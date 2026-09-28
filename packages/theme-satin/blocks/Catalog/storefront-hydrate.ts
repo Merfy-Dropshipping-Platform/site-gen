@@ -307,8 +307,10 @@ export function renderCardHtml(p: RealProduct, cardContainerOn = false): string 
 	const oldPrice = oldRaw
 		? `<span class="font-manrope text-[14px] font-light leading-tight text-[rgb(var(--color-text,0_0_0))] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";
+	// Цвет — роль схемы «Кнопка» (merfy-badge, base.css), не хардкод
+	// верстальщика #000000/text-white (владелец 28.09).
 	const badge = oldRaw
-		? `<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">Скидка</span>`
+		? `<span class="merfy-badge pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center px-2 font-manrope text-[12px] font-medium uppercase leading-none">Скидка</span>`
 		: "";
 	const cardContainerStyle = cardContainerOn
 		? ' style="padding:12px;background:rgb(var(--color-surface,245 245 245))"'
@@ -322,9 +324,9 @@ export function renderCardHtml(p: RealProduct, cardContainerOn = false): string 
 		${wishlistHeartBtnHtml(p.id)}
 	</div>
 	<div class="flex flex-col gap-1.5 md:gap-2">
-		<a href="${href}" class="font-manrope text-[16px] font-normal uppercase leading-tight text-[#000000] hover:opacity-80">${name}</a>
+		<a href="${href}" class="font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))] hover:opacity-80">${name}</a>
 		<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
-			<span class="font-manrope text-[16px] font-normal leading-tight text-[#000000]">${price}</span>
+			<span class="font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]">${price}</span>
 			${oldPrice}
 		</div>
 		<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="mt-2 flex h-11 w-full items-center justify-center rounded-[var(--radius-button,0px)] bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80">В корзину</button>

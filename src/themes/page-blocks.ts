@@ -322,23 +322,7 @@ export function prepareBlockProps(
   // списка (Publications и будущие) не получали siteId, их SSR-фетч
   // storefront-данных молча не запускался и рендерились demo-карточки.
   props.siteId = ctx.siteId;
-  Object.assign(props, designParityFlag(ctx.siteId));
   return props;
-}
-
-/**
- * PARITY_DESIGN — секция рисуется по актуальной вёрстке верстальщиков.
- *
- * Владелец 23.09: «делать как верстальщики, в точности, но только стили —
- * секции, настройки и цветовые схемы не ломать». Признак получает секция
- * сайта из списка выключателя; читают его только те секции, у которых стиль
- * уже сведён с вёрсткой, остальным он безразличен. Без выключателя секция
- * рисуется как раньше.
- */
-export function designParityFlag(siteId: string | null | undefined): {
-  __designParity?: true;
-} {
-  return parityOn("DESIGN", siteId) ? { __designParity: true } : {};
 }
 
 /**
@@ -754,6 +738,21 @@ function собратьРассыпаннуюСтроку(obj: Record<string, un
   return текст;
 }
 
+/**
+ * Поля, из которых состоит конверт кнопки. Объект с ЛЮБЫМ другим ключом —
+ * не кнопка, а структура (колонка, ряд, слайд), и схлопывать его нельзя.
+ *
+ * Без этого списка у правила `{text, link:{href}}` колонка «Мультиколонн»
+ * стартового контента (`{id, heading, text, imageUrl, linkText, link}`) после
+ * выбора ссылки в панели (пикер пишет `link: {href, text}`) превращалась в
+ * `{text, href}`: терялись заголовок, «Название ссылки» и картинка, кнопка
+ * колонки пропадала в превью и на витрине (владелец, 26.09).
+ */
+const BUTTON_ENVELOPE_FIELDS = ["text", "link", "enabled", "href"];
+
+const hasOnlyFields = (keys: string[], allowed: readonly string[]): boolean =>
+  keys.every((k) => allowed.includes(k));
+
 function coerceLegacyValue(v: unknown): unknown {
   if (v === null || typeof v !== 'object') return v;
   if (Array.isArray(v)) return v.map(coerceLegacyValue);
@@ -784,7 +783,7 @@ function coerceLegacyValue(v: unknown): unknown {
   if (
     typeof obj.text === 'string' &&
     typeof obj.link === 'string' &&
-    keys.every((k) => ['text', 'link', 'enabled', 'href'].includes(k))
+    hasOnlyFields(keys, BUTTON_ENVELOPE_FIELDS)
   ) {
     return { text: obj.text, href: obj.link };
   }
@@ -792,7 +791,8 @@ function coerceLegacyValue(v: unknown): unknown {
   if (
     typeof obj.text === 'string' &&
     isPlainObject(obj.link) &&
-    typeof (obj.link as Record<string, unknown>).href === 'string'
+    typeof (obj.link as Record<string, unknown>).href === 'string' &&
+    hasOnlyFields(keys, BUTTON_ENVELOPE_FIELDS)
   ) {
     return {
       text: obj.text,
@@ -819,6 +819,17 @@ function unwrapTextSize(
       return { value: obj.content, present: true };
   }
   return { value: '', present: false };
+}
+
+/**
+ * Конверт `{text}` / `{content}` → строка. Текста нет вовсе — поле убираем, а не
+ * ставим "": пустая строка значит «мерчант стёр» (секция рисует пусто),
+ * отсутствие — «не задано» (дефолт темы или заглушка порта). Владелец 26.09.
+ */
+function flattenTextField(out: Record<string, unknown>, key: 'heading' | 'text'): void {
+  const field = unwrapTextSize(out[key]);
+  if (field.present) out[key] = field.value;
+  else delete out[key];
 }
 
 function coerceSchemeNumber(v: unknown, fallback = 1): number {
@@ -1032,14 +1043,8 @@ function coerceImageWithTextProps(
   if (isHeadingSize(textEnvelope?.size) && !isHeadingSize(out.textSize)) {
     out.textSize = textEnvelope!.size;
   }
-  // heading: {text, enabled} → flat string
-  const h = unwrapTextSize(out.heading);
-  if (h.present) out.heading = h.value;
-  else if (typeof out.heading !== 'string') out.heading = '';
-  // text: {content, enabled} → flat string
-  const t = unwrapTextSize(out.text);
-  if (t.present) out.text = t.value;
-  else if (typeof out.text !== 'string') out.text = '';
+  flattenTextField(out, 'heading');
+  flattenTextField(out, 'text');
   // image: "" (legacy) → undefined, so Astro renders placeholder SVG
   if (typeof out.image === 'string') {
     out.image = out.image
@@ -1081,25 +1086,25 @@ function coerceMainTextProps(out: Record<string, unknown>): void {
   // а схема блока ждёт строку. Раньше конверт плющился сразу, и размер
   // выбрасывался — в панели «Большой», на витрине всегда средний (баг тестера
   // «Основной текст ▸ Заголовок → Размер заголовка», перепроверено 20.09).
-  // Тот же приём уже стоит в ContactForm/ImageWithText/Collections.
+  // У «Основного текста» размеры в панели — это поля конвертов («Заголовок →
+  // Размер заголовка», «Текст → Размер текста»), а top-level headingSize/
+  // textSize скрыты. Поэтому размер конверта ГЛАВНЕЕ (§11 контракта секции):
+  // скрытое значение вписывает первая же правка секции, и раньше оно глушило
+  // выбор мерчанта (владелец 25.09).
   const headingEnvelope = isPlainObject(out.heading)
     ? (out.heading as Record<string, unknown>)
     : null;
-  if (isHeadingSize(headingEnvelope?.size) && !isHeadingSize(out.headingSize)) {
+  if (isHeadingSize(headingEnvelope?.size)) {
     out.headingSize = headingEnvelope!.size;
   }
   const textEnvelope = isPlainObject(out.text)
     ? (out.text as Record<string, unknown>)
     : null;
-  if (isHeadingSize(textEnvelope?.size) && !isHeadingSize(out.textSize)) {
+  if (isHeadingSize(textEnvelope?.size)) {
     out.textSize = textEnvelope!.size;
   }
-  const h = unwrapTextSize(out.heading);
-  if (h.present) out.heading = h.value;
-  else if (typeof out.heading !== 'string') out.heading = '';
-  const t = unwrapTextSize(out.text);
-  if (t.present) out.text = t.value;
-  else if (typeof out.text !== 'string') out.text = '';
+  flattenTextField(out, 'heading');
+  flattenTextField(out, 'text');
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // align, padding: absent → undefined lets blockDefaults win.
 }

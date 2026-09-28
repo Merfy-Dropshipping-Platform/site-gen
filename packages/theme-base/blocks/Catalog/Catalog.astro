@@ -176,7 +176,7 @@ const cardCaptionStyleProp =
   cardCaptionStyle === 'uppercase' ? 'uppercase' : 'default';
 const cardCaptionClass = C.cardCaptionStyle[cardCaptionStyleProp];
 
-const apiBase = 'https://gateway.merfy.ru/api';
+const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 // 098 SSR-fetch products чтобы preview iframe рендерил real cards в initial
 // HTML (без placeholder flash). Mirrors PopularProducts.astro pattern.

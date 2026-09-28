@@ -1,5 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { mainTextButtonText } from "../../../../../packages/theme-base/runtime/main-text-button";
 // Фаза B (satin): канон-секция MainText — адаптация TextBlock.astro (см.
 // themes/satin/MANNER.md §10: TextBlock = заголовок + крупный body-абзац,
 // аналог MainText). Тело верстальщика перенесено КОПИЕЙ — TextBlock.astro не
@@ -8,18 +10,6 @@ import { inlineFormat } from "../../lib/rich-text";
 // пропса = литерал верстальщика (дефолт-ветка тернарников = прежние строки).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
-function contentSet(keys: string | string[], raw: unknown): boolean {
-	const ks = Array.isArray(keys) ? keys : [keys];
-	for (const key of ks) {
-		const f = merfy?.fields?.[key];
-		if (f && typeof f.set === "boolean") return f.set;
-	}
-	if (typeof raw !== "string") return false;
-	const t = raw.trim();
-	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
-	return true;
-}
 
 // Канон heading: string | { text, size }. Роль = заголовок секции (Kelly Slab
 // uppercase, МАННЕРА §1). Лестница §9 «Заголовок секции 20»: medium/отсутствие =
@@ -28,13 +18,18 @@ function contentSet(keys: string | string[], raw: unknown): boolean {
 // задал ни заголовок, ни текст — рендерим контрактный плейсхолдер
 // «Расскажи о своем бренде» + поясняющий текст + Кнопку. Любой заданный контент
 // → рендер реальных данных без изменений.
-const headingRaw = typeof p.heading === "string" ? p.heading : p.heading?.text;
-const textRaw = typeof p.text === "string" ? p.text : p.text?.content;
-const headingSet = contentSet("heading", headingRaw);
-const textSet = contentSet("text", textRaw);
+// Баг владельца 26.09: "headingSet"/"textSet" считались по trim (пустая строка
+// = "не задано"), поэтому стёртый мерчантом текст неотличим от нетронутого
+// поля — секция откатывалась в isEmptyState и показывала заглушку темы вместо
+// пустоты. Теперь "задано" = пришла СТРОКА (в т.ч. пустая); isEmptyState —
+// ТОЛЬКО когда оба поля не заданы вовсе (undefined, старые ревизии).
+const headingRaw = typeof p.heading === "string" ? p.heading : typeof p.heading?.text === "string" ? p.heading.text : undefined;
+const textRaw = typeof p.text === "string" ? p.text : typeof p.text?.content === "string" ? p.text.content : undefined;
+const headingSet = typeof headingRaw === "string";
+const textSet = typeof textRaw === "string";
 const isEmptyState = !headingSet && !textSet;
 
-const heading = headingSet && headingRaw ? headingRaw : isEmptyState ? "Расскажи о своем бренде" : "";
+const heading = headingSet ? headingRaw : isEmptyState ? "Расскажи о своем бренде" : "";
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
@@ -46,22 +41,32 @@ const headingCls =
 // Канон text: string | { content, size }. Пустое состояние → контрактный
 // поясняющий текст плейсхолдера (НЕ длинная копия верстальщика).
 const text =
-	textSet && textRaw ? textRaw : isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "";
+	textSet ? textRaw : isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "";
 
 // Канон textSize (top-level hidden приоритетнее text.size сабпанели). Роль =
 // «Body крупный» .satin-copy md:text-[20px] (Arsenal 300, lh 1.5, muted —
 // МАННЕРА §1), классы расписаны явно ради лестницы и токена цвета. Лестница §9:
 // medium/отсутствие = литерал 16/20, small 14/17, large 19/24.
 // §11 Контракта секции: видимое поле под-панели «Текст → Размер» (text.size)
-// приоритетнее СКРЫТОГО top-level textSize. У flux/bloom в defaultProps лежит
-// textSize:'medium', и при обратном порядке он глушил выбор мерчанта наглухо.
+// приоритетнее СКРЫТОГО top-level textSize. До 25.09 в defaultProps лежал
+// textSize:'medium' (в старых ревизиях так и лежит), и при обратном порядке он
+// глушил выбор мерчанта наглухо.
 const textSize = p.text?.size ?? p.textSize;
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только стили»): у
+// верстальщика (Satin-theme @cb548963, TextBlock.astro:13-16) текст
+// `.satin-copy md:text-[20px]`, но .satin-copy (16px, вне слоёв) перебивает
+// утилиту — на экране 16px на любой ширине. Так рисуется только
+// НЕ заданный «Размер текста» (у «Текст → Размер» в панели нет значения по
+// умолчанию, панель его не вписывает); выбранный мерчантом — как раньше.
+// Одна версия секции (владелец 25.09): прежняя ветка удалена.
+const TEXT_CLS: Record<string, string> = {
+	small: "text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]",
+	large: "text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]",
+	medium: "text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]",
+	designers: "text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]",
+};
 const textCls =
-	textSize === "small"
-		? "text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
-		: textSize === "large"
-			? "text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]"
-			: "text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
+	TEXT_CLS[textSize === "small" || textSize === "large" ? textSize : textSize === undefined ? "designers" : "medium"];
 
 // Канон position/alignment: canon-default обоих = 'center' (его пишет коэрсер)
 // И отсутствие = ЛИТЕРАЛ верстальщика — всё СЛЕВА во всю ширину satin-container
@@ -69,47 +74,41 @@ const textCls =
 // Двигают только отличные значения: position left/right сужает колонку до
 // текстовой ширины манеры max-w-[600px] (CollectionRows.astro:65) и прижимает
 // auto-margin'ом; alignment right выравнивает содержимое вправо.
+// Владелец 25.09 «что в панели — то и на витрине»: не заданная «Позиция»
+// рисует значение панели по умолчанию — «По центру». Вид верстальщиков
+// (блок во всю ширину 1320, прижат
+// влево) не совпадает ни с одним вариантом панели: «Слева» — колонка 600
+// (замер Chromium 25.09), поэтому ветки «не задано → вид верстальщиков» нет.
 const position = p.position === "left" || p.position === "right" ? p.position : "center";
-const posCls =
-	position === "left"
-		? " max-w-[600px] mr-auto"
-		: position === "right"
-			? " max-w-[600px] ml-auto"
-			: " mx-auto";
-const alignCls =
-	position === "left"
-		? " items-start text-left"
-		: position === "right"
-			? " items-end text-right"
-			: " items-center text-center";
+const POSITION_CLS: Record<string, { pos: string; align: string }> = {
+	left: { pos: " max-w-[600px] mr-auto", align: " items-start text-left" },
+	right: { pos: " max-w-[600px] ml-auto", align: " items-end text-right" },
+	center: { pos: " mx-auto", align: " items-center text-center" },
+};
+const posCls = POSITION_CLS[position].pos;
+const alignCls = POSITION_CLS[position].align;
 
 // Канон textStyle (hidden): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
-// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// В пустом состоянии (плейсхолдер Figma 1:19335) показываем «Кнопку» по контракту.
-// С данными рендер ТОЛЬКО при непустом тексте (заданный пустой скрывает).
-// Ссылка-фоллбек /catalog (паттерн rose T15).
-const btnTextRaw =
-	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
-	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
-const btnText = btnTextRaw ?? (isEmptyState ? "Кнопка" : undefined);
+// Кнопка — одно правило для всех тем (theme-base runtime/main-text-button.ts):
+// текст из поля панели «Кнопка → Текст», пусто — кнопки нет, заглушки «Кнопка»
+// нет; старое скрытое cta — только пока поля «Кнопка» в секции нет вовсе.
+// Ссылка-фоллбек /catalog.
+const btnText = mainTextButtonText(p);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
 	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
 	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
 	"/catalog";
-// Канон buttonStyle: solid/отсутствие = тёмная кнопка манеры (метрики
-// .satin-button-md + .satin-button-dark, g:106-126,155-159 — прямоугольник
-// min-h 48, px-24, Arsenal 16 400 uppercase, hover 0.78; цвета токенами);
-// outlined = светлая контурная .satin-button-light (родная роль satin, §3).
-const btnBase =
-	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+// «Кнопка» секции одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Задача владельца 25.09: скрытый buttonStyle=outlined раньше делал её
+// контуром «Дополнительной» с рамкой из поля «Текст».
+// Метрики .satin-button-md (g:106-126): min-h 48, px-24, 16 400, hover 0.78.
 const btnCls =
-	p.buttonStyle === "outlined"
-		? `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`
-		: `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
@@ -138,6 +137,11 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Заголовок,
+// текст и кнопка — плоские соседи одной колонки (gap-4), без общей обёртки —
+// достаточно порядка полей. Без fieldOrder — прежняя разметка.
+const textOrder = sectionFieldOrder("MainText", p);
 ---
 
 <section
@@ -148,8 +152,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class="satin-container">
 		<div class={`flex w-full flex-col gap-4${posCls}${alignCls}`}>
+			{textOrder.map((field) => (
+			<Fragment>
 			{
-				heading && !isFieldHidden('heading') && (
+				field === 'heading' && heading && !isFieldHidden('heading') && (
 					<h2
 						class={headingCls + italicCls}
 						data-puck-subsection-parent={id}
@@ -159,7 +165,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					/>
 				)
 			}
-			{!isFieldHidden('text') && (
+			{field === 'text' && text && !isFieldHidden('text') && (
 				<p
 					class={textCls + italicCls}
 					data-puck-subsection-parent={id}
@@ -169,10 +175,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				/>
 			)}
 			{
-				btnText && !isFieldHidden('button') && (
+				field === 'button' && btnText && !isFieldHidden('button') && (
 					<a
 						href={btnHref}
 						class={btnCls}
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="button"
@@ -181,6 +188,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</a>
 				)
 			}
+			</Fragment>
+			))}
 		</div>
 	</div>
 </section>

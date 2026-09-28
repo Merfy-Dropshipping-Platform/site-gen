@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { schemeIdOf } from "../../lib/color-scheme";
+import { textOf, pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (satin, группа content): канон-секция MultiRows — адаптация
 // src/components/sections/CollectionRows.astro (тело КОПИЕЙ; оригинал не
 // тронут — index.astro:26 и about.astro:62 его используют, включая
@@ -48,20 +49,19 @@ function slotSet(raw: unknown): boolean {
 const hasRealRows =
 	Array.isArray(p.rows) &&
 	p.rows.some((r: any) => {
-		const heading = (typeof r?.heading === "string" && r.heading) || (typeof r?.title === "string" && r.title) || "";
+		// Канонический ключ (title) читается ПЕРВЫМ и как есть — стёртое мерчантом
+		// поле не проваливается в легаси heading (SECTION-CONTRACT.md §2).
+		const heading = textOf(r?.title) ?? textOf(r?.heading) ?? "";
 		const image = (typeof r?.imageUrl === "string" && r.imageUrl) || (typeof r?.image === "string" && r.image) || "";
 		const btn = typeof r?.button?.text === "string" ? r.button.text : typeof r?.ctaLabel === "string" ? r.ctaLabel : "";
 		return !!slotImage(image) || slotSet(heading) || slotSet(btn);
 	});
-const headingRaw =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
+const headingRaw = textOf(p.heading) ?? textOf(p._headingLegacy);
 const heading = hasRealRows
 	? contentSet("heading", headingRaw)
-		? headingRaw
+		? (headingRaw ?? "")
 		: ""
-	: contentSet("heading", headingRaw) && headingRaw.trim()
-		? headingRaw
-		: headingRaw || "Мультиряды";
+	: pickText(contentSet("heading", headingRaw) && hasText(headingRaw) ? headingRaw : undefined, "Мультиряды");
 // Панель пишет размер в top-level `headingSize` (select), `heading` = aiText-строка.
 // Читаем top-level ПЕРВЫМ — иначе легаси-объект heading.size из старых ревизий
 // перебивает выбор мерчанта и настройка выглядит мёртвой. Тот же механизм, что
@@ -150,12 +150,20 @@ const rowHeadingCls = (s: string | undefined) =>
 		: s === "large"
 			? "font-logo text-[24px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
 			: "font-logo text-[20px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+//
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только стили»): у
+// верстальщика абзац ряда `.satin-copy md:text-[20px]`, но его .satin-copy
+// (16px, вне слоёв) перебивает утилиту — на экране 16px на любой ширине. Так
+// рисуется только «размер текста не задан»; выбранный — как раньше.
+// Одна версия секции (владелец 25.09): прежняя ветка удалена.
+const ROW_TEXT_CLS: Record<string, string> = {
+	small: "max-w-[600px] text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]",
+	large: "max-w-[600px] text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]",
+	medium: "max-w-[600px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]",
+	designers: "max-w-[600px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]",
+};
 const rowTextCls = (s: string | undefined) =>
-	s === "small"
-		? "max-w-[600px] text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
-		: s === "large"
-			? "max-w-[600px] text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]"
-			: "max-w-[600px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
+	ROW_TEXT_CLS[s === "small" || s === "large" ? s : s === undefined ? "designers" : "medium"];
 
 // «Высота» секции и «Размер» ряда — две ЖИВЫЕ настройки, и ни одна из них не
 // угадывается по данным. Ряд со своим размером всегда главнее; секция задаёт
@@ -184,12 +192,10 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 				.split(/\n\n+/)
 				.map((x) => x.trim())
 				.filter(Boolean);
-	const headingText =
-		// §11 Контракта секции: панель ряда показывает и пишет title/description/image,
-		// а heading/text/imageUrl — legacy из сидов и старых ревизий. Читать legacy
-		// ПЕРВЫМ нельзя: он есть почти в каждой ревизии и наглухо глушит правки
-		// мерчанта — заголовок ряда меняешь, на превью остаётся старый.
-		(typeof r.title === "string" && r.title) || (typeof r.heading === "string" && r.heading) || "";
+	// §11 Контракта секции: панель ряда показывает и пишет title/description/image,
+	// а heading/text/imageUrl — legacy из сидов и старых ревизий. Канон читаем
+	// как есть — стёртое title не проваливается в легаси heading (§2).
+	const headingText = textOf(r.title) ?? textOf(r.heading) ?? "";
 	const btnText =
 		(typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined) ??
 		(typeof r.ctaLabel === "string" && r.ctaLabel.trim() ? r.ctaLabel : undefined);
@@ -262,6 +268,16 @@ const ROW_SPLIT: Record<"small" | "medium" | "large", { mediaFirst: string; text
 const rowSplitKey: "small" | "medium" | "large" =
 	p.width === "small" ? "small" : p.width === "medium" ? "medium" : "large";
 
+// РЕГРЕСС 24.09 (7c87010e) — без «Ширины» сюда подставлялась
+// геометрия верстальщика (md:grid-cols-2 md:gap-10, ряды gap-12 md:gap-20, текст
+// без md:p-8), и она перебивала решения владельца 17–20.09 (f3ffa73e, ed711995,
+// b68871f1, ebd40ea0, a01dfd7a, ae55ded6, 4287e8ae): пара ряда впритык, у
+// текстовой колонки свои поля 32px, доля медиа по ROW_SPLIT (незаданная
+// «Ширина» = large), между рядами 32px. Решение владельца главнее вёрстки
+// верстальщика — отдельной ветки «как у верстальщиков» здесь нет ни при каком
+// значении «Ширины». ROW_TEXT_CLS.designers (размер текста ряда) — другая
+// настройка, эта задача её не трогает.
+
 // Канон alignment текст-колонки: left/отсутствие = ЛИТЕРАЛ (без классов —
 // контент слева, CollectionRows.astro:62); center/right двигают содержимое.
 const alignCls =
@@ -271,19 +287,16 @@ const alignCls =
 			? " items-end text-right"
 			: "";
 
-// Канон buttonStyle: canon-default И отсутствие = светлая контурная
-// .satin-button-md LIGHT ЛИТЕРАЛ (родная роль satin! CollectionRows.astro:67);
-// black|solid → тёмная заливка .satin-button-dark; white → белая заливка
-// (инверсия на тёмном §3). Метрики .satin-button-md (g:106-126) + токены;
-// mt-auto w-fit — кнопка прижата к низу ряда (литерал).
-const btnBase =
-	"mt-auto inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+// «Стиль кнопки» ряда выбирает РОЛЬ: «Дополнительная» (`secondary`, легаси
+// `white`) ← поля «Дополнительной кнопки» схемы, остальное (primary, black,
+// solid, без значения) ← «Основной». Цвета даёт правило роли
+// (data-scheme-button, src/themes/scheme-buttons.ts), у порта — только каркас.
+// Метрики .satin-button-md (g:106-126); mt-auto w-fit — кнопка прижата к низу
+// ряда (литерал).
 const btnCls =
-	p.buttonStyle === "black" || p.buttonStyle === "solid"
-		? `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`
-		: p.buttonStyle === "white" || p.buttonStyle === "secondary"
-			? `${btnBase} border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
-			: `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`;
+	"mt-auto inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+const SECONDARY_STYLES = ["secondary", "white"];
+const btnRole = SECONDARY_STYLES.includes(String(p.buttonStyle)) ? "secondary" : "primary";
 
 // Канон containerEnabled (toggle «Контейнер»; canon-default ВЫКЛ — паритет
 // rose/MultiColumns). ИСПРАВЛЕНИЕ канона Nikita: ВКЛ рисует surface-бокс §4
@@ -433,7 +446,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								</div>
 							)}
 							{row.btnText && (
-								<a href={row.btnHref} class={btnCls}>
+								<a href={row.btnHref} class={btnCls} data-scheme-button={btnRole}>
 									{row.btnText}
 								</a>
 							)}

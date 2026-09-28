@@ -2,8 +2,11 @@
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import NavItem from "./NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
+import { headerOwnLogo } from "../../../../packages/theme-base/runtime/header-logo";
 import { SITE_TITLE } from "../consts";
 import { ROSE_RAIL_INNER, ROSE_RAIL_OUTER, ROSE_RAIL_PAD_MOBILE } from "../lib/container";
+import { ROSE_HEADER_ACTION_BTN_DESIGNERS, ROSE_HEADER_MOBILE_ROW_DESIGNERS, ROSE_HEADER_SEARCH_BOX_DESIGNERS } from "../lib/design-parity";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 interface NavLink {
 	label: string;
@@ -23,13 +26,22 @@ const defaultNav: NavLink[] = [
 // прежним строкам классов байт-в-байт; новые элементы не рендерятся без пропсов.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// иконка мобильного бургера крупнее (Rose-theme @b719c193). Отдельный
-// планшетный ярус шапки верстальщиков НЕ переносим — владелец велел его не
-// делать. Без признака — прежний размер. Признак ставит sites
-// (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
-const burgerSizeCls = designParity ? "size-6" : "size-5";
+// Как у верстальщиков (владелец 23-24.09: «как у верстальщиков, только
+// стили»): иконка мобильного бургера крупнее (Rose-theme @b719c193).
+// Отдельный планшетный ярус шапки верстальщиков НЕ переносим — владелец
+// велел его не делать.
+const burgerSizeCls = "size-6";
+// Мобильная строка на планшете (768–1023) — высотой планшетного ряда
+// верстальщиков, 56px (py-4 + иконка 24). Раскладка строки прежняя: сам
+// планшетный ярус не переносим (решение владельца выше), только высота.
+const mobileRowParityCls = ` ${ROSE_HEADER_MOBILE_ROW_DESIGNERS}`;
+// Кнопки-иконки десктопной строки (поиск, избранное, корзина, профиль, бургер
+// «Бокового» меню) — 40px, как у верстальщиков (было 32): строка шапки
+// 88px вместо 80. Сами иконки прежние, 24px.
+const actionBtnSizeCls = ROSE_HEADER_ACTION_BTN_DESIGNERS;
+// Панель поиска: кнопка «Найти» в 4px от правого края коробки, как у
+// верстальщиков (pr-1); было 8 (p-2).
+const searchBoxPadCls = ROSE_HEADER_SEARCH_BOX_DESIGNERS;
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить текстовый логотип.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
 // Рекурсивно сохраняем submenu (до 3 уровней) — иначе вложенные меню теряются.
@@ -50,14 +62,9 @@ const nav: NavLink[] = Array.isArray(p.navigationLinks) && p.navigationLinks.len
 // НЕ существует на сторфронте (404) → не рендерим <img> с битой картинкой. Реальные
 // загрузки лежат в /branding/<tenant>/<site>/logo-*.svg (pathname НЕ "/logo.svg"),
 // поэтому матчим именно pathname. Иначе — текстовый логотип (siteTitle), как у верстальщика.
-const rawLogo = typeof p.logo === "string" ? p.logo.trim() : "";
-let logoPath = "";
-try {
-	logoPath = new URL(rawLogo, "https://_merfy_").pathname;
-} catch {
-	logoPath = rawLogo;
-}
-const logo = rawLogo && logoPath !== "/logo.svg" ? rawLogo : undefined;
+// Правило «что считать файлом мерчанта» (плейсхолдер /logo.svg и картинки темы
+// /icons/… — нет) — общее для пяти тем: packages/theme-base/runtime/header-logo.ts.
+const logo = headerOwnLogo(p.logo) || undefined;
 const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
 
 // Канон logoPosition: 'top-left' (canon default) / 'center-left' / отсутствие /
@@ -92,6 +99,10 @@ const SCROLL_UP_JS = [
 	"var last=window.scrollY;",
 	"window.addEventListener('scroll',function(){",
 	"var y=window.scrollY;",
+	// Режим читается на КАЖДОЙ прокрутке: в конструкторе «Статичность» меняют без
+	// перезагрузки превью, и слушатель, повешенный для scroll-up, иначе прятал
+	// шапку и после выбора «Всегда» (баг 25.09). Превью переписывает атрибут.
+	"if(root.getAttribute('data-rose-sticky')!=='scroll-up'){root.style.transform='';last=y;return;}",
 	"if(y>last&&y>root.offsetHeight){root.style.transform='translateY(-100%)';}else{root.style.transform='';}",
 	"last=y;",
 	"},{passive:true});",
@@ -190,7 +201,7 @@ const shopId = "";
 		<header class="relative w-full overflow-visible" data-nt="rose-header">
 			<div>
 				<!-- Mobile -->
-				<div class={`relative z-[60] flex h-11 items-center justify-between ${ROSE_RAIL_PAD_MOBILE} lg:hidden`}>
+				<div class={`relative z-[60] flex h-11 items-center justify-between ${ROSE_RAIL_PAD_MOBILE} lg:hidden${mobileRowParityCls}`}>
 					<button
 						type="button"
 						id="rose-burger-btn"
@@ -260,6 +271,12 @@ const shopId = "";
 								<>
 									<div class="flex w-full items-center justify-between">
 										<div class="flex items-center gap-3 lg:gap-4">
+										{isSidebar && (
+											<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+												<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
+												<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
+											</button>
+										)}
 										<a
 											href="/"
 											class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
@@ -271,7 +288,7 @@ const shopId = "";
 											<button
 												type="button"
 												data-action="toggle-search"
-												class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Поиск"
 												aria-expanded="false"
 												aria-controls="rose-search-panel"
@@ -280,7 +297,7 @@ const shopId = "";
 											</button>
 											<a
 												href="/wishlist"
-												class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Избранное"
 											>
 												<RoseNtIcon name="favourite" sizeClass="size-6" />
@@ -293,7 +310,7 @@ const shopId = "";
 											<button
 												type="button"
 												data-cart-open
-												class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Корзина"
 											>
 												<RoseNtIcon name="cart" sizeClass="size-6" />
@@ -306,17 +323,11 @@ const shopId = "";
 											<a
 												href="/login"
 												data-auth-link
-												class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Аккаунт"
 											>
 												<RoseNtIcon name="user" sizeClass="size-6" />
 											</a>
-												{isSidebar && (
-													<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
-														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
-														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
-													</button>
-												)}
 										</div>
 									</div>
 									<nav
@@ -336,11 +347,18 @@ const shopId = "";
 								/* top-center: Row1=[search LEFT | logo CENTER | cart+user RIGHT], Row2=[nav CENTER] */
 								<>
 									<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
-						{/* Левая ячейка — распорка: она держит логотип ровно по центру грида.
-						    Поиск отсюда убран (жалоба владельца 21.09 «не должно быть поиска
-						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
-						    не разрывался. */}
+						{/* Левая ячейка: бургер бокового меню (владелец, 25.09 — слева на
+						    любой ширине). Поиск отсюда убран (жалоба владельца 21.09 «не
+						    должно быть поиска слева»): он переехал к остальным иконкам
+						    справа, чтобы ряд действий не разрывался; распорка остаётся
+						    распоркой, когда бургера нет (menuType≠sidebar). */}
 										<div class="flex items-center gap-4 lg:gap-6">
+											{isSidebar && (
+												<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+													<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
+													<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
+												</button>
+											)}
 										</div>
 										<div class="flex items-center justify-center">
 											<a
@@ -354,7 +372,7 @@ const shopId = "";
 								<button
 												type="button"
 												data-action="toggle-search"
-												class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Поиск"
 												aria-expanded="false"
 												aria-controls="rose-search-panel"
@@ -363,7 +381,7 @@ const shopId = "";
 											</button>
 											<a
 												href="/wishlist"
-												class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Избранное"
 											>
 												<RoseNtIcon name="favourite" sizeClass="size-6" />
@@ -376,7 +394,7 @@ const shopId = "";
 											<button
 												type="button"
 												data-cart-open
-												class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Корзина"
 											>
 												<RoseNtIcon name="cart" sizeClass="size-6" />
@@ -389,17 +407,11 @@ const shopId = "";
 											<a
 												href="/login"
 												data-auth-link
-												class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Аккаунт"
 											>
 												<RoseNtIcon name="user" sizeClass="size-6" />
 											</a>
-												{isSidebar && (
-													<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
-														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
-														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
-													</button>
-												)}
 										</div>
 									</div>
 									<nav
@@ -422,6 +434,12 @@ const shopId = "";
 						/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 						<div class={desktopRowCls} style={headerPadStyle}>
 						<div class={singleRowCentered ? desktopRailGridCls : desktopRailCls}>
+								{isSidebar && (
+									<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+										<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
+										<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
+									</button>
+								)}
 								<a href="/" class:list={[singleRowCentered ? desktopCenterLogoCls : desktopLogoCls, logoLeft && "flex-1"]}>
 								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 							</a>
@@ -443,7 +461,7 @@ const shopId = "";
 								<button
 									type="button"
 									data-action="toggle-search"
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 									aria-label="Поиск"
 									aria-expanded="false"
 									aria-controls="rose-search-panel"
@@ -452,7 +470,7 @@ const shopId = "";
 								</button>
 								<a
 									href="/wishlist"
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 									aria-label="Избранное"
 								>
 									<RoseNtIcon name="favourite" sizeClass="size-6" />
@@ -465,7 +483,7 @@ const shopId = "";
 								<button
 									type="button"
 									data-cart-open
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 									aria-label="Корзина"
 								>
 									<RoseNtIcon name="cart" sizeClass="size-6" />
@@ -477,17 +495,11 @@ const shopId = "";
 								</button>
 								<a
 									href="/login" data-auth-link
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 									aria-label="Аккаунт"
 								>
 									<RoseNtIcon name="user" sizeClass="size-6" />
 								</a>
-												{isSidebar && (
-													<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
-														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
-														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
-													</button>
-												)}
 							</div>
 						</div>
 						</div>
@@ -513,7 +525,7 @@ const shopId = "";
 						data-header-search
 						data-search-layout="panel"
 						data-search-limit="4"
-						class="pointer-events-auto mx-auto flex w-full max-w-[1320px] flex-col rounded-[var(--radius-input,4px)] border border-[#E5E5E5] bg-[rgb(var(--color-bg,255_255_255))] p-2 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+						class={`pointer-events-auto mx-auto flex w-full max-w-[1320px] flex-col rounded-[var(--radius-input,4px)] border border-[#E5E5E5] bg-[rgb(var(--color-bg,255_255_255))] ${searchBoxPadCls} shadow-[0_8px_24px_rgba(0,0,0,0.08)]`}
 					>
 						<form
 							role="search"
@@ -577,8 +589,11 @@ const shopId = "";
 			// прокрутка панели не утекает на страницу.
 			// Выезд за 300 мс и обратно (баг 1 документа «баги пунктов меню»:
 			// панель появлялась и пропадала за один кадр) — с той стороны, где
-			// иконка меню: на телефоне бургер слева, и панель выезжает слева; с lg
-			// панель — колонка у правого края, кнопка справа, и выезд справа.
+			// иконка меню: бургер слева ВЕЗДЕ (владелец, 25.09 — тестер попросил
+			// слева и на десктопе, владелец подтвердил «да»; это отменяет правило
+			// 21.09/23.09, `59bb1a50`/`752cd8ac`, где на lg бургер и панель были
+			// справа). На телефоне и с lg панель — колонка у левого края, кнопка
+			// слева, выезд слева.
 			// Скрипт темы по-прежнему переключает `hidden`; переход через display: none дают
 			// `transition-discrete` и `starting:` (@starting-style) — без них
 			// display не анимируется, и панель прыгала бы. Где их не поддерживает
@@ -587,7 +602,7 @@ const shopId = "";
 			// за 300 мс и так же уходит: clip-path сверху вниз на том же `hidden`
 			// (пункт 2 той же пачки — раньше открывалась рывком).
 			isSidebar
-				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:left-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:translate-x-full lg:[&.hidden]:translate-x-full motion-reduce:transition-none"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:right-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:-translate-x-full lg:[&.hidden]:-translate-x-full motion-reduce:transition-none"
 				: "inset-x-0 bottom-0 w-full px-4 pt-4 pb-8 sm:px-5 md:px-10 lg:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 		]}
 		role="dialog"
@@ -772,8 +787,8 @@ const shopId = "";
 	{/* Магазин для живого поиска шапки: `const shopId = ""` патчит сборка
 	    (patchShopIdInDist) — как у подвала и корзины. В превью конструктора id
 	    приходит глобалом __MERFY_SITE_ID__, пустая строка здесь ничего не ломает. */}
-	<script is:inline define:vars={{ shopId }}>
-		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: "https://gateway.merfy.ru/api" };
+	<script is:inline define:vars={{ shopId, apiUrl }}>
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: apiUrl || "https://gateway.merfy.ru/api" };
 		if (shopId && !window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId;
 	</script>
 </div>

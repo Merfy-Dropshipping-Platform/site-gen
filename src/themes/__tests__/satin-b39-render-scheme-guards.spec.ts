@@ -26,6 +26,14 @@
  *    (тот же токен, что уже красит вторую кнопку Hero); плашка «Скидка» → --color-accent
  *    (эталон rose: RoseProductCard.astro).
  *
+ *    ОБНОВЛЕНО 28.09 (владелец: «бейдж принимает от схемы основной цвет кнопки
+ *    и текст основной кнопки»): роль «Акцент» для плашки «Скидка» — тоже не то,
+ *    чего хочет владелец. Плашка переведена на класс `merfy-badge`
+ *    (packages/theme-base/styles/base.css) = роль «Кнопка»
+ *    (--color-button-bg/--color-button-text), как у CTA «Добавить в корзину».
+ *    Ассерты ниже подняты под merfy-badge; .satin-button-light (роль «Кнопка 2»)
+ *    эта правка не трогает — «Смотреть ещё» другая кнопка, другая роль.
+ *
  * 4. Секция «Корзина» satin (CartBody.astro / CartSection.astro): плашка количества
  *    (−/N/+) в строке товара. ДО: обёртка степпера не несла color вовсе → наследовала
  *    `body { color: var(--satin-black) }` (тема, не схема) — чёрный текст на любой,
@@ -193,10 +201,13 @@ if (built) {
       return tag;
     }
 
-    it("кнопка читает --color-button-2-text/-border (не хардкод-цвет)", () => {
+    it("кнопка несёт роль «Дополнительная» схемы (не хардкод-цвет)", () => {
+      // С 25.09 цвета даёт правило роли (data-scheme-button,
+      // src/themes/scheme-buttons.ts): Фон/Текст/Обводка «Дополнительной
+      // кнопки» → фон/текст/рамка. Нарисованное меряет scheme-button-roles.spec.ts.
       const tag = secondaryButtonTag("scheme-1");
-      expect(tag).toMatch(/text-\[rgb\(var\(--color-button-2-text,0_0_0\)\)\]/);
-      expect(tag).toMatch(/border-\[rgb\(var\(--color-button-2-text,0_0_0\)\)\]/);
+      expect(tag).toMatch(/data-scheme-button="secondary"/);
+      expect(tag).not.toMatch(/(?:bg|text|border)-\[(?:#|rgb\(\d)/);
     });
 
     it("scheme-1 (светлая) и scheme-4 (тёмная) satin реально дают РАЗНЫЙ --color-button-2-text", () => {
@@ -223,12 +234,13 @@ if (built) {
       expect(declarations).not.toMatch(/--satin-black/);
     });
 
-    it("плашка «Скидка» (SatinProductCard.astro) красится --color-accent, не bg-[#000000]", () => {
+    it("плашка «Скидка» (SatinProductCard.astro) несёт merfy-badge, не accent/хардкод", () => {
       const src = read("themes/satin/src/components/products/SatinProductCard.astro");
-      const badge = /<span class="([^"]*)"[^>]*>\s*Скидка\s*<\/span>/.exec(src);
+      const badge = /<span class="([^"]*)"[^>]*>\s*(?:\{\/\*[\s\S]*?\*\/\}\s*)?Скидка\s*<\/span>/.exec(src);
       if (!badge) throw new Error("плашка «Скидка» не найдена в SatinProductCard.astro");
-      expect(badge[1]).toContain("bg-[rgb(var(--color-accent,0_0_0))]");
+      expect(badge[1]).toContain("merfy-badge");
       expect(badge[1]).not.toContain("#000000");
+      expect(badge[1]).not.toContain("--color-accent");
     });
 
     it("рендер PopularProducts (реальный товар со скидкой, colorScheme=scheme-4): оба узла на схемных токенах", () => {
@@ -263,8 +275,9 @@ if (built) {
       ]);
       expect(out).toContain("satin-button-light");
       expect(out).toContain('data-puck-subsection-field="viewAll"');
-      expect(out).toMatch(/bg-\[rgb\(var\(--color-accent,0_0_0\)\)\][^"]*"[^>]*>\s*\n?\s*Скидка/);
+      expect(out).toMatch(/merfy-badge[^"]*"[^>]*>\s*\n?\s*Скидка/);
       expect(out).not.toMatch(/bg-\[#000000\][^>]*>\s*\n?\s*Скидка/);
+      expect(out).not.toMatch(/--color-accent[^"]*"[^>]*>\s*\n?\s*Скидка/);
     });
   });
 

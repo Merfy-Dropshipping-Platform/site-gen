@@ -1,8 +1,10 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import VanillaPicture from "../img/VanillaPicture.astro";
 import { V_IMG } from "../../data/imageAssets";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Hero): канон-схема theme-base
 // Hero.puckConfig ВКЛЮЧАЯ carousel-ветку «084 vanilla pilot» (mode, slides[]≤8,
@@ -17,7 +19,9 @@ import { V_IMG } from "../../data/imageAssets";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Дефолтные слайды = литералы верстальщика (тексты/ссылки verbatim).
+// Дефолтные слайды = литералы верстальщика (тексты verbatim). Ссылки — исключение:
+// владелец 25.09 «страницы только магазинные, без верстальщиков» — у /catalog/textile
+// на витрине своей страницы нет, у нового магазина это «не найдено»; заменены на /catalog.
 const CANON_SLIDES = [
 	{
 		image: V_IMG.hero(1),
@@ -31,14 +35,14 @@ const CANON_SLIDES = [
 		title: "Дом, в который хочется возвращаться",
 		subtitle: "Товары, создающие атмосферу тепла и спокойствия",
 		ctaText: "Перейти к товарам",
-		ctaHref: "/catalog/textile",
+		ctaHref: "/catalog",
 	},
 	{
 		image: V_IMG.hero(3),
 		title: "Интерьер, наполненный смыслом",
 		subtitle: "коллекция текстиля и декора для тех, кто ценит красоту в деталях",
 		ctaText: "Новые поступления",
-		ctaHref: "/catalog/textile",
+		ctaHref: "/catalog",
 	},
 ];
 
@@ -223,12 +227,14 @@ const pagination =
 		? p.pagination
 		: "numbers";
 
-// Канон buttonStyle: solid (canon-default) = olive-CTA верстальщика дословно
-// (токены кнопки-1); outlined = белый контур манеры на тёмном (§3, токены кнопки-2).
-const ctaCls =
-	p.buttonStyle === "outlined"
-		? `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`
-		: `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`;
+// Каркас кнопок героя. Цвета — поля схемы своей роли (атрибут
+// data-scheme-button, src/themes/scheme-buttons.ts): Основная ← «Основная
+// кнопка», Дополнительная ← «Дополнительная кнопка», Фон → фон, Текст →
+// буквы, Обводка → рамка. Задача владельца 25.09: раньше Дополнительная была
+// прозрачной и брала текст и рамку из ОДНОГО поля «Фон», а скрытый
+// buttonStyle=outlined менял кнопки местами.
+const CTA_FRAME = `inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-solid font-vanilla-arsenal font-normal leading-none tracking-normal transition-opacity hover:opacity-90`;
+const ctaCls = `hero-animate-3 ${CTA_FRAME}`;
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9
 // значений) — РАЗМЕЩЕНИЕ контент-блока по сетке 3×3 (Figma 648-55404): вертикаль
@@ -343,17 +349,22 @@ const heroSlots = resolveHeroMediaSlots(
 		"",
 );
 const heroBgRaw = heroSlots.primary;
-const heroHeadingRaw =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "";
-const heroSubtitleRaw =
-	(typeof p.text === "string" ? p.text : p.text?.content) ?? p.subtitle ?? "";
+// heroHeadingRaw/heroSubtitleRaw — строка панели (heading.text/text.content) с
+// легаси-фоллбеком на p.title/p.subtitle, СОХРАНЯЯ различие «строка (в т.ч.
+// пустая — мерчант стёр)» vs undefined («поле не задано вовсе», §2 контракта):
+// pick-выбор ниже (singleTitle/singleSubtitle) отдаёт стёртое "" как есть и
+// легаси-копию верстальщика — только при undefined.
+const heroHeadingRaw = textOf(p.heading) ?? textOf(p.title);
+const heroSubtitleRaw = textOf(p.text) ?? textOf(p.subtitle);
 const heroCtaRaw = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "";
 const hasHeroSlides = Array.isArray(p.slides) && p.slides.length > 0;
+// hasText вместо `.trim()` на truthy-проверке — строка из пробелов не в счёт
+// (§2 контракта): иначе " " считался бы контентом мерчанта.
 const hasHeroData =
-	!!heroBgRaw.trim() ||
-	!!String(heroHeadingRaw).trim() ||
-	!!String(heroSubtitleRaw).trim() ||
-	!!String(heroCtaRaw).trim() ||
+	hasText(heroBgRaw) ||
+	hasText(heroHeadingRaw) ||
+	hasText(heroSubtitleRaw) ||
+	hasText(heroCtaRaw) ||
 	hasHeroSlides;
 
 // Контракт-лейблы плейсхолдера (тип «Изображение», Figma 1:19335): overlay
@@ -366,9 +377,14 @@ const PLACEHOLDER_HEADING = "Изображение";
 const PLACEHOLDER_TEXT = "Покажи и расскажи о своем товаре в одном блоке";
 const PLACEHOLDER_CTA = "Кнопка";
 
-const singleTitle = hasHeroData ? (heroHeadingRaw || CANON_SLIDES[0].title) : PLACEHOLDER_HEADING;
+// Стёртое "" рендерим КАК ЕСТЬ — без легаси-копии верстальщика; на литерал
+// CANON_SLIDES фоллбечим (pickText) ТОЛЬКО когда поле не задано вовсе
+// (undefined). Было `heroHeadingRaw || CANON_SLIDES[0].title` — пустая строка
+// такая же falsy, как отсутствие поля, и стёртый заголовок подменялся копией
+// верстальщика «Искусство жить уютно».
+const singleTitle = hasHeroData ? pickText(heroHeadingRaw, CANON_SLIDES[0].title) : PLACEHOLDER_HEADING;
 const singleSubtitle = hasHeroData
-	? (heroSubtitleRaw || CANON_SLIDES[0].subtitle)
+	? pickText(heroSubtitleRaw, CANON_SLIDES[0].subtitle)
 	: PLACEHOLDER_TEXT;
 const singleCtaText = hasHeroData
 	? (heroCtaRaw || CANON_SLIDES[0].ctaText)
@@ -403,12 +419,7 @@ const heroBoxed = String(p.container ?? "false") === "true";
 const heroBoxedCls = heroBoxed
 	? ` rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-bg,238_238_238))]/95 ${panelPadCls} [&_h1]:!text-[rgb(var(--color-heading,38_49_28))] [&_p]:!text-[rgb(var(--color-text,68_68_68))]`
 	: "";
-// Вторая кнопка (только single) — рендер при непустом тексте. Заливка ПРОТИВОПОЛОЖНА
-// первой (паттерн rose secondaryCtaCls): согласованная пара «главная + вторая» — при
-// «Стиль solid» первая залита оливой → вторая = контур манеры; при «outlined» первая
-// = контур → вторая заливается оливой (флип). Раньше secondaryCls был ЖЁСТКО контуром
-// → при buttonStyle=outlined ОБЕ кнопки становились прозрачными контурами (ни одной
-// залитой, потеря иерархии). Классы — vanilla-манера дословно (инверсия ctaCls-веток).
+// Вторая кнопка (только single) — рендер при непустом тексте.
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
 		? p.secondaryButton.text
@@ -416,11 +427,8 @@ const secondaryText =
 const secondaryHref =
 	p.secondaryButton?.link?.href ??
 	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
-	"/catalog/textile";
-const secondaryCls =
-	p.buttonStyle === "outlined"
-		? `inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`
-		: `inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`;
+	"/catalog";
+const secondaryCls = CTA_FRAME;
 
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
@@ -429,6 +437,16 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта); отсюда же берёт
+// aria-labelledby секции, чтобы не ссылаться на нерисуемый `<h1 id="hero-title">`.
+const showHeroTitle = hasText(singleTitle) && !isFieldHidden('heading');
+const showHeroSubtitle = hasText(singleSubtitle) && !isFieldHidden('text');
+// Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). У vanilla Hero
+// заголовок/текст/кнопка — плоские соседи ОДНОГО родителя (copyWrapCls) и в
+// карусельной, и в одиночной ветке — группировка не нужна, порядок применяется
+// прямым перебором. Без fieldOrder — прежний порядок реестра.
+const heroOrder = sectionFieldOrder("Hero", p);
 ---
 
 {
@@ -489,7 +507,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", carouselLayout.vItemsCls]}>
 					<div class="vanilla-container pointer-events-none">
 						<div class={carouselLayout.copyWrapCls} aria-live="polite">
-							{!isFieldHidden('heading') && (
+							{heroOrder.map((field) => (
+							<Fragment>
+							{field === 'heading' && !isFieldHidden('heading') && (
 								<h1
 									id="hero-title"
 									data-hero-title
@@ -501,7 +521,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									<Fragment set:html={inlineFormat(slides[0].title)} />
 								</h1>
 							)}
-							{!isFieldHidden('text') && (
+							{field === 'text' && !isFieldHidden('text') && (
 								<p
 									data-hero-subtitle
 									class={slides[0].subtitleCls}
@@ -512,10 +532,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									<Fragment set:html={inlineFormat(slides[0].subtitle)} />
 								</p>
 							)}
-							{!isFieldHidden('buttons') && (
+							{field === 'buttons' && !isFieldHidden('buttons') && (
 							<a
 								data-hero-cta
 								class:list={[ctaCls, !slides[0].ctaText && "hidden"]}
+								data-scheme-button="primary"
 								href={slides[0].ctaHref}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="102"
@@ -524,6 +545,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{slides[0].ctaText}
 							</a>
 							)}
+							</Fragment>
+							))}
 						</div>
 					</div>
 				</div>
@@ -582,7 +605,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	) : (
 		<section
 			class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,20_37_15))]"
-			aria-labelledby="hero-title"
+			aria-labelledby={showHeroTitle ? "hero-title" : undefined}
 			data-puck-component-id={id}
 			style={paddingStyle}
 		>
@@ -661,7 +684,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", singleLayout.vItemsCls]}>
 					<div class="vanilla-container pointer-events-none">
 						<div class={`${singleLayout.copyWrapCls}${heroBoxedCls}`}>
-							{!isFieldHidden('heading') && (
+							{heroOrder.map((field) => (
+							<Fragment>
+							{field === 'heading' && showHeroTitle && (
 								<h1
 									id="hero-title"
 									class={singleTitleCls}
@@ -672,7 +697,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									<Fragment set:html={inlineFormat(singleTitle)} />
 								</h1>
 							)}
-							{!isFieldHidden('text') && (
+							{field === 'text' && showHeroSubtitle && (
 								<p
 									class={singleSubtitleCls}
 									data-puck-subsection-parent={id}
@@ -682,10 +707,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									<Fragment set:html={inlineFormat(singleSubtitle)} />
 								</p>
 							)}
-							{!isFieldHidden('buttons') && (secondaryText ? (
+							{field === 'buttons' && !isFieldHidden('buttons') && (secondaryText ? (
 								<div class="inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3">
 									<a
 										class={ctaCls}
+										data-scheme-button="primary"
 										href={singleCtaHref}
 										data-puck-subsection-parent={id}
 										data-puck-subsection-index="102"
@@ -695,6 +721,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									</a>
 									<a
 										class={secondaryCls}
+										data-scheme-button="secondary"
 										href={secondaryHref}
 										data-puck-subsection-parent={id}
 										data-puck-subsection-index="103"
@@ -706,6 +733,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							) : (
 								<a
 									class:list={[ctaCls, !singleCtaText && "hidden"]}
+									data-scheme-button="primary"
 									href={singleCtaHref}
 									data-puck-subsection-parent={id}
 									data-puck-subsection-index="102"
@@ -713,6 +741,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								>
 									{singleCtaText}
 								</a>
+							))}
+							</Fragment>
 							))}
 						</div>
 					</div>

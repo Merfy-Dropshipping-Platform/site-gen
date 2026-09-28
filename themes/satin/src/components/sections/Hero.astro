@@ -1,8 +1,10 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import SatinPicture from "../img/SatinPicture.astro";
 import { SITE_TITLE } from "../../consts";
+import { fieldRuns, orderFields, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Hero): канон-схема theme-base Hero.puckConfig
 // поверх разметки верстальщика. Тело ниже — verbatim; дефолтные ветки тернарников =
@@ -33,7 +35,6 @@ function merchantImage(keys: string | string[], url: unknown): string {
 	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
 	return u;
 }
-
 // ── Пустое состояние (Figma 1:19335) ────────────────────────────────────────
 // Контракт плейсхолдеров: когда мерчант НИЧЕГО не настроил (секция в дефолте),
 // рендерим нейтральный ПЛЕЙСХОЛДЕР (пустой image-rect surface-тона + заголовок
@@ -49,18 +50,15 @@ const rawBackgroundImage =
 		: undefined) ??
 	(typeof p.backgroundImage === "string" && p.backgroundImage.trim() ? p.backgroundImage : undefined) ??
 	(typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url : undefined);
-const rawHeadingText =
-	typeof p.heading?.text === "string"
-		? p.heading.text
-		: typeof p.title === "string"
-			? p.title
-			: "";
-const rawSubtitleText =
-	typeof p.text?.content === "string"
-		? p.text.content
-		: typeof p.subtitle === "string"
-			? p.subtitle
-			: "";
+// Легаси-поля (title/subtitle) считаем ТОЛЬКО когда в них реально есть текст:
+// у satin оба дефолтятся пустой строкой (не undefined) с рождения секции, и
+// сравнивать их наравне с "поле не задано" нельзя — иначе свежая пустая
+// секция и стёртая мерчантом становятся неотличимы. heading.text/text.content
+// (видимые поля панели) приходят строкой как есть — пустая тоже считается.
+const legacyTitle = typeof p.title === "string" && p.title.trim() ? p.title : undefined;
+const rawHeadingText = textOf(p.heading) ?? legacyTitle;
+const legacySubtitle = typeof p.subtitle === "string" && p.subtitle.trim() ? p.subtitle : undefined;
+const rawSubtitleText = textOf(p.text) ?? legacySubtitle;
 const rawPrimaryText =
 	typeof p.primaryButton?.text === "string"
 		? p.primaryButton.text
@@ -132,13 +130,13 @@ const hasMerchantCta = !!rawPrimaryText.trim() && rawPrimaryText.trim() !== VERS
 // как условие ветки — теперь совпадает с rose (rose.isEmpty включает и cta).
 const hasMerchantText = hasMerchantTitle || hasMerchantSubtitle || hasMerchantCta;
 
-// Лейблы заданного состояния (рендер мерчанта — НЕ трогаем при наличии данных).
-const title = hasMerchantTitle
-	? (p.heading?.text ?? p.title)
-	: VERSTKA_TITLE;
-const subtitle = hasMerchantSubtitle
-	? (p.text?.content ?? p.subtitle)
-	: VERSTKA_SUB;
+// Рендер-значения поверх rawHeadingText/rawSubtitleText (§2): стёртая
+// мерчантом строка ("") рендерится пустой (элемент затем не рисуется — гейт
+// ниже через hasText), заглушка — только когда значения нет вовсе (undefined).
+// hasMerchantTitle/hasMerchantSubtitle остаются gate'ом РАСКЛАДКИ
+// (full-bleed/сплит) — их семантика не меняется.
+const title = pickText(rawHeadingText, VERSTKA_TITLE);
+const subtitle = pickText(rawSubtitleText, VERSTKA_SUB);
 const ctaRaw = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText;
 const ctaText = hasMerchantCta && typeof ctaRaw === "string" && ctaRaw.trim() ? ctaRaw : VERSTKA_CTA;
 const ctaLink =
@@ -223,21 +221,16 @@ const ctaSizeCls = {
 	small: "min-h-10 px-4 text-[14px]",
 }[heroSize];
 
-// Кнопки манеры §3 на токенах — реплика .satin-button.satin-button-md (литеральные
-// --satin-* тех классов не реагируют на смену схемы, поэтому утилиты с токенами):
-// dark = чёрная заливка (кнопка-1: 0_0_0 / 255_255_255), light = контурная (кнопка-2 —
-// родная роль satin: бордер/текст 0_0_0 на прозрачном), радиус rounded-[var(--radius-button,0px)].
-const BTN_DARK =
-	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] font-manrope font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
-const BTN_LIGHT =
-	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent font-manrope font-normal leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
-// Канон buttonStyle: solid (canon-default) И отсутствие = dark литерал; outlined = light.
-const primaryBtnCls = p.buttonStyle === "outlined" ? BTN_LIGHT : BTN_DARK;
-// Канон secondaryButton — заливка ПРОТИВОПОЛОЖНА первой (паритет rose secondaryCtaCls):
-// solid → вторая контурная (light), outlined → вторая залитая (dark). Согласованная
-// пара «главная + второстепенная». Раньше вторая была ЖЁСТКО light → при outlined обе
-// кнопки выходили контурными (ни одной залитой) — расхождение с rose.
-const secondaryBtnCls = p.buttonStyle === "outlined" ? BTN_DARK : BTN_LIGHT;
+// Кнопки манеры §3 — реплика метрик .satin-button.satin-button-md. Цвета обеих —
+// поля схемы своей роли (атрибут data-scheme-button, src/themes/scheme-buttons.ts):
+// Основная ← «Основная кнопка», Дополнительная ← «Дополнительная кнопка»; Фон →
+// фон, Текст → буквы, Обводка → рамка. Задача владельца 25.09: раньше рамка
+// основной бралась из её Фона, дополнительная была прозрачным контуром с рамкой
+// из «Текста», а скрытый buttonStyle=outlined менял кнопки местами.
+const BTN_FRAME =
+	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid font-manrope font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]`;
+const primaryBtnCls = BTN_FRAME;
+const secondaryBtnCls = BTN_FRAME;
 // Канон secondaryButton — рендер ТОЛЬКО при непустом тексте, рядом в ряд gap-3.
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
@@ -294,6 +287,31 @@ const hItemsCls = posRaw && hPos === "center" ? "mx-auto" : hPos === "right" ? "
 const alignItemsCls = p.alignment === "left" ? "items-start" : p.alignment === "right" ? "items-end" : p.alignment === "center" ? "items-center" : "";
 const textAlignCls = p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : p.alignment === "center" ? "text-center" : "";
 const buttonsJustifyCls = p.alignment === "right" ? "justify-end" : p.alignment === "center" ? "justify-center" : "justify-start";
+// Пустое состояние (заглушка до своих фото и текста) слушает «Позицию» и
+// «Выравнивание» так же, как заполненное. Раньше заглушка стояла по центру при
+// любом значении, а панель по умолчанию показывает «По центру слева» (тестер
+// 24.09: «Изображение — не работают эти две фичи»). Без своего значения —
+// то, что показывает панель: слева по горизонтали, середина по вертикали.
+const emptyPosH = posRaw ? hPos : "left";
+const emptyAlign = ["left", "center", "right"].includes(p.alignment) ? p.alignment : emptyPosH;
+const EMPTY_V: Record<string, string> = { top: "justify-start md:py-12", middle: "justify-center", bottom: "justify-end md:py-12", "": "justify-center" };
+const EMPTY_H: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
+const EMPTY_TEXT: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
+const emptyOuterCls = `absolute inset-0 z-10 flex w-full flex-col ${EMPTY_V[vPos]} ${EMPTY_H[emptyPosH]} gap-6 px-4 ${EMPTY_TEXT[emptyAlign]} sm:px-5 md:px-10`;
+const emptyInnerCls = `flex w-full max-w-[540px] flex-col ${EMPTY_H[emptyAlign]} gap-4 ${EMPTY_TEXT[emptyAlign]} md:max-w-[640px]`;
+const emptyBoxCls = `flex flex-col ${EMPTY_H[emptyAlign]} gap-6`;
+// Без «Контейнера» заголовок, текст и кнопка — одна колонка шириной с текст,
+// чтобы «Выравнивание» двигало и кнопку, а не только текст.
+// Размеры заголовка и текста заглушки — та же лестница, что у заполненного
+// экрана (headingCls/subtitleCls), без цвета: поверх фото цвет задаёт
+// hero-over-photo. Без своего значения — «Большой», как было.
+const EMPTY_HEADING_SIZE: Record<string, string> = { small: "text-[18px] md:text-[22px]", medium: "text-[22px] md:text-[27px]", large: "text-[26px] md:text-[32px]" };
+const EMPTY_TEXT_SIZE: Record<string, string> = { small: "text-[11px]", medium: "text-[14px]", large: "text-[16px]" };
+const emptyHeadingCls = `font-logo ${EMPTY_HEADING_SIZE[headingSize] ?? EMPTY_HEADING_SIZE.large} font-normal leading-[1.08] hero-over-photo-heading`;
+const emptyTextCls = `font-manrope ${EMPTY_TEXT_SIZE[textSize] ?? EMPTY_TEXT_SIZE.large} font-light tracking-[0.04em] hero-over-photo-text`;
+const EMPTY_ROW_JUSTIFY: Record<string, string> = { left: "justify-start", center: "justify-center", right: "justify-end" };
+const emptyButtonsRowCls = `flex flex-row flex-wrap items-center gap-3 ${EMPTY_ROW_JUSTIFY[emptyAlign]}`;
+const emptyWrapCls = `flex w-full max-w-[540px] flex-col ${EMPTY_H[emptyAlign]} gap-6 md:max-w-[640px]`;
 const textColCls =
 	`satin-bleed-left order-2 flex ${vJustifyCls} py-12 pr-4 md:order-1 ${heroHeightCls} ${vPadCls} md:pr-0`;
 const blockCls =
@@ -329,6 +347,22 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// §2 Контракта секции: aria-labelledby не должен ссылаться на несуществующий
+// id — h1#hero-title рисуется только при этом условии (обе ветки ниже).
+const showTitle = hasText(title) && !isFieldHidden('heading');
+// Обёртка заголовок+текст (heroEmptyRuns/heroFilledRuns ниже) не рисуется,
+// если в ней не остаётся ничего видимого — иначе стёртые оба поля оставляют
+// пустой gap (§2).
+const runHasText = (run: { fields: readonly string[] }) =>
+	run.fields.some((field) => (field === 'heading' && showTitle) || (field === 'text' && hasText(subtitle)));
+// Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). ПУСТАЯ секция —
+// обычный реестр (heading выше text — Figma-плейсхолдер). ЗАПОЛНЕННАЯ секция
+// satin по манере держит кикер (text) ВЫШЕ заголовка — свой базовый порядок
+// SATIN_HERO_ORDER; при явном fieldOrder порядок буквальный (orderFields).
+const SATIN_HERO_ORDER = ["text", "heading", "buttons"] as const;
+const heroEmptyRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
+const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "text"]);
 ---
 
 {
@@ -351,7 +385,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		   primaryButton=102) — блок остаётся выделяемым/редактируемым в конструкторе. */
 		<section
 			class={`relative w-full overflow-hidden bg-[#111111]${selfSchemeClass}`}
-			aria-labelledby="hero-title"
+			aria-labelledby={showTitle ? "hero-title" : undefined}
 			data-puck-component-id={id}
 			style={paddingStyle}
 		>
@@ -412,7 +446,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						/>
 					)
 				}
-				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 text-center sm:px-5 md:px-10">
+				<div class={emptyOuterCls}>
 					{/* «Контейнер» работает и на ПУСТОЙ секции. Свежедобавленный герой
 					    рисуется этой веткой, и плашка до неё не доходила: мерчант щёлкал
 					    переключателем и не видел ничего (баг тестера 22.09; замер прода —
@@ -420,51 +454,66 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					    веткой, поэтому у них работало — расхождение 3 к 2. Выключенный
 					    контейнер = `contents`: обёртка исчезает из раскладки целиком,
 					    прежний вид сохраняется байт-в-байт. */}
-					<div class:list={[boxed ? `flex flex-col items-center gap-6${boxedCls}` : "contents"]}>
-					<div class="flex w-full max-w-[540px] flex-col items-center gap-4 text-center md:max-w-[640px]">
-						{!isFieldHidden('heading') && (
+					<div class:list={[boxed ? `${emptyBoxCls}${boxedCls}` : emptyWrapCls]}>
+					{heroEmptyRuns.map((run) => run.grouped ? (
+					runHasText(run) && (
+					<div class={emptyInnerCls}>
+						{run.fields.map((field) => (
+						<Fragment>
+						{field === 'heading' && showTitle && (
 							<h1
 								id="hero-title"
-								class="font-logo text-[26px] font-normal leading-[1.08] hero-over-photo-heading md:text-[32px]"
+								class={emptyHeadingCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
 							>
-								{PH_LABEL}
+								{title}
 							</h1>
 						)}
-						{!isFieldHidden('text') && (
+						{field === 'text' && hasText(subtitle) && !isFieldHidden('text') && (
 							<p
-								class="font-manrope text-[16px] font-light tracking-[0.04em] hero-over-photo-text"
+								class={emptyTextCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"
 							>
-								{PH_HELPER}
+								{subtitle}
 							</p>
 						)}
+						</Fragment>
+						))}
 					</div>
-					{!isFieldHidden('buttons') && (
-					/* Кнопка пустого состояния — «Кнопка» СХЕМЫ (эталон rose, Hero.astro
-					   isEmpty-ветка: !bg-[rgb(var(--color-button-bg,255_255_255))] + токен
-					   текста; белый там — ФОЛБЭК, а не литерал). Было `bg-white`,
-					   `border-white` и `text-[#111111]`: Tailwind 4 печатает `bg-white`
-					   как var(--color-white) — переменная ЕСТЬ, схемы в ней нет, и кнопка
-					   замирала белой (замер матрицы, схемы-зонды 1 → 4: #fff → #fff).
-					   Заливка, бордер и надпись переводятся ЦЕЛИКОМ: увести один фон
-					   значит получить светлое на светлом. Заголовок и текст поверх фото
-					   остаются на hero-over-photo — они намеренно белые. Фолбэки =
-					   прежний вид. Сторож: pnpm test:scheme-targets. */
+					)
+					) : !isFieldHidden('buttons') && (
+					/* Кнопки пустого состояния красятся ролью схемы (data-scheme-button),
+					   как у заполненной ветки. Заголовок и текст поверх фото остаются на
+					   hero-over-photo — они намеренно белые. */
+					<div class={emptyButtonsRowCls}>
 					<a
 						href={ctaLink}
-						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,255_255_255))] bg-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,17_17_17))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 font-manrope text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]"
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"
 					>
 						{PH_BUTTON}
 					</a>
+					{secondaryText && (
+						<a
+							href={secondaryLink}
+							class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 font-manrope text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]"
+							data-scheme-button="secondary"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="103"
+							data-puck-subsection-field="secondaryButton"
+						>
+							{secondaryText}
+						</a>
 					)}
+					</div>
+					))}
 					</div>
 				</div>
 			</div>
@@ -472,15 +521,19 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	) : (
 <section
 	class={`relative w-full bg-[rgb(var(--color-bg,255_255_255))]${selfSchemeClass}`}
-	aria-labelledby="hero-title"
+	aria-labelledby={showTitle ? "hero-title" : undefined}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
 	<div class="mx-auto grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2">
 		<div class={textColCls}>
 			<div class={blockCls}>
+				{heroFilledRuns.map((run) => run.grouped ? (
+				runHasText(run) && (
 				<div class="flex flex-col gap-4">
-					{!isFieldHidden('text') && (
+					{run.fields.map((field) => (
+					<Fragment>
+					{field === 'text' && hasText(subtitle) && !isFieldHidden('text') && (
 						<p
 							class={subtitleCls}
 							data-puck-subsection-parent={id}
@@ -489,7 +542,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							set:html={inlineFormat(subtitle)}
 						/>
 					)}
-					{!isFieldHidden('heading') && (
+					{field === 'heading' && showTitle && (
 						<h1
 							id="hero-title"
 							class={headingCls}
@@ -499,13 +552,17 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							set:html={inlineFormat(title)}
 						/>
 					)}
+					</Fragment>
+					))}
 				</div>
-				{
+				)
+				) : (
 					!isFieldHidden('buttons') && (secondaryText ? (
 						<div class={`flex w-full flex-row flex-wrap items-center gap-3 ${rowJustifyCls}`}>
 							<a
 								href={ctaLink}
 								class={primaryBtnCls}
+								data-scheme-button="primary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="102"
 								data-puck-subsection-field="primaryButton"
@@ -515,6 +572,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<a
 								href={secondaryLink}
 								class={secondaryBtnCls}
+								data-scheme-button="secondary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="secondaryButton"
@@ -526,6 +584,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<a
 							href={ctaLink}
 							class={primaryBtnCls}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"
@@ -533,7 +592,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							{ctaText}
 						</a>
 					))
-				}
+				))}
 			</div>
 		</div>
 

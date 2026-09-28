@@ -22,9 +22,9 @@
  *     WITH_IMAGE              pagination: та же right-* группа — ПРАВЫЙ КРАЙ (баг)
  *     → едет вправо в ОБОИХ состояниях (navEdgeCls).
  *
- *   Стрелки (data-slide-prev/next) в обеих темах уже совпадали с rose
- *   (absolute left-4/right-4 top-1/2 …-translate-y-1/2) — сторожим тут же,
- *   чтобы будущая правка их не сдвинула.
+ *   Стрелки (data-slide-prev/next) с 24.09 убраны во всех темах (тестер: «убери
+ *   на всех темах стрелки справа и слева») — их отсутствие сторожит
+ *   slideshow-no-arrows-and-collapsible-sizes.spec.ts.
  *
  * ПОСЛЕ ПРАВКИ: пагинация в обоих состояниях обеих тем — "left-1/2 …
  * -translate-x-1/2" (тот же класс, что уже жил в пустом состоянии bloom и
@@ -97,21 +97,5 @@ describe.each(["bloom", "flux"] as const)("%s Slideshow: навигация по
       // пагинации — это откат к прижатию вправо.
       expect(cls).not.toMatch(/(^|\s)(?:[a-z0-9]+:)?right-/);
     });
-  });
-
-  it("стрелки (prev/next) вертикально центрированы у краёв — как rose (не трогаем)", () => {
-    const root = renderSlideshow(theme, WITH_IMAGE);
-    const prev = root.querySelector("[data-slide-prev]");
-    const next = root.querySelector("[data-slide-next]");
-    expect(prev).toBeTruthy();
-    expect(next).toBeTruthy();
-    const prevCls = prev!.getAttribute("class") ?? "";
-    const nextCls = next!.getAttribute("class") ?? "";
-    expect(prevCls).toMatch(/\bleft-4\b/);
-    expect(prevCls).toMatch(/\btop-1\/2\b/);
-    expect(prevCls).toMatch(/-translate-y-1\/2/);
-    expect(nextCls).toMatch(/\bright-4\b/);
-    expect(nextCls).toMatch(/\btop-1\/2\b/);
-    expect(nextCls).toMatch(/-translate-y-1\/2/);
   });
 });

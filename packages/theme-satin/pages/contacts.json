@@ -61,8 +61,8 @@
           "title": "ИНФОРМАЦИЯ",
           "links": [
             { "label": "Доставка", "href": "/delivery" },
-            { "label": "Возврат", "href": "/returns" },
-            { "label": "Оплата", "href": "/payment" }
+            { "label": "Возврат", "href": "/legal/return" },
+            { "label": "Оплата", "href": "/legal/terms" }
           ]
         },
         "socialColumn": {

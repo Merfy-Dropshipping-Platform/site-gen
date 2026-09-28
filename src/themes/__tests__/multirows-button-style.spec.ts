@@ -28,11 +28,11 @@
  * `resolveMultiRowsButtonStyle` на этом пути не применяется, поэтому выкинуть
  * старые литералы — значит поменять вид у магазинов, чьи ревизии их хранят.
  *
- * ЧТО СТОРОЖИМ. Не текст порта, а РЕЗУЛЬТАТ: «Основная» и «Дополнительная»
- * обязаны дать РАЗНЫЕ классы кнопки в каждой теме. Конкретные токены не
- * зашиты — у пяти тем они свои, и вторичная кнопка где-то заливка, где-то
- * прозрачная с бордером. Предыдущий класс багов ровно в том и состоял, что
- * разметка валидна, гарды зелёные, а настройка мертва.
+ * ЧТО СТОРОЖИМ. «Основная» и «Дополнительная» обязаны дать РАЗНЫЕ роли схемы
+ * в каждой теме (25.09: роль красит кнопку единым правилом, scheme-buttons.ts;
+ * что роль реально красит фон/текст/рамку, меряет scheme-button-roles.spec.ts).
+ * Предыдущий класс багов ровно в том и состоял, что разметка валидна, гарды
+ * зелёные, а настройка мертва.
  *
  * Требует сборки: pnpm build, pnpm build:blocks, pnpm build:theme-sections:all.
  */
@@ -70,18 +70,22 @@ const JOBS: Job[] = [
 ];
 
 /**
- * Класс ССЫЛКИ-кнопки ряда.
+ * Роль ССЫЛКИ-кнопки ряда (`data-scheme-button`).
  *
- * Берём именно `class` у `<a href="/catalog">`: атрибуты и текст кнопки стоят
+ * С 25.09 цвета кнопки даёт правило роли схемы (src/themes/scheme-buttons.ts):
+ * порт только называет роль, классы у «Основной» и «Дополнительной» одинаковые.
+ * Поэтому сторожим роль, а нарисованные цвета — scheme-button-roles.spec.ts.
+ *
+ * Берём тег `<a href="/catalog">` целиком: атрибуты и текст кнопки стоят
  * на разных строках, поэтому наивное `<a[^>]*>Кнопка` не находит ничего и тест
  * «зеленеет» на пустоте — на этом зонд уже один раз обманул (первая версия
  * показала «мертво» во всех пяти темах, включая заведомо рабочие rose и satin).
  */
-const buttonClass = (html: string | undefined): string | null => {
+const buttonRole = (html: string | undefined): string | null => {
   const tag = (html ?? '').match(/<a[^>]*href="\/catalog"[^>]*>/s);
   if (!tag) return null;
-  const cls = tag[0].match(/class="([^"]*)"/s);
-  return cls ? cls[1] : null;
+  const role = tag[0].match(/data-scheme-button="([^"]*)"/);
+  return role ? role[1] : null;
 };
 
 const built = (theme: Theme) =>
@@ -111,19 +115,20 @@ describe.each(THEMES)('«Мультиряды»: стиль кнопки — %s'
     // одинаковы» (оба null) — и проверка ниже упала бы по ложной причине, либо,
     // будь она написана наоборот, позеленела бы на пустоте.
     expect(rendered[0]?.error).toBeUndefined();
-    expect(buttonClass(rendered[0]?.html)).toBeTruthy();
-    expect(buttonClass(rendered[1]?.html)).toBeTruthy();
+    expect(buttonRole(rendered[0]?.html)).toBeTruthy();
+    expect(buttonRole(rendered[1]?.html)).toBeTruthy();
   });
 
-  it('«Основная» и «Дополнительная» дают РАЗНЫЕ кнопки', () => {
+  it('«Основная» и «Дополнительная» дают РАЗНЫЕ роли схемы', () => {
     if (!isBuilt) return;
-    expect(buttonClass(rendered[1]?.html)).not.toBe(buttonClass(rendered[0]?.html));
+    expect(buttonRole(rendered[0]?.html)).toBe('primary');
+    expect(buttonRole(rendered[1]?.html)).toBe('secondary');
   });
 
   it('легаси-значение из старых ревизий по-прежнему рисует вторичную кнопку', () => {
     if (!isBuilt) return;
     // `white` доезжает до порта сырым (общая нормализация на этом пути не
     // работает). Выкинуть литерал — поменять вид живым магазинам.
-    expect(buttonClass(rendered[2]?.html)).toBe(buttonClass(rendered[1]?.html));
+    expect(buttonRole(rendered[2]?.html)).toBe(buttonRole(rendered[1]?.html));
   });
 });

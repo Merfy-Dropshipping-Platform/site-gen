@@ -13,6 +13,7 @@ const state = {
   items: [],
   cartId: null,
   loading: false,
+  serverCart: null,
 };
 
 function saveToStorage() {
@@ -43,9 +44,33 @@ function notify(eventName, detail) {
   document.dispatchEvent(new CustomEvent(eventName, { detail }));
 }
 
+// Подарок акции «1+1=3» (`isBonus`) кладёт в корзину сервер при пересчёте.
+// Отправить его обратно — значит купить: сервер посчитает ещё одну штуку по
+// полной цене и снова подарит (замер 27.09: 2 970 ₽ вместо 1 980 ₽). Поэтому
+// при пересборке серверной корзины уходят только оплачиваемые позиции.
+function paidLines(lines) {
+  return (Array.isArray(lines) ? lines : []).filter((line) => line && !line.isBonus);
+}
+
+// Что посчитал сервер (orders) для последнего известного ему состава корзины:
+// скидку корзины — промокод или автоматическую, orders кладёт их в одно поле
+// `discountCents` — и позиции, для которых она посчитана. Чекаут показывает
+// скидку, только пока состав тот же (CheckoutTotals / CheckoutSubmit), поэтому
+// снимок не нужно сбрасывать на каждой локальной правке. Ответ GET корзины —
+// `{ cart, items }`, ответ промокода — плоский заказ с `items`.
+function serverCartOf(data) {
+  if (!data || !Array.isArray(data.items)) return null;
+  const money = data.cart || data;
+  // Копии позиций: оптимистичная правка количества меняет объекты state.items
+  // на месте — снимок сервера должен остаться тем, что ответил сервер.
+  const items = data.items.map((item) => ({ ...item }));
+  return { discountCents: Number(money.discountCents) || 0, items };
+}
+
 function syncFromCartData(cartData) {
   if (cartData && Array.isArray(cartData.items)) {
     state.items = cartData.items;
+    state.serverCart = serverCartOf(cartData);
   }
   saveToStorage();
   notify('cart:updated', { items: state.items });
@@ -250,11 +275,20 @@ export const cartStore = {
   },
 
   /**
+   * Снимок сервера: скидка корзины и позиции, для которых она посчитана.
+   * @returns {{ discountCents: number, items: Array<any> }|null}
+   */
+  getServerCart() {
+    return state.serverCart;
+  },
+
+  /**
    * Очистить корзину
    */
   clear() {
     state.cartId = null;
     state.items = [];
+    state.serverCart = null;
     try {
       localStorage.removeItem(CART_ID_KEY);
       localStorage.removeItem(CART_ITEMS_KEY);
@@ -280,13 +314,14 @@ export const cartStore = {
    */
   async syncLinesToServer(lines, opts) {
     const silent = !!(opts && opts.notify === false);
-    const list = Array.isArray(lines) ? lines : [];
+    const list = paidLines(lines);
     if (!list.length) return null;
 
     // Свежая серверная корзина: состав берём из локальной целиком, а не
     // доливаем в старую — иначе позиции прошлого захода останутся.
     state.cartId = null;
     state.items = [];
+    state.serverCart = null;
     try {
       localStorage.removeItem(CART_ID_KEY);
       localStorage.removeItem(CART_ITEMS_KEY);
@@ -309,6 +344,7 @@ export const cartStore = {
       const res = await CartAPI.getCart(cartId);
       if (res && res.success && res.data && Array.isArray(res.data.items)) {
         state.items = res.data.items;
+        state.serverCart = serverCartOf(res.data);
         saveToStorage();
       }
     } catch (e) {

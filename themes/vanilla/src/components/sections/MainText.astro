@@ -1,5 +1,8 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { mainTextButtonText } from "../../../../../packages/theme-base/runtime/main-text-button";
 // Фаза B (vanilla): канон-секция MainText — адаптация welcome-полотна
 // pages/about.astro:138-166 (см. themes/vanilla/MANNER.md §10: welcome =
 // тёмное полотно №2 «заголовок + текст + outlined-CTA» = аналог MainText).
@@ -20,12 +23,17 @@ const id = p.id;
 // sibling-темы satin/bloom MainText.astro (тот же Figma-контракт). Любой
 // заданный проп = реальные данные мерчанта → рендер БЕЗ изменений (заголовок
 // только при непустом, кнопка только при непустой).
-const headingProvided =
-	(typeof p.heading === "string" && p.heading.trim()) ||
-	(typeof p.heading?.text === "string" && p.heading.text.trim());
-const textProvided =
-	(typeof p.text === "string" && p.text.trim()) ||
-	(typeof p.text?.content === "string" && p.text.content.trim());
+// headingProvided/textProvided = «поле панели пришло СТРОКОЙ» (в т.ч. пустой —
+// мерчант стёр), а не «значение истинное» (§2 контракта). textOf возвращает
+// undefined только когда поля нет вовсе — тогда секция считается ПУСТОЙ
+// ЦЕЛИКОМ (isEmptyState) и подставляет плейсхолдер-бренд; стёртое "" от
+// «не задано» отличается и плейсхолдер не подставляет (владелец 26.09). Гейт
+// isEmptyState/buttonProvided НЕ трогаем — «пусто целиком» рассчитывается
+// корректно, просто не должно путать «стёрли» с «не задано».
+const headingField = textOf(p.heading);
+const headingProvided = headingField !== undefined;
+const textField = textOf(p.text);
+const textProvided = textField !== undefined;
 const buttonProvided = p.button !== undefined || p.cta !== undefined;
 const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
 
@@ -33,11 +41,29 @@ const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
 // italic 20, МАННЕРА §1), на тёмном полотне — белый. Лестница §9: medium/
 // отсутствие = литерал 20, small 17, large 24. Курсив вынесен в italicCls
 // (textStyle ниже). Пустое состояние → плейсхолдер-заголовок контракта; иначе
-// рендер ТОЛЬКО при заданном (пустой проп заголовок скрывает).
+// рендер ТОЛЬКО при заданном (пустой проп заголовок скрывает — heading="" ниже,
+// а `heading &&` у разметки уже прячет пустой узел).
 const heading = headingProvided
-	? (typeof p.heading === "string" ? p.heading : p.heading.text)
+	? headingField
 	: (isEmptyState ? "Расскажи о своем бренде" : "");
 const headingSize = p.heading?.size ?? p.headingSize;
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только
+// размеры»): промо-полоса главной Vanilla-theme @c65d9e1c
+// (sections/Gallery.astro, [data-gallery-promo]) — абзац 14/1.5 в колонке 680
+// (с 1920 — 16 в колонке 1320), кнопка h-10 px-3 14, до кнопки mt-10, полоса
+// lg:py-20.
+//
+// Владелец 25.09 «что в панели — то и на витрине». У секции в defaultProps
+// скрытый headingSize = 'medium' (до 25.09 и textSize — в старых ревизиях он
+// лежит), и первая же правка секции (даже цвета) вписывает его — значит
+// «Средний» и есть значение по умолчанию, и «не задано» обязано рисовать то
+// же, что «Средний»:
+//   • заголовок: 16px верстальщиков «Среднему» взять нельзя — он стал бы
+//     меньше «Маленького» (17), поэтому «не задано» = «Средний» 20px;
+//   • текст: 14px в колонке 680 (с 1920 — 16 в колонке 1320) порядок
+//     «Маленький 14 ≤ Средний ≤ Большой 19» не ломает, поэтому «Средний»
+//     (выбранный или не заданный) рисует вид верстальщиков.
+// Замер Chromium 25.09; сторожа panel-default-is-noop и panel-size-order.
 const headingCls =
 	headingSize === "small"
 		? "m-0 font-vanilla-bitter text-[17px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
@@ -47,23 +73,27 @@ const headingCls =
 
 // Канон text: string | { content, size }. set:html — базовая HTML-разметка.
 // Пустое состояние (Figma 1:19335) → контрактный поясняющий текст плейсхолдера,
-// НЕ длинная welcome-копия верстальщика (бренд-абзацы про Vanila).
-const text =
-	typeof p.text === "string"
-		? p.text
-		: (p.text?.content ??
-			(isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : ""));
+// НЕ длинная welcome-копия верстальщика (бренд-абзацы про Vanila). textField/
+// textProvided уже разобраны выше (isEmptyState) — второй разбор того же поля
+// не нужен, значение либо готовой строкой, либо falls back тем же путём, что heading.
+const text = textProvided
+	? textField
+	: (isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "");
 
-// Канон textSize (top-level hidden приоритетнее text.size сабпанели). Роль =
-// body-текст полотна 16 (about:153; лестница §9): medium/отсутствие = литерал
-// 16 (text-base), small 14, large 19.
-const textSize = p.textSize ?? p.text?.size;
+// Канон textSize. Роль = body-текст полотна 16 (about:153; лестница §9):
+// medium/отсутствие = литерал 16 (text-base), small 14, large 19.
+// §11 Контракта секции: видимое поле «Текст → Размер» (text.size) приоритетнее
+// СКРЫТОГО top-level textSize — иначе скрытое значение, вписанное первой
+// правкой секции, глушило выбор мерчанта в панели (владелец 25.09).
+const textSize = p.text?.size ?? p.textSize;
+const TEXT_DEFAULT_CLS =
+	"m-0 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]";
 const textCls =
 	textSize === "small"
 		? "m-0 w-full font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))] md:leading-[1.35]"
 		: textSize === "large"
 			? "m-0 w-full font-vanilla-arsenal text-[19px] font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))] md:leading-[1.35]"
-			: "m-0 w-full font-vanilla-arsenal text-base font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))] md:leading-[1.35]";
+			: TEXT_DEFAULT_CLS;
 
 // Канон textStyle: blockDefaults vanilla пишут 'italic' = литерал верстальщика —
 // курсив УЖЕ в дефолте манеры, снимается только явным 'normal'.
@@ -83,16 +113,11 @@ const alignCls =
 			? "items-end text-right"
 			: "items-center text-center";
 
-// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// Пустое состояние (плейсхолдер Figma 1:19335, секция вообще без контента) →
-// контрактная «Кнопка» (НЕ мок-CTA «ПЕРЕЙТИ В КАТАЛОГ»→/catalog/textile
-// верстальщика). Когда мерчант заполнил секцию, но кнопку не задал — кнопка
-// СКРЫТА. Заданный текст рендерится как есть; пустой проп СКРЫВАЕТ кнопку.
-// Ссылка-фоллбек /catalog (паттерн satin/bloom T15).
-const btnTextProp =
-	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
-	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
-const btnText = btnTextProp ?? (isEmptyState ? "Кнопка" : undefined);
+// Кнопка — одно правило для всех тем (theme-base runtime/main-text-button.ts):
+// текст из поля панели «Кнопка → Текст», пусто — кнопки нет, заглушки «Кнопка»
+// нет; старое скрытое cta — только пока поля «Кнопка» в секции нет вовсе.
+// Ссылка-фоллбек /catalog.
+const btnText = mainTextButtonText(p);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
@@ -100,15 +125,17 @@ const btnHref =
 	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
 	"/catalog";
 
-// Канон buttonStyle: 'outlined' (canon-default из theme.json blockDefaults) и
-// отсутствие = контурная кнопка верстальщика ДОСЛОВНО (МАННЕРА §3: outlined на
-// тёмном полотне; button-2 токены, радиус 0 ≡ var(--radius-button,0px));
-// 'solid' = заливка кнопки-2 (белая кнопка, текст цвета полотна №2).
+// «Кнопка» секции одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Задача владельца 25.09: раньше скрытый buttonStyle (outlined по умолчанию
+// темы) сажал её на «Дополнительную» и красил текст и рамку одним Фоном.
 // active:scale в манере vanilla НЕ используется (§3).
-const btnCls =
-	p.buttonStyle === "solid"
-		? "m-0 inline-flex h-12 min-h-12 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80"
-		: "m-0 inline-flex h-12 min-h-12 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80";
+// Размер кнопки (не стиль) — кнопка промо-полосы верстальщиков.
+const BTN = { h: "h-10 min-h-10", px: "px-3", fs: "text-[14px]" };
+const btnCls = `m-0 inline-flex ${BTN.h} shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid ${BTN.px} font-vanilla-arsenal ${BTN.fs} font-normal leading-none tracking-normal transition-opacity hover:opacity-80`;
+// Полоса и зазор «текст → кнопка»: верстальщики py-16 lg:py-20 и mt-10.
+const SECTION_PY_LG_CLS = "lg:py-20";
+const STACK_GAP_CLS = "gap-10";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
@@ -126,21 +153,33 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта); отсюда же берёт
+// aria-labelledby секции, чтобы не ссылаться на нерисуемый `<h2 id={headingId}>`.
+const showHeading = hasText(heading) && !isFieldHidden('heading');
+const showText = hasText(text) && !isFieldHidden('text');
+// Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Соседние
+// заголовок и текст остаются в общей колонке (gap-3), кнопка — отдельным
+// звеном стека (STACK_GAP_CLS). Без fieldOrder — прежняя разметка.
+const textRuns = fieldRuns(sectionFieldOrder("MainText", p), ["heading", "text"]);
 ---
 
 <section
-	class="vanilla-pad w-full bg-[rgb(var(--color-bg,58_69_48))] py-16 text-[rgb(var(--color-text,255_255_255))] lg:py-[120px]"
-	aria-labelledby={heading ? headingId : undefined}
+	class={`vanilla-pad w-full bg-[rgb(var(--color-bg,58_69_48))] py-16 text-[rgb(var(--color-text,255_255_255))] ${SECTION_PY_LG_CLS}`}
+	aria-labelledby={showHeading ? headingId : undefined}
 	data-welcome-section
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
 	<div
-		class={`${posCls} flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col ${alignCls} gap-16`}
+		class={`${posCls} flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col ${alignCls} ${STACK_GAP_CLS}`}
 	>
+		{textRuns.map((run) => run.grouped ? (
 		<div class={`flex w-full flex-col ${alignCls} gap-3`}>
+			{run.fields.map((field) => (
+			<Fragment>
 			{
-				heading && !isFieldHidden('heading') && (
+				field === 'heading' && showHeading && (
 					<h2
 						id={headingId}
 						class={headingCls + italicCls}
@@ -153,7 +192,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</h2>
 				)
 			}
-			{!isFieldHidden('text') && (
+			{field === 'text' && showText && (
 				<p
 					class={textCls + italicCls}
 					data-animate
@@ -163,12 +202,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					set:html={inlineFormat(text)}
 				/>
 			)}
+			</Fragment>
+			))}
 		</div>
-		{
+		) : (
 			btnText && !isFieldHidden('button') && (
 				<a
 					href={btnHref}
 					class={btnCls}
+					data-scheme-button="primary"
 					data-animate
 					data-animate-delay="0.1s"
 					data-puck-subsection-parent={id}
@@ -178,6 +220,6 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{btnText}
 				</a>
 			)
-		}
+		))}
 	</div>
 </section>

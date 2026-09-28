@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import FluxProductCard from "../products/FluxProductCard.astro";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Popular / rose T13): полная конструкторная
 // схема theme-base PopularProducts.puckConfig поверх разметки верстальщика.
@@ -24,15 +25,11 @@ const id = p.id;
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
 // заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
 // карточки-куртки). Дефолт-текст верстальщика («Популярное» + длинный
-// подзаголовок Flux) заменён на Figma-текст. Когда мерчант задал свой
-// heading/text/subtitle — рендерим ЕГО (?? fallback срабатывает только при
-// пустых данных).
-const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Коллекция товаров";
-const sectionSubtitle =
-	(typeof p.text === "string" ? p.text : p.text?.content) ??
-	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) ??
-	"";
+// подзаголовок Flux) заменён на Figma-текст. Стёртое мерчантом поле (в т.ч.
+// "") рендерим как есть — заглушка только когда поле не задано вовсе
+// (`pickText`, packages/theme-base/runtime/merchant-text).
+const sectionTitle = pickText(p.heading, pickText(p.title, "Коллекция товаров"));
+const sectionSubtitle = textOf(p.text) ?? textOf(p.subtitle) ?? "";
 
 // Канон cards 2-24: число карточек-плейсхолдеров (дефолт 4) и лимит среза
 // гидрации (data-cards на гриде при ≠4). 4 = дефолт-ветка (и отсутствие пропа).
@@ -100,7 +97,18 @@ const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round
 // Вёрстка верстальщиков: grid grid-cols-2 gap-4 md:grid-cols-4. Моб = 2 колонки;
 // с md (768px) и выше grid-template-columns задаёт <style> по --cols (слайдер
 // «Колонки» перебивает md:grid-cols-4).
-const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4" + tileAspectCls;
+// Геометрия по актуальной вёрстке flux-theme@be32556d (владелец 23-24.09: «как
+// у верстальщиков, только стили»):
+//   • карточка (components/ProductCard.astro): текстовый блок ↔ кнопка gap-6,
+//     кнопка h-12 px-4 font-light, кегль 14 → md:16. Правила висят на СЕТКЕ
+//     (arbitrary-варианты), а не на карточке: живая гидрация
+//     (renderCardHtml) перезаписывает innerHTML сетки, класс сетки остаётся;
+//   • заголовок по центру (sections/Popular.astro: text-center);
+//   • «Смотреть ещё» — кегль 16 на всех ширинах.
+const GRID_EXTRA_CLS =
+	" [&_[data-nt=flux-product-card]>div:last-child]:gap-6 [&_[data-add-to-cart]]:h-12 [&_[data-add-to-cart]]:px-4 [&_[data-add-to-cart]]:font-light md:[&_[data-add-to-cart]]:text-[16px]";
+const HEAD_WRAP_CLS = "flex flex-col gap-2 text-center";
+const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4" + tileAspectCls + GRID_EXTRA_CLS;
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС
@@ -156,8 +164,11 @@ const btnStyle =
 	p.buttonStyle === "secondary" || p.buttonStyle === "link" ? p.buttonStyle : undefined;
 
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
-// товара при наведении. Носитель данных: data-image-2 на <li> (demo —
-// gallery[1] верстальщика; реальные товары — images[1], ставит гидрация).
+// товара при наведении. Носитель данных: data-image-2 на <li> — всегда, если у
+// товара есть второе фото: по нему листает свайп на телефоне (runtime/
+// card-photo-swipe.ts) при любой настройке, а наведение — только с настройкой
+// (атрибут data-next-photo на сетке). Demo —
+// gallery[1] верстальщика; реальные товары — images[1], ставит гидрация.
 const nextPhoto = p.nextPhotoOnHover === true || p.nextPhotoOnHover === "true";
 // is:inline + set:html (без define:vars — компилятор секций его не умеет);
 // идемпотентность data-np-hydrated; без data-image-2 скрипт — no-op без ошибок.
@@ -221,7 +232,7 @@ const viewAllHref =
 // (бордер в тонах кнопки-2), primary/отсутствие = чёрная CTA манеры (заливка
 // кнопки-2). Манера flux: font-roboto-flex, rounded-button (6px), токены кнопки-2.
 const viewAllBase =
-	"inline-flex h-12 items-center justify-center font-roboto-flex text-[14px] font-normal leading-normal transition-opacity md:text-[16px]";
+	"inline-flex h-12 items-center justify-center font-roboto-flex text-[16px] font-normal leading-normal transition-opacity";
 const viewAllCls =
 	p.buttonStyle === "link"
 		? `${viewAllBase} px-0 text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 hover:opacity-70`
@@ -312,24 +323,14 @@ const paddingStyle = p.padding
 // верстальщиков). Вертикаль py-10 md:py-16 (канон эталона); при заданном padding
 // (настройка) py-классы убираются — inline-стиль ставит padding-top/bottom
 // (паттерн Footer flux, чтобы не было двойного отступа).
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Вертикаль py-10 md:py-16 не трогаем. Без признака —
-// байт в байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem. Вертикаль py-10 md:py-16 не трогаем.
 const CONTAINER_CLS = {
-	designers: {
-		custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
-		default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
-	},
-	legacy: {
-		custom: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80",
-		default: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80",
-	},
+	custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
+	default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
 };
-const containerCls =
-	CONTAINER_CLS[designParity ? "designers" : "legacy"][paddingStyle ? "custom" : "default"];
+const containerCls = CONTAINER_CLS[paddingStyle ? "custom" : "default"];
 
 // Канон Nikita (ИСПРАВЛЕНИЕ): у flux Popular контейнер-бокс УБРАН полностью — контент
 // (шапка + грид карточек + «Смотреть все») сразу в max-width-обёртке, без подложки/схемы
@@ -343,26 +344,29 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Стёртые heading+subtitle (§2 контракта секции) → шапка не рисуется вовсе,
+// иначе её gap-2 остаётся пустым отступом над гридом товаров.
+const showHeader = !isFieldHidden('heading') && (hasText(sectionTitle) || hasText(sectionSubtitle));
 
 ---
 
 <section
 	id="popular"
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
-	aria-labelledby="popular-title"
+	aria-labelledby={hasText(sectionTitle) && !isFieldHidden('heading') ? "popular-title" : undefined}
 	data-puck-component-id={id}
 >
 	<div class={containerCls} style={paddingStyle}>
-		{!isFieldHidden('heading') && (
+		{showHeader && (
 		<div
-			class="flex flex-col gap-2"
+			class={HEAD_WRAP_CLS}
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 			data-reveal
 		>
-			<h2 id="popular-title" class={headingCls}><Fragment set:html={inlineFormat(sectionTitle)} /></h2>
-			{sectionSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
+			{hasText(sectionTitle) && <h2 id="popular-title" class={headingCls}><Fragment set:html={inlineFormat(sectionTitle)} /></h2>}
+			{hasText(sectionSubtitle) && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
 		</div>
 		)}
 
@@ -467,6 +471,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		resolveCollectionProducts,
 		renderCardHtml,
 		escapeHtml,
+		bindCardSwatches,
 	} from "../../lib/storefront-hydrate";
 
 	// Реальные товары (Option B, расширение прежнего hydrateGrid): первые N из
@@ -488,7 +493,6 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		for (const grid of grids) {
 			const limitRaw = Number(grid.getAttribute("data-cards"));
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
-			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const collectionRef = grid.getAttribute("data-collection");
 			const ctaLabel = grid.getAttribute("data-qa-text") || undefined;
 			// «Быстрое добавление» из атрибута грида: 'cart' добавляет степпер в карточку.
@@ -500,7 +504,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			grid.innerHTML = items
 				.map((p) => {
 					const img2 =
-						wantNextPhoto && Array.isArray(p.images) && p.images[1]
+						Array.isArray(p.images) && p.images[1]
 							? ` data-image-2="${escapeHtml(p.images[1])}"`
 							: "";
 					// Кнопка «В корзину» (вариант-aware) теперь внутри renderCardHtml —
@@ -512,6 +516,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		}
 	};
 
+	// Квадратик цвета на карточке выбирает вариант (фото + «В корзину»).
+	bindCardSwatches();
 	hydratePopular();
 	document.addEventListener("astro:page-load", hydratePopular);
 </script>

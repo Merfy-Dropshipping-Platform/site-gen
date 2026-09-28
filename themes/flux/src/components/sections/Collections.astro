@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 // ОЖИВЛЕНИЕ (контракт flux Popular / rose T13): полная конструкторная схема
 // theme-base Collections.puckConfig поверх ВЁРСТКИ ВЕРСТАЛЬЩИКОВ (репо
 // flux-theme Collections.astro: простой <h2> font-roboto-flex uppercase
@@ -19,13 +20,11 @@ const PH_MEDIA_ICON =
 	'<span class="flex h-full w-full items-center justify-center text-[rgb(var(--color-muted,153_153_153))]"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>';
 // Figma 1:19335 — ПУСТОЕ состояние секции «Список коллекций»: дословный заголовок
 // «Список коллекций» (без подзаголовка), а НЕ дефолт-копирайт верстальщика
-// («Категории»). Эталон — rose Collections.astro. Мерчант задал свой
-// heading/subtitle → его и рендерим (?? срабатывает только при пустых данных;
-// пустая строка subtitle скрывает <p>).
-const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Список коллекций";
-const sectionSubtitle =
-	(typeof p.subtitle === "string" ? p.subtitle : undefined) ?? "";
+// («Категории»). Эталон — rose Collections.astro. Стёртое мерчантом поле (в т.ч.
+// "") рендерим как есть — заглушка только когда поле не задано вовсе (`pickText`,
+// packages/theme-base/runtime/merchant-text); пустой subtitle → <p> не выводится.
+const sectionTitle = pickText(p.heading, pickText(p.title, "Список коллекций"));
+const sectionSubtitle = textOf(p.subtitle) ?? "";
 
 // Шапка секции = ВЁРСТКА ВЕРСТАЛЬЩИКОВ (эталон Collections.astro): простой <h2>
 // font-roboto-flex uppercase, дефолт text-[19px] md:text-[23px]. headingSize —
@@ -92,10 +91,11 @@ const nameCls = `flux-collection-name font-roboto-flex text-[16px] ${nameWeightC
 // верстальщиков grid-cols-2). Tailwind-arbitrary md:grid-cols-[repeat(var(--cols))]
 // в flux-компиляторе ненадёжен — прецедент Popular: var + media-query, не класс.
 const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 3;
-// Вёрстка верстальщиков: grid grid-cols-2 gap-4 md:grid-cols-4. Моб = 2 колонки;
-// с md (768px) grid-template-columns задаёт <style> по --cols (слайдер «Колонки»
-// перебивает md:grid-cols-4).
-const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4";
+// Сетка актуальной вёрстки flux-theme@be32556d (sections/Collections.astro:
+// `grid grid-cols-1 gap-4 sm:grid-cols-3`) — на телефоне плитка во всю ширину,
+// с sm три в ряд; с md (768px) grid-template-columns задаёт <style> по --cols
+// (слайдер «Колонки» перебивает md:grid-cols-4).
+const gridCls = "grid grid-cols-1 gap-4 sm:grid-cols-3 md:grid-cols-4";
 const gridStyle = `--cols:${colsN}`;
 
 // Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
@@ -202,24 +202,14 @@ const PLACEHOLDER_COLLECTIONS = [
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Вертикаль py-10 md:py-16 не трогаем. Без признака —
-// байт в байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem. Вертикаль py-10 md:py-16 не трогаем.
 const CONTAINER_CLS = {
-	designers: {
-		custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
-		default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
-	},
-	legacy: {
-		custom: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80",
-		default: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80",
-	},
+	custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
+	default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
 };
-const containerCls =
-	CONTAINER_CLS[designParity ? "designers" : "legacy"][paddingStyle ? "custom" : "default"];
+const containerCls = CONTAINER_CLS[paddingStyle ? "custom" : "default"];
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -229,17 +219,20 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Стёртые heading+subtitle (§2 контракта секции) → шапка не рисуется вовсе,
+// иначе её gap-2 остаётся пустым отступом над гридом коллекций.
+const showHeader = !isFieldHidden('heading') && (hasText(sectionTitle) || hasText(sectionSubtitle));
 
 ---
 
 <section
 	id="collections"
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
-	aria-labelledby="collections-title"
+	aria-labelledby={hasText(sectionTitle) && !isFieldHidden('heading') ? "collections-title" : undefined}
 	data-puck-component-id={id}
 >
 	<div class={containerCls} style={paddingStyle}>
-		{!isFieldHidden('heading') && (
+		{showHeader && (
 		<div
 			class={headWrapCls}
 			data-puck-subsection-parent={id}
@@ -247,8 +240,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-puck-subsection-field="heading"
 			data-reveal
 		>
-			<h2 id="collections-title" class={headingCls}><Fragment set:html={inlineFormat(sectionTitle)} /></h2>
-			{sectionSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
+			{hasText(sectionTitle) && <h2 id="collections-title" class={headingCls}><Fragment set:html={inlineFormat(sectionTitle)} /></h2>}
+			{hasText(sectionSubtitle) && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
 		</div>
 		)}
 

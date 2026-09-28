@@ -24,8 +24,12 @@ export const OrderConfirmationTokens = [
   // Block-scoped per-section overrides (см. OrderConfirmation.astro — на корне
   // эмитятся с вшитым fallback var(--color-*), поэтому всегда определены).
   '--oc-order-bg',
+  '--oc-order-alpha',
   '--oc-summary-bg',
+  '--oc-summary-alpha',
   '--oc-accent',
+  '--oc-accent-text',
   '--oc-button-bg',
+  '--oc-button-text',
   '--oc-error',
 ] as const satisfies readonly `--${string}`[];

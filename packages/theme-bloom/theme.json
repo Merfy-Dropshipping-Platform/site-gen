@@ -39,6 +39,9 @@
     "--product-card-padding": "0px"
   },
   "blockDefaults": {
+    "OrderConfirmation": {
+      "colorScheme": "scheme-3"
+    },
     "PromoBanner": {
       "size": "medium",
       "textTransform": "none",
@@ -76,7 +79,7 @@
       "alignment": "left",
       "size": "large",
       "colorScheme": "scheme-1",
-      "overlay": 40,
+      "overlay": 0,
       "heading": {
         "text": "Изображение"
       },
@@ -150,6 +153,9 @@
     },
     "Footer": {
       "variant": "2-part",
+      "newsletter": {
+        "enabled": true
+      },
       "bottomStrip": {
         "enabled": true,
         "text": "© 2026 Bloom Theme. Powered by Merfy"
@@ -211,12 +217,12 @@
         "--color-accent": "227 142 159",
         "--color-button-bg": "255 255 255",
         "--color-button-text": "207 122 139",
-        "--color-button-border": "227 142 159",
+        "--color-button-border": "255 255 255",
         "--color-button-bg-hover": "224 224 224",
         "--color-button-text-hover": "160 94 107",
         "--color-button-2-bg": "207 122 139",
         "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "247 162 179",
+        "--color-button-2-border": "207 122 139",
         "--color-button-2-bg-hover": "182 107 122",
         "--color-button-2-text-hover": "255 255 255"
       }
@@ -233,13 +239,13 @@
         "--color-primary": "255 255 255",
         "--color-accent": "247 162 179",
         "--color-button-bg": "255 255 255",
-        "--color-button-text": "227 142 159",
-        "--color-button-border": "247 162 179",
+        "--color-button-text": "0 0 0",
+        "--color-button-border": "255 255 255",
         "--color-button-bg-hover": "224 224 224",
-        "--color-button-text-hover": "176 110 123",
+        "--color-button-text-hover": "0 0 0",
         "--color-button-2-bg": "227 142 159",
         "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "255 181 175",
+        "--color-button-2-border": "227 142 159",
         "--color-button-2-bg-hover": "200 125 140",
         "--color-button-2-text-hover": "255 255 255"
       }

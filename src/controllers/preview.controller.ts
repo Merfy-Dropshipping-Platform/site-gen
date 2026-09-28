@@ -25,6 +25,16 @@ import {
   type CollectionContext,
 } from '../themes/collection-context';
 import { applyFooterData } from '../utils/footer-data';
+import { applyHeaderShopName } from '../utils/header-title';
+import { policyUrlsFor, privacyPolicyUrlFor } from '../utils/footer-data';
+import {
+  COOKIE_BANNER_GLOBAL,
+  PRIVACY_POLICY_URL_GLOBAL,
+  cookieBannerGlobal,
+  type CookieBannerContent,
+} from '../../packages/theme-base/runtime/cookie-consent';
+import { POLICY_URLS_GLOBAL } from '../../packages/theme-base/runtime/legal-links';
+import { inlineScriptJson } from '../common/inline-script-json';
 import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss, siteTokensCss } from '../themes/tokens-css';
@@ -36,7 +46,6 @@ import {
   adaptLegacyProps,
   prepareBlockProps,
   themeBlocksFor,
-  designParityFlag,
   extractPageBlocks,
   pagePropsPreparer,
   applyCollectionContextToProps,
@@ -152,6 +161,60 @@ interface RenderBlockBody {
 interface RenderTokensCssBody {
   themeSettings: Record<string, unknown>;
   themeId?: string | null;
+}
+
+/**
+ * Глобал ссылки баннера cookie (packages/theme-base/runtime/cookie-consent.ts):
+ * адрес политики конфиденциальности продавца — только если она написана
+ * (`privacyPolicyUrlFor`). Все пути превью зовут эту функцию; сборка витрины
+ * ставит тот же глобал через `injectGlobalsIntoDist` (build.service, themes-v2).
+ */
+export function withPrivacyPolicyGlobal(
+  html: string,
+  privacyPolicyUrl: string | null | undefined,
+): string {
+  if (!privacyPolicyUrl) return html;
+  return html.replace(
+    /<head(\s[^>]*)?>/i,
+    (m) => `${m}<script>window.${PRIVACY_POLICY_URL_GLOBAL} = ${inlineScriptJson(privacyPolicyUrl)};</script>`,
+  );
+}
+
+/**
+ * Глобал текстов и кнопок баннера cookie («Настройки темы» → «Баннер»,
+ * packages/theme-base/runtime/cookie-consent.ts): только если продавец трогал
+ * баннер (`cookieBannerGlobal`). Все пути превью зовут эту функцию рядом с
+ * `withPrivacyPolicyGlobal`; сборка витрины ставит тот же глобал через
+ * `injectGlobalsIntoDist`. Правки в конструкторе приезжают без перезагрузки —
+ * агентом превью на `update-tokens`.
+ */
+export function withCookieBannerGlobal(
+  html: string,
+  banner: CookieBannerContent | null | undefined,
+): string {
+  if (!banner) return html;
+  return html.replace(
+    /<head(\s[^>]*)?>/i,
+    (m) => `${m}<script>window.${COOKIE_BANNER_GLOBAL} = ${inlineScriptJson(banner)};</script>`,
+  );
+}
+
+/**
+ * Глобал ссылок юридической строки «Спасибо за заказ» и чекаута
+ * (packages/theme-base/runtime/legal-links.ts): адреса ЗАПОЛНЕННЫХ политик
+ * продавца (`policyUrlsFor`). Ни одной политики — глобала нет, фразы остаются
+ * текстом. Все пути превью зовут эту функцию рядом с `withPrivacyPolicyGlobal`;
+ * сборка витрины ставит тот же глобал через `injectGlobalsIntoDist`.
+ */
+export function withPolicyUrlsGlobal(
+  html: string,
+  policyUrls: Readonly<Record<string, string>> | null | undefined,
+): string {
+  if (!policyUrls || Object.keys(policyUrls).length === 0) return html;
+  return html.replace(
+    /<head(\s[^>]*)?>/i,
+    (m) => `${m}<script>window.${POLICY_URLS_GLOBAL} = ${inlineScriptJson(policyUrls)};</script>`,
+  );
 }
 
 /**
@@ -427,6 +490,16 @@ export class PreviewController {
             collectionNameOverride,
           )
         : undefined;
+    // Политики магазина — текст секции «Страница» (v2-путь) и признак ссылки
+    // баннера cookie (оба пути). Один запрос на страницу превью.
+    const policies = await this.loadPolicies(siteId);
+    const privacyUrl = privacyPolicyUrlFor(policies, loaded.themeId);
+    // Ссылки юридической строки «Спасибо»/чекаута — тем же правилом.
+    const policyUrls = policyUrlsFor(policies, loaded.themeId);
+    // Тексты и кнопки баннера cookie из настроек темы (все пути превью).
+    const cookieBanner = cookieBannerGlobal(
+      (loaded.data as Record<string, unknown> | null)?.themeSettings,
+    );
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют
@@ -444,7 +517,7 @@ export class PreviewController {
           productIdOverride,
           this.logger,
           collectionContext,
-          await this.loadPolicies(siteId),
+          policies,
         );
         if (v2Blocks && v2Blocks.length > 0) {
           const pageTitle =
@@ -506,6 +579,9 @@ export class PreviewController {
               route.split('/')[0] === 'checkout'
                 ? checkoutConfigFromSettings(loaded.settings)
                 : null,
+              privacyUrl,
+              policyUrls,
+              cookieBanner,
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -708,6 +784,9 @@ export class PreviewController {
         route.split('/')[0] === 'checkout'
           ? checkoutConfigFromSettings(loaded.settings)
           : null,
+        privacyUrl,
+        policyUrls,
+        cookieBanner,
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -760,7 +839,7 @@ export class PreviewController {
       productIdOverride,
       this.logger,
       undefined,
-      await this.loadPolicies(siteId),
+      policies,
     );
     if (!blocks) {
       res
@@ -807,6 +886,13 @@ export class PreviewController {
           },
         );
       }
+      // Баннер cookie рисует сам синтетический шелл (renderPreviewPage), ссылку
+      // на политику открывает тот же глобал, что на остальных путях превью.
+      // Ключ кэша несёт footerFp (время и число политик) — смена политики
+      // даёт новый ключ.
+      html = withPrivacyPolicyGlobal(html, privacyUrl);
+      html = withPolicyUrlsGlobal(html, policyUrls);
+      html = withCookieBannerGlobal(html, cookieBanner);
       PreviewController.setCachedHtml(cacheKey, html);
       // Disable browser cache for preview iframe — Constructor вылитый
       // на свежий код мог отдавать stale HTML из browser cache (etag 304),
@@ -917,9 +1003,6 @@ export class PreviewController {
           ? applyCollectionContextToProps(body.blockType, adaptedProps, collectionCtx)
           : adaptedProps),
         siteId,
-        // Признак PARITY_DESIGN — и когда PARITY_HOT выключен: иначе после
-        // правки секция рисовалась бы по старым стилям до перезагрузки.
-        ...designParityFlag(siteId),
       };
       // Выбор товара через верхнее меню превью бьёт настройку блока — ровно как
       // на целой странице (`productIdOverride ?? defaultProductIdFromRevision`).
@@ -972,6 +1055,16 @@ export class PreviewController {
       // props в минимальную content-обёртку — applyFooterData мутирует их in-place.
       // Стоит ПОСЛЕ загрузки ревизии: тема нужна, чтобы правовые ссылки указывали
       // на реально существующий маршрут (/legal/<slug> у мигрированных тем).
+      // Шапка: одиночная перерисовка получает сырое siteTitle панели (часто
+      // стартовое «Flux»/«Rose» из сида) — подставляем название магазина тем же
+      // правилом, что страница превью и сборка (utils/header-title.ts).
+      if (body.blockType === 'Header') {
+        await applyHeaderShopName(
+          { db: this.db, schema },
+          siteId,
+          { content: [{ type: 'Header', props: propsWithContext }] },
+        );
+      }
       if (body.blockType === 'Footer') {
         await applyFooterData(
           { db: this.db, schema, billingClient: this.billingClient },
@@ -1291,6 +1384,9 @@ export class PreviewController {
     collectionContext?: PreviewCollectionContext | undefined,
     variantSwatch?: VariantSwatchShape | null,
     checkoutConfig?: CheckoutRuntimeConfig | null,
+    privacyPolicyUrl?: string | null,
+    policyUrls?: Readonly<Record<string, string>> | null,
+    cookieBanner?: CookieBannerContent | null,
   ): string {
     let html = withPreviewShopId(htmlIn, siteId);
     // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
@@ -1440,6 +1536,9 @@ export class PreviewController {
           `if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',f);}else{f();}})();</script>`,
       );
     }
+    html = withPrivacyPolicyGlobal(html, privacyPolicyUrl);
+    html = withPolicyUrlsGlobal(html, policyUrls);
+    html = withCookieBannerGlobal(html, cookieBanner);
     // Агент конструктора (hover/select → postMessage). На секционном пути его
     // добавляет renderV2ContentPage; блоб-путь (product/catalog/cart/checkout)
     // отдаёт built-theme HTML напрямую — без этого секции не выделялись (нет

@@ -196,17 +196,17 @@ describe('п.1 узел «Подвал» страницы чекаута упр�
     expect(twice).toBe(once);
   });
 
-  it('правовые ссылки и снятие подвала витрины целы (работа прошлого круга)', () => {
+  it('правовая строка и снятие подвала витрины целы (работа прошлого круга)', () => {
     const page = renderBaseBlock('CheckoutForm', { id: 'CheckoutForm-1' });
     const out = chromed(`<footer>подвал витрины</footer>${page}`, {
       Footer: { colorScheme: 'scheme-3' },
     });
     expect(out).not.toContain('<footer');
-    expect([...out.matchAll(/href="(\/legal\/[a-z-]+)"/g)].map((m) => m[1])).toEqual([
-      '/legal/terms',
-      '/legal/privacy',
-      '/legal/cookies',
-    ]);
+    // С 28.09 ссылки на документы ставит правило по ЗАПОЛНЕННЫМ политикам
+    // продавца (runtime/legal-links.ts, legal-text-links.dom.spec.ts), а не
+    // разметка: в SSR строка под правило, фиксированных /legal/* нет.
+    expect(out).toMatch(/<p\b[^>]*data-legal-text[^>]*>Размещая заказ, вы соглашаетесь с Условиями обслуживания/);
+    expect(out).not.toMatch(/href="\/legal\//);
   });
 
   it('горячая правка Подвала НЕ подменяет юр.инфу подвалом витрины', () => {

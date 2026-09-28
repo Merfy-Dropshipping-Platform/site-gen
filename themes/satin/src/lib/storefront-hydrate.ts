@@ -311,8 +311,10 @@ export function renderCardHtml(p: RealProduct, quickAdd?: string): string {
 	const oldPrice = oldRaw
 		? `<span class="font-manrope text-[14px] font-light leading-tight text-[rgb(var(--color-text,0_0_0))] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";
+	// Цвет — роль схемы «Кнопка» (merfy-badge, base.css), не хардкод
+	// верстальщика #000000/text-white (владелец 28.09).
 	const badge = oldRaw
-		? `<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">Скидка</span>`
+		? `<span class="merfy-badge pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center px-2 font-manrope text-[12px] font-medium uppercase leading-none">Скидка</span>`
 		: "";
 	// Решение владельца: карточная «В корзину» для товара с вариантами добавляет
 	// ПЕРВУЮ доступную комбинацию (combo.id + combo.price), а не товар без варианта;

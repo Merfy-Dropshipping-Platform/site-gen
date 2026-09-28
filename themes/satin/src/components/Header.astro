@@ -4,7 +4,9 @@ import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.as
 import { SATIN_ICON_SVGS } from "./icons/satin-icon-svgs";
 import NavItem from "./header/NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
+import { headerOwnLogo } from "../../../../packages/theme-base/runtime/header-logo";
 import { SITE_TITLE } from "../consts";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 interface NavLink {
 	label: string;
@@ -21,28 +23,28 @@ const defaultNav: NavLink[] = [
 
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): переход
+// Как у верстальщиков (владелец 23.09: «как у верстальщиков, только стили»): переход
 // между мобильной и десктопной строкой шапки — на md (768px), как в
 // Satin-theme @cb548963 (Header.astro:56 «md:hidden», :86 «md:flex»), а не на
-// lg (1024px, комментарии ниже «как rose» устарели под признаком). Все точки,
+// lg (1024px, комментарии ниже «как rose» устарели). Все точки,
 // завязанные на тот же порог — скрытие инлайн-меню при menuType=sidebar, сторона
 // и ширина выезда шторки, JS-порог поиска (см. <script> ниже) — переезжают на md
 // синхронно, иначе в 768–1023 расходятся десктопная строка и меню/шторка/поиск.
 // Настройки «Положение логотипа», меню, липкость и отступы не меняются — только
-// порог переключения. Без признака — прежние lg. Признак ставит sites.
-const designParity = p.__designParity === true;
+// порог переключения. Владелец 25.09: одна версия секции — порог md стал
+// единственным (прежняя ветка с lg удалена).
 const HEADER_BP = {
-	designers: {
 		mobileRow: "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 md:hidden",
 		desktopWrap: "hidden w-full md:block",
 		sidebarNavHide: "md:!hidden",
-	},
-	legacy: {
-		mobileRow: "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 lg:hidden",
-		desktopWrap: "hidden w-full lg:block",
-		sidebarNavHide: "lg:!hidden",
-	},
-}[designParity ? "designers" : "legacy"];
+		// Строка «логотип по центру» — грид [1fr auto 1fr]. Логотип стоит в
+		// разметке ПЕРВЫМ с col-start-2, меню за ним с col-start-1: обычная
+		// раскладка грида не возвращается назад по строке и уводит меню и иконки
+		// во ВТОРУЮ строку (замер 1470: логотип y=51, меню y=80, шапка вдвое
+		// выше). У верстальщика всё в одной строке — dense ставит меню и иконки
+		// в свободные ячейки первой.
+		centerRowFlow: "grid-flow-dense",
+};
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
 const mapNavLink = (l: any): NavLink => ({
 	label: l.label ?? l.text ?? "",
@@ -52,7 +54,9 @@ const mapNavLink = (l: any): NavLink => ({
 const navFromProps = Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0;
 const nav: NavLink[] = navFromProps ? p.navigationLinks.map(mapNavLink) : defaultNav;
 
-const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+// Загруженный мерчантом файл; плейсхолдер /logo.svg и картинки темы — не логотип
+// магазина, тогда название текстом. Правило — packages/theme-base/runtime/header-logo.ts.
+const logo = headerOwnLogo(p.logo) || undefined;
 const logoImgCls = "h-[var(--size-logo-width,22px)] w-auto max-w-[160px] object-contain";
 
 // Контракт раскладки = rose Header: mobile lg:hidden не зависит от logoPosition;
@@ -81,6 +85,10 @@ const SCROLL_UP_JS = [
 	"var last=window.scrollY;",
 	"window.addEventListener('scroll',function(){",
 	"var y=window.scrollY;",
+	// Режим читается на КАЖДОЙ прокрутке: в конструкторе «Статичность» меняют без
+	// перезагрузки превью, и слушатель, повешенный для scroll-up, иначе прятал
+	// шапку и после выбора «Всегда» (баг 25.09). Превью переписывает атрибут.
+	"if(root.getAttribute('data-satin-sticky')!=='scroll-up'){root.style.transform='';last=y;return;}",
 	"if(y>last&&y>root.offsetHeight){root.style.transform='translateY(-100%)';}else{root.style.transform='';}",
 	"last=y;",
 	"},{passive:true});",
@@ -105,7 +113,12 @@ const singleRowCentered = logoPosition === "center-absolute";
 const desktopRowCls = [
 	"satin-pad mx-auto w-full max-w-[1920px] items-center",
 	singleRowCentered ? "grid grid-cols-[1fr_auto_1fr]" : "flex",
-	headerPad ? "" : "min-h-16",
+	singleRowCentered ? HEADER_BP.centerRowFlow : "",
+	// Минимальная высота ряда — всегда: «Отступы» панели добавляются СВЕРХУ неё.
+	// Раньше заданный отступ снимал min-h-16, и засеянные темой 0/0 сжимали
+	// шапку до 55 (тестер 24.09: «после выбора темы сбрасываются Отступы у
+	// Header» — меню прилипало к верху). Теперь 0/0 = стандартная шапка (65).
+	"min-h-16",
 	logoLeft ? "gap-8" : "justify-between",
 ]
 	.filter(Boolean)
@@ -155,7 +168,6 @@ const shopId = "";
 	data-puck-component-id={id}
 	data-header-wrapper
 	data-satin-sticky={stickiness === "scroll-up" ? "scroll-up" : undefined}
-	data-design-parity={designParity ? "true" : undefined}
 >
 	{
 		!id && (
@@ -168,7 +180,7 @@ const shopId = "";
 	<div class="overflow-visible bg-[rgb(var(--color-bg,255_255_255))]">
 	<header class:list={["relative w-full overflow-visible border-b border-[rgb(var(--color-text,0_0_0)/13%)] bg-[rgb(var(--color-bg,255_255_255))]", headerSchemeClass]} data-nt="satin-header">
 		{/* Mobile — как rose: lg:hidden, logoPosition не трогает эту полосу.
-		    PARITY_DESIGN двигает порог на md — HEADER_BP.mobileRow. */}
+		    Порог переключения — md, HEADER_BP.mobileRow. */}
 		<div class={HEADER_BP.mobileRow}>
 			<button
 				type="button"
@@ -208,7 +220,7 @@ const shopId = "";
 		</div>
 
 		{/* Desktop — как rose: hidden lg:block. Конструктор 1280px → эта ветка.
-		    PARITY_DESIGN двигает порог на md — HEADER_BP.desktopWrap. */}
+		    Порог переключения — md, HEADER_BP.desktopWrap. */}
 		<div class={HEADER_BP.desktopWrap}>
 			{isTwoRow ? (
 				<div class={twoRowCls} style={headerPadStyle}>
@@ -216,6 +228,12 @@ const shopId = "";
 						<>
 							<div class="flex w-full items-center justify-between">
 								<div class="flex items-center gap-3">
+									{isSidebar && (
+										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
+											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
+										</button>
+									)}
 									<a href="/" class="font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90">
 										{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 									</a>
@@ -232,12 +250,6 @@ const shopId = "";
 										<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</button>
-									{isSidebar && (
-										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
-											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
-										</button>
-									)}
 								</div>
 							</div>
 							<nav
@@ -261,6 +273,12 @@ const shopId = "";
 						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
 						    не разрывался. */}
 								<div class="flex items-center gap-4">
+									{isSidebar && (
+										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
+											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
+										</button>
+									)}
 								</div>
 								<div class="flex items-center justify-center">
 									<a href="/" class="font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90">
@@ -279,12 +297,6 @@ const shopId = "";
 										<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</button>
-									{isSidebar && (
-										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
-											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
-										</button>
-									)}
 								</div>
 							</div>
 							<nav
@@ -304,6 +316,12 @@ const shopId = "";
 				</div>
 			) : (
 				<div class={desktopRowCls} style={headerPadStyle}>
+					{isSidebar && (
+						<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
+							<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+							<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
+						</button>
+					)}
 					<a href="/" class:list={[singleRowCentered ? desktopCenterLogoCls : desktopLogoCls, logoLeft && "flex-1"]}>
 						{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 					</a>
@@ -331,12 +349,6 @@ const shopId = "";
 							<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 							<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 						</button>
-											{isSidebar && (
-							<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-								<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
-								<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
-							</button>
-						)}
 					</div>
 				</div>
 			)}
@@ -392,8 +404,11 @@ const shopId = "";
 			// прокрутка панели не утекает на страницу.
 			// Выезд за 300 мс и обратно (баг 1 документа «баги пунктов меню»:
 			// панель появлялась и пропадала за один кадр) — с той стороны, где
-			// иконка меню: на телефоне бургер слева, и панель выезжает слева; с lg
-			// панель — колонка у правого края, кнопка справа, и выезд справа.
+			// иконка меню: бургер слева ВЕЗДЕ (владелец, 25.09 — тестер попросил
+			// слева и на десктопе, владелец подтвердил «да»; это отменяет правило
+			// 21.09/23.09, `59bb1a50`/`752cd8ac`, где на lg/md бургер и панель
+			// были справа). На телефоне и с порогом панель — колонка у левого
+			// края, кнопка слева, выезд слева.
 			// Скрипт темы по-прежнему переключает `hidden`; переход через display: none дают
 			// `transition-discrete` и `starting:` (@starting-style) — без них
 			// display не анимируется, и панель прыгала бы. Где их не поддерживает
@@ -401,16 +416,12 @@ const shopId = "";
 			// Нижняя шторка других типов меню (на телефоне) спадает из-под шапки
 			// за 300 мс и так же уходит: clip-path сверху вниз на том же `hidden`
 			// (пункт 2 той же пачки — раньше открывалась рывком).
-			// PARITY_DESIGN двигает и эту пару порогов на md — строки прямо в теге
+			// Пара порогов шторки тоже на md — строки прямо в теге
 			// (гард header-burger-position ищет сторону панели в теге; иначе шторка не совпадёт с новой десктопной
 			// строкой в 768–1023).
 			isSidebar
-				? designParity
-					? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:translate-x-full md:[&.hidden]:translate-x-full motion-reduce:transition-none"
-					: "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:left-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:translate-x-full lg:[&.hidden]:translate-x-full motion-reduce:transition-none"
-				: designParity
-					? "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none"
-					: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 lg:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:right-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:-translate-x-full md:[&.hidden]:-translate-x-full motion-reduce:transition-none"
+				: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 		]}
 		role="dialog"
 		aria-modal="true"
@@ -528,8 +539,8 @@ const shopId = "";
 	{/* Магазин для живого поиска шапки: `const shopId = ""` патчит сборка
 	    (patchShopIdInDist) — как у подвала и корзины. В превью конструктора id
 	    приходит глобалом __MERFY_SITE_ID__, пустая строка здесь ничего не ломает. */}
-	<script is:inline define:vars={{ shopId }}>
-		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: "https://gateway.merfy.ru/api" };
+	<script is:inline define:vars={{ shopId, apiUrl }}>
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: apiUrl || "https://gateway.merfy.ru/api" };
 		if (shopId && !window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId;
 	</script>
 </div>
@@ -609,14 +620,11 @@ const shopId = "";
 	// На телефоне поиск живёт в шторке бургера: лупа мобильной строки открывает
 	// шторку и ставит курсор в поле, а не выдвигает десктопную панель с рядом
 	// карточек. «Боковое» меню поля не несёт — тогда, как раньше, панель.
-	// PARITY_DESIGN двигает и этот порог на md (767.98): иначе desktop-строка
+	// Этот порог тоже на md (767.98): иначе desktop-строка
 	// на 768–1023 уже видна (HEADER_BP.desktopWrap), а лупа всё равно тянулась
 	// бы в скрытую по CSS шторку (шторка по умолчанию прячется с md) —
-	// клик по поиску не открывал бы ничего. Признак читаем с data-header-wrapper,
-	// а не замыканием: скрипт статичен для обоих режимов одной сборки темы.
-	const isDesignParity = () =>
-		document.querySelector('[data-header-wrapper]')?.getAttribute("data-design-parity") === "true";
-	const MOBILE_QUERY = () => (isDesignParity() ? "(max-width: 767.98px)" : "(max-width: 1023.98px)");
+	// клик по поиску не открывал бы ничего.
+	const MOBILE_QUERY = () => "(max-width: 767.98px)";
 	const openDrawerSearch = (): boolean => {
 		if (!window.matchMedia(MOBILE_QUERY()).matches) return false;
 		const burger = burgerEl();

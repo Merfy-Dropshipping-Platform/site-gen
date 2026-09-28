@@ -1,4 +1,5 @@
 ---
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 interface Props {
   heading?: { text?: string; size?: 'small' | 'medium' | 'large' };
   text?: { content?: string; size?: 'small' | 'medium' | 'large' };
@@ -34,7 +35,7 @@ const padBottom = padding?.bottom ?? 120;
     </div>
     <form
       class="w-full md:w-auto md:min-w-[652px] h-[56px] flex items-center shrink-0"
-      action="https://gateway.merfy.ru/api/storefront/newsletter/subscribe"
+      action={`${apiUrl}/storefront/newsletter/subscribe`}
       method="POST"
       data-newsletter-form
       style="border: 1px solid rgb(var(--color-foreground)); border-radius: var(--radius-input, var(--radius-button));"

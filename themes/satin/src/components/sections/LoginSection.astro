@@ -79,7 +79,7 @@ const {
 
 // Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое.
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 const schemeClass = `color-scheme-${schemeIdOf(colorScheme) || "2"}`;
 const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padding?.bottom ?? 80}px;`;
 
@@ -117,15 +117,19 @@ const btnText =
 		"
 	>
 		<div class="w-96 max-w-full flex flex-col items-center gap-20">
+			{(heading || text) && (
 			<div class="flex flex-col items-center gap-2 text-center">
+				{heading && (
 				<h1
 					class="font-heading text-xl uppercase font-normal"
 					style="color: rgb(var(--color-heading, 0 0 0));"
 				><Fragment set:html={inlineFormat(heading)} /></h1>
+				)}
 				{text && (
 					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));"><Fragment set:html={inlineFormat(text)} /></p>
 				)}
 			</div>
+			)}
 
 
 			<form id="magic-form" class="w-full flex flex-col gap-6" novalidate>
@@ -150,16 +154,20 @@ const btnText =
 			</form>
 
 			<div class="w-full flex flex-col items-center gap-8">
+				{/* «Кнопка» секции — цвета «Основной кнопки» схемы (data-scheme-button,
+				    src/themes/scheme-buttons.ts). Толщина рамки — inline: класс
+				    .auth-button-primary гасит её `border:none` вне @layer. */}
 				<button
 					type="submit"
 					id="btn-magic"
 					form="magic-form"
 					class="auth-button-primary"
+					data-scheme-button="primary"
 					data-testid="btn-magic"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="button"
-					style="border-radius:var(--radius-button,8px);"
+					style="border-radius:var(--radius-button,8px);border-width:1px;border-style:solid;"
 				>
 					<span class="auth-button-loading hidden inline-flex items-center gap-2" data-loading>
 						<span class="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>

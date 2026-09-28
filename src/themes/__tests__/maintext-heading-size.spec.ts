@@ -31,9 +31,25 @@ describe("MainText: размер заголовка переживает нор�
     expect(out.text).toBe("Текст");
   });
 
-  it("явный top-level размер сильнее конверта", () => {
-    const out = adapt({ heading: { text: "Заголовок", size: "small" }, headingSize: "large" });
+  // Владелец 25.09: в панели «Основного текста» размер — поле конверта, а
+  // top-level headingSize/textSize скрыты и вписываются первой правкой секции
+  // значением «Средний». Раньше здесь побеждал скрытый top-level, и выбор
+  // мерчанта после первой правки ни на что не влиял (§11 контракта секции).
+  it("размер из конверта (видимое поле) сильнее скрытого top-level", () => {
+    const out = adapt({
+      heading: { text: "Заголовок", size: "small" },
+      headingSize: "medium",
+      text: { content: "Текст", size: "large" },
+      textSize: "medium",
+    });
+    expect(out.headingSize).toBe("small");
+    expect(out.textSize).toBe("large");
+  });
+
+  it("без размера в конверте остаётся top-level (старые ревизии)", () => {
+    const out = adapt({ heading: "Заголовок", headingSize: "large", text: "Текст", textSize: "small" });
     expect(out.headingSize).toBe("large");
+    expect(out.textSize).toBe("small");
   });
 
   it("строковый заголовок по-прежнему работает", () => {

@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Gallery T13): конструкторная схема
 // theme-base Gallery.puckConfig поверх разметки верстальщика. Тело + канон-
 // дефолты (headingSize/textSize medium, imagePosition left) → пиксель
@@ -24,11 +25,10 @@ const _schemeId =
 			? String(_rawScheme).replace("scheme-", "")
 			: "";
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
-// Пустая строка = «мерчант не задал» (так же трактует платформа,
-// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
-const sectionTitle =
-	((typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title)?.trim() ||
-	"Галерея";
+// Панельное поле пришло строкой (в т.ч. пустой "" — мерчант стёр вручную) →
+// рендерим как есть. Легаси title и заглушка темы — только когда поля вовсе
+// нет (undefined, старые ревизии).
+const sectionTitle = pickText(p.heading, pickText(p.title, "Галерея"));
 // Подзаголовка у верстальщика НЕТ — рендер ТОЛЬКО при непустом пропе.
 const rawSubtitle =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
@@ -156,6 +156,10 @@ galleryTiles.forEach((t) => {
 // Куртка-плейсхолдер вписывается в бокс (object-contain), реальное фото — кроп.
 const fitCls = (t: GalleryTile, hover: string) =>
 	t.placeholder && t.kind === "product" ? "object-contain p-[12%]" : `object-cover ${hover}`;
+// Плитка с выбранной коллекцией: адрес фото приходит только с гидрацией
+// (data-gallery-collection), поэтому <img> рисуется заранее скрытым — гидрации
+// есть куда положить фото. Без него фото коллекции не вставало (тестер 24.09).
+const awaitsCover = (t: GalleryTile) => t.kind === "collection" && Boolean(t.ref) && !t.url;
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
 // Одна видимая плитка занимает всю ширину секции — иначе она жмётся в свою
@@ -167,17 +171,59 @@ const soloTile = galleryTiles.length === 1;
 // 1440px: разбег низов 656px против 0 у rose и flux). Узкая боковая колонка
 // (rose: minmax(280px,429px)) выравнивает высоты: большая плитка тянется по
 // строке и остаётся почти квадратной.
+// Как у верстальщиков (владелец 23.09: «как у верстальщиков, только стили»): отступы,
+// зазоры и раскладка по актуальной вёрстке Bloom-theme @5aae2ad6. Владелец
+// 25.09: одна версия секции — прежняя ветка удалена.
+// Две плитки у верстальщиков: колонки пополам (lg:grid-cols-2), большая —
+// квадрат по своей ширине, справа фото 652/594 с подписью. Три плитки
+// (наш канон) — прежняя раскладка.
+const pairLikeDesigners = sideTiles.length === 1;
 const gridColsCls = mirror
 	? "lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)]"
 	: "lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]";
-const gridLayoutCls = soloTile ? "lg:grid-cols-1" : gridColsCls;
+// Владелец 25.09: «выравниваем» — низы обеих плиток пары на одной линии на
+// всех ширинах, где они стоят рядом (было: items-start, боковая плитка
+// короче квадрата на 38–58px, под ней пустое место). lg:items-stretch тянет
+// боковую колонку до высоты строки (её задаёт квадрат — heroSizeCls ниже);
+// SIDE_TILE.photo ниже забирает добавленную высоту ФОТО (flex-1,
+// object-cover), а не пустотой под подписью.
+const GRID_LAYOUT = {
+	solo: { cols: "lg:grid-cols-1", stretch: " lg:items-stretch" },
+	pair: { cols: "lg:grid-cols-2", stretch: " lg:items-stretch" },
+	legacy: { cols: gridColsCls, stretch: " lg:items-stretch" },
+}[soloTile ? "solo" : pairLikeDesigners ? "pair" : "legacy"];
+const gridLayoutCls = GRID_LAYOUT.cols;
 // Растянутая на всю ширину плитка не должна быть квадратом во весь экран.
 // В паре с колонкой высоту большой плитке задаёт СТРОКА (`lg:h-full`), а не
 // собственный аспект — иначе низы колонок не сходятся ни при каких данных
 // (паритет rose `lg:min-h-0 lg:h-full`, flux `lg:aspect-auto lg:h-full`).
 const heroSizeCls = soloTile
 	? "aspect-[16/9]"
-	: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0";
+	: pairLikeDesigners
+		? "aspect-square"
+		: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0";
+// Подпись под фото плитки: как у верстальщиков, gap-4 (16).
+const captionMtCls = "mt-4";
+
+// Боковая плитка ПАРЫ (pairLikeDesigners): низ обязан лечь на низ квадрата
+// (владелец 25.09). Ссылка становится flex-колонкой во всю высоту строки
+// (lg:h-full — высоту дал items-stretch на гриде выше), фото-бокс внутри
+// растёт (lg:flex-1 lg:min-h-0, без своего аспекта) и забирает добавленную
+// высоту ФОТО через object-cover (крой, не сплющивание) — подпись остаётся
+// своего размера. Три плитки (LEGACY) и мобильная раскладка — байт-в-байт
+// прежние: аспект-бокс 652/594, ссылка обычным block.
+const SIDE_TILE = {
+	pair: {
+		anchor: " lg:flex lg:h-full lg:flex-col",
+		photo:
+			"relative aspect-[652/594] w-full lg:aspect-auto lg:min-h-0 lg:flex-1 overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]",
+	},
+	legacy: {
+		anchor: "",
+		photo:
+			"relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]",
+	},
+}[pairLikeDesigners ? "pair" : "legacy"];
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -193,10 +239,6 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
-// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
-// зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
-// цвета не меняются; без признака — прежние классы. Признак ставит sites.
-const designParity = p.__designParity === true;
 ---
 
 <section
@@ -207,7 +249,7 @@ const designParity = p.__designParity === true;
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
-		{!isFieldHidden('heading') && (sectionSubtitle ? (
+		{!isFieldHidden('heading') && (sectionTitle && sectionSubtitle ? (
 			<div
 				data-animate
 				class="flex flex-col gap-2"
@@ -218,7 +260,7 @@ const designParity = p.__designParity === true;
 				<h2 id="gallery-title" class={headingCls} set:html={inlineFormat(sectionTitle)}></h2>
 				<p class={subtitleCls} set:html={inlineFormat(sectionSubtitle)} />
 			</div>
-		) : (
+		) : sectionTitle ? (
 			<h2
 				id="gallery-title"
 				data-animate
@@ -228,9 +270,20 @@ const designParity = p.__designParity === true;
 				data-puck-subsection-field="heading"
 				set:html={inlineFormat(sectionTitle)}
 			></h2>
-		))}
+		) : sectionSubtitle ? (
+			// Заголовок стёрт, текст остался — рисуем только его, без пустого <h2>.
+			<p
+				id="gallery-title"
+				data-animate
+				class={subtitleCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="heading"
+				set:html={inlineFormat(sectionSubtitle)}
+			></p>
+		) : null)}
 
-		<div class={`grid min-h-0 min-w-0 grid-cols-1 items-start gap-4 lg:items-stretch ${gridLayoutCls}`} data-animate data-animate-delay="0.1s">
+		<div class={`grid min-h-0 min-w-0 grid-cols-1 items-start gap-4${GRID_LAYOUT.stretch} ${gridLayoutCls}`} data-animate data-animate-delay="0.1s">
 			{heroTile && (
 				<a
 					href={heroTile.href}
@@ -242,9 +295,10 @@ const designParity = p.__designParity === true;
 					data-puck-subsection-index={0}
 					data-puck-subsection-field="items"
 				>
-					{heroTile.url && (
+					{(heroTile.url || awaitsCover(heroTile)) && (
 						<img
-							src={heroTile.url}
+							src={heroTile.url || undefined}
+							hidden={!heroTile.url}
 							alt={heroTile.alt}
 							loading="lazy"
 							class={`absolute inset-0 size-full ${fitCls(heroTile, "transition-transform duration-500 ease-out group-hover:scale-[1.03]")}`}
@@ -254,11 +308,11 @@ const designParity = p.__designParity === true;
 			)}
 
 			{sideTiles.length > 0 && (
-				<div class={`flex w-full min-h-0 min-w-0 flex-col ${designParity ? "gap-4" : "gap-5"}${sideOrderCls}`}>
+				<div class={`flex w-full min-h-0 min-w-0 flex-col gap-4${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}
-							class="group block"
+							class={`group block${SIDE_TILE.anchor}`}
 							aria-label={tile.label || tile.alt || "Изображение"}
 							data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
 							data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
@@ -266,10 +320,11 @@ const designParity = p.__designParity === true;
 							data-puck-subsection-index={i + 1}
 							data-puck-subsection-field="items"
 						>
-							<div class="relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">
-								{tile.url && (
+							<div class={SIDE_TILE.photo}>
+								{(tile.url || awaitsCover(tile)) && (
 									<img
-										src={tile.url}
+										src={tile.url || undefined}
+										hidden={!tile.url}
 										alt={tile.alt}
 										loading="lazy"
 										class={`absolute inset-0 size-full ${fitCls(tile, "transition-transform duration-500 ease-out group-hover:scale-[1.05]")}`}
@@ -277,7 +332,7 @@ const designParity = p.__designParity === true;
 								)}
 							</div>
 							{(tile.label || tile.price) && (
-								<div class="mt-5 flex flex-col gap-1">
+								<div class={`${captionMtCls} flex flex-col gap-1`}>
 									{tile.label && (
 										<span
 											class={
@@ -338,6 +393,8 @@ const designParity = p.__designParity === true;
 			const cover = productImage(product);
 			if (img && cover) {
 				img.setAttribute("src", cover);
+				img.removeAttribute("hidden");
+				img.parentElement?.removeAttribute("aria-hidden");
 				if (product.name) img.setAttribute("alt", product.name);
 			}
 			tile.setAttribute("href", productHref(product));
@@ -352,6 +409,8 @@ const designParity = p.__designParity === true;
 			const img = tile.querySelector("img");
 			if (img && cover) {
 				img.setAttribute("src", cover);
+				img.removeAttribute("hidden");
+				img.parentElement?.removeAttribute("aria-hidden");
 				if (col.name) img.setAttribute("alt", col.name);
 			}
 			if (col.name) tile.setAttribute("aria-label", col.name);

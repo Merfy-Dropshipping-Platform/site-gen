@@ -2,6 +2,8 @@
 import { inlineFormat } from "../lib/rich-text";
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import { withBase } from "../lib/with-base";
+import { footerOwnLogo } from "../../../../packages/theme-base/runtime/footer-logo";
+import { ROSE_FOOTER_DESIGNERS, designersWhenUnset } from "../lib/design-parity";
 import { schemeIdOf } from "../lib/color-scheme";
 import { SITE_TITLE } from "../consts";
 import {
@@ -14,7 +16,7 @@ const today = new Date();
 // Live-конфиг подписки: shopId патчит build.service (patchShopIdInDist) → siteId
 // на деплое (заменяет `const shopId = ""` в HTML); apiUrl — публичный gateway.
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 const navColumn = [
 	{ label: "Главная", href: "/" },
@@ -31,13 +33,6 @@ const navColumn = [
 // (заголовки колонок) не рендерятся без пропсов.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»): на
-// планшете подвал уже переходит в две колонки (Rose-theme @b719c193
-// Footer.astro), а не с lg, и выравнивание блока контактов сдвигается туда
-// же. Правится только дефолт-ветка «Выравнивания» (contentAlign=left) — у
-// «По центру»/«Справа» своих раскладок у верстальщиков нет, остаются
-// прежними. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Rose Theme».
 // Запасное имя магазина — нейтральное, НЕ название темы. Владелец 18.09: «в
 // подвал должна идти лого из настроек темы, если загружена, или, если нет, то
@@ -48,6 +43,13 @@ const designParity = p.__designParity === true;
 // сборка (build.service) и миграция ревизии; сюда управление доходит, только
 // если магазин безымянный.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : "Мой магазин";
+// «Логотип» подвала — своя картинка из панели секции (владелец 26.09).
+// Пусто — подвал как был. Правило: packages/theme-base/runtime/footer-logo.ts.
+// Высота — настройка «Размер» логотипа, тем же классом, что у картинки в шапке.
+// В вёрстке rose логотипа в подвале нет: он встаёт над колонкой навигации,
+// как у satin/vanilla/bloom (32px до ссылок), только когда загружен.
+const ownLogo = footerOwnLogo(p);
+const OWN_LOGO_CLS = "block h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
 // Телефон/почта футера — ТОЛЬКО при настроенных контактах (build пишет их из
 // «Информация о компании»). Без данных — пусто, ссылки tel:/mailto: не рендерятся.
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
@@ -78,8 +80,13 @@ const newsletterText =
 	typeof p.text?.content === "string" && p.text.content.trim()
 		? p.text.content
 		: "Получайте информацию от нашего бренда";
-const newsletterHeadingSizeStyle = roseFooterHeadingStyle(p.heading?.size);
-const newsletterTextSizeCls = roseFooterTextClass(p.text?.size);
+// Размер заголовка/текста рассылки не задан → как у верстальщиков: заголовок
+// clamp(14px, 2.2vw, 20px) (на планшете ~17px вместо 20), текст на телефоне
+// 12px. Выбранный мерчантом размер — свой.
+const newsletterHeadingSizeStyle =
+	designersWhenUnset(p.heading?.size, ROSE_FOOTER_DESIGNERS.headingStyle) || roseFooterHeadingStyle(p.heading?.size);
+const newsletterTextSizeCls =
+	designersWhenUnset(p.text?.size, ROSE_FOOTER_DESIGNERS.text) || roseFooterTextClass(p.text?.size);
 // item 1 — выравнивание блока рассылки, ОДНО значение на десктоп И адаптив. Классы
 // ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left (раньше был захардкожен text-left + @media center).
 const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
@@ -90,49 +97,49 @@ const nlCopyAlignCls = `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
 // «Выравнивание» центрирует ГРУППУ колонок (ЦЕНТРИРОВАННЫЙ БЛОК, равные поля по краям —
 // юзер выбрал этот вариант). center → секция justify-center + узкий равный gap (колонки
 // вместе по центру), контент внутри колонок остаётся СЛЕВА (естественно). left (дефолт) =
-// нав слева / контакты справа (justify-between, текущий); right = группа к правому краю.
-// Классы литералами (Tailwind JIT).
-const colsJustifyCls = _ca === "center" ? "lg:justify-center lg:gap-24" : _ca === "right" ? "lg:justify-end" : "lg:justify-between";
-const navInfoGapCls = _ca === "center" ? "sm:gap-24" : "sm:gap-[200px]";
+// нав слева / контакты справа, в две колонки уже с планшета (как у верстальщиков,
+// Rose-theme @b719c193), и внутри левой группы список навигации/инфо на планшете снова
+// стоит колонкой, пока рядом появляется колонка контактов; right = группа к правому краю.
 // center = центрированный блок колонок И контент ВНУТРИ блоков по центру (юзер: «когда по
-// центру, и контент блоков был по центру»). right = к правому краю. left (дефолт) = слева/справа.
-const colInnerCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "";
-const contactGroupCls =
-	_ca === "center"
-		? "items-center text-center"
-		: _ca === "right"
-			? "items-end text-right"
-			: designParity
-				? "md:items-end md:text-right lg:items-end lg:text-right"
-				: "lg:items-end lg:text-right";
-const contactTextCls =
-	_ca === "center"
-		? "text-center"
-		: _ca === "right"
-			? "text-right"
-			: designParity
-				? "md:text-right lg:text-right"
-				: "lg:text-right";
-const contactJustifyCls =
-	_ca === "center"
-		? "justify-center"
-		: _ca === "right"
-			? "justify-end"
-			: designParity
-				? "md:justify-end lg:justify-end"
-				: "lg:justify-end";
-// PARITY_DESIGN, только дефолт-ветка «Выравнивания» (left): подвал уходит в
-// две колонки уже с планшета, а не с lg (Rose-theme @b719c193), и внутри
-// левой группы список навигации/инфо на планшете снова стоит колонкой (между
-// sm и lg), пока рядом появляется колонка контактов.
-const sectionRowCls =
-	designParity && _ca === "left"
-		? "flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between lg:flex-row lg:items-start lg:justify-between"
-		: `flex w-full flex-col gap-10 lg:flex-row lg:items-start ${colsJustifyCls}`;
-const navInfoWrapCls =
-	designParity && _ca === "left"
-		? "flex flex-col gap-10 sm:flex-row sm:gap-[200px] md:flex-col md:gap-10 lg:flex-row lg:gap-[200px]"
-		: `flex flex-col gap-10 sm:flex-row ${navInfoGapCls}`;
+// центру, и контент блоков был по центру»). Классы литералами (Tailwind JIT).
+const FOOTER_ALIGN = {
+	left: {
+		sectionRow:
+			"flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between lg:flex-row lg:items-start lg:justify-between",
+		navInfoWrap: "flex flex-col gap-10 sm:flex-row sm:gap-[200px] md:flex-col md:gap-10 lg:flex-row lg:gap-[200px]",
+		colInner: "",
+		contactGroup: "md:items-end md:text-right lg:items-end lg:text-right",
+		contactText: "md:text-right lg:text-right",
+		contactJustify: "md:justify-end lg:justify-end",
+	},
+	center: {
+		sectionRow: "flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-center lg:gap-24",
+		navInfoWrap: "flex flex-col gap-10 sm:flex-row sm:gap-24",
+		colInner: "items-center text-center",
+		contactGroup: "items-center text-center",
+		contactText: "text-center",
+		contactJustify: "justify-center",
+	},
+	right: {
+		sectionRow: "flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-end",
+		navInfoWrap: "flex flex-col gap-10 sm:flex-row sm:gap-[200px]",
+		colInner: "items-end text-right",
+		contactGroup: "items-end text-right",
+		contactText: "text-right",
+		contactJustify: "justify-end",
+	},
+}[_ca as "left" | "center" | "right"];
+const sectionRowCls = FOOTER_ALIGN.sectionRow;
+const navInfoWrapCls = FOOTER_ALIGN.navInfoWrap;
+const colInnerCls = FOOTER_ALIGN.colInner;
+const contactGroupCls = FOOTER_ALIGN.contactGroup;
+const contactTextCls = FOOTER_ALIGN.contactText;
+const contactJustifyCls = FOOTER_ALIGN.contactJustify;
+// На телефоне ссылки навигации и контактов 14px, заголовок рассылки обычного
+// начертания (у верстальщиков правила в @layer utilities; наши такие же в
+// <style> без слоя не действуют).
+const navSectionParityCls = ` ${ROSE_FOOTER_DESIGNERS.link}`;
+const newsletterParityCls = ` ${ROSE_FOOTER_DESIGNERS.newsletter}`;
 
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика; заголовок колонки — НОВЫЙ элемент, рендерится только
@@ -256,7 +263,7 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 	<div class={footerContainerCls} style={footerPadStyle}>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-20">
 			{newsletterEnabled && (
-			<section class={`flex w-full flex-col gap-5 ${nlSectionAlignCls}`} aria-labelledby="newsletter-heading">
+			<section class={`flex w-full flex-col gap-5 ${nlSectionAlignCls}${newsletterParityCls}`} aria-labelledby="newsletter-heading">
 				<div class={`flex max-w-[1320px] flex-col gap-2 ${nlCopyAlignCls}`}>
 					<h2
 						id="newsletter-heading"
@@ -293,7 +300,7 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 						required
 						placeholder={emailPlaceholder}
 						aria-label="Email"
-						class="min-w-0 flex-1 bg-transparent font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] placeholder:text-[#999999] outline-none"
+						class="min-w-0 flex-1 bg-transparent font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] placeholder:text-[color-mix(in_srgb,rgb(var(--color-text))_40%,rgb(var(--color-bg)))] outline-none"
 					/>
 					<button
 						type="submit"
@@ -312,7 +319,7 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 			)}
 
 			<section
-				class={sectionRowCls}
+				class={`${sectionRowCls}${navSectionParityCls}`}
 				aria-label="Навигация по сайту"
 			>
 				<div class={navInfoWrapCls}>
@@ -323,7 +330,13 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 						data-puck-subsection-index="996"
 						data-puck-subsection-field="navigationColumn"
 					>
-						{navColTitle && (
+						{ownLogo && (
+							<li class="mb-5">
+								<a href="/" class="inline-flex transition-opacity hover:opacity-80">
+									<img src={ownLogo} alt={siteTitle} class={OWN_LOGO_CLS} decoding="async" />
+								</a>
+							</li>
+						)}{navColTitle && (
 							<li>
 								<h3 class={columnTitleCls}>{navColTitle}</h3>
 							</li>

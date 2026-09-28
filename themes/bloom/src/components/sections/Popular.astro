@@ -4,6 +4,7 @@
 // Паритет rose (ui/RoseSectionHeading.astro импортируется тем же приёмом).
 import NtSectionHeading from "../ui/BloomSectionHeading.astro";
 import BloomProductCard from "../products/BloomProductCard.astro";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Popular T13): полная конструкторная схема
 // theme-base PopularProducts.puckConfig поверх разметки верстальщика. Тело +
@@ -32,18 +33,16 @@ const _schemeId =
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
 // заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
-// карточки). Дефолт-текст верстальщика («Главные хиты» + длинный подзаголовок)
-// заменён на Figma-текст. Когда мерчант задал свой heading/text/subtitle —
-// рендерим ЕГО (?? fallback срабатывает только при пустых данных).
-// Пустая строка = «мерчант не задал» (так же трактует платформа,
-// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
-const sectionTitle =
-	((typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title)?.trim() ||
-	"Коллекция товаров";
-const sectionSubtitle =
-	(typeof p.text === "string" ? p.text : p.text?.content) ??
-	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) ??
-	"";
+// карточки). Панельное поле (heading/text), пришедшее строкой — в т.ч.
+// пустой "" (мерчант стёр вручную) — рендерим как есть. Легаси title/subtitle
+// и заглушка темы — только когда поля вовсе нет (undefined, старые ревизии).
+// Раньше `?.trim() || "…"` трактовал "" как «не задано» и подставлял литерал
+// темы обратно (владелец 26.09). Общий помощник контракта §2 —
+// packages/theme-base/runtime/merchant-text.ts.
+const sectionTitle = pickText(p.heading, pickText(p.title, "Коллекция товаров"));
+const sectionSubtitle = pickText(p.text, pickText(p.subtitle, ""));
+// Оба поля стёрты — шапки нет вовсе, без пустой обёртки с отступом до карточек.
+const hasHead = hasText(sectionTitle) || hasText(sectionSubtitle);
 
 // Канон cards 2-24: лимит среза demo-витрины и гидрации (data-cards на гриде).
 // 4 = срез верстальщика (и отсутствие пропа) → дефолт-ветка.
@@ -156,12 +155,19 @@ if (siteId) {
 // подзаголовка (24px) — «поменял заголовок → сбились стили». Прецедент rose
 // Popular: small = литерал верстальщика, ступени идут ВВЕРХ.
 const headingSize = p.headingSize ?? p.heading?.size;
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только размеры и
+// ширина»): «Сейчас в тренде» Bloom-theme @5aae2ad6 — заголовок 18 → md 20
+// в одну строку, сетка 1 → sm 2 → lg «Колонки» с зазором 40 (по горизонтали
+// на lg 16), карточка: 20 между фото и текстом, текстовый блок не ниже 150 с
+// кнопкой внизу, строки leading-normal, старая цена 14. Владелец 25.09: одна
+// версия секции — прежняя ветка удалена.
+const headingDefaultCls = " [&_h2]:!text-[18px] md:[&_h2]:!text-[20px] [&_h2]:!leading-none";
 const headingSizeCls =
 	headingSize === "medium"
 		? " [&_h2]:!text-[38px] max-md:[&_h2]:!text-[24px]"
 		: headingSize === "large"
 			? " [&_h2]:!text-[46px] max-md:[&_h2]:!text-[29px]"
-			: "";
+			: headingDefaultCls;
 // Канон textSize: 'small' (canon-default) и отсутствие = подзаголовок DS
 // дословно (14/18/24) БЕЗ перекрытия; medium → 29px, large → 35px (та же
 // пропорция 1.19/1.44 от базы lg-24; мобильные — от 14). Раньше ступени были
@@ -175,15 +181,18 @@ const textSizeCls =
 			? " [&_p]:!text-[35px] max-md:[&_p]:!text-[20px]"
 			: "";
 // blockDefaults bloom headingAlignment/cardCaptionStyle из theme.json.
+// У края подзаголовок теряет `px-2` заголовка темы (ui/BloomSectionHeading.astro —
+// разметка 1:1 с дизайн-системой, где заголовок по центру). По центру отступ
+// симметричен и не виден; у края он сдвигал подзаголовок на 8px от заголовка и
+// карточек («текст не прижат к левому блоку», владелец). Сторож — замер в
+// браузере: section-heading-alignment.spec.ts.
+const HEAD_ALIGN_CLS: Record<string, string> = {
+	center: " [&_[data-nt=section-heading]]:items-center [&_h2]:!text-center [&_p]:!text-center",
+	right: " [&_[data-nt=section-heading]]:items-end [&_h2]:!text-right [&_p]:!text-right [&_p]:!px-0",
+	left: " [&_[data-nt=section-heading]]:items-start [&_h2]:!text-left [&_p]:!text-left [&_p]:!px-0",
+};
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
-const headAlignCls =
-	headingAlignment === "center"
-		? " [&_[data-nt=section-heading]]:items-center [&_h2]:!text-center [&_p]:!text-center"
-		: headingAlignment === "right"
-			? " [&_[data-nt=section-heading]]:items-end [&_h2]:!text-right [&_p]:!text-right"
-			: headingAlignment === "left"
-				? " [&_[data-nt=section-heading]]:items-start [&_h2]:!text-left [&_p]:!text-left"
-				: "";
+const headAlignCls = HEAD_ALIGN_CLS[headingAlignment] ?? "";
 const headWrapCls = `${headingSizeCls}${textSizeCls}${headAlignCls}`.trim() || undefined;
 
 // Колонки 1-6 (дефолт 3). Применяются с md (768px) и выше через CSS-переменную
@@ -207,7 +216,19 @@ const cardAspectRatio =
 			? "16/9"
 			: "1/1";
 // Моб 2 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
-const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3";
+const gridCls = "grid grid-cols-1 gap-10 sm:grid-cols-2 lg:gap-x-4";
+// «Колонки» у верстальщиков включаются с lg (1024), до него — 2 колонки.
+// Карточка — и SSR, и перерисованная гидрацией (renderCardHtml) — меняется
+// одним правилом по data-nt, поэтому стиль живёт на сетке, а не в карточке.
+const POPULAR_PARITY_CSS = [
+	"@media (min-width:768px) and (max-width:1023.98px){[data-nt=popular-grid][data-cols][data-design-parity]{grid-template-columns:repeat(2,minmax(0,1fr))}}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card]{gap:20px;height:100%}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card]>div:last-child{flex:1 1 auto;min-height:150px;gap:4px}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card] .bloom-product-name+div{margin-bottom:16px}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card] .bloom-product-name+div+*{margin-top:auto}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card] :is(.bloom-product-name,.bloom-product-price,.bloom-product-oldprice){line-height:1.5}",
+	"@media (min-width:640px){[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card] .bloom-product-oldprice{font-size:14px}}",
+].join("");
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС bloom:
@@ -244,8 +265,11 @@ const cardAlignCls =
 			: "text-left";
 
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
-// товара при наведении. Носитель данных: data-image-2 на <li> (demo —
-// gallery[1] верстальщика; реальные товары — images[1], ставит гидрация).
+// товара при наведении. Носитель данных: data-image-2 на <li> — всегда, если у
+// товара есть второе фото: по нему листает свайп на телефоне (runtime/
+// card-photo-swipe.ts) при любой настройке, а наведение — только с настройкой
+// (атрибут data-next-photo на сетке). Demo —
+// gallery[1] верстальщика; реальные товары — images[1], ставит гидрация.
 const nextPhoto = p.nextPhotoOnHover === true || p.nextPhotoOnHover === "true";
 // is:inline + set:html (без define:vars — компилятор секций его не умеет);
 // идемпотентность data-np-hydrated; без data-image-2 скрипт — no-op без ошибок.
@@ -359,6 +383,9 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Кнопка «Смотреть все» скрыта «глазом» → не оставляем и пустую строку под
+// ней: иначе зазор gap-10 висит под сеткой (+40 к высоте секции).
+const viewAllEmptyRow = isFieldHidden("viewAll");
 
 ---
 
@@ -370,7 +397,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
-		{!isFieldHidden('heading') && (
+		{!isFieldHidden('heading') && hasHead && (
 		<div
 			data-animate
 			class={headWrapCls}
@@ -389,6 +416,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-animate-delay="0.1s"
 			data-nt="popular-grid"
 			data-cols={String(colsN)}
+			data-design-parity=""
 			style={gridStyle}
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
@@ -407,7 +435,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			    live освежает данные. */}
 			{realProducts.length > 0
 				? realProducts.map((product: any) => (
-						<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
+						<li data-product-id={product.id} data-image-2={product.gallery?.[1]}>
 							<BloomProductCard
 								product={product}
 								aspectRatio={cardAspectRatio}
@@ -451,7 +479,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							</article>
 						</li>
 					))}
-		</ul>{viewAllShow && (
+		</ul>{viewAllShow && !viewAllEmptyRow && (
 			<div class="flex w-full justify-center">
 				{!isFieldHidden('viewAll') && (
 				<a
@@ -467,7 +495,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			</div>
 		)}
 	</div>
-</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{cardQuickAdd === "cart" && <script is:inline set:html={QA_STEPPER_JS} />}
+</section><style is:inline set:html={POPULAR_PARITY_CSS} />{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{cardQuickAdd === "cart" && <script is:inline set:html={QA_STEPPER_JS} />}
 
 <script>
 	import {
@@ -507,7 +535,6 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		for (const grid of grids) {
 			const limitRaw = Number(grid.getAttribute("data-cards"));
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
-			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const collectionRef = grid.getAttribute("data-collection");
 			// Коллекция выбрана → её товары; не выбрана → первые N товаров магазина.
 			// Оставлять заглушки при наличии товаров нельзя (правило владельца).
@@ -525,7 +552,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			grid.innerHTML = items
 				.map((p) => {
 					const img2 =
-						wantNextPhoto && Array.isArray(p.images) && p.images[1]
+						Array.isArray(p.images) && p.images[1]
 							? ` data-image-2="${escapeHtml(p.images[1])}"`
 							: "";
 					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p, cardAspect, qaMode, qaText)}</li>`;

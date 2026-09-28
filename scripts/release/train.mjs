@@ -28,6 +28,8 @@ import { fileURLToPath } from 'node:url';
 import { run, sh, git, gitOk, tail, dur } from './lib/proc.mjs';
 import { collectGuards, classify, otherWorkflows } from './lib/ci-guards.mjs';
 import { runGuards, formatGuardTable } from './lib/guard-runner.mjs';
+import { BUILD_SEQUENCE } from './lib/build-sequence.mjs';
+import { acquireMachineLockOrWarn } from './lib/machine-lock.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TOOLS = resolve(homedir(), '.claude/projects/-Users-alexey-projects-merfy/tools');
@@ -50,11 +52,11 @@ const HELP = `
   --branch <ветка>       ветка в поезд; можно повторять (--branch a --branch b)
   --branches a,b,c       то же одной строкой
   --train-branch <имя>   имя собираемой ветки (по умолчанию train/<дата>-<время>)
-  --onto <ref>           база (по умолчанию origin/main)
+  --onto <ref>           база (по умолчанию origin/dev)
   без --branch           поездом считается ТЕКУЩАЯ ветка
 
 действия (по умолчанию не делается НИЧЕГО необратимого)
-  --push                 запушить в main и дождаться CI
+  --push                 запушить в dev и дождаться CI
   --publish              после зелёного CI переопубликовать стенды (нужен --push)
 
 объём проверок
@@ -66,7 +68,7 @@ const HELP = `
   --skip-gate            не гонять pre-push-гейт; вместе с --push запрещено
 
 прочее
-  --max-rounds <n>       сколько раз перезаходить, если main уехал (по умолч. 2)
+  --max-rounds <n>       сколько раз перезаходить, если dev уехал (по умолч. 2)
   --ci-timeout <мин>     сколько ждать CI (по умолчанию 30)
   --publish-timeout <мин> сколько ждать витрины (по умолчанию 10)
   --stands <файл>        список стендов (по умолчанию ${TOOLS}/stands.json)
@@ -77,7 +79,7 @@ const HELP = `
 
 function parseArgs(argv) {
   const o = {
-    branches: [], trainBranch: null, onto: 'origin/main', push: false, publish: false,
+    branches: [], trainBranch: null, onto: 'origin/dev', push: false, publish: false,
     guards: 'ci', extraGuards: [], skipBuild: false, skipGate: false, maxRounds: 2,
     ciTimeout: 30, publishTimeout: 10, stands: resolve(TOOLS, 'stands.json'),
     gate: resolve(TOOLS, 'pre-push.sh'), json: null, verbose: false,
@@ -131,15 +133,15 @@ function stepEnvironment(o) {
       tail(dirty, 12));
   }
   const branch = gitOk(root, 'rev-parse', '--abbrev-ref', 'HEAD');
-  if (branch === 'main') {
-    throw new Stop(1, 'вы на main', 'поезд собирается на своей ветке: git switch -c train/<имя> origin/main');
+  if (branch === 'dev') {
+    throw new Stop(1, 'вы на dev', 'поезд собирается на своей ветке: git switch -c train/<имя> origin/dev');
   }
   if (o.guards === 'none' && o.push) throw new Stop(1, '--guards none вместе с --push', 'заливка без гардов запрещена: уберите один из флагов');
   if (o.skipGate && o.push) throw new Stop(1, '--skip-gate вместе с --push', 'заливка без гейта запрещена: уберите один из флагов');
   if (o.publish && !o.push) say('   ⚠ --publish без --push: публиковать будет нечего, флаг игнорируется');
   const slug = repoSlug(root);
   // Разводящий скрипт уезжает вместе с checkout: поезд собирается на ветке от
-  // origin/main, где scripts/release ещё нет, и python3 не нашёл бы файл ровно
+  // origin/dev, где scripts/release ещё нет, и python3 не нашёл бы файл ровно
   // в момент конфликта. Копия во временной папке от переключения веток не зависит.
   const resolver = join(mkdtempSync(join(tmpdir(), 'release-train-')), 'resolve-merge.py');
   copyFileSync(resolve(HERE, 'resolve-merge.py'), resolver);
@@ -157,9 +159,9 @@ function repoSlug(root) {
 }
 
 function stepCompose(o, ctx) {
-  step('свежий main и состав поезда');
-  const f = git(ctx.root, 'fetch', 'origin', 'main');
-  if (f.code !== 0) throw new Stop(2, 'git fetch origin main не прошёл', 'проверьте сеть/доступ к origin', tail(f.all, 10));
+  step('свежий dev и состав поезда');
+  const f = git(ctx.root, 'fetch', 'origin', 'dev');
+  if (f.code !== 0) throw new Stop(2, 'git fetch origin dev не прошёл', 'проверьте сеть/доступ к origin', tail(f.all, 10));
   const base = gitOk(ctx.root, 'rev-parse', o.onto);
   say(`   ${o.onto} = ${base.slice(0, 8)} (${gitOk(ctx.root, 'log', '-1', '--format=%s', base).slice(0, 60)})`);
 
@@ -182,10 +184,10 @@ function stepCompose(o, ctx) {
     members.push({ name: b, ref, commits, alreadyIn });
   }
   for (const m of members) {
-    say(`   ${m.alreadyIn ? '— уже в main, пропущена:' : '+ в поезд:'} ${m.name}${m.alreadyIn ? '' : ` (${m.commits} коммит(ов))`}`);
+    say(`   ${m.alreadyIn ? '— уже в dev, пропущена:' : '+ в поезд:'} ${m.name}${m.alreadyIn ? '' : ` (${m.commits} коммит(ов))`}`);
   }
   const live = members.filter((m) => !m.alreadyIn);
-  if (!live.length) return { nothing: true, base, members, message: 'все названные ветки уже в main' };
+  if (!live.length) return { nothing: true, base, members, message: 'все названные ветки уже в dev' };
 
   const train = o.trainBranch ?? `train/${new Date().toISOString().slice(0, 10)}-${new Date().toTimeString().slice(0, 5).replace(':', '')}`;
   if (git(ctx.root, 'rev-parse', '--verify', train).code === 0) {
@@ -259,14 +261,6 @@ function stepMerge(o, ctx, plan, round) {
 }
 const KNOWN_CONFLICTS = ['docs/theme-work/STATUS.md', 'docs/theme-work/WORKLOG.md', '.github/workflows/ci.yml', 'package.json', 'conformance/inventory/satin.generated.json'];
 
-const BUILD_SEQUENCE = [
-  ['pnpm build', 'сборка сервиса'],
-  ['pnpm build:blocks', 'блоки Astro'],
-  ['pnpm build:theme-sections satin', 'секции satin'],
-  ['pnpm exec tsx scripts/run-theme-build.ts satin', 'НАСТОЯЩАЯ сборка темы satin — по ней считается кандидат инвентаря'],
-  ['pnpm build:theme-sections:all', 'секции всех пяти тем — иначе снимкам не с чем сравнивать'],
-  ['pnpm build:preview-tailwind', 'бандл превью — без него часть гардов даёт ноль проверок'],
-];
 
 function stepBuild(o, ctx) {
   step('полная пересборка в порядке CI');
@@ -378,31 +372,31 @@ function stepGate(o, ctx) {
 }
 
 function stepFreshness(o, ctx, plan) {
-  step('свежесть main');
-  git(ctx.root, 'fetch', 'origin', 'main');
+  step('свежесть dev');
+  git(ctx.root, 'fetch', 'origin', 'dev');
   const now = gitOk(ctx.root, 'rev-parse', o.onto);
   if (now === plan.base) { say(`   ${o.onto} на месте: ${now.slice(0, 8)} — можно заливать`); return { drifted: false, base: now }; }
   const newCommits = Number(gitOk(ctx.root, 'rev-list', '--count', `${plan.base}..${now}`));
-  say(`   ⚠ main уехал, пока шли проверки: ${plan.base.slice(0, 8)} → ${now.slice(0, 8)} (+${newCommits} коммит(ов))`);
+  say(`   ⚠ dev уехал, пока шли проверки: ${plan.base.slice(0, 8)} → ${now.slice(0, 8)} (+${newCommits} коммит(ов))`);
   return { drifted: true, base: now, newCommits };
 }
 
 function stepPush(o, ctx, plan) {
-  step('пуш в main');
+  step('пуш в dev');
   const head = gitOk(ctx.root, 'rev-parse', 'HEAD');
   const commits = Number(gitOk(ctx.root, 'rev-list', '--count', `${plan.base}..HEAD`));
   if (!o.push) {
     say(`   НЕ ПУШУ — нет флага --push. Это режим по умолчанию.`);
-    say(`   получилось бы: git push origin HEAD:main`);
+    say(`   получилось бы: git push origin HEAD:dev`);
     say(`   уехало бы: ${commits} коммит(ов), голова ${head.slice(0, 8)}`);
     say(`   состав: ${plan.members.filter((m) => !m.alreadyIn).map((m) => m.name).join(', ')}`);
     return { pushed: false, head, commits };
   }
-  const r = git(ctx.root, 'push', 'origin', 'HEAD:main');
+  const r = git(ctx.root, 'push', 'origin', 'HEAD:dev');
   if (r.code !== 0) {
-    throw new Stop(9, 'пуш отклонён', 'скорее всего main уехал прямо сейчас — запустите поезд заново, он до мержит свежий main', tail(r.all, 15));
+    throw new Stop(9, 'пуш отклонён', 'скорее всего dev уехал прямо сейчас — запустите поезд заново, он домержит свежий dev', tail(r.all, 15));
   }
-  say(`   запушено: ${commits} коммит(ов), main = ${head.slice(0, 8)}`);
+  say(`   запушено: ${commits} коммит(ов), dev = ${head.slice(0, 8)}`);
   return { pushed: true, head, commits };
 }
 
@@ -483,7 +477,7 @@ function summary(o, ctx, plan, res) {
   say('\n══════════════════ СВОДКА ══════════════════');
   const live = plan.members.filter((m) => !m.alreadyIn);
   say(`ветки в поезде: ${live.length ? live.map((m) => `${m.name} (${m.commits})`).join(', ') : '—'}`);
-  if (plan.members.some((m) => m.alreadyIn)) say(`уже были в main: ${plan.members.filter((m) => m.alreadyIn).map((m) => m.name).join(', ')}`);
+  if (plan.members.some((m) => m.alreadyIn)) say(`уже были в dev: ${plan.members.filter((m) => m.alreadyIn).map((m) => m.name).join(', ')}`);
   say(`ветка поезда:   ${plan.train}`);
   say(`база:           ${plan.base.slice(0, 8)}`);
   say(`голова:         ${res.push?.head?.slice(0, 8) ?? '—'}${res.push?.pushed ? ' — ЗАЛИТА В MAIN' : ' (не залита: нет --push)'}`);
@@ -519,15 +513,25 @@ async function main() {
     res.merge = stepMerge(o, ctx, plan, round);
     res.build = stepBuild(o, ctx);
     res.inventory = stepInventory(o, ctx);
-    res.guards = stepGuards(o, ctx);
-    res.gate = stepGate(o, ctx);
+    // Гарды и гейт — самая тяжёлая часть: встаём в очередь на машину, чтобы не
+    // делить ядра с соседним прогоном (spec 115). Дети видят HELD и не встают
+    // в очередь второй раз.
+    const lock = await acquireMachineLockOrWarn({ label: `поезд ${plan.train}`, log: say });
+    if (!lock.disabled) process.env.MERFY_CHECKS_LOCK_HELD = '1';
+    try {
+      res.guards = stepGuards(o, ctx);
+      res.gate = stepGate(o, ctx);
+    } finally {
+      lock.release();
+      if (!lock.disabled) delete process.env.MERFY_CHECKS_LOCK_HELD;
+    }
     const fresh = stepFreshness(o, ctx, plan);
     if (!fresh.drifted) break;
     if (round === o.maxRounds) {
-      throw new Stop(8, `main уезжает быстрее, чем идут проверки (кругов: ${o.maxRounds})`,
-        'дождитесь паузы в чужих заливках и запустите поезд заново — пушить поверх уехавшего main нельзя');
+      throw new Stop(8, `dev уезжает быстрее, чем идут проверки (кругов: ${o.maxRounds})`,
+        'дождитесь паузы в чужих заливках и запустите поезд заново — пушить поверх уехавшего dev нельзя');
     }
-    say(`   возвращаюсь к шагу 2: домержу свежий main и перепроверю всё заново (круг ${round + 1} из ${o.maxRounds})`);
+    say(`   возвращаюсь к шагу 2: домержу свежий dev и перепроверю всё заново (круг ${round + 1} из ${o.maxRounds})`);
     plan = { ...plan, base: fresh.base };
   }
   res.push = stepPush(o, ctx, plan);

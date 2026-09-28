@@ -27,11 +27,15 @@ const { title, subtitle, titleId } = Astro.props;
 ---
 
 <div class="flex max-w-[90vw] flex-col items-center gap-[5px]" data-nt="section-heading">
-  <h2
-    id={titleId}
- class="text-center font-comfortaa text-xl md:text-2xl lg:text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]"
-    set:html={inlineFormat(title)}
-  ></h2>
+  {
+    title.trim() && (
+      <h2
+        id={titleId}
+        class="text-center font-comfortaa text-xl md:text-2xl lg:text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]"
+        set:html={inlineFormat(title)}
+      />
+    )
+  }
   {
     subtitle && (
       <p

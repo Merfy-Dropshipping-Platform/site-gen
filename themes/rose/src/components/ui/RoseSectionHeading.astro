@@ -6,6 +6,7 @@
 // (XSS-safe allow-list). Разметка/классы 1:1 с оригиналом (variant default/rose),
 // чтобы витрина не поехала. Порты импортируют этот файл под именем NtSectionHeading.
 import { inlineFormat } from "../../lib/rich-text";
+import { hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 interface Props {
   title: string;
@@ -16,8 +17,15 @@ interface Props {
 
 const { title, subtitle, titleId, variant = "default" } = Astro.props;
 const isRose = variant === "rose";
+// Стёртые заголовок и подзаголовок разом → нет ничего видимого, и сама
+// обёртка не рисуется (иначе на месте текста остаётся gap-пустота, см.
+// SECTION-CONTRACT.md §2).
+const showTitle = hasText(title);
+const showSubtitle = hasText(subtitle);
 ---
 
+{
+  (showTitle || showSubtitle) && (
 <div
   class:list={[
     "flex max-w-[90vw] flex-col items-center",
@@ -26,6 +34,7 @@ const isRose = variant === "rose";
   data-nt="section-heading"
   data-nt-variant={variant}
 >
+  {showTitle && (
   <h2
     id={titleId}
     class:list={[
@@ -51,8 +60,9 @@ const isRose = variant === "rose";
     ]}
     set:html={inlineFormat(title)}
   ></h2>
+  )}
   {
-    subtitle && (
+    showSubtitle && (
       <p
         class:list={[
           "text-center font-manrope font-normal text-[rgb(var(--color-muted,153_153_153))]",
@@ -65,3 +75,5 @@ const isRose = variant === "rose";
     )
   }
 </div>
+  )
+}

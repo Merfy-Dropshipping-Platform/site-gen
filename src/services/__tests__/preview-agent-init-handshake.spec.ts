@@ -179,6 +179,41 @@ describe("превью: правка до 'init' не теряется", () => {
     expect(ctx.posted.filter((m) => m.type === "ready").length).toBe(afterInit);
   });
 
+  it("смена цветов/шрифтов ДО 'init' доезжает после него (баг 26.09)", async () => {
+    const ctx = bootAgent();
+    ctx.send({ type: "update-tokens", themeSettings: { buttonRadius: 12 } });
+    await tick();
+    expect(ctx.fetches).toHaveLength(0);
+
+    ctx.send(INIT);
+    await tick();
+    await tick();
+    expect(
+      ctx.fetches.filter((u) => u.includes("/preview/tokens-css")),
+    ).toHaveLength(1);
+  });
+
+  it("из нескольких смен токенов до 'init' уходит одна — последняя", async () => {
+    const ctx = bootAgent();
+    const bodies: string[] = [];
+    const realFetch = globalThis.fetch;
+    const recordTokens = (url: string, init?: { body?: string }) => {
+      if (String(url).includes("/preview/tokens-css")) {
+        bodies.push(String(init?.body));
+      }
+      return realFetch(url as never);
+    };
+    (globalThis as unknown as { fetch: unknown }).fetch = recordTokens;
+    ctx.send({ type: "update-tokens", themeSettings: { buttonRadius: 4 } });
+    ctx.send({ type: "update-tokens", themeSettings: { buttonRadius: 24 } });
+    await tick();
+    ctx.send(INIT);
+    await tick();
+    await tick();
+    expect(bodies).toHaveLength(1);
+    expect(JSON.parse(bodies[0]).themeSettings).toEqual({ buttonRadius: 24 });
+  });
+
   it("обычная правка ПОСЛЕ 'init' работает как раньше", async () => {
     const ctx = bootAgent();
     ctx.send(INIT);

@@ -12,6 +12,7 @@
  *
  * Each stage updates site_build.status and emits progress events via RabbitMQ.
  */
+import { buildEnvForThemes } from "./api-url";
 import { Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom } from "rxjs";
@@ -37,6 +38,14 @@ import { writeCatalogRedirects } from "./catalog-redirects";
 import { DocumentAdapter } from "../content/document.adapter";
 import { StoreContentService } from "../content/store-content.service";
 import { applyFooterData } from "../utils/footer-data";
+import { policyUrlsFor, privacyPolicyUrlFor } from "../utils/footer-data";
+import {
+  COOKIE_BANNER_GLOBAL,
+  PRIVACY_POLICY_URL_GLOBAL,
+  cookieBannerGlobal,
+} from "../../packages/theme-base/runtime/cookie-consent";
+import { POLICY_URLS_GLOBAL } from "../../packages/theme-base/runtime/legal-links";
+import { inlineScriptJson } from "../common/inline-script-json";
 import { applyPageBinding } from "../render/page-transclude";
 import {
   buildScaffold,
@@ -275,12 +284,12 @@ export async function writeBuildStamp(
 
 export async function injectGlobalsIntoDist(
   distDir: string,
-  globals: Record<string, string>,
+  globals: Record<string, unknown>,
 ): Promise<number> {
   const entries2 = Object.entries(globals);
   if (entries2.length === 0) return 0;
   const script = entries2
-    .map(([k, v]) => `window.${k} = ${JSON.stringify(v)};`)
+    .map(([k, v]) => `window.${k} = ${inlineScriptJson(v)};`)
     .join("");
   const htmlFiles: string[] = [];
   async function findHtml(dir: string) {
@@ -741,7 +750,7 @@ export function runCommand(
     const proc = spawn(cmd, args, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, NODE_ENV: "production", ...extraEnv },
+      env: { ...process.env, NODE_ENV: "production", ...buildEnvForThemes(), ...extraEnv },
       timeout: timeoutMs,
     });
 
@@ -1206,11 +1215,14 @@ export async function runBuildPipeline(
       // Spec 101: legal-страницы (/legal/<slug>) рендерятся блоком «Страница» с
       // живым контентом мерчанта из site_policy (вместо статичного плейсхолдера
       // темы). Изолировано: сбой не валит билд — страница остаётся как в дисте.
+      // Те же строки нужны баннеру cookie (признак политики) — держим их ниже.
+      let sitePolicies: Array<{ type: string; content: string | null }> = [];
       try {
         const legalPolicies = await deps.db
           .select()
           .from(deps.schema.sitePolicy)
           .where(eq(deps.schema.sitePolicy.siteId, ctx.siteId));
+        sitePolicies = legalPolicies;
         const legalCount = await composeLegalPagesIntoDist(ctx, bareTheme, legalPolicies);
         logger.log(
           `[themes-v2] Composed ${legalCount} legal page(s) via «Страница» for site ${params.siteId}`,
@@ -1302,6 +1314,46 @@ export async function runBuildPipeline(
         logger.log(`[themes-v2] Injected __MERFY_THEME__="${bareTheme}", __MERFY_VARIANT_SWATCH__="${variantSwatch ?? "-"}" into ${themeGlobals} HTML files for site ${params.siteId}`);
       } catch (thErr) {
         logger.warn(`[themes-v2] theme global inject failed: ${(thErr as Error)?.message ?? thErr}`);
+      }
+      // Баннер согласия на cookie (theme-base/primitives/CookieConsent.astro):
+      // ссылка «Политике конфиденциальности» — только если продавец написал
+      // политику. Адрес — тем же правилом, что ссылка подвала; нет политики —
+      // глобала нет, и рантайм баннера убирает фразу со ссылкой. Зеркало —
+      // injectPreviewGlobals в превью конструктора.
+      try {
+        const privacyUrl = privacyPolicyUrlFor(sitePolicies, bareTheme);
+        if (privacyUrl) {
+          const n = await injectGlobalsIntoDist(ctx.distDir, { [PRIVACY_POLICY_URL_GLOBAL]: privacyUrl });
+          logger.log(`[themes-v2] Injected ${PRIVACY_POLICY_URL_GLOBAL}="${privacyUrl}" into ${n} HTML files for site ${params.siteId}`);
+        }
+      } catch (ppErr) {
+        logger.warn(`[themes-v2] privacy policy global inject failed: ${(ppErr as Error)?.message ?? ppErr}`);
+      }
+      // Тексты и кнопки баннера cookie из «Настроек темы» → «Баннер»
+      // (runtime/cookie-consent.ts). Продавец баннер не трогал — глобала нет,
+      // баннер ровно прежний. Вкл/выкл, схема и расположение едут tokens.css.
+      // Зеркало — injectPreviewGlobals / синтетический шелл в превью.
+      try {
+        const banner = cookieBannerGlobal((ctx.revisionData as Record<string, unknown> | null)?.themeSettings);
+        if (banner) {
+          const n = await injectGlobalsIntoDist(ctx.distDir, { [COOKIE_BANNER_GLOBAL]: banner });
+          logger.log(`[themes-v2] Injected ${COOKIE_BANNER_GLOBAL} into ${n} HTML files for site ${params.siteId}`);
+        }
+      } catch (cbErr) {
+        logger.warn(`[themes-v2] cookie banner global inject failed: ${(cbErr as Error)?.message ?? cbErr}`);
+      }
+      // Ссылки юридической строки «Спасибо за заказ» и чекаута
+      // (runtime/legal-links.ts): адреса ЗАПОЛНЕННЫХ политик тем же правилом,
+      // что подвал и баннер выше. Ни одной политики — глобала нет, фразы
+      // остаются текстом. Зеркало — withPolicyGlobals в превью конструктора.
+      try {
+        const policyUrls = policyUrlsFor(sitePolicies, bareTheme);
+        if (Object.keys(policyUrls).length > 0) {
+          const n = await injectGlobalsIntoDist(ctx.distDir, { [POLICY_URLS_GLOBAL]: policyUrls });
+          logger.log(`[themes-v2] Injected ${POLICY_URLS_GLOBAL}=${JSON.stringify(policyUrls)} into ${n} HTML files for site ${params.siteId}`);
+        }
+      } catch (puErr) {
+        logger.warn(`[themes-v2] policy urls global inject failed: ${(puErr as Error)?.message ?? puErr}`);
       }
       // Штамп сборки: из какого коммита sites и когда собрана эта витрина.
       try {

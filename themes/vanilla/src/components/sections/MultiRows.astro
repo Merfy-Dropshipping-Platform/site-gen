@@ -189,25 +189,16 @@ const alignCls =
 			? "items-end text-right"
 			: "items-start text-left";
 
-// Канон buttonStyle: solid/primary/black/отсутствие = solid-CTA манеры §3
-// (bg полотна №2 #3A4530, белый текст, h-12 px-4 Arsenal 16 uppercase);
-// outlined = бордер цвета заливки на прозрачном; white = кнопка-2 (белая
-// заливка, текст цвета полотна №2). Радиус 0 ≡ var(--radius-button,0px);
-// active:scale в манере НЕ используется (§3).
-const btnBase =
-	"inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal transition-opacity hover:opacity-90";
-// Канонное значение панели — `secondary` («Дополнительная»), и оно обязано
-// попадать СЮДА. Порт был написан на словаре верстальщиков (white/black/
-// outlined), которого в панели нет: ветки не срабатывали, и «Стиль кнопки»
-// рисовал основную кнопку при любом выборе. Замер локальным рендерером 20.09:
-// основная и дополнительная давали одни и те же токены. Легаси-слова оставлены
-// — они доезжают до порта СЫРЫМИ из старых ревизий (проверено на живом стенде).
+// «Стиль кнопки» ряда выбирает РОЛЬ: «Дополнительная» (`secondary`, легаси
+// `white`) ← поля «Дополнительной кнопки» схемы, остальное ← «Основной». Цвета
+// даёт правило роли (data-scheme-button, src/themes/scheme-buttons.ts), у порта —
+// только каркас. Легаси-слова доезжают до порта СЫРЫМИ из старых ревизий
+// (проверено на живом стенде 20.09), поэтому остаются в списке.
+// Радиус 0 ≡ var(--radius-button,0px); active:scale в манере НЕ используется (§3).
 const btnCls =
-	p.buttonStyle === "outlined"
-		? `${btnBase} border border-[rgb(var(--color-button-bg,58_69_48))] bg-transparent text-[rgb(var(--color-button-bg,58_69_48))]`
-		: p.buttonStyle === "white" || p.buttonStyle === "secondary"
-			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,58_69_48))]`
-			: `${btnBase} bg-[rgb(var(--color-button-bg,58_69_48))] text-[rgb(var(--color-button-text,255_255_255))]`;
+	"inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal transition-opacity hover:opacity-90";
+const SECONDARY_STYLES = ["secondary", "white"];
+const btnRole = SECONDARY_STYLES.includes(String(p.buttonStyle)) ? "secondary" : "primary";
 
 // Канон containerEnabled (toggle; puckConfig готов). ИСПРАВЛЕНИЕ (per-element,
 // эталон bloom MultiColumns): ВКЛ → surface-бокс манеры vanilla (#ECEBE7,
@@ -355,7 +346,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								/>
 							)}
 							{r.btnText && (
-								<a href={r.btnHref} class={`mt-10 ${btnCls}`}>
+								<a href={r.btnHref} class={`mt-10 ${btnCls}`} data-scheme-button={btnRole}>
 									{r.btnText}
 								</a>
 							)}

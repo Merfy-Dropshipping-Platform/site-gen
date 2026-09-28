@@ -15,7 +15,7 @@
  *   pnpm qa:probe phantom  --theme flux --class flux-container
  *   pnpm qa:probe phantom  --theme flux --block Product --marker attr:data-cfg-name
  *   pnpm qa:probe geometry --url https://<стенд> --marker css:.flux-container
- *   pnpm qa:probe geometry --theme flux --block Product --marker css:.flux-container --vs rose
+ *   pnpm qa:probe geometry --theme flux --block Product --marker css:.flux-container-designers --vs rose
  *   pnpm qa:probe reveal   --url https://<стенд> --what search --marker "#header-search-panel"
  */
 import {

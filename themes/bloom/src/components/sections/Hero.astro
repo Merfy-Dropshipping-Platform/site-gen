@@ -3,6 +3,8 @@ import { inlineFormat } from "../../lib/rich-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import BloomPicture from "../img/BloomPicture.astro";
 import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Hero): читаем канон-схему theme-base
 // Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim,
@@ -25,20 +27,27 @@ const _schemeId =
 			? String(_rawScheme).replace("scheme-", "")
 			: "";
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
-// Пустая строка после coerce/adapt ≠ «не задано» для ?? — trim → фолбэк верстальщика.
-const pickText = (...vals: unknown[]) => {
+// §2 контракта секции (packages/theme-base/runtime/merchant-text.ts): панельное
+// поле пришло строкой (в т.ч. пустой "" — мерчант стёр вручную) → рендерим как
+// есть. Легаси-поле/заглушка темы — ТОЛЬКО когда поля вовсе нет (undefined,
+// старые ревизии).
+const title = pickText(p.heading, pickText(p.title, "Искусство заботы о себе"));
+const subtitle = pickText(
+	p.text,
+	pickText(p.subtitle, "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам"),
+);
+// Кнопка — вне задачи (общий бриф §14: «кнопки не входят в задачу»). Поведение
+// дословно HEAD: "" считается «не задано» и падает в дефолт темы, кнопка
+// никогда не рисуется пустой плашкой (в отличие от заголовка/текста выше).
+// Нормализация coerceHeroProps (page-blocks.ts) подставляет ревизиям без
+// кнопки cta:{text:''} — trim-фолбэк ниже к этому не чувствителен.
+const pickButtonText = (...vals: unknown[]) => {
 	for (const v of vals) {
 		if (typeof v === "string" && v.trim()) return v;
 	}
 	return undefined;
 };
-const title =
-	pickText(p.heading?.text, p.title) ?? "Искусство заботы о себе";
-const subtitle =
-	pickText(p.text?.content, p.subtitle) ??
-	"Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам";
-const ctaText =
-	pickText(p.primaryButton?.text, p.cta?.text, p.ctaText) ?? "Начать ритуал";
+const ctaText = pickButtonText(p.primaryButton?.text, p.cta?.text, p.ctaText) ?? "Начать ритуал";
 const ctaLink =
 	p.primaryButton?.link?.href ??
 	p.primaryButton?.link ??
@@ -125,9 +134,24 @@ const backgroundImage2 = heroSlots.secondary || undefined;
 // Правило НЕ здесь — общий источник packages/theme-base/styles/hero-over-photo.css
 // (подключён в src/styles/global.css), классы hero-over-photo-heading/-text; своих
 // литералов цвета у порта больше нет. Читаемость держит ЗАТЕМНЕНИЕ ниже по
-// разметке: постоянный градиент from-black/45 to-black/10 над фото + ползунок
-// «Затемнение» (overlay). Контейнер (boxed) сильнее — переключает на тёмный
-// через [&_h1]/[&_p] (important).
+// разметке — ТОЛЬКО ползунок «Затемнение» (overlay), одинаково на всех
+// ширинах; постоянного градиента над фото больше нет (владелец 25.09: «если
+// 0 — то и там и там светло»). Контейнер (boxed) сильнее — переключает на
+// тёмный через [&_h1]/[&_p] (important).
+// Владелец 25.09: одна версия секции — прежняя ветка удалена.
+// Кегль и высота строки, когда «Размер заголовка»/«Размер текста» НЕ заданы
+// (в панели у них нет значения по умолчанию — панель их не вписывает).
+// Верстальщики (Bloom-theme @5aae2ad6, Hero.astro): заголовок 14 → md 20, текст
+// 12 → md 16, обе строки leading-normal.
+const HERO_TYPE_UNSET = {
+	heading: "hero-animate-1 font-urbanist text-[14px] font-normal leading-normal hero-over-photo-heading md:text-[20px]",
+	text: "hero-animate-2 font-inter text-[12px] font-light leading-normal hero-over-photo-text md:text-[16px]",
+};
+// Вариант «Большой» — 18/20 и 14/16 (владелец 25.09: «Большой» не мельче «Среднего»).
+const HERO_TYPE_LARGE = {
+	heading: "hero-animate-1 font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]",
+	text: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] hero-over-photo-text md:text-[16px]",
+};
 const headingSize = p.heading?.size;
 // Канал var(--size-hero-heading) СНЯТ (владелец, 16.09 — «верни типографику»,
 // сверка с состоянием до 21473d98). 21473d98 подключил ползунок «Кегль
@@ -137,19 +161,24 @@ const headingSize = p.heading?.size;
 // эту настройку (48px вместо 20px), хотя дефолт-ветка сама по себе не
 // затронута. Заголовок снова читает ТОЛЬКО литерал вёрстки (18px/md:20px), как
 // у flux/satin/vanilla — их «Кегль заголовка Hero» тоже не подключён к рендеру.
-const headingCls =
-	headingSize === "small"
-		? "hero-animate-1 font-urbanist text-[13px] font-normal leading-none hero-over-photo-heading md:text-[14px]"
-		: headingSize === "medium"
-			? "hero-animate-1 font-urbanist text-[15px] font-normal leading-none hero-over-photo-heading md:text-[17px]"
-			: "hero-animate-1 font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]";
+// Владелец 25.09: явно выбранный размер всегда рисует СВОЙ вариант. Раньше
+// «Большой» падал в ветку «не задано» и получал кегли верстальщиков:
+// заголовок на телефоне 14px — меньше «Среднего» (15), текст 12px — равен
+// «Среднему». Теперь «Большой» — свои 18/20 и 14/16 (сторож
+// panel-size-order.spec.ts).
+const HEADING_CLS: Record<string, string> = {
+	small: "hero-animate-1 font-urbanist text-[13px] font-normal leading-none hero-over-photo-heading md:text-[14px]",
+	medium: "hero-animate-1 font-urbanist text-[15px] font-normal leading-none hero-over-photo-heading md:text-[17px]",
+	large: HERO_TYPE_LARGE.heading,
+};
+const headingCls = HEADING_CLS[headingSize] ?? HERO_TYPE_UNSET.heading;
 const textSize = p.text?.size;
-const subtitleCls =
-	textSize === "small"
-		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] hero-over-photo-text md:text-[11px]"
-		: textSize === "medium"
-			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] hero-over-photo-text md:text-[14px]"
-			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] hero-over-photo-text md:text-[16px]";
+const SUBTITLE_CLS: Record<string, string> = {
+	small: "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] hero-over-photo-text md:text-[11px]",
+	medium: "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] hero-over-photo-text md:text-[14px]",
+	large: HERO_TYPE_LARGE.text,
+};
+const subtitleCls = SUBTITLE_CLS[textSize] ?? HERO_TYPE_UNSET.text;
 // «Размер» → высота секции (вьюпорт). Раньше высоту Hero диктовал aspect-[...] на
 // height-div'е, перебивая min-h от size → регулятор «Размер» не влиял (паритет бага
 // rose). Фикс: aspect убран с обоих height-div'ов (empty + filled), высоту ведёт
@@ -157,39 +186,44 @@ const subtitleCls =
 // (aspect 1920/925 на десктопе) — подняты значения и добавлены брейкпоинты; medium/
 // small заметно ниже. Дефолт (p.size не задан) = large.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
-// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): геометрия
+// Как у верстальщиков (владелец 23.09: «как у верстальщиков, только стили»): геометрия
 // по актуальной вёрстке Bloom-theme @5aae2ad6 (правка 8058391 от 14.06, «adaptive
 // hero per Figma»). Блок — пропорция по ширине экрана, одно фото вписано по высоте
 // (лицо целиком), а не заливает блок: раньше на широком окне фото было в 2,3 раза
 // крупнее и видны были только глаза и нос. «Размер» работает поверх: «Большой» =
 // пропорция верстальщиков, «Средний» и «Маленький» — та же пропорция ниже в 0,8 и
-// 0,6 раза, как соотносились прежние высоты 620 / 500 / 380. Без признака — прежняя
-// лестница высот и заливка. Признак ставит sites (page-blocks `designParityFlag`).
-const designParity = p.__designParity === true;
-const HERO_HEIGHT_CLS = {
-	designers: {
-		large: "min-h-[560px] aspect-[375/716] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]",
-		medium: "min-h-[448px] aspect-[375/573] sm:aspect-[768/774] md:aspect-[1280/774] xl:aspect-[1920/740]",
-		small: "min-h-[336px] aspect-[375/430] sm:aspect-[768/581] md:aspect-[1280/581] xl:aspect-[1920/555]",
-	},
-	legacy: {
-		large: "min-h-[min(80svh,620px)] sm:min-h-[600px] md:min-h-[620px] xl:min-h-[680px] 2xl:min-h-[720px]",
-		medium: "min-h-[min(62svh,500px)] sm:min-h-[480px] md:min-h-[500px] xl:min-h-[540px]",
-		small: "min-h-[min(46svh,380px)] sm:min-h-[360px] md:min-h-[380px] xl:min-h-[400px]",
-	},
+// 0,6 раза, как соотносились прежние высоты 620 / 500 / 380.
+const HERO_HEIGHT_CLS: Record<"large" | "medium" | "small", string> = {
+	large: "min-h-[560px] aspect-[375/716] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]",
+	medium: "min-h-[448px] aspect-[375/573] sm:aspect-[768/774] md:aspect-[1280/774] xl:aspect-[1920/740]",
+	small: "min-h-[336px] aspect-[375/430] sm:aspect-[768/581] md:aspect-[1280/581] xl:aspect-[1920/555]",
 };
-const heroHeightCls = HERO_HEIGHT_CLS[designParity ? "designers" : "legacy"][heroSize];
+const heroHeightCls = HERO_HEIGHT_CLS[heroSize];
 // Одно фото на весь блок. Два фото (50/50) и пустое состояние — прежние, их у
 // верстальщиков нет.
-// Подложка для читаемости текста поверх фото. Как у верстальщиков (владелец
-// 24.09 «базово всё как у верстальщиков»): только на телефоне и их градиентом;
-// на компьютере текст стоит на поле секции, темнее — ползунок «Затемнение».
-const veilCls = designParity
-	? "pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/75 via-black/40 via-40% to-transparent md:hidden"
-	: "pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/45 to-black/10";
-const singlePhotoCls = designParity
-	? "absolute left-0 top-0 z-0 h-[122%] w-auto max-w-none md:left-1/2 md:h-[111.45%] md:-translate-x-1/2"
-	: "absolute inset-0 z-0 size-full object-cover object-center";
+// Затемнение фото мерчанта: владелец 25.09 — «в зависимости от настройки
+// затемнения, если 0 — то и там и там светло». Раньше поверх фото ЛЕЖАЛ
+// постоянный градиент (свой на телефоне, свой на компьютере) — при ползунке
+// «Затемнение»=0 фото всё равно темнело на одной из ширин, слайдер не решал
+// ничего. Постоянная подложка снята: единственный слой затемнения — overlayN
+// ниже (ползунок «Затемнение»), одинаково на всех ширинах; при 0 — слоя нет
+// вовсе, ни на телефоне, ни на компьютере. Читаемость текста поверх фото
+// решает СХЕМА (hero-over-photo-heading/-text, packages/theme-base/styles) —
+// её эта правка не трогает.
+// Фото «по высоте» — приём верстальщиков под ИХ фото: вырезанная модель на
+// белом, поля по бокам сливаются с белым. Своё фото мерчанта так оставляло
+// по бокам полосы фона секции (тестер 24.09: «при одном фото — чёрные полосы»),
+// поэтому оно заполняет блок, как раньше; высота блока — верстальщиков в обоих
+// случаях.
+const THEME_HERO_PHOTOS = ["/images/hero-photo.webp"];
+const isThemeHeroPhoto = THEME_HERO_PHOTOS.some((path) =>
+	String(backgroundImage).split("?")[0].endsWith(path),
+);
+const SINGLE_PHOTO_CLS = {
+	fitHeight: "absolute left-0 top-0 z-0 h-[122%] w-auto max-w-none md:left-1/2 md:h-[111.45%] md:-translate-x-1/2",
+	cover: "absolute inset-0 z-0 size-full object-cover object-center",
+};
+const singlePhotoCls = SINGLE_PHOTO_CLS[isThemeHeroPhoto ? "fitHeight" : "cover"];
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом
 // тексте; кнопки встают рядом в ряд с зазором gap-3 (манера §3).
@@ -255,18 +289,26 @@ const buttonsJustifyCls =
 	p.alignment === "center" ? "justify-center" : p.alignment === "right" ? "justify-end" : "justify-start";
 // Верхний отступ контейнера нужен только при верхней/средней позиции (низ — литерал).
 const needsTopPad = vPos === "top" || vPos === "middle";
-const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px]${needsTopPad ? " pt-8 md:pt-12 xl:pt-20" : ""}`;
+// На мониторах шире 1920 текст стоит в той же колонке 1320 по центру, что и
+// остальные секции (верстальщики: max-w-[1920px] → max-w-[1320px] mx-auto).
+// До 1920 поле 300px, шире — колонка 1320 по центру.
+const heroSidePadCls = "2xl:px-[max(300px,calc(50%_-_660px))]";
+// Текстовый блок у верстальщиков: снизу 80 на телефоне, колонка 330 → md 410 с
+// внутренним полем py-10 pr-10, между текстом и кнопкой 32, кнопка 40 → md 48
+// (кегль 14 → md 16). С «Контейнером» поле задаёт плашка — внутреннее поле
+// верстальщиков не добавляем.
+const HERO_BOX = { pb: "pb-20", box: `max-w-[330px] md:max-w-[410px]${boxed ? "" : " md:py-10 md:pr-10"}`, gap: "gap-8" };
+const HERO_BTN = { size: "h-10 md:h-12", pad: "px-3 md:px-4", text: "text-[14px] md:text-[16px]" };
+const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 ${HERO_BOX.pb} md:px-20 md:pb-12 xl:pb-20 ${heroSidePadCls}${needsTopPad ? " pt-8 md:pt-12 xl:pt-20" : ""}`;
 
-// Канон buttonStyle solid|outlined: outlined = pill с бордером/текстом цвета
-// заливки кнопки на прозрачном фоне; solid/отсутствие = розовый pill верстальщика
-// дословно (токены кнопки-1 §7, rounded-full → --radius-button 100px).
-const ctaBtnCls =
-	p.buttonStyle === "outlined"
-		? "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,227_142_159))] transition-opacity hover:opacity-90 active:scale-95"
-		: "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95";
-// Вторая кнопка — белый pill манеры (Philosophy.astro:26) на токенах кнопки-2.
-const secondaryBtnCls =
-	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95";
+// Pill верстальщика (rounded-full → --radius-button 100px). Цвета обеих кнопок —
+// поля схемы своей роли (атрибут data-scheme-button, src/themes/scheme-buttons.ts):
+// Основная ← «Основная кнопка», Дополнительная ← «Дополнительная кнопка»; Фон →
+// фон, Текст → буквы, Обводка → рамка. Задача владельца 25.09: раньше
+// «Обводку» не читала ни одна из кнопок, а скрытый buttonStyle=outlined делал
+// основную контуром цвета её Фона.
+const ctaBtnCls = `inline-flex ${HERO_BTN.size} items-center justify-center rounded-[var(--radius-button,100px)] border border-solid ${HERO_BTN.pad} font-inter ${HERO_BTN.text} font-light leading-none transition-opacity hover:opacity-90 active:scale-95`;
+const secondaryBtnCls = ctaBtnCls;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T14).
 const paddingStyle = p.padding
@@ -280,6 +322,16 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Соседние
+// заголовок и текст остаются в общей колонке (gap-2), кнопка(и) — отдельным
+// звеном. Без fieldOrder — прежняя разметка.
+const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
+// §2 контракта: стёртая строка не рисуется вовсе, обёртка вокруг заголовка/
+// текста — тоже, если внутри не осталось ничего видимого (иначе на месте
+// текста остаётся gap-отступ).
+const showHeading = hasText(title) && !isFieldHidden("heading");
+const showText = hasText(subtitle) && !isFieldHidden("text");
 ---
 
 {
@@ -309,9 +361,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			<div
 				class={`relative w-full ${heroHeightCls}`}
 			>
-				<div class="absolute inset-0 z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center md:px-20 2xl:px-[300px]">
+				<div class={`absolute inset-0 z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center md:px-20 ${heroSidePadCls}`}>
+					{heroRuns.map((run) => run.grouped ? (
 					<div class="flex w-full max-w-[540px] flex-col items-center gap-2 text-center">
-						{!isFieldHidden('heading') && (
+						{run.fields.map((field) => (
+						<Fragment>
+						{field === 'heading' && !isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
 								class="font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]"
@@ -322,7 +377,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{PH_LABEL}
 							</h1>
 						)}
-						{!isFieldHidden('text') && (
+						{field === 'text' && !isFieldHidden('text') && (
 							<p
 								class="font-inter text-[14px] font-light leading-[1.2] hero-over-photo-text md:text-[16px]"
 								data-puck-subsection-parent={id}
@@ -332,25 +387,28 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{PH_HELPER}
 							</p>
 						)}
+						</Fragment>
+						))}
 					</div>
-					{!isFieldHidden('buttons') && (
+					) : !isFieldHidden('buttons') && (
 					<a
 						href={ctaLink}
-						class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+						class="border border-solid inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] px-4 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95"
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"
 					>
 						{PH_BUTTON}
 					</a>
-					)}
+					))}
 				</div>
 			</div>
 		</section>
 	) : (
 <section
 	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]${selfSchemeClass}`}
-	aria-labelledby="hero-title"
+	aria-labelledby={showHeading ? "hero-title" : undefined}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
@@ -402,25 +460,17 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		)
 	}
 
-	{/* Подложка-градиент как у плейсхолдера / rose empty: читаемость белого
-	    текста и кнопки на реальном фото. Без неё при смене плейсхолдер→фото
-	    «пропадала подложка» (оставался только slider Затемнение). */}
-	{
-		Boolean(String(backgroundImage).trim() || backgroundImage2) && (
-			<div
-				class={veilCls}
-				aria-hidden="true"
-			/>
-		)
-	}
-
 	<div
 		class={`relative w-full ${heroHeightCls}`}
 	>
 		<div class={containerCls}>
-			<div class={`flex w-full max-w-[330px] flex-col ${alignItemsCls} gap-4${boxedCls}`}>
+			<div class={`flex w-full ${HERO_BOX.box} flex-col ${alignItemsCls} ${HERO_BOX.gap}${boxedCls}`}>
+				{heroRuns.map((run) => run.grouped ? (
+				(showHeading || showText) && (
 				<div class={`flex flex-col ${alignItemsCls} gap-2${textAlignCls}`}>
-					{!isFieldHidden('heading') && (
+					{run.fields.map((field) => (
+					<Fragment>
+					{field === 'heading' && showHeading && (
 						<h1
 							id="hero-title"
 							class={headingCls}
@@ -430,7 +480,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							set:html={inlineFormat(title)}
 						></h1>
 					)}
-					{!isFieldHidden('text') && (
+					{field === 'text' && showText && (
 						<p
 							class={subtitleCls}
 							data-puck-subsection-parent={id}
@@ -439,13 +489,16 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							set:html={inlineFormat(subtitle)}
 						></p>
 					)}
+					</Fragment>
+					))}
 				</div>
-				{
-					!isFieldHidden('buttons') && (secondaryText ? (
+				)
+				) : !isFieldHidden('buttons') && (secondaryText ? (
 						<div class={`hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${buttonsJustifyCls}`}>
 							<a
 								href={ctaLink}
 								class={ctaBtnCls}
+								data-scheme-button="primary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="102"
 								data-puck-subsection-field="primaryButton"
@@ -455,6 +508,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<a
 								href={secondaryLink}
 								class={secondaryBtnCls}
+								data-scheme-button="secondary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="secondaryButton"
@@ -462,18 +516,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{secondaryText}
 							</a>
 						</div>
-					) : (
+				) : (
 						<a
 							href={ctaLink}
 							class={`hero-animate-3 ${ctaBtnCls}`}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"
 						>
 							{ctaText}
 						</a>
-					))
-				}
+				)))}
 			</div>
 		</div>
 	</div>

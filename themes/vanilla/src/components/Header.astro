@@ -2,12 +2,12 @@
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.astro";
 import { VANILLA_ICON_SVGS } from "./icons/vanilla-icon-svgs";
-import VanilaLogo from "../icons/VanilaLogo.astro";
-import VanilaLogoDesigners from "../icons/VanilaLogoDesigners.astro";
 import NavItem from "./NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
+import { headerOwnLogo } from "../../../../packages/theme-base/runtime/header-logo";
 import { SITE_TITLE } from "../consts";
 import { getProductById } from "../data/products";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 interface NavLink {
 	label: string;
@@ -30,10 +30,14 @@ function catalogNavFromProduct(url: URL): "textile" | "decor" | null {
 	return product?.collection === "Декор" ? "decor" : "textile";
 }
 
+// Владелец 25.09: «страницы только магазинные, без верстальщиков» — у /catalog/textile
+// и /catalog/decor (категории верстальщика) на витрине своей страницы нет, у нового
+// магазина это «не найдено». href обоих пунктов ведёт на /catalog; match оставлен
+// (подсветка активного пункта по товару категории и по старым адресам не ломается).
 const defaultNav: NavLink[] = [
 	{
 		label: "Текстиль",
-		href: "/catalog/textile",
+		href: "/catalog",
 		match: (url) =>
 			catalogNavFromProduct(url) === "textile" ||
 			pathnameBase(url) === "/catalog" ||
@@ -41,7 +45,7 @@ const defaultNav: NavLink[] = [
 	},
 	{
 		label: "Декор",
-		href: "/catalog/decor",
+		href: "/catalog",
 		match: (url) => catalogNavFromProduct(url) === "decor" || pathnameBase(url) === "/catalog/decor",
 	},
 	{ label: "История", href: "/about", match: (url) => pathnameBase(url).startsWith("/about") },
@@ -68,28 +72,21 @@ const nav: NavLink[] =
 		? p.navigationLinks.map(mapNavLink)
 		: defaultNav;
 
-// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
-// <img> высотой var(--size-logo-width) (слайдер «Размер» канона задаёт высоту лого)
-// в mobile И desktop. Дефолт = SVG-вордмарк VanilaLogo верстальщика (white-вариант):
-// mobile h-6 (24px), desktop h-7 (28px) — фоллбеки токена = родные высоты.
-const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): загруженный
+// мерчантом файл → <img> высотой var(--size-logo-width) (слайдер «Размер» канона)
+// в mobile И desktop. Без файла — НАЗВАНИЕ МАГАЗИНА текстом (владелец 28.09: «везде
+// вместо логотипа брать название сайта»); раньше здесь стоял вордмарк
+// верстальщиков «Vanilla» (VanilaLogoDesigners) — имя шаблона у любого магазина.
+// Что считать файлом мерчанта — packages/theme-base/runtime/header-logo.ts.
+const logo = headerOwnLogo(p.logo) || undefined;
 const logoImgMobileCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[76px] object-contain";
 const logoImgDesktopCls = "h-[var(--size-logo-width,28px)] w-auto max-w-[160px] object-contain";
-
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// встроенный вордмарк — ширина и сам рисунок по актуальной Vanilla-theme
-// @c65d9e1c. У них «Vanilla» двумя «l» (другой набор путей, не только
-// размер) — рисует отдельный компонент VanilaLogoDesigners, выбор по
-// признаку. Загруженный МЕРЧАНТОМ логотип (logoImgMobileCls/DesktopCls выше)
-// не трогаем — это чужая настройка «Логотип», не вордмарк темы.
-// Без признака — прежние классы и прежний VanilaLogo байт-в-байт.
-const designParity = p.__designParity === true;
-const VANILA_LOGO_MOBILE_CLS = designParity
-	? "h-[var(--size-logo-width,24px)] w-auto max-w-[85px]"
-	: "h-[var(--size-logo-width,24px)] w-auto max-w-[76px]";
-const VANILA_LOGO_DESKTOP_CLS = designParity
-	? "h-[var(--size-logo-width,28px)] w-[98px]"
-	: "h-[var(--size-logo-width,28px)] w-auto max-w-[89px]";
+// Текстовый логотип: шрифт заголовков темы (Bitter, «Настройки темы»), кегль —
+// слайдер «Размер» логотипа, цвет — от ссылки (logoInkCls, роль «Заголовок»).
+// Мобильный ряд узкий (бургер | лого | иконки) — длинное название с многоточием.
+const logoTextCls = "font-vanilla-bitter whitespace-nowrap leading-tight";
+const logoTextMobileCls = `${logoTextCls} block max-w-[40vw] truncate text-[length:var(--size-logo-width,24px)]`;
+const logoTextDesktopCls = `${logoTextCls} text-[length:var(--size-logo-width,28px)]`;
 
 // Канон logoPosition: 'center-absolute' (canon-default из blockDefaults vanilla) И
 // отсутствие / неизвестное значение → ЛИТЕРАЛ верстальщика (лого центр абсолютом,
@@ -141,6 +138,10 @@ const SCROLL_UP_JS = [
 	"var last=window.scrollY;",
 	"window.addEventListener('scroll',function(){",
 	"var y=window.scrollY;",
+	// Режим читается на КАЖДОЙ прокрутке: в конструкторе «Статичность» меняют без
+	// перезагрузки превью, и слушатель, повешенный для scroll-up, иначе прятал
+	// шапку и после выбора «Всегда» (баг 25.09). Превью переписывает атрибут.
+	"if(root.getAttribute('data-vanilla-sticky')!=='scroll-up'){root.style.transform='';last=y;return;}",
 	"if(y>last&&y>root.offsetHeight){root.style.transform='translateY(-100%)';}else{root.style.transform='';}",
 	"last=y;",
 	"},{passive:true});",
@@ -164,6 +165,14 @@ const headerPadStyle = headerPad
 // [1fr auto 1fr]; позиционированной строка не становится ни в одном положении —
 // иначе она перехватывает края у плашки «Расширенного» меню (см. desktopLogoCls).
 const singleRowCentered = !isTwoRow && !logoLeft;
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только
+// размеры»): шапка Vanilla-theme @c65d9e1c (Header.astro) — ОДИН ряд h-20:
+// меню слева, логотип по центру, значки справа. У нас в ряду «по центру»
+// логотип стоит в колонке 2 раньше меню с колонкой 1, и авто-размещение грида
+// уводило меню и значки во второй ряд — все три прибиты к первому ряду.
+// Значки — область нажатия 44×44 (min-h-11 min-w-11), рисунок 20px (size-5).
+const SINGLE_ROW_PIN_CLS = singleRowCentered ? "row-start-1" : false;
+const ACTION = { btn: "min-h-11 min-w-11", icon: "size-5" };
 const desktopWrapCls = isTwoRow
 	? (headerPad
 		? "vanilla-pad mx-auto hidden w-full max-w-[1560px] flex-col md:flex min-[1920px]:max-w-[1920px] min-[1920px]:px-[300px]"
@@ -233,7 +242,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль. */
 		!id && (
 			<a
-				href="/catalog/textile"
+				href="/catalog"
 				data-vanilla-announcement
 				class="m-0 flex h-11 w-full shrink-0 items-center justify-center border-0 bg-[var(--vanilla-announcement-bg)] px-4 text-center font-vanilla-arsenal text-[14px] font-normal uppercase leading-none tracking-normal text-white md:h-12 md:text-base"
 			>
@@ -261,7 +270,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 				</span>
 			</button>
 			<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_MOBILE_CLS} /> : <VanilaLogo class={VANILA_LOGO_MOBILE_CLS} />}
+				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : <span data-logo-text class={logoTextMobileCls}>{siteTitle}</span>}
 			</a>
 			<div class="flex items-center gap-3">
 				<button
@@ -286,8 +295,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white px-1 font-manrope text-[10px] font-normal leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 					>0</span>
 				</a>
-				<a
-					href="/cart"
+				<button
+					type="button"
+					data-cart-open
 					class="relative flex size-6 items-center justify-center"
 					aria-label="Корзина"
 				>
@@ -297,7 +307,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						data-empty="true"
 						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white px-1 font-manrope text-[10px] font-normal leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 					>0</span>
-				</a>
+				</button>
 				<button
 					type="button"
 					data-login-open
@@ -317,9 +327,28 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					/* top-left: Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
 					<>
 						<div class="flex w-full items-center justify-between">
+							<div class="flex items-center gap-3">
+								{isSidebar && (
+									<button
+										type="button"
+										data-burger-toggle
+										class="flex size-6 items-center justify-center transition-opacity hover:opacity-80"
+										aria-label="Меню"
+										aria-expanded="false"
+										aria-controls="vanilla-burger"
+									>
+										<span class="burger-icon" data-icon="open">
+											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-5" />
+										</span>
+										<span class="burger-icon hidden" data-icon="close">
+											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-5" />
+										</span>
+									</button>
+								)}
 							<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
+								{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <span data-logo-text class={logoTextDesktopCls}>{siteTitle}</span>}
 							</a>
+							</div>
 							<div class="flex items-center gap-5">
 								<button
 									type="button"
@@ -343,8 +372,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 									>0</span>
 								</a>
-								<a
-									href="/cart"
+								<button
+									type="button"
+									data-cart-open
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
@@ -354,7 +384,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										data-empty="true"
 										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 									>0</span>
-								</a>
+								</button>
 								<button
 									type="button"
 									data-login-open
@@ -364,23 +394,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 								>
 									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="user" sizeClass="size-6" />
 								</button>
-								{isSidebar && (
-									<button
-										type="button"
-										data-burger-toggle
-										class="flex size-6 items-center justify-center transition-opacity hover:opacity-80"
-										aria-label="Меню"
-										aria-expanded="false"
-										aria-controls="vanilla-burger"
-									>
-										<span class="burger-icon" data-icon="open">
-											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-5" />
-										</span>
-										<span class="burger-icon hidden" data-icon="close">
-											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-5" />
-										</span>
-									</button>
-								)}
 							</div>
 						</div>
 						<nav
@@ -411,10 +424,27 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
 						    не разрывался. */}
 							<div class="flex items-center">
+								{isSidebar && (
+									<button
+										type="button"
+										data-burger-toggle
+										class="flex size-6 items-center justify-center transition-opacity hover:opacity-80"
+										aria-label="Меню"
+										aria-expanded="false"
+										aria-controls="vanilla-burger"
+									>
+										<span class="burger-icon" data-icon="open">
+											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-5" />
+										</span>
+										<span class="burger-icon hidden" data-icon="close">
+											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-5" />
+										</span>
+									</button>
+								)}
 							</div>
 							<div class="flex items-center justify-center">
 								<a href="/" class={`flex items-center ${logoInkCls}`} aria-label={siteTitle}>
-									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
+									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <span data-logo-text class={logoTextDesktopCls}>{siteTitle}</span>}
 								</a>
 							</div>
 							<div class="flex items-center justify-end gap-5">
@@ -440,8 +470,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 									>0</span>
 								</a>
-								<a
-									href="/cart"
+								<button
+									type="button"
+									data-cart-open
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
@@ -451,7 +482,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										data-empty="true"
 										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 									>0</span>
-								</a>
+								</button>
 								<button
 									type="button"
 									data-login-open
@@ -461,23 +492,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 								>
 									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="user" sizeClass="size-6" />
 								</button>
-								{isSidebar && (
-									<button
-										type="button"
-										data-burger-toggle
-										class="flex size-6 items-center justify-center transition-opacity hover:opacity-80"
-										aria-label="Меню"
-										aria-expanded="false"
-										aria-controls="vanilla-burger"
-									>
-										<span class="burger-icon" data-icon="open">
-											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-5" />
-										</span>
-										<span class="burger-icon hidden" data-icon="close">
-											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-5" />
-										</span>
-									</button>
-								)}
 							</div>
 						</div>
 						<nav
@@ -503,16 +517,35 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			) : (
 				/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 				<>
+					<div class:list={["flex items-center gap-3", logoLeft && "flex-1", SINGLE_ROW_PIN_CLS]}>
+					{isSidebar && (
+						<button
+							type="button"
+							data-burger-toggle
+							class="flex size-6 items-center justify-center transition-opacity hover:opacity-80"
+							aria-label="Меню"
+							aria-expanded="false"
+							aria-controls="vanilla-burger"
+						>
+							<span class="burger-icon" data-icon="open">
+								<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-5" />
+							</span>
+							<span class="burger-icon hidden" data-icon="close">
+								<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-5" />
+							</span>
+						</button>
+					)}
 					<a
 						href="/"
-						class:list={[desktopLogoCls, logoLeft && "flex-1"]}
+						class={desktopLogoCls}
 						aria-label={siteTitle}
 					>
-						{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
+						{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <span data-logo-text class={logoTextDesktopCls}>{siteTitle}</span>}
 					</a>
+					</div>
 
 					<nav
-						class:list={["flex items-center gap-[40px]", singleRowCentered && "col-start-1", menuSchemeClass, isSidebar && "md:!hidden"]}
+						class:list={["flex items-center gap-[40px]", singleRowCentered && "col-start-1", SINGLE_ROW_PIN_CLS, menuSchemeClass, isSidebar && "md:!hidden"]}
 						data-nav-inline
 						aria-label="Основная навигация"
 						data-puck-subsection-parent={id}
@@ -535,67 +568,51 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					    display:none, единственный оставшийся блок прижимался к ЛЕВОМУ краю
 					    (замер: отступ справа 968px вместо 80) — ml-auto держит его справа
 					    независимо от соседей. */}
-					<div class:list={["flex items-center gap-5", logoLeft && "flex-1 justify-end", !logoLeft && "col-start-3 ml-auto justify-self-end"]}>
+					<div class:list={["flex items-center gap-5", logoLeft && "flex-1 justify-end", !logoLeft && "col-start-3 ml-auto justify-self-end", SINGLE_ROW_PIN_CLS]}>
 						<button
 							type="button"
 							data-action="toggle-search"
-							class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+							class={`flex ${ACTION.btn} items-center justify-center transition-opacity hover:opacity-80`}
 							aria-label="Поиск"
 							aria-expanded="false"
 							aria-controls="vanilla-search-panel"
 						>
-							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="search-lg" sizeClass="size-6" />
+							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="search-lg" sizeClass={ACTION.icon} />
 						</button>
 						<a
 							href="/wishlist"
-							class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+							class={`relative flex ${ACTION.btn} items-center justify-center transition-opacity hover:opacity-80`}
 							aria-label="Избранное"
 						>
-							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="favourite" sizeClass="size-6" />
+							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="favourite" sizeClass={ACTION.icon} />
 							<span
 								data-wishlist-count
 								data-empty="true"
 								class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 							>0</span>
 						</a>
-						<a
-							href="/cart"
-							class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+						<button
+							type="button"
+							data-cart-open
+							class={`relative flex ${ACTION.btn} items-center justify-center transition-opacity hover:opacity-80`}
 							aria-label="Корзина"
 						>
-							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="cart" sizeClass="size-6" />
+							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="cart" sizeClass={ACTION.icon} />
 							<span
 								data-cart-count
 								data-empty="true"
 								class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 							>0</span>
-						</a>
+						</button>
 						<button
 							type="button"
 							data-login-open
-							class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+							class={`flex ${ACTION.btn} items-center justify-center transition-opacity hover:opacity-80`}
 							aria-label="Аккаунт"
 							aria-haspopup="dialog"
 						>
-							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="user" sizeClass="size-6" />
+							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="user" sizeClass={ACTION.icon} />
 						</button>
-						{isSidebar && (
-							<button
-								type="button"
-								data-burger-toggle
-								class="flex size-6 items-center justify-center transition-opacity hover:opacity-80"
-								aria-label="Меню"
-								aria-expanded="false"
-								aria-controls="vanilla-burger"
-							>
-								<span class="burger-icon" data-icon="open">
-									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-5" />
-								</span>
-								<span class="burger-icon hidden" data-icon="close">
-									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-5" />
-								</span>
-							</button>
-						)}
 					</div>
 				</>
 			)}
@@ -672,8 +689,11 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			// высоту. overscroll-contain: прокрутка панели не утекает на страницу.
 			// Выезд за 300 мс и обратно (баг 1 документа «баги пунктов меню»:
 			// панель появлялась и пропадала за один кадр) — с той стороны, где
-			// иконка меню: на телефоне бургер слева, и панель выезжает слева; с md
-			// панель — колонка у правого края, кнопка справа, и выезд справа.
+			// иконка меню: бургер слева ВЕЗДЕ (владелец, 25.09 — тестер попросил
+			// слева и на десктопе, владелец подтвердил «да»; это отменяет правило
+			// 21.09/23.09, `59bb1a50`/`752cd8ac`, где на md бургер и панель были
+			// справа). На телефоне и с md панель — колонка у левого края, кнопка
+			// слева, выезд слева.
 			// Скрипт темы по-прежнему переключает `hidden`; переход через display: none дают
 			// `transition-discrete` и `starting:` (@starting-style) — без них
 			// display не анимируется, и панель прыгала бы. Где их не поддерживает
@@ -682,7 +702,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			// за 300 мс и так же уходит: clip-path сверху вниз на том же `hidden`
 			// (пункт 2 той же пачки — раньше открывалась рывком).
 			isSidebar
-				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:translate-x-full md:[&.hidden]:translate-x-full motion-reduce:transition-none"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:right-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:-translate-x-full md:[&.hidden]:-translate-x-full motion-reduce:transition-none"
 				: "inset-x-0 bottom-0 w-full px-4 pb-8 pt-4 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 		]}
 		role="dialog"
@@ -709,8 +729,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 				>
 					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-6" />
 				</button>
-				<a
-					href="/cart"
+				<button
+					type="button"
+					data-cart-open
 					class="relative flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
 					aria-label="Корзина"
 				>
@@ -720,7 +741,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						data-empty="true"
 						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white px-1 font-manrope text-[10px] font-normal leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 					>0</span>
-				</a>
+				</button>
 			</div>
 		) : (
 			/* Mobile drawer: search + profile. Строка поиска — по макету «Бургер» 375:
@@ -869,8 +890,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 	{/* Магазин для живого поиска шапки: `const shopId = ""` патчит сборка
 	    (patchShopIdInDist) — как у подвала и корзины. В превью конструктора id
 	    приходит глобалом __MERFY_SITE_ID__, пустая строка здесь ничего не ломает. */}
-	<script is:inline define:vars={{ shopId }}>
-		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: "https://gateway.merfy.ru/api" };
+	<script is:inline define:vars={{ shopId, apiUrl }}>
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: apiUrl || "https://gateway.merfy.ru/api" };
 		if (shopId && !window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId;
 	</script>
 </div>

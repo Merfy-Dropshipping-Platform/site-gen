@@ -13,6 +13,8 @@
 // онлайн-магазине в этом блоке», кнопка «Кнопка». Когда мерчант задаёт свои
 // heading/text/button — рендерятся ИХ значения (ветки p.heading/p.text/p.button ниже).
 import { inlineFormat } from "../../lib/rich-text";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { mainTextButtonText } from "../../../../../packages/theme-base/runtime/main-text-button";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -38,7 +40,10 @@ const headingCls = `rose-title${headingSizeCls}`;
 
 // Канон textSize (text.size сабпанели): 'medium' (canon-default) и отсутствие =
 // body-манера 16px. small 14, large 19 (шаги ≈0.85/1.2 как T13 subtitle).
-const textSize = p.textSize ?? p.text?.size;
+// §11 Контракта секции: видимое поле «Текст → Размер» (text.size) приоритетнее
+// СКРЫТОГО top-level textSize — иначе скрытое значение, вписанное первой
+// правкой секции, глушило выбор мерчанта в панели (владелец 25.09).
+const textSize = p.text?.size ?? p.textSize;
 const textSizeCls =
 	textSize === "small" ? " !text-[14px]" : textSize === "large" ? " !text-[19px]" : "";
 
@@ -56,34 +61,23 @@ const alignCls =
 // Канон textStyle (hidden, 084): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
-// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta
-// {text, href|link, variant}. Мерчант задал текст — рендерим его; пусто (canon-
-// defaults кнопку не пишут) — дословный Figma-плейсхолдер «Кнопка» (1:19335).
-// Ссылка-фоллбек /catalog (паттерн T11).
-const btnText =
-	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
-	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined) ??
-	"Кнопка";
+// Кнопка — одно правило для всех тем (theme-base runtime/main-text-button.ts):
+// текст из поля панели «Кнопка → Текст», пусто — кнопки нет, заглушки «Кнопка»
+// нет; старое скрытое cta — только пока поля «Кнопка» в секции нет вовсе.
+// Ссылка-фоллбек /catalog.
+const btnText = mainTextButtonText(p);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
 	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
 	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
 	"/catalog";
-// Канон buttonStyle (hidden, 084): solid (default) = чёрная заливка манеры
-// (габариты Contacts CTA: h-12 min-w-200 rounded-6 px-8 Manrope 16); outlined =
-// бордер + button-2 токены; legacy cta.variant 'white' = белая заливка (манера
-// hero CTA на фото).
-const btnVariant =
-	p.buttonStyle === "outlined" ? "outlined" : p.cta?.variant === "white" ? "white" : "solid";
-const btnBase =
-	"inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] px-8 font-manrope text-[16px] font-normal leading-normal transition-opacity hover:opacity-90";
+// «Кнопка» секции одна — всегда цвета «Основной кнопки» схемы (Фон → фон,
+// Текст → буквы, Обводка → рамка; атрибут data-scheme-button, src/themes/
+// scheme-buttons.ts). Задача владельца 25.09. Скрытые buttonStyle=outlined и
+// легаси cta.variant=white раньше пересаживали её на Дополнительную.
 const btnCls =
-	btnVariant === "outlined"
-		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
-		: btnVariant === "white"
-			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
-			: `${btnBase} bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
+	"inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] border border-solid px-8 font-manrope text-[16px] font-normal leading-normal transition-opacity hover:opacity-90";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
@@ -99,6 +93,12 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Заголовок, текст
+// и кнопка — плоские соседи одной колонки (gap-6), поэтому порядок применяется
+// напрямую, без группировки. Без fieldOrder — прежняя разметка. Добавка mt-2
+// у кнопки — отступ ОТ соседа выше, первой в колонке она не нужна.
+const mainTextOrder = sectionFieldOrder("MainText", p);
 ---
 
 <section
@@ -109,7 +109,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class="mx-auto w-full max-w-[1320px]">
 		<div class={`flex w-full max-w-[780px] flex-col gap-6 ${posCls} ${alignCls}`} data-animate>
-			{!isFieldHidden('heading') && (
+			{mainTextOrder.map((field, i) => (
+			<Fragment>
+			{field === 'heading' && !isFieldHidden('heading') && (
 				<h2
 					id={titleId}
 					class={headingCls + italicCls}
@@ -120,7 +122,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 			)}
-			{!isFieldHidden('text') && (
+			{field === 'text' && !isFieldHidden('text') && (
 				<div
 					class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}`}
 					data-puck-subsection-parent={id}
@@ -130,12 +132,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				/>
 			)}
 			{
-				btnText && (
-					<div class="mt-2">
+				field === 'button' && btnText && (
+					<div class={i > 0 ? "mt-2" : undefined}>
 						{!isFieldHidden('button') && (
 							<a
 								href={btnHref}
 								class={btnCls}
+								data-scheme-button="primary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="102"
 								data-puck-subsection-field="button"
@@ -146,6 +149,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</div>
 				)
 			}
+			</Fragment>
+			))}
 		</div>
 	</div>
 </section>

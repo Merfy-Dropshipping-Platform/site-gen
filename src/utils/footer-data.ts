@@ -4,6 +4,7 @@ import type { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom } from "rxjs";
 import { timeout } from "rxjs/operators";
 import type * as schemaTypes from "../db/schema";
+import { applyHeaderSiteTitles } from "./header-title";
 
 export interface FooterDataDeps {
   db: NodePgDatabase<typeof schemaTypes>;
@@ -47,6 +48,52 @@ const POLICY_TITLE_MAP: Record<string, string> = {
   shipping: "Политика доставки",
 };
 
+type PolicyRow = { type: string; content: string | null };
+
+const isFilled = (p: PolicyRow): boolean =>
+  typeof p.content === "string" && p.content.trim() !== "";
+
+/**
+ * Адреса ЗАПОЛНЕННЫХ политик продавца: тип site_policy → адрес страницы.
+ *
+ * Признак «политика есть» — запись site_policy с непустым (не из одних
+ * пробелов) content. Адрес — по тому же правилу, что ссылка в подвале
+ * (`legalBaseFor` + `POLICY_SLUG_MAP`): у мигрированных тем страницу собирает
+ * `composeLegalPagesIntoDist` → `/legal/terms`, `/legal/privacy`, у
+ * legacy-скаффолда — `/terms`, `/privacy`. Пустая политика страницы продавца
+ * не даёт: у мигрированных тем по этому адресу остаётся демо-текст темы,
+ * поэтому такой политики в карте нет.
+ *
+ * Потребители — глобал `__MERFY_POLICY_URLS__` (ссылки юридической строки
+ * «Спасибо за заказ» и чекаута, packages/theme-base/runtime/legal-links.ts) и
+ * `privacyPolicyUrlFor` (баннер cookie). Зовут оба пути: сборка витрины
+ * (build.service, themes-v2) и превью конструктора (preview.controller).
+ */
+export function policyUrlsFor(
+  policies: ReadonlyArray<PolicyRow>,
+  themeId: string | null | undefined,
+): Record<string, string> {
+  const base = legalBaseFor(themeId);
+  return Object.fromEntries(
+    policies
+      .filter(isFilled)
+      .map((p) => [p.type, `${base}/${POLICY_SLUG_MAP[p.type] ?? p.type}`]),
+  );
+}
+
+/**
+ * Адрес политики конфиденциальности продавца — или null, если её нет.
+ * Признак для баннера согласия на cookie
+ * (packages/theme-base/runtime/cookie-consent.ts) — частный случай
+ * `policyUrlsFor`, поведение баннера то же.
+ */
+export function privacyPolicyUrlFor(
+  policies: ReadonlyArray<PolicyRow>,
+  themeId: string | null | undefined,
+): string | null {
+  return policyUrlsFor(policies, themeId).privacy ?? null;
+}
+
 /**
  * Мутирует Footer-блоки `revisionData.pagesData[*].content` (+ legacy `content`)
  * реальными данными магазина — элемент футера показывается ТОЛЬКО при настроенных
@@ -57,6 +104,8 @@ const POLICY_TITLE_MAP: Record<string, string> = {
  *  • socialColumn.socialLinks — фильтр пустых/«#» + нормализация схемы (https://);
  *  • paymentEnabled — только при подключённой кассе (billing.shop_payment_settings);
  *  • siteTitle — название магазина из админки;
+ *  • Header.siteTitle — то же название в шапку, если там стартовое название
+ *    темы или пусто (utils/header-title.ts; своё название мерчанта остаётся).
  *  • copyright.poweredBy — подпись платформы из окна «Содержимое темы».
  *
  * Общая логика build (runBuildPipeline после stageMerge) и preview-контроллера —
@@ -170,6 +219,11 @@ export async function applyFooterData(
       }
     }
 
+    // Шапка: название магазина вместо стартового названия темы (владелец
+    // 28.09: «везде вместо логотипа брать название сайта»). Здесь — потому что
+    // этот модуль зовут оба пути рендера, как и для подвала ниже.
+    const headerCount = applyHeaderSiteTitles(revisionData, siteName);
+
     const rev = revisionData as {
       pagesData?: Record<string, { content?: unknown[] }>;
       content?: unknown[];
@@ -235,7 +289,7 @@ export async function applyFooterData(
       }
     }
     logger?.log(
-      `[footer-data] site ${siteId}: ${footerCount} footer block(s), ${policyLinks.length} policy link(s), ` +
+      `[footer-data] site ${siteId}: ${footerCount} footer block(s), ${headerCount} header title(s), ${policyLinks.length} policy link(s), ` +
         `phone=${contactPhone ? "yes" : "no"}, email=${contactEmail ? "yes" : "no"}, ` +
         `extraFields=${extraContactFields.length}, payment=${paymentEnabled ? "on" : "off"}`,
     );

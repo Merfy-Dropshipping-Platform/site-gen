@@ -18,6 +18,7 @@ import { inlineFormat } from "../../lib/rich-text";
 // текст/размер, колонки, отступы, цветовая схема, выбор коллекции-источника
 // товаров). Дефолт и назначение — сетка товаров.
 import BloomProductCard from "../products/BloomProductCard.astro";
+import { pickText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 function resolveCollectionRef(props: Record<string, any>): string | undefined {
 	if (typeof props.collection === "string" && props.collection.trim()) {
@@ -50,11 +51,10 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 // Заголовок секции: дефолт верстальщика «Сейчас в тренде». aiText пишет плоскую
 // строку; nested {text} — legacy-фолбэк. title — ещё один legacy-алиас.
-// Пустая строка = «мерчант не задал» (так же трактует платформа,
-// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
-const sectionTitle =
-	((typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title)?.trim() ||
-	"Сейчас в тренде";
+// Панельное поле пришло строкой (в т.ч. пустой "" — мерчант стёр вручную) →
+// рендерим как есть. Легаси title и заглушка темы — только когда поля вовсе
+// нет (undefined, старые ревизии).
+const sectionTitle = pickText(p.heading, pickText(p.title, "Сейчас в тренде"));
 // Подзаголовка у верстальщика НЕТ (только заголовок + карточки). Рендерим <p>
 // ТОЛЬКО когда мерчант задал непустой текст. aiText → плоская строка; nested
 // {content} — legacy-фолбэк.
@@ -238,7 +238,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
-		{!isFieldHidden('heading') && (
+		{!isFieldHidden('heading') && (sectionTitle || sectionSubtitle) && (
 		<div
 			data-animate
 			class={headWrapCls}
@@ -246,7 +246,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 id="collections-title" class={headingCls} set:html={inlineFormat(sectionTitle)}></h2>
+			{sectionTitle && <h2 id="collections-title" class={headingCls} set:html={inlineFormat(sectionTitle)}></h2>}
 			{sectionSubtitle && <p class={subtitleCls} set:html={inlineFormat(sectionSubtitle)} />}
 		</div>
 		)}

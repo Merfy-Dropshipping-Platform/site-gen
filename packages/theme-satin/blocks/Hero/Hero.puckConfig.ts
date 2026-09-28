@@ -98,6 +98,13 @@ export const HeroSchema = z.object({
   imageFullBleed: z.boolean().optional(),
   contentAlign: z.enum(['center', 'left']).optional(),
   buttonStyle: z.enum(['solid', 'outlined']).optional(),
+  /**
+   * Порядок параметров из перетаскивания в дереве конструктора (владелец
+   * 25.09: «не работает drag and drop в параметрах»). Имена — реестр
+   * SECTION_FIELDS (packages/theme-base/runtime/field-order.ts); порт темы рисует
+   * параметры в этом порядке.
+   */
+  fieldOrder: z.array(z.string()).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -288,6 +295,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // В Figma 314-34815 «Отступы» нет — скрыто из sidebar. Padding в данных
     // сохраняется (для Hero.astro), но мерчант не редактирует.
     padding: { type: 'hidden', label: '' } as any,
+    // Скрытое поле включает ручки перетаскивания параметров в дереве
+    // конструктора (без него ручек нет). Значение пишет конструктор —
+    // `defaults` не задаём: без пропа порт рисует прежний порядок темы.
+    fieldOrder: { type: 'hidden', label: '' },
   },
   // defaults — satin'овская манера (НЕ канон-дефолты). Редакторский настрой satin:
   // STYLE'S WEAR заголовок, серый кикер, split-вариант, padding 0 (edge-to-edge),
@@ -310,10 +321,11 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     container: 'false',
     overlay: 0,
     // «Позиция» НЕ задаём: порт читает p.position ?? p.contentPosition, а
-    // contentPosition — легаси-поле, которое дефолты theme-base материализуют
-    // в props ('center') при любой правке панели. Статичная «Позиция» перебила
-    // бы его и сдвинула уже стоящие баннеры (проверено рендером: HTML с
-    // contentPosition:'center' и он же + position:'center-left' различаются).
+    // contentPosition — легаси-поле, которое дефолты theme-base до 25.09
+    // вписывали в props ('center') при любой правке панели; в старых ревизиях
+    // оно так и лежит. Статичная «Позиция» перебила бы его и сдвинула уже
+    // стоящие баннеры (проверено рендером: HTML с contentPosition:'center' и
+    // он же + position:'center-left' различаются).
     // «Выравнивание» НЕ задаём: satin Hero.astro без значения оставляет
     // alignItemsCls/textAlignCls ПУСТЫМИ (четвёртая ветка), и ни left, ни
     // center, ни right этого не повторяют — дефолт изменил бы вид витрины.

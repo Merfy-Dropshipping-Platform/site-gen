@@ -22,6 +22,11 @@ import { BASE_DEFAULTS } from '../../packages/theme-contract/tokens/base-default
 import { generateGoogleFontsUrl } from '../generator/constructor-theme-bridge';
 import { CONTENT_SURFACE_CSS } from './content-surface-css';
 import { resolveCartDrawerSchemeId } from './cart-drawer-contract';
+import { SCHEME_BUTTON_CSS } from './scheme-buttons';
+import {
+  cookieBannerCss,
+  resolveCookieBanner,
+} from '../../packages/theme-base/runtime/cookie-consent';
 
 /**
  * Корни секций-страниц личного кабинета. Ровно эти четыре страницы конструктор
@@ -907,6 +912,18 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
       }}${cartDrawerPaintRule}`
     : '';
 
+  // «Настройки темы» → «Баннер» (владелец 28.09): вкл/выкл, цветовая схема и
+  // расположение баннера cookie. Тот же канал, что у схемы корзины выше:
+  // tokens.css общий для пяти тем, витрины и превью и горячо меняется в
+  // конструкторе (`update-tokens`). Правила — `cookieBannerCss` рядом с
+  // разметкой баннера (packages/theme-base/runtime/cookie-consent.ts). Продавец
+  // баннер не трогал — правил нет, баннер ровно прежний.
+  const cookieBanner = resolveCookieBanner(s.cookieBanner);
+  const cookieBannerRule = cookieBannerCss(
+    cookieBanner,
+    schemeVarsById(schemes, cookieBanner.colorScheme),
+  );
+
   // ── Поиск всегда красится Схемой 1 ────────────────────────────────────
   // Владелец, 15.09 (дословно): «Во всех темах Поиск должен брать на себя цвет
   // фона, текста, цвет текста в кнопке и цвет кнопки из Цветовой схемы 1».
@@ -1076,6 +1093,7 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     productCardBgSelfRule,
     productCardSchemeRule,
     cartDrawerSchemeRule,
+    cookieBannerRule,
     searchScheme1Rule,
     wishlistHideRule,
     stickyFooterRule,
@@ -1097,6 +1115,9 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     // токеном схемы) — владелец, 16.09, п.2. Разбор — у
     // CHECKOUT_SUBMIT_HOVER_LIGHTEN_CSS.
     CHECKOUT_SUBMIT_HOVER_LIGHTEN_CSS,
+    // Кнопки секций: Основная/Дополнительная ← одноимённые поля схемы
+    // (Фон → фон, Текст → буквы, Обводка → рамка). Разбор — scheme-buttons.ts.
+    SCHEME_BUTTON_CSS,
   ]
     .filter(Boolean)
     .join('\n');
@@ -1105,6 +1126,22 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
 // ──────────────────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Переменные схемы палитры магазина по id («scheme-2» или «2»); нет выбора или
+ * такой схемы — пусто (правило не пишется).
+ */
+function schemeVarsById(
+  schemes: Record<string, unknown>[],
+  id: string | null,
+): string {
+  if (!id) return '';
+  const wanted = schemeClassId(id);
+  const scheme = schemes.find(
+    (sc) => schemeClassId(String(sc.id ?? '')) === wanted,
+  );
+  return scheme ? schemeToVars(scheme) : '';
+}
 
 export function isPlainObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
@@ -1525,7 +1562,10 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   if (muted) parts.push(`--color-muted: ${muted}`);
   const primaryBg = hexToRgbTriple(primary.background);
   const primaryText = hexToRgbTriple(primary.text);
-  const primaryBorder = hexToRgbTriple(primary.border);
+  // Обводка без своего значения = цвет кнопки: так же дозаполняет схему
+  // панель конструктора (normalizeApiColorScheme), и рамка у такой схемы не
+  // наследуется от чужой схемы через `:root`.
+  const primaryBorder = hexToRgbTriple(primary.border) ?? primaryBg;
   if (primaryBg) parts.push(`--color-button-bg: ${primaryBg}`);
   if (primaryText) parts.push(`--color-button-text: ${primaryText}`);
   if (primaryBorder) parts.push(`--color-button-border: ${primaryBorder}`);
@@ -1548,7 +1588,7 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   if (primaryTextHover) parts.push(`--color-button-text-hover: ${primaryTextHover}`);
   const secondaryBg = hexToRgbTriple(secondary.background);
   const secondaryText = hexToRgbTriple(secondary.text);
-  const secondaryBorder = hexToRgbTriple(secondary.border);
+  const secondaryBorder = hexToRgbTriple(secondary.border) ?? secondaryText;
   if (secondaryBg) parts.push(`--color-button-secondary-bg: ${secondaryBg}`);
   if (secondaryText) parts.push(`--color-button-secondary-text: ${secondaryText}`);
   if (secondaryBorder) parts.push(`--color-button-secondary-border: ${secondaryBorder}`);

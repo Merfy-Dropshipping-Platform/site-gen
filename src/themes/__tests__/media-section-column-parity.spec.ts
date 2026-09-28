@@ -376,24 +376,9 @@ describe("Галерея: низ большой плитки сходится с
         expect([null, "stretch", "normal"]).toContain(align);
       });
 
-      it(`${theme}: ${имя} — большая плитка берёт высоту строки`, () => {
-        const shape = galleryShape(
-          theme,
-          render(theme, "Gallery", { colorScheme: "scheme-3", items }),
-        );
-        expect(shape).not.toBeNull();
-        expect(prop(theme, shape!.hero, "height")).toBe("100%");
-      });
-
-      it(`${theme}: ${имя} — аспект не держит высоту большой плитки на lg`, () => {
-        const shape = galleryShape(
-          theme,
-          render(theme, "Gallery", { colorScheme: "scheme-3", items }),
-        );
-        expect(shape).not.toBeNull();
-        const ar = prop(theme, shape!.hero, "aspect-ratio");
-        expect([null, "auto"]).toContain(ar);
-      });
+      // Сами низы колонок (большая плитка — квадрат верстальщиков, тянутся
+      // боковые) проверяются РЕЗУЛЬТАТОМ в gallery-bottoms-align.spec.ts —
+      // замер низов в браузере.
     }
 
     it(`${theme}: картинка большой плитки не задаёт высоту строки`, () => {

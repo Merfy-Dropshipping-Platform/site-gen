@@ -2,6 +2,7 @@
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
 import NtSectionHeading from "../ui/RoseSectionHeading.astro";
 import { resolveRoseHeadingSize, roseHeadingStyle } from "../../lib/heading-size";
+import { pickText, textOf, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ: канон-схема ContactForm. Секция рендерит форму обратной связи.
 // Схема описывает поля ФОРМЫ. Когда мерчант настроил поля (fields-проп) —
@@ -21,10 +22,10 @@ const id = p.id;
 const headingSizeRaw = p.heading?.size ?? p.headingSize;
 const headingFontSize =
 	headingSizeRaw === "small" ? "17px" : headingSizeRaw === "large" ? "24px" : "20px";
-const placeholderHeading =
-	(typeof p.heading?.text === "string" && p.heading.text) ||
-	(typeof p.heading === "string" && p.heading) ||
-	"Контактная форма";
+// pickText: строка панели (heading.text / легаси heading-строка) рендерится
+// КАК ЕСТЬ, даже пустая (мерчант стёр) — заглушка «Контактная форма» только
+// когда поле не задано вовсе (undefined/null, старые ревизии).
+const placeholderHeading = pickText(p.heading, "Контактная форма");
 
 // «Текст» панели (`description`) — просьба владельца 2026-09-15. Порт его НЕ
 // рендерил вовсе: замер живой цепочкой 2026-09-15 давал `absent` у rose и
@@ -42,9 +43,7 @@ const textSizeRaw = p.textSize ?? p.text?.size ?? p.subtitleSize;
 const textFontSize =
 	textSizeRaw === "small" ? "14px" : textSizeRaw === "large" ? "19px" : "16px";
 
-const description =
-	(typeof p.description === "string" ? p.description : p.description?.content) ?? "";
-const descriptionText = typeof description === "string" ? description.trim() : "";
+const description = textOf(p.description) ?? "";
 
 // Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —
 // проп-ветка рендерит поля канон-семантикой (фоллбеки частичного объекта =
@@ -100,21 +99,26 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// SECTION-CONTRACT.md §2: оба текста стёрты → шапку не рисуем вовсе (иначе
+// узел остаётся пустой обёрткой с отступом на её месте).
+const headingBlockWillRender = !isFieldHidden('heading') && (hasText(placeholderHeading) || hasText(description));
+const headingWillRender = headingBlockWillRender && hasText(placeholderHeading);
 
 ---
 
 <section
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 sm:px-5 md:px-10 md:pb-[80px] md:pt-20 lg:px-16 xl:px-20 2xl:px-[280px]"
-	aria-labelledby="contacts-title"
+	aria-labelledby={headingWillRender ? "contacts-title" : undefined}
 	data-puck-component-id={id}
 	style={`${paddingStyle ?? ""};--contacts-title-size:${headingFontSize};--contacts-text-size:${textFontSize}`}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
 		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки
-		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading). */}
-		{!isFieldHidden('heading') && (
+		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading).
+		    Оба текста стёрты → узел не рисуем вовсе (без пустого <h2> с отступами). */}
+		{headingBlockWillRender && (
 		<div class="flex w-full justify-center" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading" style={headingSizeStyle}>
-			<NtSectionHeading variant="rose" titleId="contacts-title" title={placeholderHeading} subtitle={descriptionText || undefined} />
+			<NtSectionHeading variant="rose" titleId="contacts-title" title={placeholderHeading} subtitle={description} />
 		</div>
 		)}
 		<div class="flex flex-col">

@@ -46,7 +46,7 @@ export interface VariantSwatch {
 /** Группа вариаций с опциями (несёт swatchHex на опциях группы цвета). */
 export interface VariantGroupTree {
   name: string;
-  options?: Array<{ value: string; swatchHex?: string | null }>;
+  options?: Array<{ value: string; swatchHex?: string | null; images?: string[] | null }>;
 }
 
 /** Конкретная покупаемая комбинация вариантов (из products.json). */
@@ -668,51 +668,169 @@ export function colorToHex(
   return color;
 }
 
+/** Квадратик цвета карточки = один настоящий цвет товара. */
+export interface CardSwatch {
+  /** Название цвета у мерчанта («Haze Pink»); пусто — если в данных только hex. */
+  value: string;
+  /** `#RRGGBB`: swatchHex мерчанта, иначе по названию (colorToHex). */
+  color: string;
+  /** Фото этого цвета (option.images[0] группы «Цвет»), иначе null. */
+  image: string | null;
+}
+
+const colorGroupOf = (p: RealProduct): VariantGroupTree | undefined =>
+  (p.variantGroups ?? []).find((g) => COLOR_GROUP_RE.test(String(g?.name ?? "").trim()));
+
+const colorOfCombo = (c?: VariantCombination | null): string =>
+  String(c?.options?.["Цвет"] ?? c?.options?.["Color"] ?? "").trim();
+
+/** Название цвета (без регистра) → его фото из группы «Цвет». */
+function colorImages(p: RealProduct): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const o of colorGroupOf(p)?.options ?? []) {
+    const img = Array.isArray(o?.images) ? o.images.find((u) => typeof u === "string" && u) : undefined;
+    const key = String(o?.value ?? "").trim().toLowerCase();
+    if (img && key && !out.has(key)) out.set(key, img);
+  }
+  return out;
+}
+
 /**
- * Уникальные hex-свотчи цвета товара + флаг «есть недоступный цвет». Источники
- * по приоритету: variantSwatches (плоский, эмитит пайплайн) → группа «Цвет» из
+ * Квадратики цвета товара + флаг «есть недоступный цвет». Источники по
+ * приоритету: variantSwatches (плоский, эмитит пайплайн) → группа «Цвет» из
  * variantGroups (swatchHex) → имена цветов из variantCombinations (по таблице).
  * Недоступный цвет в filled-список не идёт — вместо него один перечёркнутый
  * серый квадрат (swatchDisabled), как в эталоне.
+ *
+ * Один квадратик — на каждое НАЗВАНИЕ цвета, не на каждый hex: «Haze Pink» и
+ * «Performance Pink» без swatchHex оба угадываются розовыми, и склейка по hex
+ * прятала второй вариант (владелец 28.09, «Бесшовный топ»).
  */
 export function deriveSwatches(p: RealProduct): {
-  swatches: string[];
+  swatches: CardSwatch[];
   swatchDisabled: boolean;
 } {
-  const out: string[] = [];
+  const out: CardSwatch[] = [];
   const seen = new Set<string>();
+  const images = colorImages(p);
   let swatchDisabled = false;
-  const push = (hex: string | null, available?: boolean): void => {
+  const push = (value: string | null | undefined, hex: string | null, available?: boolean): void => {
     if (!hex) return;
     if (available === false) {
       swatchDisabled = true;
       return;
     }
-    const key = hex.toLowerCase();
+    const name = String(value ?? "").trim();
+    const key = (name || hex).toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
-    out.push(hex);
+    out.push({ value: name, color: hex, image: images.get(name.toLowerCase()) ?? null });
   };
 
   if (Array.isArray(p.variantSwatches) && p.variantSwatches.length > 0) {
     for (const s of p.variantSwatches)
-      push(colorToHex(s?.value, s?.color), s?.available);
+      push(s?.value, colorToHex(s?.value, s?.color), s?.available);
   }
-  if (out.length === 0 && Array.isArray(p.variantGroups)) {
-    const group = p.variantGroups.find((g) =>
-      COLOR_GROUP_RE.test(String(g?.name ?? "").trim()),
-    );
-    if (group && Array.isArray(group.options)) {
-      for (const o of group.options) push(colorToHex(o?.value, o?.swatchHex));
-    }
+  if (out.length === 0) {
+    for (const o of colorGroupOf(p)?.options ?? []) push(o?.value, colorToHex(o?.value, o?.swatchHex));
   }
   if (out.length === 0 && Array.isArray(p.variantCombinations)) {
-    for (const c of p.variantCombinations) {
-      const name = c?.options?.["Цвет"] ?? c?.options?.["Color"];
-      push(colorToHex(name), c?.available);
-    }
+    for (const c of p.variantCombinations) push(colorOfCombo(c), colorToHex(colorOfCombo(c)), c?.available);
   }
   return { swatches: out.slice(0, 6), swatchDisabled };
+}
+
+/** Вариант, который кладёт «В корзину» после выбора цвета: этот цвет, первый размер в порядке показа. */
+function comboForColor(p: RealProduct, color: string): VariantCombination | null {
+  if (!color) return null;
+  const combos = (p.variantCombinations ?? []).filter((c) => colorOfCombo(c) === color);
+  const otherGroups = (p.variantGroups ?? []).filter((g) => g !== colorGroupOf(p));
+  return pickDefaultCombination(combos, otherGroups);
+}
+
+const sizeOfCombo = (c: VariantCombination): string =>
+  String(c.options?.["Размер"] ?? c.options?.["Size"] ?? "").trim();
+
+const SWATCH_RING = "box-shadow:0 0 0 2px rgb(var(--color-text,0 0 0));";
+
+/**
+ * Квадратик цвета. Есть что выбирать (вариант этого цвета или его фото) —
+ * кнопка с данными варианта для bindCardSwatches; нечего — статичный
+ * квадрат, как раньше. Стили новой кнопки — inline: живая сборка CSS может
+ * не видеть классов из строк гидрации.
+ */
+function swatchHtml(p: RealProduct, s: CardSwatch, selected: string): string {
+  const combo = comboForColor(p, s.value);
+  if (!combo && !s.image) {
+    return `<span class="size-5 rounded-[2px]" style="background:${s.color}" aria-hidden="true"></span>`;
+  }
+  const on = s.value !== "" && s.value === selected;
+  const data: Array<[string, string]> = [
+    ["data-swatch-value", s.value],
+    ["data-swatch-image", s.image ?? ""],
+    ["data-swatch-combo-id", combo ? String(combo.id) : ""],
+    ["data-swatch-size", combo ? sizeOfCombo(combo) : ""],
+    ["data-swatch-price", combo ? String(combo.price) : ""],
+  ];
+  const attrs = data.map(([k, v]) => ` ${k}="${escapeHtml(v)}"`).join("");
+  return (
+    `<button type="button" data-card-swatch${attrs} aria-pressed="${on}"` +
+    ` aria-label="Цвет: ${escapeHtml(s.value)}" title="${escapeHtml(s.value)}"` +
+    ` class="size-5 rounded-[2px]" style="padding:0;border:0;cursor:pointer;background:${s.color};${on ? SWATCH_RING : ""}"></button>`
+  );
+}
+
+/** Атрибут квадратика → атрибут кнопки «В корзину» (контракт nt-cart-flux initCartUI). */
+const SWATCH_TO_CART: ReadonlyArray<[string, string]> = [
+  ["data-swatch-combo-id", "data-variant-combination-id"],
+  ["data-swatch-value", "data-variant-color"],
+  ["data-swatch-size", "data-variant-size"],
+  ["data-swatch-price", "data-price"],
+];
+
+function setOrDrop(el: Element, name: string, value: string | null): void {
+  if (value) el.setAttribute(name, value);
+  else el.removeAttribute(name);
+}
+
+/** Фото карточки → фото цвета. data-image-1 — «исходное» для наведения и свайпа (runtime/card-photo-swipe). */
+function showCardPhoto(card: Element, url: string): void {
+  const img = card.querySelector('[data-nt="flux-card-media"] img');
+  if (!img) return;
+  img.setAttribute("src", url);
+  img.setAttribute("data-image-1", url);
+}
+
+function selectCardSwatch(swatch: Element): void {
+  const card = swatch.closest('[data-nt="flux-product-card"]');
+  if (!card) return;
+  for (const el of Array.from(card.querySelectorAll<HTMLElement>("[data-card-swatch]"))) {
+    el.setAttribute("aria-pressed", String(el === swatch));
+    el.style.boxShadow = el === swatch ? "0 0 0 2px rgb(var(--color-text,0 0 0))" : "";
+  }
+  const image = swatch.getAttribute("data-swatch-image");
+  const button = card.querySelector("[data-add-to-cart]");
+  if (image) showCardPhoto(card, image);
+  if (button && image) button.setAttribute("data-image", image);
+  if (!button || !swatch.getAttribute("data-swatch-combo-id")) return;
+  for (const [from, to] of SWATCH_TO_CART) setOrDrop(button, to, swatch.getAttribute(from));
+}
+
+/**
+ * Нажатие на квадратик цвета карточки (renderCardHtml) выбирает вариант:
+ * фото этого цвета + «В корзину» кладёт вариант этого цвета. Один делегат на
+ * документ — карточки перерисовываются гидрацией, привязка переживает это.
+ */
+export function bindCardSwatches(): void {
+  const root = document.documentElement;
+  if (root.hasAttribute("data-flux-card-swatches")) return;
+  root.setAttribute("data-flux-card-swatches", "");
+  document.addEventListener("click", (event) => {
+    const swatch = (event.target as Element | null)?.closest?.("[data-card-swatch]");
+    if (!swatch) return;
+    event.preventDefault();
+    selectCardSwatch(swatch);
+  });
 }
 
 /**
@@ -756,8 +874,10 @@ function parsePriceNum(v: number | string | null | undefined): number | null {
 
 /**
  * Sale-бейдж эталона (Figma): уценённый товар (oldPrice/compareAtPrice > price)
- * → `-NN%` в оранжевом квадрате, иначе «Скидка». Нет уценки → пусто. Стиль 1:1
- * с FluxProductCard (white, 12px, font-light, px-1.5 py-1).
+ * → `-NN%`, иначе «Скидка». Нет уценки → пусто. Стиль 1:1 с FluxProductCard
+ * (12px, font-light, px-1.5 py-1). Цвет — роль схемы «Кнопка» (класс
+ * merfy-badge, base.css), не хардкод верстальщика bg #FA5109/white
+ * (владелец 28.09).
  */
 function saleBadgeHtml(p: RealProduct): string {
   const old = parsePriceNum(p.oldPrice ?? p.compareAtPrice ?? null);
@@ -767,7 +887,7 @@ function saleBadgeHtml(p: RealProduct): string {
   const label = pct > 0 ? `-${pct}%` : "Скидка";
   return (
     `<div class="absolute left-2 top-2 flex flex-col items-start gap-1">` +
-    `<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">${escapeHtml(label)}</span>` +
+    `<span class="merfy-badge inline-flex items-center justify-center rounded-[4px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none md:text-[14px]">${escapeHtml(label)}</span>` +
     `</div>`
   );
 }
@@ -867,13 +987,12 @@ export function renderCardHtml(p: RealProduct, ctaLabel?: string, qaMode?: strin
     : `<span class="flex h-full w-full items-center justify-center text-[rgb(var(--color-muted,153_153_153))]"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>`;
 
   const { swatches, swatchDisabled } = deriveSwatches(p);
+  // Выбранным рисуется цвет варианта, который кладёт «В корзину» (cardButtonHtml).
+  const selectedColor = colorOfCombo(pickDefaultCombination(p.variantCombinations ?? [], p.variantGroups));
   const swatchesHtml =
     swatches.length > 0
       ? `<div class="flex items-center gap-1">${swatches
-          .map(
-            (c) =>
-              `<span class="size-5 rounded-[2px]" style="background:${c}" aria-hidden="true"></span>`,
-          )
+          .map((s) => swatchHtml(p, s, selectedColor))
           .join("")}${
           swatchDisabled
             ? `<span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true"><span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span></span>`
@@ -904,9 +1023,9 @@ export function renderCardHtml(p: RealProduct, ctaLabel?: string, qaMode?: strin
 		<div class="flex flex-col gap-4">
 			${swatchesHtml}
 			<div class="flex flex-col gap-1">
-				<a href="${href}" class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] hover:opacity-80 md:text-[16px]">${name}</a>
+				<a href="${href}" class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80 md:text-[16px]">${name}</a>
 				<div class="flex items-center gap-2">
-					<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">${price}</span>
+					<span class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">${price}</span>
 					${oldPrice}
 				</div>
 			</div>

@@ -1,5 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
+import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/runtime/field-order";
 // Фаза B (vanilla): канон-секция ImageWithText — адаптация care-бэнда
 // sections/Gallery.astro:82-123 («Ваш дом — наша забота», см. themes/vanilla/
 // MANNER.md §10). Тело верстальщика перенесено КОПИЕЙ — Gallery.astro НЕ
@@ -16,6 +18,13 @@ import { inlineFormat } from "../../lib/rich-text";
 //     PopularProducts (collectionRef) / Collections (hasManualCollections).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+
+// Field-order 24.09 (тестер: «слетели дрэг-н-дропы»): порядок заголовка/
+// текста/кнопки из перетаскивания в конструкторе. Колонка ниже держит зазор
+// МАРЖИНОМ на каждом поле (TEXT_MT_CLS/ctaMtCls), а не `gap` — переставленный
+// набор рисуется отдельным путём (ниже, у самой разметки).
+const fieldOrder = orderTextFields(p);
+const isDefaultOrder = fieldOrder.every((f, i) => f === TEXT_COLUMN_FIELDS[i]);
 
 // ──────────────────────────────────────────────────────────────────────────
 // Гейт пустого состояния (Figma 1:19335 — empty-state ЗАМЕНЯЕТ мок верстальщика).
@@ -34,8 +43,9 @@ const hasImage = typeof p.image?.url === "string" && p.image.url.trim().length >
 // (Bitter italic 20 white на полотне №2, Gal:92). Лестница §9: medium/отсутствие
 // = литерал 20, small 17, large 24.
 const headingDefault = hasImage ? "Ваш дом — наша забота" : "Изображение с текстом";
-const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() || headingDefault;
+// pickText: строка панели (в т.ч. пустая — мерчант стёр) рендерится КАК ЕСТЬ;
+// headingDefault подставляется ТОЛЬКО когда поле не задано вовсе (§2 контракта).
+const heading = pickText(p.heading, headingDefault);
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
@@ -70,15 +80,26 @@ const selfCls =
 const textDefault = hasImage
 	? "<p>Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.</p><p>В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома</p>"
 	: "<p>Покажи и расскажи о своем товаре в одном блоке</p>";
-const text =
-	(typeof p.text === "string" ? p.text : p.text?.content)?.trim() || textDefault;
+const text = pickText(p.text, textDefault);
 const textSize = p.textSize ?? p.text?.size;
-const textCls =
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только
+// размеры»): бэнд «Ваш дом — наша забота» Vanilla-theme @c65d9e1c
+// (sections/Gallery.astro, [data-gallery-care]) — абзац под заголовком mt-3.
+// Владелец 25.09 «что в панели — то и на витрине»: не заданная «Ширина»
+// рисует значение панели по умолчанию — «Большая».
+// Раскладку верстальщиков (на lg колонка текста 352 и фото 652 по краям)
+// взять «Большой» нельзя: её колонка текста уже, чем у «Маленькой» (370) и
+// «Средней» (428–520) — порядок ширин сломался бы (замер Chromium 25.09).
+const TEXT_MT_CLS = "mt-3";
+// Field-order: тело класса БЕЗ отступа-от-соседа — нужно custom-порядку
+// (там отступ не «text-специфичный», а позиционный, см. ниже у разметки).
+const textClsBody =
 	textSize === "small"
-		? "mt-5 flex w-full flex-col gap-4 font-vanilla-arsenal text-[10px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]"
+		? `flex w-full flex-col gap-4 font-vanilla-arsenal text-[10px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]`
 		: textSize === "medium"
-			? "mt-5 flex w-full flex-col gap-4 font-vanilla-arsenal text-[12px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]"
-			: "mt-5 flex w-full flex-col gap-4 font-vanilla-arsenal text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]";
+			? `flex w-full flex-col gap-4 font-vanilla-arsenal text-[12px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]`
+			: `flex w-full flex-col gap-4 font-vanilla-arsenal text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]`;
+const textCls = `${TEXT_MT_CLS} ${textClsBody}`;
 
 // Канон textStyle: blockDefaults-литерал 'italic' = курсив верстальщика —
 // снимается только явным 'normal'.
@@ -136,13 +157,12 @@ const btnHref =
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
 	"/about";
 
-// Канон buttonStyle: 'outlined' и отсутствие = контур care-бэнда ДОСЛОВНО
-// (border 1.3px white, Gal:105; button-2 токены); 'solid' = заливка кнопки-2.
+// «Кнопка» секции одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Толщина рамки care-бэнда 1.3px (Gal:105) — вёрстка темы, остаётся здесь.
 // Радиус 0 ≡ var(--radius-button,0px); active:scale в манере НЕ используется.
 const btnCls =
-	p.buttonStyle === "solid"
-		? "inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80"
-		: "inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border-[1.3px] border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80";
+	"inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border-[1.3px] border-solid px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal transition-opacity hover:opacity-80";
 
 // Канон ctaPosition: 'bottom-pinned' (canon-default из theme.json blockDefaults)
 // и отсутствие = литерал care-бэнда (кнопка mt-10 self-start под текстом);
@@ -154,9 +174,6 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-// Фон секции — токен с фоллбеком родного полотна №2 (#3A4530, МАННЕРА §7).
-const titleId = id && heading ? `${id}-title` : undefined;
-
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -164,6 +181,13 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта); titleId ставим ТОЛЬКО
+// когда заголовок реально рисуется — иначе aria-labelledby секции сослался бы
+// на несуществующий id.
+const showHeading = hasText(heading) && !isFieldHidden('heading');
+const showText = hasText(text) && !isFieldHidden('text');
+// Фон секции — токен с фоллбеком родного полотна №2 (#3A4530, МАННЕРА §7).
+const titleId = id && showHeading ? `${id}-title` : undefined;
 ---
 
 <section
@@ -191,48 +215,92 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		   (в бандле ноль вхождений «basis») — на них опираться нельзя. */}
 		<div class={`flex w-full flex-col ${itemsCls}${imageLeft ? " lg:order-2" : ""} lg:min-w-0 lg:shrink lg:grow-0`}>
 		<div class={`flex w-full max-w-[352px] flex-col ${itemsCls}`}>
-			{
-				heading && !isFieldHidden('heading') && (
+			{isDefaultOrder && showHeading && (
 					<h2
 						id={titleId}
 						class={headingCls + alignCls + italicCls}
 						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
+						data-puck-subsection-index="101"
 						data-puck-subsection-field="heading"
 					>
 						<Fragment set:html={inlineFormat(heading)} />
 					</h2>
-				)
-			}
-			{!isFieldHidden('text') && (
+			)}
+			{isDefaultOrder && showText && (
 				<div
 					class={textCls + italicCls + alignCls}
 					data-puck-subsection-parent={id}
-					data-puck-subsection-index="101"
+					data-puck-subsection-index="102"
 					data-puck-subsection-field="text"
 					set:html={inlineFormat(text)}
 				/>
 			)}
 			{
-				btnText && !isFieldHidden('button') && (
+				isDefaultOrder && btnText && !isFieldHidden('button') && (
 					<a
 						href={btnHref}
 						class={`${ctaMtCls} ${selfCls} ${btnCls}`}
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
-						data-puck-subsection-index="102"
+						data-puck-subsection-index="103"
 						data-puck-subsection-field="button"
 					>
 						{btnText}
 					</a>
 				)
 			}
+			{/* Field-order: колонка держит зазор МАРЖИНОМ на поле (не `gap`), поэтому
+			   отступ считаем ПОЗИЦИОННО — GAP_AT[i] воспроизводит тот же отступ,
+			   что сейчас стоит между heading→text (TEXT_MT_CLS) и text→button
+			   (ctaMtCls), первому месту отступ не даём. */}
+			{!isDefaultOrder && fieldOrder.map((field, i) => {
+				const GAP_AT = ["", TEXT_MT_CLS, ctaMtCls];
+				const gapCls = GAP_AT[i];
+				// Без TS-аннотации типа объекта: `Record<...>` в теле шаблона Astro
+				// читает как открывающий тег и рвёт разметку молча.
+				const nodes = {
+					heading: showHeading && (
+						<h2
+							id={titleId}
+							class={`${gapCls} ${headingCls}${alignCls}${italicCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="heading"
+						>
+							<Fragment set:html={inlineFormat(heading)} />
+						</h2>
+					),
+					text: showText && (
+						<div
+							class={`${gapCls} ${textClsBody}${italicCls}${alignCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="text"
+							set:html={inlineFormat(text)}
+						/>
+					),
+					button: btnText && !isFieldHidden('button') && (
+						<a
+							href={btnHref}
+							class={`${gapCls} ${selfCls} ${btnCls}`}
+							data-scheme-button="primary"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="103"
+							data-puck-subsection-field="button"
+						>
+							{btnText}
+						</a>
+					),
+				};
+				return nodes[field];
+			})}
 		</div>
 		</div>
 		{!isFieldHidden('image') && (
 		<div
 			class={`relative ${aspectCls} w-full max-w-[652px] overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))]${imageLeft ? " lg:order-1" : ""} lg:min-w-0 lg:max-w-none lg:shrink lg:grow-0`}
 			data-puck-subsection-parent={id}
-			data-puck-subsection-index="103"
+			data-puck-subsection-index="100"
 			data-puck-subsection-field="image"
 		>
 			<img

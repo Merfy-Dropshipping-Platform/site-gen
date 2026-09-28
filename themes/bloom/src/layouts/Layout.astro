@@ -9,6 +9,8 @@ import Footer from "../components/Footer.astro";
 // этой темы.
 import CartAddedModal from "../../../../packages/theme-base/primitives/CartAddedModal.astro";
 import NtCartDrawer from "../../../../packages/theme-base/primitives/SchemeCartDrawer.astro";
+// Баннер согласия на cookie — ОБЩИЙ компонент theme-base (владелец 27.09).
+import CookieConsent from "../../../../packages/theme-base/primitives/CookieConsent.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 import { ViewTransitions } from "astro:transitions";
 
@@ -112,11 +114,18 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		</script>
 
 		<CartAddedModal />
+		{/* Баннер согласия на cookie (theme-base/primitives/CookieConsent.astro) —
+		    на каждой странице, включая чекаут; строго ПОСЛЕ подвала, иначе сборка
+		    страниц из секций (composeV2Page) его срежет. */}
+		<CookieConsent />
 		<script>
 			import { initCartUI } from "../lib/cart";
+			import { initCardPhotoSwipe } from "../../../../packages/theme-base/runtime/card-photo-swipe";
 			import { initWishlistUI } from "../lib/wishlist";
 			import { initAuthUI } from "../lib/auth";
 			initCartUI();
+			// «Следующее фото» на телефоне: свайп по фото карточки листает фото.
+			initCardPhotoSwipe();
 			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
 			initWishlistUI();
 			// Аккаунт покупателя — красит [data-auth-link] и грузит профиль.

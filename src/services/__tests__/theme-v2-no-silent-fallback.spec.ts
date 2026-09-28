@@ -142,7 +142,8 @@ const CASES: ThemeCase[] = [
     marker: {
       PromoBanner: "data-bloom-announcement",
       Header: "data-bloom-header",
-      Hero: "2xl:px-[300px]",
+      // Hero: колонка 1320 по центру на широких (одна версия секции, 25.09).
+      Hero: "2xl:px-[max(300px,calc(50%_-_660px))]",
       PopularProducts: "bloom-product-name",
       MainText: "2xl:px-[300px]",
       Gallery: "2xl:px-[300px]",

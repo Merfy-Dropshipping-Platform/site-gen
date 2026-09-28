@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 // ОЖИВЛЕНИЕ: канон-схема ContactForm (flux). Секция рендерит форму обратной связи
 // в чистой манере flux (Roboto Flex везде, поля rounded-8 с surface-бордером,
 // чёрная CTA, фокус #FA5109 — стиль как Footer newsletter / Header search / Hero CTA).
@@ -14,11 +15,11 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 
 // Figma 1:19335 — заголовок берём из пропса (heading.text / heading-строка), иначе
-// дословный Figma-литерал «Контактная форма».
-const placeholderHeading =
-	(typeof p.heading?.text === "string" && p.heading.text) ||
-	(typeof p.heading === "string" && p.heading) ||
-	"Контактная форма";
+// дословный Figma-литерал «Контактная форма». Поле ЗАДАНО строкой (в т.ч.
+// пустой — мерчант стёр в панели) → рендерим её как есть через `pickText`
+// (packages/theme-base/runtime/merchant-text). Фолбэк — только когда heading
+// не строка вовсе (undefined/старая ревизия).
+const placeholderHeading = pickText(p.heading, "Контактная форма");
 
 // «Размер заголовка» (как rose/flux Collections): канон-дефолт medium → эталон 19/23,
 // small меньше, large крупнее. Источник — heading.size либо плоский headingSize.
@@ -34,14 +35,7 @@ const headingCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--
 // Подзаголовок (subtitle / text / hidden description) — flux font-light, токен
 // color-muted. Рендерим ТОЛЬКО при непустом значении (как rose: нет текста → нет
 // подзаголовка). textSize управляет кеглем (канон-дефолт small = 14/16).
-const subtitleRaw =
-	(typeof p.subtitle?.content === "string" ? p.subtitle.content : undefined) ??
-	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
-	(typeof p.text?.content === "string" ? p.text.content : undefined) ??
-	(typeof p.text === "string" ? p.text : undefined) ??
-	(typeof p.description === "string" ? p.description : undefined) ??
-	"";
-const subtitleText = typeof subtitleRaw === "string" ? subtitleRaw.trim() : "";
+const subtitleText = textOf(p.subtitle) ?? textOf(p.text) ?? textOf(p.description) ?? "";
 const subtitleSizeRaw = p.subtitle?.size ?? p.text?.size ?? p.textSize ?? p.subtitleSize;
 // «Размер текста» — просьба владельца 2026-09-16 («под инпутом добавить список
 // размер текста»). Панель этой секции показывает «Средний», когда мерчант
@@ -106,24 +100,14 @@ const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
 const padStyle = pad
 	? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
 	: undefined;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. gap-8/md:gap-10 и py-10 md:py-16 не трогаем. Без признака
-// — байт в байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem. gap-8/md:gap-10 и py-10 md:py-16 не трогаем.
 const CONTAINER_CLS = {
-	designers: {
-		custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:gap-10 md:px-10 lg:px-20",
-		default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:gap-10 md:px-10 md:py-16 lg:px-20",
-	},
-	legacy: {
-		custom: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:gap-10 md:px-20 2xl:px-80",
-		default: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:gap-10 md:px-20 md:py-16 2xl:px-80",
-	},
+	custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:gap-10 md:px-10 lg:px-20",
+	default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:gap-10 md:px-10 md:py-16 lg:px-20",
 };
-const containerCls =
-	CONTAINER_CLS[designParity ? "designers" : "legacy"][padStyle ? "custom" : "default"];
+const containerCls = CONTAINER_CLS[padStyle ? "custom" : "default"];
 
 // Классы полей — стиль flux (Footer newsletter / Header search): Roboto Flex 16 light,
 // h-12, rounded-8, border surface-токен, bg-white, placeholder #999999, фокус #FA5109.
@@ -161,21 +145,23 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 <section
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
-	aria-labelledby="contacts-title"
+	aria-labelledby={!isFieldHidden('heading') && hasText(placeholderHeading) ? "contacts-title" : undefined}
 	data-puck-component-id={id}
 >
 	<div class={containerCls} style={padStyle}>
 		{/* Figma 1:19335: дословный заголовок секции «Контактная форма». Мерчант задал
-		    свой heading → рендерим ЕГО (placeholderHeading); подзаголовок — при наличии. */}
-		{!isFieldHidden('heading') && (
+		    свой heading → рендерим ЕГО (placeholderHeading); подзаголовок — при наличии.
+		    Стёртые оба поля (§2 контракта секции) → обёртка тоже не рисуется, иначе её
+		    gap-2 сдвигает форму на пустое место заголовка. */}
+		{!isFieldHidden('heading') && (hasText(placeholderHeading) || hasText(subtitleText)) && (
 		<div
 			class="flex w-full flex-col items-center gap-2 text-center"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 id="contacts-title" class={headingCls}><Fragment set:html={inlineFormat(placeholderHeading)} /></h2>
-			{subtitleText && <p class={subtitleCls}><Fragment set:html={inlineFormat(subtitleText)} /></p>}
+			{hasText(placeholderHeading) && <h2 id="contacts-title" class={headingCls}><Fragment set:html={inlineFormat(placeholderHeading)} /></h2>}
+			{hasText(subtitleText) && <p class={subtitleCls}><Fragment set:html={inlineFormat(subtitleText)} /></p>}
 		</div>
 		)}
 

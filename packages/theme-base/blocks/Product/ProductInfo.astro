@@ -28,6 +28,8 @@
 // сырыми тегами (баг-репорт тестера 2026-09-13, K4).
 import { sanitizeInline } from '../../runtime/rich-text';
 
+type InfoField = 'text' | 'title';
+
 interface Props {
   brand?: string | null;
   title: string;
@@ -35,6 +37,12 @@ interface Props {
   blockId?: string;
   hideBrand?: boolean;
   hideTitle?: boolean;
+  /**
+   * Какие строки и в каком порядке рисует эта обёртка — порядок из
+   * перетаскивания в конструкторе (`props.fieldOrder`, Product.astro). Без
+   * пропа — бренд, затем название, как раньше.
+   */
+  fields?: readonly InfoField[];
 }
 
 const {
@@ -43,10 +51,13 @@ const {
   blockId,
   hideBrand = false,
   hideTitle = false,
+  fields = ['text', 'title'],
 } = Astro.props as Props;
 ---
 <div class="flex flex-col gap-2 w-full" data-product-info>
-  {brand && !hideBrand && (
+  {fields.map((field) => (
+  <Fragment>
+  {field === 'text' && brand && !hideBrand && (
     <span
       class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-text))]/60"
       data-puck-subsection-parent={blockId}
@@ -55,7 +66,7 @@ const {
       set:html={sanitizeInline(brand)}
     ></span>
   )}
-  {!hideTitle && (
+  {field === 'title' && !hideTitle && (
     <h1
       class="[font-family:var(--font-heading)] text-[length:var(--product-title-size,24px)] leading-tight text-[rgb(var(--color-heading))] m-0 normal-case"
       data-puck-subsection-parent={blockId}
@@ -63,4 +74,6 @@ const {
       data-puck-subsection-field="title"
     >{title}</h1>
   )}
+  </Fragment>
+  ))}
 </div>

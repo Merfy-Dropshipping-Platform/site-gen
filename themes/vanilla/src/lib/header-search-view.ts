@@ -34,8 +34,12 @@ function row(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext, drawer: boole
 	const thumbBg = drawer
 		? "bg-[var(--vanilla-line)]"
 		: "bg-[rgb(var(--color-surface,245_245_245))]";
+	// textCls — та же переменная, что красит имя/цену выше: в шторке
+	// `--vanilla-dark` (палитра шторки, роль «Текст» шапки дала бы белый на
+	// белом — см. docstring файла), в панели `--color-text`. Старая цена
+	// красится ТЕМ ЖЕ правилом, а не жёстким --color-text.
 	const oldPrice = hit.oldPrice
-		? `<span class="text-[12px] leading-[15px] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
+		? `<span class="text-[12px] leading-[15px] ${textCls} line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
 		: "";
 	return (
 		`<li data-search-hit data-product-id="${ctx.escapeHtml(hit.id)}" class="min-w-0">` +

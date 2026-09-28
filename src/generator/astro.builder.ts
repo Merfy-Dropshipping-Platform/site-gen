@@ -1,3 +1,4 @@
+import { buildEnvForThemes } from "./api-url";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { spawn } from "child_process";
@@ -860,7 +861,7 @@ export async function buildWithAstro(
       const p = spawn(
         "npm",
         ["install", "--silent", "--no-fund", "--no-audit"],
-        { cwd: workingDir, stdio: "ignore" },
+        { cwd: workingDir, stdio: "ignore", env: { ...process.env, ...buildEnvForThemes() } },
       );
       p.on("exit", (code) =>
         code === 0 ? resolve() : reject(new Error("npm install failed")),
@@ -871,6 +872,7 @@ export async function buildWithAstro(
       const p = spawn("npm", ["run", "build", "--silent"], {
         cwd: workingDir,
         stdio: "ignore",
+        env: { ...process.env, ...buildEnvForThemes() },
       });
       p.on("exit", (code) =>
         code === 0 ? resolve() : reject(new Error("astro build failed")),

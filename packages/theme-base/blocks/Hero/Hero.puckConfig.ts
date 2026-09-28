@@ -95,6 +95,13 @@ export const HeroSchema = z.object({
   imageFullBleed: z.boolean().optional(),
   contentAlign: z.enum(['center', 'left']).optional(),
   buttonStyle: z.enum(['solid', 'outlined']).optional(),
+  /**
+   * Порядок параметров из перетаскивания в дереве конструктора (владелец
+   * 25.09: «не работает drag and drop в параметрах»). Имена — реестр
+   * SECTION_FIELDS (packages/theme-base/runtime/field-order.ts); порт темы рисует
+   * параметры в этом порядке.
+   */
+  fieldOrder: z.array(z.string()).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -291,6 +298,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // от шапки. Поле открыто; дефолт 0/0, чтобы новая секция выглядела как раньше
     // (полотно во всю ширину), а мерчант мог добавить воздух.
     padding: { type: 'padding', label: 'Отступы' } as any,
+    // Скрытое поле включает ручки перетаскивания параметров в дереве
+    // конструктора (без него ручек нет). Значение пишет конструктор —
+    // `defaults` не задаём: без пропа порт рисует прежний порядок темы.
+    fieldOrder: { type: 'hidden', label: '' },
   },
   defaults: {
     title: 'Добро пожаловать',
@@ -299,7 +310,6 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     images: undefined,
     cta: { text: 'Смотреть каталог', href: '/catalog' },
     variant: 'centered',
-    contentPosition: 'center',
     padding: { top: 0, bottom: 0 },
     // Контролы панели обязаны СТОЯТЬ на том, что порт рисует без значения,
     // иначе мерчант правит одно поле, а updateProp материализует чужие
@@ -318,6 +328,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // (rose bottom-center, flux/satin center-left, vanilla/bloom bottom-left),
     // а у vanilla отсутствие overlay — это фикс-затемнение bg-black/25, которое
     // overlay:0 снял бы. Значения живут в theme.json тем.
+    // Скрытую легаси-позицию `contentPosition` здесь тоже НЕ задаём: порты
+    // читают `position ?? contentPosition`, и у темы без «Позиции» в theme.json
+    // (rose, vanilla) дефолт 'center' вписывался первой же правкой секции и
+    // уводил текст первого экрана с места темы в центр (владелец 25.09).
   },
   schema: HeroSchema,
   maxInstances: null,

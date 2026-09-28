@@ -76,7 +76,9 @@ export const ThemeManifestSchema = z.object({
   screenshots: z.array(z.string()).optional(),
   tokens: z.string().optional(),
   defaults: TokensMapSchema,
-  colorSchemes: z.array(ColorSchemeSchema).min(1).max(4),
+  // До пяти схем: у rose их пять с самого начала, у vanilla и flux пятая —
+  // кнопки по вёрстке верстальщиков (scheme-button-defaults.spec.ts, 26.09).
+  colorSchemes: z.array(ColorSchemeSchema).min(1).max(5),
   blocks: z.record(z.string(), BlockConfigSchema),
   customBlocks: z.record(z.string(), CustomBlockSchema).optional(),
   features: z.record(z.string(), z.boolean()),

@@ -22,6 +22,7 @@
  */
 
 import { createCartAddedModal } from "./cart-added-modal";
+import { ORDER_STATUS_EVENT, settlePaidOrder } from "./paid-order-cart";
 // Тот же разбор «название → цвет», что рисует образцы на странице товара
 // (ProductVariants.astro). Модуль без зависимостей.
 import { resolveVariantColor } from "../blocks/Product/variantColor";
@@ -550,6 +551,17 @@ export function reconcileNtLines(
 	return { lines: labelled.lines, changed: changed || labelled.changed, dropped };
 }
 
+/**
+ * Событие «положить товар в корзину без отклика»: окно «Товар добавлен» и шторка
+ * не открываются. Его шлёт кнопка «Купить сейчас» (theme-base Product.astro,
+ * flux FeaturedProduct.astro) с кнопки «В корзину» своей секции и сразу уходит в
+ * оформление: отклик успевал мелькнуть, пока грузится /checkout (баг тестера:
+ * «на 0.5 секунды отображается корзина»). Строка та же, что по клику.
+ * Кнопки пишут имя строкой (их скрипты инлайн); сторож —
+ * src/themes/__tests__/buy-now-no-cart-flash.spec.ts.
+ */
+export const CART_ADD_SILENT_EVENT = "nt-cart:add";
+
 export const createNtCart = (opts: NtCartCreateOptions) => {
 	const { storageKey, eventPrefix, productPathPrefix = "/products", catalogUrl, renderDrawerItem } = opts;
 	const evUpdated = `${eventPrefix}:updated`;
@@ -727,10 +739,18 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 
 		const renderDrawer = () => {
 			const lines = getCart();
-			const empty = document.querySelector<HTMLElement>("[data-cart-empty]");
-			const items = document.querySelector<HTMLElement>("[data-cart-items]");
-			const summary = document.querySelector<HTMLElement>("[data-cart-summary]");
-			const total = document.querySelector<HTMLElement>("[data-cart-total]");
+			// Узлы ШТОРКИ, а не одноимённые узлы секций страницы корзины: «Промежуточный
+			// итог» и др. несут те же data-cart-* атрибуты и стоят в DOM раньше шторки,
+			// поэтому первый querySelector по странице находил секцию, и при пустой
+			// корзине шторка прятала её (тестер 24.09: схема «Промежуточного итога»
+			// «не применяется» — секция невидима в конструкторе). Секции страницы
+			// всегда внутри [data-puck-component-id], шторка — вне их.
+			const drawerNode = (sel: string) =>
+				Array.from(document.querySelectorAll<HTMLElement>(sel)).find((el) => !el.closest("[data-puck-component-id]")) ?? null;
+			const empty = drawerNode("[data-cart-empty]");
+			const items = drawerNode("[data-cart-items]");
+			const summary = drawerNode("[data-cart-summary]");
+			const total = drawerNode("[data-cart-total]");
 			if (!empty || !items || !summary || !total) return;
 
 			if (lines.length === 0) {
@@ -779,6 +799,25 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 				});
 		};
 
+		/** Строка корзины из кнопки «В корзину»: товар, выбранный вариант, цена. */
+		const itemFromButton = (btn: HTMLButtonElement) => ({
+			productId: btn.dataset.productId ?? "",
+			name: btn.dataset.name ?? "",
+			price: btn.dataset.price ?? "0",
+			oldPrice: btn.dataset.oldPrice,
+			image: btn.dataset.image ?? "",
+			quantity: Number(btn.dataset.quantity ?? "1"),
+			variant: {
+				color: btn.dataset.variantColor || undefined,
+				size: btn.dataset.variantSize || undefined,
+				// Произвольные группы вариантов («Оттенок», «Объём», «Вкус»):
+				// страница товара кладёт их сюда JSON-ом, иначе подпись строки
+				// собиралась бы из пустых color/size (баг тестера #7).
+				options: parseVariantOptions(btn.dataset.variantOptions),
+				variantCombinationId: btn.dataset.variantCombinationId || undefined,
+			},
+		});
+
 		const onClick = (event: MouseEvent) => {
 			const target = event.target as HTMLElement;
 
@@ -806,16 +845,8 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			const addBtn = target.closest<HTMLButtonElement>("[data-add-to-cart]");
 			if (addBtn) {
 				event.preventDefault();
-				const variant = {
-					color: addBtn.dataset.variantColor || undefined,
-					size: addBtn.dataset.variantSize || undefined,
-					// Произвольные группы вариантов («Оттенок», «Объём», «Вкус»):
-					// страница товара кладёт их сюда JSON-ом, иначе подпись строки
-					// собиралась бы из пустых color/size (баг тестера #7).
-					options: parseVariantOptions(addBtn.dataset.variantOptions),
-					variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
-				};
-				const productId = addBtn.dataset.productId ?? "";
+				const item = itemFromButton(addBtn);
+				const { productId, variant } = item;
 
 				// Toggle-кнопки карточек (перенесено из bloom): повторный клик по товару,
 				// который уже в корзине, удаляет его — и окно тогда не показываем.
@@ -828,15 +859,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 					}
 				}
 
-				addToCart({
-					productId,
-					name: addBtn.dataset.name ?? "",
-					price: addBtn.dataset.price ?? "0",
-					oldPrice: addBtn.dataset.oldPrice,
-					image: addBtn.dataset.image ?? "",
-					quantity: Number(addBtn.dataset.quantity ?? "1"),
-					variant,
-				});
+				addToCart(item);
 
 				// Флоу bloom, теперь общий (владелец, 15.09 — «да, везде окно»): после
 				// добавления показываем окно «Товар добавлен в корзину», а сайдбар сам
@@ -896,6 +919,13 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		};
 
 		document.addEventListener("click", onClick);
+		// «Купить сейчас»: та же строка, что по клику, но без окна и шторки —
+		// кнопка сразу уходит в оформление (CART_ADD_SILENT_EVENT).
+		document.addEventListener(CART_ADD_SILENT_EVENT, (event) => {
+			const target = event.target;
+			const btn = target instanceof Element ? target.closest<HTMLButtonElement>("[data-add-to-cart]") : null;
+			if (btn) addToCart(itemFromButton(btn));
+		});
 		// Окно закрывается по Escape и при уходе со страницы (View Transitions):
 		// иначе оверлей переживал бы навигацию и блокировал витрину.
 		document.addEventListener("keydown", (event) => {
@@ -913,10 +943,31 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		// скрыт) на КАЖДОЙ не-перезагруженной странице, и счётчик «живёт» лишь на той
 		// странице, что грузилась полностью. Бейдж избранного переживает навигацию именно
 		// потому, что initWishlistUI слушает astro:page-load — зеркалим это здесь.
+		// Заказ, ушедший на оплату: оплачен — заказанное уходит из корзины, отменён —
+		// корзина остаётся (runtime/paid-order-cart.ts). Страница «Спасибо за заказ»
+		// сообщает статус сама — тогда без запроса.
+		const settleOrder = (known?: { orderId?: string; paymentStatus?: string }) =>
+			void settlePaidOrder(
+				{
+					storage: window.localStorage,
+					fetch: (...args) => window.fetch(...args),
+					getCart,
+					saveCart,
+					defaultApiBase:
+						(window as unknown as { __MERFY_CONFIG__?: { apiUrl?: string } }).__MERFY_CONFIG__?.apiUrl ||
+						"https://gateway.merfy.ru/api",
+				},
+				known,
+			);
+		window.addEventListener(ORDER_STATUS_EVENT, (event) =>
+			settleOrder((event as CustomEvent<{ orderId?: string; paymentStatus?: string }>).detail),
+		);
+
 		document.addEventListener("astro:page-load", () => {
 			renderBadges();
 			renderDrawer();
 			syncProductCards();
+			settleOrder();
 			// Само-лечение при client-side навигации (VT не перезапускает init-модуль).
 			if (catalogUrl) void reconcileCart(catalogUrl);
 			else void labelCart();
@@ -925,6 +976,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		renderBadges();
 		renderDrawer();
 		syncProductCards();
+		settleOrder();
 		// Само-лечение цен/наличия из каталога → корзина всегда актуальна (= оформлению).
 		// Без catalogUrl — только подпись вариантов (строки и цены не трогаем).
 		if (catalogUrl) void reconcileCart(catalogUrl);

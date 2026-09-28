@@ -72,25 +72,23 @@ function функция(код: string, имя: string): string {
 
 type Построить = (выбран: boolean) => string;
 
-/** Пункты панели так, как их рисует скрипт каталога темы. */
-function пункты(html: string): { цвет: Построить; коллекция: Построить } {
-  const { colorOptionHtml, collectionOptionHtml } = (0, eval)(
-    `(function () {\n${функция(html, "escapeHtml")}\n${функция(html, "colorOptionHtml")}\n${функция(html, "collectionOptionHtml")}\nreturn { colorOptionHtml, collectionOptionHtml };\n})()`,
+/**
+ * Пункты панели так, как их рисует скрипт каталога темы. Разметка варианта у
+ * цвета и остальных параметров товара общая (`choiceOptionHtml`), параметр —
+ * «Размер: M» (`variantOptionHtml`).
+ */
+function пункты(html: string): { цвет: Построить; параметр: Построить; коллекция: Построить } {
+  const имена = ["escapeHtml", "choiceOptionHtml", "colorOptionHtml", "variantOptionHtml", "collectionOptionHtml"];
+  const { colorOptionHtml, variantOptionHtml, collectionOptionHtml } = (0, eval)(
+    `(function () {\n${имена.map((имя) => функция(html, имя)).join("\n")}\nreturn { colorOptionHtml, variantOptionHtml, collectionOptionHtml };\n})()`,
   ) as {
-    colorOptionHtml: (
-      value: string,
-      active: boolean,
-      sidebar: boolean,
-    ) => string;
-    collectionOptionHtml: (
-      value: string,
-      name: string,
-      active: boolean,
-      sidebar: boolean,
-    ) => string;
+    colorOptionHtml: (value: string, active: boolean, sidebar: boolean) => string;
+    variantOptionHtml: (group: string, value: string, active: boolean, sidebar: boolean) => string;
+    collectionOptionHtml: (value: string, name: string, active: boolean, sidebar: boolean) => string;
   };
   return {
     цвет: (выбран) => colorOptionHtml("Белый", выбран, true),
+    параметр: (выбран) => variantOptionHtml("Размер", "M", выбран, true),
     коллекция: (выбран) => collectionOptionHtml("leto", "Лето", выбран, true),
   };
 }
@@ -105,7 +103,7 @@ const МЕСТА = {
 
 function кольцо(разметка: string): HTMLElement {
   const ring = parse(разметка).querySelector(
-    ':is([data-color-option], [data-collection-option]) > span[aria-hidden="true"]',
+    ':is([data-color-option], [data-collection-option], [data-variant-option]) > span[aria-hidden="true"]',
   );
   if (!ring) throw new Error("у пункта нет кольца");
   return ring;

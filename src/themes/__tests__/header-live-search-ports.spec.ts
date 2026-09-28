@@ -121,7 +121,11 @@ describe("живой поиск шапки — контракт порта те�
       const src = headerSource(theme);
       // patchShopIdInDist (build.service) меняет ровно эту строку на siteId.
       expect(src).toContain('const shopId = "";');
-      expect(src).toMatch(/<script is:inline define:vars=\{\{ shopId \}\}>/);
+      // Адрес шлюза приходит из сборки (PUBLIC_MERFY_API_URL, spec 116) тем же define:vars.
+      expect(src).toContain(
+        'const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";',
+      );
+      expect(src).toMatch(/<script is:inline define:vars=\{\{ shopId, apiUrl \}\}>/);
     },
   );
 

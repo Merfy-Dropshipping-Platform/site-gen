@@ -51,7 +51,8 @@
     },
     "Video": {
       "padded": true,
-      "align": "container"
+      "align": "container",
+      "heading": "Видео"
     },
     "PopularProducts": {
       "productCard": {
@@ -62,10 +63,6 @@
         "quickAdd": "true",
         "buttonText": "В корзину"
       },
-      "padding": {
-        "top": 80,
-        "bottom": 80
-      },
       "viewAll": {
         "show": true,
         "text": "Смотреть ещё",
@@ -74,8 +71,12 @@
     },
     "Hero": {},
     "ImageWithText": {},
-    "Gallery": {},
-    "Slideshow": {},
+    "Gallery": {
+      "heading": "Галерея"
+    },
+    "Slideshow": {
+      "colorScheme": "scheme-4"
+    },
     "MultiRows": {},
     "MultiColumns": {
       "width": "large"

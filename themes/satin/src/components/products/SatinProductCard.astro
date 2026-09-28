@@ -53,12 +53,12 @@ const qaQtyCls =
 			)}
 		</a>
 		{product.discount && (
-			/* Плашка «Скидка» — бага владельца («Коллекция товаров»: схема не
-			   красит «Товар»). Была bg-[#000000] литералом; эталон rose
-			   (RoseProductCard.astro) красит плашку --color-accent, текст
-			   остаётся белым (контраст держит accent, не схема текста).
-			   Фолбэк 0 0 0 = прежний вид без схемы. */
-			<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[rgb(var(--color-accent,0_0_0))] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">
+			/* Плашка «Скидка» — роль схемы «Кнопка» (merfy-badge, base.css), как у
+			   CTA «Добавить в корзину» (владелец 28.09). Была --color-accent
+			   (rose-эталон до правки 8227a131) — SSR и client-гидрация
+			   (lib/storefront-hydrate.ts, уже на merfy-badge) обязаны совпадать,
+			   иначе бейдж моргает цветом на гидрации. */
+			<span class="merfy-badge pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center px-2 font-manrope text-[12px] font-medium uppercase leading-none">
 				Скидка
 			</span>
 		)}

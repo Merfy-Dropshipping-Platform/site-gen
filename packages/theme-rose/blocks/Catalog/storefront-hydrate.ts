@@ -304,9 +304,9 @@ export function renderCardHtml(p: RealProduct): string {
 		${media}
 	</a>
 	<div class="flex w-full flex-col gap-1 text-left">
-		<a href="${href}" class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[#000000] transition-opacity hover:opacity-70">${name}</a>
+		<a href="${href}" class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">${name}</a>
 		<div class="flex w-full flex-wrap items-baseline gap-2">
-			<span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[#000000]">${price}</span>
+			<span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0))]">${price}</span>
 			${oldPrice}
 		</div>
 	</div>

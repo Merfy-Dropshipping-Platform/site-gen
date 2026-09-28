@@ -6,6 +6,8 @@
 // #collections-title,#popular-title,#gallery-title{text-transform:none}.
 import NtSectionHeading from "../ui/RoseSectionHeading.astro";
 import RoseProductCard from "../products/RoseProductCard.astro";
+import { ROSE_POPULAR_DESIGNERS, ROSE_SECTION_HEADING_DESIGNERS } from "../../lib/design-parity";
+import { hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ: конструкторная схема PopularProducts (heading/subtitle union). Тело + данные verbatim.
 // T13: полная канон-схема (cards/columns/headingSize/textSize/imageView/nextPhotoOnHover/
@@ -14,13 +16,11 @@ import RoseProductCard from "../products/RoseProductCard.astro";
 // впрыск коэрсера cards=4/columns=4 → пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// отступы и зазоры по актуальной вёрстке Rose-theme @b719c193 (Popular.astro).
-// Настройки и цвета не меняются; без признака — прежние классы. Признак
-// ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
-const sectionPadCls = designParity ? "pb-20 pt-20" : "pb-14 pt-14";
-const wrapGapCls = designParity ? "gap-10" : "gap-8 md:gap-10";
+// Отступы и зазоры по актуальной вёрстке Rose-theme @b719c193 (Popular.astro)
+// — владелец 23-24.09: «как у верстальщиков, только стили». Настройки и
+// цвета не меняются.
+const sectionPadCls = "pb-20 pt-20";
+const wrapGapCls = "gap-10";
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
 // заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
 // карточки). Дефолт-текст верстальщика («Главные хиты» + длинный подзаголовок)
@@ -65,21 +65,27 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 // top-level (живой селект панели) приоритетнее legacy nested — порт cc64b373
 // с origin/main (worktree отставал: nested-first глушил панель при legacy-данных).
 const headingSize = p.headingSize ?? p.heading?.size;
-const headingSizeCls =
-	headingSize === "medium"
-		? " [&_h2]:!text-[24px]"
-		: headingSize === "large"
-			? " [&_h2]:!text-[29px]"
-			: "";
+// Владелец 25.09 «что в панели — то и на витрине»: «Маленький» — значение
+// панели по умолчанию, и он (выбранный или не заданный) рисует кегли
+// верстальщиков — телефон 14, планшет 16, иначе 20. Порядок
+// «Маленький ≤ Средний ≤ Большой» при этом сохраняется на каждой ширине
+// (замер Chromium 25.09, сторож panel-size-order.spec.ts).
+const HEADING_SIZE_CLS: Record<string, string> = {
+	small: ` ${ROSE_SECTION_HEADING_DESIGNERS.heading}`,
+	medium: " [&_h2]:!text-[24px]",
+	large: " [&_h2]:!text-[29px]",
+};
+const headingSizeCls = HEADING_SIZE_CLS[headingSize ?? "small"] ?? "";
 // Канон textSize (top-level приоритетнее legacy text.size): 'small' (canon-default)
-// и отсутствие = 16px верстальщика; medium → 19px, large → 23px.
+// и отсутствие = «Маленький» — кегли верстальщиков (телефон 12, планшет 14,
+// иначе 16); medium → 19px, large → 23px, порядок сохраняется (тот же замер).
 const textSize = p.textSize ?? p.text?.size;
-const textSizeCls =
-	textSize === "medium"
-		? " [&_p]:!text-[19px]"
-		: textSize === "large"
-			? " [&_p]:!text-[23px]"
-			: "";
+const TEXT_SIZE_CLS: Record<string, string> = {
+	small: ` ${ROSE_SECTION_HEADING_DESIGNERS.text}`,
+	medium: " [&_p]:!text-[19px]",
+	large: " [&_p]:!text-[23px]",
+};
+const textSizeCls = TEXT_SIZE_CLS[textSize ?? "small"] ?? "";
 const headWrapCls = `flex w-full justify-center${headingSizeCls}${textSizeCls}`;
 
 // Колонки 1-6 (дефолт 4). Применяются с md (768px) и выше через CSS-переменную
@@ -103,17 +109,24 @@ const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round
 // существовал; а на самом <a> висел inline `aspect-ratio:318/444`, который
 // бьёт любой класс независимо от селектора. Настройка «Вид изображения»
 // молча не применялась ни в одном из трёх значений.
-const cardAspectRatio =
-	p.imageView === "portrait"
-		? "430/500"
-		: p.imageView === "wide" || p.imageView === "adaptive"
-			? "16/9"
-			: "1/1";
+// Владелец 25.09 «что в панели — то и на витрине»: не заданный «Вид
+// изображения» рисует значение панели по умолчанию — «Квадрат» 1:1. Портрет
+// верстальщиков (168/220 → 203/250 →
+// 318/444) не совпадает ни с одним вариантом панели («Портрет» — 430/500),
+// поэтому ветки «не задано → портрет верстальщиков» больше нет: первая же
+// правка секции вписывала «Квадрат», и карточки меняли пропорцию.
+const CARD_ASPECT: Record<string, string> = { portrait: "430/500", wide: "16/9", adaptive: "16/9" };
+const cardAspectRatio = CARD_ASPECT[p.imageView] ?? "1/1";
 // Моб = 2 колонки (grid-cols-2); с md и выше grid-template-columns задаёт <style>
 // по --cols. Гэпы оставляем как у верстальщика.
-const gridCls = designParity
-	? "grid w-full grid-cols-2 gap-x-2 gap-y-10 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5"
-	: "grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5";
+// Зазор фото–подпись и цена на телефоне/планшете — как у карточки верстальщиков.
+const cardTextParityCls = ` ${ROSE_POPULAR_DESIGNERS.card}`;
+const gridBaseCls =
+	"grid w-full grid-cols-2 gap-x-2 gap-y-10 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5";
+// «Колонки» верстальщиков не берём: живая нормализация (page-blocks
+// coercePopularProductsProps) всегда дописывает columns=4, и «не задано» здесь
+// не отличить от выбора мерчанта. У верстальщиков до 1280 — 3 колонки.
+const gridCls = `${gridBaseCls}${cardTextParityCls}`;
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart): кнопка
@@ -154,8 +167,11 @@ const qaQtyCls =
 	"min-w-[28px] flex-1 text-center font-manrope text-[14px] leading-none text-[rgb(var(--color-text,0_0_0))]";
 
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
-// товара при наведении. Носитель данных: data-image-2 на <li> (demo — gallery[1]
-// верстальщика; реальные товары — images[1] из products.json, ставит гидрация).
+// товара при наведении. Носитель данных: data-image-2 на <li> — всегда, если у
+// товара есть второе фото: по нему листает свайп на телефоне (runtime/
+// card-photo-swipe.ts) при любой настройке, а наведение — только с настройкой
+// (атрибут data-next-photo на сетке). Demo — gallery[1]
+// верстальщика; реальные товары — images[1] из products.json, ставит гидрация.
 const nextPhoto = p.nextPhotoOnHover === true || p.nextPhotoOnHover === "true";
 // is:inline + set:html (без define:vars — компилятор секций его не умеет);
 // идемпотентность data-np-hydrated; без data-image-2 скрипт — no-op без ошибок.
@@ -323,18 +339,22 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// SECTION-CONTRACT.md §2: оба поля стёрты → шапку не рисуем вовсе (иначе
+// headWrapCls остаётся пустой обёрткой с отступом на её месте).
+const headingWillRender = hasText(sectionTitle) && !isFieldHidden('heading');
+const headingBlockWillRender = !isFieldHidden('heading') && (hasText(sectionTitle) || hasText(sectionSubtitle));
 
 ---
 
 <section
 	id="popular"
 	class={`w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 ${sectionPadCls} sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]`}
-	aria-labelledby="popular-title"
+	aria-labelledby={headingWillRender ? "popular-title" : undefined}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
 	<div class={`mx-auto flex w-full max-w-[1320px] flex-col ${wrapGapCls}`}>
-		{!isFieldHidden('heading') && (
+		{headingBlockWillRender && (
 		<div class={headWrapCls} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
@@ -364,7 +384,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			    плейсхолдер-куртки. data-collection остаётся → клиентская гидрация на
 			    live освежает данные. */}
 			{realProducts.length > 0 ? realProducts.map((product: any) => (
-				<li data-product-id={product.id} class:list={quickAddMode ? ["group"] : undefined} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
+				<li data-product-id={product.id} class:list={quickAddMode ? ["group"] : undefined} data-image-2={product.gallery?.[1]}>
 					<RoseProductCard product={product} aspectRatio={cardAspectRatio} />{showStepper && (
 						<div class={qaStepperCls} data-qa-stepper>
 							<button type="button" data-qa-dec class={qaStepBtnCls} aria-label="Уменьшить">−</button>
@@ -476,14 +496,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			const qaStepperCls = grid.getAttribute("data-qa-step-class") || "";
 			const qaStepBtnCls = grid.getAttribute("data-qa-step-btn-class") || "";
 			const qaQtyCls = grid.getAttribute("data-qa-qty-class") || "";
-			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			// «Вид изображения» переживает подмену innerHTML: носитель — атрибут грида.
 			const cardAspect = grid.getAttribute("data-card-aspect") || "1/1";
 			const items = matched.slice(0, limit);
 			grid.innerHTML = items
 				.map((p) => {
 					const img2 =
-						wantNextPhoto && Array.isArray(p.images) && p.images[1]
+						Array.isArray(p.images) && p.images[1]
 							? ` data-image-2="${escapeHtml(p.images[1])}"`
 							: "";
 					const liClass = quickAdd ? ' class="group"' : "";

@@ -34,11 +34,14 @@
  *     его зовёт tokens.css): тот же канал, что у схемы корзины, общий для
  *     пяти тем, витрины и превью, и горячий в конструкторе.
  *
- * В превью конструктора баннер виден ВСЕГДА, даже если в этом браузере уже
+ * В превью конструктора баннер показывается, даже если в этом браузере уже
  * ответили (превью живёт на одном адресе gateway для всех магазинов, и один
- * ответ прятал бы баннер у всех): мерчант его настраивает. Нажатия на кнопки
- * там ничего не решают — агент превью выделяет баннер и открывает его
- * настройки.
+ * ответ прятал бы баннер у всех): мерчант его настраивает. Кнопки там
+ * работают, как у покупателя (владелец 28.09: «кнопки оживить»), — баннер
+ * закрывается тем же путём, но ответ НЕ запоминается: баннер снова
+ * появляется при перезагрузке превью и по событию `merfy:cookie-banner`
+ * (агент превью шлёт его, когда продавец выбирает «Баннер» или меняет
+ * настройки темы).
  *
  * Мягкая навигация Astro (ViewTransitions у rose/vanilla/bloom) подменяет
  * <body> — новый баннер приходит скрытым, поэтому состояние сверяется заново
@@ -306,6 +309,8 @@ type ConsentWindow = Window & {
 
 /** Покупатель ответил в этом визите — на случай, если хранилище не пишет. */
 let answeredThisVisit = false;
+/** Продавец закрыл баннер кнопкой в превью — до следующего показа, не хранится. */
+let dismissedInPreview = false;
 
 function readStoredDecision(): string | null {
 	try {
@@ -394,9 +399,14 @@ function applyContent(root: Element, content: CookieBannerContent): void {
 	applyButton(root.querySelector<HTMLElement>(SELECTOR.decline), content.secondaryLabel);
 }
 
+/** Скрыт ли баннер: на витрине — ответом покупателя, в превью — кнопкой до следующего показа. */
+function bannerHidden(): boolean {
+	return inPreviewFrame() ? dismissedInPreview : hasCookieConsent();
+}
+
 /** Привести все баннеры страницы к текущему ответу, настройкам и политике. */
 export function syncCookieConsent(doc: Document = document): void {
-	const hidden = hasCookieConsent() && !inPreviewFrame();
+	const hidden = bannerHidden();
 	const url = privacyPolicyUrl();
 	const content = cookieBannerContent();
 	doc.querySelectorAll<HTMLElement>(SELECTOR.root).forEach((root) => {
@@ -414,13 +424,27 @@ function decisionFor(target: Element): string | null {
 	return null;
 }
 
+/** Ответ: на витрине запоминается, в превью только закрывает баннер. */
+function answer(decision: string): void {
+	if (inPreviewFrame()) {
+		dismissedInPreview = true;
+		return;
+	}
+	answeredThisVisit = true;
+	storeDecision(decision);
+}
+
 function onClick(event: Event): void {
 	const target = event.target instanceof Element ? event.target : null;
 	const decision = target ? decisionFor(target) : null;
-	// В превью ответ ничего не решает: нажатие забирает агент превью (выделение).
-	if (!decision || inPreviewFrame()) return;
-	answeredThisVisit = true;
-	storeDecision(decision);
+	if (!decision) return;
+	answer(decision);
+	syncCookieConsent();
+}
+
+/** Настройки сменились или продавец выбрал баннер — показать его снова (превью). */
+function onBannerUpdate(): void {
+	dismissedInPreview = false;
 	syncCookieConsent();
 }
 
@@ -432,5 +456,5 @@ export function initCookieConsent(): void {
 	window.addEventListener("click", onClick, true);
 	guardPreviewClicks(window, SELECTOR.policyLink);
 	document.addEventListener("astro:page-load", () => syncCookieConsent());
-	document.addEventListener(COOKIE_BANNER_UPDATE_EVENT, () => syncCookieConsent());
+	document.addEventListener(COOKIE_BANNER_UPDATE_EVENT, onBannerUpdate);
 }

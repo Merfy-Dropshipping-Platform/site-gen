@@ -236,18 +236,47 @@ describe("ссылка на политику конфиденциальност�
     document.removeEventListener("click", agent, true);
   });
 
-  it("превью: «Принять» доходит до агента превью и НЕ прячет баннер (28.09: баннер настраивают)", () => {
-    loadPage();
-    const agent = jest.fn();
-    document.addEventListener("click", agent, true);
+  // Владелец 28.09: «кнопки оживить, а то при нажатии нет флоу, не рабочие».
+  // В превью кнопки закрывают баннер, как у покупателя, но ответ не хранится:
+  // перезагрузка превью и событие агента (продавец выбрал «Баннер», сменил
+  // настройки) показывают его снова.
+  it.each([
+    ["«Принять»", "[data-cookie-consent-accept]"],
+    ["вторая кнопка", "[data-cookie-consent-decline]"],
+  ])("превью: %s закрывает баннер и ничего не запоминает", (_name, selector) => {
+    (window as unknown as Record<string, unknown>).__MERFY_COOKIE_BANNER__ = { secondaryLabel: "Нет" };
     jest
       .spyOn(window, "self", "get")
       .mockReturnValue({} as Window & typeof globalThis);
-    accept().click();
-    expect(banner().hidden).toBe(false);
+    loadPage();
+    document.querySelector<HTMLElement>(selector)!.click();
+    expect(banner().hidden).toBe(true);
     expect(localStorage.getItem(KEY)).toBeNull();
-    expect(agent).toHaveBeenCalledTimes(1);
-    document.removeEventListener("click", agent, true);
+    // Перезагрузка превью — баннер снова виден.
+    for (const [target, type, listener, options] of listeners.splice(0)) {
+      target.removeEventListener(type, listener, options);
+    }
+    loadPage();
+    expect(banner().hidden).toBe(false);
+    delete (window as unknown as Record<string, unknown>).__MERFY_COOKIE_BANNER__;
+  });
+
+  it("превью: закрытый кнопкой баннер снова показывается по событию агента", () => {
+    jest
+      .spyOn(window, "self", "get")
+      .mockReturnValue({} as Window & typeof globalThis);
+    loadPage();
+    accept().click();
+    expect(banner().hidden).toBe(true);
+    document.dispatchEvent(new Event("merfy:cookie-banner"));
+    expect(banner().hidden).toBe(false);
+  });
+
+  it("витрина: событие агента не возвращает баннер тому, кто уже ответил", () => {
+    loadPage();
+    accept().click();
+    document.dispatchEvent(new Event("merfy:cookie-banner"));
+    expect(banner().hidden).toBe(true);
   });
 });
 

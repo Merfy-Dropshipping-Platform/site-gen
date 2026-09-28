@@ -2330,11 +2330,14 @@ const PREVIEW_NAV_AGENT_INLINE = `
     if (e.target && e.target.closest && e.target.closest('[data-merfy-pill]')) {
       return;
     }
-    // Баннер cookie: любое нажатие по нему (текст, «Принять», «Отклонить»)
-    // выделяет баннер и открывает его настройки в конструкторе, а не отвечает
-    // на баннер — рантайм баннера в превью ответы не принимает
-    // (packages/theme-base/runtime/cookie-consent.ts). Не data-puck-component-id
-    // намеренно: reconcile прячет хром, которого нет в дереве страницы.
+    // Баннер cookie. Кнопки работают, как у покупателя (владелец 28.09: «кнопки
+    // оживить»): нажатие уходит рантайму баннера, тот закрывает баннер, не
+    // запоминая ответ (packages/theme-base/runtime/cookie-consent.ts). Нажатие
+    // в остальное место баннера выделяет его и открывает настройки. Не
+    // data-puck-component-id намеренно: reconcile прячет хром, которого нет в
+    // дереве страницы.
+    var cookieButton = e.target && e.target.closest ? e.target.closest('[data-cookie-consent-accept],[data-cookie-consent-decline]') : null;
+    if (cookieButton) return;
     var cookieBanner = e.target && e.target.closest ? e.target.closest('[data-cookie-consent]') : null;
     if (cookieBanner) {
       e.preventDefault();
@@ -2528,6 +2531,8 @@ const PREVIEW_NAV_AGENT_INLINE = `
         }
       }
       if (ev.data.cookieBanner) {
+        // Продавец выбрал баннер — показать его снова, если закрыл кнопкой.
+        try { document.dispatchEvent(new CustomEvent('merfy:cookie-banner')); } catch (e) {}
         var bannerEl = document.querySelector('[data-cookie-consent]');
         if (bannerEl) bannerEl.setAttribute('data-puck-section-selected', 'true');
       }

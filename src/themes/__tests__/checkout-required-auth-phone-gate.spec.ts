@@ -221,7 +221,7 @@ describe('CheckoutSubmit — requireCustomerAuth × contactMethod, phone-гей�
 
   it('дефолт → phone НЕ уходит в PATCH /customer и metadata.contactPhone (даже если поле заполнено)', async () => {
     (window as any).__MERFY_CONFIG__ = { shopId: 'shop1', apiUrl: 'https://gateway.test/api' };
-    const fetchMock = jest.fn((url: string) => {
+    const fetchMock = jest.fn((url: string, _init?: RequestInit) => {
       if (/\/customer$/.test(url)) return Promise.resolve({ ok: true, json: async () => ({}) });
       if (/\/checkout$/.test(url))
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ data: { orderId: 'o1' } }) });

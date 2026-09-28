@@ -2,9 +2,9 @@
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.astro";
 import { VANILLA_ICON_SVGS } from "./icons/vanilla-icon-svgs";
-import VanilaLogoDesigners from "../icons/VanilaLogoDesigners.astro";
 import NavItem from "./NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
+import { headerOwnLogo } from "../../../../packages/theme-base/runtime/header-logo";
 import { SITE_TITLE } from "../consts";
 import { getProductById } from "../data/products";
 const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
@@ -72,22 +72,21 @@ const nav: NavLink[] =
 		? p.navigationLinks.map(mapNavLink)
 		: defaultNav;
 
-// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
-// <img> высотой var(--size-logo-width) (слайдер «Размер» канона задаёт высоту лого)
-// в mobile И desktop. Дефолт = SVG-вордмарк верстальщиков VanilaLogoDesigners (white):
-// mobile h-6 (24px), desktop h-7 (28px) — фоллбеки токена = родные высоты.
-const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): загруженный
+// мерчантом файл → <img> высотой var(--size-logo-width) (слайдер «Размер» канона)
+// в mobile И desktop. Без файла — НАЗВАНИЕ МАГАЗИНА текстом (владелец 28.09: «везде
+// вместо логотипа брать название сайта»); раньше здесь стоял вордмарк
+// верстальщиков «Vanilla» (VanilaLogoDesigners) — имя шаблона у любого магазина.
+// Что считать файлом мерчанта — packages/theme-base/runtime/header-logo.ts.
+const logo = headerOwnLogo(p.logo) || undefined;
 const logoImgMobileCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[76px] object-contain";
 const logoImgDesktopCls = "h-[var(--size-logo-width,28px)] w-auto max-w-[160px] object-contain";
-
-// Как у верстальщиков (владелец 23-24.09: «как у верстальщиков, только
-// стили»): встроенный вордмарк — ширина и сам рисунок по актуальной
-// Vanilla-theme @c65d9e1c. У них «Vanilla» двумя «l» (другой набор путей, не
-// только размер) — компонент VanilaLogoDesigners. Загруженный МЕРЧАНТОМ
-// логотип (logoImgMobileCls/DesktopCls выше) не трогаем — это чужая
-// настройка «Логотип», не вордмарк темы.
-const VANILA_LOGO_MOBILE_CLS = "h-[var(--size-logo-width,24px)] w-auto max-w-[85px]";
-const VANILA_LOGO_DESKTOP_CLS = "h-[var(--size-logo-width,28px)] w-[98px]";
+// Текстовый логотип: шрифт заголовков темы (Bitter, «Настройки темы»), кегль —
+// слайдер «Размер» логотипа, цвет — от ссылки (logoInkCls, роль «Заголовок»).
+// Мобильный ряд узкий (бургер | лого | иконки) — длинное название с многоточием.
+const logoTextCls = "font-vanilla-bitter whitespace-nowrap leading-tight";
+const logoTextMobileCls = `${logoTextCls} block max-w-[40vw] truncate text-[length:var(--size-logo-width,24px)]`;
+const logoTextDesktopCls = `${logoTextCls} text-[length:var(--size-logo-width,28px)]`;
 
 // Канон logoPosition: 'center-absolute' (canon-default из blockDefaults vanilla) И
 // отсутствие / неизвестное значение → ЛИТЕРАЛ верстальщика (лого центр абсолютом,
@@ -271,7 +270,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 				</span>
 			</button>
 			<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : <VanilaLogoDesigners class={VANILA_LOGO_MOBILE_CLS} />}
+				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : <span data-logo-text class={logoTextMobileCls}>{siteTitle}</span>}
 			</a>
 			<div class="flex items-center gap-3">
 				<button
@@ -347,7 +346,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 									</button>
 								)}
 							<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} />}
+								{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <span data-logo-text class={logoTextDesktopCls}>{siteTitle}</span>}
 							</a>
 							</div>
 							<div class="flex items-center gap-5">
@@ -445,7 +444,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 							</div>
 							<div class="flex items-center justify-center">
 								<a href="/" class={`flex items-center ${logoInkCls}`} aria-label={siteTitle}>
-									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} />}
+									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <span data-logo-text class={logoTextDesktopCls}>{siteTitle}</span>}
 								</a>
 							</div>
 							<div class="flex items-center justify-end gap-5">
@@ -541,7 +540,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						class={desktopLogoCls}
 						aria-label={siteTitle}
 					>
-						{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} />}
+						{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <span data-logo-text class={logoTextDesktopCls}>{siteTitle}</span>}
 					</a>
 					</div>
 

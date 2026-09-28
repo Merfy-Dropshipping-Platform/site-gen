@@ -73,12 +73,13 @@ function виден(el: Element | null, до: Element): boolean {
   return !!el;
 }
 
-/** Раздел шторки по заголовку («Коллекции», «Цвет»). */
+/** Раздел шторки по заголовку («Коллекции», «Цвет»). Заголовок — кнопка
+ *  сворачивания группы (data-nt="filter-group-toggle"), не <p>. */
 function раздел(корень: HTMLElement, заголовок: string): HTMLElement | null {
-  const p = [...шторка(корень).querySelectorAll("p")].find(
-    (x) => (x.textContent ?? "").trim() === заголовок,
-  );
-  return p?.parentElement ?? null;
+  const кнопка = [
+    ...шторка(корень).querySelectorAll('[data-nt="filter-group-toggle"]'),
+  ].find((x) => (x.textContent ?? "").trim() === заголовок);
+  return кнопка?.parentElement ?? null;
 }
 
 const пунктыКоллекций = (корень: HTMLElement) => [

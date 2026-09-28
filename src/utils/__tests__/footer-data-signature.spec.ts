@@ -144,7 +144,10 @@ describe("название магазина доезжает до пропов �
     expect((props.copyright as Record<string, unknown>).companyName).toBe("");
   });
 
-  it("шапку не трогаем", async () => {
+  // До 28.09 здесь было «шапку не трогаем». Решение владельца 28.09 («везде
+  // вместо логотипа брать название сайта»): шапка получает название магазина —
+  // и только его; подпись платформы и копирайт в шапку не текут.
+  it("в шапку идёт только название магазина, подпись не протекает", async () => {
     const revision = {
       pagesData: {
         home: { content: [{ type: "Header", props: { id: "h" } }] },
@@ -158,7 +161,7 @@ describe("название магазина доезжает до пропов �
     await applyFooterData({ db: fakeDb(rows, schema), schema }, "site-1", revision);
     const header = (revision.pagesData as Record<string, { content: Row[] }>).home
       .content[0] as { props: Record<string, unknown> };
-    expect(header.props).toEqual({ id: "h" });
+    expect(header.props).toEqual({ id: "h", siteTitle: "Ромашка" });
   });
 });
 

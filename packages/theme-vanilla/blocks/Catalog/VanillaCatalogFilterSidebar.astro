@@ -9,6 +9,20 @@
  * с фолбэками на родную палитру vanilla.
  *
  * Порт из themes/vanilla/src/components/catalog/VanillaCatalogFilterSidebar.astro.
+ *
+ * Сворачивание групп (владелец: «возможность скрывать и раскрывать список
+ * фильтров, все темы»). Заголовок каждой группы — `<button
+ * data-nt="filter-group-toggle" aria-expanded>`, список — соседний элемент
+ * `data-filter-group-body`: клик переключает aria-expanded + атрибут
+ * hidden списка. Обработчик клика — общий делегированный <script is:inline>
+ * в Catalog.astro (window.__merfyFilterGroups, тот же текст у всех пяти тем).
+ * Правило видимости `[data-filter-group-body][hidden]` — в общем
+ * packages/theme-base/styles/catalog-filters.css. Старт — всегда развёрнуто,
+ * состояние между заходами не хранится.
+ *
+ * ВАЖНО: внутренний текст группы остаётся в отдельном <span> без детей —
+ * Catalog.astro (cloneColorBox) находит его по тексту и переименовывает в
+ * клонах групп параметров товара (Оттенок/Размер).
  */
 import {
 	CATALOG_FILTER_TITLE,
@@ -60,6 +74,9 @@ const stockOptions: RadioOption[] = [
 	{ value: "in", label: "В наличии" },
 	{ value: "out", label: "Распродано" },
 ];
+
+const groupToggleClass = `${CATALOG_FILTER_TITLE} flex w-full cursor-pointer items-center justify-between gap-2 border-0 bg-transparent p-0 text-left`;
+const chevronClass = "h-[6px] w-[10px] shrink-0 text-[rgb(var(--color-muted,153_153_153))]";
 ---
 
 <aside
@@ -71,15 +88,21 @@ const stockOptions: RadioOption[] = [
 	    ссылок тайлов Collections/Gallery. Манера = radio-секции сайдбара ниже. */}
 	{showFilters && (
 	<div class="flex flex-col gap-3 py-3" data-nt="catalog-collections-filter" style="display:none;">
-		<p class={CATALOG_FILTER_TITLE}>Коллекции</p>
-		<div data-collections-options class="flex flex-col gap-3"></div>
+		<button type="button" class={groupToggleClass} data-nt="filter-group-toggle" aria-expanded="true" aria-controls={`${namePrefix}-fg-collections`}>
+			<span>Коллекции</span>
+			<svg aria-hidden="true" viewBox="0 0 10 6" class={chevronClass} data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+		</button>
+		<div data-collections-options data-filter-group-body id={`${namePrefix}-fg-collections`} class="flex flex-col gap-3"></div>
 	</div>
 	)}
 
 	{showSort && (
 	<div class="flex flex-col gap-3 py-3">
-		<p class={CATALOG_FILTER_TITLE}>Сортировать</p>
-		<div class="flex flex-col gap-3">
+		<button type="button" class={groupToggleClass} data-nt="filter-group-toggle" aria-expanded="true" aria-controls={`${namePrefix}-fg-sort`}>
+			<span>Сортировать</span>
+			<svg aria-hidden="true" viewBox="0 0 10 6" class={chevronClass} data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+		</button>
+		<div class="flex flex-col gap-3" data-filter-group-body id={`${namePrefix}-fg-sort`}>
 			{
 				sortOptions.map((option) => {
 					const id = `${namePrefix}-sort-${option.value}`;
@@ -106,8 +129,11 @@ const stockOptions: RadioOption[] = [
 	{showFilters && (
 	<>
 	<div class="flex flex-col gap-3 py-3">
-		<p class={CATALOG_FILTER_TITLE}>Наличие</p>
-		<div class="flex flex-col gap-3">
+		<button type="button" class={groupToggleClass} data-nt="filter-group-toggle" aria-expanded="true" aria-controls={`${namePrefix}-fg-stock`}>
+			<span>Наличие</span>
+			<svg aria-hidden="true" viewBox="0 0 10 6" class={chevronClass} data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+		</button>
+		<div class="flex flex-col gap-3" data-filter-group-body id={`${namePrefix}-fg-stock`}>
 			{
 				stockOptions.map((option) => {
 					const id = `${namePrefix}-stock-${option.value}`;
@@ -131,12 +157,15 @@ const stockOptions: RadioOption[] = [
 	</div>
 
 	<div class="flex flex-col gap-3 py-3">
-		<p class={CATALOG_FILTER_TITLE}>Стоимость</p>
+		<button type="button" class={groupToggleClass} data-nt="filter-group-toggle" aria-expanded="true" aria-controls={`${namePrefix}-fg-price`}>
+			<span>Стоимость</span>
+			<svg aria-hidden="true" viewBox="0 0 10 6" class={chevronClass} data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+		</button>
 		{/* data-nt="catalog-price" — по нему скрипт каталога (bindPrice) меняет
 		    «0 / 5 990» на поля ввода. У боковой панели метки не было: при виде
 		    фильтра «Сбоку» цену нельзя было ввести (владелец 23.09: «фильтрам и
 		    сортировке…»; замер превью — полей ввода 0, у остальных тем 2). */}
-		<div class={CATALOG_PRICE_WRAP} data-nt="catalog-price">
+		<div class={CATALOG_PRICE_WRAP} data-nt="catalog-price" data-filter-group-body id={`${namePrefix}-fg-price`}>
 			<div class={CATALOG_PRICE_ROW}>
 				<span>от</span>
 				<div class={CATALOG_PRICE_VALUE}>
@@ -158,8 +187,11 @@ const stockOptions: RadioOption[] = [
 	    Гидрация (Catalog.astro) показывает его, если у товаров магазина есть
 	    группа «Цвет» (/api/store/filters), и рисует радио «Все» + цвета. */}
 	<div class="flex flex-col gap-3 py-3" data-nt="catalog-color-filter" style="display:none;">
-		<p class={CATALOG_FILTER_TITLE}>Цвет</p>
-		<div data-color-options class="flex flex-col gap-3"></div>
+		<button type="button" class={groupToggleClass} data-nt="filter-group-toggle" aria-expanded="true" aria-controls={`${namePrefix}-fg-color`}>
+			<span>Цвет</span>
+			<svg aria-hidden="true" viewBox="0 0 10 6" class={chevronClass} data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+		</button>
+		<div data-color-options data-filter-group-body id={`${namePrefix}-fg-color`} class="flex flex-col gap-3"></div>
 	</div>
 	</>
 	)}

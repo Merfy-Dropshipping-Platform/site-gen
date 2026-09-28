@@ -25,6 +25,7 @@ import {
   type CollectionContext,
 } from '../themes/collection-context';
 import { applyFooterData } from '../utils/footer-data';
+import { applyHeaderShopName } from '../utils/header-title';
 import { policyUrlsFor, privacyPolicyUrlFor } from '../utils/footer-data';
 import {
   COOKIE_BANNER_GLOBAL,
@@ -1054,6 +1055,16 @@ export class PreviewController {
       // props в минимальную content-обёртку — applyFooterData мутирует их in-place.
       // Стоит ПОСЛЕ загрузки ревизии: тема нужна, чтобы правовые ссылки указывали
       // на реально существующий маршрут (/legal/<slug> у мигрированных тем).
+      // Шапка: одиночная перерисовка получает сырое siteTitle панели (часто
+      // стартовое «Flux»/«Rose» из сида) — подставляем название магазина тем же
+      // правилом, что страница превью и сборка (utils/header-title.ts).
+      if (body.blockType === 'Header') {
+        await applyHeaderShopName(
+          { db: this.db, schema },
+          siteId,
+          { content: [{ type: 'Header', props: propsWithContext }] },
+        );
+      }
       if (body.blockType === 'Footer') {
         await applyFooterData(
           { db: this.db, schema, billingClient: this.billingClient },

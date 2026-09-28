@@ -606,6 +606,38 @@ const rowStockOptions: RadioOption[] = [
 	})();
 </script>
 
+<script is:inline>
+	// Сворачивание группы фильтров («Наличие», «Стоимость», «Цвет», «Сортировать»,
+	// «Коллекции» и клонированные группы параметров товара — «Оттенок», «Размер»…)
+	// в боковой панели и в шторке телефона — один текст на пять тем (сторож:
+	// no-second-implementation.spec.ts, «сворачивание группы фильтров»). Владелец:
+	// «возможность скрывать и раскрывать список фильтров, все темы». Заголовок
+	// группы — <button data-nt="filter-group-toggle" aria-expanded>, тело —
+	// следующий элемент с data-filter-group-body (неизменно и в клонах
+	// групп параметров товара — Catalog.astro cloneColorBox). Один делегированный
+	// обработчик на document — переживает перерисовку и клоны, добавленные
+	// скриптом каталога ПОСЛЕ первого рендера. Не гейтится «Фильтрами»/
+	// «Сортировкой»: блок «Коллекции» рисуется независимо от них, поэтому
+	// слушатель живёт здесь, а не в VanillaCatalogFilterSidebar. Старт — всегда
+	// развёрнуто, между заходами состояние не хранится. Видимость тела —
+	// атрибут hidden, правило [data-filter-group-body][hidden] лежит в
+	// общем packages/theme-base/styles/catalog-filters.css.
+	(function () {
+		if (window.__merfyFilterGroups) return;
+		window.__merfyFilterGroups = true;
+		document.addEventListener("click", function (event) {
+			var target = event.target instanceof Element ? event.target : null;
+			var toggle = target && target.closest('[data-nt="filter-group-toggle"]');
+			if (!toggle) return;
+			var body = toggle.nextElementSibling;
+			if (!body) return;
+			var expanded = toggle.getAttribute("aria-expanded") !== "false";
+			toggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+			body.hidden = expanded;
+		});
+	})();
+</script>
+
 <script is:inline define:vars={{ siteId, pageSize, cardContainerOn, cardThemeChromeStyle, cardMediaRadiusStyle, cardAspectClass, quickAddOn, quickAddLabel, quickAddClass, nextPhotoOn }}>
 	// is:inline (НЕ module-script): module client-<script> блока НЕ компилится в live
 	// build → 404 на проде. Поэтому весь клиент инлайн: функции storefront-hydrate.ts
@@ -1560,6 +1592,23 @@ const rowStockOptions: RadioOption[] = [
 				(el) => el.children.length === 0 && (el.textContent || "").trim() === COLOR_GROUP_NAME,
 			);
 			if (title) title.textContent = group;
+			// Сворачивание (владелец: «скрывать и раскрывать список фильтров»):
+			// клон несёт aria-controls/id секции «Цвет» — снимаем, чтобы не
+			// дублировались на странице. cloneNode копирует и ТЕКУЩЕЕ состояние
+			// сворачивания «Цвета» (покупатель свернул его до ответа
+			// /api/store/filters или до повторной гидрации) — клон обязан
+			// начинать развёрнутым, как любая свежая группа, поэтому
+			// aria-expanded/hidden переставляются явно, а не «остаются как есть».
+			const clonedToggle = clone.querySelector('[data-nt="filter-group-toggle"]');
+			if (clonedToggle) {
+				clonedToggle.removeAttribute("aria-controls");
+				clonedToggle.setAttribute("aria-expanded", "true");
+			}
+			const clonedBody = clone.querySelector("[data-filter-group-body]");
+			if (clonedBody) {
+				clonedBody.removeAttribute("id");
+				clonedBody.hidden = false;
+			}
 			// Пункты цвета из копии убираем сразу: их наполнит renderVariantBox.
 			for (const list of Array.from(clone.querySelectorAll("[data-variant-options]"))) list.innerHTML = "";
 			return clone;

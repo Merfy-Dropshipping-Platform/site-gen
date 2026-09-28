@@ -10786,3 +10786,55 @@ legacy-копия темы, которую ещё сканирует Tailwind ж
 входит в `section-html-snapshot.spec.ts`) — регрессии проверил отдельно (`header-icons-follow-scheme`,
 `cart-drawer-follows-scheme`, `flux-header-icon-size` — зелёные); тот же пред­существующий
 `node-html-parser` ERR_MODULE_NOT_FOUND (окружение, не эта правка). Коммит `81fa5d94`.
+
+### Второе дополнение того же дня — ревью Opus нашло дыры охвата (закрыты 28.09)
+
+Ревью (Opus) по ветке `fix/badge-scheme`: первая волна закрыла только карточку блока «Каталог»
+(`packages/theme-<t>/blocks/Catalog`). На витрине бейдж «Скидка»/«-N%» рисуется ЕЩЁ в 4 местах,
+не пересекающихся с первой волной:
+
+1. **«Популярные товары»/«Коллекции»** — СОВСЕМ ДРУГАЯ карточка:
+   `themes/<t>/src/components/products/<T>ProductCard.astro` (не пакетный порт каталога!), зовётся из
+   `themes/<t>/src/components/sections/Popular.astro` всех 5 тем и, у bloom, `Collections.astro:20`.
+   Исправлены rose (`--color-accent`+`!text-white`), bloom (то же), satin (была своя недоделанная
+   правка на `--color-accent` — рассинхрон с уже починенной client-гидрацией в
+   `storefront-hydrate.ts` давал моргание цветом на гидрации), vanilla
+   (`bg-[var(--vanilla-announcement-bg)]` — фирменный алиас темы, не роль схемы; **бейдж у vanilla
+   ЕСТЬ**, предыдущий тест утверждал обратное только про карточку каталога — текст сторожа уточнён).
+2. **Избранное satin** (`WishlistSection.astro:263`) — своя inline `renderCardHtml`, тот же
+   `bg-[#000000]`.
+3. **Живой поиск из лупы в шапке** — rose (панель + шторка-дровер, 2 места), bloom, satin: та же роль
+   «Акцент» + `!text-white`. vanilla/flux бейдж в поиске не рисуют — не в объёме.
+4. **Строка КОРЗИНЫ flux** (`/cart`, СТРАНИЦА, не дровер шапки) — `lib/cart-thumb-html.ts` («Новинка» +
+   «-N%» на `bg-[#FA5109]`) + два inline client-миррора (`CartBody.astro`/`CartSection.astro`,
+   перерисовка после ±/удаления) на `--color-accent,250_81_9` («идиома темы» — осознанное решение до
+   28.09, отменено сегодняшним требованием владельца). **Это и есть** «в корзине товар — так же с
+   бейджом» из САМОЙ ПЕРВОЙ жалобы владельца (скрин «-17%» карточки) — я искал не в том файле в первой
+   волне (theme-base `CartBody`/`CartSection`, не legacy `themes/flux/src/lib/cart-thumb-html.ts`).
+   Проверил: ни у одной из 4 остальных тем бейджа в корзине (дровер ИЛИ /cart) нет вовсе.
+
+Все переведены на `.merfy-badge`. **Не чинил (вне объёма, зафиксировал в отчёте и в сторожах):**
+клиентский `render*Html`-миррор rose/bloom вообще не рисует бейдж после фильтра/сортировки
+(`packages/theme-<t>/blocks/Catalog/Catalog.astro` — пропадает при перерисовке, отдельный баг, не про
+цвет); счётчик-плашка шапки bloom/satin/vanilla — фирменный хардкод остаётся (flux уже переведён
+предыдущим дополнением).
+
+Тест: `badge-scheme-colors.spec.ts` — 15 новых записей в табличной проверке (файл+старый
+хардкод+`merfy-badge`) плюс ДВА новых ПОВЕДЕНЧЕСКИХ describe (рендер через `render-theme-sections.mjs`,
+образец `satin-b39-render-scheme-guards.spec.ts`, реальный товар со скидкой / реальная строка корзины):
+rose «Популярные товары» (rose/satin — единственные две темы, что читают `__merfy.resolved` без живого
+HTTP; bloom/vanilla/flux тянут товары СЕРВЕРНЫМ fetch к `/api/sites/:id/storefront-data` — фикстуру
+подставить некуда без живого сервиса, остались на строковой проверке) и flux Catalog/CartBody/CartSection
+(рендер без ошибок + узел плашки в скомпилированном `<script>`). `satin-b39-render-scheme-guards.spec.ts`
+(волна b39, «баг 3») требовал `--color-accent` — поднят под `merfy-badge` (его же рендер-проверка
+`PopularProducts` реального товара — независимое подтверждение всей цепочки satin). `scheme-matrix.mjs`:
+исключение `card-badge-over-photo` СНЯТО (перестало покрывать хоть одну клетку — verdict у merfy-badge
+теперь `ok`, гард «мёртвых исключений быть не должно» поймал бы регресс сам); `counter-badge` сужен
+(`c.theme !== 'flux'`), текст обоих обновлён под текущую реальность.
+
+Проверки: весь файл `badge-scheme-colors.spec.ts` 47/47, `satin-b39-render-scheme-guards.spec.ts` 16/16,
+`scheme-matrix.spec.ts` 9/9 (включая «белый список: каждое исключение объяснено» — красный сразу после
+снятия старого exception, пока не убрал id из ожидаемого списка), `wishlist-section.spec.ts`,
+`header-search-action.spec.ts`, `header-search-not-detached.spec.ts` — все зелёные. `conformance:satin`
+инвентарь пересчитан (`conformance:satin:refresh-inventory`, коммит `332199c6`). Коммиты правки —
+`72013b1f` (код+тесты), `332199c6` (инвентарь).

@@ -218,7 +218,7 @@
     background-color: transparent;
   }
 
-  [data-filters-sheet] [data-nt="filter-sidebar"] > div > p {
+  [data-filters-sheet] [data-nt="filter-sidebar"] > div > [data-nt="filter-group-toggle"] {
     color: rgb(var(--color-text, 0 0 0));
   }
 
@@ -241,6 +241,38 @@
 
   [data-filters-sheet] [data-nt="radio-field"] > input:checked ~ span:last-child {
     color: rgb(var(--color-text, 0 0 0));
+  }
+
+  /* ── Сворачивание группы фильтров («Наличие», «Стоимость», «Цвет»,
+   * «Сортировать», «Коллекции» и клонированные группы параметров товара —
+   * «Оттенок», «Размер»…) в боковой панели и в шторке телефона ────────────
+   *
+   * Владелец: «возможность скрывать и раскрывать список фильтров, все темы».
+   * Заголовок группы — теперь `<button data-nt="filter-group-toggle"
+   * aria-expanded>`, список — соседний элемент с `data-filter-group-body`.
+   * Обработчик клика делегирован на document (window.__merfyFilterGroups,
+   * общий `<script is:inline>` в Catalog.astro каждой темы, один и тот же
+   * текст во всех пяти) и переключает `hidden` + `aria-expanded`, переживает
+   * перерисовку клонированных групп (Оттенок/Размер приходят из
+   * /api/store/filters).
+   *
+   * `[hidden]` само по себе Tailwind `.flex`/`.flex-col` на том же узле не
+   * перебивает (одинаковая специфичность, автор-слой один): без пары
+   * атрибутов список остался бы видимым при `hidden`. Правило здесь, а не
+   * классом в порте — та же причина, что у остальных правил файла: живая
+   * сборка витрины не сканирует classes из packages/theme-<t>/blocks, кроме
+   * узкого @source (NtFilterSidebar и т. п.), а поведение обязано быть одним
+   * на все пять тем. */
+  [data-filter-group-body][hidden] {
+    display: none;
+  }
+
+  [data-nt="filter-group-chevron"] {
+    transition: transform 0.15s ease;
+  }
+
+  [data-nt="filter-group-toggle"][aria-expanded="false"] [data-nt="filter-group-chevron"] {
+    transform: rotate(-90deg);
   }
 
   /* «Цвет» и «Коллекции» в боковой панели (в шторке и в раскладке «Сбоку»):

@@ -37,6 +37,16 @@
  * Разметка статическая (без пропсов): признак политики у сборки темы
  * неизвестен — дист собирается один на все магазины, магазин уточняется
  * глобалом при публикации и в превью.
+ *
+ * Настройки продавца («Настройки темы» → «Баннер», владелец 28.09): заголовок
+ * (`data-cookie-consent-heading`, пустой — скрыт), текст
+ * (`data-cookie-consent-text`), подписи кнопок и вторая кнопка «Отклонить»
+ * (`data-cookie-consent-decline`, по умолчанию скрыта) заполняет рантайм из
+ * глобала `__MERFY_COOKIE_BANNER__`. Вкл/выкл, схему и расположение задаёт
+ * tokens.css по `data-cookie-consent` / `data-cookie-consent-card` —
+ * `cookieBannerCss` в рантайме. Тексты ниже дословно равны
+ * `COOKIE_BANNER_DEFAULTS` (сторож — cookie-consent.spec.ts): без настроек
+ * баннер ровно прежний.
  */
 ---
 
@@ -48,26 +58,44 @@
 	class="fixed inset-x-4 bottom-4 z-[50] md:inset-x-auto md:bottom-6 md:left-6 md:w-[440px]"
 >
 	<div
+		data-cookie-consent-card
 		class="flex flex-col gap-4 rounded-[var(--radius-card,12px)] border border-solid border-[rgb(var(--color-text,0_0_0)/0.12)] bg-[rgb(var(--color-bg,255_255_255))] p-5 text-[rgb(var(--color-text,0_0_0))] shadow-[0_8px_32px_rgb(var(--color-heading,0_0_0)/0.14)]"
 	>
-		<p
-			class="m-0 font-[family-name:var(--font-body)] text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,0_0_0))]"
-		>
-			Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием.<span
-				data-cookie-consent-policy
+		<div class="flex flex-col gap-2">
+			<p
+				data-cookie-consent-heading
 				hidden
-			> Подробнее — в <a
-					data-cookie-consent-policy-link
-					class="text-[rgb(var(--color-text,0_0_0))] underline underline-offset-2 transition-opacity hover:opacity-70"
-				>Политике конфиденциальности</a>.</span>
-		</p>
-		<button
-			type="button"
-			data-cookie-consent-accept
-			class="inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-[family-name:var(--font-body)] text-[15px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--color-text,0_0_0))] active:scale-95 md:w-auto md:self-start"
-		>
-			Принять
-		</button>
+				class="m-0 font-[family-name:var(--font-heading)] text-[16px] font-medium leading-[1.3] text-[rgb(var(--color-heading,0_0_0))]"
+			></p>
+			<p
+				class="m-0 font-[family-name:var(--font-body)] text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,0_0_0))]"
+			>
+				<span data-cookie-consent-text>Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием.</span><span
+					data-cookie-consent-policy
+					hidden
+				> Подробнее — в <a
+						data-cookie-consent-policy-link
+						class="text-[rgb(var(--color-text,0_0_0))] underline underline-offset-2 transition-opacity hover:opacity-70"
+					>Политике конфиденциальности</a>.</span>
+			</p>
+		</div>
+		<div data-cookie-consent-actions class="flex flex-col gap-2 md:flex-row md:self-start">
+			<button
+				type="button"
+				data-cookie-consent-accept
+				class="inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-[family-name:var(--font-body)] text-[15px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--color-text,0_0_0))] active:scale-95 md:w-auto"
+			>
+				Принять
+			</button>
+			<button
+				type="button"
+				data-cookie-consent-decline
+				hidden
+				class="inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-text,0_0_0)/0.3)] bg-transparent px-6 font-[family-name:var(--font-body)] text-[15px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--color-text,0_0_0))] active:scale-95 md:w-auto"
+			>
+				Отклонить
+			</button>
+		</div>
 	</div>
 </div>
 

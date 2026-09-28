@@ -1952,6 +1952,15 @@ jobs:
       # превью-iframe гасит переход по ссылке раньше агента превью.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cookie-consent-runtime.dom.spec.ts
+      # Настройки баннера cookie («Настройки темы» → «Баннер», владелец 28.09):
+      # по умолчанию — баннер 27.09; tokens.css пяти тем (вкл/выкл, схема,
+      # расположение); глобал текстов на трёх путях превью и в сборке.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cookie-banner-settings.spec.ts
+      # Агент превью: нажатие на баннер выделяет его (а не отвечает), рамка
+      # выделения, update-tokens меняет тексты без перезагрузки. jsdom.
+      - if: false
+        run: pnpm exec jest --runInBand src/services/__tests__/preview-agent-cookie-banner.spec.ts
       # После оплаты заказанное уходит из корзины (счётчик, выдвижная, страница
       # корзины), после отмены оплаты корзина остаётся (владелец 26.09: «после
       # оплаты корзина не сбрасывается»). «Оплатить» → статус оплаты → ядро

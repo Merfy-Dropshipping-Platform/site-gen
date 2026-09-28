@@ -39,7 +39,11 @@ import { DocumentAdapter } from "../content/document.adapter";
 import { StoreContentService } from "../content/store-content.service";
 import { applyFooterData } from "../utils/footer-data";
 import { policyUrlsFor, privacyPolicyUrlFor } from "../utils/footer-data";
-import { PRIVACY_POLICY_URL_GLOBAL } from "../../packages/theme-base/runtime/cookie-consent";
+import {
+  COOKIE_BANNER_GLOBAL,
+  PRIVACY_POLICY_URL_GLOBAL,
+  cookieBannerGlobal,
+} from "../../packages/theme-base/runtime/cookie-consent";
 import { POLICY_URLS_GLOBAL } from "../../packages/theme-base/runtime/legal-links";
 import { inlineScriptJson } from "../common/inline-script-json";
 import { applyPageBinding } from "../render/page-transclude";
@@ -1324,6 +1328,19 @@ export async function runBuildPipeline(
         }
       } catch (ppErr) {
         logger.warn(`[themes-v2] privacy policy global inject failed: ${(ppErr as Error)?.message ?? ppErr}`);
+      }
+      // Тексты и кнопки баннера cookie из «Настроек темы» → «Баннер»
+      // (runtime/cookie-consent.ts). Продавец баннер не трогал — глобала нет,
+      // баннер ровно прежний. Вкл/выкл, схема и расположение едут tokens.css.
+      // Зеркало — injectPreviewGlobals / синтетический шелл в превью.
+      try {
+        const banner = cookieBannerGlobal((ctx.revisionData as Record<string, unknown> | null)?.themeSettings);
+        if (banner) {
+          const n = await injectGlobalsIntoDist(ctx.distDir, { [COOKIE_BANNER_GLOBAL]: banner });
+          logger.log(`[themes-v2] Injected ${COOKIE_BANNER_GLOBAL} into ${n} HTML files for site ${params.siteId}`);
+        }
+      } catch (cbErr) {
+        logger.warn(`[themes-v2] cookie banner global inject failed: ${(cbErr as Error)?.message ?? cbErr}`);
       }
       // Ссылки юридической строки «Спасибо за заказ» и чекаута
       // (runtime/legal-links.ts): адреса ЗАПОЛНЕННЫХ политик тем же правилом,

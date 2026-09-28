@@ -76,7 +76,10 @@ describe("баннер cookie — разметка (рендер компоне�
   });
 
   it("1b. текст согласия — дословно", () => {
-    const text = banner!.querySelector("p")!.text.replace(/\s+/g, " ").trim();
+    const text = banner!
+      .querySelector("[data-cookie-consent-text]")!
+      .parentNode.text.replace(/\s+/g, " ")
+      .trim();
     expect(
       text.startsWith(
         "Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием.",

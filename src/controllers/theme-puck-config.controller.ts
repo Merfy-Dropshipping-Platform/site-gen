@@ -33,6 +33,10 @@ import bloomManifestJsonRaw from '../../packages/theme-bloom/theme.json';
 import satinManifestJsonRaw from '../../packages/theme-satin/theme.json';
 import fluxManifestJsonRaw from '../../packages/theme-flux/theme.json';
 import { getThemeManifest as sharedThemeManifest } from '../themes/theme-manifest-loader';
+import {
+  COOKIE_BANNER_DEFAULTS,
+  type CookieBannerSettings,
+} from '../../packages/theme-base/runtime/cookie-consent';
 
 
 // Единая точка чтения манифеста. Раньше здесь лежала ВТОРАЯ копия импортов
@@ -81,6 +85,13 @@ export interface PuckConfigJson {
    * `null` — тема дефолт не заявляла (тогда активна первая схема).
    */
   defaultScheme?: string | null;
+  /**
+   * Значения по умолчанию баннера cookie («Настройки темы» → «Баннер»):
+   * панель конструктора показывает их, пока продавец баннер не трогал.
+   * Источник один — `COOKIE_BANNER_DEFAULTS` рядом с разметкой баннера;
+   * своей копии текстов у конструктора нет.
+   */
+  cookieBanner?: Readonly<CookieBannerSettings>;
 }
 
 /**
@@ -390,6 +401,7 @@ export class ThemePuckConfigController {
       defaults: themeDefaults,
       colorSchemes: themeColorSchemes,
       defaultScheme,
+      cookieBanner: COOKIE_BANNER_DEFAULTS,
     };
   }
 }

@@ -40,8 +40,9 @@
  *
  * Настройки продавца («Настройки темы» → «Баннер», владелец 28.09): заголовок
  * (`data-cookie-consent-heading`, пустой — скрыт), текст
- * (`data-cookie-consent-text`), подписи кнопок и вторая кнопка «Отклонить»
- * (`data-cookie-consent-decline`, по умолчанию скрыта) заполняет рантайм из
+ * (`data-cookie-consent-text`) и подписи кнопок «Основная» (`…-accept`) и
+ * «Дополнительная» (`…-decline`, по умолчанию пустая и скрыта; пустая
+ * подпись = кнопки нет) заполняет рантайм из
  * глобала `__MERFY_COOKIE_BANNER__`. Вкл/выкл, схему и расположение задаёт
  * tokens.css по `data-cookie-consent` / `data-cookie-consent-card` —
  * `cookieBannerCss` в рантайме. Тексты ниже дословно равны
@@ -92,9 +93,7 @@
 				data-cookie-consent-decline
 				hidden
 				class="inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-text,0_0_0)/0.3)] bg-transparent px-6 font-[family-name:var(--font-body)] text-[15px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--color-text,0_0_0))] active:scale-95 md:w-auto"
-			>
-				Отклонить
-			</button>
+			></button>
 		</div>
 	</div>
 </div>

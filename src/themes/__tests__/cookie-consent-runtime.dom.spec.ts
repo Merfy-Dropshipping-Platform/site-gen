@@ -291,9 +291,8 @@ describe("настройки продавца — тексты и кнопки",
     setBanner({
       heading: "Мы за честность",
       text: "Сайт хранит cookie.",
-      acceptLabel: "Хорошо",
-      declineEnabled: true,
-      declineLabel: "Нет, спасибо",
+      primaryLabel: "Хорошо",
+      secondaryLabel: "Нет, спасибо",
     });
     loadPage();
     expect(heading().hidden).toBe(false);
@@ -304,11 +303,21 @@ describe("настройки продавца — тексты и кнопки",
     expect(decline().textContent).toBe("Нет, спасибо");
   });
 
-  it("стёртая подпись кнопки — подпись по умолчанию, стёртый текст — пусто", () => {
-    setBanner({ acceptLabel: "  ", text: "" });
+  it("пустая подпись — кнопки нет (как у секций), стёртый текст — пусто", () => {
+    setBanner({ primaryLabel: "  ", secondaryLabel: "", text: "" });
     loadPage();
-    expect(accept().textContent).toBe("Принять");
+    expect(accept().hidden).toBe(true);
+    expect(decline().hidden).toBe(true);
     expect(text().textContent).toBe("");
+  });
+
+  it("старая ревизия (declineEnabled/declineLabel) рисуется как раньше", () => {
+    setBanner({ acceptLabel: "Ок", declineEnabled: true, declineLabel: "" });
+    loadPage();
+    expect(accept().textContent).toBe("Ок");
+    expect(accept().hidden).toBe(false);
+    expect(decline().hidden).toBe(false);
+    expect(decline().textContent).toBe("Отклонить");
   });
 
   it("жирный/курсив и ссылка [текст](адрес); чужая разметка и javascript: — текстом", () => {
@@ -328,8 +337,8 @@ describe("настройки продавца — тексты и кнопки",
     expect(t.textContent).toContain("зло");
   });
 
-  it("«Отклонить» прячет баннер и запоминает отказ", () => {
-    setBanner({ declineEnabled: true });
+  it("дополнительная кнопка прячет баннер и запоминает отказ", () => {
+    setBanner({ secondaryLabel: "Отклонить" });
     const runtime = loadPage();
     decline().click();
     expect(banner().hidden).toBe(true);
@@ -348,7 +357,7 @@ describe("настройки продавца — тексты и кнопки",
     inPreview();
     loadPage();
     expect(heading().hidden).toBe(true);
-    setBanner({ heading: "Новый заголовок", declineEnabled: true });
+    setBanner({ heading: "Новый заголовок", secondaryLabel: "Нет" });
     document.dispatchEvent(new Event("merfy:cookie-banner"));
     expect(heading().hidden).toBe(false);
     expect(heading().textContent).toBe("Новый заголовок");

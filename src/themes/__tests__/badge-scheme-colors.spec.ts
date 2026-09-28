@@ -180,3 +180,80 @@ describe("бейдж карточки/товара красится ролью �
     },
   );
 });
+
+/**
+ * Счётчик-плашка на иконке корзины/избранного в шапке flux — появляется,
+ * когда в корзине (или избранном) есть товар («когда в корзине товар — так
+ * же с бейджом, флоу», владелец 28.09). ТОЛЬКО flux: решение 15.09 сознательно
+ * оставляло фон плашки фирменным навy (`#1e2952`, «сужение исключения
+ * counter-badge» — поправили тогда только цифру на `--color-button-text`).
+ * Сегодняшнее требование владельца отменяет это решение для flux конкретно;
+ * другие темы не трогали (см. список ниже — у части та же болезнь, но не
+ * в этом объёме).
+ *
+ * flux НЕ имеет `packages/theme-flux/blocks/Header` (нет override) — реальный
+ * рендер и для витрины, и для превью конструктора (compile-theme-sections.mjs
+ * читает `themes/flux/sections.map.json` → тот же файл) — это
+ * `themes/flux/src/components/Header.astro`. Файл лежит внутри
+ * `@source "../components/**"` (themes/flux/src/styles/global.css) — класс,
+ * добавленный сюда, Tailwind живой сборки сканирует сам (ловушка «порт
+ * не сканируется» здесь не действует, она про `packages/theme-<t>/blocks/**`).
+ * Схему для этой обёртки ставит `page-generator.ts` генерически
+ * (`<div class="color-scheme-N">` вокруг блока «Шапка» по полю «Цветовая
+ * схема») — компонент её не читает и трогать не нужно.
+ *
+ * Клиентский код (`nt-cart.ts` renderBadges, `wishlist.ts` renderAll) красит
+ * только `textContent`/`data-empty` — класс/цвет плашки не трогает, перерисовки
+ * не переопределяют её вручную.
+ */
+describe("счётчик-плашка корзины/избранного в шапке flux — роль схемы «Кнопка»", () => {
+  const HEADER = "themes/flux/src/components/Header.astro";
+
+  it("flux: плашка (фон) больше не хардкод #1e2952, а --color-button-bg", () => {
+    const text = read(HEADER);
+    const badgeCls = /const badgeCls =\s*\n?\s*"([^"]+)"/.exec(text)?.[1];
+    expect(badgeCls).toBeDefined();
+    expect(badgeCls).not.toContain("bg-[#1e2952]");
+    expect(badgeCls).toMatch(/bg-\[rgb\(var\(--color-button-bg,\s*30_41_82\)\)\]/);
+    // Цифра — роль «Текст кнопки» — уже была верна 15.09, не должна была измениться.
+    expect(badgeCls).toMatch(/text-\[rgb\(var\(--color-button-text,\s*255_255_255\)\)\]/);
+  });
+
+  it("flux: один источник badgeCls — 5 мест корзины + FluxWishlistLink (никто не дублирует хардкод)", () => {
+    const text = read(HEADER);
+    const cartSpans = text.match(/data-cart-count[\s\S]{0,40}class=\{badgeCls\}/g) ?? [];
+    expect(cartSpans.length).toBeGreaterThanOrEqual(5);
+    // Ничего, кроме переменной badgeCls, не красит фон бейджа литералом хекса.
+    expect(text).not.toMatch(/bg-\[#[0-9a-fA-F]{3,6}\][^"]*data-\[empty=true\]:hidden/);
+
+    const wishlistLink = read("themes/flux/src/components/FluxWishlistLink.astro");
+    expect(wishlistLink).toMatch(/class=\{badgeCls\}/);
+    expect(wishlistLink).not.toMatch(/bg-\[#[0-9a-fA-F]{3,6}\]/);
+  });
+
+  it("flux: Header.astro остаётся внутри @source «../components/**» — класс не мёртв на витрине", () => {
+    const css = read("themes/flux/src/styles/global.css");
+    expect(css).toMatch(/@source\s+"\.\.\/components\/\*\*/);
+  });
+
+  it("flux: обёртка схемы шапки ставится генерически в page-generator (Header её не читает)", () => {
+    const pg = read("src/generator/page-generator.ts");
+    expect(pg).toMatch(/color-scheme-\$\{schemeId\}/);
+    // Header.astro сам colorScheme не деструктурирует — обёртка приходит снаружи.
+    const header = read("themes/flux/src/components/Header.astro");
+    expect(header).not.toMatch(/const\s*\{[^}]*\bcolorScheme\b[^}]*\}\s*=\s*(p|Astro\.props)/);
+  });
+
+  it.each(["bloom", "satin", "vanilla"] as const)(
+    "%s: не трогали — своя роль/хардкод плашки остаётся как была (не в объёме)",
+    (theme) => {
+      const text = read(`themes/${theme}/src/components/Header.astro`);
+      expect(text).toMatch(/data-cart-count/);
+    },
+  );
+
+  it("rose: уже был верной ролью (--color-button-bg) до этой правки — не трогали", () => {
+    const text = read("themes/rose/src/components/Header.astro");
+    expect(text).toMatch(/bg-\[rgb\(var\(--color-button-bg,0_0_0\)\)\]/);
+  });
+});

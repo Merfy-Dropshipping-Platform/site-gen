@@ -7,6 +7,8 @@ import { SITE_TITLE } from "../consts";
 import FluxNavItem from "./FluxNavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
 import FluxWishlistLink from "./FluxWishlistLink.astro";
+import FluxLogo from "./FluxLogo.astro";
+import { headerOwnLogo } from "../../../../packages/theme-base/runtime/header-logo";
 const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 interface NavLink {
@@ -58,13 +60,16 @@ const nav: NavLink[] =
 		? p.navigationLinks.map((l: any) => mapNavLink(l))
 		: defaultNav;
 
-// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
-// <img src={logo}> высотой var(--size-logo-width) в mobile И desktop. Дефолт flux
-// (мерчант НЕ задал logo) = барчарт-SVG `/icons/logo-flux.svg` (эталон верстальщиков,
-// 81×24, рендер h-6/24px). Текст-лого {siteTitle} остаётся ТОЛЬКО крайним фоллбэком —
-// через alt дефолтного img (ассет не загрузился → браузер покажет alt = название).
-const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
-const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
+// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): загруженный
+// мерчантом файл → <img> высотой var(--size-logo-width) в mobile И desktop; без
+// файла → название магазина текстом (FluxLogo). Плейсхолдер /logo.svg и картинки
+// темы (/icons/logo-flux.svg — вордмарк верстальщиков) логотипом магазина не
+// считаются: с 27.07 до 28.09 вордмарк «ılıl FLUX» стоял у любого магазина без
+// своего файла (баг владельца 28.09). Правило — packages/theme-base/runtime/header-logo.ts.
+const logo = headerOwnLogo(p.logo);
+// Мобильный ряд: текст по центру между бургером (слева 16+44) и избранным+корзиной
+// (справа 44+12+44+16) — длинное название обрезается многоточием, не наезжает на кнопки.
+const mobileLogoTextCls = "block max-w-[calc(100vw-15rem)] truncate";
 
 // Канон actionButtons {showCart, showSearch, showProfile} (строки "true"/"false";
 // панель «Кнопки действий»): show/hide трёх иконок шапки. Отсутствие/иное → показаны
@@ -165,8 +170,7 @@ const shopId = "";
 const badgeCls =
 	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#1e2952] px-1 font-roboto-flex text-[11px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden";
 
-// Лого всегда рендерится как <img> (мерчантский logo ИЛИ дефолтный барчарт-SVG) →
-// якорь = img-ветка эталона h-6 (24px). isAbsoluteCenter центрирует лого в single-row.
+// Якорь лого (картинка мерчанта или название текстом) = ряд эталона h-6 (24px). isAbsoluteCenter центрирует лого в single-row.
 // «По центру» БЕЗ absolute: absolute-лого выпадало из потока и ложилось ПОВЕРХ
 // длинного меню вёрстки (пункт №4 читался сквозь лого). Вместо этого single-row
 // становится сеткой [1fr_auto_1fr]: меню слева (может переноситься), лого в
@@ -253,7 +257,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			</span>
 		</button>
 		<a href="/" class:list={["absolute left-1/2 -translate-x-1/2", mobileLogoCls]} aria-label={siteTitle}>
-			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
+			<FluxLogo logo={logo} siteTitle={siteTitle} textCls={mobileLogoTextCls} />
 		</a>
 		<div class="flex items-center gap-3">
 			<FluxWishlistLink badgeCls={badgeCls} boxCls="size-11" iconSize="size-6" />
@@ -303,7 +307,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						</div>
 						<div class="flex items-center justify-center">
 							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
+								<FluxLogo logo={logo} siteTitle={siteTitle} />
 							</a>
 						</div>
 						<div class="flex items-center justify-end gap-4">
@@ -380,7 +384,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 								</button>
 							)}
 						<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
+							<FluxLogo logo={logo} siteTitle={siteTitle} />
 						</a>
 						</div>
 						<div class="flex items-center gap-4">
@@ -458,7 +462,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 					</button>
 				)}
 			<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
+				<FluxLogo logo={logo} siteTitle={siteTitle} />
 			</a>
 			</div>
 

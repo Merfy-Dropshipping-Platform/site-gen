@@ -4,6 +4,7 @@ import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.as
 import { SATIN_ICON_SVGS } from "./icons/satin-icon-svgs";
 import NavItem from "./header/NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
+import { headerOwnLogo } from "../../../../packages/theme-base/runtime/header-logo";
 import { SITE_TITLE } from "../consts";
 const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
@@ -53,7 +54,9 @@ const mapNavLink = (l: any): NavLink => ({
 const navFromProps = Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0;
 const nav: NavLink[] = navFromProps ? p.navigationLinks.map(mapNavLink) : defaultNav;
 
-const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+// Загруженный мерчантом файл; плейсхолдер /logo.svg и картинки темы — не логотип
+// магазина, тогда название текстом. Правило — packages/theme-base/runtime/header-logo.ts.
+const logo = headerOwnLogo(p.logo) || undefined;
 const logoImgCls = "h-[var(--size-logo-width,22px)] w-auto max-w-[160px] object-contain";
 
 // Контракт раскладки = rose Header: mobile lg:hidden не зависит от logoPosition;

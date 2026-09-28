@@ -104,9 +104,12 @@ function отрисовать(jobs: Секция[]): string[] {
 }
 
 const ОЖИДАНИЯ: Record<string, { есть: string[]; нет: string[] }> = {
+  // Без загруженного логотипа шапка пишет название магазина (владелец 28.09:
+  // «везде вместо логотипа брать название сайта») — вордмарка темы в шапке
+  // больше нет. Сторож названия: header-logo-shop-name.spec.ts.
   Header: {
-    есть: ["max-w-[85px]", "w-[98px]", "Vanila-designers.svg"],
-    нет: ["max-w-[76px]", "max-w-[89px]"],
+    есть: ["data-logo-text"],
+    нет: ["max-w-[76px]", "max-w-[89px]", "Vanila-designers.svg"],
   },
   Footer: {
     есть: [

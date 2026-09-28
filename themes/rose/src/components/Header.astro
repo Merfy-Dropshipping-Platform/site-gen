@@ -2,6 +2,7 @@
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import NavItem from "./NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
+import { headerOwnLogo } from "../../../../packages/theme-base/runtime/header-logo";
 import { SITE_TITLE } from "../consts";
 import { ROSE_RAIL_INNER, ROSE_RAIL_OUTER, ROSE_RAIL_PAD_MOBILE } from "../lib/container";
 import { ROSE_HEADER_ACTION_BTN_DESIGNERS, ROSE_HEADER_MOBILE_ROW_DESIGNERS, ROSE_HEADER_SEARCH_BOX_DESIGNERS } from "../lib/design-parity";
@@ -61,14 +62,9 @@ const nav: NavLink[] = Array.isArray(p.navigationLinks) && p.navigationLinks.len
 // НЕ существует на сторфронте (404) → не рендерим <img> с битой картинкой. Реальные
 // загрузки лежат в /branding/<tenant>/<site>/logo-*.svg (pathname НЕ "/logo.svg"),
 // поэтому матчим именно pathname. Иначе — текстовый логотип (siteTitle), как у верстальщика.
-const rawLogo = typeof p.logo === "string" ? p.logo.trim() : "";
-let logoPath = "";
-try {
-	logoPath = new URL(rawLogo, "https://_merfy_").pathname;
-} catch {
-	logoPath = rawLogo;
-}
-const logo = rawLogo && logoPath !== "/logo.svg" ? rawLogo : undefined;
+// Правило «что считать файлом мерчанта» (плейсхолдер /logo.svg и картинки темы
+// /icons/… — нет) — общее для пяти тем: packages/theme-base/runtime/header-logo.ts.
+const logo = headerOwnLogo(p.logo) || undefined;
 const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
 
 // Канон logoPosition: 'top-left' (canon default) / 'center-left' / отсутствие /

@@ -10698,3 +10698,73 @@ ILIKE, через product-service и gateway, на всех пяти темах,
   `./runtime__preview-click-guard.mjs` — адрес не раздаётся, баннер там не оживает (было и до этой правки, путь
   запасной). Опубликованные магазины получат настройки со следующей публикацией.
 
+
+## 2026-09-28 — все пять тем: сворачивание групп фильтров в боковой панели и шторке (`fix/filter-collapse`, site-gen, WIP — не залито)
+
+- Владелец: «возможность скрывать и раскрывать список фильтров, все темы». Скрин (мобильная шторка/боковая
+  панель): группы «Цвет» (7 вариантов), «Оттенок» (3), «Размер» (L/M/S…) рисовались развёрнутыми целиком, длинной
+  простынёй.
+- Понял так: заголовок каждой группы («Наличие», «Стоимость», «Цвет», «Сортировать», «Коллекции» и клонированные
+  группы параметров товара — «Оттенок», «Размер»…) становится кликабельной кнопкой с шевроном, по нажатию список
+  группы сворачивается/разворачивается — одинаково в боковой панели каталога (десктоп) и в шторке «Фильтры и
+  сортировка» на телефоне (это один и тот же компонент `NtFilterSidebar.astro`/`VanillaCatalogFilterSidebar.astro`,
+  правка одна на оба места). Старт — всегда развёрнуто (ничего не прячем без запроса владельца), состояние между
+  заходами не хранится. Доступность: `<button data-nt="filter-group-toggle" aria-expanded>`, управляемый список
+  `[data-filter-group-body]` с атрибутом `hidden`; у статичных групп `aria-controls` указывает на настоящий `id`
+  тела, у клонированных групп параметров товара `aria-controls`/`id` снимаются (не плодить дубли на странице).
+- Разметка: `packages/theme-{rose,flux,satin,bloom}/blocks/Catalog/NtFilterSidebar.astro` (файл побайтово идентичен
+  во всех четырёх, сторожится `no-second-implementation.spec.ts`) и
+  `packages/theme-vanilla/blocks/Catalog/VanillaCatalogFilterSidebar.astro`. Обработчик клика — один делегированный
+  `<script is:inline>` в `Catalog.astro` каждой темы (`window.__merfyFilterGroups`, текст идентичен во всех пяти —
+  новый сторож в `catalog-filter-group-collapse.spec.ts`), НЕ гейтится «Фильтрами»/«Сортировкой»: боковой блок
+  «Коллекции» рисуется независимо от них, а в `NtFilterSidebar`/`VanillaCatalogFilterSidebar` он не всегда
+  рендерится (edge-кейс: обе настройки выключены, но коллекции есть) — обработчик живёт там, где ГАРАНТИРОВАННО
+  рендерится вместе с блоком.
+- Ловушка (сверено замером): живая сборка CSS витрины не сканирует `packages/theme-<t>/blocks/**` кроме узкого
+  `@source` в `themes/<t>/src/styles/global.css` (там уже был список для `NtFilterSidebar`/
+  `VanillaCatalogFilterSidebar` — сверил файл-в-файл, править не пришлось). Видимость тела группы — НЕ класс
+  Tailwind из порта, а правило в общем `packages/theme-base/styles/catalog-filters.css`:
+  `[data-filter-group-body][hidden]{display:none}` (Tailwind `.flex` того же узла иначе не даёт спрятать список —
+  одинаковая специфичность, один слой `@layer utilities`, побеждает бы порядок объявления) + поворот шеврона по
+  `aria-expanded`.
+- Поправлены `bindColors()`/`cloneColorFilter()` (rose/flux/satin/bloom) и `cloneColorBox()` (vanilla): заголовок
+  «Цвет» раньше искался как `:scope > p`, теперь — `:scope > [data-nt="filter-group-toggle"]` (title стал кнопкой).
+- **Регресс, найденный ревью (Opus) 28.09, до заливки:** `cloneColorFilter`/`cloneColorBox` (копия «Цвета» под
+  каждую группу параметров товара — Оттенок/Размер из `/api/store/filters`) через `cloneNode(true)` копировали и
+  ТЕКУЩЕЕ состояние сворачивания «Цвета». Если покупатель свернул «Цвет» до ответа `/api/store/filters` или до
+  повторной гидрации (client-side навигация — `astro:page-load` на новом URL, без перезагрузки страницы), свежий
+  клон рисовался свёрнутым — ровно случай со скрина владельца (Оттенок/Размер). Исправлено: клон явно форсирует
+  `aria-expanded="true"` на кнопке и `hidden=false` на теле, независимо от состояния шаблона-источника; у vanilla
+  заодно снят неверный комментарий («aria-expanded="true" остаётся как есть» — не оставался).
+- Тест-инфраструктура: `src/themes/__tests__/lib/catalog-dom.ts` — `Магазин` получил `доп_параметры` (мок
+  дополнительных групп `/api/store/filters`, помимо «Цвета»), чтобы гонять клон «Оттенок»/«Размер» в тестах.
+- Сторож `src/themes/__tests__/catalog-filter-group-collapse.spec.ts` (46 проверок, все пять тем): группы стартуют
+  развёрнутыми (кнопка/шеврон/видимое тело); клик сворачивает/разворачивает; сворачивание одной группы не трогает
+  соседние; клон «Оттенок» стартует развёрнутым даже после свёрнутого «Цвета» и принудительной повторной гидрации
+  (главный регресс-кейс); «Цвет» — сам выбор покупателя, фикс его не трогает и остаётся свёрнутым; живой рендер
+  цвета проверяется атрибутом `[data-color-option="Белый"]` (не `textContent`, который зеленел и на demo-заглушке
+  `NtFilterSidebar`/`NtFilterPanel` — эту дыру тоже нашло ревью); `aria-controls` статичных групп указывает на
+  настоящее тело; реальный победитель CSS-каскада (`parseRules`/`winnerIn` из `lib/css-cascade.ts`, тот же движок,
+  что у `catalog-filters-mobile.spec.ts`) против СОБРАННОГО `dist/theme-css/<тема>.css` — не «строка есть в файле»,
+  а честная проверка, что `[data-filter-group-body][hidden]` бьёт настоящую утилиту `.flex`. Поправлены два
+  существующих сторожа (`catalog-filters-sheet.spec.ts`, `catalog-filters-sheet-choices.spec.ts`) — искали секцию по
+  `<p>` с текстом заголовка, после конверсии в кнопку не находили её.
+- `pnpm checks` (полный прогон после первой версии правки, до ревью): 8157 прошло, 43 не прошло — все 43 одной
+  причиной, окружения этой копии worktree (`node_modules` — ссылка на общий, в нём нет пакета `node-html-parser`;
+  проверено напрямую на нескольких гардах, включая catalog-related `catalog-filter-color-rings`/
+  `catalog-filters-mobile`/`catalog-layout-mobile`), никак не связано с правкой. Точечно зелено:
+  `catalog-filters-sheet` (55/55), `catalog-filters-sheet-choices` (41/41), `catalog-multi-select-filters` (20/20),
+  `catalog-variant-filters` (50/50), `catalog-filter-chips` (50/50), `no-second-implementation.spec.ts`,
+  `pnpm conformance:satin`.
+- Инвентарь satin (`conformance/inventory/satin.generated.json`) пересчитан дважды — `pnpm
+  conformance:satin:refresh-inventory` (после `pnpm build:blocks && pnpm build:theme-sections satin && pnpm exec tsx
+  scripts/run-theme-build.ts satin`), каждый раз отдельным коммитом chore после правки исходников, как требует сам
+  инструмент (`scripts/refresh-satin-inventory.mjs`: отказывается менять отслеживаемые файлы при грязном рабочем
+  дереве).
+- Гоча этой сессии: `renderSections()`/`показать()` (тестовый рендер) читает ПРЕДСОБРАННЫЕ `dist/theme-sections/`
+  и `dist/astro-blocks/*.mjs`, а не исходники живьём. После правки cloneColorFilter/cloneColorBox тесты сперва
+  падали одинаково на всех пяти темах (клон «Оттенок» рисовался свёрнутым) — не баг, а стухший dist: пересобрал
+  `pnpm build:blocks && pnpm build:theme-sections:all`, тесты позеленели.
+- Хвосты: не залито, PR не создавался (по заданию). На живой витрине/в конструкторе не проверено плейврайтом —
+  задача шла без доступа к Coolify/прод-БД. Ревью на итоговую версию (после регресс-фикса) не запрашивалось.
+

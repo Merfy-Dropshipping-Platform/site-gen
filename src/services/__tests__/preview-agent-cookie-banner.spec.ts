@@ -81,21 +81,42 @@ const send = (data: Record<string, unknown>) =>
   window.dispatchEvent(new MessageEvent("message", { data }));
 
 describe("агент превью — баннер cookie", () => {
-  it.each([
-    ["текст", "[data-cookie-consent-text]"],
-    ["кнопка «Принять»", "[data-cookie-consent-accept]"],
-  ])("нажатие на %s → select-cookie-banner, дальше не идёт", (_what, selector) => {
+  it("нажатие на текст баннера → select-cookie-banner, дальше не идёт", () => {
     bootAgent();
     const pageHandler = jest.fn();
     document.body.addEventListener("click", pageHandler);
-    const el = document.querySelector<HTMLElement>(selector)!;
     const event = new MouseEvent("click", { bubbles: true, cancelable: true });
-    el.dispatchEvent(event);
+    document.querySelector<HTMLElement>("[data-cookie-consent-text]")!.dispatchEvent(event);
     expect(posted).toContainEqual({ type: "select-cookie-banner" });
     expect(posted.some((m) => m.type === "select-block")).toBe(false);
     expect(event.defaultPrevented).toBe(true);
     expect(pageHandler).not.toHaveBeenCalled();
     document.body.removeEventListener("click", pageHandler);
+  });
+
+  // Владелец 28.09: «кнопки оживить» — кнопка уходит рантайму баннера, как на
+  // витрине: агент её не перехватывает и не выделяет баннер.
+  it("нажатие на кнопку баннера агент пропускает к рантайму", () => {
+    bootAgent();
+    const runtime = jest.fn();
+    document.body.addEventListener("click", runtime);
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+    document.querySelector<HTMLElement>("[data-cookie-consent-accept]")!.dispatchEvent(event);
+    expect(posted.some((m) => m.type === "select-cookie-banner")).toBe(false);
+    expect(event.defaultPrevented).toBe(false);
+    expect(runtime).toHaveBeenCalledTimes(1);
+    document.body.removeEventListener("click", runtime);
+  });
+
+  it("выбрали баннер (set-selection c cookieBanner) → событие показа баннера", () => {
+    bootAgent();
+    const show = jest.fn();
+    document.addEventListener("merfy:cookie-banner", show);
+    send({ type: "set-selection", sectionId: null, subsectionParentId: null, subsectionIndex: null, cookieBanner: true });
+    expect(show).toHaveBeenCalledTimes(1);
+    send({ type: "set-selection", sectionId: "Hero-1", subsectionParentId: null, subsectionIndex: null });
+    expect(show).toHaveBeenCalledTimes(1);
+    document.removeEventListener("merfy:cookie-banner", show);
   });
 
   it("set-selection c cookieBanner → рамка на баннере; выбрали секцию → снята", () => {

@@ -1594,11 +1594,21 @@ const rowStockOptions: RadioOption[] = [
 			if (title) title.textContent = group;
 			// Сворачивание (владелец: «скрывать и раскрывать список фильтров»):
 			// клон несёт aria-controls/id секции «Цвет» — снимаем, чтобы не
-			// дублировались на странице; aria-expanded="true" остаётся как есть.
+			// дублировались на странице. cloneNode копирует и ТЕКУЩЕЕ состояние
+			// сворачивания «Цвета» (покупатель свернул его до ответа
+			// /api/store/filters или до повторной гидрации) — клон обязан
+			// начинать развёрнутым, как любая свежая группа, поэтому
+			// aria-expanded/hidden переставляются явно, а не «остаются как есть».
 			const clonedToggle = clone.querySelector('[data-nt="filter-group-toggle"]');
-			if (clonedToggle) clonedToggle.removeAttribute("aria-controls");
+			if (clonedToggle) {
+				clonedToggle.removeAttribute("aria-controls");
+				clonedToggle.setAttribute("aria-expanded", "true");
+			}
 			const clonedBody = clone.querySelector("[data-filter-group-body]");
-			if (clonedBody) clonedBody.removeAttribute("id");
+			if (clonedBody) {
+				clonedBody.removeAttribute("id");
+				clonedBody.hidden = false;
+			}
 			// Пункты цвета из копии убираем сразу: их наполнит renderVariantBox.
 			for (const list of Array.from(clone.querySelectorAll("[data-variant-options]"))) list.innerHTML = "";
 			return clone;

@@ -1486,10 +1486,19 @@ const skeletons = Array.from({ length: skeletonCount });
       (el) => el.children.length === 0 && (el.textContent || "").trim() === COLOR_GROUP_NAME,
     );
     if (label) label.textContent = group;
+    // cloneNode копирует ТЕКУЩЕЕ состояние сворачивания «Цвета» (владелец
+    // свернул его до ответа /api/store/filters или до повторной гидрации) —
+    // клон обязан начинать развёрнутым, как любая свежая группа.
     const clonedToggle = clone.querySelector('[data-nt="filter-group-toggle"]');
-    if (clonedToggle) clonedToggle.removeAttribute("aria-controls");
+    if (clonedToggle) {
+      clonedToggle.removeAttribute("aria-controls");
+      clonedToggle.setAttribute("aria-expanded", "true");
+    }
     const clonedBody = clone.querySelector('[data-filter-group-body]');
-    if (clonedBody) clonedBody.removeAttribute("id");
+    if (clonedBody) {
+      clonedBody.removeAttribute("id");
+      clonedBody.hidden = false;
+    }
     const list = clone.querySelector(listSelector);
     if (!list) return null;
     list.removeAttribute("data-cf-color");

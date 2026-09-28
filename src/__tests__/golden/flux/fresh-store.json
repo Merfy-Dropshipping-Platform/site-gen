@@ -310,19 +310,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -352,6 +352,7 @@
             },
             {
               "props": {
+                "colorScheme": "scheme-5",
                 "id": "Product-home",
                 "variants": {
                   "displayStyle": "button",
@@ -482,19 +483,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -607,19 +608,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -738,19 +739,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -920,12 +921,59 @@
           "content": [
             {
               "props": {
-                "colorScheme": "scheme-2",
-                "id": "CheckoutHeader-1",
-                "logo": "/logo.svg",
-                "siteTitle": "Мой магазин"
+                "id": "PromoBanner-page-checkout-result",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
               },
-              "type": "CheckoutHeader"
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-page-checkout-result",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
             },
             {
               "props": {
@@ -940,7 +988,6 @@
                 "bodyFont": "",
                 "bodyWeight": "",
                 "buttonColor": "",
-                "colorScheme": "scheme-2",
                 "confirmedNote": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
                 "confirmedTitle": "Ваш заказ подтверждён",
                 "detailsTitle": "Детали заказа",
@@ -961,6 +1008,51 @@
                 "summaryBg": ""
               },
               "type": "OrderConfirmation"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-page-checkout-result",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
             }
           ],
           "root": {
@@ -1003,19 +1095,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -1141,19 +1233,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -1259,19 +1351,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -1384,19 +1476,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -1508,19 +1600,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -1628,19 +1720,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -1655,7 +1747,7 @@
             },
             {
               "props": {
-                "colorScheme": "scheme-2",
+                "colorScheme": "scheme-5",
                 "id": "Product-1",
                 "padding": {
                   "bottom": 80,
@@ -1768,19 +1860,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],
@@ -1888,19 +1980,19 @@
                     "label": "Главная"
                   },
                   {
-                    "href": "/catalog/naushniki",
+                    "href": "/catalog",
                     "label": "Полноразмерные наушники"
                   },
                   {
-                    "href": "/catalog/tws",
+                    "href": "/catalog",
                     "label": "TWS-наушники с кейсом"
                   },
                   {
-                    "href": "/catalog/kolonki",
+                    "href": "/catalog",
                     "label": "Портативные колонки"
                   },
                   {
-                    "href": "/catalog/saundbary",
+                    "href": "/catalog",
                     "label": "Саундбары"
                   }
                 ],

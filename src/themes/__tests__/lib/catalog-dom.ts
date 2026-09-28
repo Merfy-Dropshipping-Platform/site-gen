@@ -33,6 +33,9 @@ export interface Магазин {
 
   /** Значения группы «Цвет» у товаров магазина. */
   цвета?: string[];
+  /** Остальные параметры товара из /api/store/filters (Оттенок, Размер…) —
+   *  порт каждой темы клонирует под них копию фильтра «Цвет». */
+  доп_параметры?: Array<{ name: string; values: string[] }>;
   /** Товары в форме /api/store/products (title, slug, basePrice, images…). */
   товары?: Array<Record<string, unknown>>;
 }
@@ -74,7 +77,10 @@ async function витрина(input: RequestInfo | URL): Promise<Response> {
     return ответ({
       success: true,
       data: {
-        groups: магазин.цвета ? [{ name: "Цвет", values: магазин.цвета }] : [],
+        groups: [
+          ...(магазин.цвета ? [{ name: "Цвет", values: магазин.цвета }] : []),
+          ...(магазин.доп_параметры ?? []),
+        ],
       },
     });
   if (адрес.includes("/api/store/products")) {

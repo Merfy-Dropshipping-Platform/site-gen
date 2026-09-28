@@ -13,6 +13,7 @@
  */
 
 import { pickDefaultCombination } from "../../../../packages/theme-base/runtime/nt-cart";
+import type { NtVariantGroupLike } from "../../../../packages/theme-base/runtime/variant-default";
 
 export interface RealProduct {
 	id: string;
@@ -26,6 +27,8 @@ export interface RealProduct {
 	description?: string;
 	hasVariants?: boolean;
 	variantCombinations?: VariantCombination[];
+	/** Группы вариантов в порядке показа — по ним выбирается видимый первый вариант. */
+	variantGroups?: NtVariantGroupLike[] | null;
 }
 
 /** Конкретная покупаемая комбинация вариантов (из products.json). */

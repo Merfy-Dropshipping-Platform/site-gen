@@ -261,11 +261,6 @@ jobs:
         with:
           name: satin-dist
           path: .
-      # ВРЕМЕННО (отладка PR #203): полный вывод jest нового гарда.
-      - name: DEBUG product-card-style-follows-setting
-        if: matrix.shard == 3
-        continue-on-error: true
-        run: pnpm exec jest --runInBand --verbose src/themes/__tests__/product-card-style-follows-setting.spec.ts 2>&1 | tail -80
       - if: false
         run: pnpm test:section-snapshots
       # Глаз у именованного параметра: секция рендерится дважды — обычно и со

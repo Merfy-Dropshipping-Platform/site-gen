@@ -10724,3 +10724,33 @@ ILIKE, через product-service и gateway, на всех пяти темах,
 - Хвосты, не чинились: vanilla без файла рисует вордмарк темы `VanilaLogoDesigners` (тот же класс бага, 27 магазинов
   без логотипа). У 17 из 22 flux-магазинов `siteTitle` шапки — «Flux» из сида: покажут «FLUX» текстом, как rose
   «ROSE» у 131 магазина. Подвалу название из админки подставляет сборка (`applyFooterData`), шапке — нет ни в одной теме.
+
+## 2026-09-28 — все пять тем: шапка без логотипа = название сайта (`fix/flux-logo-name`, локальные коммиты, не запушено)
+
+- Решение владельца после правки flux: «крч везде вместо логотипа брать название сайта».
+- Замер прода до правки (шапка главной): `siteTitle` = стартовое название темы у большинства — «Rose» 124,
+  «Rose Theme» 12, «ROSE» 7, пусто 35 (rose); «Vanilla Pilot» 25 (vanilla); «Satin»/«SATIN» 21; «Flux»/«FLUX» 17;
+  «Bloom» 15; «Мой магазин» ещё у 23. Подвалу название из админки подставлял `applyFooterData`, шапке — никто.
+- Правило названия — `src/utils/header-title.ts`: своё название мерчанта остаётся; стартовое (список
+  `TEMPLATE_SITE_TITLES`, без учёта регистра) или пустое → `site.name`; нет названия сайта — проп не трогаем.
+  Список сверяется со всеми сидами (`packages/theme-*/theme.json`, `pages/*.json`, `templates/defaults/*.json`,
+  `themes/*/src/consts.ts`, defaultProps шапки theme-base) в `header-title.spec.ts`.
+- Где подставляется: `applyFooterData` (utils/footer-data.ts) — его зовут сборка витрины (`injectFooterData`
+  после stageMerge) и страница превью (preview.controller); точечная перерисовка шапки — `applyHeaderShopName`
+  (читает только `site.name`). В ревизию ничего не пишется, настройка шапки в конструкторе не меняется.
+- Логотип: `headerOwnLogo` во всех пяти портах (rose/bloom — вместо своих копий правила, satin — раньше брал
+  `/logo.svg` картинкой) и в `packages/theme-base/blocks/Header/Header.astro`. vanilla: вордмарк
+  `VanilaLogoDesigners` в шапке заменён названием (`font-vanilla-bitter`, кегль `--size-logo-width`, цвет от
+  ссылки — роль «Заголовок»; в мобильном ряду многоточие при `max-w-[40vw]`). `vanilla-like-designers.spec`
+  обновлён: вордмарка в шапке больше нет.
+- Сторож `src/themes/__tests__/header-logo-shop-name.spec.ts`: 5 тем × (сид + нет логотипа → название сайта;
+  плейсхолдер → название; своё название → своё; загруженный файл → картинка во всех местах; классы текста есть в
+  `dist/theme-css/<тема>.css`). С портами из origin/dev — 7 красных. `footer-data-signature.spec`: «шапку не
+  трогаем» → «в шапку идёт только название».
+- `pnpm checks`: красное только окружение (`node-html-parser` не установлен в копии — 54 «ноль проверок» и
+  `validate-token-completeness`) и два таймаута под нагрузкой (`buy-now-no-cart-flash`, `catalog-next-photo-by-theme`
+  — отдельно зелёные); инвентарь satin пересчитан отдельным коммитом.
+- Что увидят магазины (после переопубликации): 275 без логотипа сменят шапку — rose 193, vanilla 28, satin 20,
+  flux 19, bloom 15; на настоящее название — 35, на «Мой сайт» (название по умолчанию) — 240.
+- Хвосты: vanilla в подвале рисует вордмарк темы; CheckoutHeader зеркалит логотип шапки главной без правила
+  `headerOwnLogo` (плейсхолдер `/logo.svg` там уйдёт картинкой).

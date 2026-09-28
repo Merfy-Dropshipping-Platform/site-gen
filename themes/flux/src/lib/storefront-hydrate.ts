@@ -756,8 +756,10 @@ function parsePriceNum(v: number | string | null | undefined): number | null {
 
 /**
  * Sale-бейдж эталона (Figma): уценённый товар (oldPrice/compareAtPrice > price)
- * → `-NN%` в оранжевом квадрате, иначе «Скидка». Нет уценки → пусто. Стиль 1:1
- * с FluxProductCard (white, 12px, font-light, px-1.5 py-1).
+ * → `-NN%`, иначе «Скидка». Нет уценки → пусто. Стиль 1:1 с FluxProductCard
+ * (12px, font-light, px-1.5 py-1). Цвет — роль схемы «Кнопка» (класс
+ * merfy-badge, base.css), не хардкод верстальщика bg #FA5109/white
+ * (владелец 28.09).
  */
 function saleBadgeHtml(p: RealProduct): string {
   const old = parsePriceNum(p.oldPrice ?? p.compareAtPrice ?? null);
@@ -767,7 +769,7 @@ function saleBadgeHtml(p: RealProduct): string {
   const label = pct > 0 ? `-${pct}%` : "Скидка";
   return (
     `<div class="absolute left-2 top-2 flex flex-col items-start gap-1">` +
-    `<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">${escapeHtml(label)}</span>` +
+    `<span class="merfy-badge inline-flex items-center justify-center rounded-[4px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none md:text-[14px]">${escapeHtml(label)}</span>` +
     `</div>`
   );
 }

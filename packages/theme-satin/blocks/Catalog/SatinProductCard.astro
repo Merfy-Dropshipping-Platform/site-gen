@@ -73,7 +73,9 @@ const href = `/products/${product.id}`;
 			)}
 		</a>
 		{product.discount && (
-			<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">
+			<span class="merfy-badge pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center px-2 font-manrope text-[12px] font-medium uppercase leading-none">
+				{/* Цвет — роль схемы «Кнопка» (merfy-badge, base.css), не хардкод
+				    верстальщика (чёрный фон / белый текст, владелец 28.09). */}
 				Скидка
 			</span>
 		)}

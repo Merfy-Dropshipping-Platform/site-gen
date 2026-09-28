@@ -78,10 +78,13 @@ function thumbHtml(line: CartLineExtra): string {
 			? `-${Math.round((1 - line.price / line.oldPrice) * 100)}%`
 			: "");
 
+	// Цвет — роль схемы «Кнопка» (merfy-badge, base.css), не хардкод верстальщика
+	// bg #FA5109/белый текст (владелец 28.09: «в корзине — так же с бейджом»,
+	// это и есть строка товара страницы /cart, зеркалит FluxProductCard.astro).
 	const badges = `
 		<div class="absolute left-1 top-1 flex flex-col items-start gap-1">
-			${line.isNew ? `<span class="flex items-center justify-center rounded-[2px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-white">Новинка</span>` : ""}
-			${discountPercent ? `<span class="flex items-center justify-center rounded-[2px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-white">${escapeHtml(discountPercent)}</span>` : ""}
+			${line.isNew ? `<span class="merfy-badge flex items-center justify-center rounded-[2px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal">Новинка</span>` : ""}
+			${discountPercent ? `<span class="merfy-badge flex items-center justify-center rounded-[2px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal">${escapeHtml(discountPercent)}</span>` : ""}
 		</div>`;
 
 	return `

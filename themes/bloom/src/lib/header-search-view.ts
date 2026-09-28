@@ -31,9 +31,11 @@ const photo = (hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string =>
 		? `<img data-search-img src="${ctx.escapeHtml(hit.image)}" alt="" loading="lazy" onerror="this.onerror=null;this.remove()" class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" />`
 		: "";
 
+// Цвет — роль схемы «Кнопка» (merfy-badge, base.css), не «Акцент» (владелец
+// 28.09). Точки-переключатель фото ниже — легитимный accent, не бейдж, не трогать.
 const badge = (hit: HeaderSearchHit): string =>
 	hit.onSale
-		? `<span class="absolute left-3 top-3 inline-flex h-6 items-center rounded-[16px] bg-[rgb(var(--color-accent,227_142_159))] px-1.5 font-inter text-[12px] font-light leading-[15px] !text-white">Скидка</span>`
+		? `<span class="merfy-badge absolute left-3 top-3 inline-flex h-6 items-center rounded-[16px] px-1.5 font-inter text-[12px] font-light leading-[15px]">Скидка</span>`
 		: "";
 
 function dots(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string {

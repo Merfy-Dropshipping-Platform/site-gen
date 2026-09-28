@@ -25,24 +25,67 @@
  * форсит атрибут-селекторы base.css/global.css в `@layer base` (там утилита
  * `bg-[...]` победила бы); класс остаётся unlayered.
  *
- * ОХВАТ (карточка каталога/коллекции — 4 темы: rose, bloom, satin, flux;
- * vanilla бейджа на карточке не рисует вовсе — красить нечего, не в объёме).
- * Каждый порт несёт бейдж в ДВУХ местах: SSG-компонент (.astro, рисует
- * первую загрузку страницы) И клиентский `render*Html`-миррор (перерисовывает
- * карточки после фильтра/сортировки/пагинации, живёт в самом Catalog.astro
- * или в соседнем storefront-hydrate.ts) — оба обязаны совпадать, иначе после
- * фильтра бейдж откатится на старый цвет. Плюс legacy-копии
- * (`themes/<t>/src/...`) — их же Tailwind живой сборки сканирует
+ * ОХВАТ. КАРТОЧКА КАТАЛОГА (packages/theme-<t>/blocks/Catalog) — 4 темы:
+ * rose, bloom, satin, flux; vanilla там бейджа НЕ рисует вовсе (проверено
+ * ниже отдельным тестом — это правда только про каталог, не про витрину
+ * целиком). Каждый порт несёт бейдж в ДВУХ местах: SSG-компонент (.astro,
+ * рисует первую загрузку страницы) И клиентский `render*Html`-миррор
+ * (перерисовывает карточки после фильтра/сортировки/пагинации, живёт в самом
+ * Catalog.astro или в соседнем storefront-hydrate.ts) — оба обязаны
+ * совпадать, иначе после фильтра бейдж откатится на старый цвет.
+ *
+ * «ПОПУЛЯРНЫЕ ТОВАРЫ»/«КОЛЛЕКЦИИ» (ревью Opus 28.09: моё первое ОХВАТ было
+ * НЕПОЛНЫМ — на этих секциях витрина рисует СОВСЕМ ДРУГУЮ карточку,
+ * `themes/<t>/src/components/products/<T>ProductCard.astro`, а не пакетный
+ * порт каталога) — 5 тем, включая vanilla (`VanillaProductCard.astro:87`,
+ * `bg-[var(--vanilla-announcement-bg)]` — фирменный, НЕ роль схемы; у vanilla
+ * бейдж ЕСТЬ, просто не на карточке каталога). У satin SSR этой карточки был
+ * НЕ синхронизирован с client-гидрацией (`lib/storefront-hydrate.ts`, уже на
+ * merfy-badge) — первый кадр красился accent, после гидрации — button-role
+ * (моргание цветом).
+ *
+ * ОСТАЛЬНЫЕ ЖИВЫЕ КОПИИ ТОЙ ЖЕ РАЗМЕТКИ: избранное satin
+ * (`WishlistSection.astro`, своя inline `renderCardHtml`); живой поиск из
+ * лупы в шапке — rose/bloom/satin (`lib/header-search-view.ts`, ДВЕ карточки
+ * на тему — панель и шторка-дровер); СТРОКА КОРЗИНЫ flux
+ * (`lib/cart-thumb-html.ts` + INLINE-копии в `CartBody.astro`/
+ * `CartSection.astro` — client re-render после add/remove) — это и есть
+ * «в корзине — так же с бейджом» из исходной жалобы владельца (см. историю
+ * ниже); у остальных 4 тем в корзине/дровере бейджа НЕТ вовсе (проверено,
+ * см. `cart-thumb-html.ts`/`CartBody.astro`/`CartSection.astro` каждой темы —
+ * не грепится «Скидка»/«Новинка»).
+ *
+ * Legacy-копии (`themes/<t>/src/...`) — их же Tailwind живой сборки сканирует
  * (`@source "../components/**"` / `"../lib/**"`); мёртвый хардкод там не
- * рендерится, но остаётся в CSS витрины и вводит в заблуждение. Плюс страница
- * товара (PDP) — общий для всех 5 тем `ProductGallery.astro` (theme-base),
- * роль там ДО правки была третья, своя: `--color-text`/`--color-bg`
- * (инверсия текста страницы), тоже не «Кнопка».
+ * рендерится (кроме случаев выше, где эти файлы ЖИВЫЕ), но остаётся в CSS
+ * витрины и вводит в заблуждение.
+ *
+ * Плюс страница товара (PDP) — общий для всех 5 тем `ProductGallery.astro`
+ * (theme-base), роль там ДО правки была третья, своя: `--color-text`/
+ * `--color-bg` (инверсия текста страницы), тоже не «Кнопка».
+ *
+ * ВНЕ ОБЪЁМА (найдено, не чинил — см. описания в самих `it`):
+ *   - каталог rose/bloom: клиентский `render*Html`-миррор вообще не рисует
+ *     бейдж после фильтра/сортировки (пропадает) — отдельный баг, не про цвет;
+ *   - счётчик-плашка корзины/избранного в шапке bloom/satin/vanilla — свой
+ *     фирменный хардкод, не тронут (flux — тронут, см. блок ниже).
  *
  * Проверка «без хардкода» — ТОЧНЫЕ старые подстроки (не общий шаблон вроде
  * `--color-accent`, который легитимно встречается в ProductGallery.astro для
  * ДРУГОГО — иконки «Нет фото», не бейджа, — и дал бы ложный минус).
+ *
+ * ПОВЕДЕНЧЕСКИЕ ПРОВЕРКИ (ревью Opus 28.09: строковый греп не ловит «файл не
+ * компилируется»/«роль не доезжает до реального узла») — ниже, отдельными
+ * describe: рендер через `render-theme-sections.mjs` (тот же модуль, что
+ * уходит на витрину/в превью — см. `satin-b39-render-scheme-guards.spec.ts`)
+ * с РЕАЛЬНЫМ товаром со скидкой. Не для всех тем: PopularProducts
+ * bloom/vanilla/flux тянет товары СЕРВЕРНЫМ HTTP-запросом к
+ * `/api/sites/:id/storefront-data` (нет способа подставить фикстуру через
+ * этот тестовый харнесс без живого сервиса) — там остаётся только строковая
+ * проверка выше; rose/satin читают `__merfy.resolved.popularProducts` —
+ * фикстура `catalog` в job долетает, рендер настоящий.
  */
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -120,6 +163,88 @@ const BADGE_FILES: BadgeFileCheck[] = [
     oldHardcode: ["style=\"background:rgb(var(--color-text)); color:rgb(var(--color-bg));\""],
     badgeOccurrences: 4,
   },
+  // «Популярные товары»/«Коллекции» — СОВСЕМ ДРУГАЯ карточка (не пакетный
+  // порт каталога): themes/<t>/src/components/products/<T>ProductCard.astro,
+  // зовётся из themes/<t>/src/components/sections/Popular.astro (все 5 тем) и,
+  // у bloom, Collections.astro:20. Найдено ревью Opus 28.09 — моё первое ОХВАТ
+  // это пропустило.
+  {
+    path: "themes/rose/src/components/products/RoseProductCard.astro",
+    oldHardcode: ["bg-[rgb(var(--color-accent,0_0_0))]", "!text-white"],
+    badgeOccurrences: 1,
+  },
+  {
+    path: "themes/bloom/src/components/products/BloomProductCard.astro",
+    oldHardcode: ["bg-[rgb(var(--color-accent,227_142_159))]", "text-white"],
+    badgeOccurrences: 1,
+  },
+  {
+    path: "themes/satin/src/components/products/SatinProductCard.astro",
+    // Была своя, ЕЩЁ не хардкод-версия (--color-accent, "эталон rose" —
+    // предыдущая волна): рассинхрон с client-гидрацией (storefront-hydrate.ts,
+    // уже на merfy-badge) — первый кадр одного цвета, после гидрации другого.
+    oldHardcode: ["bg-[rgb(var(--color-accent,0_0_0))]"],
+    badgeOccurrences: 1,
+  },
+  {
+    path: "themes/vanilla/src/components/products/VanillaProductCard.astro",
+    // Фирменный алиас темы (шапка-анонс), НЕ роль схемы вовсе — другой
+    // хардкод, чем у остальных четырёх тем, но та же болезнь.
+    oldHardcode: ["bg-[var(--vanilla-announcement-bg)]"],
+    badgeOccurrences: 1,
+  },
+  // Избранное satin — своя inline renderCardHtml (та же болезнь, что была в
+  // SatinProductCard.astro/storefront-hydrate.ts до предыдущей волны).
+  {
+    path: "themes/satin/src/components/sections/WishlistSection.astro",
+    oldHardcode: ["bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white"],
+    badgeOccurrences: 1,
+  },
+  // Живой поиск из лупы в шапке — панель (десктоп) + шторка-дровер (мобайл),
+  // по 2 карточки-рендера на тему (rose), 1 на тему (bloom/satin — общая
+  // функция на оба вида). vanilla/flux в поиске бейдж не рисуют (не в объёме).
+  {
+    path: "themes/rose/src/lib/header-search-view.ts",
+    oldHardcode: ["bg-[rgb(var(--color-accent,0_0_0))]", "!text-white"],
+    badgeOccurrences: 2,
+  },
+  {
+    path: "themes/bloom/src/lib/header-search-view.ts",
+    // Полная строка класса бейджа, не голый триплет: тот же --color-accent
+    // легитимно красит точки-переключатель фото (dots()) — другой узел,
+    // трогать не нужно, и голый триплет как needle дал бы ложный минус.
+    oldHardcode: [
+      "bg-[rgb(var(--color-accent,227_142_159))] px-1.5 font-inter text-[12px] font-light leading-[15px] !text-white",
+    ],
+    badgeOccurrences: 1,
+  },
+  {
+    path: "themes/satin/src/lib/header-search-view.ts",
+    oldHardcode: ["bg-[rgb(var(--color-accent,0_0_0))]", "text-white"],
+    badgeOccurrences: 1,
+  },
+  // Строка КОРЗИНЫ flux (/cart, СТРАНИЦА, не дровер) — то самое «в корзине
+  // так же с бейджом» из исходной жалобы владельца (найдено ревью Opus 28.09,
+  // моя первая волна искала в theme-base CartBody/CartSection, не в legacy
+  // themes/flux/src/lib/cart-thumb-html.ts — совсем другой файл).
+  // Дублируется в 3 местах: серверный SSR-рендер thumbHtml (cart-thumb-html.ts,
+  // экспорт cartLinePictureHtml) + два ПОЧТИ идентичных inline client-миррора
+  // (CartBody.astro/CartSection.astro, перерисовка после add/remove/±).
+  {
+    path: "themes/flux/src/lib/cart-thumb-html.ts",
+    oldHardcode: ["bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-white"],
+    badgeOccurrences: 2, // «Новинка» + «-N%», один и тот же класс-литерал дважды
+  },
+  {
+    path: "themes/flux/src/components/sections/CartBody.astro",
+    oldHardcode: ["bg-[rgb(var(--color-accent,250_81_9))]"],
+    badgeOccurrences: 1,
+  },
+  {
+    path: "themes/flux/src/components/sections/CartSection.astro",
+    oldHardcode: ["bg-[rgb(var(--color-accent,250_81_9))]"],
+    badgeOccurrences: 1,
+  },
 ];
 
 describe("бейдж карточки/товара красится ролью схемы «Кнопка», не хардкодом", () => {
@@ -136,9 +261,12 @@ describe("бейдж карточки/товара красится ролью �
     },
   );
 
-  it("vanilla: бейдж «Скидка» на карточке каталога не рисуется — вне объёма правки", () => {
+  it("vanilla: на КАРТОЧКЕ КАТАЛОГА бейджа нет (не путать с «Популярными товарами» — там есть, см. BADGE_FILES выше)", () => {
     // Фиксируем находку явно (не молчаливое допущение): если разметка
     // появится, следующий тест-кейс должен добавить её сюда с проверкой роли.
+    // ⚠️ Ревью Opus 28.09: эта проверка про Catalog-порт узко, не про всю
+    // витрину — на «Популярных товарах»/«Коллекциях» у vanilla бейдж ЕСТЬ
+    // (VanillaProductCard.astro, отдельная запись выше).
     const text = read("packages/theme-vanilla/blocks/Catalog/Catalog.astro");
     expect(text).not.toMatch(/Скидка/);
   });
@@ -177,6 +305,126 @@ describe("бейдж карточки/товара красится ролью �
     (theme) => {
       const css = read(`themes/${theme}/src/styles/global.css`);
       expect(css).toMatch(/@import\s+"[^"]*theme-base\/styles\/base\.css"/);
+    },
+  );
+});
+
+/**
+ * ПОВЕДЕНЧЕСКИЕ проверки (ревью Opus 28.09): рендер РЕАЛЬНОГО модуля темы
+ * (dist/theme-sections/<тема>/manifest.json — тот же, что уходит на витрину и
+ * в превью конструктора) с настоящим товаром со скидкой, по образцу
+ * `satin-b39-render-scheme-guards.spec.ts`. Строковый греп по исходнику (блок
+ * выше) не ловит «файл не компилируется» и «роль не доезжает до РЕАЛЬНОГО
+ * узла разметки» — здесь узел приходит из настоящего Astro Container API
+ * рендера, а не из текста файла.
+ */
+const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
+
+function renderSections(theme: string, jobs: unknown[]): Array<{ html?: string; error?: string; missing?: boolean }> {
+  const out = execFileSync("node", [RENDERER, theme, JSON.stringify(jobs)], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return JSON.parse(out);
+}
+
+function renderHtml(theme: string, jobs: unknown[]): string {
+  const [row] = renderSections(theme, jobs);
+  if (!row || typeof row.html !== "string") {
+    throw new Error(`рендер не дал HTML (${theme}): ${JSON.stringify(row)}`);
+  }
+  return row.html;
+}
+
+const SECTIONS_BUILT = (theme: string): boolean =>
+  existsSync(abs(`dist/theme-sections/${theme}/manifest.json`));
+
+describe("рендер PopularProducts с реальным товаром со скидкой: merfy-badge на карточке", () => {
+  // Только rose и satin читают __merfy.resolved.popularProducts (фикстура
+  // catalog в job долетает до рендера). bloom/vanilla/flux тянут товары
+  // СЕРВЕРНЫМ fetch к /api/sites/:id/storefront-data внутри Popular.astro —
+  // этот харнесс живой сервис не поднимает, фикстуру подставить некуда;
+  // покрыты строковой проверкой в блоке выше (BADGE_FILES).
+  const THEMES_WITH_CATALOG_PROP = ["rose"] as const;
+  const catalogFixture = {
+    products: [
+      {
+        id: "p1",
+        name: "Свитер оверсайз",
+        price: 2500,
+        oldPrice: 3500,
+        discount: true,
+        images: ["https://cdn.example.test/sweater.jpg"],
+        collectionIds: ["col-1"],
+      },
+    ],
+    collections: [{ id: "col-1", slug: "col-1", name: "Коллекция 1", productIds: ["p1"] }],
+  };
+
+  it.each(THEMES_WITH_CATALOG_PROP)("%s: секции собраны (pnpm build:theme-sections %s)", (theme) => {
+    expect(SECTIONS_BUILT(theme)).toBe(true);
+  });
+
+  it.each(THEMES_WITH_CATALOG_PROP)(
+    "%s: узел «Скидка» рендерится с merfy-badge, без accent/хардкода",
+    (theme) => {
+      if (!SECTIONS_BUILT(theme)) return;
+      const out = renderHtml(theme, [
+        {
+          block: "PopularProducts",
+          props: { id: "Popular-badge-behavior", colorScheme: "scheme-2", cards: 1, collection: "col-1" },
+          cascade: true,
+          live: true,
+          catalog: catalogFixture,
+        },
+      ]);
+      const badgeTag = /<span class="([^"]*)"[^>]*>\s*(?:\n\s*)?Скидка\s*<\/span>/.exec(out);
+      expect(badgeTag).not.toBeNull();
+      expect(badgeTag![1]).toContain("merfy-badge");
+      expect(badgeTag![1]).not.toMatch(/--color-accent|bg-\[#/);
+    },
+  );
+});
+
+describe("рендер flux Catalog/CartBody/CartSection: компилируются, script несёт merfy-badge", () => {
+  const FLUX_BUILT = SECTIONS_BUILT("flux");
+
+  it("flux: секции собраны (pnpm build:theme-sections flux)", () => {
+    expect(FLUX_BUILT).toBe(true);
+  });
+
+  it.each(["Catalog", "CartBody", "CartSection"] as const)(
+    "flux %s: рендерится без ошибок",
+    (block) => {
+      if (!FLUX_BUILT) return;
+      const [row] = renderSections("flux", [
+        { block, props: { id: `${block}-behavior`, colorScheme: "scheme-2" }, cascade: true, live: true },
+      ]);
+      expect(row?.error).toBeUndefined();
+      expect(row?.missing).not.toBe(true);
+      expect(typeof row?.html).toBe("string");
+    },
+  );
+
+  it("flux Catalog: client cardSaleBadgeHtml() несёт класс merfy-badge на самом узле (не только в комментарии), не bg-[#FA5109] на плашке", () => {
+    if (!FLUX_BUILT) return;
+    const out = renderHtml("flux", [
+      { block: "Catalog", props: { id: "Catalog-behavior", colorScheme: "scheme-2" }, cascade: true, live: true },
+    ]);
+    expect(out).toMatch(/<span class="merfy-badge inline-flex items-center justify-center rounded-\[4px\]/);
+    expect(out).not.toMatch(/<span class="[^"]*bg-\[#FA5109\]/);
+  });
+
+  it.each(["CartBody", "CartSection"] as const)(
+    "flux %s: client-миррор строки корзины несёт merfy-badge на плашке, не --color-accent,250_81_9",
+    (block) => {
+      if (!FLUX_BUILT) return;
+      const out = renderHtml("flux", [
+        { block, props: { id: `${block}-behavior` }, cascade: true, live: true },
+      ]);
+      expect(out).toMatch(/<span class="merfy-badge flex items-center justify-center rounded-\[2px\]/);
+      expect(out).not.toMatch(/--color-accent,250_81_9/);
     },
   );
 });

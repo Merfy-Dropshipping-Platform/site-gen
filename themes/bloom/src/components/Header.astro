@@ -5,6 +5,7 @@ import { BLOOM_ICON_SVGS } from "./icons/bloom-icon-svgs";
 import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
 import NavItem from "./NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
+import { headerOwnLogo } from "../../../../packages/theme-base/runtime/header-logo";
 import { SITE_TITLE } from "../consts";
 import { DEFAULT_CATEGORY_HREF, categoryPages, getCategoryBySlug } from "../data/categories";
 import { getProductById } from "../data/products";
@@ -84,13 +85,6 @@ const showPromoBar = promo && promoEnabled && promoText.length > 0;
 
 // Канон logo: placeholder «/logo.svg» не существует на сторфронте (404) → не рендерим
 // битую картинку; реальные загрузки лежат в /branding/.../logo-*.svg.
-const rawLogo = typeof p.logo === "string" ? p.logo.trim() : "";
-let logoPath = "";
-try {
-	logoPath = new URL(rawLogo, "https://_merfy_").pathname;
-} catch {
-	logoPath = rawLogo;
-}
 // Без загруженного логотипа показываем НАЗВАНИЕ МАГАЗИНА (siteTitle), а не
 // картинку темы: логотип «Bloom» — это имя шаблона, у магазина мерчанта своё.
 // Так же поступает rose (текстовый логотип, как у верстальщика).
@@ -99,8 +93,8 @@ try {
 // например /icons/Bloom.svg) — это НЕ бренд магазина: с ними в шапке у
 // любого мерчанта стояло чужое имя «Bloom». Без своего файла показываем
 // siteTitle текстом (так же поступает rose).
-const isThemeAsset = logoPath === "/logo.svg" || logoPath.startsWith("/icons/");
-const logo = rawLogo && !isThemeAsset ? rawLogo : undefined;
+// Правило — общее для пяти тем: packages/theme-base/runtime/header-logo.ts.
+const logo = headerOwnLogo(p.logo) || undefined;
 const logoImgCls = "h-[var(--size-logo-width,19px)] w-auto max-w-[160px] object-contain";
 
 // Канон logoPosition: 'top-center' (canon-default) → TWO rows: row1=grid [распорка|logo|search+icons],

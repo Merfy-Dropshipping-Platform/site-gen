@@ -914,12 +914,14 @@ function cardButtonHtml(p: RealProduct, ctaLabel?: string, qaMode?: string): str
   const label = escapeHtml(ctaLabel || "В корзину");
   // «Быстрое добавление → Количество»: степпер «− N +» перед кнопкой; делегат
   // корзины читает data-quantity с кнопки. Паритет bloom/rose, метрики flux.
+  // Цвета — ролью «Заголовок» схемы секции: подложку карточки задаёт только
+  // «Стиль» карточки (при «Стандарте» её нет), литерал #000 пропал бы на тёмной схеме.
   const qaStepper =
     qaMode === "cart"
-      ? '<div class="mb-2 flex h-11 w-full items-center justify-between rounded-[4px] border border-solid border-[#DDDDDD] px-1" data-qa-stepper>' +
-        '<button type="button" data-qa-dec class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[#000000]" aria-label="Уменьшить">−</button>' +
-        '<span data-qa-qty class="min-w-[28px] flex-1 text-center font-roboto-flex text-[16px] font-normal leading-none text-[#000000]">1</span>' +
-        '<button type="button" data-qa-inc class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[#000000]" aria-label="Увеличить">+</button>' +
+      ? '<div class="mb-2 flex h-11 w-full items-center justify-between rounded-[4px] border border-solid border-[rgb(var(--color-input-border,221_221_221))] px-1" data-qa-stepper>' +
+        '<button type="button" data-qa-dec class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[rgb(var(--color-heading,0_0_0))]" aria-label="Уменьшить">−</button>' +
+        '<span data-qa-qty class="min-w-[28px] flex-1 text-center font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-heading,0_0_0))]">1</span>' +
+        '<button type="button" data-qa-inc class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[rgb(var(--color-heading,0_0_0))]" aria-label="Увеличить">+</button>' +
         "</div>"
       : "";
   const hasVariants =
@@ -1006,12 +1008,12 @@ export function renderCardHtml(p: RealProduct, ctaLabel?: string, qaMode?: strin
       ? `<div class="flex flex-wrap items-start gap-1">${memory
           .map(
             (m) =>
-              `<span class="inline-flex items-center rounded-[2px] border border-solid border-[#F5F5F5] p-1 font-roboto-flex text-[12px] font-light leading-none text-[#000000]">${escapeHtml(m)}</span>`,
+              `<span class="inline-flex items-center rounded-[2px] border border-solid border-[#F5F5F5] p-1 font-roboto-flex text-[12px] font-light leading-none text-[rgb(var(--color-heading,0_0_0))]">${escapeHtml(m)}</span>`,
           )
           .join("")}</div>`
       : "";
 
-  return `<article class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[#FBFBFB] p-3 transition-transform duration-300 hover:-translate-y-1" data-nt="flux-product-card" aria-label="${name}">
+  return `<article class="group flex h-full w-full flex-col gap-4 rounded-[12px] p-3 transition-transform duration-300 hover:-translate-y-1" data-nt="flux-product-card" aria-label="${name}">
 	<div class="relative w-full">
 		<a href="${href}" data-nt="flux-card-media" class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#FBFBFB]" aria-label="${name}">
 			${imageHtml}

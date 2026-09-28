@@ -192,6 +192,10 @@ input[type="search"]::-webkit-search-results-decoration {
   }
 
   [data-nt="flux-product-card"] {
+    /* Фон — единственный хозяин подложки. Утилиту bg-[…] на корень карточки
+       НЕ вешать: слой utilities бьёт base, и «Стандарт» получает плашку
+       (баг 28.09: на схеме секции ≠ дефолт карточка выглядела «Карточкой»).
+       Сторож: product-card-style-follows-setting.spec.ts. */
     background: var(--product-card-bg, transparent);
     /* !important обязателен: карточки верстальщиков несут собственные утилиты
        (rounded-[12px], p-3) из @layer utilities, а слой utilities бьёт base —

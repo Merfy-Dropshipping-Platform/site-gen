@@ -117,6 +117,26 @@ jobs:
       - name: Тесты миграций ревизий
         run: pnpm exec jest --runInBand src/utils/__tests__/
 
+      # Порт контента и безопасная запись ревизий (этап 2): движок операций
+      # (генеративно на золотых документах пяти тем), запись с базой и
+      # слиянием, «две вкладки», страница из кабинета во время автосейва,
+      # откат со сверкой, публикация не откатывает автосейв, сторожа «одна
+      # дверь» на чтение и на запись (запись в site_revision и перестановка
+      # указателя текущей ревизии мимо порта — красный). Раньше ни один из
+      # этих наборов CI не гонял — сторож, которого не запускают, ничего не
+      # сторожит. Артефакты тем не нужны, ~30 с.
+      - name: Тесты порта контента и записи ревизий
+        run: >-
+          pnpm exec jest --runInBand
+          src/content
+          src/__tests__/revision-save-merge.spec.ts
+          src/__tests__/revision-rollback.spec.ts
+          src/__tests__/pages-service-through-port.spec.ts
+          src/__tests__/publish-keeps-concurrent-save.spec.ts
+          src/__tests__/revision-create-cas.spec.ts
+          src/__tests__/pages-service-delete.spec.ts
+          src/pages/pages.service.update.spec.ts
+
       # Корневые адреса превью получают префикс `/__theme/<тема>` ОДИН раз.
       # Регулярку делят сборка шелла темы, пересадка блоков и хром превью;
       # второй префикс = 404 на картинках в конструкторе (bloom «О нас», 23.09).
@@ -190,6 +210,32 @@ jobs:
         run: >-
           pnpm exec jest --config jest.config.ts --runInBand
           '__tests__/(astro-inline-script-helper\.test|account-order-delivery\.coverage\.dom\.test|order-confirmation-delivery\.coverage\.dom\.test|checkout-(contact|delivery|submit)-[^/]*\.dom\.test)\.ts$'
+
+      # Этап 3 «Магазин одной командой» (src/store/): сага рождения и её
+      # доводчик, команды CreateStore/SetTheme, каталог тем, регистрация через
+      # команду под флагом `newLogic` (без флага и cron «без магазина» — старый
+      # путь). src/__tests__/ целиком CI не гоняет —
+      # поэтому файлы перечислены явно. store.pg.spec.ts идёт на сервисном
+      # Postgres этой джобы, в отдельной эфемерной базе sites_stage3_test: тест
+      # сам её создаёт и накатывает миграции, а к базе без «test» в имени не
+      # подключается вовсе (support/test-database.ts). Без
+      # SITES_TEST_DATABASE_URL набор пропускается с предупреждением.
+      - name: Этап 3 — команды магазина, сага рождения, каталог тем
+        env:
+          SITES_TEST_DATABASE_URL: postgresql://postgres:postgres123@localhost:5432/sites_stage3_test
+        run: >-
+          pnpm exec jest --runInBand
+          src/store
+          src/__tests__/provisioning-saga-bridge.spec.ts
+          src/__tests__/record-theme-choice.spec.ts
+          src/__tests__/themes-list-catalog.spec.ts
+          src/__tests__/site-create-theme.characterization.spec.ts
+          src/billing
+          src/user
+          src/scheduler/site-provisioning.missing-store.spec.ts
+          src/scheduler/site-provisioning.can-create.spec.ts
+          src/modules/theme-preset/theme-catalog-seed.spec.ts
+          src/pages
 
       # Инструменты самих проверок (spec 115): очередь на машину (flock через
       # perl — ubuntu-раннер его имеет), поток тёплого рендера секций, разбор
@@ -2160,6 +2206,13 @@ jobs:
         run: pnpm build:theme-sections:all
       - if: steps.dist-cache.outputs.cache-hit != 'true'
         run: pnpm build:preview-tailwind
+      # Боевой источник значений по умолчанию панели (этап 2, запись с базой
+      # отличает по ним автозначения конструктора от правок): в jest
+      # контроллер артефактов блоков не видит, поэтому проверяем здесь, на
+      # собранном dist — getPuckConfig отдаёт defaultProps секции Hero для
+      # всех тем. Без условия: dist есть и при сборке, и из кэша.
+      - name: Дымовая проверка значений по умолчанию панели на собранном dist
+        run: node scripts/smoke-panel-defaults.mjs
       # include-hidden-files: true — ОБЯЗАТЕЛЕН. По умолчанию (false)
       # actions/upload-artifact молча вырезает из архива любой путь с
       # dot-компонентом — themes/satin/.astro целиком, без единого

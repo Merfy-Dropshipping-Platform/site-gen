@@ -244,14 +244,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -370,14 +362,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -495,14 +479,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -623,14 +599,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -750,14 +718,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -836,14 +796,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -892,9 +844,43 @@
           "content": [
             {
               "props": {
-                "id": "CheckoutHeader-1"
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-page-checkout-result",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
               },
-              "type": "CheckoutHeader"
+              "type": "Header"
             },
             {
               "props": {
@@ -929,6 +915,56 @@
                 "summaryBg": ""
               },
               "type": "OrderConfirmation"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-page-checkout-result",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
             }
           ],
           "root": {
@@ -1014,14 +1050,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -1128,14 +1156,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -1250,14 +1270,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -1369,14 +1381,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -1486,14 +1490,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -1616,14 +1612,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -1731,14 +1719,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"
@@ -1852,14 +1832,6 @@
                     {
                       "href": "/delivery",
                       "label": "Доставка"
-                    },
-                    {
-                      "href": "/returns",
-                      "label": "Возврат"
-                    },
-                    {
-                      "href": "/payment",
-                      "label": "Оплата"
                     }
                   ],
                   "title": "ИНФОРМАЦИЯ"

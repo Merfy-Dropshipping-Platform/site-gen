@@ -3,7 +3,9 @@
   "presetVersion": 1,
   "name": "Vanilla",
   "slug": "vanilla",
-  "description": "Оливковая минимальная тема, плоские формы, акцент на типографике.",
+  "description": "Спокойная тема с акцентом на атмосферу и комфорт",
+  "previewDesktop": "/img/online_shop_page/Vanilla_shop_page.png",
+  "previewMobile": "/img/online_shop_page/Vanilla_shop_page_mobile.png",
   "templateId": "vanilla-1.0",
   "price": 0,
   "tags": [
@@ -11,6 +13,13 @@
     "olive",
     "flat",
     "modern"
+  ],
+  "fitsFor": [
+    "Товары для дома",
+    "Декор",
+    "Handmade",
+    "Свечи",
+    "Текстиль"
   ],
   "author": "merfy",
   "isActive": true,

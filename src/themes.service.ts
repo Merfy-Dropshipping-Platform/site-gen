@@ -11,9 +11,15 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, sql } from "drizzle-orm";
 import { PG_CONNECTION } from "./constants";
 import * as schema from "./db/schema";
+import {
+  THEME_CATALOG,
+  type CatalogTheme,
+  type ThemeCatalog,
+} from "./store/theme-catalog";
 
 export interface ThemeFilters {
-  isActive?: boolean;
+  /** Тенант, чьи собственные темы видны в каталоге вместе с темами платформы. */
+  tenantId?: string;
 }
 
 @Injectable()
@@ -23,12 +29,26 @@ export class ThemesService {
   constructor(
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    // Каталог — провайдер из src/store/store.providers.ts, тот же, что у команд.
+    @Inject(THEME_CATALOG) private readonly catalog: ThemeCatalog,
   ) {}
 
   /**
-   * Получить список всех активных тем.
+   * Список тем для кабинета и агента — каталог тем (этап 3, кусок 3.4, И5):
+   * пять тем витрины с «подходит для» и превью; `default` и темы без пакета
+   * скрыты.
    */
-  async list(filters?: ThemeFilters) {
+  async list(
+    filters?: Pick<ThemeFilters, "tenantId">,
+  ): Promise<{ items: CatalogTheme[] }> {
+    return { items: await this.catalog.list(filters?.tenantId) };
+  }
+
+  /**
+   * Все строки таблицы `theme`, включая неактивные и `default`, — как `list`
+   * отдавал до каталога. RPC `themes.list` с явным `isActive: false`.
+   */
+  async listAllRows() {
     const rows = await this.db
       .select({
         id: schema.theme.id,
@@ -46,12 +66,7 @@ export class ThemesService {
         createdAt: schema.theme.createdAt,
         updatedAt: schema.theme.updatedAt,
       })
-      .from(schema.theme)
-      .where(
-        filters?.isActive !== false
-          ? eq(schema.theme.isActive, true)
-          : undefined,
-      );
+      .from(schema.theme);
 
     return { items: rows };
   }

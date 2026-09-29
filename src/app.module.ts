@@ -73,6 +73,7 @@ import { BlocksController } from "./controllers/blocks.controller";
 import { PagesModule } from "./pages/pages.module";
 import { DocumentAdapter } from "./content/document.adapter";
 import { StoreContentService } from "./content/store-content.service";
+import { STORE_CONTROLLERS, STORE_PROVIDERS } from "./store/store.providers";
 
 @Module({
   imports: [
@@ -111,6 +112,8 @@ import { StoreContentService } from "./content/store-content.service";
     MediaUploadController,
     PublicationsMicroserviceController,
     BlocksController,
+    // Этап 3: RPC команд магазина (sites.cmd.*, sites.query.store_status).
+    ...STORE_CONTROLLERS,
   ],
   providers: [
     SitesDomainService,
@@ -136,6 +139,8 @@ import { StoreContentService } from "./content/store-content.service";
     FragmentPatcher,
     PublicationsService,
     HealthMonitorService,
+    // Этап 3: сага рождения магазина, доводчик, команды (src/store/).
+    ...STORE_PROVIDERS,
   ],
 })
 export class AppModule {}

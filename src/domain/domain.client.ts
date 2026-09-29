@@ -43,6 +43,12 @@ interface RpcResponse<T> {
  * - DOMAIN_SERVICE_URL — базовый URL Domain Service для HTTP fallback (по умолчанию http://localhost:3115)
  * - DOMAIN_RPC_TIMEOUT — таймаут RPC запросов в мс (по умолчанию 10000)
  */
+/**
+ * Предел ожидания domain-сервиса по умолчанию (`DOMAIN_RPC_TIMEOUT`): столько
+ * ждём RPC и столько же — HTTP-запасной путь.
+ */
+export const DEFAULT_DOMAIN_RPC_TIMEOUT_MS = 10_000;
+
 @Injectable()
 export class DomainClient implements OnModuleInit {
   private readonly logger = new Logger(DomainClient.name);
@@ -57,7 +63,10 @@ export class DomainClient implements OnModuleInit {
   ) {
     this.httpBaseUrl =
       process.env.DOMAIN_SERVICE_URL ?? "http://localhost:3115";
-    this.rpcTimeout = parseInt(process.env.DOMAIN_RPC_TIMEOUT ?? "10000", 10);
+    this.rpcTimeout = parseInt(
+      process.env.DOMAIN_RPC_TIMEOUT ?? String(DEFAULT_DOMAIN_RPC_TIMEOUT_MS),
+      10,
+    );
   }
 
   async onModuleInit() {

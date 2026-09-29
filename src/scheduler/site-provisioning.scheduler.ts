@@ -3,6 +3,11 @@
  *
  * Периодически проверяет активных пользователей без сайтов и создаёт им дефолтный сайт.
  * Запускается каждые 5 минут.
+ *
+ * Команда `CreateStore` (этап 3) включается флагом шлюза по почте аккаунта
+ * (NEW_LOGIC_EMAILS). У cron почты нет — он для всех на старом пути
+ * (`sites.create`). reaper (`migrateOrphanedSites`) берёт только строки без
+ * `lifecycle`: магазины, рождённые командой, ведёт доводчик саги.
  */
 import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";

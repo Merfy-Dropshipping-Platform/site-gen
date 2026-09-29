@@ -173,25 +173,29 @@ describe("SitesDomainService.createRevision CAS", () => {
 });
 
 describe("SitesMicroserviceController.createRevision CAS", () => {
-  // Этап 2 «Безопасная запись» (merfy-mcp/docs/plans/2026-09-24-stage2-safe-write.md),
-  // осознанная смена поведения — единственная, разрешённая планом (И7).
-  // Было: контроллер передавал expectedCurrentRevisionId в жёсткий CAS домена —
-  //   устаревшая база → revision_conflict → 409 → очередь конструктора замерзала.
-  // Стало: тот же id — БАЗА записи; устаревшая база сливается (побеждает
-  //   последний), жёсткий CAS этим путём больше не зовётся. Сам жёсткий CAS
-  //   домена (describe выше) не менялся.
+  // Этап 2 «Безопасная запись» идёт ПОД ФЛАГОМ: шлюз ставит `mergeOnStale:
+  // true` только аккаунтам из списка NEW_LOGIC_EMAILS.
+  //   без флага — как до этапа 2: expectedCurrentRevisionId уходит в жёсткий
+  //     CAS домена, устаревшая база → revision_conflict → 409;
+  //   с флагом — тот же id становится БАЗОЙ записи, устаревшая база сливается
+  //     (побеждает последний), жёсткий CAS этим путём не зовётся.
+  function makeController() {
+    const domain = {
+      createRevision: jest.fn().mockResolvedValue({ revisionId: "rev-new" }),
+    };
+    const controller = new SitesMicroserviceController(
+      domain as unknown as SitesDomainService,
+    );
+    return { domain, controller };
+  }
+
   it.each([
     ["revision id", "rev-a"],
     ["null", null],
   ])(
-    "forwards an expected current %s as the merge base",
+    "без mergeOnStale: expected current %s уходит в жёсткий CAS, базы слияния нет",
     async (_label, expectedCurrentRevisionId) => {
-      const domain = {
-        createRevision: jest.fn().mockResolvedValue({ revisionId: "rev-new" }),
-      };
-      const controller = new SitesMicroserviceController(
-        domain as unknown as SitesDomainService,
-      );
+      const { domain, controller } = makeController();
 
       await controller.createRevision({
         tenantId: "tenant-1",
@@ -199,6 +203,58 @@ describe("SitesMicroserviceController.createRevision CAS", () => {
         data: {},
         setCurrent: true,
         expectedCurrentRevisionId,
+      });
+
+      const params = domain.createRevision.mock.calls[0][0];
+      expect(params).toMatchObject({
+        setCurrent: true,
+        expectedCurrentRevisionId,
+        actor: "merchant",
+        source: "constructor",
+      });
+      expect(params).not.toHaveProperty("base");
+      expect(params).not.toHaveProperty("mergePolicy");
+    },
+  );
+
+  it.each([false, "true", 1, undefined])(
+    "mergeOnStale = %p (не строго true) — старый путь",
+    async (mergeOnStale) => {
+      const { domain, controller } = makeController();
+
+      await controller.createRevision({
+        tenantId: "tenant-1",
+        siteId: "site-1",
+        data: {},
+        setCurrent: true,
+        expectedCurrentRevisionId: "rev-a",
+        mergeOnStale,
+      });
+
+      expect(domain.createRevision.mock.calls[0][0]).toMatchObject({
+        expectedCurrentRevisionId: "rev-a",
+      });
+      expect(domain.createRevision.mock.calls[0][0]).not.toHaveProperty(
+        "base",
+      );
+    },
+  );
+
+  it.each([
+    ["revision id", "rev-a"],
+    ["null", null],
+  ])(
+    "mergeOnStale: true — expected current %s становится базой слияния",
+    async (_label, expectedCurrentRevisionId) => {
+      const { domain, controller } = makeController();
+
+      await controller.createRevision({
+        tenantId: "tenant-1",
+        siteId: "site-1",
+        data: {},
+        setCurrent: true,
+        expectedCurrentRevisionId,
+        mergeOnStale: true,
       });
 
       expect(domain.createRevision).toHaveBeenCalledWith(

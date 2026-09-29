@@ -817,102 +817,228 @@ describe("update(): смена темы у существующего магаз
 // ---------------------------------------------------------------------------
 // 7. user.listener: user.registered — дефолтный магазин при регистрации
 //
-// ИЗМЕНЕНО ОСОЗНАННО (этап 3, кусок 3.2, план
-// merfy-mcp/docs/plans/2026-09-24-stage3-store-commands-saga.md, И1/И2):
-// БЫЛО — листенер сам спрашивал биллинг (`billing.get_entitlements`) и список
-//   магазинов, затем звал `reserve({name:'Мой сайт'})` +
-//   `triggerAsyncProvisioning` (второй раз лимит проверял `reserve()`).
-// СТАЛО — листенер зовёт команду `CreateStore` (`ifNoStores`, источник
-//   `registration`, без ожидания): лимит и «у тенанта уже есть магазин» решает
-//   команда один раз, под блокировкой тенанта; провижининг ведёт доводчик саги.
-// Три наблюдаемых исхода волны 0 сохранены и проверяются ниже через настоящую
-// команду на памяти: 0 магазинов → «Мой сайт» создан; магазин есть → нового
-// нет; лимит 0 → магазина нет.
+// Под флагом (этап 3, кусок 3.2, план
+// merfy-mcp/docs/plans/2026-09-24-stage3-store-commands-saga.md, И1/И2).
+// Решает шлюз: `newLogic: true` в событии только у аккаунтов из списка
+// NEW_LOGIC_EMAILS.
+//   без флага — как в волне 0: листенер сам спрашивает биллинг
+//     (`billing.get_entitlements`) и список магазинов, затем
+//     `reserve({name:'Мой сайт'})` + `triggerAsyncProvisioning`;
+//   с флагом — команда `CreateStore` (`ifNoStores`, источник `registration`,
+//     без ожидания): лимит и «у тенанта уже есть магазин» решает команда,
+//     провижининг ведёт доводчик саги. Три исхода волны 0 те же.
 // ---------------------------------------------------------------------------
 
 describe("UserListenerController.handleUserRegistered (src/user/user.listener.ts)", () => {
+  function makeBillingClient(entitlements: any) {
+    return {
+      send: jest.fn((_pattern: string, _payload: any) => ({
+        subscribe: (observer: any) => {
+          observer.next(entitlements);
+          observer.complete?.();
+          return { unsubscribe: () => {} };
+        },
+      })),
+    };
+  }
+
+  function makeLegacySites(existing: any[] = []) {
+    return {
+      list: jest.fn().mockResolvedValue({ success: true, items: existing }),
+      reserve: jest.fn().mockResolvedValue({ id: "site-new", publicUrl: null }),
+      triggerAsyncProvisioning: jest.fn(),
+    };
+  }
+
+  const untouchedCommand = () => ({ execute: jest.fn() });
+
   const event = { userId: "u1", tenantId: "t1", accountId: "acc1" };
 
-  it("стало: регистрация зовёт CreateStore('Мой сайт', ifNoStores, registration) — сама ничего не решает", async () => {
-    const createStore = {
-      execute: jest
-        .fn()
-        .mockResolvedValue({ ok: true, effect: { created: true } }),
-    };
-    const controller = new UserListenerController(createStore as any);
+  describe("без newLogic — как в волне 0", () => {
+    it("0 магазинов и лимит позволяет — reserve('Мой сайт') + triggerAsyncProvisioning", async () => {
+      const sites = makeLegacySites();
+      const createStore = untouchedCommand();
+      const controller = new UserListenerController(
+        makeBillingClient({ shopsLimit: 5 }) as any,
+        sites as any,
+        createStore as any,
+      );
 
-    await controller.handleUserRegistered(event, {} as any);
+      await controller.handleUserRegistered(event, {} as any);
 
-    expect(createStore.execute).toHaveBeenCalledTimes(1);
-    expect(createStore.execute).toHaveBeenCalledWith({
-      tenantId: "t1",
-      actorUserId: "u1",
-      name: "Мой сайт",
-      ifNoStores: true,
-      wait: false,
-      source: "registration",
+      expect(sites.reserve).toHaveBeenCalledWith({
+        tenantId: "t1",
+        actorUserId: "u1",
+        name: "Мой сайт",
+        slug: undefined,
+      });
+      expect(sites.triggerAsyncProvisioning).toHaveBeenCalledWith(
+        "site-new",
+        "t1",
+      );
+      expect(createStore.execute).not.toHaveBeenCalled();
     });
-  });
 
-  it("исход волны 0 сохранён: 0 магазинов и лимит позволяет — создан «Мой сайт» на теме по умолчанию", async () => {
-    const { command, repo } = makeCreateStoreHarness({
-      entitlements: { shopsLimit: 5 },
+    it("магазин уже есть — reserve НЕ вызывается", async () => {
+      const sites = makeLegacySites([{ id: "existing" }]);
+      const controller = new UserListenerController(
+        makeBillingClient({ shopsLimit: 5 }) as any,
+        sites as any,
+        untouchedCommand() as any,
+      );
+
+      await controller.handleUserRegistered(event, {} as any);
+
+      expect(sites.reserve).not.toHaveBeenCalled();
+      expect(sites.triggerAsyncProvisioning).not.toHaveBeenCalled();
     });
-    const controller = new UserListenerController(command);
 
-    await controller.handleUserRegistered(event, {} as any);
-    await command.settle();
+    it("лимит тарифа исчерпан (0 сайтов, лимит 0) — reserve НЕ вызывается", async () => {
+      const sites = makeLegacySites();
+      const controller = new UserListenerController(
+        makeBillingClient({ shopsLimit: 0 }) as any,
+        sites as any,
+        untouchedCommand() as any,
+      );
 
-    const rows = [...repo.rows.values()];
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      tenantId: "t1",
-      name: "Мой сайт",
-      themeId: "rose",
-      lifecycle: "ready",
+      await controller.handleUserRegistered(event, {} as any);
+
+      expect(sites.reserve).not.toHaveBeenCalled();
     });
-  });
 
-  it("исход волны 0 сохранён: магазин уже есть — новый не создаётся", async () => {
-    const { command, repo, registry } = makeCreateStoreHarness({
-      entitlements: { shopsLimit: 5 },
-    });
-    repo.put(makeSiteRow({ id: "existing", tenantId: "t1", lifecycle: null }));
-    const controller = new UserListenerController(command);
+    it.each([false, "true", 1])(
+      "newLogic = %p (не строго true) — тоже старый путь",
+      async (newLogic) => {
+        const sites = makeLegacySites();
+        const createStore = untouchedCommand();
+        const controller = new UserListenerController(
+          makeBillingClient({ shopsLimit: 5 }) as any,
+          sites as any,
+          createStore as any,
+        );
 
-    await controller.handleUserRegistered(event, {} as any);
+        await controller.handleUserRegistered(
+          { ...event, newLogic } as any,
+          {} as any,
+        );
 
-    expect(registry.inserted).toHaveLength(0);
-  });
-
-  it("исход волны 0 сохранён: лимит тарифа 0 — магазин не создаётся, листенер не падает", async () => {
-    const { command, registry } = makeCreateStoreHarness({
-      entitlements: { shopsLimit: 0 },
-    });
-    const controller = new UserListenerController(command);
-
-    await expect(
-      controller.handleUserRegistered(event, {} as any),
-    ).resolves.toBeUndefined();
-
-    expect(registry.inserted).toHaveLength(0);
-  });
-
-  it("стало: без userId/tenantId команда не вызывается; её исключение листенер глотает", async () => {
-    const createStore = {
-      execute: jest.fn().mockRejectedValue(new Error("db down")),
-    };
-    const controller = new UserListenerController(createStore as any);
-
-    await controller.handleUserRegistered(
-      { userId: "", tenantId: "t1", accountId: "" },
-      {} as any,
+        expect(sites.reserve).toHaveBeenCalledTimes(1);
+        expect(createStore.execute).not.toHaveBeenCalled();
+      },
     );
-    expect(createStore.execute).not.toHaveBeenCalled();
+  });
 
-    await expect(
-      controller.handleUserRegistered(event, {} as any),
-    ).resolves.toBeUndefined();
+  describe("newLogic: true — команда CreateStore (этап 3)", () => {
+    const flagged = { ...event, newLogic: true };
+
+    it("зовёт CreateStore('Мой сайт', ifNoStores, registration) и не трогает старый путь", async () => {
+      const createStore = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ ok: true, effect: { created: true } }),
+      };
+      const billing = makeBillingClient({ shopsLimit: 5 });
+      const sites = makeLegacySites();
+      const controller = new UserListenerController(
+        billing as any,
+        sites as any,
+        createStore as any,
+      );
+
+      await controller.handleUserRegistered(flagged, {} as any);
+
+      expect(createStore.execute).toHaveBeenCalledTimes(1);
+      expect(createStore.execute).toHaveBeenCalledWith({
+        tenantId: "t1",
+        actorUserId: "u1",
+        name: "Мой сайт",
+        ifNoStores: true,
+        wait: false,
+        source: "registration",
+      });
+      expect(sites.reserve).not.toHaveBeenCalled();
+      expect(sites.triggerAsyncProvisioning).not.toHaveBeenCalled();
+      expect(billing.send).not.toHaveBeenCalled();
+    });
+
+    it("исход волны 0 сохранён: 0 магазинов и лимит позволяет — создан «Мой сайт» на теме по умолчанию", async () => {
+      const { command, repo } = makeCreateStoreHarness({
+        entitlements: { shopsLimit: 5 },
+      });
+      const controller = new UserListenerController(
+        makeBillingClient({}) as any,
+        makeLegacySites() as any,
+        command,
+      );
+
+      await controller.handleUserRegistered(flagged, {} as any);
+      await command.settle();
+
+      const rows = [...repo.rows.values()];
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        tenantId: "t1",
+        name: "Мой сайт",
+        themeId: "rose",
+        lifecycle: "ready",
+      });
+    });
+
+    it("исход волны 0 сохранён: магазин уже есть — новый не создаётся", async () => {
+      const { command, repo, registry } = makeCreateStoreHarness({
+        entitlements: { shopsLimit: 5 },
+      });
+      repo.put(
+        makeSiteRow({ id: "existing", tenantId: "t1", lifecycle: null }),
+      );
+      const controller = new UserListenerController(
+        makeBillingClient({}) as any,
+        makeLegacySites() as any,
+        command,
+      );
+
+      await controller.handleUserRegistered(flagged, {} as any);
+
+      expect(registry.inserted).toHaveLength(0);
+    });
+
+    it("исход волны 0 сохранён: лимит тарифа 0 — магазин не создаётся, листенер не падает", async () => {
+      const { command, registry } = makeCreateStoreHarness({
+        entitlements: { shopsLimit: 0 },
+      });
+      const controller = new UserListenerController(
+        makeBillingClient({}) as any,
+        makeLegacySites() as any,
+        command,
+      );
+
+      await expect(
+        controller.handleUserRegistered(flagged, {} as any),
+      ).resolves.toBeUndefined();
+
+      expect(registry.inserted).toHaveLength(0);
+    });
+
+    it("без userId/tenantId команда не вызывается; её исключение листенер глотает", async () => {
+      const createStore = {
+        execute: jest.fn().mockRejectedValue(new Error("db down")),
+      };
+      const controller = new UserListenerController(
+        makeBillingClient({}) as any,
+        makeLegacySites() as any,
+        createStore as any,
+      );
+
+      await controller.handleUserRegistered(
+        { userId: "", tenantId: "t1", accountId: "", newLogic: true },
+        {} as any,
+      );
+      expect(createStore.execute).not.toHaveBeenCalled();
+
+      await expect(
+        controller.handleUserRegistered(flagged, {} as any),
+      ).resolves.toBeUndefined();
+    });
   });
 });
 

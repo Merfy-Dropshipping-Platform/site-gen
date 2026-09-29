@@ -42,6 +42,25 @@ function revisionWriteFailure(e: any) {
   return { success: false, message: e?.message ?? "internal_error" };
 }
 
+/**
+ * Как сохранение из конструктора обходится с устаревшей базой. Выбирает шлюз:
+ * `mergeOnStale: true` приходит только для аккаунтов из списка новой логики
+ * (NEW_LOGIC_EMAILS в api-gateway); сам sites ничего не решает.
+ *   merge — этап 2: id, который видел клиент, — база записи; устарела —
+ *           слияние, одно и то же поле — побеждает последний (как в Figma);
+ *   cas   — как до этапа 2: жёсткий CAS по тому же id, устарела —
+ *           REVISION_CONFLICT (шлюз отдаёт 409).
+ */
+const CONSTRUCTOR_STALE_BASE = {
+  merge: (seen: string | null | undefined) => ({
+    base: seen,
+    mergePolicy: "last-writer-wins" as const,
+  }),
+  cas: (seen: string | null | undefined) => ({
+    expectedCurrentRevisionId: seen,
+  }),
+};
+
 @Controller()
 export class SitesMicroserviceController {
   private readonly logger = new Logger(SitesMicroserviceController.name);
@@ -310,8 +329,9 @@ export class SitesMicroserviceController {
         meta,
         actorUserId,
         setCurrent,
-        // На проводе база записи называется expectedCurrentRevisionId (контракт конструктора).
-        expectedCurrentRevisionId: base,
+        // Ревизия, которую видел конструктор (контракт конструктора).
+        expectedCurrentRevisionId,
+        mergeOnStale,
       } = data ?? {};
       if (!tenantId || !siteId)
         return { success: false, message: "tenantId and siteId required" };
@@ -322,13 +342,11 @@ export class SitesMicroserviceController {
         meta,
         actorUserId,
         setCurrent,
-        // Этап 2 (было: жёсткий CAS → 409 → очередь конструктора замерзала):
-        // база устарела — слияние, одно и то же поле — побеждает последний
-        // (как в Figma).
-        base,
+        ...CONSTRUCTOR_STALE_BASE[mergeOnStale === true ? "merge" : "cas"](
+          expectedCurrentRevisionId,
+        ),
         actor: "merchant",
         source: "constructor",
-        mergePolicy: "last-writer-wins",
         // B17: внешний путь сохранения. Конструктор шлёт всю карту страниц,
         // включая досеянные сервером на чтении, — отсеиваем их здесь, иначе
         // они вмораживаются в ревизию и правки темы до них больше не доходят.

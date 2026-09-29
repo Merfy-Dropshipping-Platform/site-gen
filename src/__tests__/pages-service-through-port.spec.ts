@@ -53,18 +53,22 @@ async function setup(themeId = "bloom") {
       revisionId: id,
     };
   };
-  const autosave = (
-    data: Doc,
-    expectedCurrentRevisionId: string,
-  ): Promise<any> =>
-    rpc.createRevision({
-      tenantId: TENANT,
-      siteId: SITE,
-      data,
-      setCurrent: true,
-      expectedCurrentRevisionId,
-    });
-  return { fake, sites, pages, open, autosave, initial };
+  const send =
+    (flag: { mergeOnStale?: true }) =>
+    (data: Doc, expectedCurrentRevisionId: string): Promise<any> =>
+      rpc.createRevision({
+        tenantId: TENANT,
+        siteId: SITE,
+        data,
+        setCurrent: true,
+        expectedCurrentRevisionId,
+        ...flag,
+      });
+  // Автосейв конструктора у аккаунта новой логики (шлюз добавил mergeOnStale).
+  const autosave = send({ mergeOnStale: true });
+  // Автосейв у всех остальных — как до этапа 2, жёсткий CAS.
+  const autosaveWithoutFlag = send({});
+  return { fake, sites, pages, open, autosave, autosaveWithoutFlag, initial };
 }
 
 describe("PagesService пишет новую ревизию через порт (И1)", () => {
@@ -182,6 +186,35 @@ describe("страница из кабинета во время автосей�
     ).toContain("/sale");
     expect(block(later, "home", "Gallery").props.testField).toBe(
       "вторая правка",
+    );
+  });
+
+  it("без флага новой логики: автосейв со старой базой — REVISION_CONFLICT как до этапа 2, страница кабинета цела", async () => {
+    const { fake, pages, open, autosaveWithoutFlag } = await setup();
+    const tab = await open();
+
+    const { page } = await pages.createPage({
+      tenantId: TENANT,
+      siteId: SITE,
+      name: "Акции",
+      slug: "/sale",
+    });
+    const afterPage = fake.site.currentRevisionId;
+
+    const edited = clone(tab.doc);
+    block(edited, "home", "Hero").props.testField = "правка конструктора";
+    const saved = await autosaveWithoutFlag(edited, tab.revisionId);
+
+    expect(saved).toEqual({
+      success: false,
+      code: "REVISION_CONFLICT",
+      message: "revision_conflict",
+    });
+    expect(fake.site.currentRevisionId).toBe(afterPage);
+    const now = (await open()).doc;
+    expect(now.pages.map((p: Doc) => p.id)).toContain(page.id);
+    expect(block(now, "home", "Hero").props.testField).not.toBe(
+      "правка конструктора",
     );
   });
 

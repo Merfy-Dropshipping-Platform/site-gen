@@ -66,6 +66,8 @@ async function setup(themeId = "bloom") {
       data,
       setCurrent: true,
       expectedCurrentRevisionId,
+      // Автосейв аккаунта новой логики: шлюз добавил флаг. Сам откат — у всех.
+      mergeOnStale: true,
     });
   const rollback = (revisionId: string, extra: Doc = {}): Promise<any> =>
     rpc.setCurrentRevision({

@@ -10,6 +10,10 @@
  * клиента: сегодняшний конструктор берёт его базой следующего сохранения и
  * тем самым уже идёт по своей «линии» — чужая правка не откатывается (И4)
  * даже до куска 2.4.
+ *
+ * Под флагом: слияние включает `mergeOnStale: true`, который шлюз ставит
+ * только аккаунтам из NEW_LOGIC_EMAILS. Без флага — как до этапа 2 (последний
+ * describe файла): жёсткий CAS, устаревшая база → REVISION_CONFLICT.
  */
 import { SitesMicroserviceController } from "../sites.microservice.controller";
 import { SitesDomainService } from "../sites.service";
@@ -61,21 +65,25 @@ async function setup(themeId = "bloom") {
       revisionId: id,
     };
   };
-  const create = (
-    data: Doc,
-    expectedCurrentRevisionId?: string | null,
-  ): Promise<any> =>
-    controller.createRevision({
-      tenantId: TENANT,
-      siteId: SITE,
-      data,
-      setCurrent: true,
-      actorUserId: "user-1",
-      ...(expectedCurrentRevisionId !== undefined
-        ? { expectedCurrentRevisionId }
-        : {}),
-    });
-  return { fake, service, controller, open, create };
+  const send =
+    (flag: { mergeOnStale?: true }) =>
+    (data: Doc, expectedCurrentRevisionId?: string | null): Promise<any> =>
+      controller.createRevision({
+        tenantId: TENANT,
+        siteId: SITE,
+        data,
+        setCurrent: true,
+        actorUserId: "user-1",
+        ...flag,
+        ...(expectedCurrentRevisionId !== undefined
+          ? { expectedCurrentRevisionId }
+          : {}),
+      });
+  // Аккаунт из списка новой логики: шлюз добавил `mergeOnStale: true`.
+  const create = send({ mergeOnStale: true });
+  // Все остальные: флага нет — поведение до этапа 2.
+  const createWithoutFlag = send({});
+  return { fake, service, controller, open, create, createWithoutFlag };
 }
 
 describe("sites.revisions.create: устаревшая база сливается вместо 409", () => {
@@ -230,5 +238,57 @@ describe("sites.revisions.create: конфликт слияния при стр�
       message: "revision_merge_conflict",
       conflicts,
     });
+  });
+});
+
+describe("sites.revisions.create без mergeOnStale — как до этапа 2", () => {
+  it("свежая база: прежний ответ { success, revisionId } без полей слияния", async () => {
+    const { fake, open, createWithoutFlag } = await setup();
+    const tab = await open();
+
+    const res = await createWithoutFlag(
+      withProp(tab.doc, "Hero-1", "testField", "x"),
+      tab.revisionId,
+    );
+
+    expect(res).toEqual({
+      success: true,
+      revisionId: fake.site.currentRevisionId,
+    });
+    expect(res.revisionId).not.toBe(tab.revisionId);
+    expect(fake.storedMeta(res.revisionId)).toEqual({
+      actor: "merchant",
+      source: "constructor",
+    });
+  });
+
+  it("две вкладки: вторая с устаревшей базой получает REVISION_CONFLICT, ничего не записано", async () => {
+    const { fake, open, createWithoutFlag } = await setup();
+    const tabA = await open();
+    const tabB = await open();
+
+    const b = await createWithoutFlag(
+      withProp(tabB.doc, "Hero-1", "testField", "B"),
+      tabB.revisionId,
+    );
+    expect(b.success).toBe(true);
+    const currentAfterB = fake.site.currentRevisionId;
+    const storedAfterB = fake.revisions.size;
+
+    const a = await createWithoutFlag(
+      withProp(tabA.doc, "Gallery-1", "testField", "A"),
+      tabA.revisionId,
+    );
+
+    expect(a).toEqual({
+      success: false,
+      code: "REVISION_CONFLICT",
+      message: "revision_conflict",
+    });
+    expect(fake.site.currentRevisionId).toBe(currentAfterB);
+    expect(fake.revisions.size).toBe(storedAfterB);
+    const now = (await open()).doc;
+    expect(homeBlock(now, "Hero-1").props.testField).toBe("B");
+    expect(homeBlock(now, "Gallery-1").props.testField).not.toBe("A");
   });
 });

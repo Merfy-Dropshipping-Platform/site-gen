@@ -7,6 +7,15 @@ export const PG_CONNECTION = "PG_CONNECTION";
 export const USER_RMQ_SERVICE = "USER_RMQ_SERVICE";
 
 /**
+ * Очередь, которую слушает sites (RPC и свои события). Отдельный стенд
+ * поднимает копию сервиса на том же брокере — ему задают своё имя через
+ * `SITES_QUEUE`, иначе копии делили бы одну очередь.
+ */
+export function sitesQueue(): string {
+  return process.env.SITES_QUEUE || "sites_queue";
+}
+
+/**
  * Sentinel-значение `site.coolifyAppUuid` для сайтов, обслуживаемых ОБЩИМ
  * центральным прокси (Phase 3 миграции), а НЕ собственным per-site Coolify-app.
  * Инвариант: `coolifyAppUuid === CENTRAL_PROXY_APP_SENTINEL` ⇒ контейнера нет,

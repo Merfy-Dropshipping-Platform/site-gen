@@ -51,13 +51,12 @@ type Allowance = {
 const ALLOWANCES: Allowance[] = [
   {
     path: 'sites.service.ts',
-    literalData: 2,
+    literalData: 1,
     bareSelect: 0,
     reason:
-      'literalData×2: update() решает, нужен ли пересев темы, по themeSettings ' +
-      'ПРЕДЫДУЩЕЙ ревизии (до вызова порта, не относится к load/save) — и ' +
-      'resetContentPages() (админ-сброс контент-страниц на сиды темы, отдельная ' +
-      'операция вне объёма волны 1). getRevision() читает конверт ревизии ' +
+      'literalData×1: update() решает, нужен ли пересев темы, по themeSettings ' +
+      'ПРЕДЫДУЩЕЙ ревизии (до вызова порта, не относится к load/save; этап 3). ' +
+      'resetContentPages() читает базу через порт (этап 2). getRevision() читает конверт ревизии ' +
       '(id/siteId/meta/createdAt/createdBy) ПРОЕКЦИЕЙ без data — содержимое ' +
       'отдельно приходит из storeContent.load(), блоб не читается дважды.',
   },
@@ -85,11 +84,11 @@ const ALLOWANCES: Allowance[] = [
   {
     path: 'pages/pages.service.ts',
     literalData: 0,
-    bareSelect: 2,
+    bareSelect: 1,
     reason:
-      'из брифа: "pages.service" — CRUD пользовательских страниц. Этап 2: запись ' +
-      'идёт через порт, три одинаковых чтения create/update/delete сведены в ' +
-      'readCurrent() (сырые данные — основа правки, без шагов чтения); второе — listPages().',
+      'из брифа: "pages.service" — CRUD пользовательских страниц. Этап 2: правки ' +
+      'create/update/delete читают базу и пишут через порт (readCurrent); ' +
+      'осталось чтение списка страниц listPages() — не писатель, вне объёма этапа 2.',
   },
   {
     path: 'admin/bulk/bulk.service.ts',

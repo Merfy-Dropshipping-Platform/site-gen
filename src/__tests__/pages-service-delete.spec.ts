@@ -7,10 +7,10 @@
  * home system page. The guard must instead derive the protected set from the
  * theme manifest (via the resolver), NOT from the raw/normalized `role`.
  *
- * The Drizzle `db` is hand-mocked: `deletePage` issues two reads
- * (`select().from(site)`, `select().from(siteRevision)`) and one write —
- * через порт StoreContent (этап 2). The mock routes reads by table identity;
- * the port stub captures the write payload for assertions.
+ * The Drizzle `db` is hand-mocked: `deletePage` reads the site
+ * (`select().from(site)`); the revision is read and written through the
+ * StoreContent port (этап 2). The mock routes reads by table identity;
+ * the port stub serves the stored revision and captures the write payload.
  */
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PagesService } from '../pages/pages.service';
@@ -53,9 +53,12 @@ function makeDb(opts: {
  * `update().set()` строки на месте (у мок-БД больше нет `update` — возврат к
  * правке на месте уронит тест). Заглушка порта ловит записанный документ.
  */
-function portInto(captured: { data?: RevData; params?: any }) {
+function portInto(
+  captured: { data?: RevData; params?: any },
+  rev: { id: string; data: RevData },
+) {
   return {
-    load: jest.fn(),
+    load: jest.fn(async () => ({ document: rev.data, version: rev.id })),
     save: jest.fn(async (_siteId: string, params: any) => {
       captured.data = params.document;
       captured.params = params;
@@ -96,8 +99,9 @@ describe('PagesService.deletePage — system-page guard', () => {
       },
     };
     const captured: { data?: RevData } = {};
-    const db = makeDb({ site: makeSite({ themeId: 'rose' }), rev: makeRev(legacyData), captured });
-    const service = new PagesService(db, portInto(captured));
+    const rev = makeRev(legacyData);
+    const db = makeDb({ site: makeSite({ themeId: 'rose' }), rev, captured });
+    const service = new PagesService(db, portInto(captured, rev));
 
     await expect(
       service.deletePage({ tenantId: TENANT_ID, siteId: SITE_ID, pageId: 'home' }),
@@ -119,8 +123,9 @@ describe('PagesService.deletePage — system-page guard', () => {
       lockVersion: 3,
     };
     const captured: { data?: RevData } = {};
-    const db = makeDb({ site: makeSite({ themeId: 'rose' }), rev: makeRev(legacyData), captured });
-    const service = new PagesService(db, portInto(captured));
+    const rev = makeRev(legacyData);
+    const db = makeDb({ site: makeSite({ themeId: 'rose' }), rev, captured });
+    const service = new PagesService(db, portInto(captured, rev));
 
     const res = await service.deletePage({
       tenantId: TENANT_ID,
@@ -149,8 +154,9 @@ describe('PagesService.deletePage — system-page guard', () => {
       },
     };
     const captured: { data?: RevData } = {};
-    const db = makeDb({ site: makeSite({ themeId: 'rose' }), rev: makeRev(data), captured });
-    const service = new PagesService(db, portInto(captured));
+    const rev = makeRev(data);
+    const db = makeDb({ site: makeSite({ themeId: 'rose' }), rev, captured });
+    const service = new PagesService(db, portInto(captured, rev));
 
     const res = await service.deletePage({
       tenantId: TENANT_ID,
@@ -168,8 +174,9 @@ describe('PagesService.deletePage — system-page guard', () => {
       pagesData: { home: { content: [], root: { props: {} }, zones: {} } },
     };
     const captured: { data?: RevData } = {};
-    const db = makeDb({ site: makeSite(), rev: makeRev(data), captured });
-    const service = new PagesService(db, portInto(captured));
+    const rev = makeRev(data);
+    const db = makeDb({ site: makeSite(), rev, captured });
+    const service = new PagesService(db, portInto(captured, rev));
 
     await expect(
       service.deletePage({ tenantId: TENANT_ID, siteId: SITE_ID, pageId: 'does-not-exist' }),

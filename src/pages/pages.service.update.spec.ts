@@ -3,7 +3,7 @@ import { PagesService } from "./pages.service";
 
 /**
  * Юнит-тесты PagesService.updatePage (Phase 3 — per-page SEO). Ручной db-мок:
- * select site → select revision; запись — через порт StoreContent (этап 2).
+ * select site; ревизия читается и пишется через порт StoreContent (этап 2).
  * updatePage резолвера НЕ вызывает.
  */
 function makeDb(siteRow: any, revRow: any) {
@@ -21,7 +21,10 @@ function makeDb(siteRow: any, revRow: any) {
   // update().set() строки на месте (у мок-БД больше нет update). Заглушка
   // порта ловит записанный документ.
   const storeContent: any = {
-    load: jest.fn(),
+    load: jest.fn(async () => {
+      if (!revRow) throw new Error("revision_not_found");
+      return { document: revRow.data, version: revRow.id };
+    }),
     save: jest.fn(async (_siteId: string, params: any) => {
       captured.data = params.document;
       captured.params = params;

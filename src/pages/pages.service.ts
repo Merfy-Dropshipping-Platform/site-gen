@@ -80,7 +80,10 @@ export class PagesService {
     ));
   }
 
-  /** Сайт (в пределах тенанта) и его текущая ревизия — сырые данные, без шагов чтения. */
+  /**
+   * Сайт (в пределах тенанта) и его текущая ревизия как она хранится — через
+   * порт, без шагов чтения: основа правки и её база.
+   */
   private async readCurrent(params: SiteScope) {
     const [site] = await this.db
       .select()
@@ -93,13 +96,19 @@ export class PagesService {
       );
     if (!site) throw new NotFoundException("site_not_found");
 
-    const [rev] = await this.db
-      .select()
-      .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.id, site.currentRevisionId!));
-    if (!rev) throw new NotFoundException("revision_not_found");
-
-    return { site, rev, revData: rev.data as Record<string, any> };
+    const stored = await this.storeContent
+      .load(site.id, { site: toStoreContentSite(site), asStored: true })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.message === "revision_not_found") {
+          throw new NotFoundException("revision_not_found");
+        }
+        throw e;
+      });
+    return {
+      site,
+      revisionId: stored.version,
+      revData: stored.document as Record<string, any>,
+    };
   }
 
   /**
@@ -142,7 +151,7 @@ export class PagesService {
     slug: string;
     templatePageId?: string;
   }) {
-    const { site, rev, revData } = await this.readCurrent(params);
+    const { site, revisionId, revData } = await this.readCurrent(params);
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const pagesData = revData.pagesData ?? {};
 
@@ -265,7 +274,7 @@ export class PagesService {
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
-    await this.saveRevision(params.tenantId, site, rev.id, newRevData);
+    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
 
     return { page: newPage };
   }
@@ -283,7 +292,7 @@ export class PagesService {
     siteId: string;
     pageId: string;
   }) {
-    const { site, rev, revData } = await this.readCurrent(params);
+    const { site, revisionId, revData } = await this.readCurrent(params);
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const target = pages.find((p: any) => p.id === params.pageId);
     if (!target) throw new NotFoundException("page_not_found");
@@ -326,7 +335,7 @@ export class PagesService {
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
-    await this.saveRevision(params.tenantId, site, rev.id, newRevData);
+    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
 
     return { deleted: params.pageId };
   }
@@ -359,7 +368,7 @@ export class PagesService {
     name?: string;
     content?: string;
   }) {
-    const { site, rev, revData } = await this.readCurrent(params);
+    const { site, revisionId, revData } = await this.readCurrent(params);
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const idx = pages.findIndex((p: any) => p.id === params.pageId);
     if (idx === -1) throw new NotFoundException("page_not_found");
@@ -474,7 +483,7 @@ export class PagesService {
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
-    await this.saveRevision(params.tenantId, site, rev.id, newRevData);
+    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
 
     return { page: nextPage };
   }

@@ -3017,15 +3017,18 @@ export class SitesDomainService {
     if (!site.currentRevisionId)
       throw new Error(`Site ${siteId} has no current revision`);
 
-    const [revision] = await this.db
-      .select({ id: schema.siteRevision.id, data: schema.siteRevision.data })
-      .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.id, site.currentRevisionId));
-    if (!revision)
-      throw new Error(`Revision ${site.currentRevisionId} not found`);
+    // База сброса — текущая ревизия как она хранится (без шагов чтения).
+    const revision = await this.storeContent
+      .load(siteId, { site: toStoreContentSite(site), asStored: true })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.message === "revision_not_found") {
+          throw new Error(`Revision ${site.currentRevisionId} not found`);
+        }
+        throw e;
+      });
 
     const theme = (site.themeId ?? "rose").replace(/-\d+(?:\.\d+)*$/, "");
-    const data = (revision.data ?? {}) as Record<string, any>;
+    const data = revision.document as Record<string, any>;
     const pagesData = { ...(data.pagesData ?? {}) };
     const fs = await import("node:fs/promises");
     const path = await import("node:path");
@@ -3063,7 +3066,7 @@ export class SitesDomainService {
     await this.storeContent.save(siteId, {
       mode: "on-base",
       document: { ...data, pagesData },
-      base: revision.id,
+      base: revision.version,
       tenantId: site.tenantId,
       actor: "system",
       source: "ops",

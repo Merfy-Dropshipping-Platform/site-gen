@@ -15,7 +15,7 @@
 import { DocumentAdapter } from "../document.adapter";
 import { SitesDomainService } from "../../sites.service";
 import { RevisionMergeConflictError } from "../store-content.port";
-import type { SaveParams } from "../store-content.port";
+import type { SaveOnBaseParams } from "../store-content.port";
 import { makeFakeRevisionDb } from "./fake-revision-db";
 
 type Doc = Record<string, any>;
@@ -70,20 +70,20 @@ async function freshStore(themeId = "bloom") {
   const save = (
     document: Doc,
     base: string | null,
-    extra: Partial<SaveParams> = {},
+    extra: Partial<SaveOnBaseParams> = {},
   ) =>
     adapter.save(SITE, {
+      mode: "on-base",
       document,
       base,
       tenantId: TENANT,
-      setCurrent: true,
       filterSeeded: true,
       actor: "merchant",
       source: "constructor",
       mergePolicy: "last-writer-wins",
       site: site(),
       ...extra,
-    });
+    } as SaveOnBaseParams);
   return { fake, adapter, load, save, site };
 }
 
@@ -95,6 +95,7 @@ describe("save с базой: база совпадает с текущей (о�
 
     const withBase = await a.save(doc, "r0", { meta: { title: "автосейв" } });
     const legacy = await b.adapter.save(SITE, {
+      mode: "blind",
       document: doc,
       tenantId: TENANT,
       setCurrent: true,
@@ -129,6 +130,7 @@ describe("save с базой: база совпадает с текущей (о�
     const { fake, adapter, site, load } = await freshStore();
     const doc = (await load()).document;
     const saved = await adapter.save(SITE, {
+      mode: "blind",
       document: doc,
       tenantId: TENANT,
       setCurrent: true,
@@ -340,10 +342,10 @@ describe("save с базой: устаревшая база сливается (
     const initial = await makeBareService().buildInitialRevision("bloom");
 
     const saved = await adapter.save(SITE, {
+      mode: "on-base",
       document: initial,
       base: null,
       tenantId: TENANT,
-      setCurrent: true,
       actor: "merchant",
       source: "constructor",
       mergePolicy: "last-writer-wins",

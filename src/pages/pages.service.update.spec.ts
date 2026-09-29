@@ -66,8 +66,8 @@ describe("PagesService.updatePage", () => {
     expect(captured.data.pages[0].seo).toEqual({ title: "new", description: "keep" });
     // Новая ревизия от прочитанной (база r1), с метками кто/откуда.
     expect(captured.params).toMatchObject({
+      mode: "on-base",
       base: "r1",
-      setCurrent: true,
       actor: "merchant",
       source: "admin-pages",
       mergePolicy: "reject-conflicts",

@@ -99,6 +99,7 @@ export function runStoreContentConformance(makeAdapter: MakeAdapter): void {
       first.document,
     );
     await fx.content.save(fx.siteId, {
+      mode: 'blind',
       document: withoutContentPages,
       filterSeeded: false, // прямая запись «как есть» — без досеянных страниц
       setCurrent: true,
@@ -122,6 +123,7 @@ export function runStoreContentConformance(makeAdapter: MakeAdapter): void {
     // Пишем обратно с filterSeeded=true — досеянные страницы не должны
     // вмёрзнуть в хранимую ревизию.
     const saved = await fx.content.save(fx.siteId, {
+      mode: 'blind',
       document: loaded.document,
       filterSeeded: true,
       setCurrent: true,
@@ -164,6 +166,7 @@ export function runStoreContentConformance(makeAdapter: MakeAdapter): void {
 
     await expect(
       fx.content.save(fx.siteId, {
+        mode: 'blind',
         document: { pages: [], pagesData: {} },
         filterSeeded: false,
         setCurrent: true,
@@ -182,6 +185,7 @@ export function runStoreContentConformance(makeAdapter: MakeAdapter): void {
     const original = await fx.content.load(fx.siteId, { site: fx.site });
 
     const second = await fx.content.save(fx.siteId, {
+      mode: 'blind',
       document: { pages: [], pagesData: { home: { marker: 'second-revision' } } },
       filterSeeded: false,
       setCurrent: true,

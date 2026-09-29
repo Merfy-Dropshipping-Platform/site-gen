@@ -95,51 +95,64 @@ export const CLIENT_SNAPSHOT_KIND = "client-snapshot";
  */
 export type StaleBasePolicy = MergePolicy | "refuse";
 
-export interface SaveParams {
-  /** Документ целиком (путь конструктора). Вместо него можно `ops` от `base`. */
-  document?: Record<string, unknown>;
-  /** Операции от `base` (черновики, агент) — вместо `document`; нужна `base`. */
-  ops?: Op[];
+/** Общее для обеих форм записи. */
+interface WriteCommon {
   /**
    * Тенант, которому принадлежит запись — как параметр (не поле `site`):
-   * оригинальный `createRevision` фильтрует CAS-предикат ИМЕННО по нему
-   * (`params.tenantId`), а не по `site.tenantId` из `SitesDomainService.get()` —
-   * граница безопасности задаётся вызывающим кодом, а не производной от
-   * уже прочитанной строки. Совпадает по смыслу с сегодняшним `params.tenantId`.
+   * CAS-предикат фильтруется ИМЕННО по нему, граница безопасности задаётся
+   * вызывающим кодом, а не производной от уже прочитанной строки `site`.
    */
   tenantId: string;
-  /**
-   * CAS: id ревизии, которую вызывающий код читал последней.
-   * `undefined` — без CAS (простой insert). `null` — ожидаем, что текущей
-   * ревизии ещё нет вовсе. Совпадает по смыслу с сегодняшним
-   * `expectedCurrentRevisionId`.
-   */
-  expectedVersion?: string | null;
-  /**
-   * База записи (этап 2, И2): id ревизии, от которой сделан документ. Вместе
-   * с `setCurrent`:
-   *  - база = текущая → запись с CAS (как `expectedVersion`);
-   *  - база устарела → `merge3(база, текущая, входящая)` по `mergePolicy`
-   *    вместо `revision_conflict`; после слияния документ клиента
-   *    сохраняется снимком (`effect.clientVersion`).
-   * `undefined` — старые пути без базы (создание магазина, смена темы).
-   * `null` — ревизии ещё нет вовсе.
-   */
-  base?: string | null;
+  site: StoreContentSite;
   /** Кто пишет (И5). Не задан — в `meta` не пишется. */
   actor?: WriteActor;
   /** Откуда запись (И5). Не задан — в `meta` не пишется. */
   source?: WriteSource;
-  /** Что делать при устаревшей базе (слить по политике или отказать). По умолчанию `reject-conflicts`. */
-  mergePolicy?: StaleBasePolicy;
   actorUserId?: string;
   meta?: Record<string, unknown>;
   /** B17: серверный фильтр досеянных страниц перед записью (revision-write-filter). */
   filterSeeded?: boolean;
+}
+
+/**
+ * Запись от базы (этап 2, И2): «я видел ревизию `base` и правил её». Всегда
+ * делает записанную ревизию текущей.
+ *  - база = текущая → запись с CAS;
+ *  - база устарела → по `mergePolicy`: `merge3(база, текущая, входящая)` или
+ *    отказ; после слияния документ клиента сохраняется снимком
+ *    (`effect.clientVersion`).
+ * Пишется документ целиком (конструктор, кабинет) или операции от базы
+ * (черновики, агент) — одно из двух.
+ */
+export type SaveOnBaseParams = WriteCommon & {
+  mode: "on-base";
+  /** Ревизия, от которой сделана правка; `null` — ревизии у магазина ещё нет. */
+  base: string | null;
+  mergePolicy: StaleBasePolicy;
+} & (
+    | { document: Record<string, unknown>; ops?: never }
+    | { ops: Op[]; document?: never }
+  );
+
+/**
+ * Запись вслепую — документ целиком поверх текущей, без слияния, меток
+ * изменений и снимков: создание магазина, пересев при смене темы (этап 3).
+ */
+export interface BlindSaveParams extends WriteCommon {
+  mode: "blind";
+  document: Record<string, unknown>;
   /** Сделать записанную ревизию текущей (`site.currentRevisionId`). */
   setCurrent?: boolean;
-  site: StoreContentSite;
+  /**
+   * Жёсткий CAS (только вместе с `setCurrent`): текущая должна быть этой
+   * ревизией, иначе `revision_conflict`. `null` — текущей ещё нет вовсе;
+   * не задан — без CAS.
+   */
+  expectedVersion?: string | null;
 }
+
+/** Форма записи выбирается явно: сочетания вроде «база + жёсткий CAS» тип не пропустит. */
+export type SaveParams = SaveOnBaseParams | BlindSaveParams;
 
 /** Эффект записи с базой — то, что видит клиент (раздел «Контракт записи» плана этапа 2). */
 export interface SaveEffect {
@@ -161,43 +174,8 @@ export interface SaveEffect {
 export interface SaveResult {
   /** id новой ревизии (при `setCurrent` — теперь текущей). */
   version: string;
-  /** Есть у записи с базой (`base !== undefined`). */
+  /** Есть у записи от базы (`mode: "on-base"`). */
   effect?: SaveEffect;
-}
-
-/**
- * Недопустимые сочетания параметров записи — данными. Без проверки такие
- * сочетания молча уходили бы в другой путь: `base` без `setCurrent` — в
- * старую запись без базы, `base` вместе с `expectedVersion` — жёсткий CAS
- * молча игнорировался бы.
- */
-const SAVE_PARAM_RULES: ReadonlyArray<{
-  error: string;
-  broken: (p: SaveParams) => boolean;
-}> = [
-  { error: "document_or_ops_required", broken: (p) => !p.document && !p.ops },
-  {
-    error: "document_and_ops_are_exclusive",
-    broken: (p) => Boolean(p.document && p.ops),
-  },
-  {
-    error: "ops_require_base",
-    broken: (p) => Boolean(p.ops) && p.base === undefined,
-  },
-  {
-    error: "base_requires_set_current",
-    broken: (p) => p.base !== undefined && !p.setCurrent,
-  },
-  {
-    error: "base_and_expected_version_are_exclusive",
-    broken: (p) => p.base !== undefined && p.expectedVersion !== undefined,
-  },
-];
-
-/** Адаптер вызывает до записи: недопустимое сочетание — ошибка, ничего не записано. */
-export function assertSaveParams(params: SaveParams): void {
-  const rule = SAVE_PARAM_RULES.find((r) => r.broken(params));
-  if (rule) throw new Error(rule.error);
 }
 
 /** Слияние при политике `reject-conflicts` упёрлось в одно и то же место. Ничего не записано. */

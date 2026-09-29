@@ -44,8 +44,10 @@ import { isStoreVersion } from "./content/revision-kinds";
 import { rewriteCurrent } from "./content/rewrite-current";
 import { toStoreContentSite } from "./content/store-content.port";
 import type {
+  SaveParams,
   StaleBasePolicy,
   StoreContent,
+  StoreContentSite,
   WriteActor,
   WriteSource,
 } from "./content/store-content.port";
@@ -1776,8 +1778,10 @@ export class SitesDomainService {
      */
     filterSeededPages?: boolean;
     /**
-     * Этап 2: база записи. Устарела — слияние по `mergePolicy` вместо
-     * `revision_conflict` (`expectedCurrentRevisionId` — прежний жёсткий CAS).
+     * База записи — ревизия, которую видел пишущий (этап 2, И2). Задана —
+     * запись от базы: устарела → слияние по `mergePolicy`. Не задана — запись
+     * вслепую (создание магазина, пересев при смене темы), где
+     * `expectedCurrentRevisionId` — прежний жёсткий CAS (до этапа 2).
      */
     base?: string | null;
     actor?: WriteActor;
@@ -1786,20 +1790,10 @@ export class SitesDomainService {
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
-    const saved = await this.storeContent.save(params.siteId, {
-      document: params.data,
-      tenantId: params.tenantId,
-      meta: params.meta,
-      actorUserId: params.actorUserId,
-      setCurrent: params.setCurrent,
-      expectedVersion: params.expectedCurrentRevisionId,
-      filterSeeded: params.filterSeededPages,
-      base: params.base,
-      actor: params.actor,
-      source: params.source,
-      mergePolicy: params.mergePolicy,
-      site: toStoreContentSite(site),
-    });
+    const saved = await this.storeContent.save(
+      params.siteId,
+      this.revisionWrite(params, toStoreContentSite(site)),
+    );
     if (!saved.effect) return { revisionId: saved.version };
     // Контракт записи для клиентов (план этапа 2): `revisionId` — ревизия,
     // равная документу клиента (база его следующего сохранения), текущая
@@ -1810,6 +1804,43 @@ export class SitesDomainService {
       merged: saved.effect.merged,
       overwritten: saved.effect.overwritten,
       conflicts: saved.effect.conflicts,
+    };
+  }
+
+  /** Параметры `createRevision` → форма записи порта: с базой — от базы, без неё — вслепую. */
+  private revisionWrite(
+    params: Parameters<SitesDomainService["createRevision"]>[0],
+    site: StoreContentSite,
+  ): SaveParams {
+    const common = {
+      document: params.data,
+      tenantId: params.tenantId,
+      meta: params.meta,
+      actorUserId: params.actorUserId,
+      filterSeeded: params.filterSeededPages,
+      actor: params.actor,
+      source: params.source,
+      site,
+    };
+    if (params.base === undefined) {
+      return {
+        mode: "blind",
+        setCurrent: params.setCurrent,
+        expectedVersion: params.expectedCurrentRevisionId,
+        ...common,
+      };
+    }
+    // Запись от базы всегда делает ревизию текущей и не знает жёсткого CAS:
+    // такие сочетания — явная ошибка, а не тихий уход в другой путь.
+    if (!params.setCurrent) throw new Error("base_requires_set_current");
+    if (params.expectedCurrentRevisionId !== undefined) {
+      throw new Error("base_and_expected_version_are_exclusive");
+    }
+    return {
+      mode: "on-base",
+      base: params.base,
+      mergePolicy: params.mergePolicy ?? "reject-conflicts",
+      ...common,
     };
   }
 
@@ -1828,11 +1859,11 @@ export class SitesDomainService {
     revisionId: string;
     actorUserId?: string;
     /**
-     * Текущая ревизия, которую видел клиент (шлюз начнёт передавать в 2.5).
-     * Не передана — текущая на момент чтения. `null` — «ревизии нет»: явное
-     * значение, не подменяется текущей.
+     * База отката — текущая ревизия, которую видел клиент (шлюз начнёт
+     * передавать в 2.5). Не передана — текущая на момент чтения. `null` —
+     * «ревизии нет»: явное значение, не подменяется текущей.
      */
-    expectedCurrentRevisionId?: string | null;
+    base?: string | null;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
@@ -1852,14 +1883,12 @@ export class SitesDomainService {
       return { ...restored, revisionId: params.revisionId };
     }
     const seen =
-      params.expectedCurrentRevisionId !== undefined
-        ? params.expectedCurrentRevisionId
-        : storeSite.currentRevisionId;
+      params.base !== undefined ? params.base : storeSite.currentRevisionId;
     const saved = await this.storeContent.save(params.siteId, {
+      mode: "on-base",
       document: target.document,
       base: seen ?? null,
       tenantId: params.tenantId,
-      setCurrent: true,
       actor: "merchant",
       source: "rollback",
       mergePolicy: "refuse",
@@ -3032,10 +3061,10 @@ export class SitesDomainService {
       }
     }
     await this.storeContent.save(siteId, {
+      mode: "on-base",
       document: { ...data, pagesData },
       base: revision.id,
       tenantId: site.tenantId,
-      setCurrent: true,
       actor: "system",
       source: "ops",
       mergePolicy: "reject-conflicts",

@@ -114,10 +114,10 @@ export class PagesService {
     data: Record<string, unknown>,
   ): Promise<void> {
     await this.storeContent.save(site.id, {
+      mode: "on-base",
       document: data,
       base: baseRevisionId,
       tenantId,
-      setCurrent: true,
       actor: "merchant",
       source: "admin-pages",
       mergePolicy: "reject-conflicts",

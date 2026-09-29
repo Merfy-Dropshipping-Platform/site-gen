@@ -28,7 +28,12 @@ import {
   CLIENT_SNAPSHOT_KIND,
   RevisionMergeConflictError,
 } from "./store-content.port";
-import type { SaveEffect, SaveParams, SaveResult } from "./store-content.port";
+import type {
+  SaveEffect,
+  SaveOnBaseParams,
+  SaveParams,
+  SaveResult,
+} from "./store-content.port";
 
 export interface NewRevision {
   id: string;
@@ -49,7 +54,7 @@ export interface RevisionStore {
    */
   writeModel(
     siteId: string,
-    params: SaveParams,
+    params: SaveOnBaseParams,
     storedCurrent: Doc | undefined,
   ): Promise<WriteModel>;
   /**
@@ -138,16 +143,12 @@ class BaseWrite {
   constructor(
     private readonly store: RevisionStore,
     private readonly siteId: string,
-    private readonly params: SaveParams,
+    private readonly params: SaveOnBaseParams,
     private readonly logger: Logger,
   ) {}
 
   private get base(): string | null {
-    return this.params.base ?? null;
-  }
-
-  private get policy() {
-    return this.params.mergePolicy ?? "reject-conflicts";
+    return this.params.base;
   }
 
   async run(): Promise<SaveResult> {
@@ -177,9 +178,8 @@ class BaseWrite {
 
   /** Документ пишущего: присланный целиком или операции поверх базы. */
   private async incoming(normalizedBase: () => Promise<Doc>): Promise<Doc> {
-    if (this.params.document) return this.params.document;
-    if (!this.params.ops) throw new Error("document_or_ops_required");
-    return apply(await normalizedBase(), this.params.ops);
+    if (this.params.ops) return apply(await normalizedBase(), this.params.ops);
+    return this.params.document;
   }
 
   private meta(extra: Record<string, unknown>): Record<string, unknown> {
@@ -237,7 +237,7 @@ class BaseWrite {
 
   /** База устарела: слить по политике или отказать (`refuse`). */
   private async stale(current: string | null): Promise<SaveResult | null> {
-    const policy = this.policy;
+    const policy = this.params.mergePolicy;
     if (policy === "refuse") throw new Error("revision_conflict");
     return this.merge(current, policy);
   }
@@ -331,7 +331,7 @@ class BaseWrite {
 export function saveOnBase(
   store: RevisionStore,
   siteId: string,
-  params: SaveParams,
+  params: SaveOnBaseParams,
   logger: Logger,
 ): Promise<SaveResult> {
   return new BaseWrite(store, siteId, params, logger).run();

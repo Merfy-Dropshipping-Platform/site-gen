@@ -307,7 +307,8 @@ export class SitesMicroserviceController {
         meta,
         actorUserId,
         setCurrent,
-        expectedCurrentRevisionId,
+        // На проводе база записи называется expectedCurrentRevisionId (контракт конструктора).
+        expectedCurrentRevisionId: base,
       } = data ?? {};
       if (!tenantId || !siteId)
         return { success: false, message: "tenantId and siteId required" };
@@ -319,9 +320,9 @@ export class SitesMicroserviceController {
         actorUserId,
         setCurrent,
         // Этап 2 (было: жёсткий CAS → 409 → очередь конструктора замерзала):
-        // ожидаемая текущая ревизия конструктора — база записи. Устарела —
-        // слияние, одно и то же поле — побеждает последний (как в Figma).
-        base: expectedCurrentRevisionId,
+        // база устарела — слияние, одно и то же поле — побеждает последний
+        // (как в Figma).
+        base,
         actor: "merchant",
         source: "constructor",
         mergePolicy: "last-writer-wins",
@@ -345,7 +346,8 @@ export class SitesMicroserviceController {
         siteId,
         revisionId,
         actorUserId,
-        expectedCurrentRevisionId,
+        // На проводе база отката называется expectedCurrentRevisionId (контракт шлюза).
+        expectedCurrentRevisionId: base,
       } = data ?? {};
       if (!tenantId || !siteId || !revisionId)
         return {
@@ -359,7 +361,7 @@ export class SitesMicroserviceController {
         siteId,
         revisionId,
         actorUserId,
-        expectedCurrentRevisionId,
+        base,
       });
       return res;
     } catch (e: any) {

@@ -38,10 +38,11 @@ import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
 import type { PanelDefaultsSource } from "./panel-defaults";
 import { saveOnBase, writeLabels } from "./save-on-base";
 import type { RevisionStore } from "./save-on-base";
-import { assertSaveParams } from "./store-content.port";
 import type {
+  BlindSaveParams,
   LoadOptions,
   LoadResult,
+  SaveOnBaseParams,
   SaveParams,
   SaveResult,
   StoreContent,
@@ -189,19 +190,21 @@ export class DocumentAdapter implements StoreContent {
   }
 
   async save(siteId: string, params: SaveParams): Promise<SaveResult> {
-    assertSaveParams(params);
-    if (params.base !== undefined) {
+    if (params.mode === "on-base") {
       return saveOnBase(this.revisionStore, siteId, params, this.logger);
     }
     return this.saveWithoutBase(siteId, params);
   }
 
-  /** Старые пути (создание магазина, смена темы, CAS по expectedVersion) — без изменений. */
+  /**
+   * Запись вслепую (создание магазина, смена темы, жёсткий CAS по
+   * `expectedVersion`) — как до этапа 2. Второй путь записи рядом с
+   * `saveOnBase`: уходит при стыковке с этапом 3 (долг — `README.md`).
+   */
   private async saveWithoutBase(
     siteId: string,
-    params: SaveParams,
+    params: BlindSaveParams,
   ): Promise<SaveResult> {
-    if (!params.document) throw new Error("document_required");
     const id = randomUUID();
     const dataToPersist = params.filterSeeded
       ? await this.stripSeededPages(siteId, params.site, params.document)
@@ -236,7 +239,9 @@ export class DocumentAdapter implements StoreContent {
   }
 
   /** Метки (И5) дописываются, только если их передали: meta старых путей не меняется. */
-  private legacyMeta(params: SaveParams): Record<string, unknown> | undefined {
+  private legacyMeta(
+    params: BlindSaveParams,
+  ): Record<string, unknown> | undefined {
     const labels = writeLabels(params);
     if (Object.keys(labels).length === 0) return params.meta;
     return { ...(params.meta ?? {}), ...labels };
@@ -259,7 +264,7 @@ export class DocumentAdapter implements StoreContent {
 
   private async writeModel(
     siteId: string,
-    params: SaveParams,
+    params: SaveOnBaseParams,
     storedCurrent: Record<string, unknown> | undefined,
   ): Promise<WriteModel> {
     const ctx = stepContextFor(siteId, params.site, this.logger);

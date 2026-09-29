@@ -13,7 +13,7 @@
  */
 import { DocumentAdapter } from "../document.adapter";
 import { SitesDomainService } from "../../sites.service";
-import type { SaveParams } from "../store-content.port";
+import type { SaveOnBaseParams } from "../store-content.port";
 import { makeFakeRevisionDb } from "./fake-revision-db";
 
 type Doc = Record<string, any>;
@@ -64,19 +64,19 @@ async function freshStore() {
   });
   const load = async (): Promise<Doc> =>
     (await adapter.load(SITE, { site: site() })).document;
-  const save = (document: Doc, base: string, extra: Partial<SaveParams> = {}) =>
+  const save = (document: Doc, base: string, extra: Partial<SaveOnBaseParams> = {}) =>
     adapter.save(SITE, {
+      mode: "on-base",
       document,
       base,
       tenantId: TENANT,
-      setCurrent: true,
       filterSeeded: true,
       actor: "merchant",
       source: "constructor",
       mergePolicy: "last-writer-wins",
       site: site(),
       ...extra,
-    });
+    } as SaveOnBaseParams);
   return { fake, load, save };
 }
 

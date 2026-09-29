@@ -207,6 +207,7 @@ describe('DocumentAdapter — специфичные проверки адапт
     const adapter = new DocumentAdapter(store.db);
 
     const result = await adapter.save(siteId, {
+      mode: 'blind',
       document: { pages: [] },
       filterSeeded: false,
       tenantId: site.tenantId,

@@ -71,8 +71,12 @@ export interface RevisionStore {
   }): Promise<boolean>;
 }
 
-/** Попыток CAS на одну запись: каждая неудача — свежий указатель и слияние поверх. */
-const MAX_ATTEMPTS = 3;
+/**
+ * Попыток CAS на одну запись: каждая неудача — свежий указатель и слияние
+ * поверх. Единственный повтор гонки CAS: писатели сверху (`rewrite-current.ts`)
+ * его не повторяют.
+ */
+export const CAS_ATTEMPTS = 3;
 
 /** Метки записи в `meta` (И5) — только заданные; старые пути без меток не меняются. */
 export function writeLabels(params: SaveParams): Record<string, unknown> {
@@ -150,7 +154,7 @@ class BaseWrite {
 
   async run(): Promise<SaveResult> {
     let current = await this.initialPointer();
-    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    for (let attempt = 0; attempt < CAS_ATTEMPTS; attempt += 1) {
       const written =
         current === this.base ? await this.fast() : await this.stale(current);
       if (written) return written;

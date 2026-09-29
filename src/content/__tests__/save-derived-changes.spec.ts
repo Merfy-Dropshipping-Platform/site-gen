@@ -64,7 +64,11 @@ async function freshStore() {
   });
   const load = async (): Promise<Doc> =>
     (await adapter.load(SITE, { site: site() })).document;
-  const save = (document: Doc, base: string, extra: Partial<SaveOnBaseParams> = {}) =>
+  const save = (
+    document: Doc,
+    base: string,
+    extra: Partial<SaveOnBaseParams> = {},
+  ) =>
     adapter.save(SITE, {
       mode: "on-base",
       document,

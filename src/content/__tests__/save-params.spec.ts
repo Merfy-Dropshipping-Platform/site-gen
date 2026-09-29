@@ -27,14 +27,23 @@ const ON_BASE = {
 
 describe("порт: невозможные сочетания запрещает тип", () => {
   it("вслепую нельзя передать базу — запись от базы выбирается явно", () => {
-    // @ts-expect-error — `base` есть только у формы "on-base"
-    const params: SaveParams = { ...COMMON, mode: "blind", document: DOC, base: "r0" };
+    const params: SaveParams = {
+      ...COMMON,
+      mode: "blind",
+      document: DOC,
+      // @ts-expect-error — `base` есть только у формы "on-base"
+      base: "r0",
+    };
     expect(params.mode).toBe("blind");
   });
 
   it("от базы нельзя передать жёсткий CAS", () => {
-    // @ts-expect-error — `expectedVersion` есть только у формы "blind"
-    const params: SaveParams = { ...ON_BASE, document: DOC, expectedVersion: "r0" };
+    const params: SaveParams = {
+      ...ON_BASE,
+      document: DOC,
+      // @ts-expect-error — `expectedVersion` есть только у формы "blind"
+      expectedVersion: "r0",
+    };
     expect(params.mode).toBe("on-base");
   });
 
@@ -62,7 +71,13 @@ describe("порт: допустимые формы записывают рев�
     ["вслепую", { ...COMMON, mode: "blind", document: DOC, setCurrent: true }],
     [
       "вслепую с жёстким CAS",
-      { ...COMMON, mode: "blind", document: DOC, setCurrent: true, expectedVersion: "r0" },
+      {
+        ...COMMON,
+        mode: "blind",
+        document: DOC,
+        setCurrent: true,
+        expectedVersion: "r0",
+      },
     ],
     ["от базы, документом", { ...ON_BASE, document: DOC }],
     ["от базы, операциями", { ...ON_BASE, ops: [] }],

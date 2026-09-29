@@ -11,6 +11,7 @@
  * client-функцией renderCardHtml (SSG ≡ live). Меняется СИНХРОННО с renderCardHtml.
  */
 import FluxPicture from "./FluxPicture.astro";
+import { cardMemoryValues, cardSwatchesHtml } from "./card-swatches";
 
 interface VariantSwatchLite {
   value?: string;
@@ -77,133 +78,17 @@ const {
 } = Astro.props as Props;
 const href = `/products/${product.id}`;
 
-// ─── Свотчи цвета / чипы памяти-размера / бейдж «-N%» (parity с эталоном
-//     FluxProductCard.astro + client renderCardHtml). Логика деривации
-//     заинлайнена (block-папка автономна — без import за пределы папки). ───
-const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-const COLOR_GROUP_RE = /^(цвет|color)$/i;
-const CHIP_GROUP_RE = /^(память|memory|storage|накопитель|размер|объ[её]м памяти|размер памяти)$/i;
-const COLOR_NAME_HEX: Record<string, string> = {
-  белый: "#FFFFFF", white: "#FFFFFF", "чёрный": "#000000", черный: "#000000", black: "#000000",
-  красный: "#E02D2D", red: "#E02D2D", синий: "#2D4BE0", blue: "#2D4BE0", голубой: "#6FB7E0",
-  "зелёный": "#2DA84F", зеленый: "#2DA84F", green: "#2DA84F", "жёлтый": "#F2C53D", желтый: "#F2C53D",
-  yellow: "#F2C53D", оранжевый: "#FA5109", orange: "#FA5109", серый: "#9A9A9A", gray: "#9A9A9A",
-  grey: "#9A9A9A", серебро: "#C0C0C0", серебряный: "#C0C0C0", silver: "#C0C0C0", графит: "#3A3A3A",
-  graphite: "#3A3A3A", "бежевый": "#E8D9C0", beige: "#E8D9C0", коричневый: "#7A5230", brown: "#7A5230",
-  розовый: "#F2A0C0", pink: "#F2A0C0", фиолетовый: "#7A3FB0", purple: "#7A3FB0", violet: "#7A3FB0",
-  бордовый: "#6E1423", золотой: "#D4AF37", gold: "#D4AF37", бирюзовый: "#2DBFB0", teal: "#2DBFB0",
-};
-function colorToHex(value?: string | null, hint?: string | null): string | null {
-  const h = String(hint ?? "").trim();
-  if (HEX_RE.test(h)) return h;
-  const v = String(value ?? "").trim();
-  if (HEX_RE.test(v)) return v;
-  return COLOR_NAME_HEX[v.toLowerCase()] ?? null;
-}
-// Свотч flux несёт СВОЮ картинку цвета-варианта (фича flux, нет у rose):
-// { color:#hex, image:url|null, available }. image = группа «Цвет» variantGroups →
-// option.images[0], сопоставление по value (имя цвета) и по hex. Нет картинки →
-// image=null → свотч рисуется статичным <span> (эталон). Зеркалит client
-// deriveCardSwatches в Catalog.astro (parity SSG↔live).
-interface CardSwatch {
-  color: string;
-  image: string | null;
-  available: boolean;
-}
-function deriveSwatches(p: Product): { swatches: CardSwatch[]; swatchDisabled: boolean } {
-  const out: CardSwatch[] = [];
-  const seen = new Set<string>();
-  let swatchDisabled = false;
-  // Лукап картинок цвета из группы «Цвет» variantGroups (option.images[0]):
-  // по имени цвета (value) и по hex.
-  const imageByValue = new Map<string, string>();
-  const imageByHex = new Map<string, string>();
-  const colorGroup = Array.isArray(p.variantGroups)
-    ? p.variantGroups.find((g) => COLOR_GROUP_RE.test(String(g?.name ?? "").trim()))
-    : undefined;
-  if (colorGroup && Array.isArray(colorGroup.options)) {
-    for (const o of colorGroup.options) {
-      const img =
-        (o && Array.isArray(o.images) && typeof o.images[0] === "string" && o.images[0]) || null;
-      if (!img) continue;
-      const val = String(o?.value ?? "").trim().toLowerCase();
-      if (val && !imageByValue.has(val)) imageByValue.set(val, img);
-      const hx = colorToHex(o?.value, o?.swatchHex);
-      if (hx && !imageByHex.has(hx.toLowerCase())) imageByHex.set(hx.toLowerCase(), img);
-    }
-  }
-  const push = (hex: string | null, available?: boolean, value?: string | null): void => {
-    if (!hex) return;
-    if (available === false) { swatchDisabled = true; return; }
-    const key = hex.toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
-    const val = String(value ?? "").trim().toLowerCase();
-    const image = (val ? imageByValue.get(val) : undefined) ?? imageByHex.get(key) ?? null;
-    out.push({ color: hex, image, available: available !== false });
-  };
-  if (Array.isArray(p.variantSwatches) && p.variantSwatches.length) {
-    for (const s of p.variantSwatches) push(colorToHex(s?.value, s?.color), s?.available, s?.value);
-  }
-  if (out.length === 0 && Array.isArray(p.variantGroups)) {
-    const group = p.variantGroups.find((g) => COLOR_GROUP_RE.test(String(g?.name ?? "").trim()));
-    if (group && Array.isArray(group.options)) {
-      for (const o of group.options) push(colorToHex(o?.value, o?.swatchHex), undefined, o?.value);
-    }
-  }
-  if (out.length === 0 && Array.isArray(p.variantCombinations)) {
-    for (const c of p.variantCombinations) {
-      const name = c?.options?.["Цвет"] ?? c?.options?.["Color"];
-      push(colorToHex(name), c?.available, name);
-    }
-  }
-  return { swatches: out.slice(0, 6), swatchDisabled };
-}
-function deriveChips(p: Product): Array<{ value: string; disabled: boolean }> {
-  const groups = Array.isArray(p.variantGroups) ? p.variantGroups : [];
-  const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
-  const availableValues = new Set<string>();
-  let haveComboData = false;
-  for (const c of combos) {
-    const opts = c?.options ?? {};
-    for (const k of Object.keys(opts)) {
-      if (!CHIP_GROUP_RE.test(String(k).trim())) continue;
-      haveComboData = true;
-      if (c?.available !== false) availableValues.add(String(opts[k]).trim().toLowerCase());
-    }
-  }
-  const out: Array<{ value: string; disabled: boolean }> = [];
-  const seen = new Set<string>();
-  const add = (value?: string | null): void => {
-    const s = String(value ?? "").trim();
-    if (!s) return;
-    const key = s.toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
-    out.push({ value: s, disabled: haveComboData && !availableValues.has(key) });
-  };
-  for (const g of groups) {
-    if (!g || !CHIP_GROUP_RE.test(String(g.name ?? "").trim())) continue;
-    for (const o of g.options ?? []) add(o?.value);
-  }
-  if (out.length === 0) {
-    for (const c of combos) {
-      const opts = c?.options ?? {};
-      for (const k of Object.keys(opts)) {
-        if (CHIP_GROUP_RE.test(String(k).trim())) add(opts[k]);
-      }
-    }
-  }
-  return out.slice(0, 4);
-}
+// ─── Квадратики цвета / чипы памяти — card-swatches.ts, одна реализация с
+//     «Коллекцией товаров» и клиентским рендером каталога. Серверная карточка
+//     без выбора варианта по умолчанию: квадратик с фото цвета меняет фото. ───
 function parsePriceNum(v: number | string | null | undefined): number | null {
   if (v === null || v === undefined || v === "") return null;
   if (typeof v === "number") return Number.isFinite(v) && v > 0 ? v : null;
   const n = parseInt(String(v).replace(/[^\d]/g, ""), 10);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
-const { swatches, swatchDisabled } = deriveSwatches(product);
-const chips = deriveChips(product);
+const swatchInner = cardSwatchesHtml(product);
+const chips = cardMemoryValues(product);
 // Бейдж: «-N%» при уценке (oldPrice/compareAtPrice > price); иначе legacy «Скидка»
 // (demo-флаг discount, чтобы не потерять заглушку пустой сборки).
 const _oldNum = parsePriceNum(product.oldPrice ?? product.compareAtPrice ?? null);
@@ -329,27 +214,7 @@ const defaultHeartSvg =
     </button>
   </div>
   {/* Слот свотчей всегда одной высоты — иначе карточки с цветом выше соседей. */}
-  <div class="flex min-h-5 items-center gap-1" data-nt="card-swatches" aria-hidden={swatches.length === 0}>
-    {swatches.map((s) =>
-      s.image ? (
-        <button
-          type="button"
-          data-swatch-img={s.image}
-          aria-pressed="false"
-          aria-label="Показать фото цвета"
-          class="size-5 rounded-[2px] cursor-pointer p-0"
-          style={`background:${s.color};border:0`}
-        ></button>
-      ) : (
-        <span class="size-5 rounded-[2px]" style={`background:${s.color}`} aria-hidden="true"></span>
-      ),
-    )}
-    {swatchDisabled && (
-      <span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true">
-        <span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span>
-      </span>
-    )}
-  </div>
+  <div class="flex min-h-5 items-center gap-1" data-nt="card-swatches" aria-hidden={!swatchInner} set:html={swatchInner}></div>
   <div class="flex min-h-0 w-full flex-1 flex-col gap-1 text-left">
     <a
       href={href}
@@ -371,13 +236,8 @@ const defaultHeartSvg =
   {/* Слот чипов всегда одной высоты — карточки без памяти/размера не проседают. */}
   <div class="flex min-h-6 flex-wrap items-start gap-1" data-nt="card-chips" aria-hidden={chips.length === 0}>
     {chips.map((m) => (
-      <span
-        class:list={[
-          "inline-flex items-center rounded-[2px] border border-solid p-1 font-roboto-flex text-[12px] font-light leading-none",
-          m.disabled ? "border-[#F5F5F5] bg-[#F5F5F5] text-[#CCCCCC]" : "border-[#F5F5F5] text-[#000000]",
-        ]}
-      >
-        {m.value}
+      <span class="inline-flex items-center rounded-[2px] border border-solid p-1 font-roboto-flex text-[12px] font-light leading-none border-[#F5F5F5] text-[#000000]">
+        {m}
       </span>
     ))}
   </div>

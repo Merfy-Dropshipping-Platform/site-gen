@@ -12,7 +12,6 @@
 import { Module } from "@nestjs/common";
 import { ClientsModule, Transport } from "@nestjs/microservices";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { sitesQueue } from "../constants";
 import { SitesEventsService } from "./events.service";
 
 @Module({
@@ -28,7 +27,7 @@ import { SitesEventsService } from "./events.service";
             transport: Transport.RMQ,
             options: {
               urls: [rabbitmqUrl],
-              queue: sitesQueue(),
+              queue: "sites_queue",
               queueOptions: { durable: true },
             },
           };

@@ -1,7 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module";
-import { sitesQueue } from "./constants";
 import { MicroserviceOptions, Transport } from "@nestjs/microservices";
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -93,7 +92,7 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: [rabbitmqUrl],
-      queue: sitesQueue(),
+      queue: "sites_queue",
       prefetchCount: 3,
       queueOptions: {
         durable: true,
@@ -114,7 +113,7 @@ async function bootstrap() {
   const port = Number.parseInt(String(process.env.PORT ?? 3114), 10);
   await app.listen(port);
   logger.log(`Sites service HTTP listening on http://localhost:${port}`);
-  logger.log(`Sites microservice connected to RabbitMQ (${sitesQueue()})`);
+  logger.log("Sites microservice connected to RabbitMQ (sites_queue)");
 }
 
 bootstrap().catch((e) => {

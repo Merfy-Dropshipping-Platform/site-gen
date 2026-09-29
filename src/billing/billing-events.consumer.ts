@@ -20,10 +20,11 @@ import * as amqp from "amqp-connection-manager";
 import type { ChannelWrapper } from "amqp-connection-manager";
 import type { Channel, ConsumeMessage } from "amqplib";
 import { ClientProxy } from "@nestjs/microservices";
-import { USER_RMQ_SERVICE, sitesBillingEventsQueue } from "../constants";
+import { USER_RMQ_SERVICE } from "../constants";
 import { SitesDomainService } from "../sites.service";
 
 const BILLING_EVENTS_EXCHANGE = "billing.events";
+const SITES_BILLING_QUEUE = "sites_billing_events";
 
 interface SubscriptionUpdatedPayload {
   event?: string;
@@ -85,7 +86,7 @@ export class BillingEventsConsumer implements OnModuleInit, OnModuleDestroy {
           });
 
           // Создаём уникальную очередь для sites service
-          const q = await channel.assertQueue(sitesBillingEventsQueue(), {
+          const q = await channel.assertQueue(SITES_BILLING_QUEUE, {
             durable: true,
             // autoDelete: false - очередь сохраняется при перезапуске
           });
@@ -101,7 +102,7 @@ export class BillingEventsConsumer implements OnModuleInit, OnModuleDestroy {
           );
 
           this.logger.log(
-            `Listening to ${BILLING_EVENTS_EXCHANGE} exchange via ${q.queue} queue`,
+            `Listening to ${BILLING_EVENTS_EXCHANGE} exchange via ${SITES_BILLING_QUEUE} queue`,
           );
         },
       });

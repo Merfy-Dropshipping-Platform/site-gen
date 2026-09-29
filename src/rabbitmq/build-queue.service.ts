@@ -18,7 +18,7 @@ import { ConfigService } from "@nestjs/config";
 import * as amqp from "amqp-connection-manager";
 import type { ChannelWrapper } from "amqp-connection-manager";
 import type { Channel } from "amqplib";
-import { sitesBuildQueue } from "../constants";
+import { SITES_BUILD_QUEUE } from "./retry-setup.service";
 
 export interface QueueBuildParams {
   tenantId: string;
@@ -48,8 +48,8 @@ export class BuildQueuePublisher implements OnModuleInit, OnModuleDestroy {
     this.channel = this.connection.createChannel({
       setup: async (channel: Channel) => {
         // Use a dedicated build queue to avoid competition with NestJS RPC consumer
-        await channel.assertQueue(sitesBuildQueue(), { durable: true });
-        this.logger.log(`Build queue publisher channel ready (queue: ${sitesBuildQueue()})`);
+        await channel.assertQueue(SITES_BUILD_QUEUE, { durable: true });
+        this.logger.log(`Build queue publisher channel ready (queue: ${SITES_BUILD_QUEUE})`);
       },
     });
 
@@ -89,7 +89,7 @@ export class BuildQueuePublisher implements OnModuleInit, OnModuleDestroy {
 
     try {
       await this.channel.sendToQueue(
-        sitesBuildQueue(),
+        SITES_BUILD_QUEUE,
         Buffer.from(JSON.stringify(message)),
         {
           persistent: true,

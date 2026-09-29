@@ -9,7 +9,6 @@
  */
 import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
-import { userEventsEnabled } from "../constants";
 
 const USER_SERVICE_PATTERNS = new Set<string>([
   "sites.site.created",
@@ -73,7 +72,7 @@ export class SitesEventsService implements OnModuleInit {
     }
 
     // Additionally to user_queue for cross-service consumers.
-    if (USER_SERVICE_PATTERNS.has(pattern) && userEventsEnabled()) {
+    if (USER_SERVICE_PATTERNS.has(pattern)) {
       this.logger.log(
         `emit dispatching pattern=${pattern} client=user payloadKeys=${payloadKeys}`,
       );

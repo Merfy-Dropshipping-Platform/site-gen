@@ -14,7 +14,6 @@ import {
   DOMAIN_RMQ_SERVICE,
   PRODUCT_RMQ_SERVICE,
   RMQ_SERVICE,
-  sitesQueue,
   USER_RMQ_SERVICE,
 } from "../constants";
 
@@ -33,7 +32,7 @@ import {
             transport: Transport.RMQ,
             options: {
               urls: [rabbitmqUrl],
-              queue: sitesQueue(),
+              queue: "sites_queue",
               queueOptions: {
                 durable: true,
               },

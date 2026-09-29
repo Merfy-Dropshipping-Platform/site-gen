@@ -1290,6 +1290,11 @@ function scrollSelfTo(el, mode) {
  *     { type: 'update-block', blockId, props }
  *     { type: 'update-tokens', themeSettings }   — и тексты баннера cookie
  *     { type: 'set-selection', …, cookieBanner?: boolean }
+ *     { type: 'merfy:thumbnail' }   — НЕ от конструктора: шлёт кабинет
+ *       (MerfyFrontend, ShopLiveThumbnails.tsx) после 'ready' для живых
+ *       миниатюр «Онлайн-магазина» — прячет баннер cookie, ставит видео на
+ *       паузу, глушит CSS-анимации. Конструктор его не отправляет, баннер там
+ *       остаётся как есть.
  *
  * Design notes:
  *  - postMessage origin is `*` for now; tightening it requires the parent to
@@ -2909,6 +2914,25 @@ const PREVIEW_NAV_AGENT_INLINE = `
         }
         __rcApply(rcVersion, rcTarget, rcMain, rcParts);
       });
+    } else if (ev.data.type === 'merfy:thumbnail') {
+      // Живая миниатюра карточки «Онлайн-магазин» в кабинете (ревью 28.09) —
+      // родитель шлёт ПОСЛЕ 'ready' (MerfyFrontend, ShopLiveThumbnails.tsx).
+      // Плашка cookie в уменьшенном кадре ни к чему — прячем, останавливаем
+      // видео и CSS-анимации, чтобы миниатюра была статичной картинкой
+      // магазина. Конструктор этот тип сообщения не шлёт — там баннер
+      // остаётся видимым и кликабельным, как раньше.
+      var thumbBanner = document.querySelector('[data-cookie-consent]');
+      if (thumbBanner) thumbBanner.hidden = true;
+      var thumbVideos = document.querySelectorAll('video');
+      for (var tvi = 0; tvi < thumbVideos.length; tvi++) {
+        try { thumbVideos[tvi].pause(); } catch (e) {}
+      }
+      if (!document.getElementById('__merfy_thumbnail_freeze')) {
+        var freezeStyle = document.createElement('style');
+        freezeStyle.id = '__merfy_thumbnail_freeze';
+        freezeStyle.textContent = '*,*::before,*::after{animation-play-state:paused!important;scroll-behavior:auto!important}';
+        if (document.head) document.head.appendChild(freezeStyle);
+      }
     }
   });
 

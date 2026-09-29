@@ -15,7 +15,8 @@
  *   CAS не прошёл     → свежий указатель и новая попытка (слияние поверх
  *                       записи, успевшей раньше).
  * Без базы (`base: null` — первая ревизия) список изменений не считается:
- * от пустого документа это был бы весь магазин.
+ * от пустого документа это был бы весь магазин. Карта модуля и таблица
+ * «писатель → политика» — `README.md`.
  */
 import type { Logger } from "@nestjs/common";
 import { randomUUID } from "crypto";
@@ -140,7 +141,8 @@ function reportChanges(
   return { changes: pathsOf("change"), ...(hasDerived ? { derived } : {}) };
 }
 
-class BaseWrite {
+/** Одна запись от базы: попытки CAS, на каждой — запись поверх текущей или слияние. */
+class WriteOnBase {
   constructor(
     private readonly store: RevisionStore,
     private readonly siteId: string,
@@ -156,7 +158,9 @@ class BaseWrite {
     let current = await this.initialPointer();
     for (let attempt = 0; attempt < CAS_ATTEMPTS; attempt += 1) {
       const written =
-        current === this.base ? await this.fast() : await this.stale(current);
+        current === this.base
+          ? await this.writeOnCurrent()
+          : await this.writeOnStale(current);
       if (written) return written;
       current = await this.store.readPointer(this.siteId, this.params.tenantId);
     }
@@ -193,7 +197,7 @@ class BaseWrite {
   }
 
   /** База = текущая: запись как без базы, плюс метки и список изменений. */
-  private async fast(): Promise<SaveResult | null> {
+  private async writeOnCurrent(): Promise<SaveResult | null> {
     const stored = await this.fetchBase();
     const model = await this.store.writeModel(this.siteId, this.params, stored);
     const incoming = await this.incoming(() => model.normalize(stored));
@@ -237,7 +241,9 @@ class BaseWrite {
   }
 
   /** База устарела: слить по политике или отказать (`refuse`). */
-  private async stale(current: string | null): Promise<SaveResult | null> {
+  private async writeOnStale(
+    current: string | null,
+  ): Promise<SaveResult | null> {
     const policy = this.params.mergePolicy;
     if (policy === "refuse") throw new RevisionConflictError();
     return this.merge(current, policy);
@@ -335,5 +341,5 @@ export function saveOnBase(
   params: SaveOnBaseParams,
   logger: Logger,
 ): Promise<SaveResult> {
-  return new BaseWrite(store, siteId, params, logger).run();
+  return new WriteOnBase(store, siteId, params, logger).run();
 }

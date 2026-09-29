@@ -7,7 +7,7 @@ export { diff } from "./diff";
 export { merge3 } from "./merge3";
 export type { MergeOptions } from "./merge3";
 export { VOLATILE_PATHS, isVolatile } from "./shape";
-export { readAt } from "./walk";
+export { readAt } from "./locate";
 export type {
   AddOp,
   ContestedValue,

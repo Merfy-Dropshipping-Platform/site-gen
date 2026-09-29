@@ -36,7 +36,13 @@ import type {
   MergeResult,
   Op,
 } from "./types";
-import { coversPath, isOrderPath, locate, overlapsPath, readAt } from "./walk";
+import {
+  coversPath,
+  isOrderPath,
+  locate,
+  overlapsPath,
+  readAt,
+} from "./locate";
 
 /** Наименьшие адреса, где пересеклись чужие и входящие операции. */
 function contestedRegions(
@@ -162,13 +168,16 @@ export function merge3(
 ): MergeResult {
   const isAuto = options.isAuto ?? NOTHING_IS_AUTO;
   const plan = atomicContainers([base, current, incoming]);
+
+  // 1. Где пересеклись. Правки сторон от базы («чужие» и «входящие») и
+  //    наименьшие места, где они задели одно и то же. Совпали значения —
+  //    не спор; страница целиком тянет вторую половину (мета ↔ содержимое).
   const theirs = diffWithPlan(base, current, plan).filter(
     (op) => !isVolatile(op) && !isAuto(op, base, current),
   );
   const ours = diffWithPlan(base, incoming, plan).filter(
     (op) => !isAuto(op, base, incoming),
   );
-
   const regions = contestedRegions(
     theirs,
     ours.filter((op) => !isVolatile(op)),
@@ -178,14 +187,20 @@ export function merge3(
     current,
     incoming,
   );
+
+  // 2. Что попадёт в отчёт: спорные места, которые чужая сторона
+  //    действительно меняла. При `reject-conflicts` это конфликты, и ничего
+  //    не сливается.
   const disputes = contested
     .filter(differs(current, base))
     .map(valuePair(current, incoming));
-
   if (policy === "reject-conflicts" && disputes.length > 0) {
     return { merged: null, overwritten: [], conflicts: disputes, applied: [] };
   }
 
+  // 3. Что берём от входящей: её правки вне спорных мест — как есть, в
+  //    спорных местах — её значение (`last-writer-wins`). Всё это ложится
+  //    поверх текущей.
   const settled = [...regions, ...contested];
   const free = ours.filter(
     (op) => !settled.some((r) => coversPath(r, op.path)),

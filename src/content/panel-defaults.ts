@@ -4,7 +4,8 @@
  * (`defaultProps` блока + `blockDefaults` темы через `deepMergeBlockProps`).
  * Конструктор вписывает их в секцию при правке соседнего поля
  * (CustomFieldsPanel `updateProp`), поэтому для записи с базой такие значения
- * — не правка мерчанта (`change-kinds.ts`).
+ * — не правка мерчанта (`change-kinds.ts`). Зависимость от HTTP-контроллера —
+ * записанный долг (`README.md`, раздел «Долг»).
  */
 import { Logger } from "@nestjs/common";
 import type { PanelDefaults } from "./change-kinds";

@@ -6,11 +6,14 @@
  *   load = выборка ревизии (текущая или по revisionId) → migrateRevisionData →
  *          normalizeRevision (PageResolver) → seedContentPagesFromTheme (B17) →
  *          resolveAssetUrls
- *   save = с базой (этап 2) → save-on-base.ts: CAS или слияние; этот адаптер
- *          даёт алгоритму хранилище (ревизии, указатель, транзакция) и
- *          нормализатор (свои шаги чтения + фильтр досеянного);
- *          без базы — как раньше: опц. filterSeededPagesOnWrite → insert
- *          (+ CAS по expectedVersion в транзакции, если запрошен) → { version }
+ *   save = от базы (`mode: "on-base"`, этап 2) → save-on-base.ts: CAS или
+ *          слияние; этот адаптер даёт алгоритму хранилище (ревизии,
+ *          указатель, транзакция) и нормализатор (свои шаги чтения + фильтр
+ *          досеянного);
+ *          вслепую (`mode: "blind"`) — как раньше: опц.
+ *          filterSeededPagesOnWrite → insert (+ CAS по expectedVersion в
+ *          транзакции, если запрошен) → { version }
+ * Карта модуля — `README.md`.
  *
  * `site`-метаданные (тема/publicUrl/…) приходят ПАРАМЕТРОМ, а не
  * отдельным `SELECT` по `schema.site` — так адаптер остаётся мокаемым теми

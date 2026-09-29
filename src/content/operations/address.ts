@@ -71,7 +71,7 @@ export function parentPath(path: string): string {
 
 /**
  * `outer` равен `inner` или содержит его — по строке, без учёта поднятых
- * контейнеров. Для слияния — `coversPath`/`overlapsPath` из walk.ts.
+ * контейнеров. Для слияния — `coversPath`/`overlapsPath` из locate.ts.
  */
 export function covers(outer: string, inner: string): boolean {
   return outer === "" || outer === inner || inner.startsWith(`${outer}/`);

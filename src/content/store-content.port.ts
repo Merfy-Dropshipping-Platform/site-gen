@@ -4,7 +4,8 @@
  * Бриф: merfy-mcp/docs/plans/2026-09-23-wave1-content-port.md §1.1,
  * модель — merfy-mcp/docs/plans/2026-09-21-deltas-and-port.md §5.
  * Запись с базой и слиянием — этап 2, merfy-mcp/docs/plans/2026-09-24-stage2-safe-write.md
- * (раздел «Контракт записи для клиентов»).
+ * (раздел «Контракт записи для клиентов»). Карта модуля, инварианты и
+ * таблица «писатель → политика» — `README.md` рядом.
  *
  * Сегодня единственный адаптер — `DocumentAdapter` (`document.adapter.ts`):
  * ровно путь конструктора (`SitesDomainService.getRevision`/`createRevision`

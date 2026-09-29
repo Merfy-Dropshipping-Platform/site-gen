@@ -14,7 +14,7 @@ import {
   parseSegment,
   splitPath,
 } from "../address";
-import { overlapsPath } from "../walk";
+import { overlapsPath } from "../locate";
 
 describe("адрес поля: сегменты", () => {
   it.each([

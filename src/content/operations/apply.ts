@@ -9,8 +9,8 @@ import { cloneJson } from "./json";
 import { idsOf } from "./shape";
 import type { ListShape } from "./shape";
 import type { AddOp, Doc, Op, OrderOp, RemoveOp, SetOp } from "./types";
-import { locate } from "./walk";
-import type { Target } from "./walk";
+import { locate } from "./locate";
+import type { Target } from "./locate";
 
 function missing(path: string): Error {
   return new Error(`apply_target_missing: ${path}`);

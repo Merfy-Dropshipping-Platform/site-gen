@@ -13,6 +13,7 @@
  *    внутренней странице — её раскатывают с главной конструктор
  *    (`syncSharedSections`) и чтение (`unifyHeaderWithHome`); в `meta` она
  *    считается отдельно, правкой мерчанта остаётся правка на главной.
+ * Карта модуля — `README.md`.
  */
 import { parseSegment, splitPath } from "./operations/address";
 import { deepEqual, isPlainObject } from "./operations/json";

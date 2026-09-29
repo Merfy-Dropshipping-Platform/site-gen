@@ -17,11 +17,15 @@ import { ClientProxy } from "@nestjs/microservices";
 import {
   DLX_EXCHANGE,
   DEAD_LETTER_QUEUE,
-  SITES_BUILD_QUEUE,
   getRetryCountFromHeaders,
   getRetryRoutingKey,
 } from "./retry-setup.service";
-import { PG_CONNECTION, PRODUCT_RMQ_SERVICE, BILLING_RMQ_SERVICE } from "../constants";
+import {
+  PG_CONNECTION,
+  PRODUCT_RMQ_SERVICE,
+  BILLING_RMQ_SERVICE,
+  sitesBuildQueue,
+} from "../constants";
 import * as schema from "../db/schema";
 import {
   runBuildPipeline,
@@ -87,7 +91,7 @@ export class BuildQueueConsumer implements OnModuleInit {
 
     // Ensure queue exists (idempotent — do NOT pass x-max-priority to avoid
     // PRECONDITION_FAILED if queue already exists without priority support)
-    await this.channel.assertQueue(SITES_BUILD_QUEUE, {
+    await this.channel.assertQueue(sitesBuildQueue(), {
       durable: true,
     });
 
@@ -96,7 +100,7 @@ export class BuildQueueConsumer implements OnModuleInit {
     );
 
     await this.channel.consume(
-      SITES_BUILD_QUEUE,
+      sitesBuildQueue(),
       async (msg) => {
         if (!msg) return;
 
@@ -218,7 +222,7 @@ export class BuildQueueConsumer implements OnModuleInit {
                   ...(((msg.properties.headers?.["x-death"] as unknown[]) ??
                     []) as Array<Record<string, unknown>>),
                   {
-                    queue: SITES_BUILD_QUEUE,
+                    queue: sitesBuildQueue(),
                     reason: "rejected",
                     count: 1,
                     time: new Date(),

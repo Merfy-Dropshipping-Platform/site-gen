@@ -16,6 +16,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, ilike, sql } from "drizzle-orm";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
+import { leaseEndSql } from "./lifecycle/lifecycle.repository";
 
 export interface NewStoreRow {
   id: string;
@@ -24,12 +25,6 @@ export interface NewStoreRow {
   slug: string;
   themeId: string;
   actorUserId: string;
-  /**
-   * Строка рождается арендованной командой (`lifecycle_next_at = now() +
-   * leaseMs`): тик доводчика её не берёт, пока команда сама не сделает сид и не
-   * ответит (В3). Упала команда — аренда истечёт, строку подберёт тик.
-   */
-  leaseMs: number;
 }
 
 /**
@@ -44,7 +39,10 @@ export interface StoreRegistryTx {
   slugTaken(tenantId: string, slug: string): Promise<boolean>;
   /**
    * Новая строка сразу в саге (`lifecycle = 'reserved'`: её ведёт доводчик, не
-   * старые cron) и сразу в аренде у вставившей её команды.
+   * старые cron) и сразу в аренде у вставившей её команды
+   * (`lifecycle_next_at = now() + LEASE_MS`): тик доводчика её не берёт, пока
+   * команда сама не сделает сид и не ответит (В3). Упала команда — аренда
+   * истечёт, строку подберёт тик.
    */
   insertStore(row: NewStoreRow): Promise<void>;
 }
@@ -104,7 +102,7 @@ class DrizzleStoreRegistryTx implements StoreRegistryTx {
       updatedBy: row.actorUserId,
       lifecycle: "reserved",
       lifecycleAttempts: 0,
-      lifecycleNextAt: sql`now() + make_interval(secs => ${row.leaseMs / 1000})`,
+      lifecycleNextAt: leaseEndSql,
     });
   }
 }

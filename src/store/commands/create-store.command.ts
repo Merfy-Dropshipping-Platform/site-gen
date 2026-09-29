@@ -36,7 +36,6 @@ import {
   type LifecycleRow,
 } from "../lifecycle/lifecycle.repository";
 import { StoreLifecycleReconciler } from "../lifecycle/store-lifecycle.reconciler";
-import { LEASE_MS } from "../lifecycle/store-lifecycle";
 import { BackgroundWork, within } from "../shared/background-work";
 import { issuesOf } from "../shared/input-issues";
 import {
@@ -228,7 +227,6 @@ export class CreateStoreCommand {
       slug,
       themeId,
       actorUserId: input.actorUserId,
-      leaseMs: LEASE_MS,
     });
     return { kind: "created", id, slug };
   }

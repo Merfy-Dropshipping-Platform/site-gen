@@ -18,7 +18,6 @@
  */
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
-  LEASE_MS,
   LIFECYCLE_STEPS,
   failedAttempt,
   isStateAtLeast,
@@ -94,7 +93,7 @@ export class StoreLifecycleReconciler {
     siteId: string,
     opts: AdvanceOptions = {},
   ): Promise<AdvanceResult> {
-    const claimed = await this.repo.claim(siteId, LEASE_MS);
+    const claimed = await this.repo.claim(siteId);
     if (!claimed) return this.notDriven(siteId);
     return this.drive(claimed, opts);
   }

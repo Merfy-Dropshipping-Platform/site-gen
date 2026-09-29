@@ -272,7 +272,7 @@ describe("доводчик: конкуренция — два доводчика
     const { clock, repo, reconciler, count } = setup();
     repo.put(makeSiteRow({ id: "s1" }));
     // Имитация: кто-то взял строку и умер, ничего не записав.
-    expect(await repo.claim("s1", LEASE_MS)).not.toBeNull();
+    expect(await repo.claim("s1")).not.toBeNull();
 
     expect(await reconciler.advance("s1")).toMatchObject({ claimed: false });
     expect(count("seed")).toBe(0);

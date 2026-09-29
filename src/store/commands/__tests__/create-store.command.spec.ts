@@ -24,7 +24,6 @@ import {
   deferred,
   makeSiteRow,
 } from "../../__tests__/support/in-memory-lifecycle";
-import { LEASE_MS } from "../../lifecycle/store-lifecycle";
 import type { StoreRegistryTx } from "../../store-registry";
 
 const setup = makeCreateStoreHarness;
@@ -214,7 +213,7 @@ describe("CreateStore: тик доводчика не перехватывает
     ): Promise<T> => {
       const reservation = await lockAndInsert(tenantId, work);
       for (const id of await h.repo.listDue(10)) {
-        competing.push(await h.repo.claim(id, LEASE_MS));
+        competing.push(await h.repo.claim(id));
       }
       return reservation;
     };

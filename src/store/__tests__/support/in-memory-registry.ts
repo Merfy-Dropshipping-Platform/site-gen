@@ -7,6 +7,7 @@ import type {
   StoreRegistry,
   StoreRegistryTx,
 } from "../../store-registry";
+import { LEASE_MS } from "../../lifecycle/store-lifecycle";
 import {
   InMemoryLifecycleRepository,
   makeSiteRow,
@@ -76,7 +77,7 @@ export class InMemoryStoreRegistry implements StoreRegistry {
             createdBy: row.actorUserId,
             lifecycle: "reserved",
             lifecycleAttempts: 0,
-            lifecycleNextAt: new Date(this.repo.clock.nowMs + row.leaseMs),
+            lifecycleNextAt: new Date(this.repo.clock.nowMs + LEASE_MS),
             createdAt: new Date(this.repo.clock.nowMs),
           }),
         );

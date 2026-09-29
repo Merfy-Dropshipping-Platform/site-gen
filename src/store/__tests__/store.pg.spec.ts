@@ -115,10 +115,10 @@ suite("сага рождения на настоящем Postgres", () => {
       const b = new DrizzleLifecycleRepository(drizzle(pool, { schema }));
 
       const results = await Promise.all([
-        a.claim(own("claim-1"), 60_000),
-        b.claim(own("claim-1"), 60_000),
-        a.claim(own("claim-1"), 60_000),
-        b.claim(own("claim-1"), 60_000),
+        a.claim(own("claim-1")),
+        b.claim(own("claim-1")),
+        a.claim(own("claim-1")),
+        b.claim(own("claim-1")),
       ]);
 
       expect(results.filter(Boolean)).toHaveLength(1);
@@ -132,14 +132,14 @@ suite("сага рождения на настоящем Postgres", () => {
       });
       const repo = new DrizzleLifecycleRepository(db);
 
-      const claimed = await repo.claim(own("lease-1"), 60_000);
+      const claimed = await repo.claim(own("lease-1"));
 
       expect(claimed?.id).toBe(own("lease-1"));
       const leaseMs = claimed!.lifecycleNextAt!.getTime() - Date.now();
-      expect(leaseMs).toBeGreaterThan(50_000);
-      expect(leaseMs).toBeLessThan(70_000);
+      expect(leaseMs).toBeGreaterThan(LEASE_MS - 10_000);
+      expect(leaseMs).toBeLessThan(LEASE_MS + 10_000);
       expect(await repo.listDue(1000)).not.toContain(own("lease-1"));
-      expect(await repo.claim(own("lease-1"), 60_000)).toBeNull();
+      expect(await repo.claim(own("lease-1"))).toBeNull();
     });
 
     it("выборка: только строки саги, не готовые, не удалённые, чьё время пришло", async () => {
@@ -177,10 +177,10 @@ suite("сага рождения на настоящем Postgres", () => {
 
       const due = (await repo.listDue(1000)).filter((id) => id.startsWith(P));
       expect(new Set(due)).toEqual(new Set([own("fresh"), own("retry-due")]));
-      expect(await repo.claim(own("legacy"), 60_000)).toBeNull();
-      expect(await repo.claim(own("done"), 60_000)).toBeNull();
-      expect(await repo.claim(own("gone"), 60_000)).toBeNull();
-      expect(await repo.claim(own("retry-later"), 60_000)).toBeNull();
+      expect(await repo.claim(own("legacy"))).toBeNull();
+      expect(await repo.claim(own("done"))).toBeNull();
+      expect(await repo.claim(own("gone"))).toBeNull();
+      expect(await repo.claim(own("retry-later"))).toBeNull();
     });
 
     it("readOwned: граница тенанта и удалённые — в самом запросе", async () => {
@@ -206,7 +206,7 @@ suite("сага рождения на настоящем Postgres", () => {
         lifecycleAttempts: 0,
       });
       const repo = new DrizzleLifecycleRepository(db);
-      const claimed = await repo.claim(own("rec-1"), 60_000);
+      const claimed = await repo.claim(own("rec-1"));
 
       await repo.record(own("rec-1"), {
         state: "seeded",
@@ -356,7 +356,7 @@ suite("сага рождения на настоящем Postgres", () => {
           const reservation = await lockAndInsert(tenantId, work);
           // Тик «успел» между коммитом вставки и сидом команды.
           for (const row of await tenantRows(own("race"))) {
-            competing.push(await tick.claim(row.id, LEASE_MS));
+            competing.push(await tick.claim(row.id));
           }
           return reservation;
         };

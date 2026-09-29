@@ -10,7 +10,10 @@
  * Время — управляемые часы `FakeClock`, а не `Date.now()`: тест двигает время
  * сам и проверяет паузы повторов точно.
  */
-import type { LifecycleRecord } from "../../lifecycle/store-lifecycle";
+import {
+  LEASE_MS,
+  type LifecycleRecord,
+} from "../../lifecycle/store-lifecycle";
 import type {
   LifecycleRepository,
   LifecycleRow,
@@ -85,10 +88,10 @@ export class InMemoryLifecycleRepository implements LifecycleRepository {
     );
   }
 
-  async claim(siteId: string, leaseMs: number): Promise<LifecycleRow | null> {
+  async claim(siteId: string): Promise<LifecycleRow | null> {
     const row = this.rows.get(siteId);
     if (!row || !this.isInFlight(row) || !this.isDue(row)) return null;
-    row.lifecycleNextAt = new Date(this.clock.nowMs + leaseMs);
+    row.lifecycleNextAt = new Date(this.clock.nowMs + LEASE_MS);
     return { ...row };
   }
 
@@ -177,10 +180,7 @@ if (isOwnTestFile())
     it("две попытки захвата одной строки — выигрывает одна", async () => {
       const repo = new InMemoryLifecycleRepository();
       repo.put(makeSiteRow({ id: "s1" }));
-      const [a, b] = await Promise.all([
-        repo.claim("s1", 1000),
-        repo.claim("s1", 1000),
-      ]);
+      const [a, b] = await Promise.all([repo.claim("s1"), repo.claim("s1")]);
       expect([a, b].filter(Boolean)).toHaveLength(1);
     });
 
@@ -198,7 +198,7 @@ if (isOwnTestFile())
     it("строку без состояния (старый магазин) не захватывает", async () => {
       const repo = new InMemoryLifecycleRepository();
       repo.put(makeSiteRow({ id: "old", lifecycle: null }));
-      expect(await repo.claim("old", 1000)).toBeNull();
+      expect(await repo.claim("old")).toBeNull();
       expect(await repo.listDue(10)).toEqual([]);
     });
   });

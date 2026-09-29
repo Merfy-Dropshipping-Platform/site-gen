@@ -21,7 +21,11 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { PG_CONNECTION } from "../../constants";
 import * as schema from "../../db/schema";
-import type { LifecycleRecord, LifecycleState } from "./store-lifecycle";
+import {
+  LEASE_MS,
+  type LifecycleRecord,
+  type LifecycleState,
+} from "./store-lifecycle";
 
 export interface LifecycleRow {
   id: string;
@@ -45,12 +49,13 @@ export interface LifecycleRow {
 
 export interface LifecycleRepository {
   /**
-   * Атомарно взять строку в работу на `leaseMs`: успех только если строка
+   * Атомарно взять строку в работу на время аренды (`LEASE_MS`,
+   * store-lifecycle.ts): успех только если строка
    * рождается командой (`lifecycle` не пуст), не готова, не удалена и её время
    * пришло (`lifecycle_next_at` пуст или в прошлом). Два одновременных захвата
    * одной строки — выигрывает ровно один.
    */
-  claim(siteId: string, leaseMs: number): Promise<LifecycleRow | null>;
+  claim(siteId: string): Promise<LifecycleRow | null>;
   read(siteId: string): Promise<LifecycleRow | null>;
   /**
    * Строка магазина этого тенанта, не удалённая, — для запроса состояния
@@ -88,6 +93,9 @@ const ROW = {
 const inFlight = sql`${schema.site.lifecycle} IS NOT NULL AND ${schema.site.lifecycle} <> 'ready' AND ${schema.site.deletedAt} IS NULL`;
 const due = sql`(${schema.site.lifecycleNextAt} IS NULL OR ${schema.site.lifecycleNextAt} <= now())`;
 
+/** Конец аренды по часам базы: `now() + LEASE_MS`. */
+export const leaseEndSql = sql`now() + make_interval(secs => ${LEASE_MS / 1000})`;
+
 function nextAtSql(policy: LifecycleRecord["nextAt"]) {
   if (policy === "clear") return sql`NULL`;
   if (policy === "keep") return sql`${schema.site.lifecycleNextAt}`;
@@ -101,14 +109,14 @@ export class DrizzleLifecycleRepository implements LifecycleRepository {
     private readonly db: NodePgDatabase<typeof schema>,
   ) {}
 
-  async claim(siteId: string, leaseMs: number): Promise<LifecycleRow | null> {
+  async claim(siteId: string): Promise<LifecycleRow | null> {
     // Один условный UPDATE: в READ COMMITTED второй конкурент ждёт блокировку
     // строки и перепроверяет WHERE уже по новой версии — `lifecycle_next_at`
     // в будущем, строка ему не достаётся.
     const rows = await this.db
       .update(schema.site)
       .set({
-        lifecycleNextAt: sql`now() + make_interval(secs => ${leaseMs / 1000})`,
+        lifecycleNextAt: leaseEndSql,
       })
       .where(and(eq(schema.site.id, siteId), inFlight, due))
       .returning(ROW);

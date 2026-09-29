@@ -6,6 +6,7 @@
  */
 import { ThemesService } from "../themes.service";
 import { ThemesMicroserviceController } from "../themes.microservice.controller";
+import { DbThemeCatalog } from "../store/theme-catalog";
 
 function row(id: string, extra: Record<string, unknown> = {}) {
   return {
@@ -45,9 +46,15 @@ function dbReturning(rows: Array<{ isActive?: boolean }>) {
   return { select: () => ({ from }) };
 }
 
+/** Сервис на заглушке базы — с тем же каталогом, что даёт ему Nest. */
+function serviceOver(rows: Array<{ isActive?: boolean }>): ThemesService {
+  const db = dbReturning(rows) as any;
+  return new ThemesService(db, new DbThemeCatalog(db));
+}
+
 describe("ThemesService.list — каталог тем", () => {
   it("пять тем с «подходит для» и превью, без default", async () => {
-    const service = new ThemesService(dbReturning(ROWS) as any);
+    const service = serviceOver(ROWS);
 
     const { items } = await service.list();
 
@@ -66,7 +73,7 @@ describe("ThemesService.list — каталог тем", () => {
   });
 
   it("поля, которые кабинет читает сегодня, — на месте", async () => {
-    const service = new ThemesService(dbReturning(ROWS) as any);
+    const service = serviceOver(ROWS);
     const { items } = await service.list();
     expect(items[0]).toMatchObject({
       id: "rose",
@@ -86,9 +93,7 @@ describe("ThemesService.list — каталог тем", () => {
 
 describe("RPC themes.list", () => {
   it("по умолчанию — каталог (без default); явный isActive:false — все строки таблицы, как раньше", async () => {
-    const controller = new ThemesMicroserviceController(
-      new ThemesService(dbReturning(ROWS) as any),
-    );
+    const controller = new ThemesMicroserviceController(serviceOver(ROWS));
 
     const catalog = await controller.listThemes({});
     const raw = await controller.listThemes({ isActive: false });

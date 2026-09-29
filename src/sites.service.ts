@@ -97,6 +97,10 @@ export const THEMES_RESEED_ON_SWITCH = new Set<string>([
  * Чистое решение «пересеивать ли ревизию при апдейте темы» (без БД — тестируется
  * изолированно). Сохраняет legacy-правила (новый сайт / нет themeSettings /
  * resetContent) и добавляет правило 109: реальный свитч НА тему из allowlist.
+ *
+ * @deprecated Смена темы в PATCH `update()`. Замена — команда `SetTheme`
+ * (`sites.cmd.set_theme`, src/store/theme-switch/). Шлюз переходит на неё
+ * в куске 3.5, код удаляется в уборке 3.9 (план этапа 3).
  */
 export function shouldReseedOnThemeSwitch(p: {
   hasCurrentRevision: boolean;
@@ -141,6 +145,10 @@ export function shouldReseedOnThemeSwitch(p: {
  *
  * Чистая функция без БД — тестируется изолированно, как соседний
  * `shouldReseedOnThemeSwitch`. Сторож: `theme-switch-keeps-user-pages.spec.ts`.
+ *
+ * @deprecated Смена темы в PATCH `update()`. Замена — команда `SetTheme`
+ * (`sites.cmd.set_theme`, src/store/theme-switch/). Шлюз переходит на неё
+ * в куске 3.5, код удаляется в уборке 3.9 (план этапа 3).
  */
 export function carryOverUserPages(prevData: unknown, nextData: unknown): unknown {
   const prev = (prevData ?? {}) as Record<string, any>;
@@ -197,6 +205,10 @@ export function carryOverUserPages(prevData: unknown, nextData: unknown): unknow
  * поэтому список берём с главной и раскладываем во ВСЕ шапки пересеянной
  * ревизии. Пустой список не переносим: пустое меню порты тем рисуют своим
  * демо-меню, переносить нечего.
+ *
+ * @deprecated Смена темы в PATCH `update()`. Замена — команда `SetTheme`
+ * (`sites.cmd.set_theme`, src/store/theme-switch/). Шлюз переходит на неё
+ * в куске 3.5, код удаляется в уборке 3.9 (план этапа 3).
  */
 export function carryOverMenuLinks(
   prevData: unknown,
@@ -572,6 +584,10 @@ export class SitesDomainService {
    * `user.listener.ts`) to kick off the slow path via RMQ. For admin/cron
    * paths that need the final publicUrl synchronously, use the `create()`
    * facade instead.
+   *
+   * @deprecated Замена — команда `CreateStore` (`sites.cmd.create_store`,
+   * src/store/commands/create-store.command.ts). Регистрация уже на ней; шлюз
+   * переходит в куске 3.5, код удаляется в уборке 3.9 (план этапа 3).
    */
   async reserve(params: {
     tenantId: string;
@@ -696,6 +712,10 @@ export class SitesDomainService {
    * by the 3s REG.RU saga. The RMQ hop provides crash-safety: if site-gen
    * is restarted between reserve and provision, the broker redelivers the
    * message.
+   *
+   * @deprecated Никем не вызывается: регистрация идёт через `CreateStore`,
+   * провижининг ведёт сага рождения (src/store/lifecycle/). Удаляется вместе с
+   * обработчиком `sites.site.provision_requested` в уборке 3.9 (план этапа 3).
    */
   triggerAsyncProvisioning(
     siteId: string,
@@ -1082,6 +1102,10 @@ export class SitesDomainService {
    * The signup flow must NOT use this — it calls `reserve()` +
    * `triggerAsyncProvisioning()` to keep signup fast (~300ms instead of
    * 3500ms).
+   *
+   * @deprecated Замена — команда `CreateStore` (`sites.cmd.create_store`).
+   * RPC `sites.create_site` шлюз переводит на команду в куске 3.5, код
+   * удаляется в уборке 3.9 (план этапа 3).
    */
   async create(params: {
     tenantId: string;

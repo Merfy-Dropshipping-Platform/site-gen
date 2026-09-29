@@ -7,6 +7,7 @@
  * организаций; то, как доводчик их склеивает, — в store-lifecycle.reconciler.spec.ts.
  */
 import { StoreLifecycleSteps } from "../lifecycle.steps";
+import { RevisionConflictError } from "../../../content/store-content.port";
 import type { LifecycleRow } from "../lifecycle.repository";
 import { makeSiteRow } from "../../__tests__/support/in-memory-lifecycle";
 
@@ -65,11 +66,14 @@ describe("шаг seed: стартовая ревизия выбранной те
     expect(saves).toHaveLength(1);
     expect(saves[0].siteId).toBe("s1");
     expect(saves[0].params).toMatchObject({
+      mode: "blind",
       tenantId: "t1",
       actorUserId: "u1",
+      actor: "system",
+      source: "seed",
       setCurrent: true,
       expectedVersion: null,
-      meta: { title: "Шёлк", actor: "system", source: "seed" },
+      meta: { title: "Шёлк" },
       site: { themeId: "satin", currentRevisionId: null },
     });
     expect(saves[0].params.document).toEqual({
@@ -92,7 +96,7 @@ describe("шаг seed: стартовая ревизия выбранной те
 
   it("гонка двух сидов: второй получает revision_conflict и считает шаг выполненным", async () => {
     const { steps, content } = makeDeps();
-    content.save.mockRejectedValueOnce(new Error("revision_conflict"));
+    content.save.mockRejectedValueOnce(new RevisionConflictError());
 
     await expect(steps.seed(row())).resolves.toBeUndefined();
   });

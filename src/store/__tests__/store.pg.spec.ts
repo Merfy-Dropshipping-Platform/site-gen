@@ -636,6 +636,7 @@ suite("сага рождения на настоящем Postgres", () => {
         load: async (siteId: string, opts: any) => {
           const loaded = await content.load(siteId, opts);
           const saved = await constructorTab.save(siteId, {
+            mode: "blind",
             document: { ...loaded.document, savedBy: "constructor" },
             tenantId: own("t1"),
             setCurrent: true,

@@ -85,11 +85,12 @@ describe("CreateStore: магазин рождается сразу на выб�
   it("стартовая ревизия пишется через порт StoreContent с пометкой «сид, система»", async () => {
     const { command, saves } = setup();
     await command.execute({ ...base, themeId: "bloom" });
-    expect(saves[0].params.meta).toEqual({
-      title: "Шёлк",
+    expect(saves[0].params).toMatchObject({
+      mode: "blind",
       actor: "system",
       source: "seed",
     });
+    expect(saves[0].params.meta).toEqual({ title: "Шёлк" });
     expect(saves[0].params.expectedVersion).toBeNull();
   });
 });

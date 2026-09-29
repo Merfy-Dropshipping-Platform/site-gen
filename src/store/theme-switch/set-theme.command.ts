@@ -23,9 +23,10 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { z } from "zod";
 import { StoreContentService } from "../../content/store-content.service";
-import type {
-  StoreContent,
-  StoreContentSite,
+import {
+  RevisionConflictError,
+  toStoreContentSite,
+  type StoreContent,
 } from "../../content/store-content.port";
 import { SitesEventsService } from "../../events/events.service";
 import { SitesDomainService } from "../../sites.service";
@@ -101,16 +102,6 @@ export interface ThemeSwitchSites {
   }): Promise<{ url?: string | null; buildId?: string | null }>;
 }
 
-function storeContentSite(site: SiteRow): StoreContentSite {
-  return {
-    themeId: site.themeId,
-    publicUrl: site.publicUrl,
-    name: site.name,
-    currentRevisionId: site.currentRevisionId,
-    contentModel: site.contentModel ?? null,
-  };
-}
-
 @Injectable()
 export class SetThemeCommand {
   private readonly logger = new Logger(SetThemeCommand.name);
@@ -151,7 +142,7 @@ export class SetThemeCommand {
     if (!canon)
       return refused("theme_canon_unavailable", { themeId: theme.id });
     const previous = site.currentRevisionId
-      ? await this.content.load(site.id, { site: storeContentSite(site) })
+      ? await this.content.load(site.id, { site: toStoreContentSite(site) })
       : null;
     const plan = planThemeSwitch({
       previous: previous?.document ?? null,
@@ -217,23 +208,24 @@ export class SetThemeCommand {
   ): Promise<string | null> {
     try {
       const saved = await this.content.save(site.id, {
+        mode: "blind",
         document,
         tenantId: input.tenantId,
+        actor: "merchant",
+        source: "theme-switch",
         actorUserId: input.actorUserId,
         setCurrent: true,
         expectedVersion,
         meta: {
           title: "Theme switch",
-          actor: "merchant",
-          source: "theme-switch",
           fromThemeId: site.themeId,
           toThemeId,
         },
-        site: storeContentSite(site),
+        site: toStoreContentSite(site),
       });
       return saved.version;
     } catch (e) {
-      if (errorMessage(e) === "revision_conflict") return null;
+      if (e instanceof RevisionConflictError) return null;
       throw e;
     }
   }

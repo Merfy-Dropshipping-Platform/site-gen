@@ -15,6 +15,7 @@
 import { SetThemeCommand } from "../set-theme.command";
 import { pageBodyFingerprint } from "../theme-switch.plan";
 import { DocumentAdapter } from "../../../content/document.adapter";
+import { RevisionConflictError } from "../../../content/store-content.port";
 import { SitesDomainService } from "../../../sites.service";
 import type { ThemeCatalog, CatalogTheme } from "../../theme-catalog";
 
@@ -505,7 +506,7 @@ describe("SetTheme: запись и переиздание", () => {
         version: "rev-0",
       }),
       save: async () => {
-        throw new Error("revision_conflict");
+        throw new RevisionConflictError();
       },
     };
     (command as any).content = conflicting;

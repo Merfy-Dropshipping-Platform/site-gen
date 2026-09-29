@@ -14,14 +14,16 @@
  */
 import { Inject, Injectable } from "@nestjs/common";
 import { StoreContentService } from "../../content/store-content.service";
-import type { StoreContent } from "../../content/store-content.port";
+import {
+  RevisionConflictError,
+  type StoreContent,
+} from "../../content/store-content.port";
 import { SitesDomainService } from "../../sites.service";
 import {
   ORGANIZATION_DIRECTORY,
   type OrganizationDirectory,
 } from "../../user/organization-directory.client";
 import { hasStorefrontPackage } from "../theme-catalog";
-import { errorMessage } from "../shared/error-message";
 import type { LifecycleRow } from "./lifecycle.repository";
 import type { LifecycleStepRunner } from "./store-lifecycle.reconciler";
 
@@ -65,9 +67,12 @@ export class StoreLifecycleSteps implements LifecycleStepRunner {
     if (!document) throw new Error(`no starter content for theme "${themeId}"`);
     try {
       await this.content.save(row.id, {
+        mode: "blind",
         document,
         tenantId: row.tenantId,
-        meta: { title: row.name, actor: "system", source: "seed" },
+        actor: "system",
+        source: "seed",
+        meta: { title: row.name },
         actorUserId: row.createdBy ?? undefined,
         setCurrent: true,
         // CAS «ревизии ещё нет»: два сида одной строки не дадут двух текущих ревизий.
@@ -82,7 +87,7 @@ export class StoreLifecycleSteps implements LifecycleStepRunner {
       });
     } catch (e) {
       // Кто-то уже засеял магазин (второй проход, гонка) — требование выполнено.
-      if (errorMessage(e) === "revision_conflict") return;
+      if (e instanceof RevisionConflictError) return;
       throw e;
     }
   }

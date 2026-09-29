@@ -319,13 +319,13 @@ describe("CheckoutSubmit — periodMin/periodMax способа доставки
 
   describe("известные дефекты (ТЕКУЩЕЕ ПОВЕДЕНИЕ)", () => {
     // ТЕКУЩЕЕ ПОВЕДЕНИЕ (сомнительно): canSubmit() требует pickupPointCode для
-    // cdek_pickup ОДИН РАЗ, синхронно, в начале клик-хендлера (строка 333). Но
+    // cdek_pickup ОДИН РАЗ, синхронно, в начале клик-хендлера (строка 258). Но
     // сам pickupPointCode ЧИТАЕТСЯ ПОВТОРНО из state.deliveryMethod уже ПОСЛЕ
-    // первого await (await window.cartStore.syncToServer(), строка 344) — между
+    // первого await (await window.cartStore.syncToServer(), строка 367) — между
     // этими двумя моментами есть окно, где новое событие checkout:delivery-changed
     // (например, пользователь снял выбор ПВЗ, пока шёл запрос) успевает заменить
     // state.deliveryMethod. Гейт это уже не перепроверяет: код молча уходит в
-    // /delivery/select БЕЗ pickupPointCode (строка 455, false-ветка) вместо того
+    // /delivery/select БЕЗ pickupPointCode (строка 478, false-ветка) вместо того
     // чтобы прервать оформление, как для случая «ПВЗ не выбран изначально».
     it("ПВЗ сброшен ПОСЛЕ клика, пока идёт await (гонка) → /delivery/select уходит без pickupPointCode", async () => {
       setConfig(undefined);

@@ -194,7 +194,7 @@ afterEach(cleanup);
 describe("CheckoutSubmit — разрешение корня секции (Spec 102)", () => {
   // ТЕКУЩЕЕ ПОВЕДЕНИЕ (сомнительно): первый инлайн-скрипт (строка 50) вызывает
   // `window.__merfyRoot(blockId)` БЕЗ проверки `typeof ... === 'function'` —
-  // в отличие от второго скрипта (строка 584: `typeof window.__merfyRoot ===
+  // в отличие от второго скрипта (строка 617: `typeof window.__merfyRoot ===
   // 'function' ? window.__merfyRoot(blockId) : null`). Если хелпер не
   // инжектирован вовсе (не функция), первый скрипт падает с TypeError, а не
   // тихо переходит на резервный document.querySelector — это разное

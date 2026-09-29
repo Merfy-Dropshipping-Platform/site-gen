@@ -270,8 +270,9 @@ describe("CheckoutDeliveryMethod — покрытие оставшихся ве�
 
     it("адрес известен, опций нет, cdekError не пришёл — общее сообщение об ошибке (после исчерпания ретраев)", async () => {
       // Пустой ответ БЕЗ cdekError не считается фатальным сразу (это же «пустой
-      // ответ» eventual-consistency retry, строки 795/801) — движок домучивает
-      // всю лестницу ретраев и только потом render() показывает общую ошибку.
+      // ответ» eventual-consistency retry, recalculate(): цикл attempts строка 821,
+      // фатальная проверка строка 840) — движок домучивает всю лестницу ретраев
+      // и только потом render() показывает общую ошибку.
       fetchMock.mockImplementation(() =>
         Promise.resolve({
           ok: true,
@@ -1062,9 +1063,9 @@ describe("CheckoutDeliveryMethod — покрытие оставшихся ве�
 
   describe("переключение radio-визуала на клике (data-delivery-radio-dot)", () => {
     // ТЕКУЩЕЕ ПОВЕДЕНИЕ (сомнительно): обработчик клика ищет [data-delivery-radio-dot]
-    // внутри карточки (строки 659,671 CheckoutDeliveryMethod.astro) и обновляет его
-    // className/innerHTML, но шаблон render() (строки 591-610) такой узел вообще не
-    // рисует — есть только <input data-delivery-radio>. При текущей вёрстке это
+    // внутри карточки (строки 704,716 CheckoutDeliveryMethod.astro) и обновляет его
+    // className/innerHTML, но шаблон карточки в render() (строки 636-655) такой узел
+    // вообще не рисует — есть только <input data-delivery-radio>. При текущей вёрстке это
     // мёртвый код. Ниже элемент добавлен вручную (как будто он есть), чтобы
     // зафиксировать, что сама JS-логика переключения корректна на случай, если
     // верстальщики добавят этот узел или его вернут в другой теме/варианте.
@@ -1998,6 +1999,53 @@ describe("CheckoutDeliveryMethod — покрытие оставшихся ве�
       ) as HTMLElement;
       expect(picker.hidden).toBe(false); // пикер всё равно раскрыт (тип карточки cdek_pickup)
       expect(picker.querySelector("[data-pvz-row]")).toBeNull(); // но точек нет — fias пуст
+    });
+
+    it("merfy:cartId пропадает из localStorage МЕЖДУ расчётом и открытием пикера — fetchPickupPoints видит его пустым и не идёт в сеть (строка 278 CheckoutDeliveryMethod.astro)", async () => {
+      // recalculate() читает cartId ОДИН РАЗ синхронно в начале (проходит гейт,
+      // т.к. beforeEach файла уже положил merfy:cartId) — на этот вызов removeItem
+      // ниже не влияет. Но fetchPickupPoints() (вызывается ПОЗЖЕ, из
+      // syncPicker→openPickerFor после успешного /delivery/calculate) читает
+      // localStorage.getItem('merfy:cartId') ЗАНОВО — увидит уже пусто.
+      fetchMock.mockImplementation((url: string) => {
+        if (/delivery\/calculate/.test(url))
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              success: true,
+              data: {
+                deliveryOptions: [
+                  {
+                    id: "o1",
+                    name: "ПВЗ",
+                    type: "PARTNER",
+                    price: 300,
+                    minDays: 1,
+                    maxDays: 3,
+                    cdekTariffCode: 1,
+                    deliveryMode: "pickup",
+                    pickupPointKind: "PVZ",
+                  },
+                ],
+                pickupPoints: [],
+              },
+            }),
+          });
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      });
+      const section = mountDom();
+      runScript(section);
+      dispatchAddress({ cityFiasId: "fias1", postalCode: "101000" }); // cartId ещё есть — гейт recalculate() пройден синхронно
+      localStorage.removeItem("merfy:cartId"); // до первого await afterward — успевает раньше fetchPickupPoints
+      await tick();
+
+      expect(
+        fetchMock.mock.calls.some((c) => /pickup-points/.test(String(c[0]))),
+      ).toBe(false); // fetchPickupPoints вернул [] СРАЗУ по !cartId, сети не касаясь
+      const picker = section.querySelector(
+        "[data-cdek-pvz-picker]",
+      ) as HTMLElement;
+      expect(picker.textContent).toContain("Нет доступных пунктов выдачи");
     });
   });
 

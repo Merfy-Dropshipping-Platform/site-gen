@@ -99,6 +99,16 @@ function isUserPage(page: Json): boolean {
   return page.source === "user" || page.isCustom === true;
 }
 
+/** Список страниц документа; нет документа или списка — пусто. */
+function pagesOf(doc: Json | null): Json[] {
+  return Array.isArray(doc?.pages) ? doc.pages : [];
+}
+
+/** Тела страниц документа по id; нет документа или тел — пусто. */
+function pagesDataOf(doc: Json | null): Json {
+  return isObject(doc?.pagesData) ? doc.pagesData : {};
+}
+
 function stable(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stable);
   if (!isObject(value)) return value;
@@ -325,33 +335,15 @@ interface JudgedPage {
   edited: boolean;
 }
 
-/**
- * Что сказать в отчёте о странице темы — таблица «есть в новой теме ×
- * правлена»: правленая теряется (пересев или тема её не знает), нетронутая,
- * которой нет в новой теме, — «убрана», нетронутая в новой теме — не новость.
- */
-const LOST_REASON: Record<"true" | "false", LostReason> = {
-  true: "merchant_edits_on_theme_page",
-  false: "theme_page_dropped",
-};
-
 function judgeThemePages(
   previous: Json | null,
   canon: Json,
   previousCanon: Json,
 ): JudgedPage[] {
-  const prevPages: Json[] = Array.isArray(previous?.pages)
-    ? previous.pages
-    : [];
-  const prevData: Json = isObject(previous?.pagesData)
-    ? previous.pagesData
-    : {};
-  const refData: Json = isObject(previousCanon.pagesData)
-    ? previousCanon.pagesData
-    : {};
-  const inNewTheme = new Set(
-    (canon.pages ?? []).map((p: Json) => String(p.id)),
-  );
+  const prevPages = pagesOf(previous);
+  const prevData = pagesDataOf(previous);
+  const refData = pagesDataOf(previousCanon);
+  const inNewTheme = new Set(pagesOf(canon).map((p) => String(p.id)));
   // Нет тела в ревизии — страница досеивается из темы, правок мерчанта в ней нет.
   const withBody = prevPages.filter(
     (p) => !isUserPage(p) && prevData[p.id] !== undefined,
@@ -371,6 +363,14 @@ function judgeThemePages(
   });
 }
 
+/**
+ * Что сказать в отчёте о страницах темы прежнего документа:
+ *   - правленая теряется: её пересеют из новой темы
+ *     (`merchant_edits_on_theme_page`) или новая тема её не знает
+ *     (`theme_page_dropped`);
+ *   - нетронутая, которой нет в новой теме, — «убрана»;
+ *   - нетронутая, которая есть в новой теме, — не новость.
+ */
 function fateOfThemePages(
   previous: Json | null,
   canon: Json,
@@ -385,7 +385,9 @@ function fateOfThemePages(
         pageId,
         slug,
         name,
-        reason: LOST_REASON[String(inNewTheme) as "true" | "false"],
+        reason: inNewTheme
+          ? "merchant_edits_on_theme_page"
+          : "theme_page_dropped",
       })),
     dropped: judged
       .filter((p) => !p.edited && !p.inNewTheme)
@@ -394,45 +396,43 @@ function fateOfThemePages(
 }
 
 // ---------------------------------------------------------------------------
+// Перенос своих страниц и меню
+// ---------------------------------------------------------------------------
 
-export function planThemeSwitch(input: ThemeSwitchInput): ThemeSwitchPlan {
-  const { previous, canon, previousCanon } = input;
-  const canonPages: Json[] = Array.isArray(canon.pages) ? canon.pages : [];
-  const prevPages: Json[] = Array.isArray(previous?.pages)
-    ? previous.pages
-    : [];
-  const prevData: Json = isObject(previous?.pagesData)
-    ? previous.pagesData
-    : {};
-
-  const placements = placeUserPages(prevPages.filter(isUserPage), canonPages);
-  const report: ThemeSwitchReport = {
-    carried: { pages: [], menu: null },
-    renamed: [],
-    normalized: [],
-    menuLinksRewritten: [],
-    reseeded: {
-      pages: canonPages.map((p) => ({
-        id: String(p.id),
-        slug: String(p.slug),
-      })),
-    },
-    ...fateOfThemePages(previous, canon, previousCanon),
-    lostDetection: previousCanon ? "seed-compare" : "unavailable",
+interface CarriedPages {
+  /** Метаданные перенесённых страниц — в конец списка страниц новой темы. */
+  pages: Json[];
+  /** Тела перенесённых страниц по новому id. */
+  data: Json;
+  /** Своя страница сменила slug (Н3): старый slug → новый — для меню. */
+  slugMoves: Map<string, string>;
+  report: Pick<ThemeSwitchReport, "renamed" | "normalized"> & {
+    pages: ThemeSwitchReport["carried"]["pages"];
   };
+}
 
-  const carriedPages: Json[] = [];
-  const carriedData: Json = {};
-  const slugMoves = new Map<string, string>();
+/** Переносит свои страницы мерчанта по местам из `placeUserPages` — в полной форме (Н9). */
+function carryUserPages(
+  placements: Placement[],
+  prevData: Json,
+  canon: Json,
+): CarriedPages {
+  const carried: CarriedPages = {
+    pages: [],
+    data: {},
+    slugMoves: new Map(),
+    report: { pages: [], renamed: [], normalized: [] },
+  };
   for (const { page, toId, toSlug, reason } of placements) {
     const meta = fullPageMeta(page, toId, toSlug);
     const full = fullPageData(prevData[page.id], toId, meta.name, canon);
-    carriedPages.push(meta);
-    carriedData[toId] = full.data;
-    report.carried.pages.push({ id: toId, slug: toSlug, name: meta.name });
-    if (full.legacy) report.normalized.push({ pageId: toId, from: "legacy" });
+    carried.pages.push(meta);
+    carried.data[toId] = full.data;
+    carried.report.pages.push({ id: toId, slug: toSlug, name: meta.name });
+    if (full.legacy)
+      carried.report.normalized.push({ pageId: toId, from: "legacy" });
     if (!reason) continue;
-    report.renamed.push({
+    carried.report.renamed.push({
       pageId: toId,
       fromId: String(page.id),
       toId,
@@ -440,27 +440,83 @@ export function planThemeSwitch(input: ThemeSwitchInput): ThemeSwitchPlan {
       toSlug,
       reason,
     });
-    if (toSlug !== page.slug) slugMoves.set(String(page.slug), toSlug);
+    if (toSlug !== page.slug) carried.slugMoves.set(String(page.slug), toSlug);
   }
+  return carried;
+}
 
-  let pagesData: Json = { ...(canon.pagesData ?? {}), ...carriedData };
+interface CarriedMenu {
+  pagesData: Json;
+  menu: ThemeSwitchReport["carried"]["menu"];
+  menuLinksRewritten: ThemeSwitchReport["menuLinksRewritten"];
+}
+
+/**
+ * Меню магазина переезжает всегда (решение владельца 23.09): во все шапки
+ * новых страниц, пункты на переименованные страницы — на новый slug. Нет меню
+ * у мерчанта — страницы остаются с меню новой темы.
+ */
+function carryMenu(
+  pagesData: Json,
+  prevData: Json,
+  slugMoves: Map<string, string>,
+): CarriedMenu {
   const menu = merchantMenu(prevData);
-  if (menu) {
-    const counts = new Map<string, number>();
-    const carriedMenu = rewriteLinks(menu, slugMoves, counts);
-    pagesData = withMenu(pagesData, carriedMenu);
-    report.carried.menu = { links: carriedMenu.length };
-    report.menuLinksRewritten = [...counts].map(([from, count]) => ({
+  if (!menu) return { pagesData, menu: null, menuLinksRewritten: [] };
+  const counts = new Map<string, number>();
+  const carriedMenu = rewriteLinks(menu, slugMoves, counts);
+  return {
+    pagesData: withMenu(pagesData, carriedMenu),
+    menu: { links: carriedMenu.length },
+    menuLinksRewritten: [...counts].map(([from, count]) => ({
       from,
       to: slugMoves.get(from)!,
       count,
-    }));
-  }
+    })),
+  };
+}
 
+// ---------------------------------------------------------------------------
+
+/**
+ * Разместить свои страницы → перенести их → перенести меню → решить судьбу
+ * страниц прежней темы → собрать документ и отчёт.
+ */
+export function planThemeSwitch(input: ThemeSwitchInput): ThemeSwitchPlan {
+  const { previous, canon, previousCanon } = input;
+  const canonPages = pagesOf(canon);
+  const prevData = pagesDataOf(previous);
+
+  const placements = placeUserPages(
+    pagesOf(previous).filter(isUserPage),
+    canonPages,
+  );
+  const carried = carryUserPages(placements, prevData, canon);
+  const menu = carryMenu(
+    { ...(canon.pagesData ?? {}), ...carried.data },
+    prevData,
+    carried.slugMoves,
+  );
+  const fate = fateOfThemePages(previous, canon, previousCanon);
+
+  const report: ThemeSwitchReport = {
+    carried: { pages: carried.report.pages, menu: menu.menu },
+    renamed: carried.report.renamed,
+    normalized: carried.report.normalized,
+    menuLinksRewritten: menu.menuLinksRewritten,
+    reseeded: {
+      pages: canonPages.map((p) => ({
+        id: String(p.id),
+        slug: String(p.slug),
+      })),
+    },
+    ...fate,
+    lostDetection: previousCanon ? "seed-compare" : "unavailable",
+  };
   const document = {
     ...canon,
-    pages: [...canonPages, ...carriedPages],
-    pagesData,
+    pages: [...canonPages, ...carried.pages],
+    pagesData: menu.pagesData,
   };
   return { document, report };
 }

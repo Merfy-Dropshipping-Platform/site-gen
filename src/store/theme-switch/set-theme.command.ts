@@ -35,7 +35,7 @@ import {
   hasStorefrontPackage,
   type ThemeCatalog,
 } from "../theme-catalog";
-import { presentCanonLikePort } from "./canon-reference";
+import { canonAsLoadedByPort } from "./canon-reference";
 import { planThemeSwitch, type ThemeSwitchReport } from "./theme-switch.plan";
 import { BackgroundWork, within } from "../shared/background-work";
 import { errorMessage } from "../shared/error-message";
@@ -204,7 +204,7 @@ export class SetThemeCommand {
     if (!site.themeId || !hasStorefrontPackage(site.themeId)) return null;
     const canon = await this.sites.buildInitialRevision(site.themeId);
     if (!canon) return null;
-    return presentCanonLikePort(canon, site.themeId, site);
+    return canonAsLoadedByPort(canon, site.themeId, site);
   }
 
   /** Новая ревизия через порт с CAS; `null` — чужая запись успела раньше. */

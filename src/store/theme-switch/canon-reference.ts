@@ -23,7 +23,7 @@ export interface CanonReferenceSite {
   publicUrl: string | null;
 }
 
-export async function presentCanonLikePort(
+export async function canonAsLoadedByPort(
   canon: Record<string, unknown>,
   themeId: string,
   site: CanonReferenceSite,

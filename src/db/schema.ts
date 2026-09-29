@@ -23,6 +23,8 @@ import {
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+// Состояния саги рождения магазина объявлены в одном месте — в модуле саги.
+import type { LifecycleState } from "../store/lifecycle/store-lifecycle";
 
 export const publicationStatusEnum = pgEnum("publication_status", [
   "draft",
@@ -176,9 +178,7 @@ export const site = pgTable("site", {
   // у старых — NULL, без backfill: их по-прежнему ведут старые cron
   // (site-provisioning.scheduler), а доводчик саги (src/store/lifecycle/)
   // берёт только непустые. Не путать со `status` — это про публикацию.
-  lifecycle: text("lifecycle").$type<
-    "reserved" | "seeded" | "provisioned" | "ready" | "failed"
-  >(),
+  lifecycle: text("lifecycle").$type<LifecycleState>(),
   // Причина последнего провала шага саги ("provision: REG.RU timeout").
   lifecycleError: text("lifecycle_error"),
   // Провалов подряд; сбрасывается при успехе шага.

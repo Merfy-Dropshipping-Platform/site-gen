@@ -1,6 +1,6 @@
 /**
  * Эталон «что потеряно» при смене темы — канон прежней темы, прогнанный теми
- * же шагами, что порт при чтении (`presentCanonLikePort`, canon-reference.ts).
+ * же шагами, что порт при чтении (`canonAsLoadedByPort`, canon-reference.ts).
  *
  * 1. Канон — общий кэш LazySeed на процесс: шаги не имеют права менять вход
  *    (заморозка — любая запись в него бросает).
@@ -9,7 +9,7 @@
  *    `DocumentAdapter.load` для ревизии-канона. Иначе отчёт SetTheme видел бы
  *    правки мерчанта там, где их нет.
  */
-import { presentCanonLikePort } from "../canon-reference";
+import { canonAsLoadedByPort } from "../canon-reference";
 import { pageBodyFingerprint } from "../theme-switch.plan";
 import { DocumentAdapter } from "../../../content/document.adapter";
 import { SitesDomainService } from "../../../sites.service";
@@ -50,15 +50,15 @@ function portOver(data: unknown) {
   return new DocumentAdapter(db);
 }
 
-describe("presentCanonLikePort", () => {
+describe("canonAsLoadedByPort", () => {
   it.each(THEMES)(
     "%s: замороженный канон — шаги его не трогают",
     async (theme) => {
       const canon = await canonOf(theme);
       const frozen = deepFreeze(JSON.parse(JSON.stringify(canon)));
 
-      const fromFrozen = await presentCanonLikePort(frozen, theme, SITE);
-      const fromCopy = await presentCanonLikePort(canon, theme, SITE);
+      const fromFrozen = await canonAsLoadedByPort(frozen, theme, SITE);
+      const fromCopy = await canonAsLoadedByPort(canon, theme, SITE);
 
       expect(fromFrozen).toEqual(fromCopy);
       expect(frozen).toEqual(await canonOf(theme));
@@ -69,7 +69,7 @@ describe("presentCanonLikePort", () => {
     "%s: тело каждой страницы эталона = то, что отдаёт порт для ревизии-канона",
     async (theme) => {
       const canon = await canonOf(theme);
-      const reference = await presentCanonLikePort(canon, theme, SITE);
+      const reference = await canonAsLoadedByPort(canon, theme, SITE);
       const loaded = await portOver(canon).load("site-1", {
         site: { themeId: theme, ...SITE, currentRevisionId: "rev-1" },
       });

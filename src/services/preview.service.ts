@@ -1293,7 +1293,7 @@ function scrollSelfTo(el, mode) {
  *     { type: 'merfy:thumbnail' }   — НЕ от конструктора: шлёт кабинет
  *       (MerfyFrontend, ShopLiveThumbnails.tsx) после 'ready' для живых
  *       миниатюр «Онлайн-магазина» — прячет баннер cookie, ставит видео на
- *       паузу, глушит CSS-анимации. Конструктор его не отправляет, баннер там
+ *       паузу, доводит CSS-анимации до конца. Конструктор его не отправляет, баннер там
  *       остаётся как есть.
  *
  * Design notes:
@@ -2918,9 +2918,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // Живая миниатюра карточки «Онлайн-магазин» в кабинете (ревью 28.09) —
       // родитель шлёт ПОСЛЕ 'ready' (MerfyFrontend, ShopLiveThumbnails.tsx).
       // Плашка cookie в уменьшенном кадре ни к чему — прячем, останавливаем
-      // видео и CSS-анимации, чтобы миниатюра была статичной картинкой
-      // магазина. Конструктор этот тип сообщения не шлёт — там баннер
-      // остаётся видимым и кликабельным, как раньше.
+      // видео, а CSS-анимации и переходы ДОВОДИМ до конца мгновенно: пауза
+      // замораживала появление (fadeInUp … forwards) на нулевой прозрачности —
+      // сообщение приходит, пока текст героя ещё проявляется (прод 29.09:
+      // в кадре не было заголовка и кнопки). Конструктор этот тип сообщения
+      // не шлёт — там баннер остаётся видимым и кликабельным, как раньше.
       var thumbBanner = document.querySelector('[data-cookie-consent]');
       if (thumbBanner) thumbBanner.hidden = true;
       var thumbVideos = document.querySelectorAll('video');
@@ -2930,7 +2932,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       if (!document.getElementById('__merfy_thumbnail_freeze')) {
         var freezeStyle = document.createElement('style');
         freezeStyle.id = '__merfy_thumbnail_freeze';
-        freezeStyle.textContent = '*,*::before,*::after{animation-play-state:paused!important;scroll-behavior:auto!important}';
+        freezeStyle.textContent = '*,*::before,*::after{animation-duration:0.001ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:0.001ms!important;transition-delay:0s!important;scroll-behavior:auto!important}';
         if (document.head) document.head.appendChild(freezeStyle);
       }
     }

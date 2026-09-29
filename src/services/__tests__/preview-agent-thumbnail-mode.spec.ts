@@ -116,7 +116,9 @@ describe("агент превью — режим миниатюры (merfy:thumb
     send({ type: "merfy:thumbnail" });
     const styles = document.head.querySelectorAll("#__merfy_thumbnail_freeze");
     expect(styles).toHaveLength(1);
-    expect(styles[0].textContent).toContain("animation-play-state:paused");
+    expect(styles[0].textContent).toContain("animation-duration:0.001ms");
+    // Пауза замораживала появление на нулевой прозрачности (прод 29.09) — её быть не должно.
+    expect(styles[0].textContent).not.toContain("animation-play-state:paused");
 
     // Повторное сообщение не плодит второй <style>.
     send({ type: "merfy:thumbnail" });

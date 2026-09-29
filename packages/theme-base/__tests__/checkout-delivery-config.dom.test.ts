@@ -8,10 +8,13 @@
  *  - addressRequired=false                  → все [data-checkout-address] скрыты,
  *    поля имени НЕ трогаются;
  *  - обратимость + идемпотентность.
- * Конфиг-скрипт извлекается из .astro (второй <script>) и исполняется в jsdom.
+ * Конфиг-скрипт извлекается из .astro (второй <script>) и исполняется через
+ * astroInlineRunners (покрытие пишется под путём CheckoutDeliveryForm.astro —
+ * см. helpers/astro-inline-script). Второй <script> в файле — именно конфиг
+ * (initCheckoutDeliveryConfig), первый — DaData/init формы, отсюда индекс [1].
  */
-import { readFileSync } from 'fs';
 import { join } from 'path';
+import { astroInlineRunners } from './helpers/astro-inline-script';
 
 const ASTRO = join(
   __dirname,
@@ -19,21 +22,6 @@ const ASTRO = join(
   'blocks',
   'CheckoutDeliveryForm',
   'CheckoutDeliveryForm.astro',
-);
-
-/** Тело <script>, содержащего маркер (в .astro DaData-скрипт + конфиг-скрипт). */
-function scriptBodyWith(src: string, marker: string): string {
-  const re = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src))) {
-    if (m[1].includes(marker)) return m[1];
-  }
-  throw new Error(`no <script> with marker "${marker}" in CheckoutDeliveryForm.astro`);
-}
-
-const CONFIG_SCRIPT = scriptBodyWith(
-  readFileSync(ASTRO, 'utf8'),
-  'initCheckoutDeliveryConfig',
 );
 
 const FIELD_FULL = 'md:col-span-2';
@@ -72,8 +60,7 @@ function mountDom(): HTMLElement {
 
 function runConfigScript(section: HTMLElement) {
   (window as any).__merfyRoot = () => section;
-  // eslint-disable-next-line no-new-func
-  new Function('blockId', 'fieldFullClass', CONFIG_SCRIPT)('cdf-1', FIELD_FULL);
+  astroInlineRunners(ASTRO)[1].run({ blockId: 'cdf-1', fieldFullClass: FIELD_FULL });
 }
 
 function setConfig(checkout: Record<string, unknown> | null) {

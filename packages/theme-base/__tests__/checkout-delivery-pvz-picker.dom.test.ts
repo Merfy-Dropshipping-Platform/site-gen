@@ -6,10 +6,11 @@
  *    выборе раскрывает список точек из /delivery/pickup-points;
  *  - точки сортируются ПВЗ→постамат и помечаются бейджем;
  *  - выбор точки эмитит checkout:delivery-changed с pickupPointCode.
- * Скрипт извлекается из .astro и исполняется в jsdom.
+ * Скрипт извлекается из .astro и исполняется через astroInlineRunners (покрытие
+ * пишется под путём CheckoutDeliveryMethod.astro — см. helpers/astro-inline-script).
  */
-import { readFileSync } from 'fs';
 import { join } from 'path';
+import { astroInlineRunners } from './helpers/astro-inline-script';
 
 const ASTRO = join(
   __dirname,
@@ -18,14 +19,6 @@ const ASTRO = join(
   'CheckoutDeliveryMethod',
   'CheckoutDeliveryMethod.astro',
 );
-
-function inlineScriptBody(src: string): string {
-  const m = /<script\b[^>]*>([\s\S]*?)<\/script>/i.exec(src);
-  if (!m) throw new Error('no <script> in CheckoutDeliveryMethod.astro');
-  return m[1];
-}
-
-const SCRIPT = inlineScriptBody(readFileSync(ASTRO, 'utf8'));
 
 function mountDom(): HTMLElement {
   document.body.innerHTML = `
@@ -47,8 +40,7 @@ function mountDom(): HTMLElement {
 
 function runScript(section: HTMLElement) {
   (window as any).__merfyRoot = () => section;
-  // eslint-disable-next-line no-new-func
-  new Function('blockId', SCRIPT)('cdm-1');
+  astroInlineRunners(ASTRO)[0].run({ blockId: 'cdm-1' });
 }
 
 const CALC = {

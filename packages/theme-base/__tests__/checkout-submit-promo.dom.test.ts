@@ -6,19 +6,10 @@
  * the promo is no longer valid. Script body is extracted from the .astro source
  * and executed in jsdom with `define:vars` injected (preview-nav-agent precedent).
  */
-import { readFileSync } from 'fs';
 import { join } from 'path';
+import { astroInlineRunners } from './helpers/astro-inline-script';
 
 const ASTRO = join(__dirname, '..', 'blocks', 'CheckoutSubmit', 'CheckoutSubmit.astro');
-
-function inlineScriptBody(src: string): string {
-  const m = /<script\b[^>]*>([\s\S]*?)<\/script>/i.exec(src);
-  if (!m) throw new Error('no <script> in CheckoutSubmit.astro');
-  return m[1];
-}
-
-const SRC = readFileSync(ASTRO, 'utf8');
-const SCRIPT = inlineScriptBody(SRC);
 
 /** Full checkout DOM: submit section + all cross-block fields the script reads. */
 function mountSubmitDom(): HTMLElement {
@@ -44,20 +35,12 @@ function mountSubmitDom(): HTMLElement {
 
 function runScript(section: HTMLElement) {
   (window as any).__merfyRoot = () => section;
-  const vars = {
+  astroInlineRunners(ASTRO)[0].run({
     buttonText: 'Оформить — {total}',
     loadingText: 'Оформляем…',
     successRedirectUrl: '/checkout/result',
     blockId: 'cs-1',
-  };
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
-  new Function(
-    'buttonText',
-    'loadingText',
-    'successRedirectUrl',
-    'blockId',
-    SCRIPT,
-  )(vars.buttonText, vars.loadingText, vars.successRedirectUrl, vars.blockId);
+  });
 }
 
 /** Make the submit button enabled by satisfying canSubmit(), then fire delivery/payment. */

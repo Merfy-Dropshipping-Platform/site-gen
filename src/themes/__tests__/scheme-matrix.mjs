@@ -852,7 +852,7 @@ export const ALLOWED = [
   },
   {
     id: 'search-always-scheme-1',
-    why: 'панель поиска в шапке ПРИБИТА к схеме 1 решением владельца 15.09 («Всегда Схема 1, жёстко») — правило form[role="search"] в tokens-css, сторож src/themes/__tests__/search-always-scheme-1.spec.ts. Краска не должна ехать за схемой шапки: это не дефект, а требование',
+    why: 'кнопка «Найти» поиска ПРИБИТА к схеме 1: решение владельца 15.09 («Всегда Схема 1, жёстко»), суженное 28.09 до одной кнопки — само поле с 28.09 едет за схемой шторки/шапки. Правило form[role="search"] button[type="submit"] в tokens-css, сторож src/themes/__tests__/search-always-scheme-1.spec.ts. Кнопка не должна ехать за схемой шапки: это не дефект, а требование',
     test: (c) => c.verdict === 'pinned' && /form\[role="search"\]/.test(c.pinnedBy ?? ''),
   },
 ];

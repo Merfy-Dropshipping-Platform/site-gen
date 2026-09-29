@@ -215,6 +215,18 @@ input[type="search"]::-webkit-search-results-decoration {
     align-items: var(--product-card-justify, flex-start) !important;
     text-align: var(--product-card-align, left) !important;
   }
+  /* Потомки текст-блока не шире карточки. Без stretch колонка отдаёт им ширину
+     по содержимому, а название с `truncate` (nowrap) — это вся строка целиком:
+     блок раздувался, обрезки не было, и длинное название распирало главную на
+     телефоне (замер 28.09, 390 px, магазин MrMerfy: страница 461 px, справа
+     белая полоса; локально с длинным названием — 857 px). Потолок 100% держит
+     выравнивание «Слева/По центру/Справа» (короткое название по-прежнему
+     сжимается по тексту) и включает обрезку длинного. Одно правило на все пути
+     карточки: SSR FluxProductCard, дорисовка renderCardHtml, заглушки Popular. */
+  [data-nt="flux-product-card"] > div:last-child > * {
+    min-width: 0;
+    max-width: 100%;
+  }
   /* Цена — flex-строка (имя + перечёркнутая цена, .gap-2) внутри текст-блока:
      центр/право через justify-content (не трогаем строку свотчей .gap-1). */
   [data-nt="flux-product-card"] > div:last-child .flex.items-center.gap-2 {

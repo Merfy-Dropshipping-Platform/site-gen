@@ -212,6 +212,42 @@ describe("доводчик: падения внешних служб и повт
     expect(repo.rows.get("s1")!.lifecycle).toBe("failed");
   });
 
+  it("факты откатываются между шагами — «сага не сошлась»: провал с записью и паузой, а не тихий выход", async () => {
+    const clock = new FakeClock();
+    const repo = new InMemoryLifecycleRepository(clock);
+    repo.put(makeSiteRow({ id: "s1" }));
+    // Провижининг и маршрут выполняют своё, но ревизия каждый раз пропадает:
+    // сид и остальные шаги ходят по кругу, до ready проход не доходит.
+    const dropRevision = (id: string, facts: object): void => {
+      Object.assign(repo.rows.get(id)!, facts, { currentRevisionId: null });
+    };
+    const steps: LifecycleStepRunner = {
+      seed: async ({ id }) => {
+        repo.rows.get(id)!.currentRevisionId = `rev-${id}`;
+      },
+      provision: async ({ id }) =>
+        dropRevision(id, { domainId: "dom", coolifyProjectUuid: "proj" }),
+      route: async ({ id }) =>
+        dropRevision(id, { coolifyAppUuid: "central-proxy" }),
+    };
+
+    const result = await new StoreLifecycleReconciler(repo, steps).advance(
+      "s1",
+    );
+
+    expect(result).toEqual({
+      claimed: true,
+      state: "failed",
+      leaseKept: false,
+    });
+    expect(repo.rows.get("s1")!).toMatchObject({
+      lifecycle: "failed",
+      lifecycleError: "seed: saga did not converge",
+      lifecycleAttempts: 1,
+      lifecycleNextAt: new Date(clock.nowMs + RETRY_DELAYS_MS[0]),
+    });
+  });
+
   it("упал сид: строка остаётся без ревизии и повторяет сид", async () => {
     const { clock, repo, reconciler, failures, count } = setup();
     repo.put(makeSiteRow({ id: "s1" }));

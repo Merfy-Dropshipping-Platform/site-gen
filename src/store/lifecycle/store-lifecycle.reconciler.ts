@@ -72,13 +72,29 @@ export function factsOf(row: LifecycleRow): LifecycleFacts {
   };
 }
 
-/** Магазин готов или дошёл до состояния, после которого просили остановиться. */
-function isDone(seen: Observation, opts: AdvanceOptions): boolean {
-  return (
-    !seen.next ||
-    Boolean(opts.stopAfter && isStateAtLeast(seen.state, opts.stopAfter))
-  );
+/**
+ * Шаг, который проходу осталось сделать; `null` — делать нечего: магазин
+ * готов или дошёл до состояния, после которого просили остановиться.
+ */
+function stepToRun(
+  seen: Observation,
+  opts: AdvanceOptions,
+): LifecycleStep | null {
+  if (opts.stopAfter && isStateAtLeast(seen.state, opts.stopAfter)) return null;
+  return seen.next;
 }
+
+/** Исход одного шага прохода (`runOnce`). */
+type StepOutcome =
+  /** Делать больше нечего — записать достигнутое состояние. */
+  | { kind: "done"; row: LifecycleRow; seen: Observation }
+  /** Шаг упал или его факт не появился. */
+  | { kind: "failed"; row: LifecycleRow; step: LifecycleStep; reason: string }
+  /** Требование шага выполнено, дальше — шаг `next`. */
+  | { kind: "progressed"; row: LifecycleRow; next: LifecycleStep };
+
+const REQUIREMENT_NOT_MET = "requirement not met after step";
+const SAGA_NOT_CONVERGED = "saga did not converge";
 
 @Injectable()
 export class StoreLifecycleReconciler {
@@ -125,35 +141,60 @@ export class StoreLifecycleReconciler {
   }
 
   /**
-   * Ведёт захваченную строку. Число итераций ограничено числом шагов саги:
-   * каждый успешный проход цикла выполняет новое требование, иначе — выход.
+   * Ведёт захваченную строку: шаг за шагом, пока есть что делать. Каждый
+   * успешный шаг выполняет новое требование саги, поэтому шагов по числу
+   * шагов саги хватает с запасом. Не хватило — факты откатываются между
+   * шагами (например, ревизию сняли параллельно): это провал «сага не
+   * сошлась» с записью исхода, а не тихий выход с арендой.
    */
   private async drive(
     row: LifecycleRow,
     opts: AdvanceOptions,
   ): Promise<AdvanceResult> {
-    let current = row;
-    let seen = observeLifecycle(factsOf(current));
-    for (let i = 0; i <= LIFECYCLE_STEPS.length; i += 1) {
-      if (isDone(seen, opts)) return this.finish(current.id, seen, opts);
-      const step = seen.next as LifecycleStep;
-      const failure = await this.runStep(step, current);
-      current = (await this.repo.read(current.id)) ?? current;
-      const after = observeLifecycle(factsOf(current));
-      const reason =
-        failure ??
-        (after.next === step ? "requirement not met after step" : null);
-      if (reason !== null) return this.fail(current, step, reason);
-      // Промежуточное состояние видно сразу; аренда остаётся за этим проходом.
-      if (!isDone(after, opts))
-        await this.repo.record(current.id, progressed(after.state, "keep"));
-      seen = after;
+    let outcome = await this.runOnce(row, opts);
+    for (const _ of LIFECYCLE_STEPS) {
+      if (outcome.kind !== "progressed") break;
+      outcome = await this.runOnce(outcome.row, opts);
     }
-    return {
-      claimed: true,
-      state: current.lifecycle,
-      leaseKept: false,
-    };
+    return this.conclude(outcome, opts);
+  }
+
+  /**
+   * Один шаг: посмотреть на факты, сделать первое невыполненное требование,
+   * перечитать строку и проверить, что факт появился. Промежуточное
+   * состояние записывается сразу; аренда остаётся за этим проходом.
+   */
+  private async runOnce(
+    row: LifecycleRow,
+    opts: AdvanceOptions,
+  ): Promise<StepOutcome> {
+    const seen = observeLifecycle(factsOf(row));
+    const step = stepToRun(seen, opts);
+    if (!step) return { kind: "done", row, seen };
+
+    const failure = await this.runStep(step, row);
+    const current = (await this.repo.read(row.id)) ?? row;
+    const after = observeLifecycle(factsOf(current));
+    const reason =
+      failure ?? (after.next === step ? REQUIREMENT_NOT_MET : null);
+    if (reason !== null) return { kind: "failed", row: current, step, reason };
+
+    const next = stepToRun(after, opts);
+    if (!next) return { kind: "done", row: current, seen: after };
+    await this.repo.record(current.id, progressed(after.state, "keep"));
+    return { kind: "progressed", row: current, next };
+  }
+
+  /** Записать исход прохода. */
+  private conclude(
+    outcome: StepOutcome,
+    opts: AdvanceOptions,
+  ): Promise<AdvanceResult> {
+    if (outcome.kind === "done")
+      return this.finish(outcome.row.id, outcome.seen, opts);
+    if (outcome.kind === "failed")
+      return this.fail(outcome.row, outcome.step, outcome.reason);
+    return this.fail(outcome.row, outcome.next, SAGA_NOT_CONVERGED);
   }
 
   /**

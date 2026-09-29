@@ -24,6 +24,7 @@
  */
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { astroInlineRunners } from './helpers/astro-inline-script';
 
 const ASTRO = join(__dirname, '..', 'blocks', 'CheckoutSubmit', 'CheckoutSubmit.astro');
 const ASTRO_SRC = readFileSync(ASTRO, 'utf8');
@@ -34,6 +35,11 @@ function inlineScriptBody(src: string): string {
   return m[1];
 }
 
+// Пристинный текст первого инлайн-скрипта — нужен ТОЛЬКО как основа для
+// мутаций в САБОТАЖ-тестах ниже (SCRIPT.replace(...)). Сам пристинный текст
+// через эту константу больше не исполняется: исполнение — через
+// astroInlineRunners (покрытие блока), мутированный текст — по-прежнему через
+// new Function (помощник не умеет исполнять произвольную строку).
 const SCRIPT = inlineScriptBody(ASTRO_SRC);
 
 /** Пустая форма: ни одного заполненного поля, доставка не выбрана. */
@@ -71,6 +77,20 @@ function mountFilledDom(): HTMLElement {
 
 function runScript(section: HTMLElement, script: string = SCRIPT) {
   (window as any).__merfyRoot = () => section;
+  if (script === SCRIPT) {
+    // Пристинный скрипт — через помощник покрытия (пишет в globalThis.__coverage__
+    // под путём CheckoutSubmit.astro).
+    astroInlineRunners(ASTRO)[0].run({
+      buttonText: 'Оформить — {total}',
+      loadingText: 'Оформляем…',
+      successRedirectUrl: '/checkout/result',
+      blockId: 'cs-1',
+    });
+    return;
+  }
+  // Мутированный (сабботированный) текст — помощник умеет исполнять только
+  // настоящий файл, поэтому здесь остаётся new Function; такой прогон
+  // намеренно НЕ участвует в покрытии CheckoutSubmit.astro.
   // eslint-disable-next-line no-new-func
   new Function('buttonText', 'loadingText', 'successRedirectUrl', 'blockId', script)(
     'Оформить — {total}',
@@ -253,13 +273,12 @@ describe('САБОТАЖ', () => {
     expect(btnOf(section).disabled).toBe(false);
     // сам факт: перекраска лейбла (другой параметр) не влияет на disabled
     (window as any).__merfyRoot = () => section;
-    // eslint-disable-next-line no-new-func
-    new Function('buttonText', 'loadingText', 'successRedirectUrl', 'blockId', sabotaged)(
-      'Купить — {total}',
-      'Секунду…',
-      '/checkout/result',
-      'cs-1',
-    );
+    astroInlineRunners(ASTRO)[0].run({
+      buttonText: 'Купить — {total}',
+      loadingText: 'Секунду…',
+      successRedirectUrl: '/checkout/result',
+      blockId: 'cs-1',
+    });
     expect(btnOf(section).disabled).toBe(false);
   });
 });

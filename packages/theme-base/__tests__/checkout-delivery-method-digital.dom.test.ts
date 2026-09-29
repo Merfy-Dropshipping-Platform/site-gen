@@ -8,20 +8,13 @@
  *  - recalculate НЕ бьёт в логистику (нет fetch к /delivery/calculate);
  *  - дефолт / addressRequired=true → секция видима, синтетика НЕ диспатчится
  *    (нулевая регрессия).
- * Скрипт извлекается из .astro и исполняется в jsdom (как в submit-тестах).
+ * Скрипт извлекается из .astro и исполняется через astroInlineRunners (покрытие
+ * пишется под путём CheckoutDeliveryMethod.astro — см. helpers/astro-inline-script).
  */
-import { readFileSync } from 'fs';
 import { join } from 'path';
+import { astroInlineRunners } from './helpers/astro-inline-script';
 
 const ASTRO = join(__dirname, '..', 'blocks', 'CheckoutDeliveryMethod', 'CheckoutDeliveryMethod.astro');
-
-function inlineScriptBody(src: string): string {
-  const m = /<script\b[^>]*>([\s\S]*?)<\/script>/i.exec(src);
-  if (!m) throw new Error('no <script> in CheckoutDeliveryMethod.astro');
-  return m[1];
-}
-
-const SCRIPT = inlineScriptBody(readFileSync(ASTRO, 'utf8'));
 
 function mountDeliveryDom(): HTMLElement {
   document.body.innerHTML = `
@@ -41,8 +34,7 @@ function mountDeliveryDom(): HTMLElement {
 
 function runScript(section: HTMLElement) {
   (window as any).__merfyRoot = () => section;
-  // eslint-disable-next-line no-new-func
-  new Function('blockId', SCRIPT)('dm-1');
+  astroInlineRunners(ASTRO)[0].run({ blockId: 'dm-1' });
 }
 
 function setConfig(checkout?: Record<string, unknown>) {

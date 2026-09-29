@@ -12,12 +12,12 @@
  */
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { astroInlineRunners } from './helpers/astro-inline-script';
 
 const BLOCKS = join(__dirname, '..', 'blocks');
 const read = (block: string) => readFileSync(join(BLOCKS, block, `${block}.astro`), 'utf8');
 
-const SUBMIT_SRC = read('CheckoutSubmit');
-const SCRIPT = (/<script\b[^>]*>([\s\S]*?)<\/script>/i.exec(SUBMIT_SRC) as RegExpExecArray)[1];
+const ASTRO = join(BLOCKS, 'CheckoutSubmit', 'CheckoutSubmit.astro');
 
 const fieldsOf = (src: string) =>
   [...src.matchAll(/data-checkout-field="([a-zA-Z]+)"/g)].map((m) => m[1]);
@@ -48,10 +48,12 @@ function mount(values: Values = {}, parsed: Parsed = {}): HTMLElement {
 
 function run(section: HTMLElement) {
   (window as any).__merfyRoot = () => section;
-  // eslint-disable-next-line no-new-func
-  new Function('buttonText', 'loadingText', 'successRedirectUrl', 'blockId', SCRIPT)(
-    'Оформить — {total}', 'Оформляем…', '/checkout/result', 'cs-1',
-  );
+  astroInlineRunners(ASTRO)[0].run({
+    buttonText: 'Оформить — {total}',
+    loadingText: 'Оформляем…',
+    successRedirectUrl: '/checkout/result',
+    blockId: 'cs-1',
+  });
   return section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
 }
 

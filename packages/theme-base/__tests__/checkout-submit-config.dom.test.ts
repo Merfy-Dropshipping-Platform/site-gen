@@ -26,18 +26,10 @@
  *  - применение по событию checkout:config-ready.
  * Скрипт извлекается из .astro и исполняется в jsdom (как в promo/cdek-тестах).
  */
-import { readFileSync } from 'fs';
 import { join } from 'path';
+import { astroInlineRunners } from './helpers/astro-inline-script';
 
 const ASTRO = join(__dirname, '..', 'blocks', 'CheckoutSubmit', 'CheckoutSubmit.astro');
-
-function inlineScriptBody(src: string): string {
-  const m = /<script\b[^>]*>([\s\S]*?)<\/script>/i.exec(src);
-  if (!m) throw new Error('no <script> in CheckoutSubmit.astro');
-  return m[1];
-}
-
-const SCRIPT = inlineScriptBody(readFileSync(ASTRO, 'utf8'));
 
 type Fields = Partial<{
   email: string; phone: string; firstName: string; lastName: string; fullName: string;
@@ -104,13 +96,12 @@ function mountSubmitDomFullNameOnly(overrides: Fields = {}): HTMLElement {
 
 function runScript(section: HTMLElement) {
   (window as any).__merfyRoot = () => section;
-  // eslint-disable-next-line no-new-func
-  new Function('buttonText', 'loadingText', 'successRedirectUrl', 'blockId', SCRIPT)(
-    'Оформить — {total}',
-    'Оформляем…',
-    '/checkout/result',
-    'cs-1',
-  );
+  astroInlineRunners(ASTRO)[0].run({
+    buttonText: 'Оформить — {total}',
+    loadingText: 'Оформляем…',
+    successRedirectUrl: '/checkout/result',
+    blockId: 'cs-1',
+  });
 }
 
 function setConfig(checkout?: Record<string, unknown>) {

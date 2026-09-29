@@ -9,10 +9,11 @@
  *  - курьер (deliveryMode 'door') рисуется с door-лейблом;
  *  - OWN-тариф и самовывоз магазина остаются нетронутыми;
  *  - бейдж «дешевле всего» вешается на единственную самую дешёвую платную карточку.
- * Скрипт извлекается из .astro и исполняется в jsdom (как pvz-picker тест).
+ * Скрипт извлекается из .astro и исполняется через astroInlineRunners (покрытие
+ * пишется под путём CheckoutDeliveryMethod.astro — см. helpers/astro-inline-script).
  */
-import { readFileSync } from 'fs';
 import { join } from 'path';
+import { astroInlineRunners } from './helpers/astro-inline-script';
 
 const ASTRO = join(
   __dirname,
@@ -21,14 +22,6 @@ const ASTRO = join(
   'CheckoutDeliveryMethod',
   'CheckoutDeliveryMethod.astro',
 );
-
-function inlineScriptBody(src: string): string {
-  const m = /<script\b[^>]*>([\s\S]*?)<\/script>/i.exec(src);
-  if (!m) throw new Error('no <script> in CheckoutDeliveryMethod.astro');
-  return m[1];
-}
-
-const SCRIPT = inlineScriptBody(readFileSync(ASTRO, 'utf8'));
 
 function mountDom(pickupEnabled: boolean): HTMLElement {
   document.body.innerHTML = `
@@ -51,8 +44,7 @@ function mountDom(pickupEnabled: boolean): HTMLElement {
 
 function runScript(section: HTMLElement) {
   (window as any).__merfyRoot = () => section;
-  // eslint-disable-next-line no-new-func
-  new Function('blockId', SCRIPT)('cdm-1');
+  astroInlineRunners(ASTRO)[0].run({ blockId: 'cdm-1' });
 }
 
 async function flush(ms = 30) {

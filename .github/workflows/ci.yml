@@ -178,20 +178,18 @@ jobs:
         working-directory: packages/theme-vanilla
         run: pnpm exec jest --config jest.config.ts --runInBand
 
-      # Настройки оформления заказа (админка → Заказы): регистрация, адрес,
-      # имя/фамилия. Тесты лежат в packages/theme-base/__tests__, которую CI не
-      # видел, — поэтому слияние #34 (28.08) молча вырезало эту логику из
-      # чекаута, и месяц она не работала на витринах.
-      - name: Тесты настроек чекаута магазина
+      # Чекаут магазина: настройки оформления, способ и адрес доставки,
+      # кнопка «Оформить», показ доставки в кабинете и в подтверждении заказа.
+      # Тесты лежат в packages/theme-base/__tests__, которую CI не видел, —
+      # поэтому слияние #34 (28.08) молча вырезало логику настроек из чекаута,
+      # и месяц она не работала на витринах. Раньше здесь был список из шести
+      # файлов, и тесты СДЭК (выбор ПВЗ, самовывоз СДЭК) в него не попали;
+      # теперь берутся все тесты чекаута по шаблону имени.
+      - name: Тесты чекаута магазина
         working-directory: packages/theme-base
         run: >-
           pnpm exec jest --config jest.config.ts --runInBand
-          __tests__/checkout-contact-config.dom.test.ts
-          __tests__/checkout-delivery-config.dom.test.ts
-          __tests__/checkout-delivery-method-digital.dom.test.ts
-          __tests__/checkout-submit-config.dom.test.ts
-          __tests__/checkout-submit-auth-gate.dom.test.ts
-          __tests__/checkout-submit-full-address.dom.test.ts
+          '__tests__/(astro-inline-script-helper\.test|account-order-delivery\.coverage\.dom\.test|order-confirmation-delivery\.coverage\.dom\.test|checkout-(contact|delivery|submit)-[^/]*\.dom\.test)\.ts$'
 
       # Инструменты самих проверок (spec 115): очередь на машину (flock через
       # perl — ubuntu-раннер его имеет), поток тёплого рендера секций, разбор

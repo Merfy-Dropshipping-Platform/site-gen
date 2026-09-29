@@ -924,57 +924,40 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     schemeVarsById(schemes, cookieBanner.colorScheme),
   );
 
-  // ── Поиск всегда красится Схемой 1 ────────────────────────────────────
-  // Владелец, 15.09 (дословно): «Во всех темах Поиск должен брать на себя цвет
-  // фона, текста, цвет текста в кнопке и цвет кнопки из Цветовой схемы 1».
-  // Решение принято им же явно: «Всегда Схема 1, жёстко» — что бы ни стояло у
-  // секции-шапки вокруг. Побочный эффект («на тёмной шапке белое поле поиска
-  // будет выбиваться») озвучен и принят.
+  // ── Поиск: поле — схема вокруг, кнопка «Найти» — Схема 1 ──────────────
+  // Решение владельца 28.09 («как у верстальщиков») сужает правило 15.09
+  // («Всегда Схема 1, жёстко», c6b3b965). Схема 1 осталась ТОЛЬКО у кнопки
+  // «Найти». Само поле берёт «Фон» схемы, в которой стоит: шторки меню на
+  // телефоне или коробки поиска шапки на десктопе.
   //
-  // Замер «до» (Chromium 1440, пять живых стендов, шапка обёрнута в
-  // .color-scheme-1..5 поочерёдно; фон поля | текст поля | фон кнопки | текст
-  // кнопки):
-  //   rose    255 255 255 | 0 0 0 | СКАЧЕТ 0 0 0→255 255 255 | СКАЧЕТ
-  //   vanilla 255 255 255 | 0 0 0 | 58 69 48    | 255 255 255  (замерло)
-  //   bloom   255 255 255 | 0 0 0 | 227 142 159 | 255 255 255  (замерло)
-  //   satin   255 255 255 | 0 0 0 | 0 0 0       | 255 255 255  (замерло)
-  //   flux    255 255 255 | 0 0 0 | 30 41 82    | 255 255 255  (замерло)
-  // То есть ни одна из двадцати величин не приходила из Схемы 1: фон и текст
-  // поля — литералы `bg-white` / `text-[#000000]` в каждом порту
-  // (themes/rose/src/components/Header.astro:477,485;
-  //  themes/vanilla/…:565,573; themes/bloom/…:673,679;
-  //  themes/satin/…:295,296; themes/flux/…:489,495), кнопка — литерал у bloom
-  // (#e38e9f, :683), satin (#000000, :297), flux (#1e2952, :499), алиас
-  // --vanilla-header-bg у vanilla (:577) и наследование от ОКРУЖАЮЩЕЙ схемы у
-  // rose (:489 `!bg-[rgb(var(--color-button-bg,0_0_0))]`).
+  // Почему сузили. Схема 1 у разных тем разная, а поле красилось ей целиком.
+  // Замер заводских схем (theme.json → themeSchemeToMerchantShape, WebKit 390,
+  // шторка открыта; фон шторки | фон поля | текст поля):
+  //   flux    255 255 255 | 0 0 0       | 255 255 255  — чёрный брусок на белой шторке
+  //   bloom   255 255 255 | 207 122 139 | 255 255 255  — розовое поле, контраст 3,08
+  //   vanilla 38 49 28    | 38 49 28    | 255 255 255  — совпало случайно: шапка на Схеме 1
+  //   rose, satin — совпадало (Схема 1 белая).
+  // У верстальщиков во всех пяти темах поле — цвет шторки, кнопка «Найти» —
+  // фирменная заливка (Merfy-Dropshipping-Platform/<t>-theme, Header.astro).
   //
-  // Почему правило здесь, а не копией в пяти портах: tokens.css — единственный
-  // слой, общий и витрине, и превью конструктора (см. wishlistHideRule,
-  // cartDrawerPaintRule). Порты не трогаем вовсе.
+  // Текст в поле — «Заголовок» схемы, а не «Текст». У flux на заводской
+  // схеме шапки (scheme-2) «Текст» = 153 153 153: на белом это 2,85 — ниже
+  // 4,5, введённое не читается. «Заголовок» там 0 0 0, как #000000 у
+  // верстальщиков. Этой же ролью уже пишут пункты шторки vanilla
+  // (--vanilla-dark), цифра степпера карточки flux (4df5d3e7).
   //
-  // Почему два блока, а не один:
-  //   1) ПЕРЕМЕННЫЕ на корне формы. Нужны ради rose: её кнопка объявлена
-  //      !important-утилитой (`!bg-[…]`), а для !important слой `utilities`
-  //      СИЛЬНЕЕ безслойного правила — покраска бы проиграла. Зато сама
-  //      утилита читает --color-button-bg, и переопределение переменной
-  //      доводит до неё ровно Схему 1.
-  //   2) ПОКРАСКА литералов (bloom/satin/flux/vanilla). Утилиты `bg-white`,
-  //      `bg-[#1e2952]` без !important лежат в @layer utilities, а tokens.css
-  //      БЕЗ слоя — безслойное обычное объявление бьёт любой слой.
+  // Слой. tokens.css БЕЗ @layer: безслойное объявление бьёт литералы портов
+  // (`bg-white`, `text-[#000000]`, `bg-[#1e2952]`) из @layer utilities. Кнопке
+  // Схема 1 отдаётся ПЕРЕМЕННЫМИ на самой кнопке: у rose заливка объявлена
+  // !important-утилитой, читающей --color-button-bg, и переопределение
+  // переменной доходит до неё, а покраска свойством проиграла бы. Литералы
+  // кнопки в выпадающей панели (bloom/satin/flux/vanilla) докрашиваются
+  // свойством. В шторке rose/vanilla/bloom кнопка — голая иконка, заливку ей
+  // не даём: переменные на ней ничего не красят.
   //
-  // Область — ровно четыре величины владельца. Подложка самой выпадающей
-  // панели ([data-search-panel] у satin/flux), рамки, тень, плашка подсказок
-  // satin ([data-search-results]) НЕ трогаются.
-  //
-  // Кнопка красится только в выпадающей панели: в мобильном бургере
-  // `button[type="submit"]` — голая иконка без фона во всех пяти темах
-  // (themes/*/src/components/Header.astro, формы с aria-label="Найти"), и
-  // заливка её фоном была бы изменением сверх просьбы.
-  //
-  // Нет схемы с id `scheme-1` (ни у мерчанта, ни в манифесте) → правила нет
-  // вовсе, всё остаётся как было.
+  // Нет Схемы 1 — нет переменных кнопки, остальное остаётся.
   const scheme1Tokens = pickSchemeOneTokens(schemeRules);
-  const searchScheme1Rule = buildSearchScheme1Rule(scheme1Tokens);
+  const searchRule = buildSearchRule(scheme1Tokens);
 
   // Избранное (wishlist) вкл/выкл — глобальный тумблер из ThemeSettingsPanel
   // («Настройки темы» → «Избранное»). Когда выключено, скрываем весь wishlist UI
@@ -1094,7 +1077,7 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     productCardSchemeRule,
     cartDrawerSchemeRule,
     cookieBannerRule,
-    searchScheme1Rule,
+    searchRule,
     wishlistHideRule,
     stickyFooterRule,
     accountSurfaceRule,
@@ -1411,24 +1394,25 @@ export function themeSchemeToMerchantShape(scheme: {
 /**
  * Корень поиска в любой из пяти тем. Замер по портам (grep `role="search"` по
  * themes/<t>/src): ровно две формы на тему — выпадающая панель шапки и форма в
- * мобильном бургере, и ничего больше. В общем пакете (theme-base
- * blocks/Header/Header.astro:338) — та же разметка.
+ * мобильной шторке, и ничего больше. В общем пакете (theme-base
+ * blocks/Header/Header.astro) — та же разметка.
  */
 export const SEARCH_FORM_SELECTOR = 'form[role="search"]';
 
-/** Кнопка «Найти» выпадающей панели (в бургере она — голая иконка). */
-export const SEARCH_PANEL_SUBMIT_SELECTOR = `[data-search-panel] ${SEARCH_FORM_SELECTOR} button[type="submit"]`;
+/** Кнопка отправки любой формы поиска: в панели — «Найти», в шторке — «Найти» или иконка. */
+export const SEARCH_SUBMIT_SELECTOR = `${SEARCH_FORM_SELECTOR} button[type="submit"]`;
 
-/**
- * Четыре токена Схемы 1 — и ничего сверх них: фон поля, цвет текста в поле,
- * цвет кнопки, цвет текста кнопки. Ровно объём просьбы владельца.
- */
-const SEARCH_SCHEME_TOKENS = [
-  '--color-bg',
-  '--color-text',
-  '--color-button-bg',
-  '--color-button-text',
-] as const;
+/** Кнопка «Найти» выпадающей панели: её литералы докрашиваются свойством. */
+export const SEARCH_PANEL_SUBMIT_SELECTOR = `[data-search-panel] ${SEARCH_SUBMIT_SELECTOR}`;
+
+/** Токены Схемы 1, которые получает кнопка «Найти», — и ничего сверх них. */
+const SEARCH_BUTTON_TOKENS = ['--color-button-bg', '--color-button-text'] as const;
+
+/** Поле: фон и текст — роли схемы вокруг (шторки или коробки поиска). */
+const SEARCH_FIELD_RULES = [
+  `${SEARCH_FORM_SELECTOR}{background-color:rgb(var(--color-bg));}`,
+  `${SEARCH_FORM_SELECTOR} input[type="search"]{color:rgb(var(--color-heading));}`,
+];
 
 /**
  * Достаёт объявления уже собранного правила `.color-scheme-1`.
@@ -1458,40 +1442,20 @@ export function pickSchemeOneTokens(
 }
 
 /**
- * Правило «поиск всегда в Схеме 1». Разбор — у места вызова в buildTokensCss.
- * Объявление появляется только для тех токенов, которые у Схемы 1 РЕАЛЬНО есть:
- * иначе `rgb(var(--color-bg))` подхватил бы значение по наследству, то есть
- * ровно ту окружающую схему, от которой поиск и отвязывают.
+ * Правило поиска. Разбор — у места вызова в buildTokensCss.
+ * Поле — всегда по схеме вокруг. Кнопке — только те токены Схемы 1, что у неё
+ * РЕАЛЬНО есть: объявить пустую переменную значило бы унаследовать окружающую.
  */
-export function buildSearchScheme1Rule(
-  tokens: Record<string, string> | null,
-): string {
-  if (!tokens) return '';
-  const has = (n: (typeof SEARCH_SCHEME_TOKENS)[number]) =>
-    typeof tokens[n] === 'string' && tokens[n].length > 0;
-  const vars = SEARCH_SCHEME_TOKENS.filter(has)
-    .map((n) => `${n}:${tokens[n]};`)
-    .join('');
-  if (!vars) return '';
-  const rules: string[] = [];
-  rules.push(
-    `${SEARCH_FORM_SELECTOR}{${vars}${
-      has('--color-bg') ? 'background-color:rgb(var(--color-bg));' : ''
-    }}`,
-  );
-  if (has('--color-text')) {
-    rules.push(
-      `${SEARCH_FORM_SELECTOR} input[type="search"]{color:rgb(var(--color-text));}`,
-    );
-  }
-  const button = [
-    has('--color-button-bg')
-      ? 'background-color:rgb(var(--color-button-bg));'
-      : '',
-    has('--color-button-text') ? 'color:rgb(var(--color-button-text));' : '',
-  ].join('');
-  if (button) rules.push(`${SEARCH_PANEL_SUBMIT_SELECTOR}{${button}}`);
-  return rules.join('');
+export function buildSearchRule(tokens: Record<string, string> | null): string {
+  const present = SEARCH_BUTTON_TOKENS.filter((n) => Boolean(tokens?.[n]));
+  const vars = present.map((n) => `${n}:${tokens![n]};`).join('');
+  const buttonRules = vars
+    ? [
+        `${SEARCH_SUBMIT_SELECTOR}{${vars}}`,
+        `${SEARCH_PANEL_SUBMIT_SELECTOR}{background-color:rgb(var(--color-button-bg));color:rgb(var(--color-button-text));}`,
+      ]
+    : [];
+  return [...SEARCH_FIELD_RULES, ...buttonRules].join('');
 }
 
 function buildSchemeRule(scheme: Record<string, unknown>): string {

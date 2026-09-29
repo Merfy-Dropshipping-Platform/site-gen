@@ -56,8 +56,14 @@ describe("шапка flux: иконка действия — 24px", () => {
     expect(html).not.toMatch(/pointer-events-none size-8/);
   });
 
-  it("исходник порта не несёт sizeClass=\"size-8\"", () => {
-    expect(readFileSync(HEADER_SRC, "utf8")).not.toMatch(/sizeClass="size-8"/);
+  it("исходник строки шапки не несёт sizeClass=\"size-8\"", () => {
+    // Только строка шапки — до мобильной шторки (`id="flux-burger"`). В шторке
+    // иконка «Профиля» 32 px по вёрстке верстальщиков (владелец 28.09); её
+    // сторожит search-always-scheme-1.spec.ts. Жалоба 20.09 была про шапку.
+    const src = readFileSync(HEADER_SRC, "utf8");
+    const drawerAt = src.indexOf('id="flux-burger"');
+    expect(drawerAt).toBeGreaterThan(-1);
+    expect(src.slice(0, drawerAt)).not.toMatch(/sizeClass="size-8"/);
   });
 
   it("у избранного дефолтный размер иконки тоже 24px", () => {

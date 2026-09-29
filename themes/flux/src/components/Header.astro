@@ -536,9 +536,9 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 	<!-- Поиск (Figma «Поиск» 1320×232): коробка выпадает ПОВЕРХ страницы под шапкой,
 	     а не раздвигает её. Сверху строка поиска с линией, ниже — живые результаты
 	     (общий модуль theme-base/runtime/header-search, вид — lib/header-search-view).
-	     Цвета: строка поиска — Схема 1 (правило form[role="search"], решение
-	     владельца 15.09 про поле и кнопку), коробка и выдача — схема шапки, как у
-	     выпадающих меню. «Найти» и Enter по-прежнему ведут в каталог ?q=. -->
+	     Цвета: коробка, выдача и само поле — схема шапки, как у выпадающих меню;
+	     кнопка «Найти» — Схема 1 (правило поиска в tokens-css.ts, решение
+	     владельца 28.09). «Найти» и Enter по-прежнему ведут в каталог ?q=. -->
 	<div
 		data-search-panel
 		class="absolute left-0 right-0 top-full z-40 hidden w-full"
@@ -662,37 +662,44 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			</div>
 		) : (
 			/* Mobile drawer (эталон): поиск + профиль сверху. Строка поиска — по
-			   макету «Бургер» 375: высота 40, только нижняя линия, Roboto Flex 300 14. */
+			   вёрстке верстальщиков (flux-theme, Header.astro «Мобильный бургер»):
+			   рамка 1px, скругление 4, высота 44, отступ слева 12, текст 16 и
+			   кнопка «Найти». 22.09 (88ad8361) поле сводили к «только нижней
+			   линии» без кнопки; владелец 28.09 вернул вид верстальщиков.
+			   Цвета — ролями схемы шторки, литералов нет: поле — «Фон», текст —
+			   «Заголовок» (правило поиска в tokens-css.ts), рамка — «Заголовок»
+			   на 10% (у верстальщиков #F5F5F5 на белом), «Найти» — «Кнопка»
+			   Схемы 1 (переменные на кнопке ставит то же правило). */
 			<div class="flex items-center gap-2">
 				{showSearch && (
-					<form class="flex h-10 min-h-10 flex-1 items-center justify-between gap-2 border-b border-[rgb(var(--color-heading,0_0_0))]" role="search" action="/catalog" method="get">
+					<form class="flex h-11 min-h-11 flex-1 items-center justify-between gap-2 rounded-[4px] border border-[rgb(var(--color-heading,0_0_0)/0.1)] bg-[rgb(var(--color-bg,255_255_255))] pl-3 pr-1" role="search" action="/catalog" method="get">
 						<input
 							type="search"
 							name="q"
 							placeholder="Поиск"
 							aria-label="Поиск"
 							autocomplete="off"
-							class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[14px] font-light leading-4 placeholder:text-[rgb(var(--color-muted,153_153_153))] outline-none"
+							class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))] placeholder:text-[rgb(var(--color-muted,204_204_204))] outline-none"
 						/>
-						<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
-							<SchemeIcon svgs={FLUX_ICON_SVGS} name="search-sm" sizeClass="size-6" />
+						<button type="submit" class="flex h-9 shrink-0 items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-bg,30_41_82))] px-3 font-roboto-flex text-[14px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95">
+							Найти
 						</button>
 					</form>
 				)}
 				{showProfile && (
-					/* Заливка — «Кнопка» СХЕМЫ. `bg-black` Tailwind 4 печатает как
-					   var(--color-black): переменная есть, схемы в ней нет, поэтому
-					   кнопка «Профиль» в шторке замирала чёрной на любой схеме
-					   (замер матрицы, схемы-зонды 1 → 4: #000 → #000, при том что
-					   полотно шторки теперь едет). Роль та же, что у кнопки слайда
-					   flux (fix b19, Slideshow.astro) и у эталона rose. Фолбэк 0_0_0
-					   = прежний чёрный. Сторож: pnpm test:scheme-targets. */
+					/* «Профиль» — «Кнопка 2» схемы шторки, иконка 32 px, как у
+					   верстальщиков (там `bg-black` + `size-8`). С 0ee3b650 заливкой
+					   была «Кнопка» — у flux она тёмно-синяя (#1e2952), а на заводской
+					   схеме шапки «Кнопка 2» ровно чёрная; на тёмных схемах flux она
+					   белая с тёмной иконкой. Литерал `bg-black` не ставим: Tailwind 4
+					   печатает его как var(--color-black), схема до него не доходит.
+					   Сторож: pnpm test:search-scheme. */
 					<a
 						href="/login" data-auth-link
-						class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-bg,0_0_0))]"
+						class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-2-bg,0_0_0))]"
 						aria-label="Профиль"
 					>
-						<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" colorClass="text-[rgb(var(--color-button-text,255_255_255))]" />
+						<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-8" colorClass="text-[rgb(var(--color-button-2-text,255_255_255))]" />
 					</a>
 				)}
 			</div>

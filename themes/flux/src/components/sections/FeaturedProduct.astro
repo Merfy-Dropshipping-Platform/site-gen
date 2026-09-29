@@ -604,13 +604,15 @@ const productRuns = fieldRuns(sectionFieldOrder("Product", p), ["text", "title",
 				/>
 				)}
 
-				{/* Счётчик */}
+				{/* Счётчик. Цифра — «Заголовок» схемы секции, как «−»/«+» рядом и как
+				    степпер карточки (4df5d3e7). Ролью «Кнопка» она становилась белой
+				    на белом на Схеме 5 (у неё «Кнопка» белая, 21779a49 от 26.09). */}
 				{field === 'quantity' && quantityVisible && !isFieldHidden('quantity') && (
 					<div class="inline-flex w-fit items-center gap-3" data-cfg-qty data-puck-subsection-parent={id} data-puck-subsection-index="104" data-puck-subsection-field="quantity">
 						<button type="button" class="flex size-11 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
 							<span class="block size-4" set:html={MINUS_ICON_SVG} />
 						</button>
-						<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))]" data-cfg-qty-value>1</span>
+						<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-heading,0_0_0))]" data-cfg-qty-value>1</span>
 						<button type="button" class="flex size-11 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
 							<span class="block size-4" set:html={PLUS_ICON_SVG} />
 						</button>
@@ -748,13 +750,13 @@ const productRuns = fieldRuns(sectionFieldOrder("Product", p), ["text", "title",
 			/>
 			)}
 
-			{/* Счётчик */}
+			{/* Счётчик. Цифра — «Заголовок» схемы секции (см. разметку выше). */}
 			{field === 'quantity' && quantityVisible && !isFieldHidden('quantity') && (
 				<div class="inline-flex w-fit items-center gap-3" data-cfg-qty data-puck-subsection-parent={id} data-puck-subsection-index="104" data-puck-subsection-field="quantity">
 					<button type="button" class="flex size-8 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
 						<span class="block size-4" set:html={MINUS_ICON_SVG} />
 					</button>
-					<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))]" data-cfg-qty-value>1</span>
+					<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-heading,0_0_0))]" data-cfg-qty-value>1</span>
 					<button type="button" class="flex size-8 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
 						<span class="block size-4" set:html={PLUS_ICON_SVG} />
 					</button>

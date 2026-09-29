@@ -1821,6 +1821,12 @@ jobs:
       # цвета без нажатия»). jsdom, разметка гидрации renderCardHtml.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/flux-card-swatch-selects-variant.spec.ts
+      # flux, «Группа товаров» (каталог): те же квадратики цвета, что в «Коллекции
+      # товаров» — одна реализация (card-swatches.ts, в инлайн каталога строкой).
+      # Исполняется настоящий инлайн-скрипт порта; размеры чипами не выводятся;
+      # классы квадратиков есть в CSS живой витрины (владелец 29.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/flux-catalog-swatches.spec.ts
       # «Настройки темы → Карточки товара → Стиль» в секции со своей схемой:
       # «Стандарт» — без подложки, «Карточка» — «Поверхность» схемы секции.
       # Пять тем, SSR с товарами, заглушки и дорисовка renderCardHtml; замер

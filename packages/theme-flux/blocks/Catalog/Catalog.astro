@@ -26,6 +26,9 @@ import NtFilterSidebar from "./NtFilterSidebar.astro";
 import NtFilterPanel from "./NtFilterPanel.astro";
 import FluxNtIcon from "./FluxNtIcon.astro";
 import FluxFiltersSheet from "./FluxFiltersSheet.astro";
+// Квадратики цвета карточки — одна реализация с «Коллекцией товаров» (строкой
+// для is:inline ниже, см. шапку card-swatches.ts).
+import { fluxCardSwatchesSource } from "./card-swatches";
 
 
 // Совместимый с theme-base/blocks/Catalog/Catalog.puckConfig props-минимум.
@@ -679,6 +682,8 @@ const skeletons = Array.from({ length: skeletonCount });
   })();
 </script>
 
+<script is:inline set:html={fluxCardSwatchesSource()}></script>
+
 <script is:inline define:vars={{ siteId, pageSize, cardAspectClass, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn, cardContainerState }}>
   // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build — generatePuckCatalogPage импортит блок, но его ESM-script не
@@ -745,7 +750,7 @@ const skeletons = Array.from({ length: skeletonCount });
       // Свотчи/чипы карточки (parity с эталоном): variantGroups несёт swatchHex
       // (группа «Цвет») и значения памяти/размера; variantSwatches — плоский
       // удобный массив (есть на LIST-пути; на /store/products findAll часто пуст
-      // → deriveCardSwatches каскадит на variantGroups/variantCombinations).
+      // → квадратики каскадят на variantGroups/variantCombinations).
       variantGroups: Array.isArray(p.variantGroups) ? p.variantGroups : [],
       variantSwatches: Array.isArray(p.variantSwatches) ? p.variantSwatches : [],
       collections: coll,
@@ -874,127 +879,8 @@ const skeletons = Array.from({ length: skeletonCount });
         ? "background:transparent;"
         : "";
 
-  // ─── Свотчи цвета / чипы памяти-размера / бейдж скидки (parity с эталоном
-  //     FluxProductCard.astro + Popular storefront-hydrate.ts). Логика деривации
-  //     перенесена телами (is:inline → без import). ───
-  const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-  const COLOR_GROUP_RE = /^(цвет|color)$/i;
-  // Чип-группы каталога — ПО ИМЕНИ (эталон каталога несёт «128 ГБ» и «S/M/L»):
-  // шире, чем Popular (тот фильтрует только значения с ед. памяти ГБ/GB).
-  const CHIP_GROUP_RE = /^(память|memory|storage|накопитель|размер|объ[её]м памяти|размер памяти)$/i;
-  // Имя цвета → #RRGGBB (фолбэк, когда swatchHex/hex не задан мерчантом).
-  const COLOR_NAME_HEX = {
-    белый: "#FFFFFF", white: "#FFFFFF", "чёрный": "#000000", черный: "#000000", black: "#000000",
-    красный: "#E02D2D", red: "#E02D2D", синий: "#2D4BE0", blue: "#2D4BE0", голубой: "#6FB7E0",
-    "зелёный": "#2DA84F", зеленый: "#2DA84F", green: "#2DA84F", "жёлтый": "#F2C53D", желтый: "#F2C53D",
-    yellow: "#F2C53D", оранжевый: "#FA5109", orange: "#FA5109", серый: "#9A9A9A", gray: "#9A9A9A",
-    grey: "#9A9A9A", серебро: "#C0C0C0", серебряный: "#C0C0C0", silver: "#C0C0C0", графит: "#3A3A3A",
-    graphite: "#3A3A3A", "бежевый": "#E8D9C0", beige: "#E8D9C0", коричневый: "#7A5230", brown: "#7A5230",
-    розовый: "#F2A0C0", pink: "#F2A0C0", фиолетовый: "#7A3FB0", purple: "#7A3FB0", violet: "#7A3FB0",
-    бордовый: "#6E1423", золотой: "#D4AF37", gold: "#D4AF37", бирюзовый: "#2DBFB0", teal: "#2DBFB0",
-  };
-  function colorToHex(value, hint) {
-    const h = String(hint ?? "").trim();
-    if (HEX_RE.test(h)) return h;
-    const v = String(value ?? "").trim();
-    if (HEX_RE.test(v)) return v;
-    return COLOR_NAME_HEX[v.toLowerCase()] ?? null;
-  }
-  // deriveCardSwatches — каскад источников: variantSwatches → группа «Цвет»
-  // (swatchHex) из variantGroups → имена цветов из variantCombinations.
-  // Недоступный цвет → один перечёркнутый серый квадрат (swatchDisabled), эталон.
-  // ФИЧА flux (нет у rose): каждый свотч несёт СВОЮ картинку цвета-варианта
-  // → { color:#hex, image:url|null, available }. image = группа «Цвет»
-  // variantGroups → option.images[0], сопоставление по value (имя цвета) и по
-  // hex. Нет картинки у цвета → image=null (свотч рисуется статичным, эталон).
-  function deriveCardSwatches(p) {
-    const out = [];
-    const seen = new Set();
-    let swatchDisabled = false;
-    // Лукап картинок цвета из группы «Цвет» variantGroups (option.images[0]):
-    // по имени цвета (value) и по hex — свотч из ЛЮБОГО источника найдёт своё фото.
-    const imageByValue = new Map();
-    const imageByHex = new Map();
-    if (Array.isArray(p.variantGroups)) {
-      const grp = p.variantGroups.find((g) => COLOR_GROUP_RE.test(String((g && g.name) || "").trim()));
-      if (grp && Array.isArray(grp.options)) {
-        for (const o of grp.options) {
-          const img = (o && Array.isArray(o.images) && typeof o.images[0] === "string" && o.images[0]) || null;
-          if (!img) continue;
-          const val = String((o && o.value) ?? "").trim().toLowerCase();
-          if (val && !imageByValue.has(val)) imageByValue.set(val, img);
-          const hx = colorToHex(o && o.value, o && o.swatchHex);
-          if (hx && !imageByHex.has(hx.toLowerCase())) imageByHex.set(hx.toLowerCase(), img);
-        }
-      }
-    }
-    const push = (hex, available, value) => {
-      if (!hex) return;
-      if (available === false) { swatchDisabled = true; return; }
-      const key = hex.toLowerCase();
-      if (seen.has(key)) return;
-      seen.add(key);
-      const val = String(value ?? "").trim().toLowerCase();
-      const image = (val ? imageByValue.get(val) : undefined) ?? imageByHex.get(key) ?? null;
-      out.push({ color: hex, image, available: available !== false });
-    };
-    if (Array.isArray(p.variantSwatches) && p.variantSwatches.length) {
-      for (const s of p.variantSwatches) push(colorToHex(s && s.value, s && s.color), s && s.available, s && s.value);
-    }
-    if (out.length === 0 && Array.isArray(p.variantGroups)) {
-      const group = p.variantGroups.find((g) => COLOR_GROUP_RE.test(String((g && g.name) || "").trim()));
-      if (group && Array.isArray(group.options)) {
-        for (const o of group.options) push(colorToHex(o && o.value, o && o.swatchHex), undefined, o && o.value);
-      }
-    }
-    if (out.length === 0 && Array.isArray(p.variantCombinations)) {
-      for (const c of p.variantCombinations) {
-        const name = c && c.options && (c.options["Цвет"] || c.options["Color"]);
-        push(colorToHex(name), c && c.available, name);
-      }
-    }
-    return { swatches: out.slice(0, 6), swatchDisabled };
-  }
-  // deriveCardChips — чипы памяти/размера из чип-групп. Значение disabled, если
-  // среди комбинаций ЕСТЬ данные по чип-группам, но НЕТ ни одной available с этим
-  // значением (эталонное приглушение недоступного варианта).
-  function deriveCardChips(p) {
-    const groups = Array.isArray(p.variantGroups) ? p.variantGroups : [];
-    const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
-    const availableValues = new Set();
-    let haveComboData = false;
-    for (const c of combos) {
-      const opts = (c && c.options) || {};
-      for (const k of Object.keys(opts)) {
-        if (!CHIP_GROUP_RE.test(String(k).trim())) continue;
-        haveComboData = true;
-        if (c && c.available !== false) availableValues.add(String(opts[k]).trim().toLowerCase());
-      }
-    }
-    const out = [];
-    const seen = new Set();
-    const add = (value) => {
-      const s = String(value ?? "").trim();
-      if (!s) return;
-      const key = s.toLowerCase();
-      if (seen.has(key)) return;
-      seen.add(key);
-      out.push({ value: s, disabled: haveComboData && !availableValues.has(key) });
-    };
-    for (const g of groups) {
-      if (!g || !CHIP_GROUP_RE.test(String(g.name || "").trim())) continue;
-      for (const o of g.options ?? []) add(o && o.value);
-    }
-    if (out.length === 0) {
-      for (const c of combos) {
-        const opts = (c && c.options) || {};
-        for (const k of Object.keys(opts)) {
-          if (CHIP_GROUP_RE.test(String(k).trim())) add(opts[k]);
-        }
-      }
-    }
-    return out.slice(0, 4);
-  }
+  // ─── Квадратики цвета / чипы памяти — window.__merfyFluxCardSwatches
+  //     (card-swatches.ts, та же реализация, что у «Коллекции товаров»). ───
   // cardSaleBadgeHtml — «-N%» (цвет — роль схемы «Кнопка», класс merfy-badge
   // из base.css; НЕ хардкод верстальщика bg #FA5109, владелец 28.09; зеркалит
   // FluxProductCard.astro). oldPrice и price — в одной единице (проценты не
@@ -1039,34 +925,20 @@ const skeletons = Array.from({ length: skeletonCount });
     const oldPrice = oldRaw
       ? `<span class="flux-product-oldprice font-manrope text-[12px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
       : "";
-    // Свотчи цвета (эталон): цветные квадраты + опц. перечёркнутый «недоступный».
-    // Свотч С картинкой цвета → КЛИКАБЕЛЬНАЯ кнопка (data-swatch-img): клик меняет
-    // фото карточки на фото этого цвета (делегат в bindCardInteractions). Свотч
-    // без картинки → статический <span> (эталонный вид не меняется). Класс кнопки
-    // ЗЕРКАЛИТ FluxProductCard.astro (parity SSG↔live, Tailwind-скан оттуда).
-    const sw = deriveCardSwatches(p);
-    const swatchOneHtml = (s) =>
-      s.image
-        ? `<button type="button" data-swatch-img="${escapeHtml(s.image)}" aria-pressed="false" aria-label="Показать фото цвета" class="size-5 rounded-[2px] cursor-pointer p-0" style="background:${s.color};border:0"></button>`
-        : `<span class="size-5 rounded-[2px]" style="background:${s.color}" aria-hidden="true"></span>`;
+    // Квадратики цвета — один на каждый цвет товара; нажатие выбирает вариант
+    // (фото + «В корзину»), выбран цвет варианта кнопки. Размеры одежды чипами
+    // не выводим — только память («128 ГБ»), как «Коллекция товаров» (владелец
+    // 29.09). Слоты всегда одной высоты — карточки в ряду не проседают.
+    const cardSw = window.__merfyFluxCardSwatches;
+    const swatchInner = cardSw.html(p, window.__merfyPickDefaultCombination);
     const swatchesHtml =
-      `<div class="flex min-h-5 items-center gap-1" data-nt="card-swatches"${sw.swatches.length ? "" : " aria-hidden=\"true\""}>${sw.swatches
-            .map(swatchOneHtml)
-            .join("")}${
-            sw.swatchDisabled
-              ? `<span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true"><span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span></span>`
-              : ""
-          }</div>`;
-    // Чипы памяти/размера (эталон): приглушённый чип = недоступное значение.
-    // Слот всегда одной высоты — карточки без чипов не проседают в ряду.
-    const chips = deriveCardChips(p);
+      `<div class="flex min-h-5 items-center gap-1" data-nt="card-swatches"${swatchInner ? "" : " aria-hidden=\"true\""}>${swatchInner}</div>`;
+    const chips = cardSw.memory(p);
     const chipsHtml =
       `<div class="flex min-h-6 flex-wrap items-start gap-1" data-nt="card-chips"${chips.length ? "" : " aria-hidden=\"true\""}>${chips
             .map(
               (m) =>
-                `<span class="inline-flex items-center rounded-[2px] border border-solid p-1 font-roboto-flex text-[12px] font-light leading-none ${
-                  m.disabled ? "border-[#F5F5F5] bg-[#F5F5F5] text-[#CCCCCC]" : "border-[#F5F5F5] text-[#000000]"
-                }">${escapeHtml(m.value)}</span>`,
+                `<span class="inline-flex items-center rounded-[2px] border border-solid p-1 font-roboto-flex text-[12px] font-light leading-none border-[#F5F5F5] text-[#000000]">${escapeHtml(m)}</span>`,
             )
             .join("")}</div>`;
     // Бейдж «-N%» (оверлей поверх фото).
@@ -2028,35 +1900,8 @@ const skeletons = Array.from({ length: skeletonCount });
       setTimeout(() => { btn.textContent = orig; }, 1500);
     });
 
-    // ── Свотч цвета кликабелен → фото карточки меняется на фото этого цвета ──
-    // Делегат на document (как quickAdd). Скоуп — СВОЯ карточка: closest по
-    // data-nt="flux-product-card" (или data-product-id), поэтому клик меняет фото
-    // ТОЛЬКО своей карточки (на странице много карточек). Свотчи без картинки —
-    // статичные <span> (не имеют data-swatch-img) → сюда не попадают. Работает и
-    // для SSG-карточек (demo/пустой магазин), и для renderCardHtml (фильтрация).
-    // НЕ гейтится nextPhotoOn — переключение по цвету независимо от hover-фото.
-    document.addEventListener("click", (event) => {
-      const swBtn = event.target.closest("[data-swatch-img]");
-      if (!swBtn) return;
-      if (!swBtn.closest('[data-nt="catalog-grid"]')) return;
-      event.preventDefault();
-      const url = swBtn.getAttribute("data-swatch-img");
-      const card = swBtn.closest('[data-nt="flux-product-card"]') || swBtn.closest("[data-product-id]");
-      if (!card || !url) return;
-      const img = card.querySelector("[data-card-img]");
-      if (img) {
-        img.setAttribute("src", url);
-        // Выбранный цвет «залипает» и после hover-возврата (nextPhoto):
-        // primary становится картинкой выбранного цвета.
-        img.setAttribute("data-img-primary", url);
-      }
-      // Подсветка активного свотча В ПРЕДЕЛАХ карточки (box-shadow — без сдвига).
-      for (const el of Array.from(card.querySelectorAll("[data-swatch-img]"))) {
-        const on = el === swBtn;
-        el.setAttribute("aria-pressed", on ? "true" : "false");
-        el.style.boxShadow = on ? "0 0 0 2px rgb(var(--color-text,0 0 0))" : "";
-      }
-    });
+    // Квадратик цвета выбирает вариант — общий делегат (card-swatches.ts).
+    window.__merfyFluxCardSwatches.bind();
   }
 
   // «Следующее фото при наведении» — своя привязка и свой флажок «один раз на

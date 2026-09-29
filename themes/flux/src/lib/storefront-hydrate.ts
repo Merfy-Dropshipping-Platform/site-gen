@@ -13,6 +13,16 @@
  */
 
 import { pickDefaultCombination } from "../../../../packages/theme-base/runtime/nt-cart";
+import {
+  bindCardSwatches,
+  cardMemoryValues,
+  cardSwatches,
+  cardSwatchesHtml,
+  colorToHex,
+  normalizeColorName,
+  type CardSwatch,
+  type PickCombo,
+} from "../../../../packages/theme-flux/blocks/Catalog/card-swatches";
 
 export interface RealProduct {
   id: string;
@@ -431,437 +441,21 @@ function wishlistHeartHtml(id: string): string {
 }
 
 // ───────────────────────── Свотчи цвета / память ─────────────────────────
+// Одна реализация на все карточки flux — packages/theme-flux/blocks/Catalog/
+// card-swatches.ts (каталог получает те же функции строкой). Здесь — прежние
+// имена экспорта для секций и тестов.
 
-const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-const COLOR_GROUP_RE = /^(цвет|color)$/i;
-// Чипы памяти/объёма (эталон «128 ГБ»): ловим ТОЛЬКО значения с единицей памяти,
-// чтобы не выводить чипами размеры одежды (S/M/L) — те остаются только в свотчах
-// /выборе на PDP. Покрывает ГБ/GB/ТБ/TB/МБ/MB.
-// `\b` НЕ годится: после кириллических «ГБ» границы слова нет (кириллица — не
-// \w), и «128 ГБ» бы не матчился. Негативный lookahead на букву (лат/кир)
-// отсекает «gb» внутри длинного слова, но пропускает «ГБ» в конце/перед пробелом.
-const MEMORY_VALUE_RE = /\d+\s*(гб|gb|тб|tb|мб|mb)(?![a-zа-яё])/i;
+export { normalizeColorName, colorToHex, bindCardSwatches };
+export type { CardSwatch };
 
-/** Имя цвета → `#RRGGBB` (фолбэк, когда swatchHex не задан мерчантом). */
-const COLOR_NAME_HEX: Record<string, string> = {
-  белый: "#FFFFFF",
-  white: "#FFFFFF",
-  чёрный: "#000000",
-  черный: "#000000",
-  black: "#000000",
-  красный: "#E02D2D",
-  red: "#E02D2D",
-  синий: "#2D4BE0",
-  blue: "#2D4BE0",
-  голубой: "#6FB7E0",
-  зелёный: "#2DA84F",
-  зеленый: "#2DA84F",
-  green: "#2DA84F",
-  жёлтый: "#F2C53D",
-  желтый: "#F2C53D",
-  yellow: "#F2C53D",
-  оранжевый: "#FA5109",
-  orange: "#FA5109",
-  серый: "#9A9A9A",
-  gray: "#9A9A9A",
-  grey: "#9A9A9A",
-  серебро: "#C0C0C0",
-  серебряный: "#C0C0C0",
-  серебристый: "#C0C0C0",
-  silver: "#C0C0C0",
-  графит: "#3A3A3A",
-  graphite: "#3A3A3A",
-  бежевый: "#E8D9C0",
-  beige: "#E8D9C0",
-  коричневый: "#7A5230",
-  brown: "#7A5230",
-  розовый: "#F2A0C0",
-  pink: "#F2A0C0",
-  фиолетовый: "#7A3FB0",
-  purple: "#7A3FB0",
-  violet: "#7A3FB0",
-  бордовый: "#6E1423",
-  золотой: "#D4AF37",
-  gold: "#D4AF37",
-  бирюзовый: "#2DBFB0",
-  teal: "#2DBFB0",
-};
-
-/**
- * Модификаторы светлоты составного имени: основа слова → сдвиг (+ к белому,
- * − к чёрному). «Ярко»/«матовый» узнаём, но тон не двигаем.
- */
-const COLOR_MODIFIER_SHIFT: Record<string, number> = {
-  светл: 0.35,
-  бледн: 0.3,
-  нежн: 0.3,
-  пастельн: 0.3,
-  light: 0.35,
-  pale: 0.3,
-  soft: 0.3,
-  темн: -0.35,
-  глубок: -0.3,
-  dark: -0.35,
-  deep: -0.3,
-  ярк: 0,
-  насыщенн: 0,
-  матов: 0,
-  глянцев: 0,
-  металлик: 0,
-  bright: 0,
-  neon: 0,
-  неон: 0,
-};
-
-/** Окончания прилагательных — снимаются при сравнении основ. Длинные раньше. */
-const ADJECTIVE_ENDINGS = [
-  "ыми", "ими", "ого", "его", "ому", "ему",
-  "ый", "ий", "ой", "ая", "яя", "ое", "ее", "ые", "ие",
-  "ым", "им", "ых", "их", "ую", "юю",
-  "о", "е",
-];
-
-/** Регистр, ё/е, дефисы и тире, повторные пробелы — к одному виду. */
-export function normalizeColorName(raw?: string | null): string {
-  return String(raw ?? "")
-    .toLowerCase()
-    .replace(/ё/g, "е")
-    .replace(/[-_/\\‐-―−]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+/** Квадратики цвета товара + флаг «есть недоступный цвет» (см. cardSwatches). */
+export function deriveSwatches(p: RealProduct): { swatches: CardSwatch[]; swatchDisabled: boolean } {
+  return cardSwatches(p);
 }
 
-/** Основа слова: снимаем окончание прилагательного, если остаётся ≥3 букв. */
-function colorStem(word: string): string {
-  if (word.length < 4) return word;
-  for (const end of ADJECTIVE_ENDINGS) {
-    if (word.length - end.length >= 3 && word.endsWith(end)) {
-      return word.slice(0, word.length - end.length);
-    }
-  }
-  return word;
-}
-
-/**
- * Таблицы поиска строятся ЛЕНИВО и только здесь: этот модуль инлайнится в
- * hoisted-скрипт КАЖДОЙ секции flux, и константы уровня модуля (IIFE) esbuild
- * снести не может — они уезжали в бандлы Gallery/Collections/PopularProducts,
- * которым цвета не нужны (ловится снимками секций). Ленивая сборка внутри
- * функции тришейкается вместе с самой функцией.
- */
-let colorTablesCache: {
-  exact: Record<string, string>;
-  stems: Map<string, string>;
-} | null = null;
-
-function colorTables(): { exact: Record<string, string>; stems: Map<string, string> } {
-  if (colorTablesCache) return colorTablesCache;
-  const exact: Record<string, string> = {};
-  const stems = new Map<string, string>();
-  for (const [name, hex] of Object.entries(COLOR_NAME_HEX)) {
-    const normalized = normalizeColorName(name);
-    exact[normalized] = hex;
-    const s = colorStem(normalized);
-    if (!stems.has(s)) stems.set(s, hex);
-  }
-  colorTablesCache = { exact, stems };
-  return colorTablesCache;
-}
-
-/** Слово → цвет: точное имя, затем основа, затем общий префикс основ (≥4). */
-function lookupColorWord(word: string): string | null {
-  if (!word) return null;
-  const { exact, stems } = colorTables();
-  const direct = exact[word];
-  if (direct) return direct;
-  const s = colorStem(word);
-  const byStem = stems.get(s);
-  if (byStem) return byStem;
-  if (s.length >= 4) {
-    for (const [key, hex] of stems) {
-      if (key.length >= 4 && (key.startsWith(s) || s.startsWith(key))) return hex;
-    }
-  }
-  return null;
-}
-
-function lookupColorModifier(word: string): number | undefined {
-  const s = colorStem(word);
-  if (Object.prototype.hasOwnProperty.call(COLOR_MODIFIER_SHIFT, s)) {
-    return COLOR_MODIFIER_SHIFT[s];
-  }
-  return Object.prototype.hasOwnProperty.call(COLOR_MODIFIER_SHIFT, word)
-    ? COLOR_MODIFIER_SHIFT[word]
-    : undefined;
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace("#", "");
-  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h.slice(0, 6);
-  const n = parseInt(full, 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-/** Смешение двух цветов: t=0 — первый, t=1 — второй. */
-function mixHex(a: string, b: string, t: number): string {
-  const x = hexToRgb(a);
-  const y = hexToRgb(b);
-  const c = x.map((v, i) => Math.round(v + (y[i] - v) * t));
-  return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
-}
-
-/**
- * Преобразует значение/подсказку цвета в `#RRGGBB`. Приоритет: hex-подсказка
- * (swatchHex) → hex прямо в значении → имя цвета.
- *
- * Имя разбирается как КЛАСС, а не точным совпадением со словарём (баг
- * тестировщика 2026-09-13, п.6: «Светло-голубой» единственный из девяти
- * образцов оставался текст-кнопкой, потому что в словаре его нет): регистр,
- * ё/е, дефис/тире, лишние пробелы нормализуются; у составного имени базовый
- * цвет ищется с КОНЦА («светло-голубой» = голубой), слова перед ним — либо
- * модификатор светлоты, либо второй цвет («сине-зелёный» = смесь); основа
- * слова сравнивается без окончания прилагательного («голубая» → «голубой»).
- * Не распознали — null (свотч пропускается, размеры остаются текстом).
- *
- * Тот же алгоритм во втором порте секции —
- * packages/theme-base/blocks/Product/variantColor.ts (палитра своя).
- */
-export function colorToHex(
-  value?: string | null,
-  hint?: string | null,
-): string | null {
-  const h = (hint ?? "").trim();
-  if (HEX_RE.test(h)) return h;
-  const v = (value ?? "").trim();
-  if (HEX_RE.test(v)) return v;
-
-  const normalized = normalizeColorName(v);
-  if (!normalized) return null;
-  const exact = colorTables().exact[normalized];
-  if (exact) return exact;
-
-  const words = normalized.split(" ");
-  let baseIdx = -1;
-  let color: string | null = null;
-  for (let i = words.length - 1; i >= 0; i--) {
-    const hit = lookupColorWord(words[i]);
-    if (hit) {
-      color = hit;
-      baseIdx = i;
-      break;
-    }
-  }
-  if (!color) return null;
-
-  let shift = 0;
-  for (let i = 0; i < baseIdx; i++) {
-    const mod = lookupColorModifier(words[i]);
-    if (mod !== undefined) {
-      shift += mod;
-      continue;
-    }
-    const second = lookupColorWord(words[i]);
-    if (second) color = mixHex(color, second, 0.5);
-  }
-  if (shift > 0) color = mixHex(color, "#FFFFFF", Math.min(shift, 0.75));
-  if (shift < 0) color = mixHex(color, "#000000", Math.min(-shift, 0.75));
-  return color;
-}
-
-/** Квадратик цвета карточки = один настоящий цвет товара. */
-export interface CardSwatch {
-  /** Название цвета у мерчанта («Haze Pink»); пусто — если в данных только hex. */
-  value: string;
-  /** `#RRGGBB`: swatchHex мерчанта, иначе по названию (colorToHex). */
-  color: string;
-  /** Фото этого цвета (option.images[0] группы «Цвет»), иначе null. */
-  image: string | null;
-}
-
-const colorGroupOf = (p: RealProduct): VariantGroupTree | undefined =>
-  (p.variantGroups ?? []).find((g) => COLOR_GROUP_RE.test(String(g?.name ?? "").trim()));
-
-const colorOfCombo = (c?: VariantCombination | null): string =>
-  String(c?.options?.["Цвет"] ?? c?.options?.["Color"] ?? "").trim();
-
-/** Название цвета (без регистра) → его фото из группы «Цвет». */
-function colorImages(p: RealProduct): Map<string, string> {
-  const out = new Map<string, string>();
-  for (const o of colorGroupOf(p)?.options ?? []) {
-    const img = Array.isArray(o?.images) ? o.images.find((u) => typeof u === "string" && u) : undefined;
-    const key = String(o?.value ?? "").trim().toLowerCase();
-    if (img && key && !out.has(key)) out.set(key, img);
-  }
-  return out;
-}
-
-/**
- * Квадратики цвета товара + флаг «есть недоступный цвет». Источники по
- * приоритету: variantSwatches (плоский, эмитит пайплайн) → группа «Цвет» из
- * variantGroups (swatchHex) → имена цветов из variantCombinations (по таблице).
- * Недоступный цвет в filled-список не идёт — вместо него один перечёркнутый
- * серый квадрат (swatchDisabled), как в эталоне.
- *
- * Один квадратик — на каждое НАЗВАНИЕ цвета, не на каждый hex: «Haze Pink» и
- * «Performance Pink» без swatchHex оба угадываются розовыми, и склейка по hex
- * прятала второй вариант (владелец 28.09, «Бесшовный топ»).
- */
-export function deriveSwatches(p: RealProduct): {
-  swatches: CardSwatch[];
-  swatchDisabled: boolean;
-} {
-  const out: CardSwatch[] = [];
-  const seen = new Set<string>();
-  const images = colorImages(p);
-  let swatchDisabled = false;
-  const push = (value: string | null | undefined, hex: string | null, available?: boolean): void => {
-    if (!hex) return;
-    if (available === false) {
-      swatchDisabled = true;
-      return;
-    }
-    const name = String(value ?? "").trim();
-    const key = (name || hex).toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
-    out.push({ value: name, color: hex, image: images.get(name.toLowerCase()) ?? null });
-  };
-
-  if (Array.isArray(p.variantSwatches) && p.variantSwatches.length > 0) {
-    for (const s of p.variantSwatches)
-      push(s?.value, colorToHex(s?.value, s?.color), s?.available);
-  }
-  if (out.length === 0) {
-    for (const o of colorGroupOf(p)?.options ?? []) push(o?.value, colorToHex(o?.value, o?.swatchHex));
-  }
-  if (out.length === 0 && Array.isArray(p.variantCombinations)) {
-    for (const c of p.variantCombinations) push(colorOfCombo(c), colorToHex(colorOfCombo(c)), c?.available);
-  }
-  return { swatches: out.slice(0, 6), swatchDisabled };
-}
-
-/** Вариант, который кладёт «В корзину» после выбора цвета: этот цвет, первый размер в порядке показа. */
-function comboForColor(p: RealProduct, color: string): VariantCombination | null {
-  if (!color) return null;
-  const combos = (p.variantCombinations ?? []).filter((c) => colorOfCombo(c) === color);
-  const otherGroups = (p.variantGroups ?? []).filter((g) => g !== colorGroupOf(p));
-  return pickDefaultCombination(combos, otherGroups);
-}
-
-const sizeOfCombo = (c: VariantCombination): string =>
-  String(c.options?.["Размер"] ?? c.options?.["Size"] ?? "").trim();
-
-const SWATCH_RING = "box-shadow:0 0 0 2px rgb(var(--color-text,0 0 0));";
-
-/**
- * Квадратик цвета. Есть что выбирать (вариант этого цвета или его фото) —
- * кнопка с данными варианта для bindCardSwatches; нечего — статичный
- * квадрат, как раньше. Стили новой кнопки — inline: живая сборка CSS может
- * не видеть классов из строк гидрации.
- */
-function swatchHtml(p: RealProduct, s: CardSwatch, selected: string): string {
-  const combo = comboForColor(p, s.value);
-  if (!combo && !s.image) {
-    return `<span class="size-5 rounded-[2px]" style="background:${s.color}" aria-hidden="true"></span>`;
-  }
-  const on = s.value !== "" && s.value === selected;
-  const data: Array<[string, string]> = [
-    ["data-swatch-value", s.value],
-    ["data-swatch-image", s.image ?? ""],
-    ["data-swatch-combo-id", combo ? String(combo.id) : ""],
-    ["data-swatch-size", combo ? sizeOfCombo(combo) : ""],
-    ["data-swatch-price", combo ? String(combo.price) : ""],
-  ];
-  const attrs = data.map(([k, v]) => ` ${k}="${escapeHtml(v)}"`).join("");
-  return (
-    `<button type="button" data-card-swatch${attrs} aria-pressed="${on}"` +
-    ` aria-label="Цвет: ${escapeHtml(s.value)}" title="${escapeHtml(s.value)}"` +
-    ` class="size-5 rounded-[2px]" style="padding:0;border:0;cursor:pointer;background:${s.color};${on ? SWATCH_RING : ""}"></button>`
-  );
-}
-
-/** Атрибут квадратика → атрибут кнопки «В корзину» (контракт nt-cart-flux initCartUI). */
-const SWATCH_TO_CART: ReadonlyArray<[string, string]> = [
-  ["data-swatch-combo-id", "data-variant-combination-id"],
-  ["data-swatch-value", "data-variant-color"],
-  ["data-swatch-size", "data-variant-size"],
-  ["data-swatch-price", "data-price"],
-];
-
-function setOrDrop(el: Element, name: string, value: string | null): void {
-  if (value) el.setAttribute(name, value);
-  else el.removeAttribute(name);
-}
-
-/** Фото карточки → фото цвета. data-image-1 — «исходное» для наведения и свайпа (runtime/card-photo-swipe). */
-function showCardPhoto(card: Element, url: string): void {
-  const img = card.querySelector('[data-nt="flux-card-media"] img');
-  if (!img) return;
-  img.setAttribute("src", url);
-  img.setAttribute("data-image-1", url);
-}
-
-function selectCardSwatch(swatch: Element): void {
-  const card = swatch.closest('[data-nt="flux-product-card"]');
-  if (!card) return;
-  for (const el of Array.from(card.querySelectorAll<HTMLElement>("[data-card-swatch]"))) {
-    el.setAttribute("aria-pressed", String(el === swatch));
-    el.style.boxShadow = el === swatch ? "0 0 0 2px rgb(var(--color-text,0 0 0))" : "";
-  }
-  const image = swatch.getAttribute("data-swatch-image");
-  const button = card.querySelector("[data-add-to-cart]");
-  if (image) showCardPhoto(card, image);
-  if (button && image) button.setAttribute("data-image", image);
-  if (!button || !swatch.getAttribute("data-swatch-combo-id")) return;
-  for (const [from, to] of SWATCH_TO_CART) setOrDrop(button, to, swatch.getAttribute(from));
-}
-
-/**
- * Нажатие на квадратик цвета карточки (renderCardHtml) выбирает вариант:
- * фото этого цвета + «В корзину» кладёт вариант этого цвета. Один делегат на
- * документ — карточки перерисовываются гидрацией, привязка переживает это.
- */
-export function bindCardSwatches(): void {
-  const root = document.documentElement;
-  if (root.hasAttribute("data-flux-card-swatches")) return;
-  root.setAttribute("data-flux-card-swatches", "");
-  document.addEventListener("click", (event) => {
-    const swatch = (event.target as Element | null)?.closest?.("[data-card-swatch]");
-    if (!swatch) return;
-    event.preventDefault();
-    selectCardSwatch(swatch);
-  });
-}
-
-/**
- * Чипы памяти/объёма (эталон) из не-цветовой группы вариаций. Только значения с
- * единицей памяти (ГБ/GB/…) — размеры одежды чипами не выводим. Источники:
- * variantGroups → variantCombinations.
- */
+/** Чипы памяти/объёма («128 ГБ»); размеры одежды чипами не выводим (см. cardMemoryValues). */
 export function deriveMemory(p: RealProduct): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  const add = (value?: string | null): void => {
-    const s = (value ?? "").trim();
-    if (!s || seen.has(s.toLowerCase()) || !MEMORY_VALUE_RE.test(s)) return;
-    seen.add(s.toLowerCase());
-    out.push(s);
-  };
-
-  if (Array.isArray(p.variantGroups)) {
-    for (const g of p.variantGroups) {
-      if (COLOR_GROUP_RE.test(String(g?.name ?? "").trim())) continue;
-      for (const o of g?.options ?? []) add(o?.value);
-    }
-  }
-  if (out.length === 0 && Array.isArray(p.variantCombinations)) {
-    for (const c of p.variantCombinations) {
-      for (const [key, val] of Object.entries(c?.options ?? {})) {
-        if (!COLOR_GROUP_RE.test(key)) add(val);
-      }
-    }
-  }
-  return out.slice(0, 4);
+  return cardMemoryValues(p);
 }
 
 /** Цена-в-число: число как есть, строка «54 990 ₽» → 54990, иначе null. */
@@ -988,19 +582,10 @@ export function renderCardHtml(p: RealProduct, ctaLabel?: string, qaMode?: strin
     ? `<img src="${image}" alt="${name}" width="600" height="600" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />`
     : `<span class="flex h-full w-full items-center justify-center text-[rgb(var(--color-muted,153_153_153))]"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>`;
 
-  const { swatches, swatchDisabled } = deriveSwatches(p);
-  // Выбранным рисуется цвет варианта, который кладёт «В корзину» (cardButtonHtml).
-  const selectedColor = colorOfCombo(pickDefaultCombination(p.variantCombinations ?? [], p.variantGroups));
-  const swatchesHtml =
-    swatches.length > 0
-      ? `<div class="flex items-center gap-1">${swatches
-          .map((s) => swatchHtml(p, s, selectedColor))
-          .join("")}${
-          swatchDisabled
-            ? `<span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true"><span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span></span>`
-            : ""
-        }</div>`
-      : "";
+  // Квадратики цвета (одна реализация — card-swatches.ts): выбран цвет варианта,
+  // который кладёт «В корзину» (cardButtonHtml, тот же pickDefaultCombination).
+  const swatchInner = cardSwatchesHtml(p, pickDefaultCombination as PickCombo);
+  const swatchesHtml = swatchInner ? `<div class="flex items-center gap-1">${swatchInner}</div>` : "";
 
   const memory = deriveMemory(p);
   const memoryHtml =

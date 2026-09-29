@@ -1,6 +1,7 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { SitesMicroserviceController } from "../sites.microservice.controller";
 import { SitesDomainService } from "../sites.service";
+import { RevisionConflictError } from "../content/store-content.port";
 
 function createDb(currentRevisionId: string | null, updateMatches: boolean) {
   const committedRevisionIds: string[] = [];
@@ -218,7 +219,7 @@ describe("SitesMicroserviceController.createRevision CAS", () => {
     const domain = {
       createRevision: jest
         .fn()
-        .mockRejectedValue(new Error("revision_conflict")),
+        .mockRejectedValue(new RevisionConflictError()),
     };
     const controller = new SitesMicroserviceController(
       domain as unknown as SitesDomainService,

@@ -38,6 +38,7 @@ import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
 import type { PanelDefaultsSource } from "./panel-defaults";
 import { saveOnBase, writeLabels } from "./save-on-base";
 import type { RevisionStore } from "./save-on-base";
+import { RevisionConflictError } from "./store-content.port";
 import type {
   BlindSaveParams,
   LoadOptions,
@@ -221,7 +222,7 @@ export class DocumentAdapter implements StoreContent {
         expected: expectedVersion,
         createdBy: params.actorUserId,
       });
-      if (!ok) throw new Error("revision_conflict");
+      if (!ok) throw new RevisionConflictError();
       return { version: id };
     }
 

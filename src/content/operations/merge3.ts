@@ -19,7 +19,6 @@
  */
 import {
   ORDER_SEGMENT,
-  covers,
   itemSegment,
   joinPath,
   parentPath,
@@ -29,7 +28,7 @@ import {
 import { apply } from "./apply";
 import { atomicContainers, diffWithPlan } from "./diff";
 import { deepEqual, orNull } from "./json";
-import { VOLATILE_PATHS, idsOf } from "./shape";
+import { idsOf, isVolatile } from "./shape";
 import type {
   ContestedValue,
   Doc,
@@ -38,10 +37,6 @@ import type {
   Op,
 } from "./types";
 import { coversPath, isOrderPath, locate, overlapsPath, readAt } from "./walk";
-
-function isVolatile(op: Op): boolean {
-  return VOLATILE_PATHS.some((path) => covers(path, op.path));
-}
 
 /** Наименьшие адреса, где пересеклись чужие и входящие операции. */
 function contestedRegions(

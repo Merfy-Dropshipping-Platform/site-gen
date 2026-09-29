@@ -31,8 +31,8 @@ export interface WriteModel {
   filterForWrite(doc: Doc): Doc;
   /** Операция `diff(base, side)` — автозначение панели, а не правка. */
   isAutoValue(op: Op, base: Doc, side: Doc): boolean;
-  /** Операция — копия служебного блока на внутренней странице. */
-  isDerived(op: Op, ...docs: Doc[]): boolean;
+  /** Операция `diff(base, side)` — копия служебного блока на внутренней странице. */
+  isDerived(op: Op, base: Doc, side: Doc): boolean;
 }
 
 export interface WriteModelInput {
@@ -75,6 +75,7 @@ export async function makeDocumentWriteModel(
     normalize: async (doc) => filter(await input.load(doc)),
     filterForWrite: (doc) => (input.filterSeeded ? filter(doc) : doc),
     isAutoValue: makeAutoValueRule(input.panelDefaults),
-    isDerived: isChromeCopy,
+    // Тип секции ищется сначала в документе стороны, потом в базе.
+    isDerived: (op, base, side) => isChromeCopy(op, side, base),
   };
 }

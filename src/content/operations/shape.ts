@@ -12,7 +12,9 @@
  * Любой другой объект — обычная запись (поле за полем), любой другой массив —
  * одно значение (слайды, пункты меню, цветовые схемы).
  */
+import { covers } from "./address";
 import { isPlainObject } from "./json";
+import type { Op } from "./types";
 
 export interface RecordShape {
   kind: "record";
@@ -87,6 +89,11 @@ export const VOLATILE_PATHS: readonly string[] = [
   "currentPageId",
   "lockVersion",
 ];
+
+/** Операция над служебным полем (`VOLATILE_PATHS`) — не правка и не спор. */
+export function isVolatile(op: Op): boolean {
+  return VOLATILE_PATHS.some((path) => covers(path, op.path));
+}
 
 /** Список «годится для адресации по id»: у каждого элемента непустой строковый id, id не повторяются. */
 export function isKeyedList(

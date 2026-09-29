@@ -17,7 +17,10 @@ import {
   RmqContext,
 } from "@nestjs/microservices";
 import { SitesDomainService } from "./sites.service";
-import { RevisionMergeConflictError } from "./content/store-content.port";
+import {
+  RevisionConflictError,
+  RevisionMergeConflictError,
+} from "./content/store-content.port";
 
 /** Ошибка записи ревизии → устойчивый конверт RPC (шлюз отображает код в HTTP). */
 function revisionWriteFailure(e: any) {
@@ -29,7 +32,7 @@ function revisionWriteFailure(e: any) {
       conflicts: e.conflicts,
     };
   }
-  if (e?.message === "revision_conflict") {
+  if (e instanceof RevisionConflictError) {
     return {
       success: false,
       code: "REVISION_CONFLICT",

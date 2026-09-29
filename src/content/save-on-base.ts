@@ -19,13 +19,13 @@
  */
 import type { Logger } from "@nestjs/common";
 import { randomUUID } from "crypto";
-import { VOLATILE_PATHS, apply, diff, merge3, paths } from "./operations";
+import { apply, diff, isVolatile, merge3, paths } from "./operations";
 import type { Doc, MergePolicy, Op } from "./operations";
-import { covers } from "./operations/address";
 import { deepEqual } from "./operations/json";
 import type { WriteModel } from "./write-model";
 import {
   CLIENT_SNAPSHOT_KIND,
+  RevisionConflictError,
   RevisionMergeConflictError,
 } from "./store-content.port";
 import type {
@@ -94,17 +94,14 @@ type KindRule = {
  * правило задаёт вид операции `diff(base, side)`.
  */
 const NOT_A_CHANGE: KindRule[] = [
-  {
-    kind: "volatile",
-    test: (op) => VOLATILE_PATHS.some((v) => covers(v, op.path)),
-  },
+  { kind: "volatile", test: (op) => isVolatile(op) },
   {
     kind: "panelDefault",
     test: (op, base, side, model) => model.isAutoValue(op, base, side),
   },
   {
     kind: "chromeCopy",
-    test: (op, base, side, model) => model.isDerived(op, side, base),
+    test: (op, base, side, model) => model.isDerived(op, base, side),
   },
 ];
 
@@ -159,7 +156,7 @@ class BaseWrite {
       if (written) return written;
       current = await this.store.readPointer(this.siteId, this.params.tenantId);
     }
-    throw new Error("revision_conflict");
+    throw new RevisionConflictError();
   }
 
   private async initialPointer(): Promise<string | null> {
@@ -238,7 +235,7 @@ class BaseWrite {
   /** База устарела: слить по политике или отказать (`refuse`). */
   private async stale(current: string | null): Promise<SaveResult | null> {
     const policy = this.params.mergePolicy;
-    if (policy === "refuse") throw new Error("revision_conflict");
+    if (policy === "refuse") throw new RevisionConflictError();
     return this.merge(current, policy);
   }
 

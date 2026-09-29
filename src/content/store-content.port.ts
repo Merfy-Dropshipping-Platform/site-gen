@@ -178,6 +178,19 @@ export interface SaveResult {
   effect?: SaveEffect;
 }
 
+/**
+ * Текущая ревизия не та, от которой пишут: жёсткий CAS не прошёл, база
+ * устарела при политике `refuse` или все попытки CAS проиграны. Ничего не
+ * записано. `message` — прежний код `revision_conflict` (его видят RPC и
+ * шлюз).
+ */
+export class RevisionConflictError extends Error {
+  constructor() {
+    super("revision_conflict");
+    this.name = "RevisionConflictError";
+  }
+}
+
 /** Слияние при политике `reject-conflicts` упёрлось в одно и то же место. Ничего не записано. */
 export class RevisionMergeConflictError extends Error {
   constructor(readonly conflicts: ContestedValue[]) {

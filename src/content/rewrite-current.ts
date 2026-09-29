@@ -7,13 +7,18 @@
  * (`RevisionMergeConflictError`) или проиграла все попытки CAS
  * (`revision_conflict`). Правки в разных местах сливает сам порт.
  */
-import { RevisionMergeConflictError } from "./store-content.port";
+import {
+  RevisionConflictError,
+  RevisionMergeConflictError,
+} from "./store-content.port";
 
 const ATTEMPTS = 3;
 
 function isStaleWrite(e: unknown): boolean {
-  if (e instanceof RevisionMergeConflictError) return true;
-  return e instanceof Error && e.message === "revision_conflict";
+  return (
+    e instanceof RevisionMergeConflictError ||
+    e instanceof RevisionConflictError
+  );
 }
 
 type Outcome<T> = { ok: true; value: T } | { ok: false; error: unknown };

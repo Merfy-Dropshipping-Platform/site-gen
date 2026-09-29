@@ -1,6 +1,7 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { SitesMicroserviceController } from "../sites.microservice.controller";
 import { SitesDomainService } from "../sites.service";
+import { RevisionConflictError } from "../content/store-content.port";
 
 function createDb(currentRevisionId: string | null, updateMatches: boolean) {
   const committedRevisionIds: string[] = [];
@@ -172,11 +173,18 @@ describe("SitesDomainService.createRevision CAS", () => {
 });
 
 describe("SitesMicroserviceController.createRevision CAS", () => {
+  // Этап 2 «Безопасная запись» (merfy-mcp/docs/plans/2026-09-24-stage2-safe-write.md),
+  // осознанная смена поведения — единственная, разрешённая планом (И7).
+  // Было: контроллер передавал expectedCurrentRevisionId в жёсткий CAS домена —
+  //   устаревшая база → revision_conflict → 409 → очередь конструктора замерзала.
+  // Стало: тот же id — БАЗА записи; устаревшая база сливается (побеждает
+  //   последний), жёсткий CAS этим путём больше не зовётся. Сам жёсткий CAS
+  //   домена (describe выше) не менялся.
   it.each([
     ["revision id", "rev-a"],
     ["null", null],
   ])(
-    "forwards an expected current %s",
+    "forwards an expected current %s as the merge base",
     async (_label, expectedCurrentRevisionId) => {
       const domain = {
         createRevision: jest.fn().mockResolvedValue({ revisionId: "rev-new" }),
@@ -194,7 +202,15 @@ describe("SitesMicroserviceController.createRevision CAS", () => {
       });
 
       expect(domain.createRevision).toHaveBeenCalledWith(
-        expect.objectContaining({ expectedCurrentRevisionId }),
+        expect.objectContaining({
+          base: expectedCurrentRevisionId,
+          mergePolicy: "last-writer-wins",
+          actor: "merchant",
+          source: "constructor",
+        }),
+      );
+      expect(domain.createRevision.mock.calls[0][0]).not.toHaveProperty(
+        "expectedCurrentRevisionId",
       );
     },
   );
@@ -203,7 +219,7 @@ describe("SitesMicroserviceController.createRevision CAS", () => {
     const domain = {
       createRevision: jest
         .fn()
-        .mockRejectedValue(new Error("revision_conflict")),
+        .mockRejectedValue(new RevisionConflictError()),
     };
     const controller = new SitesMicroserviceController(
       domain as unknown as SitesDomainService,

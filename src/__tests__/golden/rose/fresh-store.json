@@ -583,12 +583,33 @@
           "content": [
             {
               "props": {
-                "colorScheme": "scheme-2",
-                "id": "CheckoutHeader-1",
-                "logo": "/logo.svg",
-                "siteTitle": "Мой магазин"
+                "id": "PromoBanner-page-checkout-result"
               },
-              "type": "CheckoutHeader"
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-page-checkout-result",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
             },
             {
               "props": {
@@ -603,7 +624,6 @@
                 "bodyFont": "",
                 "bodyWeight": "",
                 "buttonColor": "",
-                "colorScheme": "scheme-2",
                 "confirmedNote": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
                 "confirmedTitle": "Ваш заказ подтверждён",
                 "detailsTitle": "Детали заказа",
@@ -624,6 +644,13 @@
                 "summaryBg": ""
               },
               "type": "OrderConfirmation"
+            },
+            {
+              "props": {
+                "id": "Footer-page-checkout-result",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
             }
           ],
           "root": {

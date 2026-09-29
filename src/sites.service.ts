@@ -41,7 +41,17 @@ import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 import { getPageResolver } from "./themes/page-resolver-instance";
 import { getThemeManifest } from "./themes/theme-manifest-loader";
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
-import type { StoreContent, StoreContentSite } from "./content/store-content.port";
+import { isStoreVersion } from "./content/revision-kinds";
+import { rewriteCurrent } from "./content/rewrite-current";
+import { toStoreContentSite } from "./content/store-content.port";
+import type {
+  SaveParams,
+  StaleBasePolicy,
+  StoreContent,
+  StoreContentSite,
+  WriteActor,
+  WriteSource,
+} from "./content/store-content.port";
 
 const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== 'false'; // default ON, set to 'false' to disable
 
@@ -319,23 +329,6 @@ export class SitesDomainService {
    * (фабрика — content/store-content.service.ts, общая с PreviewController). */
   private get storeContent(): StoreContent {
     return (this.storeContentInstance ??= resolveStoreContent(this.injectedStoreContent, this.db));
-  }
-
-  /** Подмножество `site`, нужное порту StoreContent (см. store-content.port.ts). */
-  private toStoreContentSite(site: {
-    themeId?: string | null;
-    publicUrl?: string | null;
-    name?: string | null;
-    currentRevisionId?: string | null;
-    contentModel?: string | null;
-  }): StoreContentSite {
-    return {
-      themeId: site.themeId ?? null,
-      publicUrl: site.publicUrl ?? null,
-      name: site.name ?? null,
-      currentRevisionId: site.currentRevisionId ?? null,
-      contentModel: site.contentModel ?? null,
-    };
   }
 
   /**
@@ -1844,7 +1837,7 @@ export class SitesDomainService {
 
     // === SYNCHRONOUS BUILD PATH (legacy) ===
     // Build runs in parallel with Coolify app creation
-    const { buildId, artifactUrl, revisionId } = await this.generator.build({
+    const { buildId, artifactUrl } = await this.generator.build({
       tenantId: params.tenantId,
       siteId: params.siteId,
       mode: params.mode,
@@ -1874,12 +1867,14 @@ export class SitesDomainService {
       }
     }
 
-    // Обновить статус сайта + publicUrl
+    // Обновить статус сайта + publicUrl. Указатель текущей ревизии НЕ трогаем
+    // (этап 2): сборка и так собирала текущую, а автосейв, записанный во
+    // время сборки, иначе молча перестал бы быть текущим. Двигает указатель
+    // только порт StoreContent.
     await this.db
       .update(schema.site)
       .set({
         status: "published",
-        currentRevisionId: revisionId,
         ...(finalUrl ? { publicUrl: finalUrl } : {}),
         updatedAt: new Date(),
       })
@@ -1928,13 +1923,15 @@ export class SitesDomainService {
   async listRevisions(tenantId: string, siteId: string, limit = 50) {
     const site = await this.get(tenantId, siteId);
     if (!site) throw new Error("site_not_found");
+    // Снимки документа клиента (этап 2, «линия клиента») — служебные базы
+    // слияния, не версии магазина: в истории их нет.
     const rows = await this.db
       .select({
         id: schema.siteRevision.id,
         createdAt: schema.siteRevision.createdAt,
       })
       .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.siteId, siteId))
+      .where(and(eq(schema.siteRevision.siteId, siteId), isStoreVersion()))
       .limit(limit);
     return { items: rows };
   }
@@ -1966,7 +1963,7 @@ export class SitesDomainService {
     // normalizeRevision → seedContentPagesFromTheme (B17) → resolveAssetUrls.
     const loaded = await this.storeContent.load(siteId, {
       revisionId,
-      site: this.toStoreContentSite(site),
+      site: toStoreContentSite(site),
     });
     return { item: { ...rev, data: loaded.document } };
   }
@@ -2052,49 +2049,126 @@ export class SitesDomainService {
      * эталонный контент темы намеренно и фильтроваться не должны.
      */
     filterSeededPages?: boolean;
+    /**
+     * База записи — ревизия, которую видел пишущий (этап 2, И2). Задана —
+     * запись от базы: устарела → слияние по `mergePolicy`. Не задана — запись
+     * вслепую (создание магазина, пересев при смене темы), где
+     * `expectedCurrentRevisionId` — прежний жёсткий CAS (до этапа 2).
+     */
+    base?: string | null;
+    actor?: WriteActor;
+    source?: WriteSource;
+    mergePolicy?: StaleBasePolicy;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
-    const saved = await this.storeContent.save(params.siteId, {
+    const saved = await this.storeContent.save(
+      params.siteId,
+      this.revisionWrite(params, toStoreContentSite(site)),
+    );
+    if (!saved.effect) return { revisionId: saved.version };
+    // Контракт записи для клиентов (план этапа 2): `revisionId` — ревизия,
+    // равная документу клиента (база его следующего сохранения), текущая
+    // ревизия магазина — `currentRevisionId`.
+    return {
+      revisionId: saved.effect.clientVersion,
+      currentRevisionId: saved.version,
+      merged: saved.effect.merged,
+      overwritten: saved.effect.overwritten,
+      conflicts: saved.effect.conflicts,
+    };
+  }
+
+  /** Параметры `createRevision` → форма записи порта: с базой — от базы, без неё — вслепую. */
+  private revisionWrite(
+    params: Parameters<SitesDomainService["createRevision"]>[0],
+    site: StoreContentSite,
+  ): SaveParams {
+    const common = {
       document: params.data,
       tenantId: params.tenantId,
       meta: params.meta,
       actorUserId: params.actorUserId,
-      setCurrent: params.setCurrent,
-      expectedVersion: params.expectedCurrentRevisionId,
       filterSeeded: params.filterSeededPages,
-      site: this.toStoreContentSite(site),
-    });
-    return { revisionId: saved.version };
+      actor: params.actor,
+      source: params.source,
+      site,
+    };
+    if (params.base === undefined) {
+      return {
+        mode: "blind",
+        setCurrent: params.setCurrent,
+        expectedVersion: params.expectedCurrentRevisionId,
+        ...common,
+      };
+    }
+    // Запись от базы всегда делает ревизию текущей и не знает жёсткого CAS:
+    // такие сочетания — явная ошибка, а не тихий уход в другой путь.
+    if (!params.setCurrent) throw new Error("base_requires_set_current");
+    if (params.expectedCurrentRevisionId !== undefined) {
+      throw new Error("base_and_expected_version_are_exclusive");
+    }
+    return {
+      mode: "on-base",
+      base: params.base,
+      mergePolicy: params.mergePolicy ?? "reject-conflicts",
+      ...common,
+    };
   }
 
+  /**
+   * Откат (этап 2, И6): новая ревизия — ТОЧНАЯ копия выбранной версии (как
+   * она хранится) — через порт со сверкой «текущая = та, что видел клиент»
+   * и пометкой `restoredFrom`. Раньше — безусловная перестановка указателя на
+   * старую строку. Откат — осознанное действие: если текущая сменилась
+   * (автосейв успел раньше), он НЕ сливается и не перезаписывает чужое —
+   * `revision_conflict` (409), в базе ничего нового. Выбранная версия и так
+   * текущая — ничего не пишется.
+   */
   async setCurrentRevision(params: {
     tenantId: string;
     siteId: string;
     revisionId: string;
+    actorUserId?: string;
+    /**
+     * База отката — текущая ревизия, которую видел клиент (шлюз начнёт
+     * передавать в 2.5). Не передана — текущая на момент чтения. `null` —
+     * «ревизии нет»: явное значение, не подменяется текущей.
+     */
+    base?: string | null;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
-    const [rev] = await this.db
-      .select({ id: schema.siteRevision.id })
-      .from(schema.siteRevision)
-      .where(
-        and(
-          eq(schema.siteRevision.id, params.revisionId),
-          eq(schema.siteRevision.siteId, params.siteId),
-        ),
-      );
-    if (!rev) throw new Error("revision_not_found");
-    await this.db
-      .update(schema.site)
-      .set({ currentRevisionId: params.revisionId, updatedAt: new Date() })
-      .where(
-        and(
-          eq(schema.site.id, params.siteId),
-          eq(schema.site.tenantId, params.tenantId),
-        ),
-      );
-    return { success: true } as const;
+    const storeSite = toStoreContentSite(site);
+    // Копия ревизии как она лежит (без шагов чтения и фильтра досеянного):
+    // восстановленная версия читается ровно как выбранная.
+    const target = await this.storeContent.load(params.siteId, {
+      revisionId: params.revisionId,
+      site: storeSite,
+      asStored: true,
+    });
+    const restored = {
+      success: true,
+      restoredFrom: params.revisionId,
+    } as const;
+    if (params.revisionId === storeSite.currentRevisionId) {
+      return { ...restored, revisionId: params.revisionId };
+    }
+    const seen =
+      params.base !== undefined ? params.base : storeSite.currentRevisionId;
+    const saved = await this.storeContent.save(params.siteId, {
+      mode: "on-base",
+      document: target.document,
+      base: seen ?? null,
+      tenantId: params.tenantId,
+      actor: "merchant",
+      source: "rollback",
+      mergePolicy: "refuse",
+      meta: { restoredFrom: params.revisionId },
+      actorUserId: params.actorUserId,
+      site: storeSite,
+    });
+    return { ...restored, revisionId: saved.version };
   }
 
   async freezeTenant(tenantId: string) {
@@ -3160,11 +3234,23 @@ export class SitesDomainService {
 
   /** Сбросить контентные страницы текущей ревизии на сиды темы (Фаза 2 слайсинга). */
   async resetContentPages(siteId: string): Promise<{ reset: string[] }> {
+    // Этап 2 (И1): новая ревизия через порт с базой = текущая, а не UPDATE
+    // строки на месте; спор с чужой правкой — пересчитать от свежей ревизии.
+    return rewriteCurrent(() => this.resetContentPagesOnce(siteId));
+  }
+
+  private async resetContentPagesOnce(
+    siteId: string,
+  ): Promise<{ reset: string[] }> {
     const [site] = await this.db
       .select({
         id: schema.site.id,
+        tenantId: schema.site.tenantId,
         themeId: schema.site.themeId,
         currentRevisionId: schema.site.currentRevisionId,
+        publicUrl: schema.site.publicUrl,
+        name: schema.site.name,
+        contentModel: schema.site.contentModel,
       })
       .from(schema.site)
       .where(eq(schema.site.id, siteId));
@@ -3172,15 +3258,18 @@ export class SitesDomainService {
     if (!site.currentRevisionId)
       throw new Error(`Site ${siteId} has no current revision`);
 
-    const [revision] = await this.db
-      .select({ id: schema.siteRevision.id, data: schema.siteRevision.data })
-      .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.id, site.currentRevisionId));
-    if (!revision)
-      throw new Error(`Revision ${site.currentRevisionId} not found`);
+    // База сброса — текущая ревизия как она хранится (без шагов чтения).
+    const revision = await this.storeContent
+      .load(siteId, { site: toStoreContentSite(site), asStored: true })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.message === "revision_not_found") {
+          throw new Error(`Revision ${site.currentRevisionId} not found`);
+        }
+        throw e;
+      });
 
     const theme = (site.themeId ?? "rose").replace(/-\d+(?:\.\d+)*$/, "");
-    const data = (revision.data ?? {}) as Record<string, any>;
+    const data = revision.document as Record<string, any>;
     const pagesData = { ...(data.pagesData ?? {}) };
     const fs = await import("node:fs/promises");
     const path = await import("node:path");
@@ -3215,10 +3304,17 @@ export class SitesDomainService {
         /* нет сида у темы — страницу не трогаем */
       }
     }
-    await this.db
-      .update(schema.siteRevision)
-      .set({ data: { ...data, pagesData } })
-      .where(eq(schema.siteRevision.id, revision.id));
+    await this.storeContent.save(siteId, {
+      mode: "on-base",
+      document: { ...data, pagesData },
+      base: revision.version,
+      tenantId: site.tenantId,
+      actor: "system",
+      source: "ops",
+      mergePolicy: "reject-conflicts",
+      meta: { operation: "reset-content-pages" },
+      site: toStoreContentSite(site),
+    });
     return { reset };
   }
 

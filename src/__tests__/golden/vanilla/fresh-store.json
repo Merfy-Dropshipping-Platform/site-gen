@@ -133,6 +133,20 @@
           "variant": null
         },
         {
+          "id": "page-checkout-result",
+          "isCustom": false,
+          "locale": null,
+          "name": "Спасибо за заказ",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout-result",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
           "id": "page-profile",
           "isCustom": false,
           "locale": null,
@@ -439,13 +453,14 @@
             {
               "props": {
                 "alignment": "center",
+                "button": {
+                  "link": {
+                    "href": "/catalog"
+                  },
+                  "text": "К покупкам"
+                },
                 "buttonStyle": "outlined",
                 "colorScheme": "scheme-5",
-                "cta": {
-                  "href": "/catalog",
-                  "text": "К покупкам",
-                  "variant": "primary"
-                },
                 "heading": {
                   "size": "small",
                   "text": "Тепло вашего дома начинается здесь"
@@ -953,6 +968,99 @@
           "root": {
             "props": {
               "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout-result": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-checkout-result",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-page-checkout-result",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "accentColor": "",
+                "banner": {
+                  "align": "center",
+                  "enabled": false,
+                  "placement": "order",
+                  "src": "",
+                  "width": 580
+                },
+                "bodyFont": "",
+                "bodyWeight": "",
+                "buttonColor": "",
+                "confirmedNote": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
+                "confirmedTitle": "Ваш заказ подтверждён",
+                "detailsTitle": "Детали заказа",
+                "errorColor": "",
+                "greetingTemplate": "Спасибо за заказ, {name}!",
+                "headingFont": "",
+                "headingWeight": "",
+                "helpText": "Нужна помощь? Обратитесь к нам",
+                "id": "OrderConfirmation-1",
+                "legalText": "Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.",
+                "orderBg": "",
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "returnButtonHref": "/",
+                "returnButtonText": "Вернуться к магазину",
+                "summaryBg": ""
+              },
+              "type": "OrderConfirmation"
+            },
+            {
+              "props": {
+                "id": "Footer-page-checkout-result",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Спасибо за заказ"
             }
           },
           "zones": {}

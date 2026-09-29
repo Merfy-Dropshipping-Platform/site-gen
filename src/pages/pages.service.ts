@@ -7,6 +7,12 @@
  *
  * Системные страницы (role: 'system') защищены от удаления.
  * Slug'и кастомных страниц не должны коллидировать с manifest.pages темы.
+ *
+ * Запись (этап 2, И1): каждая правка — НОВАЯ ревизия через порт StoreContent
+ * с базой = прочитанная ревизия (раньше — `UPDATE site_revision SET data` на
+ * текущей строке без CAS, гонка с автосейвом конструктора). Правки в разных
+ * местах сливаются портом; спор о том же месте — правка пересчитывается от
+ * свежей ревизии (`rewriteCurrent`).
  */
 import {
   Injectable,
@@ -15,6 +21,7 @@ import {
   ForbiddenException,
   BadRequestException,
   Inject,
+  Optional,
 } from "@nestjs/common";
 import * as crypto from "crypto";
 import { eq, and } from "drizzle-orm";
@@ -24,6 +31,16 @@ import * as schema from "../db/schema";
 import { getPageResolver } from "../themes/page-resolver-instance";
 import { getThemeManifest } from "../themes/theme-manifest-loader";
 import { emptyPageBlock } from "./page-section";
+import {
+  StoreContentService,
+  resolveStoreContent,
+} from "../content/store-content.service";
+import { toStoreContentSite } from "../content/store-content.port";
+import type { StoreContent } from "../content/store-content.port";
+import { rewriteCurrent } from "../content/rewrite-current";
+
+type SiteRow = typeof schema.site.$inferSelect;
+type SiteScope = { tenantId: string; siteId: string };
 
 /**
  * Извлекает тело («Описание») контент-страницы из её Puck-дерева: props.content
@@ -48,15 +65,27 @@ export class PagesService {
   constructor(
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    // Этап 2 (И1): правки страниц — новая ревизия через порт StoreContent.
+    // Optional — как в SitesDomainService: тесты, собирающие сервис напрямую,
+    // получают DocumentAdapter на том же db.
+    @Optional()
+    private readonly injectedStoreContent?: StoreContentService,
   ) {}
 
-  async createPage(params: {
-    tenantId: string;
-    siteId: string;
-    name: string;
-    slug: string;
-    templatePageId?: string;
-  }) {
+  private storeContentInstance?: StoreContent;
+
+  private get storeContent(): StoreContent {
+    return (this.storeContentInstance ??= resolveStoreContent(
+      this.injectedStoreContent,
+      this.db,
+    ));
+  }
+
+  /**
+   * Сайт (в пределах тенанта) и его текущая ревизия как она хранится — через
+   * порт, без шагов чтения: основа правки и её база.
+   */
+  private async readCurrent(params: SiteScope) {
     const [site] = await this.db
       .select()
       .from(schema.site)
@@ -68,13 +97,62 @@ export class PagesService {
       );
     if (!site) throw new NotFoundException("site_not_found");
 
-    const [rev] = await this.db
-      .select()
-      .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.id, site.currentRevisionId!));
-    if (!rev) throw new NotFoundException("revision_not_found");
+    const stored = await this.storeContent
+      .load(site.id, { site: toStoreContentSite(site), asStored: true })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.message === "revision_not_found") {
+          throw new NotFoundException("revision_not_found");
+        }
+        throw e;
+      });
+    return {
+      site,
+      revisionId: stored.version,
+      revData: stored.document as Record<string, any>,
+    };
+  }
 
-    const revData = rev.data as Record<string, any>;
+  /**
+   * Новая ревизия через порт (этап 2, И1): база — прочитанная ревизия. Чужие
+   * правки в других местах сливаются; спор о том же месте — ошибка, и
+   * `rewriteCurrent` пересчитывает правку от свежей ревизии.
+   */
+  private async saveRevision(
+    tenantId: string,
+    site: SiteRow,
+    baseRevisionId: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    await this.storeContent.save(site.id, {
+      mode: "on-base",
+      document: data,
+      base: baseRevisionId,
+      tenantId,
+      actor: "merchant",
+      source: "admin-pages",
+      mergePolicy: "reject-conflicts",
+      site: toStoreContentSite({ ...site, currentRevisionId: baseRevisionId }),
+    });
+  }
+
+  async createPage(params: {
+    tenantId: string;
+    siteId: string;
+    name: string;
+    slug: string;
+    templatePageId?: string;
+  }) {
+    return rewriteCurrent(() => this.createPageOnce(params));
+  }
+
+  private async createPageOnce(params: {
+    tenantId: string;
+    siteId: string;
+    name: string;
+    slug: string;
+    templatePageId?: string;
+  }) {
+    const { site, revisionId, revData } = await this.readCurrent(params);
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const pagesData = revData.pagesData ?? {};
 
@@ -188,10 +266,7 @@ export class PagesService {
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
-    await this.db
-      .update(schema.siteRevision)
-      .set({ data: newRevData })
-      .where(eq(schema.siteRevision.id, rev.id));
+    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
 
     return { page: newPage };
   }
@@ -201,24 +276,15 @@ export class PagesService {
     siteId: string;
     pageId: string;
   }) {
-    const [site] = await this.db
-      .select()
-      .from(schema.site)
-      .where(
-        and(
-          eq(schema.site.id, params.siteId),
-          eq(schema.site.tenantId, params.tenantId),
-        ),
-      );
-    if (!site) throw new NotFoundException("site_not_found");
+    return rewriteCurrent(() => this.deletePageOnce(params));
+  }
 
-    const [rev] = await this.db
-      .select()
-      .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.id, site.currentRevisionId!));
-    if (!rev) throw new NotFoundException("revision_not_found");
-
-    const revData = rev.data as Record<string, any>;
+  private async deletePageOnce(params: {
+    tenantId: string;
+    siteId: string;
+    pageId: string;
+  }) {
+    const { site, revisionId, revData } = await this.readCurrent(params);
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const target = pages.find((p: any) => p.id === params.pageId);
     if (!target) throw new NotFoundException("page_not_found");
@@ -261,10 +327,7 @@ export class PagesService {
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
-    await this.db
-      .update(schema.siteRevision)
-      .set({ data: newRevData })
-      .where(eq(schema.siteRevision.id, rev.id));
+    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
 
     return { deleted: params.pageId };
   }
@@ -286,24 +349,18 @@ export class PagesService {
     name?: string;
     content?: string;
   }) {
-    const [site] = await this.db
-      .select()
-      .from(schema.site)
-      .where(
-        and(
-          eq(schema.site.id, params.siteId),
-          eq(schema.site.tenantId, params.tenantId),
-        ),
-      );
-    if (!site) throw new NotFoundException("site_not_found");
+    return rewriteCurrent(() => this.updatePageOnce(params));
+  }
 
-    const [rev] = await this.db
-      .select()
-      .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.id, site.currentRevisionId!));
-    if (!rev) throw new NotFoundException("revision_not_found");
-
-    const revData = rev.data as Record<string, any>;
+  private async updatePageOnce(params: {
+    tenantId: string;
+    siteId: string;
+    pageId: string;
+    seo?: { title?: string; description?: string; keywords?: string };
+    name?: string;
+    content?: string;
+  }) {
+    const { site, revisionId, revData } = await this.readCurrent(params);
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const idx = pages.findIndex((p: any) => p.id === params.pageId);
     if (idx === -1) throw new NotFoundException("page_not_found");
@@ -411,10 +468,7 @@ export class PagesService {
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
-    await this.db
-      .update(schema.siteRevision)
-      .set({ data: newRevData })
-      .where(eq(schema.siteRevision.id, rev.id));
+    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
 
     return { page: nextPage };
   }

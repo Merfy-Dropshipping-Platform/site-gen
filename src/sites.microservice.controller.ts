@@ -17,6 +17,30 @@ import {
   RmqContext,
 } from "@nestjs/microservices";
 import { SitesDomainService } from "./sites.service";
+import {
+  RevisionConflictError,
+  RevisionMergeConflictError,
+} from "./content/store-content.port";
+
+/** Ошибка записи ревизии → устойчивый конверт RPC (шлюз отображает код в HTTP). */
+function revisionWriteFailure(e: any) {
+  if (e instanceof RevisionMergeConflictError) {
+    return {
+      success: false,
+      code: "REVISION_MERGE_CONFLICT",
+      message: e.message,
+      conflicts: e.conflicts,
+    };
+  }
+  if (e instanceof RevisionConflictError) {
+    return {
+      success: false,
+      code: "REVISION_CONFLICT",
+      message: "revision_conflict",
+    };
+  }
+  return { success: false, message: e?.message ?? "internal_error" };
+}
 
 @Controller()
 export class SitesMicroserviceController {
@@ -286,7 +310,8 @@ export class SitesMicroserviceController {
         meta,
         actorUserId,
         setCurrent,
-        expectedCurrentRevisionId,
+        // На проводе база записи называется expectedCurrentRevisionId (контракт конструктора).
+        expectedCurrentRevisionId: base,
       } = data ?? {};
       if (!tenantId || !siteId)
         return { success: false, message: "tenantId and siteId required" };
@@ -297,7 +322,13 @@ export class SitesMicroserviceController {
         meta,
         actorUserId,
         setCurrent,
-        expectedCurrentRevisionId,
+        // Этап 2 (было: жёсткий CAS → 409 → очередь конструктора замерзала):
+        // база устарела — слияние, одно и то же поле — побеждает последний
+        // (как в Figma).
+        base,
+        actor: "merchant",
+        source: "constructor",
+        mergePolicy: "last-writer-wins",
         // B17: внешний путь сохранения. Конструктор шлёт всю карту страниц,
         // включая досеянные сервером на чтении, — отсеиваем их здесь, иначе
         // они вмораживаются в ревизию и правки темы до них больше не доходят.
@@ -306,35 +337,39 @@ export class SitesMicroserviceController {
       return { success: true, ...res };
     } catch (e: any) {
       this.logger.error(`revisions.create failed: ${e?.message}`, e?.stack);
-      if (e?.message === "revision_conflict") {
-        return {
-          success: false,
-          code: "REVISION_CONFLICT",
-          message: "revision_conflict",
-        };
-      }
-      return { success: false, message: e?.message ?? "internal_error" };
+      return revisionWriteFailure(e);
     }
   }
 
   @MessagePattern("sites.revisions.set_current")
   async setCurrentRevision(@Payload() data: any) {
     try {
-      const { tenantId, siteId, revisionId } = data ?? {};
+      const {
+        tenantId,
+        siteId,
+        revisionId,
+        actorUserId,
+        // На проводе база отката называется expectedCurrentRevisionId (контракт шлюза).
+        expectedCurrentRevisionId: base,
+      } = data ?? {};
       if (!tenantId || !siteId || !revisionId)
         return {
           success: false,
           message: "tenantId, siteId and revisionId required",
         };
+      // Этап 2 (И6): откат — точная копия со сверкой текущей; сменилась —
+      // REVISION_CONFLICT (шлюз отдаст 409), ничего не записано.
       const res = await this.service.setCurrentRevision({
         tenantId,
         siteId,
         revisionId,
+        actorUserId,
+        base,
       });
       return res;
     } catch (e: any) {
       this.logger.error("revisions.set_current failed", e);
-      return { success: false, message: e?.message ?? "internal_error" };
+      return revisionWriteFailure(e);
     }
   }
 

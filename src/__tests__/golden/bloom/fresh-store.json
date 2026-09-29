@@ -584,12 +584,13 @@
             {
               "props": {
                 "align": "center",
-                "colorScheme": "scheme-3",
-                "cta": {
-                  "href": "/skin-care",
-                  "text": "К продукции",
-                  "variant": "primary"
+                "button": {
+                  "link": {
+                    "href": "/catalog"
+                  },
+                  "text": "К продукции"
                 },
+                "colorScheme": "scheme-3",
                 "heading": {
                   "size": "small",
                   "text": "История о том, как расцветать каждый день:"
@@ -609,7 +610,7 @@
             {
               "props": {
                 "button": {
-                  "href": "/skin-care",
+                  "href": "/catalog",
                   "text": "К продукции"
                 },
                 "colorScheme": "scheme-2",
@@ -961,9 +962,55 @@
           "content": [
             {
               "props": {
-                "id": "CheckoutHeader-1"
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-page-checkout-result",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
               },
-              "type": "CheckoutHeader"
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-page-checkout-result",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
             },
             {
               "props": {
@@ -998,6 +1045,18 @@
                 "summaryBg": ""
               },
               "type": "OrderConfirmation"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-page-checkout-result",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
             }
           ],
           "root": {

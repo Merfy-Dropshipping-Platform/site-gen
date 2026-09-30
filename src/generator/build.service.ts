@@ -869,13 +869,16 @@ export async function trySnapshotDeploy(
     // Сырое содержимое (без миграций/досева) — эта проверка ищет РЕАЛЬНУЮ
     // правку мерчанта в том виде, как она хранится, не то, во что её
     // разворачивают шаги чтения.
-    const loaded = await snapshotStoreContent
-      .load(params.siteId, {
-        revisionId: siteRow.currentRevisionId,
-        site: snapshotSite,
-        asStored: true,
-      })
-      .catch(() => null);
+    // Третий круг (ревью главного треда): `loadOrNull`, не голый `.catch(() =>
+    // null)` — тот гасил бы и сбой базы, а не только «ревизии нет». Магазин с
+    // реальным содержимым при сбое базы читался бы как «ревизии нет», и по
+    // снэпшот-пути ниже ему выложился бы шаблон темы поверх настоящей правки.
+    // Сбой базы обязан остановить деплой, не притвориться пустым магазином.
+    const loaded = await snapshotStoreContent.loadOrNull(params.siteId, {
+      revisionId: siteRow.currentRevisionId,
+      site: snapshotSite,
+      asStored: true,
+    });
 
     if (loaded) {
       revisionId = siteRow.currentRevisionId;
@@ -1902,7 +1905,7 @@ async function stageMerge(
 
   if (siteRow.currentRevisionId) {
     // Конверт (без .data) — дешёвая проверка, что ревизия существует.
-    const envelope = await storeContent.envelope(
+    const envelope = await storeContent.envelopeOrNull(
       params.siteId,
       siteRow.currentRevisionId,
       { site: mergeSite },
@@ -1934,7 +1937,7 @@ async function stageMerge(
 
   // meta (title/mode) — конверт ревизии, не содержимое: отдельным вызовом,
   // как и раньше (порт несёт только data, не эти поля).
-  const revMetaRow = await storeContent.envelope(params.siteId, revisionId, {
+  const revMetaRow = await storeContent.envelopeOrNull(params.siteId, revisionId, {
     site: mergeSite,
   });
 

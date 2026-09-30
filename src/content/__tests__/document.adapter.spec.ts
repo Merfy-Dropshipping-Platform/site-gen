@@ -13,6 +13,7 @@
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { DocumentAdapter } from '../document.adapter';
 import { SitesDomainService } from '../../sites.service';
+import { RevisionNotFoundError } from '../store-content.port';
 import * as schema from '../../db/schema';
 import {
   runStoreContentConformance,
@@ -563,9 +564,10 @@ describe('DocumentAdapter — специфичные проверки адапт
     expect(seenAcrossPages).toEqual(['r-a', 'r-b', 'r-c']);
   });
 
-  // Второй круг (R1): envelope() — дешёвая проверка «есть ли такая ревизия»
-  // без содержимого; в отличие от get()/load(), отсутствие — не исключение.
-  it('envelope(): конверт без data; нет такой ревизии — null, не исключение', async () => {
+  // Второй круг (R1): envelopeOrNull() — дешёвая проверка «есть ли такая
+  // ревизия» без содержимого; в отличие от get()/load(), отсутствие — не
+  // исключение (суффикс OrNull — третий круг, см. store-content.port.ts).
+  it('envelopeOrNull(): конверт без data; нет такой ревизии — null, не исключение', async () => {
     const siteId = nextId('site');
     const site = { id: siteId, tenantId: nextId('tenant'), currentRevisionId: null as string | null };
     const store = makeFakeDb(site);
@@ -582,10 +584,10 @@ describe('DocumentAdapter — специфичные проверки адапт
 
     // makeFakeDb не разбирает проекцию .select({...}) (всегда отдаёт всю
     // сохранённую строку) — сама проекция (envelope без .data) проверена в
-    // document.adapter.ts (см. get(): envelope() + отдельный load() за
+    // document.adapter.ts (см. get(): envelopeOrNull() + отдельный load() за
     // содержимым, а не двойное чтение блоба). Здесь — форма ответа и
     // поведение на отсутствующую ревизию.
-    const envelope = await adapter.envelope(siteId, 'rev-1', opts);
+    const envelope = await adapter.envelopeOrNull(siteId, 'rev-1', opts);
     expect(envelope).toMatchObject({
       id: 'rev-1',
       siteId,
@@ -593,8 +595,65 @@ describe('DocumentAdapter — специфичные проверки адапт
       createdBy: 'u1',
     });
 
-    const missing = await adapter.envelope(siteId, 'rev-does-not-exist', opts);
+    const missing = await adapter.envelopeOrNull(siteId, 'rev-does-not-exist', opts);
     expect(missing).toBeNull();
+  });
+
+  // Третий круг (ревью главного треда): load() бросает RevisionNotFoundError
+  // (не голую строку) — вызывающий код различает «ревизии нет» от сбоя базы
+  // через instanceof, не хрупкое сравнение e.message.
+  it('load(): «ревизии нет» бросает именно RevisionNotFoundError (instanceof, не просто Error)', async () => {
+    const siteId = nextId('site');
+    const site = { id: siteId, tenantId: nextId('tenant'), currentRevisionId: null as string | null };
+    const store = makeFakeDb(site);
+    const adapter = new DocumentAdapter(store.db);
+    const opts = { site: { themeId: 'rose', publicUrl: null, currentRevisionId: null } };
+
+    await expect(adapter.load(siteId, { revisionId: 'rev-does-not-exist', site: opts.site })).rejects.toThrow(
+      RevisionNotFoundError,
+    );
+  });
+
+  // Третий круг (ревью главного треда): loadOrNull() — как load(), но
+  // «ревизии нет» отдаёт null; ЛЮБАЯ другая ошибка (сбой базы) пробрасывается
+  // как есть — этим он отличается от старого голого `.catch(() => null)`,
+  // который гасил и сбой базы (см. no-swallowed-db-errors.spec.ts — саботаж).
+  it('loadOrNull(): «ревизии нет» — null; содержимое — как у load()', async () => {
+    const siteId = nextId('site');
+    const site = { id: siteId, tenantId: nextId('tenant'), currentRevisionId: null as string | null };
+    const store = makeFakeDb(site);
+    store.revisions.set('rev-1', {
+      id: 'rev-1',
+      siteId,
+      data: { pages: ['content'] },
+      meta: {},
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      createdBy: null,
+    });
+    const adapter = new DocumentAdapter(store.db);
+    const opts = { site: { themeId: 'rose', publicUrl: null, currentRevisionId: null } };
+
+    const missing = await adapter.loadOrNull(siteId, { revisionId: 'rev-does-not-exist', site: opts.site });
+    expect(missing).toBeNull();
+
+    const found = await adapter.loadOrNull(siteId, { revisionId: 'rev-1', site: opts.site, asStored: true });
+    expect(found).toMatchObject({ document: { pages: ['content'] }, version: 'rev-1' });
+  });
+
+  it('loadOrNull(): сбой базы (не «ревизии нет») пробрасывается, не гасится в null', async () => {
+    const siteId = nextId('site');
+    const site = { id: siteId, tenantId: nextId('tenant'), currentRevisionId: null as string | null };
+    const store = makeFakeDb(site);
+    const adapter = new DocumentAdapter(store.db);
+    const opts = { site: { themeId: 'rose', publicUrl: null, currentRevisionId: null } };
+    const dbFailure = new Error('connection terminated unexpectedly');
+    jest.spyOn(store.db, 'select').mockImplementationOnce(() => {
+      throw dbFailure;
+    });
+
+    await expect(
+      adapter.loadOrNull(siteId, { revisionId: 'rev-1', site: opts.site }),
+    ).rejects.toThrow('connection terminated unexpectedly');
   });
 
   // Второй круг (R1): historyCounts() — число версий (без снимков клиента)

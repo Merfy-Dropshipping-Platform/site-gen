@@ -59,13 +59,14 @@ export class PageMetaController {
       // Сырое содержимое (без миграций/досева) — как и раньше: этот эндпойнт
       // только достаёт id/slug/name из `data.pages`, применять шаги чтения
       // (нормализацию манифеста темы) ему незачем.
-      const loaded = await this.storeContent
-        .load(siteId, {
-          revisionId: site.currentRevisionId,
-          site: { themeId: null, publicUrl: site.publicUrl, currentRevisionId: site.currentRevisionId },
-          asStored: true,
-        })
-        .catch(() => null);
+      // Третий круг (ревью главного треда): `loadOrNull`, не голый
+      // `.catch(() => null)` — сбой базы теперь ловит внешний try/catch этого
+      // метода (лог warn), а не тонет молча внутри одного вызова.
+      const loaded = await this.storeContent.loadOrNull(siteId, {
+        revisionId: site.currentRevisionId,
+        site: { themeId: null, publicUrl: site.publicUrl, currentRevisionId: site.currentRevisionId },
+        asStored: true,
+      });
       if (!loaded?.document) {
         res.status(200).json({ page: null });
         return;

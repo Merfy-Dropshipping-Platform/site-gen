@@ -42,7 +42,7 @@ import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
 import type { PanelDefaultsSource } from "./panel-defaults";
 import { saveOnBase, writeLabels } from "./save-on-base";
 import type { RevisionStore } from "./save-on-base";
-import { RevisionConflictError } from "./store-content.port";
+import { RevisionConflictError, RevisionNotFoundError } from "./store-content.port";
 import type {
   BlindSaveParams,
   DiffOptions,
@@ -231,9 +231,9 @@ export class DocumentAdapter implements StoreContent {
   async load(siteId: string, opts: LoadOptions): Promise<LoadResult> {
     const revisionId =
       opts.revisionId ?? opts.site.currentRevisionId ?? undefined;
-    if (!revisionId) throw new Error("revision_not_found");
+    if (!revisionId) throw new RevisionNotFoundError();
     const rev = await this.fetchRevision(revisionId, siteId);
-    if (!rev) throw new Error("revision_not_found");
+    if (!rev) throw new RevisionNotFoundError();
     if (opts.asStored) {
       return {
         document: (rev.data ?? {}) as Record<string, unknown>,
@@ -245,6 +245,20 @@ export class DocumentAdapter implements StoreContent {
       stepContextFor(siteId, opts.site, this.logger),
     );
     return { document, version: revisionId };
+  }
+
+  /**
+   * Третий круг (ревью главного треда): `load`, но «ревизии нет» — `null`.
+   * ЛЮБАЯ другая ошибка (в т.ч. `fetchRevision`'s сбой базы) пробрасывается —
+   * ловим строго `RevisionNotFoundError` через `instanceof`, не любой catch.
+   */
+  async loadOrNull(siteId: string, opts: LoadOptions): Promise<LoadResult | null> {
+    try {
+      return await this.load(siteId, opts);
+    } catch (e) {
+      if (e instanceof RevisionNotFoundError) return null;
+      throw e;
+    }
   }
 
   async save(siteId: string, params: SaveParams): Promise<SaveResult> {
@@ -324,8 +338,8 @@ export class DocumentAdapter implements StoreContent {
     revisionId: string,
     opts: GetOptions,
   ): Promise<RevisionItem> {
-    const envelope = await this.envelope(siteId, revisionId, opts);
-    if (!envelope) throw new Error("revision_not_found");
+    const envelope = await this.envelopeOrNull(siteId, revisionId, opts);
+    if (!envelope) throw new RevisionNotFoundError();
     // Как и раньше (getRevision): конверт прокидывается КАК ЕСТЬ, без
     // нормализации отсутствующих полей — байт-в-байт форма ответа не меняется
     // (золотые документы сравнивают именно её).
@@ -333,7 +347,7 @@ export class DocumentAdapter implements StoreContent {
     return { ...envelope, data: loaded.document } as RevisionItem;
   }
 
-  async envelope(
+  async envelopeOrNull(
     siteId: string,
     revisionId: string,
     _opts: GetOptions,

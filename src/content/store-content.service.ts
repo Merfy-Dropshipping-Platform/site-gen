@@ -39,6 +39,10 @@ export class StoreContentService implements StoreContent {
     return this.resolveAdapter(opts.site).load(siteId, opts);
   }
 
+  async loadOrNull(siteId: string, opts: LoadOptions): Promise<LoadResult | null> {
+    return this.resolveAdapter(opts.site).loadOrNull(siteId, opts);
+  }
+
   async save(siteId: string, params: SaveParams): Promise<SaveResult> {
     return this.resolveAdapter(params.site).save(siteId, params);
   }
@@ -55,12 +59,12 @@ export class StoreContentService implements StoreContent {
     return this.resolveAdapter(opts.site).get(siteId, revisionId, opts);
   }
 
-  async envelope(
+  async envelopeOrNull(
     siteId: string,
     revisionId: string,
     opts: GetOptions,
   ): Promise<RevisionEnvelope | null> {
-    return this.resolveAdapter(opts.site).envelope(siteId, revisionId, opts);
+    return this.resolveAdapter(opts.site).envelopeOrNull(siteId, revisionId, opts);
   }
 
   async rollback(siteId: string, params: RollbackParams): Promise<RollbackResult> {

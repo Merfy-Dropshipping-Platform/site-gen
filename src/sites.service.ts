@@ -1287,13 +1287,15 @@ export class SitesDomainService {
         // (DocumentAdapter.rollback, asStored: true).
         let prevRevisionData: unknown = null;
         if (currentRevId) {
-          const loaded = await this.storeContent
-            .load(params.siteId, {
-              revisionId: currentRevId,
-              site: { themeId: null, publicUrl: null, currentRevisionId: currentRevId },
-              asStored: true,
-            })
-            .catch(() => null);
+          // Третий круг (ревью главного треда): `loadOrNull`, не голый
+          // `.catch(() => null)` — тот гасил бы и сбой базы, а не только
+          // «ревизии нет», и пересев тихо потерял бы страницы мерчанта
+          // (hasThemeSettings/prevRevisionData читались бы как «пусто»).
+          const loaded = await this.storeContent.loadOrNull(params.siteId, {
+            revisionId: currentRevId,
+            site: { themeId: null, publicUrl: null, currentRevisionId: currentRevId },
+            asStored: true,
+          });
           const d = (loaded?.document ?? {}) as Record<string, unknown>;
           prevRevisionData = loaded?.document ?? null;
           const ts = (d as any).themeSettings;

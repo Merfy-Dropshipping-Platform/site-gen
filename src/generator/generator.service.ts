@@ -310,7 +310,7 @@ export class SiteGeneratorService {
     };
     if (siteRow?.currentRevisionId) {
       // Проверяем, что ревизия существует — конверт (без .data), дешёвая проверка.
-      const envelope = await this.storeContent.envelope(
+      const envelope = await this.storeContent.envelopeOrNull(
         params.siteId,
         siteRow.currentRevisionId,
         { site: genSite },
@@ -409,11 +409,12 @@ export class SiteGeneratorService {
           // Для Astro потребуются данные; если брали ревизию, можно вычитать её.
           // Сырое содержимое (без миграций/досева) — как и раньше; конверт
           // (meta) — отдельно, тем же приёмом, что build.service.ts.stageMerge.
+          // Третий круг (ревью главного треда): `loadOrNull`, не голый `.catch(() =>
+          // null)` — тот гасил бы и сбой базы, а не только «ревизии нет», и Astro
+          // собрался бы с пустыми данными вместо явного падения сборки.
           data: (await Promise.all([
-            this.storeContent
-              .load(params.siteId, { revisionId, site: genSite, asStored: true })
-              .catch(() => null),
-            this.storeContent.envelope(params.siteId, revisionId, { site: genSite }),
+            this.storeContent.loadOrNull(params.siteId, { revisionId, site: genSite, asStored: true }),
+            this.storeContent.envelopeOrNull(params.siteId, revisionId, { site: genSite }),
           ]).then(([loaded, envelope]) => ({
             ...((loaded?.document as Record<string, unknown>) ?? {}),
             meta: envelope?.meta ?? {},

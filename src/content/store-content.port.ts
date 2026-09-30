@@ -254,6 +254,29 @@ export class RevisionMergeConflictError extends Error {
 }
 
 /**
+ * Третий круг (ревью главного треда): ревизии нет — типизированная ошибка,
+ * не голая строка. `load`/`get`/`diff`/`rollback` бросают её вместо
+ * `new Error("revision_not_found")`, и вызывающий код различает «ревизии
+ * нет» от сбоя базы через `instanceof`, а не хрупкое сравнение `e.message`.
+ * `message` остаётся `"revision_not_found"` — эту строку уже читают
+ * `sites.microservice.controller.ts` (ответ RPC) и `pages.service.ts`
+ * (catch-блоки); менять её не нужно, `instanceof` работает поверх нового
+ * класса без изменения текста.
+ *
+ * Конвенция имён порта: метод БЕЗ суффикса (`load`, `get`) — «ревизии нет»
+ * бросает эту ошибку. Метод С суффиксом `OrNull` (`loadOrNull`,
+ * `envelopeOrNull`) — «ревизии нет» отдаёт `null`; ЛЮБАЯ другая ошибка (сбой
+ * базы, таймаут) пробрасывается всегда, независимо от суффикса — `OrNull`
+ * гасит только `RevisionNotFoundError`, не ошибки вообще.
+ */
+export class RevisionNotFoundError extends Error {
+  constructor() {
+    super("revision_not_found");
+    this.name = "RevisionNotFoundError";
+  }
+}
+
+/**
  * Одна запись истории магазина (без служебных снимков клиента, И5). Поля
  * ниже — R3 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`):
  * совместимое расширение `sites.revisions.list` (только новые поля, старые
@@ -353,27 +376,41 @@ export interface DiffResult {
 }
 
 export interface StoreContent {
+  /** «Ревизии нет» — бросает {@link RevisionNotFoundError}. Нужен именно результат без исключения — см. `loadOrNull`. */
   load(siteId: string, opts: LoadOptions): Promise<LoadResult>;
+  /**
+   * Как `load`, но «ревизии нет» — `null` (третий круг, ревью главного
+   * треда), не исключение; ЛЮБАЯ другая ошибка (сбой базы, таймаут)
+   * пробрасывается как есть — вызывающему запрещено гасить её в `null`
+   * блинным `.catch(() => null)` (так сбой базы на быстром пути снэпшота
+   * читался бы как «мерчант ничего не менял», и магазину с реальным
+   * содержимым выкладывался бы шаблон темы). Используют места, где «ревизии
+   * нет» — штатный, ожидаемый исход: `generator.service.ts` (финальные
+   * данные для Astro), `build.service.ts` (быстрый путь снэпшота),
+   * легаси-чтение в `sites.service.ts`/`page-meta.controller.ts`.
+   */
+  loadOrNull(siteId: string, opts: LoadOptions): Promise<LoadResult | null>;
   save(siteId: string, params: SaveParams): Promise<SaveResult>;
   /** История версий магазина, без служебных снимков клиента (И4). */
   history(siteId: string, opts: HistoryOptions): Promise<HistoryPage>;
-  /** Конкретная ревизия: конверт + содержимое (шаги чтения адаптера). */
+  /** Конкретная ревизия: конверт + содержимое (шаги чтения адаптера). «Ревизии нет» — бросает {@link RevisionNotFoundError}. */
   get(siteId: string, revisionId: string, opts: GetOptions): Promise<RevisionItem>;
   /**
    * Второй круг (R1): конверт БЕЗ содержимого — дешёвая проверка «есть ли
    * такая ревизия у этого магазина» и чтение только `meta`/`createdAt`/
    * `createdBy`, без миграций и без второго прогона `load()` там, где
-   * содержимое уже прочитано отдельно (сборка). Нет такой ревизии — `null`,
-   * не исключение (в отличие от `get`/`load`, которым «ревизии нет» — ошибка
-   * по контракту конструктора).
+   * содержимое уже прочитано отдельно (сборка). Суффикс `OrNull` — «ревизии
+   * нет» отдаёт `null` (не исключение, в отличие от `get`/`load`); сбой базы
+   * пробрасывается как есть, тем же правилом, что `loadOrNull`.
    */
-  envelope(siteId: string, revisionId: string, opts: GetOptions): Promise<RevisionEnvelope | null>;
-  /** Откат (И6): новая ревизия — точная копия выбранной, со сверкой текущей. */
+  envelopeOrNull(siteId: string, revisionId: string, opts: GetOptions): Promise<RevisionEnvelope | null>;
+  /** Откат (И6): новая ревизия — точная копия выбранной, со сверкой текущей. «Ревизии нет» — бросает {@link RevisionNotFoundError}. */
   rollback(siteId: string, params: RollbackParams): Promise<RollbackResult>;
   /**
    * Разница `from` → `to` (R3): оба документа проходят те же шаги чтения, что
    * и обычное `load` (та же «одна версия формата», что у слияния), затем
-   * движок (`operations/diff`) строит список операций.
+   * движок (`operations/diff`) строит список операций. Любая из двух версий
+   * не найдена — бросает {@link RevisionNotFoundError} (через `load`).
    */
   diff(siteId: string, from: string, to: string, opts: DiffOptions): Promise<DiffResult>;
 }

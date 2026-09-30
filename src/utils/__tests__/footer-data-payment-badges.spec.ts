@@ -1,4 +1,4 @@
-import { of, throwError } from "rxjs";
+import { of, throwError, type Observable } from "rxjs";
 import { applyFooterData } from "../footer-data";
 
 /**
@@ -37,7 +37,7 @@ const sitePolicy = { siteId: "siteId", type: "type", content: "content", updated
 const siteContacts = { siteId: "siteId", fields: "fields", updatedAt: "u" };
 const schema = { site, sitePolicy, siteContacts } as never;
 
-async function badges(answer: () => ReturnType<typeof of>) {
+async function badges(answer: () => Observable<unknown>) {
   const send = jest.fn(answer);
   const revision = {
     pagesData: { home: { content: [{ type: "Footer", props: { id: "f" } }] } },
@@ -86,7 +86,7 @@ describe("значки оплаты в подвале — по публичны�
     expect(paymentEnabled).toBe(expected);
   });
 
-  it.each<[string, () => ReturnType<typeof of>]>([
+  it.each<[string, () => Observable<unknown>]>([
     ["billing ответил отказом", () => of({ success: false, message: "internal_error", activeProvider: null })],
     ["billing недоступен", () => throwError(() => new Error("Connection closed"))],
   ])("%s → значков нет, подвал собирается", async (_name, answer) => {

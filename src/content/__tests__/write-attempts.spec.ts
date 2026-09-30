@@ -25,7 +25,7 @@ const IDENTITY_MODEL: WriteModel = {
 
 /** Хранилище, где каждую попытку CAS перехватывает чужая запись. */
 function alwaysLosingStore() {
-  const commits: string[] = [];
+  const commits: Array<string | undefined> = [];
   const store: RevisionStore = {
     fetchData: async () => DOC,
     readPointer: async () => "r0",

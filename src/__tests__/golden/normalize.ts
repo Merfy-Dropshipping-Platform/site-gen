@@ -72,10 +72,11 @@ function sortKeysDeep(value: unknown): unknown {
  * конверт ревизии — по имени поля, `item.data` — по форме значения,
  * ключи всего дерева — отсортированы для стабильного диффа.
  */
-export function normalizeGoldenSnapshot(result: {
-  item: Record<string, unknown>;
-}): unknown {
-  const { item } = result;
+/** Ответ `getRevision`: конверт ревизии и её `data` (форма — `RevisionItem` модуля content). */
+export type GoldenRevisionResult = { item: object };
+
+export function normalizeGoldenSnapshot(result: GoldenRevisionResult): unknown {
+  const item = result.item as Record<string, unknown>;
   const envelope: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(item)) {
     if (key === "data") continue;
@@ -90,9 +91,7 @@ export function normalizeGoldenSnapshot(result: {
 
 /** Сериализация снимка в pretty JSON с отсортированными ключами — единый
  * формат и для записи (`UPDATE_GOLDEN=1`), и для сравнения при обычном прогоне. */
-export function toGoldenJson(result: {
-  item: Record<string, unknown>;
-}): string {
+export function toGoldenJson(result: GoldenRevisionResult): string {
   return JSON.stringify(normalizeGoldenSnapshot(result), null, 2) + "\n";
 }
 

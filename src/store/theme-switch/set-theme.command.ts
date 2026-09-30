@@ -106,7 +106,9 @@ export class SetThemeCommand {
 
   constructor(
     @Inject(SitesDomainService) private readonly sites: ThemeSwitchSites,
-    @Inject(StoreContentService) private readonly content: StoreContent,
+    // Команде нужны только чтение и запись документа — зависимость ровно на них.
+    @Inject(StoreContentService)
+    private readonly content: Pick<StoreContent, "load" | "save">,
     @Inject(THEME_CATALOG) private readonly catalog: ThemeCatalog,
     @Inject(SitesEventsService)
     private readonly events: Pick<SitesEventsService, "emit">,

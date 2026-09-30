@@ -627,7 +627,6 @@ describe('DocumentAdapter — специфичные проверки адапт
       data: { pages: ['content'] },
       meta: {},
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      createdBy: null,
     });
     const adapter = new DocumentAdapter(store.db);
     const opts = { site: { themeId: 'rose', publicUrl: null, currentRevisionId: null } };

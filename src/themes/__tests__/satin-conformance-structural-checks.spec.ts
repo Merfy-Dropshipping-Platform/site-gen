@@ -434,7 +434,7 @@ describe('Satin known-current classification — REAL pipeline reproduces the ta
     }
   });
 
-  // Ревью главного треда (третий круг, R4-регресс): `cartMigratedTarget` эта
+  // `cartMigratedTarget` эта
   // проба читает файл ТЕКСТОМ, ища `type: 'CartBody'`/`'CartSection'`. Раньше
   // источником был `utils/revision-migrations.ts`; R4 сделал его 21-строчным
   // фасадом-реэкспортом — регэксп молча переставал находить `CartBody`,

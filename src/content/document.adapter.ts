@@ -248,7 +248,7 @@ export class DocumentAdapter implements StoreContent {
   }
 
   /**
-   * Третий круг (ревью главного треда): `load`, но «ревизии нет» — `null`.
+   * Как `load`, но «ревизии нет» — `null`.
    * ЛЮБАЯ другая ошибка (в т.ч. `fetchRevision`'s сбой базы) пробрасывается —
    * ловим строго `RevisionNotFoundError` через `instanceof`, не любой catch.
    */
@@ -294,7 +294,7 @@ export class DocumentAdapter implements StoreContent {
   }
 
   /**
-   * Второй круг (R1): число версий магазина (без снимков клиента) для ПАЧКИ
+   * Число версий магазина (без снимков клиента) для ПАЧКИ
    * сайтов одним запросом — `admin/bulk` (экспорт) считал это сам, выбирая
    * ВСЕ строки пачки и фильтруя в памяти (`revisions.filter(r => r.siteId
    * === site.id).length`); здесь — `GROUP BY site_id, count(*)` в базе.
@@ -528,7 +528,7 @@ export class DocumentAdapter implements StoreContent {
           });
         }
         if (write.current === undefined) return;
-        // Защитный порядок (ревью главного треда): sitePatch — СНАЧАЛА, указатель
+        // Защитный порядок: sitePatch — СНАЧАЛА, указатель
         // и updatedAt — ПОСЛЕ. Объектный литерал берёт последнее значение ключа,
         // поэтому даже если SitePatch когда-нибудь обзаведётся полем
         // currentRevisionId, патч не сможет им сдвинуть указатель мимо CAS.

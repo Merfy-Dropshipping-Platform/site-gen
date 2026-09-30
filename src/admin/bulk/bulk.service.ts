@@ -61,7 +61,7 @@ export class BulkOperationsService {
     private readonly domainClient: ClientProxy,
     private readonly generator: SiteGeneratorService,
     private readonly traefik: TraefikRouterService,
-    // Второй круг (R1): число версий на экспорт — только через модуль
+    // Число версий на экспорт — только через модуль
     // (historyCounts, пачкой). Optional — тот же приём, что в
     // SitesDomainService: тесты, собирающие сервис напрямую, не обязаны
     // передавать.

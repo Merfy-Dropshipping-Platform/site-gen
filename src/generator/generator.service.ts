@@ -66,7 +66,7 @@ export class SiteGeneratorService {
     @Inject(BILLING_RMQ_SERVICE)
     private readonly billingClient: ClientProxy,
     private readonly s3: S3StorageService,
-    // Второй круг (R1): легаси-генератор — содержимое ревизии только через
+    // Легаси-генератор — содержимое ревизии только через
     // порт. Optional — тот же приём, что в SitesDomainService: тесты,
     // собирающие сервис напрямую, не обязаны его передавать.
     @Optional()
@@ -409,7 +409,7 @@ export class SiteGeneratorService {
           // Для Astro потребуются данные; если брали ревизию, можно вычитать её.
           // Сырое содержимое (без миграций/досева) — как и раньше; конверт
           // (meta) — отдельно, тем же приёмом, что build.service.ts.stageMerge.
-          // Третий круг (ревью главного треда): `loadOrNull`, не голый `.catch(() =>
+          // `loadOrNull`, не голый `.catch(() =>
           // null)` — тот гасил бы и сбой базы, а не только «ревизии нет», и Astro
           // собрался бы с пустыми данными вместо явного падения сборки.
           data: (await Promise.all([

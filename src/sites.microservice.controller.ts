@@ -292,9 +292,8 @@ export class SitesMicroserviceController {
         return { success: false, message: "tenantId and siteId required" };
       // R3: курсор постраничности — совместимое расширение (поле новое,
       // старые items/лимит не меняются; без before — первая страница, как
-      // раньше). На проводе курсор — пара {createdAt, id} (ревью главного
-      // треда: голая дата на границе страниц с одинаковым createdAt
-      // пропускала бы версии).
+      // раньше). На проводе курсор — пара {createdAt, id}: голая дата на
+      // границе страниц с одинаковым createdAt пропускала бы версии.
       const res = await this.service.listRevisions(
         tenantId,
         siteId,

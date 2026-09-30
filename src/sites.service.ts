@@ -1287,7 +1287,7 @@ export class SitesDomainService {
         // (DocumentAdapter.rollback, asStored: true).
         let prevRevisionData: unknown = null;
         if (currentRevId) {
-          // Третий круг (ревью главного треда): `loadOrNull`, не голый
+          // `loadOrNull`, не голый
           // `.catch(() => null)` — тот гасил бы и сбой базы, а не только
           // «ревизии нет», и пересев тихо потерял бы страницы мерчанта
           // (hasThemeSettings/prevRevisionData читались бы как «пусто»).

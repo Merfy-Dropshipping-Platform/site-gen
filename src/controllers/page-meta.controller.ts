@@ -21,7 +21,7 @@ export class PageMetaController {
   constructor(
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
-    // Второй круг (R1): содержимое ревизии — только через порт. Optional —
+    // Содержимое ревизии — только через порт. Optional —
     // тот же приём, что в SitesDomainService/PagesService: тесты, которые
     // собирают контроллер напрямую, не обязаны его передавать.
     @Optional()
@@ -59,7 +59,7 @@ export class PageMetaController {
       // Сырое содержимое (без миграций/досева) — как и раньше: этот эндпойнт
       // только достаёт id/slug/name из `data.pages`, применять шаги чтения
       // (нормализацию манифеста темы) ему незачем.
-      // Третий круг (ревью главного треда): `loadOrNull`, не голый
+      // `loadOrNull`, не голый
       // `.catch(() => null)` — сбой базы теперь ловит внешний try/catch этого
       // метода (лог warn), а не тонет молча внутри одного вызова.
       const loaded = await this.storeContent.loadOrNull(siteId, {

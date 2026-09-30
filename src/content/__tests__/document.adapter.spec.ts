@@ -254,7 +254,7 @@ describe('DocumentAdapter — специфичные проверки адапт
     );
   });
 
-  // Ревью главного треда (второй круг): на время выкатки миграции 0020 рядом
+  // На время выкатки миграции 0020 рядом
   // со старым контейнером тот пишет снимки с meta.kind, но колонку kind не
   // знает (осталась бы NULL) — coalesce(kind, meta->>'kind', '') в
   // revision-kinds.ts обязан такую строку тоже считать снимком клиента.
@@ -467,8 +467,7 @@ describe('DocumentAdapter — специфичные проверки адапт
       restoredFrom: null,
     });
 
-    // Курсор `before` — пара (createdAt, id), не голая дата (ревью главного
-    // треда): свежий вызов действительно строит условие "раньше пары", а не
+    // Курсор `before` — пара (createdAt, id), не голая дата: свежий вызов действительно строит условие "раньше пары", а не
     // молча её игнорирует.
     const cursor = { createdAt: new Date('2026-01-02T00:00:00.000Z'), id: 'r2' };
     await adapter.history(siteId, { site, limit: 1, before: cursor });
@@ -511,7 +510,7 @@ describe('DocumentAdapter — специфичные проверки адапт
     expect(page.nextBefore).toEqual({ createdAt: rows[1].createdAt, id: rows[1].id });
   });
 
-  // Ревью главного треда (второй круг): курсор ТОЛЬКО по дате пропускал бы
+  // Курсор ТОЛЬКО по дате пропускал бы
   // версии на границе страницы, если у них совпал createdAt (та же
   // миллисекунда) — пара (createdAt, id) с keyset-фильтром по настоящему
   // WHERE (через sqlOf/paramsOf, а не ручную имитацию) обе версии находит.
@@ -564,9 +563,9 @@ describe('DocumentAdapter — специфичные проверки адапт
     expect(seenAcrossPages).toEqual(['r-a', 'r-b', 'r-c']);
   });
 
-  // Второй круг (R1): envelopeOrNull() — дешёвая проверка «есть ли такая
+  // envelopeOrNull() — дешёвая проверка «есть ли такая
   // ревизия» без содержимого; в отличие от get()/load(), отсутствие — не
-  // исключение (суффикс OrNull — третий круг, см. store-content.port.ts).
+  // исключение (суффикс OrNull, см. store-content.port.ts).
   it('envelopeOrNull(): конверт без data; нет такой ревизии — null, не исключение', async () => {
     const siteId = nextId('site');
     const site = { id: siteId, tenantId: nextId('tenant'), currentRevisionId: null as string | null };
@@ -599,7 +598,7 @@ describe('DocumentAdapter — специфичные проверки адапт
     expect(missing).toBeNull();
   });
 
-  // Третий круг (ревью главного треда): load() бросает RevisionNotFoundError
+  // load() бросает RevisionNotFoundError
   // (не голую строку) — вызывающий код различает «ревизии нет» от сбоя базы
   // через instanceof, не хрупкое сравнение e.message.
   it('load(): «ревизии нет» бросает именно RevisionNotFoundError (instanceof, не просто Error)', async () => {
@@ -614,7 +613,7 @@ describe('DocumentAdapter — специфичные проверки адапт
     );
   });
 
-  // Третий круг (ревью главного треда): loadOrNull() — как load(), но
+  // loadOrNull() — как load(), но
   // «ревизии нет» отдаёт null; ЛЮБАЯ другая ошибка (сбой базы) пробрасывается
   // как есть — этим он отличается от старого голого `.catch(() => null)`,
   // который гасил и сбой базы (см. no-swallowed-db-errors.spec.ts — саботаж).
@@ -656,7 +655,7 @@ describe('DocumentAdapter — специфичные проверки адапт
     ).rejects.toThrow('connection terminated unexpectedly');
   });
 
-  // Второй круг (R1): historyCounts() — число версий (без снимков клиента)
+  // historyCounts() — число версий (без снимков клиента)
   // ПАЧКОЙ сайтов одним запросом (admin/bulk экспорт).
   it('historyCounts(): считает версии на сайт пачкой, снимки клиента не считает, пустой сайт — 0', async () => {
     const [siteA, siteB, siteC] = [nextId('site'), nextId('site'), nextId('site')];

@@ -253,19 +253,38 @@ export class RevisionMergeConflictError extends Error {
   }
 }
 
-/** Одна запись истории магазина (без служебных снимков клиента). */
+/**
+ * Одна запись истории магазина (без служебных снимков клиента, И5). Поля
+ * ниже — R3 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`):
+ * совместимое расширение `sites.revisions.list` (только новые поля, старые
+ * `id`/`createdAt` не переименованы и не удалены). Кто/откуда/что не
+ * записано (например, ревизии до И5, создание магазина) — `null`, а не
+ * ошибка.
+ */
 export interface HistoryItem {
   id: string;
   createdAt: Date;
+  /** Кто сделал версию (И5). */
+  actor: WriteActor | null;
+  /** Откуда пришла запись (И5). */
+  source: WriteSource | null;
+  /** Адреса правок мерчанта относительно прежней текущей; не посчиталось/первая ревизия — `null`. */
+  changes: string[] | null;
+  /** Эта версия — восстановление; значение — id ревизии-источника. */
+  restoredFrom: string | null;
 }
 
 export interface HistoryOptions {
   site: StoreContentSite;
   limit?: number;
+  /** Курсор постраничности: строго раньше этой даты создания. */
+  before?: Date;
 }
 
 export interface HistoryPage {
   items: HistoryItem[];
+  /** Курсор следующей страницы (`HistoryOptions.before`); `null` — дальше версий нет. */
+  nextBefore: Date | null;
 }
 
 /** Метаданные ревизии — без содержимого (`data` несёт `load`/`get`). */
@@ -307,6 +326,16 @@ export interface RollbackResult {
   restoredFrom: string;
 }
 
+/** Опции для операций, которым нужен только `site` (диспетчер адаптера). */
+export interface DiffOptions {
+  site: StoreContentSite;
+}
+
+/** Разница двух версий — список операций движка (R3). */
+export interface DiffResult {
+  ops: Op[];
+}
+
 export interface StoreContent {
   load(siteId: string, opts: LoadOptions): Promise<LoadResult>;
   save(siteId: string, params: SaveParams): Promise<SaveResult>;
@@ -316,6 +345,12 @@ export interface StoreContent {
   get(siteId: string, revisionId: string, opts: GetOptions): Promise<RevisionItem>;
   /** Откат (И6): новая ревизия — точная копия выбранной, со сверкой текущей. */
   rollback(siteId: string, params: RollbackParams): Promise<RollbackResult>;
+  /**
+   * Разница `from` → `to` (R3): оба документа проходят те же шаги чтения, что
+   * и обычное `load` (та же «одна версия формата», что у слияния), затем
+   * движок (`operations/diff`) строит список операций.
+   */
+  diff(siteId: string, from: string, to: string, opts: DiffOptions): Promise<DiffResult>;
 }
 
 /** Модели контента, которые понимает `StoreContentService`. Сегодня — только 'document'. */

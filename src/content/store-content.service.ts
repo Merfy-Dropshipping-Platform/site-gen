@@ -14,6 +14,8 @@ import type * as schema from '../db/schema';
 import type {
   CreateRevisionParams,
   CreateRevisionResult,
+  DiffOptions,
+  DiffResult,
   GetOptions,
   HistoryOptions,
   HistoryPage,
@@ -54,6 +56,15 @@ export class StoreContentService implements StoreContent {
 
   async rollback(siteId: string, params: RollbackParams): Promise<RollbackResult> {
     return this.resolveAdapter(params.site).rollback(siteId, params);
+  }
+
+  async diff(
+    siteId: string,
+    from: string,
+    to: string,
+    opts: DiffOptions,
+  ): Promise<DiffResult> {
+    return this.resolveAdapter(opts.site).diff(siteId, from, to, opts);
   }
 
   /**

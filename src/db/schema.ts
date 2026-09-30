@@ -207,6 +207,11 @@ export const siteRevision = pgTable("site_revision", {
   siteId: text("site_id").notNull(),
   data: jsonb("data"),
   meta: jsonb("meta"),
+  // R3 (drizzle/0020): вид ревизии — колонка вместо meta->>'kind'
+  // (content/revision-kinds.ts). NULL — обычная версия магазина;
+  // 'client-snapshot' — служебная база слияния (никогда не текущая).
+  // DocumentAdapter.commit() пишет обе копии на время выкатки.
+  kind: text("kind"),
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),

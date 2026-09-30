@@ -1923,12 +1923,27 @@ export class SitesDomainService {
   // (sites.microservice.controller.ts) и тесты собирают его напрямую с ОДНИМ
   // аргументом (SitesDomainService) — без обёрток пришлось бы менять сигнатуру
   // конструктора контроллера и переписывать эти тесты (вне объёма ревизий).
-  async listRevisions(tenantId: string, siteId: string, limit = 50) {
+  async listRevisions(
+    tenantId: string,
+    siteId: string,
+    limit = 50,
+    before?: Date,
+  ) {
     const site = await this.get(tenantId, siteId);
     if (!site) throw new Error("site_not_found");
     return this.storeContent.history(siteId, {
       site: toStoreContentSite(site),
       limit,
+      before,
+    });
+  }
+
+  /** Разница двух версий (R3) — список операций движка (см. content/operations). */
+  async diffRevisions(tenantId: string, siteId: string, from: string, to: string) {
+    const site = await this.get(tenantId, siteId);
+    if (!site) throw new Error("site_not_found");
+    return this.storeContent.diff(siteId, from, to, {
+      site: toStoreContentSite(site),
     });
   }
 

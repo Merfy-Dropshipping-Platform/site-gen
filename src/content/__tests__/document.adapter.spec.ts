@@ -219,6 +219,40 @@ describe('DocumentAdapter — специфичные проверки адапт
     expect(result.version).not.toBe('rev-old');
   });
 
+  // R3: колонка `kind` (миграция 0020) зеркалит `meta.kind` — то же значение,
+  // что раньше читался только из jsonb (revision-kinds.ts теперь читает
+  // колонку). Обычная запись — kind не задан (null); снимок клиента (то, что
+  // реально пишет save-on-base.ts.snapshotRow) — kind = 'client-snapshot'.
+  it('save() пишет колонку kind из meta.kind (совместимость с revision-kinds.ts)', async () => {
+    const siteId = nextId('site');
+    const site = { id: siteId, tenantId: nextId('tenant'), currentRevisionId: null as string | null };
+    const store = makeFakeDb(site);
+    const adapter = new DocumentAdapter(store.db);
+
+    await adapter.save(siteId, {
+      mode: 'blind',
+      document: { pages: [] },
+      filterSeeded: false,
+      tenantId: site.tenantId,
+      site: { themeId: 'rose', publicUrl: null, currentRevisionId: null },
+    });
+    const [plainId] = [...store.revisions.keys()];
+    expect((store.revisions.get(plainId) as { kind?: string | null }).kind).toBeNull();
+
+    await adapter.save(siteId, {
+      mode: 'blind',
+      document: { pages: [] },
+      meta: { kind: 'client-snapshot' },
+      filterSeeded: false,
+      tenantId: site.tenantId,
+      site: { themeId: 'rose', publicUrl: null, currentRevisionId: null },
+    });
+    const snapshotId = [...store.revisions.keys()].find((id) => id !== plainId)!;
+    expect((store.revisions.get(snapshotId) as { kind?: string | null }).kind).toBe(
+      'client-snapshot',
+    );
+  });
+
   // R2 (В4, `merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): ревизия и
   // правка строки site (например, смена темы) — ОДНА транзакция. Раньше
   // (SetTheme) это были два отдельных запроса: при сбое между ними ревизия
@@ -312,5 +346,139 @@ describe('DocumentAdapter — специфичные проверки адапт
     // …ни новой темы (сама строка site — та же ссылка, её никто не менял).
     expect(siteRow.themeId).toBe('rose');
     expect(siteRow.currentRevisionId).toBe('rev-old');
+  });
+
+  // R3 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): история —
+  // новые сверху, курсор постраничности, конверт → HistoryItem (И5: actor/
+  // source/changes/restoredFrom из meta). Фейк не разбирает WHERE сам (это
+  // делают настоящие операторы drizzle в revision-kinds.ts/document.
+  // adapter.ts — снимки клиента без колонки kind уже проверяет
+  // revision-save-merge.spec.ts) — здесь проверяется форма ответа.
+  it('history(): новые сверху, курсор nextBefore, meta мапится в HistoryItem', async () => {
+    const siteId = nextId('site');
+    const rows = [
+      {
+        id: 'r1',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        meta: {
+          actor: 'merchant',
+          source: 'constructor',
+          changes: ['page:home/block:Hero-1/props/heading/text'],
+        },
+      },
+      {
+        id: 'r2',
+        createdAt: new Date('2026-01-02T00:00:00.000Z'),
+        meta: { actor: 'merchant', source: 'rollback', restoredFrom: 'r1' },
+      },
+    ];
+    let capturedWhere: unknown;
+    const db: any = {
+      select: (_proj?: unknown) => ({
+        from: (_tbl: unknown) => ({
+          where: (cond: unknown) => {
+            capturedWhere = cond;
+            return {
+              orderBy: (..._cols: unknown[]) => ({
+                limit: async (n: number) =>
+                  [...rows]
+                    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                    .slice(0, n),
+              }),
+            };
+          },
+        }),
+      }),
+    };
+    const adapter = new DocumentAdapter(db);
+    const site = { themeId: 'rose', publicUrl: null, currentRevisionId: null };
+
+    // limit шире, чем есть строк, — страница неполная, nextBefore пуст
+    // (случай «ровно limit строк, может быть, есть ещё» — тест ниже).
+    const page = await adapter.history(siteId, { site, limit: 5 });
+
+    expect(page.items.map((i) => i.id)).toEqual(['r2', 'r1']);
+    expect(page.nextBefore).toBeNull();
+    expect(page.items[0]).toMatchObject({
+      id: 'r2',
+      actor: 'merchant',
+      source: 'rollback',
+      restoredFrom: 'r1',
+      changes: null,
+    });
+    expect(page.items[1]).toMatchObject({
+      id: 'r1',
+      actor: 'merchant',
+      source: 'constructor',
+      changes: ['page:home/block:Hero-1/props/heading/text'],
+      restoredFrom: null,
+    });
+
+    // Курсор `before` — тот же адрес, что limit: свежий вызов действительно
+    // строит "раньше даты", а не молча её игнорирует.
+    const cursor = new Date('2026-01-02T00:00:00.000Z');
+    await adapter.history(siteId, { site, limit: 1, before: cursor });
+    expect(sqlOf(capturedWhere)).toContain('"site_revision"."created_at" <');
+    // drizzle сериализует Date в параметре как ISO-строку.
+    expect(paramsOf(capturedWhere)).toContainEqual(cursor.toISOString());
+  });
+
+  // nextBefore = дата последней строки страницы — ровно когда страница полна
+  // (rows.length === limit): дальше могут быть ещё версии.
+  it('history(): nextBefore есть, когда строк ровно limit', async () => {
+    const siteId = nextId('site');
+    const rows = [
+      { id: 'r1', createdAt: new Date('2026-01-01T00:00:00.000Z'), meta: {} },
+      { id: 'r2', createdAt: new Date('2026-01-02T00:00:00.000Z'), meta: {} },
+    ];
+    const db: any = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            orderBy: () => ({
+              limit: async (n: number) =>
+                [...rows]
+                  .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                  .slice(0, n),
+            }),
+          }),
+        }),
+      }),
+    };
+    const adapter = new DocumentAdapter(db);
+    const site = { themeId: 'rose', publicUrl: null, currentRevisionId: null };
+
+    const page = await adapter.history(siteId, { site, limit: 1 });
+    expect(page.items.map((i) => i.id)).toEqual(['r2']);
+    expect(page.nextBefore).toEqual(rows[1].createdAt);
+  });
+
+  it('diff(): читает from/to тем же путём, что load, и строит операции движка', async () => {
+    const siteId = nextId('site');
+    const site = { id: siteId, tenantId: nextId('tenant'), currentRevisionId: null as string | null };
+    const store = makeFakeDb(site);
+    store.revisions.set('rev-a', {
+      id: 'rev-a',
+      siteId,
+      data: { pages: [], pagesData: {}, themeSettings: { title: 'A' } },
+      meta: {},
+      createdAt: new Date(0),
+    });
+    store.revisions.set('rev-b', {
+      id: 'rev-b',
+      siteId,
+      data: { pages: [], pagesData: {}, themeSettings: { title: 'B' } },
+      meta: {},
+      createdAt: new Date(0),
+    });
+    const adapter = new DocumentAdapter(store.db);
+
+    const result = await adapter.diff(siteId, 'rev-a', 'rev-b', {
+      site: { themeId: 'rose', publicUrl: null, currentRevisionId: null },
+    });
+
+    expect(result.ops).toEqual([
+      { op: 'set', path: 'themeSettings/title', value: 'B' },
+    ]);
   });
 });

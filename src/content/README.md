@@ -14,7 +14,7 @@
 
 | Файл | За что отвечает | Кто зовёт |
 |---|---|---|
-| `store-content.port.ts` | контракт порта: `load`/`save`/`history`/`get`/`rollback`, формы записи `SaveParams` (`"on-base"` / `"blind"`), `SitePatch` (В4), результат, ошибки `RevisionConflictError` и `RevisionMergeConflictError` | все ниже, `sites.service`, `pages.service`, RPC-контроллер, команды `store/` |
+| `store-content.port.ts` | контракт порта: `load`/`save`/`history`/`get`/`rollback`/`diff`, формы записи `SaveParams` (`"on-base"` / `"blind"`), `SitePatch` (В4), результат, ошибки `RevisionConflictError` и `RevisionMergeConflictError` | все ниже, `sites.service`, `pages.service`, RPC-контроллер, команды `store/` |
 | `store-content.service.ts` | Nest-провайдер: диспетчер по `site.content_model` (сегодня только `document`) + `createRevision`/`buildInitialRevision` (не диспетчеризуются — общие для всех моделей) | `sites.service`, `pages.service`, `build.service`, `preview.controller`, команды `store/theme-switch`, `store/lifecycle` |
 | `document.adapter.ts` | адаптер модели `document`: шаги чтения (миграции, досев, адреса), `history`/`get`/`rollback`, единая функция фиксации `commit()` (вставка + сдвиг указателя + `sitePatch`, одна транзакция — что раньше было «записью от базы» и отдельно «вслепую» с дублированным SQL) | `store-content.service` |
 | `canon.ts` | канон темы — стартовый документ без базы данных (PageResolver для тем с полным манифестом, иначе легаси JSON из `generator/templates/defaults`) | `store-content.service.buildInitialRevision` |
@@ -23,7 +23,7 @@
 | `change-kinds.ts` | правила «не правка»: автозначения панели конструктора, копии шапки и подвала на внутренних страницах | `write-model` |
 | `panel-defaults.ts` | значения по умолчанию панели из того же puck-config, что получает конструктор | `document.adapter`, дымовая проверка `scripts/smoke-panel-defaults.mjs` |
 | `rewrite-current.ts` | повтор «прочитал → посчитал → записал» при споре о том же месте | `pages.service`, `sites.service.resetContentPages` |
-| `revision-kinds.ts` | условие «ревизия — версия магазина, а не снимок клиента» | `document.adapter.history` (было — `sites.service.listRevisions` до R1), `admin/bulk` |
+| `revision-kinds.ts` | условие «ревизия — версия магазина, а не снимок клиента»; R3 — читает колонку `kind`, не `meta->>'kind'` | `document.adapter.history` (было — `sites.service.listRevisions` до R1), `admin/bulk` |
 | `operations/` | движок: `diff`, `apply`, `merge3`, адреса; чистые функции без базы | `save-on-base`, `change-kinds`, `write-model` |
 
 ## Инварианты этапа 2
@@ -42,6 +42,28 @@
 - **И6.** Откат создаёт новую ревизию: побайтовую копию выбранной версии со сверкой текущей и
   пометкой `restoredFrom`.
 - **И7.** Если писатель один, всё работает как раньше: золотые документы и снимки секций не меняются.
+
+## История, разница, откат (R3)
+
+- **`history(siteId, {site, limit?, before?})`** — новые версии сверху (`ORDER BY created_at DESC`),
+  постранично: `before` — курсор («строго раньше этой даты»), `nextBefore` в ответе — дата самой старой
+  строки страницы, когда строк ровно `limit` (может быть, есть ещё); меньше `limit` или пусто —
+  `nextBefore: null` (это была последняя страница). Каждый `HistoryItem` несёт И5 из `meta`:
+  `actor`/`source`/`changes`/`restoredFrom` (не записано — `null`, не ошибка). Снимки клиента — не
+  версии магазина, в списке их нет (`isStoreVersion()`, колонка `kind`). RPC `sites.revisions.list`
+  расширен совместимо: `before` на входе, `nextBefore` + новые поля `HistoryItem` на выходе; старые
+  поля не переименованы и не удалены.
+- **`diff(siteId, from, to, {site})`** — список операций движка (`operations/diff`) между двумя
+  версиями: оба документа читаются тем же путём, что `load` (миграции, досев, адреса — «одна версия
+  формата», как у слияния), затем чистый `diff(a, b)`. Новый RPC `sites.revisions.diff` (вход
+  `{tenantId, siteId, from, to}`, ответ `{success, ops}`).
+- **`rollback`** уже принимает базу (`RollbackParams.base`) — не менялось в R3, шлюз передаёт её с
+  этапа 2 (`expectedCurrentRevisionId` на проводе, см. `sites.microservice.controller.ts`).
+- **Миграция `drizzle/0020_revision_kind_and_history_index.sql`** (только добавляет): колонка
+  `site_revision.kind text` (backfill из `meta->>'kind'` для существующих строк, где он есть) + индекс
+  `idx_site_revision_site_id_created_at (site_id, created_at DESC)` — без него история — полный
+  просмотр таблицы. `DocumentAdapter.commit()` пишет `kind` из `meta.kind` при каждой вставке —
+  совместимость (`meta.kind` продолжает писаться) на время выкатки.
 
 ## Писатели и политика при устаревшей базе
 
@@ -69,7 +91,9 @@
   `content.save({mode: "blind", ...})`, `commit()` пишет ревизию, сдвигает указатель и патчит `site`
   одной транзакцией. Сбой между вставкой и патчем — ничего не записано (тест-саботаж:
   `document.adapter.spec.ts` → «sitePatch: сбой ПОСЛЕ вставки ревизии…»).
-- **Колонка `kind` у `site_revision` вместо `meta->>'kind'`.** R3.
+- ~~Колонка `kind` у `site_revision` вместо `meta->>'kind'`~~ — снято R3 (миграция 0020, см. выше).
+  `meta.kind` продолжает писаться (совместимость на время выкатки) — убрать дубль отдельной задачей,
+  когда прод перейдёт на колонку везде, где ещё смотрит в `meta`.
 - **Источник значений по умолчанию панели** (`panel-defaults.ts`) создаёт HTTP-контроллер
   `ThemePuckConfigController`, так что слой контента зависит от контроллера. Чтобы это исправить,
   нужно вынести сборку puck-config с кэшем в провайдер уровня `themes/`, а это правка старого

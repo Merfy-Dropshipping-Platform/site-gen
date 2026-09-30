@@ -26,7 +26,7 @@
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, lt } from "drizzle-orm";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { migrateRevisionData } from "../utils/revision-migrations";
@@ -44,7 +44,10 @@ import type { RevisionStore } from "./save-on-base";
 import { RevisionConflictError } from "./store-content.port";
 import type {
   BlindSaveParams,
+  DiffOptions,
+  DiffResult,
   GetOptions,
+  HistoryItem,
   HistoryOptions,
   HistoryPage,
   LoadOptions,
@@ -58,6 +61,7 @@ import type {
   StoreContent,
   StoreContentSite,
 } from "./store-content.port";
+import { diff as diffDocuments } from "./operations";
 import { isStoreVersion } from "./revision-kinds";
 
 // Тот же флаг, что в sites.service.ts/preview.controller.ts — поведение шага
@@ -163,6 +167,29 @@ function stepContextFor(
 /** CAS не прошёл внутри транзакции — откатить вставку и сообщить наружу `false`. */
 class CasMiss extends Error {}
 
+/** R3: колонка `kind` из `meta.kind` — та же метка, только не внутри jsonb. */
+function kindOfMeta(meta: Record<string, unknown> | undefined): string | null {
+  const kind = meta?.kind;
+  return typeof kind === "string" ? kind : null;
+}
+
+/** R3: строка истории из конверта + `meta` (И5: actor/source/changes/restoredFrom). */
+function historyItemOf(row: {
+  id: string;
+  createdAt: Date;
+  meta: unknown;
+}): HistoryItem {
+  const meta = (row.meta ?? {}) as Record<string, unknown>;
+  return {
+    id: row.id,
+    createdAt: row.createdAt,
+    actor: typeof meta.actor === "string" ? (meta.actor as HistoryItem["actor"]) : null,
+    source: typeof meta.source === "string" ? (meta.source as HistoryItem["source"]) : null,
+    changes: Array.isArray(meta.changes) ? (meta.changes as string[]) : null,
+    restoredFrom: typeof meta.restoredFrom === "string" ? meta.restoredFrom : null,
+  };
+}
+
 @Injectable()
 export class DocumentAdapter implements StoreContent {
   private readonly logger = new Logger(DocumentAdapter.name);
@@ -209,15 +236,41 @@ export class DocumentAdapter implements StoreContent {
 
   /** История версий магазина (R1/R3): без служебных снимков клиента (И4). */
   async history(siteId: string, opts: HistoryOptions): Promise<HistoryPage> {
+    const limit = opts.limit ?? 50;
+    const conditions = [eq(schema.siteRevision.siteId, siteId), isStoreVersion()];
+    if (opts.before) conditions.push(lt(schema.siteRevision.createdAt, opts.before));
     const rows = await this.db
       .select({
         id: schema.siteRevision.id,
         createdAt: schema.siteRevision.createdAt,
+        meta: schema.siteRevision.meta,
       })
       .from(schema.siteRevision)
-      .where(and(eq(schema.siteRevision.siteId, siteId), isStoreVersion()))
-      .limit(opts.limit ?? 50);
-    return { items: rows };
+      .where(and(...conditions))
+      .orderBy(desc(schema.siteRevision.createdAt))
+      .limit(limit);
+    return {
+      items: rows.map(historyItemOf),
+      nextBefore: rows.length === limit ? rows[rows.length - 1].createdAt : null,
+    };
+  }
+
+  /**
+   * Разница `from` → `to` (R3): оба документа читаются тем же путём, что и
+   * обычное `load` (миграции, досев, адреса — «одна версия формата», как у
+   * слияния), затем движок строит список операций.
+   */
+  async diff(
+    siteId: string,
+    from: string,
+    to: string,
+    opts: DiffOptions,
+  ): Promise<DiffResult> {
+    const [a, b] = await Promise.all([
+      this.load(siteId, { revisionId: from, site: opts.site }),
+      this.load(siteId, { revisionId: to, site: opts.site }),
+    ]);
+    return { ops: diffDocuments(a.document, b.document) };
   }
 
   /** Конкретная ревизия: конверт (без `data`) отдельным SELECT + содержимое через `load`. */
@@ -401,6 +454,10 @@ export class DocumentAdapter implements StoreContent {
             siteId: write.siteId,
             data: row.data ?? {},
             meta: row.meta ?? {},
+            // R3: колонка зеркалит meta.kind (совместимость на время
+            // выкатки, revision-kinds.ts читает колонку). Сегодня непустой
+            // kind пишет только снимок клиента (save-on-base.ts, snapshotRow).
+            kind: kindOfMeta(row.meta),
             createdAt: new Date(),
             createdBy: write.createdBy,
           });

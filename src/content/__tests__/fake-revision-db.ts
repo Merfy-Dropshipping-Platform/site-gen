@@ -50,6 +50,17 @@ function queryOf(cond: unknown): Query {
 function rowsResult<T>(rows: T[]) {
   const result: any = Promise.resolve(rows);
   result.limit = (n: number) => Promise.resolve(rows.slice(0, n));
+  // R3: history() сортирует .orderBy(desc(createdAt)) перед .limit(). Здесь
+  // единственный реальный вызывающий — он же единственный порядок, который
+  // фейк обязан уметь; сортировка настоящая (не no-op), чтобы курсор
+  // постраничности в тестах истории можно было проверить по датам.
+  result.orderBy = (..._cols: unknown[]) =>
+    rowsResult(
+      [...rows].sort(
+        (a: any, b: any) =>
+          (b?.createdAt?.getTime?.() ?? 0) - (a?.createdAt?.getTime?.() ?? 0),
+      ),
+    );
   return result;
 }
 

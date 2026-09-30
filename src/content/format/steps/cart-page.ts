@@ -5,8 +5,8 @@
  * Миграция содержимого страницы корзины.
  */
 
-import type { Block, PageData } from './types';
-import { getHomeChrome, ensureChrome } from './shared-chrome';
+import type { Block, PageData } from "./types";
+import { getHomeChrome, ensureChrome } from "./shared-chrome";
 
 /**
  * Cart page = Puck-managed ОДНОЙ секцией CartSection (вся ванильная логика корзины:
@@ -45,11 +45,11 @@ import { getHomeChrome, ensureChrome } from './shared-chrome';
  *   - прочие секции (PopularProducts, Collections — кросс-селл мерчанта) сохраняются;
  *   - идемпотентна: [.., CartBody, CartSummary, ..] без монолита — no-op (только chrome).
  */
-const LEGACY_CART_SUBBLOCKS = new Set(['CartTotals', 'CartCheckoutButton']);
+const LEGACY_CART_SUBBLOCKS = new Set(["CartTotals", "CartCheckoutButton"]);
 const CART_PAGE_BLOCKS = new Set([
-  'CartSection',
-  'CartBody',
-  'CartSummary',
+  "CartSection",
+  "CartBody",
+  "CartSummary",
   ...LEGACY_CART_SUBBLOCKS,
 ]);
 
@@ -58,49 +58,58 @@ const CART_BODY_BOTTOM_GAP = 24;
 
 function cartPadding(value: unknown): { top: number; bottom: number } | null {
   const p = value as { top?: unknown; bottom?: unknown } | undefined;
-  if (!p || typeof p.top !== 'number' || typeof p.bottom !== 'number') return null;
+  if (!p || typeof p.top !== "number" || typeof p.bottom !== "number")
+    return null;
   return { top: p.top, bottom: p.bottom };
 }
 
 export function migrateCartPage(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
-  const existing = pagesData['page-cart'] as PageData | undefined;
+  const existing = pagesData["page-cart"] as PageData | undefined;
 
   const makePair = (source?: Block[]): Block[] => {
     // Настройки берём (в порядке приоритета) у прежних CartBody/CartSummary, затем
     // у монолита — чтобы правки мерчанта пережили разворот.
     const prev = (type: string) =>
-      source?.find((b) => b.type === type)?.props as Record<string, unknown> | undefined;
-    const body = prev('CartBody');
-    const summary = prev('CartSummary');
-    const mono = prev('CartSection');
-    const monoPad = cartPadding(mono?.['padding']);
-    const scheme = body?.['colorScheme'] ?? mono?.['colorScheme'];
-    const summaryScheme = summary?.['colorScheme'] ?? scheme;
+      source?.find((b) => b.type === type)?.props as
+        | Record<string, unknown>
+        | undefined;
+    const body = prev("CartBody");
+    const summary = prev("CartSummary");
+    const mono = prev("CartSection");
+    const monoPad = cartPadding(mono?.["padding"]);
+    const scheme = body?.["colorScheme"] ?? mono?.["colorScheme"];
+    const summaryScheme = summary?.["colorScheme"] ?? scheme;
     return [
       {
-        type: 'CartBody',
+        type: "CartBody",
         props: {
           ...(body ?? {}),
           // b45-fix: детерминированный id (не Date.now()) — см. коммент у
           // getHomeChrome. Совпадает с сидом theme.json (`CartBody-1`).
-          id: (body?.['id'] as string) ?? 'CartBody-1',
+          id: (body?.["id"] as string) ?? "CartBody-1",
           ...(scheme !== undefined ? { colorScheme: scheme } : {}),
           padding:
-            cartPadding(body?.['padding']) ??
-            (monoPad ? { top: monoPad.top, bottom: CART_BODY_BOTTOM_GAP } : { top: 80, bottom: CART_BODY_BOTTOM_GAP }),
+            cartPadding(body?.["padding"]) ??
+            (monoPad
+              ? { top: monoPad.top, bottom: CART_BODY_BOTTOM_GAP }
+              : { top: 80, bottom: CART_BODY_BOTTOM_GAP }),
         },
       },
       {
-        type: 'CartSummary',
+        type: "CartSummary",
         props: {
           ...(summary ?? {}),
-          id: (summary?.['id'] as string) ?? 'CartSummary-1',
-          ...(summaryScheme !== undefined ? { colorScheme: summaryScheme } : {}),
+          id: (summary?.["id"] as string) ?? "CartSummary-1",
+          ...(summaryScheme !== undefined
+            ? { colorScheme: summaryScheme }
+            : {}),
           padding:
-            cartPadding(summary?.['padding']) ??
-            (monoPad ? { top: 0, bottom: monoPad.bottom } : { top: 0, bottom: 80 }),
+            cartPadding(summary?.["padding"]) ??
+            (monoPad
+              ? { top: 0, bottom: monoPad.bottom }
+              : { top: 0, bottom: 80 }),
         },
       },
     ];
@@ -111,23 +120,23 @@ export function migrateCartPage(
     const chrome = getHomeChrome(pagesData);
     return {
       ...pagesData,
-      'page-cart': {
+      "page-cart": {
         content: [chrome.headerBlock, ...makePair(), chrome.footerBlock],
-        root: { props: { title: 'Корзина' } },
+        root: { props: { title: "Корзина" } },
         zones: {},
       } as PageData,
     };
   }
 
   const content = existing.content.filter(
-    (b): b is Block => !!b && typeof b?.type === 'string',
+    (b): b is Block => !!b && typeof b?.type === "string",
   );
-  const types = content.map((b) => b.type ?? '');
+  const types = content.map((b) => b.type ?? "");
   const isCanonical =
-    types.filter((t) => t === 'CartBody').length === 1 &&
-    types.filter((t) => t === 'CartSummary').length === 1 &&
-    types.indexOf('CartBody') + 1 === types.indexOf('CartSummary') &&
-    !types.includes('CartSection') &&
+    types.filter((t) => t === "CartBody").length === 1 &&
+    types.filter((t) => t === "CartSummary").length === 1 &&
+    types.indexOf("CartBody") + 1 === types.indexOf("CartSummary") &&
+    !types.includes("CartSection") &&
     !types.some((t) => LEGACY_CART_SUBBLOCKS.has(t));
 
   if (isCanonical) {
@@ -138,19 +147,23 @@ export function migrateCartPage(
     ) {
       return pagesData;
     }
-    return { ...pagesData, 'page-cart': { ...existing, content: patched } };
+    return { ...pagesData, "page-cart": { ...existing, content: patched } };
   }
 
   // Разворот: все cart-блоки страницы (монолит и/или легаси-081) → одна пара
   // CartBody+CartSummary в позиции ПЕРВОГО из них. Прочее остаётся как есть.
-  const firstCartIdx = content.findIndex((b) => CART_PAGE_BLOCKS.has(b.type ?? ''));
-  const cartBlocks = content.filter((b) => CART_PAGE_BLOCKS.has(b.type ?? ''));
-  const kept = content.filter((b) => !CART_PAGE_BLOCKS.has(b.type ?? ''));
+  const firstCartIdx = content.findIndex((b) =>
+    CART_PAGE_BLOCKS.has(b.type ?? ""),
+  );
+  const cartBlocks = content.filter((b) => CART_PAGE_BLOCKS.has(b.type ?? ""));
+  const kept = content.filter((b) => !CART_PAGE_BLOCKS.has(b.type ?? ""));
   const keptBefore =
     firstCartIdx >= 0
-      ? content.slice(0, firstCartIdx).filter((b) => !CART_PAGE_BLOCKS.has(b.type ?? '')).length
+      ? content
+          .slice(0, firstCartIdx)
+          .filter((b) => !CART_PAGE_BLOCKS.has(b.type ?? "")).length
       : (() => {
-          const fi = kept.findIndex((b) => b.type === 'Footer');
+          const fi = kept.findIndex((b) => b.type === "Footer");
           return fi >= 0 ? fi : kept.length;
         })();
   const next = [
@@ -159,5 +172,5 @@ export function migrateCartPage(
     ...kept.slice(keptBefore),
   ];
   const withChrome = ensureChrome(next, pagesData);
-  return { ...pagesData, 'page-cart': { ...existing, content: withChrome } };
+  return { ...pagesData, "page-cart": { ...existing, content: withChrome } };
 }

@@ -5,7 +5,7 @@
  * Бэкфиллы легаси-форм пропов (варианты товара, Hero, MainText, Video).
  */
 
-import type { Block, PageData } from './types';
+import type { Block, PageData } from "./types";
 
 /**
  * Figma 1:21431 — подсекция «Варианты» секции Product разделена на 2 свитчера:
@@ -15,34 +15,44 @@ import type { Block, PageData } from './types';
  * shape из legacy style/shape, сохраняя итоговый mode (та же деривация что в
  * Product.astro). Идемпотентно: если displayStyle уже задан — блок не трогаем.
  */
-export function backfillProductVariants(pagesData: Record<string, unknown>): Record<string, unknown> {
+export function backfillProductVariants(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
   for (const [pageId, page] of Object.entries(pagesData)) {
     const pd = page as PageData | undefined;
-    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    const content = Array.isArray(pd?.content)
+      ? (pd!.content as Block[])
+      : null;
     if (!content) continue;
     let pageChanged = false;
     const newContent = content.map((block) => {
-      if (block?.type !== 'Product') return block;
+      if (block?.type !== "Product") return block;
       const props = (block.props ?? {}) as Record<string, unknown>;
       const variants = (props.variants ?? {}) as Record<string, unknown>;
-      if (typeof variants.displayStyle === 'string') return block; // уже новая модель
-      const style = typeof variants.style === 'string' ? variants.style : '';
-      const shape = typeof variants.shape === 'string' ? variants.shape : '';
+      if (typeof variants.displayStyle === "string") return block; // уже новая модель
+      const style = typeof variants.style === "string" ? variants.style : "";
+      const shape = typeof variants.shape === "string" ? variants.shape : "";
       // Legacy-деривация итогового mode (зеркало Product.astro).
       const mode =
-        style === 'circle' || style === 'square'
+        style === "circle" || style === "square"
           ? style
-          : style === 'list'
-            ? 'list'
-            : shape === 'circle' || shape === 'square'
+          : style === "list"
+            ? "list"
+            : shape === "circle" || shape === "square"
               ? shape
-              : 'button';
-      const displayStyle = mode === 'list' ? 'list' : 'button';
-      const newShape = mode === 'circle' || mode === 'square' ? mode : 'none';
+              : "button";
+      const displayStyle = mode === "list" ? "list" : "button";
+      const newShape = mode === "circle" || mode === "square" ? mode : "none";
       pageChanged = true;
-      return { ...block, props: { ...props, variants: { ...variants, displayStyle, shape: newShape } } };
+      return {
+        ...block,
+        props: {
+          ...props,
+          variants: { ...variants, displayStyle, shape: newShape },
+        },
+      };
     });
     if (pageChanged) {
       out[pageId] = { ...(pd as object), content: newContent };
@@ -68,39 +78,58 @@ export function backfillProductVariants(pagesData: Record<string, unknown>): Rec
  * оно считается из тех же raw legacy/nested пропов. Идемпотентно: блок с уже
  * заданным nested-пропом пропускается.
  */
-export function backfillHeroLegacyProps(pagesData: Record<string, unknown>): Record<string, unknown> {
+export function backfillHeroLegacyProps(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
-  const isBlank = (v: unknown): boolean => v == null || v === '';
+  const isBlank = (v: unknown): boolean => v == null || v === "";
   for (const [pageId, page] of Object.entries(pagesData)) {
     const pd = page as PageData | undefined;
-    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    const content = Array.isArray(pd?.content)
+      ? (pd!.content as Block[])
+      : null;
     if (!content) continue;
     let pageChanged = false;
     const newContent = content.map((block) => {
-      if (block?.type !== 'Hero') return block;
+      if (block?.type !== "Hero") return block;
       const props = (block.props ?? {}) as Record<string, unknown>;
       const patch: Record<string, unknown> = {};
 
       // «Заголовок»: heading.text ← legacy title.
       const heading = props.heading as Record<string, unknown> | undefined;
-      if (isBlank(heading?.text) && typeof props.title === 'string' && props.title !== '') {
+      if (
+        isBlank(heading?.text) &&
+        typeof props.title === "string" &&
+        props.title !== ""
+      ) {
         patch.heading = { ...(heading ?? {}), text: props.title };
       }
 
       // «Текст»: text.content ← legacy subtitle.
       const text = props.text as Record<string, unknown> | undefined;
-      if (isBlank(text?.content) && typeof props.subtitle === 'string' && props.subtitle !== '') {
+      if (
+        isBlank(text?.content) &&
+        typeof props.subtitle === "string" &&
+        props.subtitle !== ""
+      ) {
         patch.text = { ...(text ?? {}), content: props.subtitle };
       }
 
       // «Кнопка основная»: primaryButton.{text,link} ← legacy cta.{text,href}.
-      const primaryButton = props.primaryButton as Record<string, unknown> | undefined;
+      const primaryButton = props.primaryButton as
+        | Record<string, unknown>
+        | undefined;
       const cta = props.cta as { text?: unknown; href?: unknown } | undefined;
-      if (isBlank(primaryButton?.text) && cta && typeof cta.text === 'string' && cta.text !== '') {
+      if (
+        isBlank(primaryButton?.text) &&
+        cta &&
+        typeof cta.text === "string" &&
+        cta.text !== ""
+      ) {
         patch.primaryButton = {
           text: cta.text,
-          link: { href: typeof cta.href === 'string' ? cta.href : '' },
+          link: { href: typeof cta.href === "string" ? cta.href : "" },
         };
       }
 
@@ -131,24 +160,38 @@ export function backfillHeroLegacyProps(pagesData: Record<string, unknown>): Rec
  * сохраняем 1-в-1, как у Hero. Рендер-нейтрально: порт берёт `cta`, пока поля
  * нет, и тот же текст после переноса. Идемпотентно.
  */
-export function backfillMainTextLegacyButton(pagesData: Record<string, unknown>): Record<string, unknown> {
+export function backfillMainTextLegacyButton(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
-  const filled = (v: unknown): v is string => typeof v === 'string' && v.trim() !== '';
+  const filled = (v: unknown): v is string =>
+    typeof v === "string" && v.trim() !== "";
   for (const [pageId, page] of Object.entries(pagesData)) {
     const pd = page as PageData | undefined;
-    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    const content = Array.isArray(pd?.content)
+      ? (pd!.content as Block[])
+      : null;
     if (!content) continue;
     let pageChanged = false;
     const newContent = content.map((block) => {
-      if (block?.type !== 'MainText') return block;
+      if (block?.type !== "MainText") return block;
       const props = (block.props ?? {}) as Record<string, unknown>;
-      const cta = props.cta as { text?: unknown; href?: unknown; link?: unknown } | null | undefined;
+      const cta = props.cta as
+        | { text?: unknown; href?: unknown; link?: unknown }
+        | null
+        | undefined;
       const text = cta?.text;
       if (props.button != null || !filled(text)) return block;
-      const href = [cta?.href, cta?.link].find((v): v is string => typeof v === 'string') ?? '';
+      const href =
+        [cta?.href, cta?.link].find(
+          (v): v is string => typeof v === "string",
+        ) ?? "";
       pageChanged = true;
-      return { ...block, props: { ...props, button: { text, link: { href } } } };
+      return {
+        ...block,
+        props: { ...props, button: { text, link: { href } } },
+      };
     });
     if (pageChanged) {
       out[pageId] = { ...(pd as object), content: newContent };
@@ -169,25 +212,36 @@ export function backfillMainTextLegacyButton(pagesData: Record<string, unknown>)
  * заголовком» молча получила бы более высокое видео.
  * Идемпотентно: срабатывает только когда `size` — строка И `headingSize` пуст.
  */
-export function backfillVideoSizeSplit(pagesData: Record<string, unknown>): Record<string, unknown> {
+export function backfillVideoSizeSplit(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
   for (const [pageId, page] of Object.entries(pagesData)) {
     const pd = page as PageData | undefined;
-    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    const content = Array.isArray(pd?.content)
+      ? (pd!.content as Block[])
+      : null;
     if (!content) continue;
     let pageChanged = false;
     const newContent = content.map((block) => {
-      if (block?.type !== 'Video') return block;
+      if (block?.type !== "Video") return block;
       const props = (block.props ?? {}) as Record<string, unknown>;
       const hasHeadingSize =
-        typeof props.headingSize === 'string' && props.headingSize !== '';
+        typeof props.headingSize === "string" && props.headingSize !== "";
       const legacySize = props.size;
-      if (hasHeadingSize || typeof legacySize !== 'string' || legacySize === '') {
+      if (
+        hasHeadingSize ||
+        typeof legacySize !== "string" ||
+        legacySize === ""
+      ) {
         return block;
       }
       pageChanged = true;
-      const nextProps: Record<string, unknown> = { ...props, headingSize: legacySize };
+      const nextProps: Record<string, unknown> = {
+        ...props,
+        headingSize: legacySize,
+      };
       delete nextProps.size;
       return { ...block, props: nextProps };
     });

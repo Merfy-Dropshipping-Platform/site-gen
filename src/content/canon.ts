@@ -68,9 +68,9 @@ export async function buildThemeCanon(
 ): Promise<Record<string, unknown> | null> {
   if (!USE_PAGE_RESOLVER) return legacySeed(themeId);
 
-  const manifest = getThemeManifest(themeId) as
-    | { pages?: Array<{ isHome?: boolean }> }
-    | null;
+  const manifest = getThemeManifest(themeId) as {
+    pages?: Array<{ isHome?: boolean }>;
+  } | null;
   const manifestPages = Array.isArray(manifest?.pages) ? manifest!.pages : [];
   const hasHomePage = manifestPages.some((p) => p?.isHome === true);
   if (!hasHomePage) return legacySeed(themeId);

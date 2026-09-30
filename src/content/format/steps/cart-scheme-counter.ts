@@ -5,7 +5,7 @@
  * Снятие цветовой схемы сида корзины и варианта счётчика, где тема задаёт своё.
  */
 
-import type { Block, PageData } from './types';
+import type { Block, PageData } from "./types";
 
 /**
  * Корзина: снять схему платформенного сида там, где тема задаёт свою.
@@ -21,22 +21,22 @@ import type { Block, PageData } from './types';
  * `blockDefaults` — без них снятие вернуло бы корзину к базовой схеме темы
  * (у flux это чёрная scheme-1), то есть сломало бы вид.
  */
-const CART_SEED_SCHEME = 'scheme-2';
-const CART_THEME_SCHEME_THEMES = new Set(['bloom']);
+const CART_SEED_SCHEME = "scheme-2";
+const CART_THEME_SCHEME_THEMES = new Set(["bloom"]);
 const CART_BLOCK_TYPES = new Set([
-  'CartBody',
-  'CartSummary',
-  'CartTotals',
-  'CartCheckoutButton',
+  "CartBody",
+  "CartSummary",
+  "CartTotals",
+  "CartCheckoutButton",
 ]);
 
 export function dropSeededCartScheme(
   pagesData: Record<string, unknown>,
   themeId?: string | null,
 ): Record<string, unknown> {
-  const bare = (themeId ?? '').split('-')[0];
+  const bare = (themeId ?? "").split("-")[0];
   if (!CART_THEME_SCHEME_THEMES.has(bare)) return pagesData;
-  const page = pagesData['page-cart'] as PageData | undefined;
+  const page = pagesData["page-cart"] as PageData | undefined;
   if (!page || !Array.isArray(page.content)) return pagesData;
   let changed = false;
   const content = page.content.map((block) => {
@@ -49,7 +49,7 @@ export function dropSeededCartScheme(
     return { ...b, props };
   });
   if (!changed) return pagesData;
-  return { ...pagesData, 'page-cart': { ...(page as object), content } };
+  return { ...pagesData, "page-cart": { ...(page as object), content } };
 }
 
 /**
@@ -82,7 +82,7 @@ export function dropSeededCartScheme(
  * СЮДА НЕ ВХОДИТ — у flux сид (`true`) расходится с манифестом (`false`), и
  * снятие спрятало бы описание товара; это решение за владельцем.
  */
-const SEED_FROZEN_VISUAL_KEYS = ['counter', 'gallery', 'variantsType'] as const;
+const SEED_FROZEN_VISUAL_KEYS = ["counter", "gallery", "variantsType"] as const;
 
 export function dropSeededCounterVariant(
   pagesData: Record<string, unknown>,
@@ -95,9 +95,9 @@ export function dropSeededCounterVariant(
     let pageChanged = false;
     const content = page.content.map((block) => {
       const b = block as { type?: string; props?: Record<string, unknown> };
-      if (b?.type !== 'Product' || !b.props) return block;
+      if (b?.type !== "Product" || !b.props) return block;
       const visual = b.props.visualConfig;
-      if (!visual || typeof visual !== 'object' || Array.isArray(visual)) {
+      if (!visual || typeof visual !== "object" || Array.isArray(visual)) {
         return block;
       }
       const visualRec = visual as Record<string, unknown>;

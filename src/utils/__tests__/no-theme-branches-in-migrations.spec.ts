@@ -47,7 +47,7 @@ function stripComments(src: string): string {
  */
 const WHITELIST: Array<{ needle: string; reason: string }> = [
   {
-    needle: "const CART_THEME_SCHEME_THEMES = new Set(['bloom']);",
+    needle: 'const CART_THEME_SCHEME_THEMES = new Set(["bloom"]);',
     reason:
       "dropSeededCartScheme (b*: cart-scheme) — отдельная, более ранняя задача " +
       "(схема корзины из theme.json.blockDefaults для тем, где она задана). " +
@@ -57,7 +57,9 @@ const WHITELIST: Array<{ needle: string; reason: string }> = [
 ];
 
 describe("код миграций не содержит литеральных if(themeId === на конкретную тему)", () => {
-  const rawSource = SOURCE_FILES.map((f) => readFileSync(f, "utf-8")).join("\n\n");
+  const rawSource = SOURCE_FILES.map((f) => readFileSync(f, "utf-8")).join(
+    "\n\n",
+  );
   const codeOnly = stripComments(rawSource);
 
   it("файлы существуют и непустые (страховка от опечатки в пути)", () => {

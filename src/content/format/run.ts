@@ -21,7 +21,11 @@
  * (`format/steps/table.ts`), их реализации — маленькие файлы
  * (`format/steps/*.ts`), проверка порядка — `validateStepOrder()`.
  */
-import { MIGRATION_STEPS, validateStepOrder, type MigrationCtx } from './steps/table';
+import {
+  MIGRATION_STEPS,
+  validateStepOrder,
+  type MigrationCtx,
+} from "./steps/table";
 
 // Саботаж (переставить два шага с `after` местами) должен падать на загрузке
 // модуля, а не тихо менять поведение в проде — см. `steps/__tests__/table.spec.ts`.
@@ -38,7 +42,7 @@ export function migrateRevisionData(
    */
   options: { unifyFooter?: boolean } = {},
 ): Record<string, unknown> {
-  if (!data || typeof data !== 'object') return {};
+  if (!data || typeof data !== "object") return {};
   let doc: Record<string, unknown> = { ...data };
   const ctx: MigrationCtx = {
     themeId,
@@ -47,9 +51,9 @@ export function migrateRevisionData(
   };
   for (const step of MIGRATION_STEPS) {
     if (step.when && !step.when(ctx)) continue;
-    if (step.scope === 'pagesData') {
+    if (step.scope === "pagesData") {
       // Тот же гард, что был у каждого блока лестницы.
-      if (doc.pagesData && typeof doc.pagesData === 'object') {
+      if (doc.pagesData && typeof doc.pagesData === "object") {
         doc.pagesData = step.run(doc.pagesData as Record<string, unknown>, ctx);
       }
       continue;

@@ -5,7 +5,7 @@
  * Нормализация подвала: имя темы → имя магазина, контакты.
  */
 
-import type { Block, PageData } from './types';
+import type { Block, PageData } from "./types";
 
 /**
  * Apply all server-side migrations to a revision data object. Mutates a
@@ -17,7 +17,7 @@ import type { Block, PageData } from './types';
  * шаги пропускаются (back-compat для legacy callers).
  */
 /** Плейсхолдер-телефон верстальщиков (засевался во все темы). */
-const FOOTER_PLACEHOLDER_PHONE = '+7 (000) 000-00-00';
+const FOOTER_PLACEHOLDER_PHONE = "+7 (000) 000-00-00";
 /**
  * Плейсхолдер-почты сидов/тем. Покрывает: `example@…` (example@bloom.ru,
  * example@vanila.merfy), `…@example.…` (rose@example.ru, info@example.ru) и
@@ -61,9 +61,9 @@ export function stripThemeNameFromFooter(
   themeId: string | null | undefined,
   siteName?: string | null,
 ): Record<string, unknown> {
-  const theme = (themeId ?? '').trim().toLowerCase();
+  const theme = (themeId ?? "").trim().toLowerCase();
   if (!theme) return pagesData;
-  const shopName = (siteName ?? '').trim();
+  const shopName = (siteName ?? "").trim();
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
   for (const pageId of Object.keys(pagesData)) {
@@ -71,11 +71,19 @@ export function stripThemeNameFromFooter(
     const content = page?.content;
     if (!Array.isArray(content)) continue;
     const nextContent = content.map((block) => {
-      const b = block as { type?: string; props?: Record<string, unknown> } | undefined;
-      if (b?.type !== 'Footer' || !b.props) return block;
-      const copyright = b.props.copyright as Record<string, unknown> | undefined;
-      const company = typeof copyright?.companyName === 'string' ? copyright.companyName.trim() : '';
-      const title = typeof b.props.siteTitle === 'string' ? b.props.siteTitle.trim() : '';
+      const b = block as
+        | { type?: string; props?: Record<string, unknown> }
+        | undefined;
+      if (b?.type !== "Footer" || !b.props) return block;
+      const copyright = b.props.copyright as
+        | Record<string, unknown>
+        | undefined;
+      const company =
+        typeof copyright?.companyName === "string"
+          ? copyright.companyName.trim()
+          : "";
+      const title =
+        typeof b.props.siteTitle === "string" ? b.props.siteTitle.trim() : "";
       const companyIsTheme = !!company && company.toLowerCase() === theme;
       // Пустой siteTitle — тоже повод подставить название магазина: у bloom в
       // ревизии поля не было вовсе, имя темы приходило из порта, и после его
@@ -124,23 +132,23 @@ export function normalizeFooterContacts(
     let pageChanged = false;
     const content = page.content.map((block) => {
       const b = block as { type?: string; props?: Record<string, unknown> };
-      if (!b || b.type !== 'Footer' || !b.props) return block;
+      if (!b || b.type !== "Footer" || !b.props) return block;
       const props = { ...b.props } as Record<string, any>;
       let blockChanged = false;
 
       if (
-        typeof props.phone === 'string' &&
+        typeof props.phone === "string" &&
         props.phone.trim() === FOOTER_PLACEHOLDER_PHONE
       ) {
         delete props.phone;
         blockChanged = true;
       }
 
-      if (props.socialColumn && typeof props.socialColumn === 'object') {
+      if (props.socialColumn && typeof props.socialColumn === "object") {
         const social = { ...(props.socialColumn as Record<string, any>) };
         let socialChanged = false;
         if (
-          typeof social.email === 'string' &&
+          typeof social.email === "string" &&
           FOOTER_PLACEHOLDER_EMAIL.test(social.email.trim())
         ) {
           delete social.email;
@@ -150,9 +158,9 @@ export function normalizeFooterContacts(
           const filtered = social.socialLinks.filter(
             (s: any) =>
               s &&
-              typeof s.href === 'string' &&
-              s.href.trim() !== '' &&
-              s.href.trim() !== '#',
+              typeof s.href === "string" &&
+              s.href.trim() !== "" &&
+              s.href.trim() !== "#",
           );
           if (filtered.length !== social.socialLinks.length) {
             social.socialLinks = filtered;
@@ -165,15 +173,18 @@ export function normalizeFooterContacts(
         }
       }
 
-      if (props.informationColumn && typeof props.informationColumn === 'object') {
+      if (
+        props.informationColumn &&
+        typeof props.informationColumn === "object"
+      ) {
         const info = { ...(props.informationColumn as Record<string, any>) };
         if (Array.isArray(info.links)) {
           const filtered = info.links.filter(
             (l: any) =>
               l &&
-              typeof l.href === 'string' &&
-              l.href.trim() !== '#' &&
-              !l.href.trim().startsWith('/legal/'),
+              typeof l.href === "string" &&
+              l.href.trim() !== "#" &&
+              !l.href.trim().startsWith("/legal/"),
           );
           if (filtered.length !== info.links.length) {
             info.links = filtered;

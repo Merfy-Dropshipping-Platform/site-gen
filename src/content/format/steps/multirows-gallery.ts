@@ -5,7 +5,7 @@
  * «Мультиряды» (Высота секции/ряда) и «Галерея» (канон плиток).
  */
 
-import type { Block, PageData } from './types';
+import type { Block, PageData } from "./types";
 
 /**
  * Мультиряды: перенести «Как в секции» в тот размер, который ряд и так рисовал.
@@ -37,7 +37,7 @@ import type { Block, PageData } from './types';
 /** Фолбэк ряда = «высота» секции ровно по правилу MultiRows.astro. */
 function multiRowsSectionSize(props: Record<string, unknown>): string {
   const raw = props.size;
-  return raw === 'small' || raw === 'large' ? raw : 'medium';
+  return raw === "small" || raw === "large" ? raw : "medium";
 }
 
 /**
@@ -78,11 +78,11 @@ export function materializeMultiRowsSectionSize(
     let pageChanged = false;
     const content = page.content.map((block) => {
       const b = block as { type?: string; props?: Record<string, unknown> };
-      if (b?.type !== 'MultiRows' || !b.props) return block;
+      if (b?.type !== "MultiRows" || !b.props) return block;
       const raw = b.props.size;
-      if (raw === 'small' || raw === 'medium' || raw === 'large') return block;
+      if (raw === "small" || raw === "medium" || raw === "large") return block;
       pageChanged = true;
-      return { ...b, props: { ...b.props, size: 'medium' } };
+      return { ...b, props: { ...b.props, size: "medium" } };
     });
     if (pageChanged) {
       out[pageId] = { ...(page as object), content };
@@ -103,11 +103,13 @@ export function materializeMultiRowsItemSize(
     let pageChanged = false;
     const content = page.content.map((block) => {
       const b = block as { type?: string; props?: Record<string, unknown> };
-      if (b?.type !== 'MultiRows' || !b.props) return block;
+      if (b?.type !== "MultiRows" || !b.props) return block;
       const rows = b.props.rows;
       if (!Array.isArray(rows) || rows.length === 0) return block;
       const stale = (r: unknown) =>
-        !!r && typeof r === 'object' && (r as { size?: unknown }).size === 'inherit';
+        !!r &&
+        typeof r === "object" &&
+        (r as { size?: unknown }).size === "inherit";
       if (!rows.some(stale)) return block;
       const fallback = multiRowsSectionSize(b.props);
       const nextRows = rows.map((r) =>
@@ -133,9 +135,9 @@ export function materializeMultiRowsItemSize(
  * массив с живым `GET /api/themes/:id/puck-config` по всем пяти темам.
  */
 export const GALLERY_CANON_ITEMS: ReadonlyArray<Record<string, unknown>> = [
-  { id: 'item-1', type: 'image', url: '', alt: 'Изображение' },
-  { id: 'item-2', type: 'product', productId: null },
-  { id: 'item-3', type: 'collection', collectionId: null },
+  { id: "item-1", type: "image", url: "", alt: "Изображение" },
+  { id: "item-2", type: "product", productId: null },
+  { id: "item-3", type: "collection", collectionId: null },
 ];
 
 /**
@@ -178,7 +180,7 @@ export function materializeGalleryItems(
     let pageChanged = false;
     const content = page.content.map((block) => {
       const b = block as { type?: string; props?: Record<string, unknown> };
-      if (b?.type !== 'Gallery') return block;
+      if (b?.type !== "Gallery") return block;
       const props = b.props ?? {};
       if (Array.isArray(props.items)) return block;
       pageChanged = true;

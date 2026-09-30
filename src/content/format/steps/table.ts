@@ -14,40 +14,53 @@
  * записаны как данные и проверяются `validateStepOrder()` — см. тест
  * `__tests__/table.spec.ts`.
  */
-import type { Block, PageData } from './types';
-import { migrateCartPage } from './cart-page';
-import { migrateCatalogPage } from './catalog-page';
-import { migrateCollectionPage } from './collection-page';
-import { migrateContentPages } from './content-pages';
-import { migrateProductPage } from './product-page';
+import type { Block, PageData } from "./types";
+import { migrateCartPage } from "./cart-page";
+import { migrateCatalogPage } from "./catalog-page";
+import { migrateCollectionPage } from "./collection-page";
+import { migrateContentPages } from "./content-pages";
+import { migrateProductPage } from "./product-page";
 import {
   migrateCheckoutPage,
   retagSeededCheckoutScheme,
   seedCheckoutResultPage,
   themeHasCheckoutResultPage,
-} from './checkout';
-import { normalizeFooterContacts, stripThemeNameFromFooter } from './footer-contacts';
-import { normalizePromoBannerPadding, renameNewsletterPlaceholder } from './promo-newsletter';
-import { dropSeededCartScheme, dropSeededCounterVariant } from './cart-scheme-counter';
+} from "./checkout";
+import {
+  normalizeFooterContacts,
+  stripThemeNameFromFooter,
+} from "./footer-contacts";
+import {
+  normalizePromoBannerPadding,
+  renameNewsletterPlaceholder,
+} from "./promo-newsletter";
+import {
+  dropSeededCartScheme,
+  dropSeededCounterVariant,
+} from "./cart-scheme-counter";
 import {
   materializeGalleryItems,
   materializeMultiRowsItemSize,
   materializeMultiRowsSectionSize,
-} from './multirows-gallery';
-import { clearDemoImageSections } from './demo-images';
+} from "./multirows-gallery";
+import { clearDemoImageSections } from "./demo-images";
 import {
   backfillHeroLegacyProps,
   backfillMainTextLegacyButton,
   backfillProductVariants,
   backfillVideoSizeSplit,
-} from './legacy-backfills';
+} from "./legacy-backfills";
 import {
   seedAccountPageSections,
   seedLoginPageSection,
   seedProfilePage,
   seedWishlistPage,
-} from './account-pages';
-import { storeChromeOnCheckoutResult, unifyFooterWithHome, unifyHeaderWithHome } from './chrome-unify';
+} from "./account-pages";
+import {
+  storeChromeOnCheckoutResult,
+  unifyFooterWithHome,
+  unifyHeaderWithHome,
+} from "./chrome-unify";
 
 /** Что шагу нужно сверх самого документа — те же параметры, что были у `migrateRevisionData`. */
 export type MigrationCtx = {
@@ -67,65 +80,139 @@ type StepCommon = {
 
 /** Оперирует `document.pagesData` — под стандартным гардом «есть и объект» (как в лестнице). */
 export type PagesDataStep = StepCommon & {
-  scope: 'pagesData';
-  run: (pagesData: Record<string, unknown>, ctx: MigrationCtx) => Record<string, unknown>;
+  scope: "pagesData";
+  run: (
+    pagesData: Record<string, unknown>,
+    ctx: MigrationCtx,
+  ) => Record<string, unknown>;
 };
 
 /** Оперирует ВСЕМ документом (`pages[]` + `pagesData` разом) — сидеры системных страниц. */
 export type DocumentStep = StepCommon & {
-  scope: 'document';
-  run: (doc: Record<string, unknown>, ctx: MigrationCtx) => Record<string, unknown>;
+  scope: "document";
+  run: (
+    doc: Record<string, unknown>,
+    ctx: MigrationCtx,
+  ) => Record<string, unknown>;
 };
 
 export type MigrationStep = PagesDataStep | DocumentStep;
 
 // ── Фаза 1: миграции и бэкфиллы pagesData (было — первые ~21 блок лестницы) ──
 export const PAGESDATA_MIGRATION_STEPS: readonly PagesDataStep[] = [
-  { name: 'migrateCatalogPage', scope: 'pagesData', run: (pd) => migrateCatalogPage(pd) },
-  { name: 'migrateCollectionPage', scope: 'pagesData', run: (pd) => migrateCollectionPage(pd) },
-  { name: 'migrateContentPages', scope: 'pagesData', run: (pd) => migrateContentPages(pd) },
-  { name: 'migrateProductPage', scope: 'pagesData', run: (pd) => migrateProductPage(pd) },
-  { name: 'migrateCartPage', scope: 'pagesData', run: (pd) => migrateCartPage(pd) },
-  { name: 'migrateCheckoutPage', scope: 'pagesData', run: (pd) => migrateCheckoutPage(pd) },
-  { name: 'retagSeededCheckoutScheme', scope: 'pagesData', run: (pd) => retagSeededCheckoutScheme(pd) },
-  { name: 'normalizeFooterContacts', scope: 'pagesData', run: (pd) => normalizeFooterContacts(pd) },
   {
-    name: 'stripThemeNameFromFooter',
-    scope: 'pagesData',
+    name: "migrateCatalogPage",
+    scope: "pagesData",
+    run: (pd) => migrateCatalogPage(pd),
+  },
+  {
+    name: "migrateCollectionPage",
+    scope: "pagesData",
+    run: (pd) => migrateCollectionPage(pd),
+  },
+  {
+    name: "migrateContentPages",
+    scope: "pagesData",
+    run: (pd) => migrateContentPages(pd),
+  },
+  {
+    name: "migrateProductPage",
+    scope: "pagesData",
+    run: (pd) => migrateProductPage(pd),
+  },
+  {
+    name: "migrateCartPage",
+    scope: "pagesData",
+    run: (pd) => migrateCartPage(pd),
+  },
+  {
+    name: "migrateCheckoutPage",
+    scope: "pagesData",
+    run: (pd) => migrateCheckoutPage(pd),
+  },
+  {
+    name: "retagSeededCheckoutScheme",
+    scope: "pagesData",
+    run: (pd) => retagSeededCheckoutScheme(pd),
+  },
+  {
+    name: "normalizeFooterContacts",
+    scope: "pagesData",
+    run: (pd) => normalizeFooterContacts(pd),
+  },
+  {
+    name: "stripThemeNameFromFooter",
+    scope: "pagesData",
     run: (pd, ctx) => stripThemeNameFromFooter(pd, ctx.themeId, ctx.siteName),
   },
-  { name: 'normalizePromoBannerPadding', scope: 'pagesData', run: (pd) => normalizePromoBannerPadding(pd) },
-  { name: 'renameNewsletterPlaceholder', scope: 'pagesData', run: (pd) => renameNewsletterPlaceholder(pd) },
   {
-    name: 'dropSeededCartScheme',
-    scope: 'pagesData',
+    name: "normalizePromoBannerPadding",
+    scope: "pagesData",
+    run: (pd) => normalizePromoBannerPadding(pd),
+  },
+  {
+    name: "renameNewsletterPlaceholder",
+    scope: "pagesData",
+    run: (pd) => renameNewsletterPlaceholder(pd),
+  },
+  {
+    name: "dropSeededCartScheme",
+    scope: "pagesData",
     run: (pd, ctx) => dropSeededCartScheme(pd, ctx.themeId),
   },
-  { name: 'dropSeededCounterVariant', scope: 'pagesData', run: (pd) => dropSeededCounterVariant(pd) },
-  { name: 'materializeMultiRowsItemSize', scope: 'pagesData', run: (pd) => materializeMultiRowsItemSize(pd) },
+  {
+    name: "dropSeededCounterVariant",
+    scope: "pagesData",
+    run: (pd) => dropSeededCounterVariant(pd),
+  },
+  {
+    name: "materializeMultiRowsItemSize",
+    scope: "pagesData",
+    run: (pd) => materializeMultiRowsItemSize(pd),
+  },
   {
     // СТРОГО после materializeMultiRowsItemSize: та читает секционный размер
     // как фолбэк для рядов со снятым «Как в секции», и ей нужно исходное
     // состояние пропа, а не проставленное здесь (комментарий из лестницы).
-    name: 'materializeMultiRowsSectionSize',
-    scope: 'pagesData',
-    after: ['materializeMultiRowsItemSize'],
+    name: "materializeMultiRowsSectionSize",
+    scope: "pagesData",
+    after: ["materializeMultiRowsItemSize"],
     run: (pd) => materializeMultiRowsSectionSize(pd),
   },
-  { name: 'clearDemoImageSections', scope: 'pagesData', run: (pd) => clearDemoImageSections(pd) },
+  {
+    name: "clearDemoImageSections",
+    scope: "pagesData",
+    run: (pd) => clearDemoImageSections(pd),
+  },
   {
     // СТРОГО после clearDemoImageSections: стриппер снимает демо-плитки сида,
     // и без материализации секция уезжала бы к мерчанту пустой (комментарий
     // из лестницы).
-    name: 'materializeGalleryItems',
-    scope: 'pagesData',
-    after: ['clearDemoImageSections'],
+    name: "materializeGalleryItems",
+    scope: "pagesData",
+    after: ["clearDemoImageSections"],
     run: (pd) => materializeGalleryItems(pd),
   },
-  { name: 'backfillProductVariants', scope: 'pagesData', run: (pd) => backfillProductVariants(pd) },
-  { name: 'backfillHeroLegacyProps', scope: 'pagesData', run: (pd) => backfillHeroLegacyProps(pd) },
-  { name: 'backfillMainTextLegacyButton', scope: 'pagesData', run: (pd) => backfillMainTextLegacyButton(pd) },
-  { name: 'backfillVideoSizeSplit', scope: 'pagesData', run: (pd) => backfillVideoSizeSplit(pd) },
+  {
+    name: "backfillProductVariants",
+    scope: "pagesData",
+    run: (pd) => backfillProductVariants(pd),
+  },
+  {
+    name: "backfillHeroLegacyProps",
+    scope: "pagesData",
+    run: (pd) => backfillHeroLegacyProps(pd),
+  },
+  {
+    name: "backfillMainTextLegacyButton",
+    scope: "pagesData",
+    run: (pd) => backfillMainTextLegacyButton(pd),
+  },
+  {
+    name: "backfillVideoSizeSplit",
+    scope: "pagesData",
+    run: (pd) => backfillVideoSizeSplit(pd),
+  },
 ];
 
 const PAGESDATA_STEP_NAMES = PAGESDATA_MIGRATION_STEPS.map((s) => s.name);
@@ -137,24 +224,36 @@ export const DOCUMENT_SEEDER_STEPS: readonly DocumentStep[] = [
     // поэтому после ВСЕХ pagesData-мигр��ций/бэкфиллов фазы 1 (комментарий из
     // лестницы: «после pagesData-сидеров»). Решает по манифесту темы, не по
     // имени.
-    name: 'seedCheckoutResultPage',
-    scope: 'document',
+    name: "seedCheckoutResultPage",
+    scope: "document",
     after: PAGESDATA_STEP_NAMES,
     when: (ctx) => themeHasCheckoutResultPage(ctx.themeId),
     run: (doc) => seedCheckoutResultPage(doc),
   },
-  { name: 'seedProfilePage', scope: 'document', run: (doc) => seedProfilePage(doc) },
-  { name: 'seedWishlistPage', scope: 'document', run: (doc) => seedWishlistPage(doc) },
+  {
+    name: "seedProfilePage",
+    scope: "document",
+    run: (doc) => seedProfilePage(doc),
+  },
+  {
+    name: "seedWishlistPage",
+    scope: "document",
+    run: (doc) => seedWishlistPage(doc),
+  },
   {
     // СТРОГО после seedProfilePage — тот создаёт page-profile новым сайтам, а
     // этот кладёт в неё секцию, в том числе тем, у кого страница уже была
     // создана пустой (комментарий из лестницы).
-    name: 'seedAccountPageSections',
-    scope: 'document',
-    after: ['seedProfilePage'],
+    name: "seedAccountPageSections",
+    scope: "document",
+    after: ["seedProfilePage"],
     run: (doc) => seedAccountPageSections(doc),
   },
-  { name: 'seedLoginPageSection', scope: 'document', run: (doc) => seedLoginPageSection(doc) },
+  {
+    name: "seedLoginPageSection",
+    scope: "document",
+    run: (doc) => seedLoginPageSection(doc),
+  },
 ];
 
 const DOCUMENT_STEP_NAMES = DOCUMENT_SEEDER_STEPS.map((s) => s.name);
@@ -166,23 +265,23 @@ export const FINAL_CHROME_STEPS: readonly PagesDataStep[] = [
     // свои страницы (catalog/product/cart/checkout/collection/checkout-
     // result/profile/wishlist/account/login) — унификация обязана накрыть и
     // их тоже (комментарий из лестницы, пункт 13).
-    name: 'storeChromeOnCheckoutResult',
-    scope: 'pagesData',
+    name: "storeChromeOnCheckoutResult",
+    scope: "pagesData",
     after: [...PAGESDATA_STEP_NAMES, ...DOCUMENT_STEP_NAMES],
     run: (pd) => storeChromeOnCheckoutResult(pd),
   },
   {
-    name: 'unifyHeaderWithHome',
-    scope: 'pagesData',
-    after: ['storeChromeOnCheckoutResult'],
+    name: "unifyHeaderWithHome",
+    scope: "pagesData",
+    after: ["storeChromeOnCheckoutResult"],
     run: (pd) => unifyHeaderWithHome(pd),
   },
   {
     // Пункт 3б: подвал = подвал главной, только если включено (PARITY_FOOTER,
     // знает siteId вызывающий, не эта таблица).
-    name: 'unifyFooterWithHome',
-    scope: 'pagesData',
-    after: ['unifyHeaderWithHome'],
+    name: "unifyFooterWithHome",
+    scope: "pagesData",
+    after: ["unifyHeaderWithHome"],
     when: (ctx) => ctx.unifyFooter,
     run: (pd) => unifyFooterWithHome(pd),
   },

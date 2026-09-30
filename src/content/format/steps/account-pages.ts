@@ -5,8 +5,8 @@
  * Сидеры страниц аккаунта: профиль, избранное, заказы, вход.
  */
 
-import type { Block, PageData } from './types';
-import { getHomeChrome } from './shared-chrome';
+import type { Block, PageData } from "./types";
+import { getHomeChrome } from "./shared-chrome";
 
 /**
  * Пункт 14: страница «Профиль» (личный кабинет покупателя, «Основные данные»).
@@ -26,20 +26,22 @@ import { getHomeChrome } from './shared-chrome';
  *
  * Идемпотентна: страница с уже существующей записью/контентом не трогается.
  */
-export function seedProfilePage(out: Record<string, unknown>): Record<string, unknown> {
+export function seedProfilePage(
+  out: Record<string, unknown>,
+): Record<string, unknown> {
   // Пустая ревизия (без pagesData вовсе) — не сайт, а заглушка: у новых сайтов
   // страницы приходят из манифеста темы. Не создаём pagesData на ровном месте,
   // иначе `migrateRevisionData({})` перестаёт быть тождественным преобразованием.
-  if (!out.pagesData || typeof out.pagesData !== 'object') return out;
+  if (!out.pagesData || typeof out.pagesData !== "object") return out;
   const pagesData = out.pagesData as Record<string, unknown>;
   const pages = Array.isArray(out.pages)
     ? (out.pages as Array<{ id?: string; slug?: string }>)
     : [];
-  const hasContent = !!pagesData['page-profile'];
+  const hasContent = !!pagesData["page-profile"];
   const hasMeta = pages.some(
     (p) =>
-      p?.id === 'page-profile' ||
-      (p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'account/profile',
+      p?.id === "page-profile" ||
+      (p?.slug ?? "").replace(/^\/+|\/+$/g, "") === "account/profile",
   );
   if (hasContent && hasMeta) return out;
 
@@ -50,13 +52,25 @@ export function seedProfilePage(out: Record<string, unknown>): Record<string, un
     ? pagesData
     : {
         ...pagesData,
-        'page-profile': {
+        "page-profile": {
           // Свои id — Puck ломается на дубликатах между страницами.
           content: [
-            { ...chrome.headerBlock, props: { ...(chrome.headerBlock.props ?? {}), id: 'Header-profile' } },
-            { ...chrome.footerBlock, props: { ...(chrome.footerBlock.props ?? {}), id: 'Footer-profile' } },
+            {
+              ...chrome.headerBlock,
+              props: {
+                ...(chrome.headerBlock.props ?? {}),
+                id: "Header-profile",
+              },
+            },
+            {
+              ...chrome.footerBlock,
+              props: {
+                ...(chrome.footerBlock.props ?? {}),
+                id: "Footer-profile",
+              },
+            },
           ],
-          root: { props: { meta: { title: 'Основные данные' } } },
+          root: { props: { meta: { title: "Основные данные" } } },
           zones: {},
         } as PageData,
       };
@@ -65,11 +79,11 @@ export function seedProfilePage(out: Record<string, unknown>): Record<string, un
     : [
         ...pages,
         {
-          id: 'page-profile',
-          name: 'Профиль',
-          slug: '/account/profile',
-          role: 'system',
-          contentFile: 'pages/profile.json',
+          id: "page-profile",
+          name: "Профиль",
+          slug: "/account/profile",
+          role: "system",
+          contentFile: "pages/profile.json",
         },
       ];
   return { ...out, pages: newPages, pagesData: newPagesData };
@@ -96,20 +110,22 @@ export function seedProfilePage(out: Record<string, unknown>): Record<string, un
  * поэтому правки мерчанта (схема, отступы, добавленные секции) переживают
  * любой повторный прогон.
  */
-export function seedWishlistPage(out: Record<string, unknown>): Record<string, unknown> {
+export function seedWishlistPage(
+  out: Record<string, unknown>,
+): Record<string, unknown> {
   // Пустая ревизия (без pagesData вовсе) — не сайт, а заглушка: у новых сайтов
   // страницы приходят из манифеста темы. Не создаём pagesData на ровном месте,
   // иначе `migrateRevisionData({})` перестаёт быть тождественным преобразованием.
-  if (!out.pagesData || typeof out.pagesData !== 'object') return out;
+  if (!out.pagesData || typeof out.pagesData !== "object") return out;
   const pagesData = out.pagesData as Record<string, unknown>;
   const pages = Array.isArray(out.pages)
     ? (out.pages as Array<{ id?: string; slug?: string }>)
     : [];
-  const hasContent = !!pagesData['page-wishlist'];
+  const hasContent = !!pagesData["page-wishlist"];
   const hasMeta = pages.some(
     (p) =>
-      p?.id === 'page-wishlist' ||
-      (p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'wishlist',
+      p?.id === "page-wishlist" ||
+      (p?.slug ?? "").replace(/^\/+|\/+$/g, "") === "wishlist",
   );
   if (hasContent && hasMeta) return out;
 
@@ -120,20 +136,32 @@ export function seedWishlistPage(out: Record<string, unknown>): Record<string, u
     ? pagesData
     : {
         ...pagesData,
-        'page-wishlist': {
+        "page-wishlist": {
           content: [
-            { ...chrome.headerBlock, props: { ...(chrome.headerBlock.props ?? {}), id: 'Header-wishlist' } },
             {
-              type: 'WishlistSection',
+              ...chrome.headerBlock,
               props: {
-                id: 'WishlistSection-1',
+                ...(chrome.headerBlock.props ?? {}),
+                id: "Header-wishlist",
+              },
+            },
+            {
+              type: "WishlistSection",
+              props: {
+                id: "WishlistSection-1",
                 colorScheme: 2,
                 padding: { top: 80, bottom: 80 },
               },
             },
-            { ...chrome.footerBlock, props: { ...(chrome.footerBlock.props ?? {}), id: 'Footer-wishlist' } },
+            {
+              ...chrome.footerBlock,
+              props: {
+                ...(chrome.footerBlock.props ?? {}),
+                id: "Footer-wishlist",
+              },
+            },
           ],
-          root: { props: { title: 'Избранное' } },
+          root: { props: { title: "Избранное" } },
           zones: {},
         } as PageData,
       };
@@ -142,11 +170,11 @@ export function seedWishlistPage(out: Record<string, unknown>): Record<string, u
     : [
         ...pages,
         {
-          id: 'page-wishlist',
-          name: 'Избранное',
-          slug: '/wishlist',
-          role: 'system',
-          contentFile: 'pages/wishlist.json',
+          id: "page-wishlist",
+          name: "Избранное",
+          slug: "/wishlist",
+          role: "system",
+          contentFile: "pages/wishlist.json",
         },
       ];
   return { ...out, pages: newPages, pagesData: newPagesData };
@@ -185,7 +213,7 @@ export function seedAccountPageSections(
   // Пустая ревизия (без pagesData вовсе) — не сайт, а заглушка: у новых сайтов
   // страницы приходят из манифеста темы. Не создаём pagesData на ровном месте,
   // иначе `migrateRevisionData({})` перестаёт быть тождественным преобразованием.
-  if (!out.pagesData || typeof out.pagesData !== 'object') return out;
+  if (!out.pagesData || typeof out.pagesData !== "object") return out;
 
   let pagesData = out.pagesData as Record<string, unknown>;
   let pages = Array.isArray(out.pages)
@@ -198,39 +226,39 @@ export function seedAccountPageSections(
   // ── 1. Страница «Заказы» ────────────────────────────────────────────────
   const ordersHasMeta = pages.some(
     (p) =>
-      p?.id === 'page-orders' ||
-      String(p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'account/orders',
+      p?.id === "page-orders" ||
+      String(p?.slug ?? "").replace(/^\/+|\/+$/g, "") === "account/orders",
   );
   if (!ordersHasMeta) {
     pages = [
       ...pages,
       {
-        id: 'page-orders',
-        name: 'Заказы',
-        slug: '/account/orders',
-        role: 'system',
-        contentFile: 'pages/orders.json',
+        id: "page-orders",
+        name: "Заказы",
+        slug: "/account/orders",
+        role: "system",
+        contentFile: "pages/orders.json",
       },
     ];
     changed = true;
   }
-  if (!pagesData['page-orders']) {
+  if (!pagesData["page-orders"]) {
     const chrome = getHomeChrome(pagesData);
     pagesData = {
       ...pagesData,
-      'page-orders': {
+      "page-orders": {
         // Свои id — Puck ломается на дубликатах между страницами.
         content: [
           {
             ...chrome.headerBlock,
-            props: { ...(chrome.headerBlock.props ?? {}), id: 'Header-orders' },
+            props: { ...(chrome.headerBlock.props ?? {}), id: "Header-orders" },
           },
           {
             ...chrome.footerBlock,
-            props: { ...(chrome.footerBlock.props ?? {}), id: 'Footer-orders' },
+            props: { ...(chrome.footerBlock.props ?? {}), id: "Footer-orders" },
           },
         ],
-        root: { props: { meta: { title: 'Мои заказы' } } },
+        root: { props: { meta: { title: "Мои заказы" } } },
         zones: {},
       } as PageData,
     };
@@ -239,8 +267,8 @@ export function seedAccountPageSections(
 
   // ── 2-3. Тело страниц: секция перед подвалом ────────────────────────────
   const BODIES: Array<{ pageId: string; block: string }> = [
-    { pageId: 'page-profile', block: 'AccountSection' },
-    { pageId: 'page-orders', block: 'OrdersSection' },
+    { pageId: "page-profile", block: "AccountSection" },
+    { pageId: "page-orders", block: "OrdersSection" },
   ];
   for (const { pageId, block } of BODIES) {
     const pd = pagesData[pageId] as PageData | undefined;
@@ -251,12 +279,19 @@ export function seedAccountPageSections(
       type: block,
       props: { id: `${block}-1`, colorScheme: 2 },
     };
-    const footerIdx = content.findIndex((b) => b?.type === 'Footer');
+    const footerIdx = content.findIndex((b) => b?.type === "Footer");
     const next =
       footerIdx === -1
         ? [...content, section]
-        : [...content.slice(0, footerIdx), section, ...content.slice(footerIdx)];
-    pagesData = { ...pagesData, [pageId]: { ...(pd as object), content: next } };
+        : [
+            ...content.slice(0, footerIdx),
+            section,
+            ...content.slice(footerIdx),
+          ];
+    pagesData = {
+      ...pagesData,
+      [pageId]: { ...(pd as object), content: next },
+    };
     changed = true;
   }
 
@@ -297,7 +332,7 @@ export function seedLoginPageSection(
   // Пустая ревизия (без pagesData вовсе) — не сайт, а заглушка: у новых сайтов
   // страницы приходят из манифеста темы. Не создаём pagesData на ровном месте,
   // иначе `migrateRevisionData({})` перестаёт быть тождественным преобразованием.
-  if (!out.pagesData || typeof out.pagesData !== 'object') return out;
+  if (!out.pagesData || typeof out.pagesData !== "object") return out;
 
   let pagesData = out.pagesData as Record<string, unknown>;
   let pages = Array.isArray(out.pages)
@@ -310,39 +345,39 @@ export function seedLoginPageSection(
   // ── 1. Страница «Вход» ──────────────────────────────────────────────────
   const hasMeta = pages.some(
     (p) =>
-      p?.id === 'page-login' ||
-      String(p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'login',
+      p?.id === "page-login" ||
+      String(p?.slug ?? "").replace(/^\/+|\/+$/g, "") === "login",
   );
   if (!hasMeta) {
     pages = [
       ...pages,
       {
-        id: 'page-login',
-        name: 'Вход',
-        slug: '/login',
-        role: 'system',
-        contentFile: 'pages/login.json',
+        id: "page-login",
+        name: "Вход",
+        slug: "/login",
+        role: "system",
+        contentFile: "pages/login.json",
       },
     ];
     changed = true;
   }
-  if (!pagesData['page-login']) {
+  if (!pagesData["page-login"]) {
     const chrome = getHomeChrome(pagesData);
     pagesData = {
       ...pagesData,
-      'page-login': {
+      "page-login": {
         // Свои id — Puck ломается на дубликатах между страницами.
         content: [
           {
             ...chrome.headerBlock,
-            props: { ...(chrome.headerBlock.props ?? {}), id: 'Header-login' },
+            props: { ...(chrome.headerBlock.props ?? {}), id: "Header-login" },
           },
           {
             ...chrome.footerBlock,
-            props: { ...(chrome.footerBlock.props ?? {}), id: 'Footer-login' },
+            props: { ...(chrome.footerBlock.props ?? {}), id: "Footer-login" },
           },
         ],
-        root: { props: { meta: { title: 'Вход' } } },
+        root: { props: { meta: { title: "Вход" } } },
         zones: {},
       } as PageData,
     };
@@ -350,24 +385,31 @@ export function seedLoginPageSection(
   }
 
   // ── 2. Тело страницы: секция перед подвалом ─────────────────────────────
-  const pd = pagesData['page-login'] as PageData | undefined;
+  const pd = pagesData["page-login"] as PageData | undefined;
   if (pd && Array.isArray(pd.content)) {
     const content = pd.content as Block[];
-    if (!content.some((b) => b?.type === 'LoginSection')) {
+    if (!content.some((b) => b?.type === "LoginSection")) {
       const section: Block = {
-        type: 'LoginSection',
+        type: "LoginSection",
         props: {
-          id: 'LoginSection-1',
+          id: "LoginSection-1",
           colorScheme: 2,
           padding: { top: 80, bottom: 80 },
         },
       };
-      const footerIdx = content.findIndex((b) => b?.type === 'Footer');
+      const footerIdx = content.findIndex((b) => b?.type === "Footer");
       const next =
         footerIdx === -1
           ? [...content, section]
-          : [...content.slice(0, footerIdx), section, ...content.slice(footerIdx)];
-      pagesData = { ...pagesData, 'page-login': { ...(pd as object), content: next } };
+          : [
+              ...content.slice(0, footerIdx),
+              section,
+              ...content.slice(footerIdx),
+            ];
+      pagesData = {
+        ...pagesData,
+        "page-login": { ...(pd as object), content: next },
+      };
       changed = true;
     }
   }

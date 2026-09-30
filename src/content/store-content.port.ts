@@ -393,7 +393,11 @@ export interface StoreContent {
   /** История версий магазина, без служебных снимков клиента (И4). */
   history(siteId: string, opts: HistoryOptions): Promise<HistoryPage>;
   /** Конкретная ревизия: конверт + содержимое (шаги чтения адаптера). «Ревизии нет» — бросает {@link RevisionNotFoundError}. */
-  get(siteId: string, revisionId: string, opts: GetOptions): Promise<RevisionItem>;
+  get(
+    siteId: string,
+    revisionId: string,
+    opts: GetOptions,
+  ): Promise<RevisionItem>;
   /**
    * Конверт БЕЗ содержимого — дешёвая проверка «есть ли
    * такая ревизия у этого магазина» и чтение только `meta`/`createdAt`/
@@ -402,7 +406,11 @@ export interface StoreContent {
    * нет» отдаёт `null` (не исключение, в отличие от `get`/`load`); сбой базы
    * пробрасывается как есть, тем же правилом, что `loadOrNull`.
    */
-  envelopeOrNull(siteId: string, revisionId: string, opts: GetOptions): Promise<RevisionEnvelope | null>;
+  envelopeOrNull(
+    siteId: string,
+    revisionId: string,
+    opts: GetOptions,
+  ): Promise<RevisionEnvelope | null>;
   /** Откат (И6): новая ревизия — точная копия выбранной, со сверкой текущей. «Ревизии нет» — бросает {@link RevisionNotFoundError}. */
   rollback(siteId: string, params: RollbackParams): Promise<RollbackResult>;
   /**
@@ -411,7 +419,12 @@ export interface StoreContent {
    * движок (`operations/diff`) строит список операций. Любая из двух версий
    * не найдена — бросает {@link RevisionNotFoundError} (через `load`).
    */
-  diff(siteId: string, from: string, to: string, opts: DiffOptions): Promise<DiffResult>;
+  diff(
+    siteId: string,
+    from: string,
+    to: string,
+    opts: DiffOptions,
+  ): Promise<DiffResult>;
 }
 
 /** Модели контента, которые понимает `StoreContentService`. Сегодня — только 'document'. */

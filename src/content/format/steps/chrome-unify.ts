@@ -5,7 +5,7 @@
  * Унификация шапки/подвала со страницей `home` (последний шаг миграции).
  */
 
-import type { Block, PageData } from './types';
+import type { Block, PageData } from "./types";
 
 /**
  * Шапка на ВСЕХ страницах = шапка ГЛАВНОЙ (пункт 13 тестировщика: «на всех
@@ -36,7 +36,7 @@ import type { Block, PageData } from './types';
  */
 function blockHasSettings(block: Block | undefined): boolean {
   if (!block) return false;
-  return Object.keys(block.props ?? {}).some((k) => k !== 'id');
+  return Object.keys(block.props ?? {}).some((k) => k !== "id");
 }
 
 function samePropsShallow(
@@ -47,7 +47,8 @@ function samePropsShallow(
   const bk = Object.keys(b);
   if (ak.length !== bk.length) return false;
   return bk.every(
-    (k) => JSON.stringify((a ?? {})[k] ?? null) === JSON.stringify(b[k] ?? null),
+    (k) =>
+      JSON.stringify((a ?? {})[k] ?? null) === JSON.stringify(b[k] ?? null),
   );
 }
 
@@ -60,7 +61,7 @@ function samePropsShallow(
  *
  * Порядок внутри массива — как на главной (промо НАД шапкой).
  */
-const HEADER_GROUP_TYPES = ['PromoBanner', 'Header'] as const;
+const HEADER_GROUP_TYPES = ["PromoBanner", "Header"] as const;
 
 const isHeaderGroup = (type: unknown): boolean =>
   (HEADER_GROUP_TYPES as readonly string[]).includes(String(type));
@@ -68,9 +69,11 @@ const isHeaderGroup = (type: unknown): boolean =>
 export function unifyHeaderWithHome(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
-  const home = pagesData['home'] as PageData | undefined;
-  const homeContent: Block[] = Array.isArray(home?.content) ? (home!.content as Block[]) : [];
-  const source = homeContent.find((b) => b?.type === 'Header');
+  const home = pagesData["home"] as PageData | undefined;
+  const homeContent: Block[] = Array.isArray(home?.content)
+    ? (home!.content as Block[])
+    : [];
+  const source = homeContent.find((b) => b?.type === "Header");
   if (!blockHasSettings(source)) return pagesData;
 
   // Эталонная группа: блоки группы «Шапка» в порядке главной.
@@ -79,14 +82,14 @@ export function unifyHeaderWithHome(
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
   for (const [pageId, page] of Object.entries(pagesData)) {
-    if (pageId === 'home') continue;
+    if (pageId === "home") continue;
     // Служебные ключи pagesData (напр. `_vanillaHomeMigrationVersion`: number)
     // НЕ страницы — пропускаем, сохраняя значение как есть.
     const content = (page as PageData | undefined)?.content;
     if (!Array.isArray(content)) continue;
     // Страница со своим хромом (чекаут: `CheckoutHeader`) — другой компонент
     // by design, группу главной туда не переносим.
-    if (!content.some((b) => b?.type === 'Header')) continue;
+    if (!content.some((b) => b?.type === "Header")) continue;
 
     // id блока держим ЗА СТРАНИЦЕЙ: Puck ломается на дубликатах, а превью и
     // конструктор ищут секцию по `props.id`. Был свой блок такого типа —
@@ -120,7 +123,8 @@ function sameContentShallow(a: Block[], b: Block[]): boolean {
   if (a.length !== b.length) return false;
   return a.every(
     (blk, i) =>
-      blk?.type === b[i]?.type && samePropsShallow(blk?.props, b[i]?.props ?? {}),
+      blk?.type === b[i]?.type &&
+      samePropsShallow(blk?.props, b[i]?.props ?? {}),
   );
 }
 
@@ -136,37 +140,55 @@ function sameContentShallow(a: Block[], b: Block[]): boolean {
  * `<Тип>-<страница>` (идемпотентно). Дальше страницу держат в синхроне
  * общие unifyHeaderWithHome / unifyFooterWithHome.
  */
-const CHECKOUT_RESULT_PAGE_IDS = ['page-checkout-result', 'checkout-result'] as const;
+const CHECKOUT_RESULT_PAGE_IDS = [
+  "page-checkout-result",
+  "checkout-result",
+] as const;
 
 export function storeChromeOnCheckoutResult(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
-  const homeContent = (pagesData['home'] as PageData | undefined)?.content;
-  const home: Block[] = Array.isArray(homeContent) ? (homeContent as Block[]) : [];
+  const homeContent = (pagesData["home"] as PageData | undefined)?.content;
+  const home: Block[] = Array.isArray(homeContent)
+    ? (homeContent as Block[])
+    : [];
   const headerGroup = home.filter((b) => isHeaderGroup(b?.type));
-  const footer = home.find((b) => b?.type === 'Footer');
-  if (!headerGroup.some((b) => b?.type === 'Header')) return pagesData;
+  const footer = home.find((b) => b?.type === "Footer");
+  if (!headerGroup.some((b) => b?.type === "Header")) return pagesData;
 
-  const copyFor = (pageId: string) => (b: Block): Block => ({
-    ...b,
-    props: { ...(b.props ?? {}), id: `${String(b.type)}-${pageId}` },
-  });
+  const copyFor =
+    (pageId: string) =>
+    (b: Block): Block => ({
+      ...b,
+      props: { ...(b.props ?? {}), id: `${String(b.type)}-${pageId}` },
+    });
 
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
   for (const pageId of CHECKOUT_RESULT_PAGE_IDS) {
     const page = pagesData[pageId] as PageData | undefined;
-    const content = Array.isArray(page?.content) ? (page!.content as Block[]) : null;
+    const content = Array.isArray(page?.content)
+      ? (page!.content as Block[])
+      : null;
     if (!content) continue;
     const ownHeader = content.filter((b) => isHeaderGroup(b?.type));
-    const ownFooter = content.filter((b) => b?.type === 'Footer');
+    const ownFooter = content.filter((b) => b?.type === "Footer");
     const body = content.filter(
-      (b) => b?.type !== 'CheckoutHeader' && b?.type !== 'Footer' && !isHeaderGroup(b?.type),
+      (b) =>
+        b?.type !== "CheckoutHeader" &&
+        b?.type !== "Footer" &&
+        !isHeaderGroup(b?.type),
     );
     const next = [
-      ...(ownHeader.some((b) => b?.type === 'Header') ? ownHeader : headerGroup.map(copyFor(pageId))),
+      ...(ownHeader.some((b) => b?.type === "Header")
+        ? ownHeader
+        : headerGroup.map(copyFor(pageId))),
       ...body,
-      ...(ownFooter.length > 0 ? ownFooter : footer ? [copyFor(pageId)(footer)] : []),
+      ...(ownFooter.length > 0
+        ? ownFooter
+        : footer
+          ? [copyFor(pageId)(footer)]
+          : []),
     ];
     if (sameContentShallow(content, next)) continue;
     out[pageId] = { ...(page as PageData), content: next };
@@ -195,9 +217,9 @@ export function storeChromeOnCheckoutResult(
 export function unifyFooterWithHome(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
-  const homeContent = (pagesData['home'] as PageData | undefined)?.content;
+  const homeContent = (pagesData["home"] as PageData | undefined)?.content;
   const source = Array.isArray(homeContent)
-    ? homeContent.find((b) => b?.type === 'Footer')
+    ? homeContent.find((b) => b?.type === "Footer")
     : undefined;
   if (!source || !blockHasSettings(source)) return pagesData;
   const canon = source.props ?? {};
@@ -205,11 +227,11 @@ export function unifyFooterWithHome(
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
   for (const [pageId, page] of Object.entries(pagesData)) {
-    if (pageId === 'home') continue;
+    if (pageId === "home") continue;
     const content = (page as PageData | undefined)?.content;
     if (!Array.isArray(content)) continue;
     const withHomeFooter = (b: Block): Block =>
-      b?.type === 'Footer'
+      b?.type === "Footer"
         ? { ...b, props: { ...canon, id: b.props?.id ?? `Footer-${pageId}` } }
         : b;
     const next = content.map(withHomeFooter);

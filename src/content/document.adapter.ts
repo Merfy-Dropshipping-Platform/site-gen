@@ -42,7 +42,10 @@ import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
 import type { PanelDefaultsSource } from "./panel-defaults";
 import { saveOnBase, writeLabels } from "./save-on-base";
 import type { RevisionStore } from "./save-on-base";
-import { RevisionConflictError, RevisionNotFoundError } from "./store-content.port";
+import {
+  RevisionConflictError,
+  RevisionNotFoundError,
+} from "./store-content.port";
 import type {
   BlindSaveParams,
   DiffOptions,
@@ -203,10 +206,17 @@ function historyItemOf(row: {
   return {
     id: row.id,
     createdAt: row.createdAt,
-    actor: typeof meta.actor === "string" ? (meta.actor as HistoryItem["actor"]) : null,
-    source: typeof meta.source === "string" ? (meta.source as HistoryItem["source"]) : null,
+    actor:
+      typeof meta.actor === "string"
+        ? (meta.actor as HistoryItem["actor"])
+        : null,
+    source:
+      typeof meta.source === "string"
+        ? (meta.source as HistoryItem["source"])
+        : null,
     changes: Array.isArray(meta.changes) ? (meta.changes as string[]) : null,
-    restoredFrom: typeof meta.restoredFrom === "string" ? meta.restoredFrom : null,
+    restoredFrom:
+      typeof meta.restoredFrom === "string" ? meta.restoredFrom : null,
   };
 }
 
@@ -252,7 +262,10 @@ export class DocumentAdapter implements StoreContent {
    * ЛЮБАЯ другая ошибка (в т.ч. `fetchRevision`'s сбой базы) пробрасывается —
    * ловим строго `RevisionNotFoundError` через `instanceof`, не любой catch.
    */
-  async loadOrNull(siteId: string, opts: LoadOptions): Promise<LoadResult | null> {
+  async loadOrNull(
+    siteId: string,
+    opts: LoadOptions,
+  ): Promise<LoadResult | null> {
     try {
       return await this.load(siteId, opts);
     } catch (e) {
@@ -271,7 +284,10 @@ export class DocumentAdapter implements StoreContent {
   /** История версий магазина (R1/R3): без служебных снимков клиента (И4). */
   async history(siteId: string, opts: HistoryOptions): Promise<HistoryPage> {
     const limit = opts.limit ?? 50;
-    const conditions = [eq(schema.siteRevision.siteId, siteId), isStoreVersion()];
+    const conditions = [
+      eq(schema.siteRevision.siteId, siteId),
+      isStoreVersion(),
+    ];
     if (opts.before) conditions.push(beforeCursor(opts.before));
     const rows = await this.db
       .select({
@@ -283,13 +299,18 @@ export class DocumentAdapter implements StoreContent {
       .where(and(...conditions))
       // Сортировка ПАРОЙ — id тай-брейк на совпавший createdAt (та же
       // миллисекунда); тот же порядок использует beforeCursor() ниже.
-      .orderBy(desc(schema.siteRevision.createdAt), desc(schema.siteRevision.id))
+      .orderBy(
+        desc(schema.siteRevision.createdAt),
+        desc(schema.siteRevision.id),
+      )
       .limit(limit);
     const last = rows[rows.length - 1];
     return {
       items: rows.map(historyItemOf),
       nextBefore:
-        rows.length === limit ? { createdAt: last.createdAt, id: last.id } : null,
+        rows.length === limit
+          ? { createdAt: last.createdAt, id: last.id }
+          : null,
     };
   }
 
@@ -309,7 +330,9 @@ export class DocumentAdapter implements StoreContent {
         count: sql<number>`count(*)::int`,
       })
       .from(schema.siteRevision)
-      .where(and(inArray(schema.siteRevision.siteId, siteIds), isStoreVersion()))
+      .where(
+        and(inArray(schema.siteRevision.siteId, siteIds), isStoreVersion()),
+      )
       .groupBy(schema.siteRevision.siteId);
     return new Map(rows.map((r) => [r.siteId, r.count]));
   }
@@ -376,7 +399,10 @@ export class DocumentAdapter implements StoreContent {
    * `revision_conflict`, ничего не пишется. Выбранная версия и так текущая —
    * ничего не пишется, ответ несёт её же id.
    */
-  async rollback(siteId: string, params: RollbackParams): Promise<RollbackResult> {
+  async rollback(
+    siteId: string,
+    params: RollbackParams,
+  ): Promise<RollbackResult> {
     const target = await this.load(siteId, {
       revisionId: params.revisionId,
       site: params.site,
@@ -639,5 +665,4 @@ export class DocumentAdapter implements StoreContent {
       .where(eq(schema.siteRevision.id, currentRevisionId));
     return (prev?.data as Record<string, unknown> | undefined) ?? null;
   }
-
 }

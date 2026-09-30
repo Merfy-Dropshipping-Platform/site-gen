@@ -456,8 +456,8 @@ function loadSourceFacts(): SatinSourceFacts {
         `дайте факту молча подставить запасное значение.`,
     );
   }
-  const cartMigrationHasCartBody = /type:\s*'CartBody'/.test(cartMigrationCode);
-  const cartMigrationHasCartSection = /type:\s*'CartSection'/.test(cartMigrationCode);
+  const cartMigrationHasCartBody = /type:\s*['"]CartBody['"]/.test(cartMigrationCode);
+  const cartMigrationHasCartSection = /type:\s*['"]CartSection['"]/.test(cartMigrationCode);
   if (!cartMigrationHasCartBody && !cartMigrationHasCartSection) {
     throw new Error(
       `satin-structural-facts: "${CART_MIGRATION_SOURCE}" не содержит ни 'CartBody', ` +

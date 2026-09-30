@@ -62,7 +62,8 @@ function revisionStore(siteRef: {
   const applySitePatch = (v: any) => {
     if (v.currentRevisionId) state.current = v.currentRevisionId;
     if (v.themeId !== undefined) siteRef.themeId = v.themeId;
-    if (v.themeAppliedAt !== undefined) siteRef.themeAppliedAt = v.themeAppliedAt;
+    if (v.themeAppliedAt !== undefined)
+      siteRef.themeAppliedAt = v.themeAppliedAt;
     if (v.updatedBy !== undefined) siteRef.updatedBy = v.updatedBy;
   };
   const db: any = {

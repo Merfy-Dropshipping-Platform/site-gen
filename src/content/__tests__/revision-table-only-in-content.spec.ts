@@ -127,7 +127,8 @@ const POINTER_CALLS: RegExp[] = [
   /\.update\(\s*(?:schema\.)?site\s*\)\s*\.set\(/g,
   /\.insert\(\s*(?:schema\.)?site\s*\)\s*\.values\(/g,
 ];
-const POINTER_SQL = /\bupdate\s+"?site"?\s+set\b[^;`]*\bcurrent_revision_id\s*=/gi;
+const POINTER_SQL =
+  /\bupdate\s+"?site"?\s+set\b[^;`]*\bcurrent_revision_id\s*=/gi;
 const PAREN_DEPTH: Record<string, number> = { "(": 1, ")": -1 };
 
 /** Аргумент вызова по балансу скобок, начиная с открывающей. */
@@ -149,7 +150,11 @@ function countPointerWrites(code: string): number {
   return orm + (clean.match(POINTER_SQL)?.length ?? 0);
 }
 
-const POINTER_ALLOWANCES: Array<{ path: string; count: number; reason: string }> = [
+const POINTER_ALLOWANCES: Array<{
+  path: string;
+  count: number;
+  reason: string;
+}> = [
   {
     path: "modules/theme-preset/theme-preset.service.ts",
     count: 1,
@@ -230,7 +235,9 @@ describe("таблица site_revision — только в src/content/", () => 
     expect(rels).toContain("pages/pages.service.ts");
     expect(rels).not.toContain("content/document.adapter.ts");
     expect(
-      countMentions("const x = schema.siteRevision.data; // schema.siteRevision в комментарии"),
+      countMentions(
+        "const x = schema.siteRevision.data; // schema.siteRevision в комментарии",
+      ),
     ).toBe(1);
     expect(countMentions("db.select().from(schema.siteRevision)")).toBe(1);
     expect(countMentions("tx.insert(schema.siteRevision).values(v)")).toBe(1);

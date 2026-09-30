@@ -6,4 +6,8 @@
  */
 
 export type Block = { type?: string; props?: Record<string, unknown> };
-export type PageData = { content?: Block[]; root?: { props?: Record<string, unknown> }; zones?: Record<string, unknown> };
+export type PageData = {
+  content?: Block[];
+  root?: { props?: Record<string, unknown> };
+  zones?: Record<string, unknown>;
+};

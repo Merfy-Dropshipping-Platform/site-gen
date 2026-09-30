@@ -5,7 +5,7 @@
  * Нормализация отступов промо-баннера и плейсхолдера формы подписки.
  */
 
-import type { Block, PageData } from './types';
+import type { Block, PageData } from "./types";
 
 /**
  * PromoBanner: снять легаси-`padding {12,12}` старого сида.
@@ -31,11 +31,13 @@ export function normalizePromoBannerPadding(
     let pageChanged = false;
     const content = page.content.map((block) => {
       const b = block as { type?: string; props?: Record<string, unknown> };
-      if (!b || b.type !== 'PromoBanner' || !b.props) return block;
-      const padding = b.props.padding as { top?: unknown; bottom?: unknown } | undefined;
+      if (!b || b.type !== "PromoBanner" || !b.props) return block;
+      const padding = b.props.padding as
+        | { top?: unknown; bottom?: unknown }
+        | undefined;
       if (
         !padding ||
-        typeof padding !== 'object' ||
+        typeof padding !== "object" ||
         padding.top !== PROMO_BANNER_LEGACY_PADDING.top ||
         padding.bottom !== PROMO_BANNER_LEGACY_PADDING.bottom
       ) {
@@ -67,8 +69,8 @@ export function normalizePromoBannerPadding(
  * («Ваша почта», «E-mail для скидок») не трогаем. Идемпотентна: после переноса
  * значение уже «Email» и повторный прогон — no-op.
  */
-const NEWSLETTER_LEGACY_PLACEHOLDER = 'Твой email';
-const NEWSLETTER_PLACEHOLDER = 'Email';
+const NEWSLETTER_LEGACY_PLACEHOLDER = "Твой email";
+const NEWSLETTER_PLACEHOLDER = "Email";
 
 export function renameNewsletterPlaceholder(
   pagesData: Record<string, unknown>,
@@ -81,7 +83,7 @@ export function renameNewsletterPlaceholder(
     let pageChanged = false;
     const content = page.content.map((block) => {
       const b = block as { type?: string; props?: Record<string, unknown> };
-      if (!b || b.type !== 'Newsletter' || !b.props) return block;
+      if (!b || b.type !== "Newsletter" || !b.props) return block;
       const props = { ...b.props };
       let blockChanged = false;
       if (props.placeholder === NEWSLETTER_LEGACY_PLACEHOLDER) {
@@ -93,7 +95,7 @@ export function renameNewsletterPlaceholder(
       const form = props.form as Record<string, unknown> | undefined;
       if (
         form &&
-        typeof form === 'object' &&
+        typeof form === "object" &&
         form.placeholder === NEWSLETTER_LEGACY_PLACEHOLDER
       ) {
         props.form = { ...form, placeholder: NEWSLETTER_PLACEHOLDER };

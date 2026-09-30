@@ -21,7 +21,11 @@ import { dirname, resolve } from "node:path";
 
 import { SitesDomainService } from "../../sites.service";
 import * as schema from "../../db/schema";
-import { normalizeGoldenSnapshot, toGoldenJson, type GoldenRevisionResult } from "./normalize";
+import {
+  normalizeGoldenSnapshot,
+  toGoldenJson,
+  type GoldenRevisionResult,
+} from "./normalize";
 
 // ---------------------------------------------------------------------------
 // Общие помощники (тот же паттерн, что в site-create-theme.characterization.spec.ts)

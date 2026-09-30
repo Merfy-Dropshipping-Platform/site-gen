@@ -6,7 +6,7 @@
  * каталога, товара и сидерами страниц аккаунта (profile/wishlist/account/login).
  */
 
-import type { Block, PageData } from './types';
+import type { Block, PageData } from "./types";
 
 /**
  * 094: shared chrome helper. Returns Header/Footer blocks lifted from the
@@ -22,8 +22,10 @@ export function getHomeChrome(pagesData: Record<string, unknown>): {
   headerBlock: Block;
   footerBlock: Block;
 } {
-  const home = pagesData['home'] as PageData | undefined;
-  const homeContent: Block[] = Array.isArray(home?.content) ? (home!.content as Block[]) : [];
+  const home = pagesData["home"] as PageData | undefined;
+  const homeContent: Block[] = Array.isArray(home?.content)
+    ? (home!.content as Block[])
+    : [];
   // b45-fix: ids детерминированы (не Date.now()) — эта функция запускается
   // read-time на КАЖДЫЙ GET без персиста (см. PreviewController.loadRevisionData).
   // Конструктор загружает данные редактора и iframe грузит /preview ДВУМЯ
@@ -33,16 +35,14 @@ export function getHomeChrome(pagesData: Record<string, unknown>): {
   // id стабилен на любое число независимых вызовов над одними и теми же
   // неперсистентными данными.
   return {
-    headerBlock:
-      homeContent.find((b) => b?.type === 'Header') ?? {
-        type: 'Header',
-        props: { id: 'Header-fallback' },
-      },
-    footerBlock:
-      homeContent.find((b) => b?.type === 'Footer') ?? {
-        type: 'Footer',
-        props: { id: 'Footer-fallback' },
-      },
+    headerBlock: homeContent.find((b) => b?.type === "Header") ?? {
+      type: "Header",
+      props: { id: "Header-fallback" },
+    },
+    footerBlock: homeContent.find((b) => b?.type === "Footer") ?? {
+      type: "Footer",
+      props: { id: "Footer-fallback" },
+    },
   };
 }
 
@@ -55,11 +55,14 @@ export function getHomeChrome(pagesData: Record<string, unknown>): {
  *
  * Idempotent: re-running on already-chromed content is a no-op (same length).
  */
-export function ensureChrome(content: Block[], pagesData: Record<string, unknown>): Block[] {
+export function ensureChrome(
+  content: Block[],
+  pagesData: Record<string, unknown>,
+): Block[] {
   const chrome = getHomeChrome(pagesData);
   const out = [...content];
-  const hasHeader = out.some((b) => b?.type === 'Header');
-  const hasFooter = out.some((b) => b?.type === 'Footer');
+  const hasHeader = out.some((b) => b?.type === "Header");
+  const hasFooter = out.some((b) => b?.type === "Footer");
   if (!hasHeader) out.unshift(chrome.headerBlock);
   if (!hasFooter) out.push(chrome.footerBlock);
   return out;

@@ -5,9 +5,9 @@
  * Миграция и сидер страницы чекаута + thank-you (`/checkout-result`).
  */
 
-import type { Block, PageData } from './types';
-import { getHomeChrome } from './shared-chrome';
-import { getThemeManifest } from '../../../themes/theme-manifest-loader';
+import type { Block, PageData } from "./types";
+import { getHomeChrome } from "./shared-chrome";
+import { getThemeManifest } from "../../../themes/theme-manifest-loader";
 
 /**
  * Figma 1:19998: checkout page = 4 sections (Header / CheckoutForm /
@@ -28,16 +28,16 @@ import { getThemeManifest } from '../../../themes/theme-manifest-loader';
  * не нужны — подписи несут «(устар.)», а панели предлагают чужие настройки.
  */
 const LEGACY_CHECKOUT_TYPES: ReadonlySet<string> = new Set<string>([
-  'CheckoutLayout',
-  'CheckoutSummaryToggle',
-  'CheckoutContactForm',
-  'CheckoutDeliveryForm',
-  'CheckoutDeliveryMethod',
-  'CheckoutPayment',
-  'CheckoutOrderSummary',
-  'CheckoutTotals',
-  'CheckoutSubmit',
-  'CheckoutTerms',
+  "CheckoutLayout",
+  "CheckoutSummaryToggle",
+  "CheckoutContactForm",
+  "CheckoutDeliveryForm",
+  "CheckoutDeliveryMethod",
+  "CheckoutPayment",
+  "CheckoutOrderSummary",
+  "CheckoutTotals",
+  "CheckoutSubmit",
+  "CheckoutTerms",
 ]);
 
 /**
@@ -60,11 +60,11 @@ const LEGACY_CHECKOUT_TYPES: ReadonlySet<string> = new Set<string>([
  * `CHECKOUT_SCHEME_ID` в `src/themes/tokens-css.ts` — `scheme-checkout` минус
  * префикс `scheme-` (снимает `schemeIdOf`/`schemeIdFromProp`) даёт ровно её.
  */
-const CHECKOUT_SCHEME_PROP = 'scheme-checkout';
+const CHECKOUT_SCHEME_PROP = "scheme-checkout";
 
 /** Прежнее сидовое значение — только ЕГО retag красит в новую схему (осознанный выбор мерчанта не трогаем, тот же приём что `dropSeededCartScheme`). */
-const CHECKOUT_SEED_SCHEME = 'scheme-2';
-const CHECKOUT_BLOCK_TYPES = new Set(['CheckoutForm', 'CheckoutSummary']);
+const CHECKOUT_SEED_SCHEME = "scheme-2";
+const CHECKOUT_BLOCK_TYPES = new Set(["CheckoutForm", "CheckoutSummary"]);
 
 /**
  * Ретроактивный аналог `dropSeededCartScheme`, но для чекаута: существующие
@@ -82,8 +82,8 @@ export function retagSeededCheckoutScheme(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
   const page =
-    (pagesData['page-checkout'] as PageData | undefined) ??
-    (pagesData['checkout'] as PageData | undefined);
+    (pagesData["page-checkout"] as PageData | undefined) ??
+    (pagesData["checkout"] as PageData | undefined);
   if (!page || !Array.isArray(page.content)) return pagesData;
   let changed = false;
   const content = page.content.map((block) => {
@@ -95,10 +95,12 @@ export function retagSeededCheckoutScheme(
   });
   if (!changed) return pagesData;
   const patchedPage = { ...(page as object), content };
-  return { ...pagesData, 'page-checkout': patchedPage, checkout: patchedPage };
+  return { ...pagesData, "page-checkout": patchedPage, checkout: patchedPage };
 }
 
-export function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string, unknown> {
+export function migrateCheckoutPage(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
   // Constructor uses `page-checkout` key, live `pages/checkout.astro` reads
   // `checkout`. Keep BOTH keys in sync (migrate either source → both).
   //
@@ -117,30 +119,41 @@ export function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<
   // «Constructor uses page-checkout key»); `checkout` — производный дубликат
   // для legacy-рендера темы, не должен затирать актуальные правки.
   const out: Record<string, unknown> = { ...pagesData };
-  const fromLegacy = out['page-checkout'] as PageData | undefined;
-  const fromNew = out['checkout'] as PageData | undefined;
+  const fromLegacy = out["page-checkout"] as PageData | undefined;
+  const fromNew = out["checkout"] as PageData | undefined;
   const source = fromLegacy?.content?.length ? fromLegacy : fromNew;
 
   // Уже консолидирован в 2 mega-блока (новый Figma 1:19998 layout) — no-op.
-  if (source && Array.isArray(source.content) && source.content.some((b) => b?.type === 'CheckoutForm')) {
+  if (
+    source &&
+    Array.isArray(source.content) &&
+    source.content.some((b) => b?.type === "CheckoutForm")
+  ) {
     let chromed: PageData = source;
     // ГИБРИДНОЕ состояние: страница уже несёт CheckoutForm/CheckoutSummary, но
     // рядом остался легаси-контейнер 080 (CheckoutLayout и fine-grained блоки).
     // Раньше эта ветка выходила первой и оставляла их в дереве — мерчант видел
     // «Чекаут (контейнер, устар.)» и его панель вместо настроек оформления.
     // Функциональность не теряется: CheckoutForm рендерит те же части внутри.
-    if (chromed.content!.some((b) => b?.type && LEGACY_CHECKOUT_TYPES.has(b.type))) {
+    if (
+      chromed.content!.some((b) => b?.type && LEGACY_CHECKOUT_TYPES.has(b.type))
+    ) {
       chromed = {
         ...chromed,
-        content: chromed.content!.filter((b) => !(b?.type && LEGACY_CHECKOUT_TYPES.has(b.type))),
+        content: chromed.content!.filter(
+          (b) => !(b?.type && LEGACY_CHECKOUT_TYPES.has(b.type)),
+        ),
       };
     }
-    if (!chromed.content!.some((b) => b?.type === 'Footer')) {
+    if (!chromed.content!.some((b) => b?.type === "Footer")) {
       const { footerBlock } = getHomeChrome(pagesData);
-      chromed = { ...chromed, content: [...(chromed.content ?? []), footerBlock] };
+      chromed = {
+        ...chromed,
+        content: [...(chromed.content ?? []), footerBlock],
+      };
     }
-    out['checkout'] = chromed;
-    out['page-checkout'] = chromed;
+    out["checkout"] = chromed;
+    out["page-checkout"] = chromed;
     return out;
   }
 
@@ -148,44 +161,56 @@ export function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<
   // [CheckoutHeader, CheckoutForm, CheckoutSummary, Footer]. Удаляем
   // 11 inner blocks (functionality сохраняется т.к. CheckoutForm рендерит
   // их через Astro imports с теми же дефолтами).
-  if (source && Array.isArray(source.content) && source.content.some((b) => b?.type === 'CheckoutLayout')) {
+  if (
+    source &&
+    Array.isArray(source.content) &&
+    source.content.some((b) => b?.type === "CheckoutLayout")
+  ) {
     // b45-fix: детерминированные id (не Date.now()) — см. коммент у
     // getHomeChrome. Совпадает с сидом theme.json (`CheckoutHeader-1` и т.д.).
-    const header = source.content.find((b) => b?.type === 'CheckoutHeader');
-    const footer = source.content.find((b) => b?.type === 'Footer');
+    const header = source.content.find((b) => b?.type === "CheckoutHeader");
+    const footer = source.content.find((b) => b?.type === "Footer");
     const collapsed: Block[] = [
       header ?? {
-        type: 'CheckoutHeader',
+        type: "CheckoutHeader",
         props: {
-          id: 'CheckoutHeader-1',
-          siteTitle: 'Мой магазин',
-          logoMode: 'text',
+          id: "CheckoutHeader-1",
+          siteTitle: "Мой магазин",
+          logoMode: "text",
           logoImage: null,
-          rightIcon: 'cart',
-          accountLink: '/account',
-          backLink: '/cart',
-          cartLink: '/cart',
+          rightIcon: "cart",
+          accountLink: "/account",
+          backLink: "/cart",
+          cartLink: "/cart",
           padding: { top: 24, bottom: 24 },
         },
       },
       {
-        type: 'CheckoutForm',
+        type: "CheckoutForm",
         // b35: НЕ 'scheme-2' — платформенная константа молча считала вторую
         // схему темы светлой (у vanilla она тёмно-оливковая, у bloom —
         // розовая). `scheme-checkout` — отдельная, нечисловая схема с
         // фиксированными светлыми токенами (Figma 1:13398), см.
         // `CHECKOUT_SCHEME_CSS` в `tokens-css.ts`.
-        props: { id: 'CheckoutForm-1', colorScheme: CHECKOUT_SCHEME_PROP, padding: { top: 0, bottom: 0 } },
+        props: {
+          id: "CheckoutForm-1",
+          colorScheme: CHECKOUT_SCHEME_PROP,
+          padding: { top: 0, bottom: 0 },
+        },
       },
       {
-        type: 'CheckoutSummary',
-        props: { id: 'CheckoutSummary-1', colorScheme: CHECKOUT_SCHEME_PROP, padding: { top: 0, bottom: 0 } },
+        type: "CheckoutSummary",
+        props: {
+          id: "CheckoutSummary-1",
+          colorScheme: CHECKOUT_SCHEME_PROP,
+          padding: { top: 0, bottom: 0 },
+        },
       },
       footer ?? getHomeChrome(pagesData).footerBlock,
     ];
     const chromed: PageData = { ...source, content: collapsed };
-    out['checkout'] = chromed;
-    out['page-checkout'] = chromed;
+    out["checkout"] = chromed;
+    out["page-checkout"] = chromed;
     return out;
   }
   // Figma 1:19998 — 2 mega-блока «Оформление заказа» + «Сводка заказа».
@@ -195,32 +220,32 @@ export function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<
   // getHomeChrome. Совпадает с сидом theme.json (`CheckoutHeader-1` и т.д.).
   const seedBlocks: Block[] = [
     {
-      type: 'CheckoutHeader',
+      type: "CheckoutHeader",
       props: {
-        id: 'CheckoutHeader-1',
-        siteTitle: 'Мой магазин',
-        logoMode: 'text',
+        id: "CheckoutHeader-1",
+        siteTitle: "Мой магазин",
+        logoMode: "text",
         logoImage: null,
-        rightIcon: 'cart',
-        accountLink: '/account',
-        backLink: '/cart',
-        cartLink: '/cart',
+        rightIcon: "cart",
+        accountLink: "/account",
+        backLink: "/cart",
+        cartLink: "/cart",
         padding: { top: 24, bottom: 24 },
       } as Record<string, unknown>,
     },
     {
-      type: 'CheckoutForm',
+      type: "CheckoutForm",
       props: {
-        id: 'CheckoutForm-1',
+        id: "CheckoutForm-1",
         // b35: НЕ 'scheme-2' — см. `retagSeededCheckoutScheme` ниже.
         colorScheme: CHECKOUT_SCHEME_PROP,
         padding: { top: 0, bottom: 0 },
       } as Record<string, unknown>,
     },
     {
-      type: 'CheckoutSummary',
+      type: "CheckoutSummary",
       props: {
-        id: 'CheckoutSummary-1',
+        id: "CheckoutSummary-1",
         colorScheme: CHECKOUT_SCHEME_PROP,
         padding: { top: 0, bottom: 0 },
       } as Record<string, unknown>,
@@ -232,13 +257,13 @@ export function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<
   const { footerBlock } = getHomeChrome(pagesData);
   const newPage: PageData = {
     content: [...seedBlocks, footerBlock],
-    root: { props: { title: 'Оформление заказа' } },
+    root: { props: { title: "Оформление заказа" } },
     zones: {},
   };
   return {
     ...out,
     checkout: newPage,
-    'page-checkout': newPage,
+    "page-checkout": newPage,
   };
 }
 
@@ -250,10 +275,14 @@ export function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<
  * каста, что уже используют `sites.service.ts#buildInitialRevision` и
  * `page-blocks.ts`.
  */
-export function themeHasCheckoutResultPage(themeId: string | null | undefined): boolean {
+export function themeHasCheckoutResultPage(
+  themeId: string | null | undefined,
+): boolean {
   if (!themeId) return false;
-  const manifest = getThemeManifest(themeId) as { pages?: Array<{ id?: string }> } | null;
-  return (manifest?.pages ?? []).some((p) => p?.id === 'page-checkout-result');
+  const manifest = getThemeManifest(themeId) as {
+    pages?: Array<{ id?: string }>;
+  } | null;
+  return (manifest?.pages ?? []).some((p) => p?.id === "page-checkout-result");
 }
 
 /**
@@ -278,11 +307,11 @@ export function seedCheckoutResultPage(
     ? (out.pages as Array<{ id?: string; slug?: string }>)
     : [];
   const hasContent =
-    !!pagesData['page-checkout-result'] || !!pagesData['checkout-result'];
+    !!pagesData["page-checkout-result"] || !!pagesData["checkout-result"];
   const hasMeta = pages.some(
     (p) =>
-      p?.id === 'page-checkout-result' ||
-      (p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'checkout-result',
+      p?.id === "page-checkout-result" ||
+      (p?.slug ?? "").replace(/^\/+|\/+$/g, "") === "checkout-result",
   );
   if (hasContent && hasMeta) return out; // already present — no-op (idempotent)
 
@@ -295,30 +324,30 @@ export function seedCheckoutResultPage(
   const seedPage: PageData = {
     content: [
       {
-        type: 'OrderConfirmation',
+        type: "OrderConfirmation",
         props: {
-          id: 'OrderConfirmation-1',
+          id: "OrderConfirmation-1",
           padding: { top: 0, bottom: 0 },
         } as Record<string, unknown>,
       },
     ],
-    root: { props: { title: 'Спасибо за заказ' } },
+    root: { props: { title: "Спасибо за заказ" } },
     zones: {},
   };
 
   const newPagesData = hasContent
     ? pagesData
-    : { ...pagesData, 'page-checkout-result': seedPage };
+    : { ...pagesData, "page-checkout-result": seedPage };
   const newPages = hasMeta
     ? pages
     : [
         ...pages,
         {
-          id: 'page-checkout-result',
-          name: 'Спасибо за заказ',
-          slug: '/checkout-result',
-          role: 'system',
-          contentFile: 'pages/checkout-result.json',
+          id: "page-checkout-result",
+          name: "Спасибо за заказ",
+          slug: "/checkout-result",
+          role: "system",
+          contentFile: "pages/checkout-result.json",
         },
       ];
   return { ...out, pages: newPages, pagesData: newPagesData };

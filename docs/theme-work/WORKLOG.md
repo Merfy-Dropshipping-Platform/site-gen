@@ -11320,3 +11320,95 @@ Chromium 1440. Скрины до/после: scratchpad сессии `flux-mobil
   1280 — показывают «Курьер до двери»/«До пункта выдачи» на обоих, попиксельный дифф 0 из
   329160 (390) и 0 из 1152000 (1280). Снимок с ПЭК — те же СДЭК-карточки с сохранённым текстом
   плюс «Отделение ПЭК»/«Курьер ПЭК до двери» из расчёта (у ПЭК таких пропсов нет).
+
+## 2026-09-30 — все пять тем: кабинет и «Спасибо за заказ» на общих полях доставки, сторож словаря (`feat/117-5.2-account-confirmation`, spec 117 шаг 5.2)
+
+Задача: `specs/117-pek-carrier/plan.md` строка 5.2, продолжение 5.1. Кабинет покупателя
+(`themes/<тема>/src/pages/account/order.astro`) и «Спасибо за заказ» (`OrderConfirmation.astro`)
+показывали доставку по старым полям заказа (`cdekTariffName`, `cdekPickupPointAddress`, разбор
+`deliveryType` по подстроке "cdek"). Перевели на общие поля orders 2.1–2.3 (`deliveryTariffName`,
+`deliveryCarrierName`, `deliveryMode`, `pickupPointAddress`, `trackingNumber`, `trackingUrl`,
+`shipmentCancellable`) со старыми полями запасными — «Отменить» решает `shipmentCancellable`, а не
+локальный список кодов. Шлюз не трогали: `/orders/:id/summary` пока не отдаёт
+`deliveryCarrierName`/`trackingNumber`/`shipmentCancellable` (contracts/http.md обещает
+`+pickupPointAddress`/`+deliveryCarrierName` — не сделано), код читает их заранее (заработает без
+правки витрины, когда шлюз догонит).
+
+### Правка
+
+- `packages/theme-base/runtime/order-delivery.ts` — `deliveryMethodLabel()`: цепочка
+  `deliveryTariffName → cdekTariffName → deliveryProfileName → deliveryCarrierName → typeLabel`;
+  `typeLabel()` больше не разбирает "cdek" по подстроке (мертво после переноса 2.1 — общее поле
+  `deliveryCarrierName` заполнено у ЛЮБОГО заказа СДЭК); добавлены `deliveryTrackingNumber`,
+  `deliveryTrackingUrl`, `customerMayCancelShipment` (зеркало orders `shipment-status.ts`).
+- `themes/{rose,flux,vanilla,satin,bloom}/src/pages/account/order.astro` (идентичная правка во
+  всех пяти, файлы совпадают байт-в-байт кроме атрибута `promo` у `Layout`): адрес — фолбэк на
+  `pickupPointAddress`/`cdekPickupPointAddress`, когда `shippingAddress` пуст (раньше только
+  own-shop `pickupAddress`, не трогали); новая ячейка «Отслеживание» (номер, ссылкой при наличии
+  `trackingUrl`), скрыта без трек-номера; «Отменить заказ» — по `customerMayCancelShipment(order)`
+  вместо локального `blockedDelivery`.
+- `packages/theme-base/blocks/OrderConfirmation/OrderConfirmation.astro` (is:inline — TS-модуль не
+  импортировать, логика продублирована по той же схеме, что уже была у этого блока для адреса):
+  адрес — `pickupPointAddress` впереди `cdekPickupPointAddress`; способ — та же цепочка полей, что
+  в кабинете, плюс `deliveryLabel` сводки шлюза ТОЛЬКО когда он не равен `deliveryType` (иначе это
+  сырой код — раньше показывался как есть, теперь генеральная подпись «Доставка», тот же фикс, что
+  раньше сделали в кабинете).
+- `src/__tests__/carrier-vocabulary.spec.ts` (новый) — сторож по образцу logistic/orders,
+  `SRC = packages/theme-base`; временные исключения — 4 файла чекаута из 5.1 (`cdek*Label` пропсы
+  и комментарии, не трогали) + `OrderConfirmation.astro`/`order-delivery.ts` (старые поля-запасные).
+
+### Тесты
+
+- `order-delivery-labels.spec.ts` — фикстура `cdek_door` без имени дополнена
+  `deliveryCarrierName: 'СДЭК'` (реалистичное состояние после переноса 2.1); +8 тестов: приоритет
+  новых полей, ПЭК как имя перевозчика, tracking-хелперы, `customerMayCancelShipment`.
+- `account-order-delivery.coverage.dom.test.ts` — +4 теста на пункт выдачи (общее поле впереди
+  старого), +4 на «Отслеживание», +5 на кнопку «Отменить» (по каждой теме) = 105/105.
+- `order-confirmation-delivery.coverage.dom.test.ts` — способ доставки: было 3 теста (включая явный
+  «сомнительное поведение» на сыром `deliveryType`), стало 8 (приоритет полей, self_pickup, сырой
+  `deliveryLabel === deliveryType` тоже не показываем); адрес +2 (pickupPointAddress) = 19/19.
+
+### Хвосты
+
+- `/orders/:id/summary` не отдаёт `deliveryCarrierName`/`trackingNumber`/`trackingUrl`/
+  `shipmentCancellable`/`pickupPointAddress` — контракт (`http.md`) их обещает, шаг 3.1 не довёл.
+  Правка в api-gateway, не в этом PR.
+- Кабинет не показывает `pickupPointAddress` для CDEK-ПВЗ через own-shop ветку
+  (`order.deliveryType==='pickup' && order.pickupAddress`) — не трогали, другое поле (адрес
+  магазина, не пункта перевозчика), риск задеть СДЭК, вне списка задачи.
+
+### Пруф
+
+- `pnpm checks` — 10227/0, пропущено 15, 3 мин 51 с (гонка красная один раз на устаревшем
+  инвентаре satin, поправлено `conformance:satin:refresh-inventory` — правка задела
+  `themes/satin/src/pages/account/order.astro`, отдельным коммитом по требованию инструмента).
+- Скриншоты (satin, заказ СДЭК-курьером без трек-номера — `deliveryCarrierName`/
+  `shipmentCancellable`/`trackingNumber` ещё не пришли, как у заказов до переноса 2.1): 390 и
+  1280, до (сборка на `19229d30`, до этого PR) и после — попиксельный дифф 0 из 653640 (390) и 0
+  из 1792000 (1280).
+
+## 2026-09-30 (правка) — убрали ячейку «Отслеживание» из кабинета — новый элемент интерфейса (поверх записи выше, `feat/117-5.2-account-confirmation`)
+
+Координатор: владелец «интерфейс нигде не меняем, только добавляется ПЭК там, где есть СДЭК» —
+ячейка «Отслеживание» из записи выше новая, тестовый заказ в скриншотах был без трек-номера, поэтому
+диф 0 её не поймал (с трек-номером ячейка появилась бы у всех заказов СДЭК). Проверил: до шага 5.2
+трек нигде в кабинете не показывался (`git show 19229d30` — ни в `order.astro`, ни в `orders.astro`,
+ни в блоках `AccountLayout`/`AccountSection`) — восстанавливать нечего, просто убрал.
+
+- `themes/{rose,flux,vanilla,satin,bloom}/src/pages/account/order.astro` — убраны `trackingNumber`/
+  `trackingUrl`/`trackingValue` и ячейка «Отслеживание» из `infoEl.innerHTML`; импорт
+  `deliveryTrackingNumber`/`deliveryTrackingUrl` убран.
+- `packages/theme-base/runtime/order-delivery.ts` — сами хелперы `deliveryTrackingNumber`/
+  `deliveryTrackingUrl` удалены (нигде больше не рисуются — мертвый код, `cdekNumber` ушёл из
+  исключений сторожа вместе с ними).
+- Остальное из записи выше не тронуто: способ по общим полям, адрес пункта выдачи, кнопка
+  «Отменить» по `customerMayCancelShipment`, «Доставка» вместо сырого `deliveryType` на
+  «Спасибо за заказ» — так и было решено, к интерфейсу это не добавляет новых элементов.
+- Тесты: `account-order-delivery.coverage.dom.test.ts` — убран describe-блок «отслеживание» (было
+  105/105, стало 85/85); `order-delivery-labels.spec.ts` — убран тест трек-хелперов (17/17);
+  `order-confirmation-delivery.coverage.dom.test.ts` не тронут (19/19) — там ячейки отслеживания не
+  было и не появлялось.
+- Пруф: скриншоты (satin) переснял на заказе СДЭК **с трек-номером и ссылкой** (`trackingNumber`,
+  `trackingUrl` заданы в фикстуре — именно тот случай, который не поймал прошлый снимок) — 390 и
+  1280, до (`19229d30`) и после — попиксельный дифф 0 из 653640 (390) и 0 из 1792000 (1280).
+  `pnpm checks` — см. отчёт агента.

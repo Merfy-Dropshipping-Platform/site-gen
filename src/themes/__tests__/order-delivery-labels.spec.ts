@@ -1,9 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { deliveryMethodLabel, deliveryPeriodLabel } from '../../../packages/theme-base/runtime/order-delivery';
+import {
+  deliveryMethodLabel,
+  deliveryPeriodLabel,
+  customerMayCancelShipment,
+} from '../../../packages/theme-base/runtime/order-delivery';
 
 /**
  * Личный кабинет → заказ: способ и срок доставки (владелец 26.09 — «custom» и «—»).
+ *
+ * Spec 117, шаг 5.2: заказ хранит доставку в общих полях (data-model.md §
+ * orders) — `deliveryTariffName`/`deliveryCarrierName`/`deliveryMode` вместо
+ * проверки по имени перевозчика в строке типа. Фикстуры ниже дополнены общими
+ * полями там, где старая фикстура описывала состояние, которого после
+ * миграции 2.1 (data-model.md) больше не бывает.
  */
 describe('доставка заказа в личном кабинете', () => {
   it('название способа, выбранное на оформлении, а не код', () => {
@@ -12,11 +22,46 @@ describe('доставка заказа в личном кабинете', () =>
     expect(deliveryMethodLabel({ deliveryType: 'pickup', cdekTariffName: 'Самовывоз из магазина' })).toBe('Самовывоз');
   });
 
-  it('названия нет — понятная подпись, никогда не «custom»', () => {
+  it('новое deliveryTariffName — впереди старого cdekTariffName (общие поля первыми)', () => {
+    expect(
+      deliveryMethodLabel({
+        deliveryType: 'cdek_door',
+        deliveryTariffName: 'Посылка склад-дверь',
+        cdekTariffName: 'устаревшее имя',
+      }),
+    ).toBe('Посылка склад-дверь');
+  });
+
+  it('deliveryMode="self_pickup" — «Самовывоз» без проверки сырого deliveryType', () => {
+    expect(deliveryMethodLabel({ deliveryType: 'custom', deliveryMode: 'self_pickup' })).toBe('Самовывоз');
+  });
+
+  it('название не задано, но известен перевозчик (deliveryCarrierName) — его имя, для любого перевозчика, не только СДЭК', () => {
+    expect(deliveryMethodLabel({ deliveryType: 'cdek_door', deliveryCarrierName: 'СДЭК' })).toBe('СДЭК');
+    expect(deliveryMethodLabel({ deliveryType: 'pek_door', deliveryCarrierName: 'ПЭК' })).toBe('ПЭК');
+  });
+
+  it('названия нет — понятная подпись, никогда не «custom» и не сырой код перевозчика', () => {
     expect(deliveryMethodLabel({ deliveryType: 'custom' })).toBe('Доставка');
     expect(deliveryMethodLabel({ deliveryType: 'own' })).toBe('Доставка');
-    expect(deliveryMethodLabel({ deliveryType: 'cdek_door' })).toBe('СДЭК');
+    // ИЗМЕНИЛОСЬ (5.2): раньше typeLabel() сам узнавал «cdek» по подстроке типа и
+    // показывал «СДЭК»; после миграции 2.1 (data-model.md) deliveryCarrierName
+    // заполнен у ЛЮБОГО заказа СДЭК — сценарий «есть cdek_door, но нет вообще
+    // никакого общего поля» реальным заказам не соответствует. Без единого общего
+    // поля способ теперь — нейтральная подпись «Доставка», а не разбор строки типа.
+    expect(deliveryMethodLabel({ deliveryType: 'cdek_door' })).toBe('Доставка');
     expect(deliveryMethodLabel({})).toBe('—');
+  });
+
+  it('отмена покупателем — по shipmentCancellable перевозчика, а без него — по статусу отправления (решение владельца 29.09)', () => {
+    expect(customerMayCancelShipment({ shipmentCancellable: true, deliveryStatus: 'IN_TRANSIT' })).toBe(true);
+    expect(customerMayCancelShipment({ shipmentCancellable: false, deliveryStatus: null })).toBe(false);
+    expect(customerMayCancelShipment({ deliveryStatus: 'CREATED' })).toBe(true);
+    expect(customerMayCancelShipment({ deliveryStatus: 'REGISTERING' })).toBe(true);
+    expect(customerMayCancelShipment({ deliveryStatus: 'REGISTRATION_FAILED' })).toBe(true);
+    expect(customerMayCancelShipment({ deliveryStatus: 'IN_TRANSIT' })).toBe(false);
+    expect(customerMayCancelShipment({ deliveryStatus: 'DELIVERED' })).toBe(false);
+    expect(customerMayCancelShipment({})).toBe(true);
   });
 
   it('срок доставки словами; нет срока — пусто', () => {

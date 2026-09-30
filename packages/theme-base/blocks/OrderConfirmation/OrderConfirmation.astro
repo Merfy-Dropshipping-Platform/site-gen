@@ -359,9 +359,20 @@ const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.r
       if (d.customerEmail) contactParts.push(d.customerEmail);
       setText('[data-oc-contact]', contactParts.join('\n') || '—');
 
-      var addr = (d.shippingAddress && (d.shippingAddress.fullAddress || [d.shippingAddress.country, d.shippingAddress.city, d.shippingAddress.street, d.shippingAddress.building].filter(Boolean).join(', '))) || d.cdekPickupPointAddress || '—';
+      // Адрес — общие поля заказа (data-model.md § orders): pickupPointAddress
+      // впереди старого cdekPickupPointAddress (spec 117, шаг 5.2).
+      var addr = (d.shippingAddress && (d.shippingAddress.fullAddress || [d.shippingAddress.country, d.shippingAddress.city, d.shippingAddress.street, d.shippingAddress.building].filter(Boolean).join(', '))) || d.pickupPointAddress || d.cdekPickupPointAddress || '—';
       setText('[data-oc-address]', addr);
-      setText('[data-oc-delivery]', d.deliveryLabel || d.deliveryType || '—');
+      // Способ — deliveryTariffName/deliveryCarrierName (общие поля) раньше
+      // deliveryLabel/deliveryType (сводка шлюза их пока не шлёт — запасные);
+      // deliveryLabel, совпавший с deliveryType, — сырой код, не название, не
+      // показываем (spec 117, шаг 5.2: то же правило, что в личном кабинете,
+      // runtime/order-delivery.ts).
+      var methodLabel = d.deliveryTariffName || d.cdekTariffName || d.deliveryCarrierName
+        || (d.deliveryLabel && d.deliveryLabel !== d.deliveryType ? d.deliveryLabel : '')
+        || (d.deliveryType ? 'Доставка' : '—');
+      var isPickup = d.deliveryMode === 'self_pickup' || d.deliveryType === 'pickup';
+      setText('[data-oc-delivery]', isPickup ? 'Самовывоз' : methodLabel);
 
       var itemsEl = q('[data-oc-items]');
       var merge = window.__merfyMergeGiftLines;

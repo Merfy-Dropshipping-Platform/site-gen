@@ -52,7 +52,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
   </div>
 
   <script>
-    import { deliveryMethodLabel, deliveryPeriodLabel } from '../../../../../packages/theme-base/runtime/order-delivery';
+    import { deliveryMethodLabel, deliveryPeriodLabel, customerMayCancelShipment } from '../../../../../packages/theme-base/runtime/order-delivery';
     import { orderItemView } from '../../../../../packages/theme-base/runtime/order-item';
     import { mergeGiftLines } from '../../../../../packages/theme-base/runtime/gift-lines';
     import { navTo, fetchOrder, cancelOrder, getToken } from '../../lib/auth';
@@ -135,6 +135,9 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
         const parts = [a.city, a.street, a.building ? 'д. ' + a.building : ''].filter(Boolean);
         if (parts.length) address = parts.join(', ');
       }
+      // Общее поле пункта выдачи (data-model.md § orders) — только когда
+      // адрес ещё не собран выше; старый cdekPickupPointAddress запасной.
+      if (address === '—') address = order.pickupPointAddress || order.cdekPickupPointAddress || '—';
       if (order.deliveryType === 'pickup' && order.pickupAddress) address = order.pickupAddress;
       const deliveryDate = deliveryPeriodLabel(order);
 
@@ -150,10 +153,10 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
         '<div class="account-info-cell"><span class="info-label">Итоговая стоимость</span><span class="info-value">' + formatPrice(order.totalCents) + '</span></div>';
       contentEl.classList.remove('hidden');
 
-      // Отмена (paid/processing, не в доставке)
-      const blockedDelivery = ['IN_TRANSIT', 'DELIVERED', 'NOT_DELIVERED', 'RECEIVED', 'RETURNED'];
+      // Отмена: paid/processing и разрешение перевозчика (shipmentCancellable),
+      // а пока его нет — по статусу отправления (spec 117, шаг 5.2).
       const canCancel = ['paid', 'processing'].includes(order.status) &&
-        (!order.deliveryStatus || !blockedDelivery.includes(order.deliveryStatus));
+        customerMayCancelShipment(order);
       if (!canCancel) return;
 
       const cancelBtn = document.createElement('button');

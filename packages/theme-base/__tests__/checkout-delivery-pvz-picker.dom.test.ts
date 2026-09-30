@@ -43,6 +43,9 @@ function runScript(section: HTMLElement) {
   astroInlineRunners(ASTRO)[0].run({ blockId: 'cdm-1' });
 }
 
+// carrier/mode/tariffCode(строка)/label/requiresPickupPoint — поля расчёта
+// (spec 117); label — готовая строка из логистики, tariffCode — строка
+// (единый формат для любого перевозчика, не только числовые коды СДЭК).
 const CALC = {
   success: true,
   data: {
@@ -55,8 +58,12 @@ const CALC = {
         minDays: 1,
         maxDays: 2,
         description: '',
-        cdekTariffCode: 138,
-        deliveryMode: 'pickup',
+        carrier: 'cdek',
+        mode: 'pickup',
+        tariffCode: '138',
+        requiresPickupPoint: true,
+        shipmentRequired: true,
+        label: 'До пункта выдачи',
       },
     ],
     pickupPoints: [],
@@ -151,7 +158,8 @@ describe('CheckoutDeliveryMethod — CDEK ПВЗ picker', () => {
     expect(lastDelivery).toBeTruthy();
     expect(lastDelivery.type).toBe('cdek_pickup');
     expect(lastDelivery.pickupPointCode).toBe('P1');
-    expect(lastDelivery.tariffCode).toBe(138);
+    // tariffCode теперь строка — общий формат для любого перевозчика.
+    expect(lastDelivery.tariffCode).toBe('138');
   });
 
   it('смена города сбрасывает выбранную точку (нет утечки кода старого города)', async () => {
@@ -218,8 +226,8 @@ describe('CheckoutDeliveryMethod — CDEK ПВЗ picker', () => {
   it('переключение ПВЗ-тариф → постамат-тариф в одном городе сбрасывает точку', async () => {
     // Две pickup-опции разного типа; дешёвая (ПВЗ, 510) автоселектится первой.
     calcOptionsOverride = [
-      { id: 'o138', name: 'дверь-склад', type: 'PARTNER', price: 510, minDays: 1, maxDays: 2, description: '', cdekTariffCode: 138, deliveryMode: 'pickup', pickupPointKind: 'PVZ' },
-      { id: 'o366', name: 'дверь-постамат', type: 'PARTNER', price: 520, minDays: 1, maxDays: 2, description: '', cdekTariffCode: 366, deliveryMode: 'pickup', pickupPointKind: 'POSTAMAT' },
+      { id: 'o138', name: 'дверь-склад', type: 'PARTNER', price: 510, minDays: 1, maxDays: 2, description: '', carrier: 'cdek', mode: 'pickup', tariffCode: '138', requiresPickupPoint: true, shipmentRequired: true, pickupPointKind: 'PVZ', label: 'До пункта выдачи' },
+      { id: 'o366', name: 'дверь-постамат', type: 'PARTNER', price: 520, minDays: 1, maxDays: 2, description: '', carrier: 'cdek', mode: 'pickup', tariffCode: '366', requiresPickupPoint: true, shipmentRequired: true, pickupPointKind: 'POSTAMAT', label: 'Постамат СДЭК' },
     ];
     const section = mountDom();
     runScript(section);

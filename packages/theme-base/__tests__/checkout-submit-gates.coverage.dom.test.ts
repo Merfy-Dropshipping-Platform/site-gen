@@ -282,6 +282,9 @@ describe("CheckoutSubmit — periodMin/periodMax способа доставки
     runScript(section);
     selectDelivery({
       type: "cdek_pickup",
+      carrier: "cdek",
+      mode: "pickup",
+      requiresPickupPoint: true,
       label: "До пункта выдачи",
       costCents: 51000,
       tariffCode: 138,
@@ -305,6 +308,9 @@ describe("CheckoutSubmit — periodMin/periodMax способа доставки
     runScript(section);
     selectDelivery({
       type: "cdek_pickup",
+      carrier: "cdek",
+      mode: "pickup",
+      requiresPickupPoint: true,
       label: "До пункта выдачи",
       pickupPointCode: "PVZ77",
       // costCents и tariffCode намеренно не переданы (undefined)
@@ -335,6 +341,9 @@ describe("CheckoutSubmit — periodMin/periodMax способа доставки
       runScript(section);
       selectDelivery({
         type: "cdek_pickup",
+        carrier: "cdek",
+        mode: "pickup",
+        requiresPickupPoint: true,
         label: "До пункта выдачи",
         costCents: 30000,
         tariffCode: 136,
@@ -347,6 +356,9 @@ describe("CheckoutSubmit — periodMin/periodMax способа доставки
       // типом, но БЕЗ pickupPointCode.
       selectDelivery({
         type: "cdek_pickup",
+        carrier: "cdek",
+        mode: "pickup",
+        requiresPickupPoint: true,
         label: "До пункта выдачи",
         costCents: 30000,
         tariffCode: 136,

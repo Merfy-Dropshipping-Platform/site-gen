@@ -62,7 +62,7 @@ const choose = (detail: Record<string, unknown>) =>
 
 const SELF_PICKUP = { type: 'self_pickup', label: 'Самовывоз', costCents: 0, tariffCode: null };
 const OWN_COURIER = { type: 'own_courier', label: 'Курьер магазина', costCents: 30000, tariffCode: null };
-const CDEK_DOOR = { type: 'cdek_door', label: 'CDEK курьер', costCents: 40000, tariffCode: 137 };
+const CDEK_DOOR = { type: 'cdek_door', carrier: 'cdek', mode: 'door', label: 'CDEK курьер', costCents: 40000, tariffCode: 137 };
 
 function chainFetch(): jest.Mock {
   return jest.fn((url: string) => {

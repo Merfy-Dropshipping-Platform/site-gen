@@ -11176,3 +11176,147 @@ Chromium 1440. Скрины до/после: scratchpad сессии `flux-mobil
   взять bloom для «Найти» другую роль или поменять Схему 1 bloom — решить владельцу.
 - rose, vanilla, bloom: в шторке вместо кнопки «Найти» иконка (у верстальщиков — кнопка).
 - Живьём не проверено — не залито.
+
+## 2026-09-30 — все пять тем: чекаут берёт перевозчика/режим из расчёта, не из «cdek» (`feat/117-5.1-checkout-carrier-mode`, spec 117 шаг 5.1)
+
+Задача: специфика 117 «ПЭК вторым перевозчиком», `specs/117-pek-carrier/plan.md` строка 5.1. Бэкенд
+(orders 2.3, api-gateway 3.1) уже на dev отдаёт у варианта расчёта `carrier`, `mode`, готовую
+`label`, `requiresPickupPoint`, `shipmentRequired` (contracts/117 `messaging.md` §1) и принимает
+такой же вид на входе (§8). Задача — перевести витрину (все пять тем берут блоки из
+`packages/theme-base`, своих копий Checkout-блоков у тем нет) с проверок `type==='PARTNER'` +
+`cdekTariffCode`/`deliveryMode` + лейблов из пропсов блока на эти поля, чтобы варианты ПЭК
+появились рядом со СДЭК без второго прохода по вёрстке.
+
+### Изменённые файлы (продакшен-код)
+
+- `packages/theme-base/blocks/CheckoutDeliveryMethod/CheckoutDeliveryMethod.astro` — `buildOptions()`
+  группирует варианты перевозчика по `carrier|mode|pickupPointKind` (было — только СДЭК по
+  `door|PVZ|POSTAMAT`); своя доставка магазина определяется по `!o.carrier` (было —
+  `type==='OWN'`); лейбл карточки — `o.label` из расчёта (было — `cdekDoorLabel`/`cdekPvzLabel`/
+  `cdekPostamatLabel` пропсы блока); подзаголовок без текста тарифа — `defaultMethodDesc()`,
+  для `carrier==='cdek'` слово в слово прежний текст (проверено по `calculator.service.ts`:
+  `description` тарифа обычно `undefined`, значит фолбэк реально виден покупателю), для остальных
+  перевозчиков — нейтральная формулировка; пикер пункта выдачи раскрывается по
+  `opt.requiresPickupPoint` (было — `opt.type==='cdek_pickup'`); запрос точек несёт обязательный
+  `carrier` и, когда есть, `city`/`region`/`lat`/`lon` (кэш пикера — по ключу «перевозчик+город»,
+  не только городу); событие `checkout:delivery-changed` несёт `carrier`/`mode`/
+  `requiresPickupPoint`/`shipmentRequired` вдобавок к прежним полям; `data-delivery-type` на
+  карточке остался `<carrier>_<mode>` (напр. `cdek_door`, `cdek_pickup`) — то же самое значение,
+  что и раньше для СДЭК, просто теперь вычисляется из данных, а не зашито строкой; добавлены
+  `data-delivery-carrier`/`data-delivery-mode`/`data-delivery-requires-pickup`/
+  `data-delivery-shipment-required`. `tariffCode` теперь строка (был `parseInt(cdekTariffCode)`) —
+  общий формат, не только числовые коды СДЭК (data-model.md: `delivery_tariff_code::text`).
+  Убраны пропсы `cdekEnabled`/`cdekDoorLabel`/`cdekPvzLabel`/`cdekPostamatLabel` (Props, атрибуты
+  секции, чтение в скрипте) — продавец их не редактировал.
+- `CheckoutDeliveryMethod.puckConfig.ts` — те же 4 поля убраны из схемы/полей/дефолтов.
+- `packages/theme-base/blocks/CheckoutForm/CheckoutForm.astro` (мега-блок «Оформление заказа» —
+  единственный живой путь чекаута, см. `research.md` 1.9) — не передаёт больше убранные пропсы
+  `CheckoutDeliveryMethod`.
+- `packages/theme-base/blocks/CheckoutDeliveryForm/CheckoutDeliveryForm.astro` — при выборе города
+  (клик по подсказке DaData, ресолв по blur/тексту, last-resort резолв в `dispatchAddressChange`)
+  сохраняет `city`/`region_with_type`/`geo_lat`/`geo_lon` в `data-selected-*` атрибуты секции и
+  шлёт их в `checkout:address-changed` вместе с `cityFiasId`/`postalCode`. СДЭК эти поля
+  игнорирует (считает по `cityFiasId`, как раньше); нужны перевозчикам без кодов ФИАС (ПЭК —
+  research.md 1.12).
+- `packages/theme-base/blocks/CheckoutSubmit/CheckoutSubmit.astro` — `canSubmit()`: адрес не нужен
+  для `self_pickup` ИЛИ `requiresPickupPoint` (было — `type==='self_pickup'||'cdek_pickup'`);
+  код точки обязателен по `requiresPickupPoint` (было — `type==='cdek_pickup'`); дом обязателен по
+  `carrier && mode==='door'` (было — `type==='cdek_door'`); `/delivery/select` уходит по
+  `requiresPickupPoint` (было — `type==='cdek_pickup'`), в тело добавлены `carrier`/`mode` рядом
+  с прежними полями (`type` для СДЭК НЕ меняется — остаётся `cdek_door`/`cdek_pickup`: бэкенд
+  принимает оба вида, менять сложившийся формат без необходимости не стали);
+  `metadata.deliveryMethod` — тот же `state.deliveryMethod` целиком (был и есть), теперь несёт
+  `carrier`/`mode`/`requiresPickupPoint`/`shipmentRequired` заодно с прежними полями.
+
+### Тесты (15 файлов `packages/theme-base/__tests__/checkout-*.dom.test.ts` + 1 вне шаблона CI)
+
+Смысл проверок не менялся — только fixture-объекты вариантов расчёта дополнены `carrier`/`mode`/
+`tariffCode`(строка)/`requiresPickupPoint`/`shipmentRequired`/`label`, и ожидания `toEqual`
+дополнены теми же новыми полями (либо `tariffCode` переведён на строку):
+`checkout-delivery-method-block-contract.test.ts` (схема без cdek-полей — вне регэкспа CI, часть
+`pnpm checks`), `checkout-delivery-method-dedup.dom.test.ts`, `checkout-delivery-pvz-picker.dom.test.ts`,
+`checkout-delivery-form-dadata.coverage.dom.test.ts` (+city/region/lat/lon:null в ожиданиях
+`checkout:address-changed`), `checkout-delivery-submit-flow.coverage.dom.test.ts`,
+`checkout-delivery-method-money-contract.coverage.dom.test.ts` (+ `carrier=cdek` в URL
+`/pickup-points`), `checkout-delivery-method.coverage.dom.test.ts` (24 fixture-объекта, скриптом),
+`checkout-submit-cdek-pickup.dom.test.ts`, `checkout-submit-full-address.dom.test.ts`,
+`checkout-submit-gates.coverage.dom.test.ts`, `checkout-submit-error-paths.coverage.dom.test.ts`,
+`checkout-submit-money-cdek-contract.coverage.dom.test.ts`, `checkout-submit-config.dom.test.ts`.
+Не тронуты (уже проходили не завися от этих полей): `account-order-delivery.coverage.dom.test.ts`,
+`order-confirmation-delivery.coverage.dom.test.ts` (личный кабинет/подтверждение — шаг 5.2),
+`src/themes/__tests__/checkout-undeliverable-product.spec.ts`,
+`src/themes/__tests__/order-delivery-labels.spec.ts`.
+
+### Пруф
+
+- `pnpm checks` (полный прогон, не из памяти для всех тестов чекаута): 10148/0, 15 пропущено
+  (CI-only гарды), 3 мин 47 с.
+- Скриншоты 390 и 1280: чекаут flux со СДЭК до/после правки — попиксельно идентичны (дифф 0);
+  отдельный снимок с фикстурным вариантом ПЭК рядом со СДЭК (карточка «Курьер ПЭК до двери» и
+  «Отделение ПЭК») — мокнутый ответ `/delivery/calculate`, реального адаптера ПЭК ещё нет (шаг 6
+  плана 117 не начат), поэтому это не сквозной пруф, а проверка, что клиент верно рисует чужого
+  перевозчика, если бэкенд его вернёт.
+
+### Не в объёме этого шага (правки не делались)
+
+- `templates/astro/{rose,bloom,satin,vanilla}` и `packages/storefront` — старый React-чекаут,
+  вне объёма 117 (research.md 1.9); там же живут прежние `cdekDoorLabel` и т. п. — не трогать до
+  отдельной задачи (снимок rose — шаг 5.3 плана).
+- Кабинет покупателя и «Спасибо за заказ» на общих полях, сторож словаря (`carrier-vocabulary.spec.ts`)
+  — шаг 5.2 плана 117, отдельная задача.
+
+## 2026-09-30 (правка) — вернули cdek*-подписи из настроек блока поверх 5.1 (`feat/117-5.1-checkout-carrier-mode`, коммит поверх `7d0b4060`)
+
+Координатор до слияния: на проде 458 сайтов (последняя ревизия каждого) хранят в
+`CheckoutDeliveryMethod` свой текст `cdekDoorLabel`/`cdekPvzLabel` (например «Курьер до
+двери», «До пункта выдачи» — не совпадает с дефолтом «Курьер СДЭК до двери» puckConfig и с
+`label` из манифеста логистики). PR 5.1 убрал эти пропсы целиком — 458 сайтов увидели бы
+чужой текст. Против решения владельца «интерфейс не меняем», FR-013 спеки 117 и правила
+«настройки секций и их значения не ломать».
+
+### Что вернули
+
+- `CheckoutDeliveryMethod.puckConfig.ts` — поля `cdekEnabled`/`cdekDoorLabel`/`cdekPvzLabel`/
+  `cdekPostamatLabel` обратно в схему/fields/defaults, byte-в-byte как до 5.1.
+- `CheckoutForm.astro` — снова передаёт их мега-блоку теми же строками-константами.
+- `CheckoutDeliveryMethod.astro` — пропсы снова в `Astro.props` и `data-cdek-*` атрибутах.
+  Подпись carrier==='cdek' теперь: **пропс, если задан → он; пропс не передан (атрибута нет в
+  DOM) → label из расчёта.** Пустая строка в пропсе — отдельно: то же поведение, что и до 5.1
+  (`attr || 'Курьер СДЭК до двери'` и т. п.), НЕ то же самое что «не задан» — иначе продавец,
+  специально стерший текст, увидел бы чужой label вместо старого дефолта. У остальных
+  перевозчиков (ПЭК) таких пропсов нет и не будет — только label из расчёта.
+  `cdekEnabled` — проверено по родительскому коммиту `7d0b4060^` (`git show`): до 5.1 атрибут
+  рисовался, но скриптом НИГДЕ не читался (не фильтровал варианты). Восстановлено 1:1: то же
+  отсутствие эффекта, никакой новой фильтрации по нему не добавлено.
+- `checkout-delivery-method-block-contract.test.ts` — вернул исходные assertions (`cdekEnabled`/
+  `cdekDoorLabel` в схеме).
+- Новый файл `checkout-delivery-method-cdek-label-override.dom.test.ts` (7 тестов): пропс
+  непустой побеждает calc (кейс 458 сайтов), пустая строка → старый дефолт (не расчёт и не
+  пусто), пропс не передан → label из расчёта, ПЭК не видит cdek-пропсы вовсе, `cdekEnabled=false`
+  не прячет карточки (как и раньше).
+
+### Временные исключения сторожа словаря (для шага 5.2 плана 117)
+
+Когда `carrier-vocabulary.spec.ts` появится в site-gen, эти места — законные временные
+исключения (удалить вместе со сторожем на шаге 7, когда 458 сайтов смигрируют/за
+кроют вопрос миграцией ревизий):
+- `packages/theme-base/blocks/CheckoutDeliveryMethod/CheckoutDeliveryMethod.puckConfig.ts` —
+  поля `cdekEnabled`, `cdekDoorLabel`, `cdekPvzLabel`, `cdekPostamatLabel`;
+- `packages/theme-base/blocks/CheckoutDeliveryMethod/CheckoutDeliveryMethod.astro` — те же 4
+  имени в деструктуризации пропсов, атрибутах `data-cdek-*` и функции `cdekLabelOverride()`;
+- `packages/theme-base/blocks/CheckoutForm/CheckoutForm.astro` — передача тех же 4 пропсов
+  константами;
+- тесты `checkout-delivery-method-block-contract.test.ts`,
+  `checkout-delivery-method-cdek-label-override.dom.test.ts`.
+
+### Пруф
+
+- `pnpm exec jest` по шаблону CI «Тесты чекаута магазина» — 426/0 (419 из 5.1 + 7 новых).
+- `pnpm checks` — `✓ проверки пройдены за 1 мин 47 с`, ИТОГО 10155/0, пропущено 15.
+- Скриншоты (реалистичный сценарий: блок хранит `cdekDoorLabel="Курьер до двери"`,
+  `cdekPvzLabel="До пункта выдачи"`, расчёт отдаёт `label:"Курьер СДЭК до двери"`/
+  `"Пункт выдачи СДЭК"`) — рендер САМОГО блока `CheckoutDeliveryMethod` (не через мега-блок
+  CheckoutForm — там эти пропсы константы в JSX, разное значение не проверить), до/после 390 и
+  1280 — показывают «Курьер до двери»/«До пункта выдачи» на обоих, попиксельный дифф 0 из
+  329160 (390) и 0 из 1152000 (1280). Снимок с ПЭК — те же СДЭК-карточки с сохранённым текстом
+  плюс «Отделение ПЭК»/«Курьер ПЭК до двери» из расчёта (у ПЭК таких пропсов нет).

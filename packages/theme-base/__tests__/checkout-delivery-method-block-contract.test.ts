@@ -10,6 +10,11 @@ describe('CheckoutDeliveryMethod block', () => {
     const r = await validateBlock(path.resolve(__dirname, '../blocks/CheckoutDeliveryMethod'));
     expect(r.errors).toEqual([]); expect(r.ok).toBe(true);
   });
+  // spec 117: перевозчик и режим — из расчёта логистики; cdekEnabled/cdek*Label
+  // остаются ВРЕМЕННО (правка после 5.1) — 458 сайтов на проде хранят в
+  // ревизии свой текст этих полей, интерфейс конструктора не меняем. Подпись
+  // СДЭК приоритетно берёт их, у остальных перевозчиков полей нет — только
+  // label из расчёта (CheckoutDeliveryMethod.astro).
   it('PuckConfig has CDEK + pickup + custom', () => {
     expect(CheckoutDeliveryMethodPuckConfig.fields.cdekEnabled).toBeDefined();
     expect(CheckoutDeliveryMethodPuckConfig.fields.pickupEnabled).toBeDefined();

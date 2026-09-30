@@ -9,6 +9,9 @@ const CustomMethodSchema = z.object({
 
 export const CheckoutDeliveryMethodSchema = z.object({
   heading: z.string(),
+  // Временное исключение сторожа словаря (спека 117, шаг 5.2): поля существуют
+  // ради 458 сайтов с сохранённым в ревизии текстом — см. WORKLOG 2026-09-30
+  // (правка после 5.1). Логика чтения — CheckoutDeliveryMethod.astro §«cdek».
   cdekEnabled: z.boolean(),
   cdekDoorLabel: z.string(),
   cdekPvzLabel: z.string(),

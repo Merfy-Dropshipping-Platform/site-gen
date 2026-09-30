@@ -3,10 +3,22 @@
  *
  * OrderConfirmation — ветка показа доставки внутри fillContent() инлайн-скрипта
  * (адрес [data-oc-address], способ [data-oc-delivery], стоимость
- * [data-oc-delivery-cost]; OrderConfirmation.astro строки 362-364 и 378).
- * Скрипт помечен is:inline — исполняется через astroInlineRunners (как в
- * checkout-delivery-method.coverage.dom.test.ts), покрытие пишется под путём
- * OrderConfirmation.astro с его собственными номерами строк.
+ * [data-oc-delivery-cost]). Скрипт помечен is:inline — исполняется через
+ * astroInlineRunners (как в checkout-delivery-method.coverage.dom.test.ts),
+ * покрытие пишется под путём OrderConfirmation.astro с его собственными
+ * номерами строк.
+ *
+ * Spec 117, шаг 5.2: адрес и способ читают общие поля заказа (data-model.md §
+ * orders) — pickupPointAddress/deliveryTariffName/deliveryCarrierName —
+ * впереди старых cdekPickupPointAddress/cdekTariffName и синтетического
+ * deliveryLabel сводки шлюза (contracts/http.md § витрина, шлюз пока не шлёт
+ * deliveryCarrierName). Тот же принцип (общие поля первыми, сырой код не
+ * показываем), что в runtime/order-delivery.ts для личного кабинета — но
+ * is:inline не даёт импортировать TS-модуль напрямую (см. `mergeGiftLines` /
+ * `GIFT_LINES_SOURCE` в runtime/gift-lines.ts, тот же приём для другого
+ * рантайма), а набор полей сводки здесь свой (нет deliveryProfileName, есть
+ * deliveryLabel) — поэтому логика продублирована в разметке is:inline, а не
+ * вынесена в общую функцию.
  *
  * Фикстура покрывает и [data-oc-subtotal]/[data-oc-discount-row]/[data-oc-discount]
  * (добавлены в разметку вместе со статусом оплаты и скидкой заказа — вне ветки
@@ -131,7 +143,7 @@ describe("OrderConfirmation — ветка показа доставки (fillCo
       expect(text(section, "[data-oc-address]")).toBe("Россия, Казань");
     });
 
-    it('shippingAddress задан, но все части — пустые строки, cdekPickupPointAddress нет — "—"', async () => {
+    it('shippingAddress задан, но все части — пустые строки, ни pickupPointAddress, ни cdekPickupPointAddress нет — "—"', async () => {
       const section = await renderDelivery({
         shippingAddress: { country: "", city: "", street: "", building: "" },
       });
@@ -141,8 +153,8 @@ describe("OrderConfirmation — ветка показа доставки (fillCo
     it("shippingAddress задан, но все части — пустые строки, ЕСТЬ cdekPickupPointAddress — используется адрес пункта выдачи", async () => {
       // ТЕКУЩЕЕ ПОВЕДЕНИЕ: shippingAddress с пустыми полями после
       // .filter(Boolean).join(', ') даёт '' (falsy) — OR-цепочка идёт дальше и
-      // берёт cdekPickupPointAddress, как будто shippingAddress не было вовсе.
-      // OrderConfirmation.astro:324
+      // берёт pickupPointAddress/cdekPickupPointAddress, как будто shippingAddress
+      // не было вовсе. OrderConfirmation.astro (fillContent, ветка addr).
       const section = await renderDelivery({
         shippingAddress: { country: "", city: "", street: "", building: "" },
         cdekPickupPointAddress: "ПВЗ №12, ул. Складская, 9",
@@ -152,7 +164,7 @@ describe("OrderConfirmation — ветка показа доставки (fillCo
       );
     });
 
-    it("shippingAddress отсутствует вовсе, есть cdekPickupPointAddress — показывается адрес пункта выдачи", async () => {
+    it("shippingAddress отсутствует вовсе, есть cdekPickupPointAddress — показывается адрес пункта выдачи (старое поле, запасное)", async () => {
       const section = await renderDelivery({
         cdekPickupPointAddress: "Пункт самовывоза, просп. Мира, 3",
       });
@@ -161,14 +173,70 @@ describe("OrderConfirmation — ветка показа доставки (fillCo
       );
     });
 
-    it('нет ни shippingAddress, ни cdekPickupPointAddress — "—"', async () => {
+    it("shippingAddress отсутствует, есть общее pickupPointAddress (spec 117, шаг 5.2) — показывается оно", async () => {
+      const section = await renderDelivery({
+        pickupPointAddress: "ПВЗ №7, ул. Новая, 2",
+      });
+      expect(text(section, "[data-oc-address]")).toBe("ПВЗ №7, ул. Новая, 2");
+    });
+
+    it("заданы и pickupPointAddress, и старое cdekPickupPointAddress — общее поле побеждает (spec 117, шаг 5.2)", async () => {
+      const section = await renderDelivery({
+        pickupPointAddress: "Новый адрес пункта",
+        cdekPickupPointAddress: "Старый адрес пункта",
+      });
+      expect(text(section, "[data-oc-address]")).toBe("Новый адрес пункта");
+    });
+
+    it('нет ни shippingAddress, ни pickupPointAddress, ни cdekPickupPointAddress — "—"', async () => {
       const section = await renderDelivery({});
       expect(text(section, "[data-oc-address]")).toBe("—");
     });
   });
 
   describe("способ доставки — [data-oc-delivery]", () => {
-    it("deliveryLabel задан — показывается ярлык, deliveryType игнорируется", async () => {
+    it("deliveryTariffName (общее поле) задан — впереди старого cdekTariffName и deliveryLabel", async () => {
+      const section = await renderDelivery({
+        deliveryTariffName: "Посылка склад-дверь",
+        cdekTariffName: "устаревшее имя",
+        deliveryLabel: "Курьер СДЭК",
+        deliveryType: "cdek_door",
+      });
+      expect(text(section, "[data-oc-delivery]")).toBe("Посылка склад-дверь");
+    });
+
+    it("deliveryTariffName нет, есть старое cdekTariffName — используется оно (запасное поле)", async () => {
+      const section = await renderDelivery({
+        cdekTariffName: "24 часа",
+        deliveryType: "cdek_door",
+      });
+      expect(text(section, "[data-oc-delivery]")).toBe("24 часа");
+    });
+
+    it("ни одного тарифа нет, есть deliveryCarrierName — показывается имя перевозчика, для любого перевозчика", async () => {
+      expect(
+        text(
+          await renderDelivery({ deliveryCarrierName: "СДЭК", deliveryType: "cdek_door" }),
+          "[data-oc-delivery]",
+        ),
+      ).toBe("СДЭК");
+      expect(
+        text(
+          await renderDelivery({ deliveryCarrierName: "ПЭК", deliveryType: "pek_door" }),
+          "[data-oc-delivery]",
+        ),
+      ).toBe("ПЭК");
+    });
+
+    it('deliveryMode="self_pickup" — «Самовывоз» независимо от тарифа/перевозчика', async () => {
+      const section = await renderDelivery({
+        deliveryMode: "self_pickup",
+        deliveryTariffName: "не должно показаться",
+      });
+      expect(text(section, "[data-oc-delivery]")).toBe("Самовывоз");
+    });
+
+    it("deliveryLabel задан и отличается от deliveryType — показывается ярлык (сегодняшняя сводка шлюза, поле уходит на шаге 7)", async () => {
       const section = await renderDelivery({
         deliveryLabel: "Курьер СДЭК",
         deliveryType: "cdek_door",
@@ -176,12 +244,22 @@ describe("OrderConfirmation — ветка показа доставки (fillCo
       expect(text(section, "[data-oc-delivery]")).toBe("Курьер СДЭК");
     });
 
-    it("deliveryLabel не задан, есть deliveryType — показывается СЫРОЙ deliveryType", async () => {
-      // ТЕКУЩЕЕ ПОВЕДЕНИЕ (сомнительно): без deliveryLabel покупатель видит
-      // внутренний идентификатор способа доставки как есть ('cdek_pickup'), а
-      // не человекочитаемую подпись. OrderConfirmation.astro:326
+    it("deliveryLabel не задан, есть только deliveryType — общая подпись «Доставка», СЫРОЙ код больше не показывается", async () => {
+      // ИЗМЕНИЛОСЬ (spec 117, шаг 5.2): раньше покупатель видел внутренний
+      // идентификатор способа доставки как есть ('cdek_pickup') — то же
+      // сомнительное поведение, которое до этого уже исправили в личном
+      // кабинете (runtime/order-delivery.ts, owner 26.09). Теперь — то же
+      // правило здесь: сырой код не показываем, общая подпись «Доставка».
       const section = await renderDelivery({ deliveryType: "cdek_pickup" });
-      expect(text(section, "[data-oc-delivery]")).toBe("cdek_pickup");
+      expect(text(section, "[data-oc-delivery]")).toBe("Доставка");
+    });
+
+    it("deliveryLabel равен deliveryType (сегодняшний фолбэк шлюза) — тоже считается сырым кодом, не названием", async () => {
+      const section = await renderDelivery({
+        deliveryLabel: "own_boxberry",
+        deliveryType: "own_boxberry",
+      });
+      expect(text(section, "[data-oc-delivery]")).toBe("Доставка");
     });
 
     it('ни deliveryLabel, ни deliveryType не заданы — "—"', async () => {

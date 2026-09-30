@@ -52,7 +52,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
   </div>
 
   <script>
-    import { deliveryMethodLabel, deliveryPeriodLabel } from '../../../../../packages/theme-base/runtime/order-delivery';
+    import { deliveryMethodLabel, deliveryPeriodLabel, deliveryTrackingNumber, deliveryTrackingUrl, customerMayCancelShipment } from '../../../../../packages/theme-base/runtime/order-delivery';
     import { orderItemView } from '../../../../../packages/theme-base/runtime/order-item';
     import { mergeGiftLines } from '../../../../../packages/theme-base/runtime/gift-lines';
     import { navTo, fetchOrder, cancelOrder, getToken } from '../../lib/auth';
@@ -135,8 +135,18 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
         const parts = [a.city, a.street, a.building ? 'д. ' + a.building : ''].filter(Boolean);
         if (parts.length) address = parts.join(', ');
       }
+      // Общее поле пункта выдачи (data-model.md § orders) — только когда
+      // адрес ещё не собран выше; старый cdekPickupPointAddress запасной.
+      if (address === '—') address = order.pickupPointAddress || order.cdekPickupPointAddress || '—';
       if (order.deliveryType === 'pickup' && order.pickupAddress) address = order.pickupAddress;
       const deliveryDate = deliveryPeriodLabel(order);
+      const trackingNumber = deliveryTrackingNumber(order);
+      const trackingUrl = deliveryTrackingUrl(order);
+      const trackingValue = trackingNumber
+        ? (trackingUrl
+            ? '<a class="account-text-link" href="' + trackingUrl + '" target="_blank" rel="noopener noreferrer">' + trackingNumber + '</a>'
+            : trackingNumber)
+        : '';
 
       infoEl.innerHTML =
         '<div class="account-info-grid">' +
@@ -145,15 +155,16 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
           '<div class="account-info-cell"><span class="info-label">Способ доставки</span><span class="info-value">' + deliveryMethod + '</span></div>' +
           '<div class="account-info-cell"><span class="info-label">Адрес доставки</span><span class="info-value">' + address + '</span></div>' +
           (deliveryDate ? '<div class="account-info-cell"><span class="info-label">Срок доставки</span><span class="info-value">' + deliveryDate + '</span></div>' : '') +
+          (trackingValue ? '<div class="account-info-cell"><span class="info-label">Отслеживание</span><span class="info-value">' + trackingValue + '</span></div>' : '') +
           '<div class="account-info-cell"><span class="info-label">Способ оплаты</span><span class="info-value">Онлайн</span></div>' +
         '</div>' +
         '<div class="account-info-cell"><span class="info-label">Итоговая стоимость</span><span class="info-value">' + formatPrice(order.totalCents) + '</span></div>';
       contentEl.classList.remove('hidden');
 
-      // Отмена (paid/processing, не в доставке)
-      const blockedDelivery = ['IN_TRANSIT', 'DELIVERED', 'NOT_DELIVERED', 'RECEIVED', 'RETURNED'];
+      // Отмена: paid/processing и разрешение перевозчика (shipmentCancellable),
+      // а пока его нет — по статусу отправления (spec 117, шаг 5.2).
       const canCancel = ['paid', 'processing'].includes(order.status) &&
-        (!order.deliveryStatus || !blockedDelivery.includes(order.deliveryStatus));
+        customerMayCancelShipment(order);
       if (!canCancel) return;
 
       const cancelBtn = document.createElement('button');

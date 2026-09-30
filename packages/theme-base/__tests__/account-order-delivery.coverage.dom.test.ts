@@ -29,6 +29,9 @@ import ts from "typescript";
 import {
   deliveryMethodLabel,
   deliveryPeriodLabel,
+  deliveryTrackingNumber,
+  deliveryTrackingUrl,
+  customerMayCancelShipment,
 } from "../runtime/order-delivery";
 import { orderItemView } from "../runtime/order-item";
 import { mergeGiftLines } from "../runtime/gift-lines";
@@ -76,7 +79,11 @@ interface AuthMock {
   getToken: jest.Mock;
 }
 
-/** Минимальная разметка страницы — только элементы, которые трогает initOrderPage(). */
+/**
+ * Минимальная разметка страницы — элементы, которые трогает initOrderPage(),
+ * плюс модалка отмены (order.astro рендерит её статически всегда — код после
+ * `if (!canCancel) return;` обращается к её узлам без проверки на null).
+ */
 function mountOrderPageDom(): void {
   document.body.innerHTML = `
     <span id="order-subtitle"></span>
@@ -87,17 +94,24 @@ function mountOrderPageDom(): void {
       <div id="order-products"></div>
       <div id="order-info"></div>
     </div>
+    <div id="cancel-modal" class="hidden">
+      <div id="cancel-modal-overlay"></div>
+      <textarea id="cancel-reason"></textarea>
+      <p id="cancel-error" class="hidden"></p>
+      <button id="btn-cancel-confirm" type="button"></button>
+      <button id="btn-cancel-close" type="button"></button>
+    </div>
   `;
 }
 
 /**
  * Исполняет initOrderPage() темы с фикстурой заказа и возвращает содержимое
- * блока "Способ доставки" / "Адрес доставки" / "Срок доставки" из #order-info
- * (ярлык переименован вместе с переездом на runtime/order-delivery.ts — было
- * "Дата доставки"; ячейка ТЕПЕРЬ не рендерится вовсе, когда deliveryPeriodLabel
- * вернул пустую строку, — раньше показывала "—", см. тесты ниже).
- * order.status='delivered' — canCancel=false (кнопка отмены и её разметка вне
- * объёма этой ветки, поэтому не монтируем #cancel-modal и не проверяем её).
+ * блока "Способ доставки" / "Адрес доставки" / "Срок доставки" / "Отслеживание"
+ * из #order-info (ярлык переименован вместе с переездом на
+ * runtime/order-delivery.ts — было "Дата доставки"; ячейка ТЕПЕРЬ не
+ * рендерится вовсе, когда deliveryPeriodLabel вернул пустую строку, — раньше
+ * показывала "—", см. тесты ниже), а также текст кнопки «Отменить заказ»
+ * (null, если кнопка не появилась — canCancel=false, spec 117 шаг 5.2).
  */
 async function renderDeliveryInfo(
   theme: string,
@@ -125,7 +139,13 @@ async function renderDeliveryInfo(
   const fakeRequire = (spec: string) => {
     if (spec === "../../lib/auth") return authMock;
     if (spec === "../../../../../packages/theme-base/runtime/order-delivery") {
-      return { deliveryMethodLabel, deliveryPeriodLabel };
+      return {
+        deliveryMethodLabel,
+        deliveryPeriodLabel,
+        deliveryTrackingNumber,
+        deliveryTrackingUrl,
+        customerMayCancelShipment,
+      };
     }
     if (spec === "../../../../../packages/theme-base/runtime/order-item") {
       return { orderItemView };
@@ -155,21 +175,27 @@ async function renderDeliveryInfo(
     const found = cells.find(
       (c) => c.querySelector(".info-label")?.textContent === label,
     );
-    return found?.querySelector(".info-value")?.textContent ?? null;
+    return found?.querySelector(".info-value") ?? null;
   };
+  const trackingCell = cell("Отслеживание");
+  const cancelBtn = document.body.querySelector("button.account-text-link");
   return {
-    method: cell("Способ доставки"),
-    address: cell("Адрес доставки"),
-    period: cell("Срок доставки"),
+    method: cell("Способ доставки")?.textContent ?? null,
+    address: cell("Адрес доставки")?.textContent ?? null,
+    period: cell("Срок доставки")?.textContent ?? null,
+    tracking: trackingCell?.textContent ?? null,
+    trackingLink: trackingCell?.querySelector("a")?.getAttribute("href") ?? null,
+    cancelButton: cancelBtn?.textContent ?? null,
   };
 }
 
 describe.each(THEMES)(
   "Кабинет покупателя (%s) — order.astro, ветка показа доставки",
   (theme) => {
-    it('deliveryType="pickup" → "Самовывоз"; pickupAddress подставляется в адрес (даже при наличии shippingAddress)', async () => {
+    it('deliveryType="pickup" (deliveryMode="self_pickup") → "Самовывоз"; pickupAddress подставляется в адрес (даже при наличии shippingAddress)', async () => {
       const result = await renderDeliveryInfo(theme, {
         deliveryType: "pickup",
+        deliveryMode: "self_pickup",
         pickupAddress: "Магазин, ул. Складская, 1",
         shippingAddress: { city: "Москва", street: "Тверская", building: "1" },
         deliveryPeriodMin: 1,
@@ -184,10 +210,11 @@ describe.each(THEMES)(
     });
 
     it.each(["cdek_door", "cdek_pickup"] as const)(
-      'deliveryType=%s (содержит "cdek") → "СДЭК"; адрес собирается из city+street+д.building',
+      'deliveryType=%s, deliveryCarrierName="СДЭК" (общее поле, заполнено переносом 2.1 у ЛЮБОГО заказа СДЭК) → "СДЭК"; адрес собирается из city+street+д.building',
       async (deliveryType) => {
         const result = await renderDeliveryInfo(theme, {
           deliveryType,
+          deliveryCarrierName: "СДЭК",
           shippingAddress: {
             city: "Санкт-Петербург",
             street: "Невский проспект",
@@ -206,15 +233,15 @@ describe.each(THEMES)(
       },
     );
 
-    it('deliveryType="cdek_door" И deliveryProfileName заданы одновременно, cdekTariffName НЕ задан — теперь побеждает deliveryProfileName (приоритет изменился с переездом на runtime/order-delivery.ts)', async () => {
-      // ИЗМЕНИЛОСЬ: раньше order.astro сам проверял order.deliveryType.includes('cdek')
-      // ДО deliveryProfileName — побеждала "СДЭК". Новый deliveryMethodLabel()
-      // (runtime/order-delivery.ts) считает в порядке cdekTariffName →
-      // deliveryProfileName → typeLabel(type); typeLabel распознаёт "cdek" по
-      // подстроке типа ТОЛЬКО когда ни то, ни другое не задано — проверка типа
-      // на "cdek" теперь ПОСЛЕ deliveryProfileName, а не до неё.
+    it('deliveryType="cdek_door", deliveryCarrierName="СДЭК" И deliveryProfileName заданы одновременно, тарифа нет — побеждает deliveryProfileName (приоритет: тариф → deliveryProfileName → перевозчик → общая подпись)', async () => {
+      // Порядок в deliveryMethodLabel() (runtime/order-delivery.ts, spec 117 5.2):
+      // deliveryTariffName → cdekTariffName → deliveryProfileName →
+      // deliveryCarrierName → typeLabel(type). Без своего тарифа
+      // deliveryProfileName (мерчантский профиль) побеждает даже над известным
+      // именем перевозчика — не только над разбором сырого deliveryType.
       const result = await renderDeliveryInfo(theme, {
         deliveryType: "cdek_door",
+        deliveryCarrierName: "СДЭК",
         deliveryProfileName: "Экспресс от партнёра",
         shippingAddress: { city: "Казань", street: "Баумана", building: "3" },
       });
@@ -282,6 +309,125 @@ describe.each(THEMES)(
         });
         expect(result.method).toBe("Самовывоз");
         expect(result.address).toBe("Санкт-Петербург, Невский проспект, д. 12");
+      });
+    });
+
+    describe("пункт выдачи перевозчика — общее поле (spec 117, шаг 5.2)", () => {
+      it("нет shippingAddress, есть pickupPointAddress (общее) — показывается адрес пункта выдачи", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          deliveryType: "cdek_pickup",
+          pickupPointAddress: "ПВЗ №12, ул. Складская, 9",
+        });
+        expect(result.address).toBe("ПВЗ №12, ул. Складская, 9");
+      });
+
+      it("нет shippingAddress, только старое cdekPickupPointAddress — тоже показывается (запасное поле)", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          deliveryType: "cdek_pickup",
+          cdekPickupPointAddress: "Пункт самовывоза, просп. Мира, 3",
+        });
+        expect(result.address).toBe("Пункт самовывоза, просп. Мира, 3");
+      });
+
+      it("заданы оба — общее pickupPointAddress побеждает старое cdekPickupPointAddress", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          deliveryType: "cdek_pickup",
+          pickupPointAddress: "Новый адрес пункта",
+          cdekPickupPointAddress: "Старый адрес пункта",
+        });
+        expect(result.address).toBe("Новый адрес пункта");
+      });
+
+      it("shippingAddress уже даёт непустой адрес — пункт выдачи его не перекрывает", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          deliveryType: "cdek_door",
+          shippingAddress: { city: "Москва", street: "Тверская", building: "1" },
+          pickupPointAddress: "ПВЗ, который не должен показаться",
+        });
+        expect(result.address).toBe("Москва, Тверская, д. 1");
+      });
+    });
+
+    describe("отслеживание — общие поля trackingNumber/trackingUrl (spec 117, шаг 5.2)", () => {
+      it("trackingNumber и trackingUrl заданы — номер показан ссылкой на trackingUrl", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          status: "processing",
+          trackingNumber: "1234567890",
+          trackingUrl: "https://www.cdek.ru/ru/tracking?order_id=1234567890",
+        });
+        expect(result.tracking).toBe("1234567890");
+        expect(result.trackingLink).toBe(
+          "https://www.cdek.ru/ru/tracking?order_id=1234567890",
+        );
+      });
+
+      it("только trackingNumber, ссылки нет — номер показан обычным текстом, без ссылки", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          status: "processing",
+          trackingNumber: "1234567890",
+        });
+        expect(result.tracking).toBe("1234567890");
+        expect(result.trackingLink).toBeNull();
+      });
+
+      it("нет trackingNumber, есть старый cdekNumber — показывается он (запасное поле)", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          status: "processing",
+          cdekNumber: "0987654321",
+        });
+        expect(result.tracking).toBe("0987654321");
+      });
+
+      it("ни trackingNumber, ни cdekNumber не заданы — ячейка «Отслеживание» не рендерится вовсе", async () => {
+        const result = await renderDeliveryInfo(theme, { status: "processing" });
+        expect(result.tracking).toBeNull();
+      });
+    });
+
+    describe("кнопка «Отменить заказ» — по shipmentCancellable (spec 117, шаг 5.2, решение владельца 29.09)", () => {
+      it("status=paid, shipmentCancellable=true — кнопка показана", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          status: "paid",
+          shipmentCancellable: true,
+          deliveryStatus: "IN_TRANSIT", // даже «в пути» — перевозчик явно разрешил
+        });
+        expect(result.cancelButton).toBe("Отменить заказ");
+      });
+
+      it("status=paid, shipmentCancellable=false — кнопки нет, даже если по старому статусу было бы можно", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          status: "paid",
+          shipmentCancellable: false,
+          deliveryStatus: "CREATED",
+        });
+        expect(result.cancelButton).toBeNull();
+      });
+
+      it("shipmentCancellable не пришёл (undefined) — решает статус отправления: CREATED можно, IN_TRANSIT нельзя", async () => {
+        const created = await renderDeliveryInfo(theme, {
+          status: "processing",
+          deliveryStatus: "CREATED",
+        });
+        expect(created.cancelButton).toBe("Отменить заказ");
+
+        const inTransit = await renderDeliveryInfo(theme, {
+          status: "processing",
+          deliveryStatus: "IN_TRANSIT",
+        });
+        expect(inTransit.cancelButton).toBeNull();
+      });
+
+      it("ни shipmentCancellable, ни deliveryStatus не заданы — можно (как раньше, до передачи перевозчику)", async () => {
+        const result = await renderDeliveryInfo(theme, { status: "paid" });
+        expect(result.cancelButton).toBe("Отменить заказ");
+      });
+
+      it("status=delivered — кнопки нет независимо от shipmentCancellable (стадия заказа решает первой)", async () => {
+        const result = await renderDeliveryInfo(theme, {
+          status: "delivered",
+          shipmentCancellable: true,
+        });
+        expect(result.cancelButton).toBeNull();
       });
     });
   },

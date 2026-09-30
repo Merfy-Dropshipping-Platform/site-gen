@@ -3,8 +3,6 @@ import { resolve } from 'node:path';
 import {
   deliveryMethodLabel,
   deliveryPeriodLabel,
-  deliveryTrackingNumber,
-  deliveryTrackingUrl,
   customerMayCancelShipment,
 } from '../../../packages/theme-base/runtime/order-delivery';
 
@@ -53,17 +51,6 @@ describe('доставка заказа в личном кабинете', () =>
     // поля способ теперь — нейтральная подпись «Доставка», а не разбор строки типа.
     expect(deliveryMethodLabel({ deliveryType: 'cdek_door' })).toBe('Доставка');
     expect(deliveryMethodLabel({})).toBe('—');
-  });
-
-  it('трек-номер и ссылка отслеживания — общие поля, старый номер СДЭК запасной', () => {
-    expect(deliveryTrackingNumber({ trackingNumber: '1234567890' })).toBe('1234567890');
-    expect(deliveryTrackingNumber({ cdekNumber: '0987654321' })).toBe('0987654321');
-    expect(deliveryTrackingNumber({ trackingNumber: '111', cdekNumber: '222' })).toBe('111');
-    expect(deliveryTrackingNumber({})).toBe('');
-    expect(deliveryTrackingUrl({ trackingUrl: 'https://www.cdek.ru/ru/tracking?order_id=0987654321' })).toBe(
-      'https://www.cdek.ru/ru/tracking?order_id=0987654321',
-    );
-    expect(deliveryTrackingUrl({})).toBe('');
   });
 
   it('отмена покупателем — по shipmentCancellable перевозчика, а без него — по статусу отправления (решение владельца 29.09)', () => {

@@ -73,20 +73,6 @@ export function deliveryPeriodLabel(order: OrderDelivery): string {
   return `${range} ${dayWord(hi)}`;
 }
 
-/** Номер отправления — общее поле события `shipment.*`, старый номер СДЭК запасной. */
-export function deliveryTrackingNumber(order: { trackingNumber?: unknown; cdekNumber?: unknown }): string {
-  return text(order.trackingNumber) || text(order.cdekNumber);
-}
-
-/**
- * Готовая ссылка отслеживания — перевозчик формирует её сам (событие
- * `shipment.*` / перенос старых заказов, data-model.md § orders). Старого
- * аналога нет: до шага 2.1 заказ ссылку не хранил вовсе.
- */
-export function deliveryTrackingUrl(order: { trackingUrl?: unknown }): string {
-  return text(order.trackingUrl);
-}
-
 /**
  * Статусы отправления «груз ещё у продавца» — зеркало orders
  * `src/delivery/shipment-status.ts` (`BEFORE_HANDOVER`, data-model.md § общий

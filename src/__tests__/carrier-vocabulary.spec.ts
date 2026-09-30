@@ -56,11 +56,11 @@ const CDEK_COMMENT_PROSE =
   'СДЭК/ПЭК в тексте комментария блока чекаута — описывает поведение (шаг 5.1 плана ' +
   '117, вне объёма шага 5.2), не имя в коде.';
 const ORDER_DELIVERY_LEGACY =
-  'старое поле заказа (cdekTariffName/cdekNumber) — запасной источник впереди общих ' +
-  'deliveryTariffName/trackingNumber, для заказов, у которых общие поля ещё не ' +
-  'заполнены (data-model.md § orders); уходит на шаге 7, когда старые колонки заказа ' +
-  'удалят. СДЭК в историческом комментарии (владелец 26.09) объясняет причину ' +
-  'появления файла, не имя в коде.';
+  'старое поле заказа (cdekTariffName) — запасной источник впереди общего ' +
+  'deliveryTariffName, для заказов, у которых общие поля ещё не заполнены ' +
+  '(data-model.md § orders); уходит на шаге 7, когда старые колонки заказа удалят. ' +
+  'СДЭК в историческом комментарии (владелец 26.09) объясняет причину появления ' +
+  'файла, не имя в коде.';
 const SUMMARY_LEGACY_FALLBACK =
   'старое поле сводки заказа /orders/:id/summary (cdekPickupPointAddress) и старая ' +
   'колонка заказа (cdekTariffName) — запасные источники впереди общих ' +
@@ -134,7 +134,7 @@ const TEMPORARY: readonly TemporaryException[] = [
   },
   {
     file: 'runtime/order-delivery.ts',
-    words: ['cdekNumber', 'cdekTariffName', 'СДЭК'],
+    words: ['cdekTariffName', 'СДЭК'],
     why: ORDER_DELIVERY_LEGACY,
   },
 ];

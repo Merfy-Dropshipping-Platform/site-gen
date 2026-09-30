@@ -52,7 +52,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
   </div>
 
   <script>
-    import { deliveryMethodLabel, deliveryPeriodLabel, deliveryTrackingNumber, deliveryTrackingUrl, customerMayCancelShipment } from '../../../../../packages/theme-base/runtime/order-delivery';
+    import { deliveryMethodLabel, deliveryPeriodLabel, customerMayCancelShipment } from '../../../../../packages/theme-base/runtime/order-delivery';
     import { orderItemView } from '../../../../../packages/theme-base/runtime/order-item';
     import { mergeGiftLines } from '../../../../../packages/theme-base/runtime/gift-lines';
     import { navTo, fetchOrder, cancelOrder, getToken } from '../../lib/auth';
@@ -140,13 +140,6 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
       if (address === '—') address = order.pickupPointAddress || order.cdekPickupPointAddress || '—';
       if (order.deliveryType === 'pickup' && order.pickupAddress) address = order.pickupAddress;
       const deliveryDate = deliveryPeriodLabel(order);
-      const trackingNumber = deliveryTrackingNumber(order);
-      const trackingUrl = deliveryTrackingUrl(order);
-      const trackingValue = trackingNumber
-        ? (trackingUrl
-            ? '<a class="account-text-link" href="' + trackingUrl + '" target="_blank" rel="noopener noreferrer">' + trackingNumber + '</a>'
-            : trackingNumber)
-        : '';
 
       infoEl.innerHTML =
         '<div class="account-info-grid">' +
@@ -155,7 +148,6 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
           '<div class="account-info-cell"><span class="info-label">Способ доставки</span><span class="info-value">' + deliveryMethod + '</span></div>' +
           '<div class="account-info-cell"><span class="info-label">Адрес доставки</span><span class="info-value">' + address + '</span></div>' +
           (deliveryDate ? '<div class="account-info-cell"><span class="info-label">Срок доставки</span><span class="info-value">' + deliveryDate + '</span></div>' : '') +
-          (trackingValue ? '<div class="account-info-cell"><span class="info-label">Отслеживание</span><span class="info-value">' + trackingValue + '</span></div>' : '') +
           '<div class="account-info-cell"><span class="info-label">Способ оплаты</span><span class="info-value">Онлайн</span></div>' +
         '</div>' +
         '<div class="account-info-cell"><span class="info-label">Итоговая стоимость</span><span class="info-value">' + formatPrice(order.totalCents) + '</span></div>';

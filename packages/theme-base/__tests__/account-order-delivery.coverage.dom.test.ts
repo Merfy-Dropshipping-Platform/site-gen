@@ -29,8 +29,6 @@ import ts from "typescript";
 import {
   deliveryMethodLabel,
   deliveryPeriodLabel,
-  deliveryTrackingNumber,
-  deliveryTrackingUrl,
   customerMayCancelShipment,
 } from "../runtime/order-delivery";
 import { orderItemView } from "../runtime/order-item";
@@ -106,12 +104,12 @@ function mountOrderPageDom(): void {
 
 /**
  * Исполняет initOrderPage() темы с фикстурой заказа и возвращает содержимое
- * блока "Способ доставки" / "Адрес доставки" / "Срок доставки" / "Отслеживание"
- * из #order-info (ярлык переименован вместе с переездом на
- * runtime/order-delivery.ts — было "Дата доставки"; ячейка ТЕПЕРЬ не
- * рендерится вовсе, когда deliveryPeriodLabel вернул пустую строку, — раньше
- * показывала "—", см. тесты ниже), а также текст кнопки «Отменить заказ»
- * (null, если кнопка не появилась — canCancel=false, spec 117 шаг 5.2).
+ * блока "Способ доставки" / "Адрес доставки" / "Срок доставки" из #order-info
+ * (ярлык переименован вместе с переездом на runtime/order-delivery.ts — было
+ * "Дата доставки"; ячейка ТЕПЕРЬ не рендерится вовсе, когда deliveryPeriodLabel
+ * вернул пустую строку, — раньше показывала "—", см. тесты ниже), а также
+ * текст кнопки «Отменить заказ» (null, если кнопка не появилась —
+ * canCancel=false, spec 117 шаг 5.2).
  */
 async function renderDeliveryInfo(
   theme: string,
@@ -139,13 +137,7 @@ async function renderDeliveryInfo(
   const fakeRequire = (spec: string) => {
     if (spec === "../../lib/auth") return authMock;
     if (spec === "../../../../../packages/theme-base/runtime/order-delivery") {
-      return {
-        deliveryMethodLabel,
-        deliveryPeriodLabel,
-        deliveryTrackingNumber,
-        deliveryTrackingUrl,
-        customerMayCancelShipment,
-      };
+      return { deliveryMethodLabel, deliveryPeriodLabel, customerMayCancelShipment };
     }
     if (spec === "../../../../../packages/theme-base/runtime/order-item") {
       return { orderItemView };
@@ -177,14 +169,11 @@ async function renderDeliveryInfo(
     );
     return found?.querySelector(".info-value") ?? null;
   };
-  const trackingCell = cell("Отслеживание");
   const cancelBtn = document.body.querySelector("button.account-text-link");
   return {
     method: cell("Способ доставки")?.textContent ?? null,
     address: cell("Адрес доставки")?.textContent ?? null,
     period: cell("Срок доставки")?.textContent ?? null,
-    tracking: trackingCell?.textContent ?? null,
-    trackingLink: trackingCell?.querySelector("a")?.getAttribute("href") ?? null,
     cancelButton: cancelBtn?.textContent ?? null,
   };
 }
@@ -345,42 +334,6 @@ describe.each(THEMES)(
           pickupPointAddress: "ПВЗ, который не должен показаться",
         });
         expect(result.address).toBe("Москва, Тверская, д. 1");
-      });
-    });
-
-    describe("отслеживание — общие поля trackingNumber/trackingUrl (spec 117, шаг 5.2)", () => {
-      it("trackingNumber и trackingUrl заданы — номер показан ссылкой на trackingUrl", async () => {
-        const result = await renderDeliveryInfo(theme, {
-          status: "processing",
-          trackingNumber: "1234567890",
-          trackingUrl: "https://www.cdek.ru/ru/tracking?order_id=1234567890",
-        });
-        expect(result.tracking).toBe("1234567890");
-        expect(result.trackingLink).toBe(
-          "https://www.cdek.ru/ru/tracking?order_id=1234567890",
-        );
-      });
-
-      it("только trackingNumber, ссылки нет — номер показан обычным текстом, без ссылки", async () => {
-        const result = await renderDeliveryInfo(theme, {
-          status: "processing",
-          trackingNumber: "1234567890",
-        });
-        expect(result.tracking).toBe("1234567890");
-        expect(result.trackingLink).toBeNull();
-      });
-
-      it("нет trackingNumber, есть старый cdekNumber — показывается он (запасное поле)", async () => {
-        const result = await renderDeliveryInfo(theme, {
-          status: "processing",
-          cdekNumber: "0987654321",
-        });
-        expect(result.tracking).toBe("0987654321");
-      });
-
-      it("ни trackingNumber, ни cdekNumber не заданы — ячейка «Отслеживание» не рендерится вовсе", async () => {
-        const result = await renderDeliveryInfo(theme, { status: "processing" });
-        expect(result.tracking).toBeNull();
       });
     });
 

@@ -246,19 +246,21 @@ const schemeClass = schemeClassOf(colorScheme);
       // гейт пропускает этот случай без выбора метода.
       if (getAddressRequired()) {
         if (!state.deliveryMethod) return false;
-        var dt = state.deliveryMethod.type;
-        // Самовывоз (self_pickup) и CDEK-ПВЗ (cdek_pickup) адрес-независимы — город/улица
-        // не нужны (зеркало серверного «не-курьер»: адрес требуют только курьерские типы).
-        var isPickup = (dt === 'self_pickup' || dt === 'cdek_pickup');
+        var dm = state.deliveryMethod;
+        // Самовывоз (self_pickup) и пункт выдачи ЛЮБОГО перевозчика
+        // (requiresPickupPoint — признак из расчёта, не имя перевозчика)
+        // адрес-независимы — город/улица не нужны (зеркало серверного
+        // «не-курьер»: адрес требуют только курьерские типы).
+        var isPickup = (dm.type === 'self_pickup' || dm.requiresPickupPoint);
         var addr = getAddressParts();
         if (!isPickup && (!getField('city') || !addr.street)) return false;
-        // CDEK самовывоз (ПВЗ/постамат) требует выбранного пункта — иначе СДЭК
-        // отклонит отправление уже ПОСЛЕ оплаты (нет delivery_point). Тип именно
-        // 'cdek_pickup' (как в CheckoutDeliveryMethod), не 'cdek_pvz'.
-        if (dt === 'cdek_pickup' && !state.deliveryMethod.pickupPointCode) return false;
-        // Курьер/до двери (cdek_door): «Дом» обязателен — иначе CDEK получит адрес
-        // без номера дома (doorAddress = только улица) → реджект/недоставка после оплаты.
-        if (dt === 'cdek_door' && !addr.building) return false;
+        // Пункт выдачи перевозчика требует выбранной точки — иначе перевозчик
+        // отклонит отправление уже ПОСЛЕ оплаты (нет delivery_point).
+        if (dm.requiresPickupPoint && !dm.pickupPointCode) return false;
+        // Курьер до двери (mode:'door', любой перевозчик): «Дом» обязателен —
+        // иначе перевозчик получит адрес без номера дома (doorAddress = только
+        // улица) → реджект/недоставка после оплаты.
+        if (dm.carrier && dm.mode === 'door' && !addr.building) return false;
       }
 
       if (!state.paymentMethod) return false;
@@ -310,13 +312,20 @@ const schemeClass = schemeClassOf(colorScheme);
       if (!d) return;
       state.deliveryMethod = {
         type: d.type,
+        // Перевозчик и режим — из расчёта (carrier/mode), не из имени типа
+        // карточки: гейты canSubmit() и запрос отправления читают ИХ, а не
+        // 'cdek_door'/'cdek_pickup'.
+        carrier: d.carrier || null,
+        mode: d.mode || null,
+        requiresPickupPoint: !!d.requiresPickupPoint,
+        shipmentRequired: !!d.shipmentRequired,
         label: d.label,
         costCents: d.costCents || 0,
         tariffCode: d.tariffCode != null ? d.tariffCode : null,
         customTariffId: d.customTariffId || null,
         pickupPointId: d.pickupPointId || null,
-        // Код выбранного ПВЗ/постамата СДЭК (для cdek_pickup). Доедет до заказа
-        // через Step 0 /delivery/select → orders.cdekPickupPointCode.
+        // Код выбранного пункта выдачи (для requiresPickupPoint). Доедет до
+        // заказа через /delivery/select → orders.pickupPointCode.
         pickupPointCode: d.pickupPointCode || null,
         pickupPointAddress: d.pickupPointAddress || null,
         periodMin: d.periodMin != null ? d.periodMin : null,
@@ -452,15 +461,20 @@ const schemeClass = schemeClassOf(colorScheme);
           });
         }
 
-        // 2.5 — CDEK самовывоз (ПВЗ/постамат): пробрасываем код точки на заказ
-        // через /delivery/select. Это ЕДИНСТВЕННЫЙ путь, по которому
-        // cdekPickupPointCode доезжает до logistics.producer → delivery_point;
+        // 2.5 — пункт выдачи ЛЮБОГО перевозчика (requiresPickupPoint): пробрасываем
+        // код точки на заказ через /delivery/select. Это ЕДИНСТВЕННЫЙ путь, по
+        // которому pickupPointCode доезжает до logistics.producer → delivery_point;
         // metadata.deliveryMethod при checkout код точки НЕ переносит. Падение
-        // НЕ глотаем — иначе СДЭК отклонит отправление уже после оплаты.
+        // НЕ глотаем — иначе перевозчик отклонит отправление уже после оплаты.
         var dm = state.deliveryMethod;
-        if (addressRequired && dm && dm.type === 'cdek_pickup') {
+        if (addressRequired && dm && dm.requiresPickupPoint) {
           var selectBody = {
             type: dm.type,
+            // carrier/mode — контракт заказов для отправления любого
+            // перевозчика (не только СДЭК): logistics.producer читает их,
+            // чтобы понять, КАКОЙ перевозчик и режим везут точку.
+            carrier: dm.carrier || null,
+            mode: dm.mode || null,
             deliveryCostCents: dm.costCents || 0,
             address: {
               city: getField('city'),

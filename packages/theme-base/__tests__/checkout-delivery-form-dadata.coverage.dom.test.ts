@@ -187,6 +187,10 @@ describe("CheckoutDeliveryForm — DaData init script", () => {
       expect(addressChangedEvents.at(-1)).toEqual({
         cityFiasId: "fias-1",
         postalCode: "101000",
+        city: null,
+        region: null,
+        lat: null,
+        lon: null,
       });
     });
 
@@ -266,6 +270,10 @@ describe("CheckoutDeliveryForm — DaData init script", () => {
       expect(addressChangedEvents.at(-1)).toEqual({
         cityFiasId: "",
         postalCode: "101000",
+        city: null,
+        region: null,
+        lat: null,
+        lon: null,
       });
     });
 
@@ -300,6 +308,10 @@ describe("CheckoutDeliveryForm — DaData init script", () => {
       expect(addressChangedEvents.at(-1)).toEqual({
         cityFiasId: "fias-1",
         postalCode: "",
+        city: null,
+        region: null,
+        lat: null,
+        lon: null,
       });
     });
   });

@@ -156,6 +156,23 @@ const paddingStyle = padding
     // Logistics: эмитим checkout:address-changed когда меняется
     // city/postal — CheckoutDeliveryMethod слушает и пересчитывает тарифы.
     var dispatchAddressTimer;
+    // Перевозчики без кодов ФИАС (ПЭК и, вероятно, следующие) ищут город по
+    // имени/региону/координатам (research.md 1.12: «Кодов ФИАС ПЭК не
+    // понимает: город, регион, координаты»). Сохраняем их РЯДОМ с fiasId —
+    // тем же приёмом (data-selected-* атрибуты на секции), чтобы
+    // checkout:address-changed нёс их для ЛЮБОГО подключённого перевозчика,
+    // а не только для СДЭК.
+    function storeSelectedCity(d) {
+      if (!d) return;
+      var name = d.city || d.settlement || '';
+      var region = d.region_with_type || d.region || '';
+      var lat = d.geo_lat || '';
+      var lon = d.geo_lon || '';
+      if (name) section.setAttribute('data-selected-city-name', name); else section.removeAttribute('data-selected-city-name');
+      if (region) section.setAttribute('data-selected-region', region); else section.removeAttribute('data-selected-region');
+      if (lat) section.setAttribute('data-selected-lat', lat); else section.removeAttribute('data-selected-lat');
+      if (lon) section.setAttribute('data-selected-lon', lon); else section.removeAttribute('data-selected-lon');
+    }
     function dispatchAddressChange() {
       clearTimeout(dispatchAddressTimer);
       // 400ms — даём юзеру допечатать перед resolve+fetch. Универсальный resolver
@@ -198,6 +215,7 @@ const paddingStyle = padding
                 // конкретного адреса. Заполняется ниже при выборе address
                 // suggestion из DaData.
               }
+              storeSelectedCity(first && first.data);
             } catch (e) {
               // silent
             }
@@ -206,8 +224,21 @@ const paddingStyle = padding
 
         var postalInput = section.querySelector('[data-checkout-field="postalCode"] input');
         var postalCode = (postalInput && postalInput.value && postalInput.value.trim()) || '';
+        // Город/регион/координаты — для перевозчиков без кодов ФИАС (ПЭК).
+        // СДЭК их игнорирует (считает по cityFiasId, как сейчас).
+        var cityName = section.getAttribute('data-selected-city-name') || '';
+        var region = section.getAttribute('data-selected-region') || '';
+        var lat = parseFloat(section.getAttribute('data-selected-lat') || '');
+        var lon = parseFloat(section.getAttribute('data-selected-lon') || '');
         document.dispatchEvent(new CustomEvent('checkout:address-changed', {
-          detail: { cityFiasId: cityFiasId, postalCode: postalCode },
+          detail: {
+            cityFiasId: cityFiasId,
+            postalCode: postalCode,
+            city: cityName || null,
+            region: region || null,
+            lat: isNaN(lat) ? null : lat,
+            lon: isNaN(lon) ? null : lon,
+          },
         }));
       }, 400);
     }
@@ -383,7 +414,10 @@ const paddingStyle = padding
             return '<li class="' + ITEM_CLS + '"'
               + ' data-suggest-value="' + escapeHtml(r.setVal) + '"'
               + ' data-postal="' + escapeHtml(r.d.postal_code || '') + '"'
-              + ' data-city="' + escapeHtml(r.d.city || '') + '"'
+              + ' data-city="' + escapeHtml(r.d.city || r.d.settlement || '') + '"'
+              + ' data-region="' + escapeHtml(r.d.region_with_type || r.d.region || '') + '"'
+              + ' data-lat="' + escapeHtml(r.d.geo_lat || '') + '"'
+              + ' data-lon="' + escapeHtml(r.d.geo_lon || '') + '"'
               + ' data-fias-id="' + escapeHtml(r.d.city_fias_id || r.d.fias_id || '') + '"'
               + ' data-street="' + escapeHtml(r.d.street_with_type || r.d.street || '') + '"'
               + ' data-house="' + escapeHtml(r.d.house || '') + '"'
@@ -413,6 +447,7 @@ const paddingStyle = padding
         }
         if (kind === 'city') {
           section.removeAttribute('data-selected-city-fias-id');
+          storeSelectedCity(null);
           // …и старый ИНДЕКС от прежнего города тоже невалиден. Без очистки он
           // «прилипает»: при наличии индекса бэкенд игнорирует city fias и
           // считает СДЭК по прежнему городу (дальний город уходит по цене
@@ -466,6 +501,7 @@ const paddingStyle = padding
           var fiasId = first && first.data && (first.data.city_fias_id || first.data.settlement_fias_id);
           if (!fiasId) return;
           section.setAttribute('data-selected-city-fias-id', fiasId);
+          storeSelectedCity(first && first.data);
           if (first.value && first.value !== q) {
             input.value = first.value;
             lastQuery = first.value;
@@ -518,6 +554,13 @@ const paddingStyle = padding
           // Сохраняем city_fias_id — точная фильтрация для address-подсказок.
           if (fiasId) section.setAttribute('data-selected-city-fias-id', fiasId);
           else section.removeAttribute('data-selected-city-fias-id');
+          // Город/регион/координаты — перевозчикам без кодов ФИАС (ПЭК).
+          storeSelectedCity({
+            city: li.getAttribute('data-city') || '',
+            region_with_type: li.getAttribute('data-region') || '',
+            geo_lat: li.getAttribute('data-lat') || '',
+            geo_lon: li.getAttribute('data-lon') || '',
+          });
           // City selection — dropdown закрывается (нет progressive для города)
           list.hidden = true;
           list.innerHTML = '';

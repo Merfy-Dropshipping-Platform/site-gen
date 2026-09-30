@@ -15,10 +15,6 @@ interface Props extends CheckoutDeliveryMethodProps { id?: string; }
 const {
   id,
   heading,
-  cdekEnabled,
-  cdekDoorLabel,
-  cdekPvzLabel,
-  cdekPostamatLabel,
   pickupEnabled,
   pickupLabel,
   freeShippingThresholdCents,
@@ -30,10 +26,6 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
   class={C.root}
   data-puck-component-id={id}
   data-checkout-delivery-method
-  data-cdek-enabled={String(cdekEnabled)}
-  data-cdek-door-label={cdekDoorLabel}
-  data-cdek-pvz-label={cdekPvzLabel}
-  data-cdek-postamat-label={cdekPostamatLabel}
   data-pickup-enabled={String(pickupEnabled)}
   data-pickup-label={pickupLabel}
   data-free-shipping-threshold={freeShippingThresholdCents != null ? String(freeShippingThresholdCents) : ''}
@@ -88,9 +80,6 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
     var pickupEnabled = section.getAttribute('data-pickup-enabled') === 'true';
     var pickupLabel = section.getAttribute('data-pickup-label') || 'Самовывоз';
-    var cdekDoorLabel = section.getAttribute('data-cdek-door-label') || 'Курьер СДЭК до двери';
-    var cdekPvzLabel = section.getAttribute('data-cdek-pvz-label') || 'Пункт выдачи СДЭК';
-    var cdekPostamatLabel = section.getAttribute('data-cdek-postamat-label') || 'Постамат СДЭК';
     var freeThresholdRaw = section.getAttribute('data-free-shipping-threshold') || '';
     var freeShippingThreshold = freeThresholdRaw ? parseInt(freeThresholdRaw, 10) : null;
 
@@ -106,7 +95,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     var selectedPvzAddress = null;
     var lastOpt = null;           // последняя выбранная опция доставки (для re-emit при выборе точки)
     var pvzListenersBound = false;
-    var pvzFias = null;           // город, для которого загружены/выбраны точки (смена → сброс выбора)
+    var pvzFias = null;           // ключ «перевозчик|город», для которого загружены/выбраны точки (смена → сброс выбора)
     var selectedPickupKind = null; // 'PVZ'|'POSTAMAT' выбранного тарифа — фильтр точек
 
     // Lazy — конфиг инжектится ПОСЛЕ блоков. Считываем при каждом вызове.
@@ -271,16 +260,30 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       if (listEl) { listEl.removeAttribute('aria-busy'); listEl.hidden = false; }
     }
 
-    // ── CDEK ПВЗ-picker ────────────────────────────────────────────────────
-    // GET /store/carts/:id/delivery/pickup-points?store_id&cityFiasId — тот же
-    // эндпоинт, что и rose React-чекаут. Точка = {code,name,address,workTime,type}.
-    async function fetchPickupPoints(fias) {
+    // ── Пункты выдачи перевозчика ──────────────────────────────────────────
+    // GET /store/carts/:id/delivery/pickup-points?store_id&carrier&kind&cityFiasId
+    // — тот же эндпоинт, что и rose React-чекаут. Точка = {code,name,address,workTime,type}.
+    // carrier обязателен: без него шлюз молча считает СДЭК (contracts/http.md §5,
+    // до шага 7) — под несколько перевозчиков так отдал бы чужие точки.
+    // Перевозчики без кодов ФИАС (ПЭК) ищут по городу/региону/координатам —
+    // передаём их, когда есть (section.data-last-*, см. recalculate()).
+    async function fetchPickupPoints(fias, carrier, kind) {
       var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
       var shopId = getShopId();
-      if (!fias || !cartId || !shopId) return [];
+      if ((!fias && !section.getAttribute('data-last-city')) || !cartId || !shopId || !carrier) return [];
       var url = getApiBase() + '/store/carts/' + encodeURIComponent(cartId)
         + '/delivery/pickup-points?store_id=' + encodeURIComponent(shopId)
-        + '&cityFiasId=' + encodeURIComponent(fias);
+        + '&carrier=' + encodeURIComponent(carrier);
+      if (kind) url += '&kind=' + encodeURIComponent(kind);
+      if (fias) url += '&cityFiasId=' + encodeURIComponent(fias);
+      var lastCity = section.getAttribute('data-last-city') || '';
+      var lastRegion = section.getAttribute('data-last-region') || '';
+      var lastLat = section.getAttribute('data-last-lat') || '';
+      var lastLon = section.getAttribute('data-last-lon') || '';
+      if (lastCity) url += '&city=' + encodeURIComponent(lastCity);
+      if (lastRegion) url += '&region=' + encodeURIComponent(lastRegion);
+      if (lastLat) url += '&lat=' + encodeURIComponent(lastLat);
+      if (lastLon) url += '&lon=' + encodeURIComponent(lastLon);
       var res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('http ' + res.status);
       var json = await res.json().catch(function () { return null; });
@@ -372,8 +375,9 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         var retry = e.target.closest && e.target.closest('[data-pvz-retry]');
         if (retry) {
           var fias = section.getAttribute('data-last-fias-id') || '';
-          delete pvzCache[fias];
-          openPickerFor(fias);
+          var retryCarrier = lastOpt && lastOpt.carrier;
+          delete pvzCache[(retryCarrier || '') + '|' + fias];
+          openPickerFor(fias, retryCarrier);
           return;
         }
         var row = e.target.closest && e.target.closest('[data-pvz-row]');
@@ -386,24 +390,32 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       });
     }
 
-    async function openPickerFor(fias) {
+    async function openPickerFor(fias, carrier) {
       if (!pickerEl) return;
       ensurePvzListeners();
-      if (fias !== pvzFias) {
-        // Город сменился → точка из старого города больше не валидна (СДЭК
-        // отклонит). Сбрасываем выбор и поиск; guard снова заблокирует оплату,
-        // пока покупатель не выберет точку в новом городе.
-        pvzFias = fias;
+      // Ключ кэша/сравнения — перевозчик + город: у разных перевозчиков разные
+      // точки в одном городе (нельзя показать точки СДЭК под тарифом ПЭК).
+      var cacheKey = (carrier || '') + '|' + (fias || '');
+      if (cacheKey !== pvzFias) {
+        // Город или перевозчик сменился → точка из прошлого состояния больше не
+        // валидна (перевозчик отклонит). Сбрасываем выбор и поиск; guard снова
+        // заблокирует оплату, пока покупатель не выберет точку заново.
+        pvzFias = cacheKey;
         selectedPvzCode = null;
         selectedPvzAddress = null;
         pvzQuery = '';
       }
-      if (!fias) { pvzPoints = []; pvzError = false; renderPvzState(); return; }
-      if (pvzCache[fias]) { pvzPoints = pvzCache[fias]; pvzError = false; renderPvzState(); return; }
+      if (!carrier || (!fias && !section.getAttribute('data-last-city'))) {
+        pvzPoints = []; pvzError = false; renderPvzState(); return;
+      }
+      if (pvzCache[cacheKey]) { pvzPoints = pvzCache[cacheKey]; pvzError = false; renderPvzState(); return; }
       pvzPoints = null; pvzError = false; renderPvzState(); // loading
       try {
-        var list = await fetchPickupPoints(fias);
-        pvzCache[fias] = list;
+        // СДЭК — без kind (сервер отдаёт все типы, фильтруем сами, как сейчас).
+        // Остальные перевозчики — kind тарифа: у них нет общего «отдай всё».
+        var kind = carrier === 'cdek' ? null : selectedPickupKind;
+        var list = await fetchPickupPoints(fias, carrier, kind);
+        pvzCache[cacheKey] = list;
         pvzPoints = list; pvzError = false;
       } catch (e) {
         pvzError = true;
@@ -411,23 +423,25 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       renderPvzState();
     }
 
-    // Показать/скрыть пикер под выбранной опцией доставки.
+    // Показать/скрыть пикер под выбранной опцией доставки. Признак «нужен
+    // пункт выдачи» — из расчёта (requiresPickupPoint), а не по имени
+    // перевозчика: одинаково работает для СДЭК-ПВЗ/постамата и точек ПЭК.
     function syncPicker(opt) {
       if (!pickerEl) return;
-      if (opt && opt.type === 'cdek_pickup') {
-        var newKind = opt.pickupPointKind || null; // ПВЗ-тариф → ПВЗ, постамат → постамат
-        // Сменился тип точки тарифа (ПВЗ↔постамат) в том же городе → ранее
-        // выбранная точка другого типа невалидна (СДЭК отклонит). Сбрасываем,
-        // чтобы guard снова заблокировал оплату до выбора точки нужного типа.
-        // Сравнение (а не безусловный сброс) сохраняет выбор при ре-рендере того
-        // же типа (cart:updated / повторный авто-селект той же опции).
+      if (opt && opt.requiresPickupPoint) {
+        var newKind = opt.pickupPointKind || null; // ПВЗ-тариф → ПВЗ, постамат/отделение → свой тип
+        // Сменился тип точки тарифа (ПВЗ↔постамат↔отделение) в том же городе —
+        // ранее выбранная точка другого типа невалидна. Сбрасываем, чтобы guard
+        // снова заблокировал оплату до выбора точки нужного типа. Сравнение (а
+        // не безусловный сброс) сохраняет выбор при ре-рендере того же типа
+        // (cart:updated / повторный авто-селект той же опции).
         if (newKind !== selectedPickupKind) {
           selectedPvzCode = null;
           selectedPvzAddress = null;
         }
         selectedPickupKind = newKind;
         pickerEl.hidden = false;
-        openPickerFor(section.getAttribute('data-last-fias-id') || '');
+        openPickerFor(section.getAttribute('data-last-fias-id') || '', opt.carrier);
       } else {
         pickerEl.hidden = true;
         // ушли с pickup-метода → сбрасываем точку, чтобы не уехал устаревший код
@@ -439,10 +453,12 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
     /**
      * Собирает массив option'ов из ответа логистики + локальных флагов.
-     * Доставкой владеет merfy-logistics-service: ответ — дженерик
-     *   { deliveryOptions: [{id,name,type:'OWN'|'PARTNER',price,minDays,maxDays,
-     *      description,cdekTariffCode,deliveryMode:'door'|'pickup'}], pickupPoints[] }
-     * type карточки: 'self_pickup' | 'cdek_door' | 'cdek_pickup' | 'custom'
+     * Доставкой владеет merfy-logistics-service: вариант несёт carrier (id
+     * перевозчика или null у своих тарифов), mode ('door'|'pickup'|'own'),
+     * requiresPickupPoint, shipmentRequired и готовую подпись (label) —
+     * label больше не строится на витрине из пропсов блока (contracts/117
+     * messaging.md §1). Type карточки: 'self_pickup' | 'custom' |
+     * '<carrier>_<mode>' (напр. 'cdek_door', 'cdek_pickup', 'pek_pickup').
      */
     function buildOptions(data, addressKnown) {
       var options = [];
@@ -462,12 +478,16 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           var pp = pickupPoints[pi];
           if (!pp) continue;
           // При нескольких точках уточняем подпись городом/адресом, чтобы и
-          // покупатель, и заказ (cdekTariffName=label) различали точки.
+          // покупатель, и заказ различали точки.
           var pickupName = multiPickup
             ? pickupLabel + ' — ' + (pp.city || pp.address || ('точка ' + (pi + 1)))
             : pickupLabel;
           options.push({
             type: 'self_pickup',
+            carrier: null,
+            mode: 'self_pickup',
+            requiresPickupPoint: false,
+            shipmentRequired: false,
             tariffCode: null,
             pickupPointId: pp.id || null,
             label: pickupName,
@@ -478,19 +498,19 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       }
 
       // Опции доставки.
-      // • OWN — собственный тариф магазина: каждый своей карточкой.
-      // • PARTNER (CDEK) — группируем по «методу покупателя» (дверь / ПВЗ /
-      //   постамат) и оставляем по ОДНОЙ карточке. СДЭК отдаёт дубли-тарифы,
-      //   отличающиеся лишь внутренним плечом отправки (склад-склад vs
-      //   дверь-склад) при одной точке назначения, — для покупателя это один и
-      //   тот же способ, поэтому держим самый дешёвый. Разные ТИПЫ точки
-      //   (ПВЗ ↔ постамат) НЕ мержим: контракт СДЭК привязывает delivery_point и
-      //   фильтр пикера к типу точки тарифа.
-      var cdekGroups = {}; // methodKey → лучший (самый дешёвый) кандидат
-      var cdekOrder = [];  // порядок появления методов (стабильность до сортировки)
+      // • Свой тариф магазина (carrier: null, mode: 'own') — каждый своей карточкой.
+      // • Перевозчик (carrier — любой подключённый: cdek, pek, …) — группируем по
+      //   «методу покупателя» (перевозчик + режим + тип точки) и оставляем по
+      //   ОДНОЙ карточке. Перевозчик отдаёт дубли-тарифы, отличающиеся лишь
+      //   внутренним плечом отправки (склад-склад vs дверь-склад) при одной точке
+      //   назначения, — для покупателя это один и тот же способ, поэтому держим
+      //   самый дешёвый. Разные ТИПЫ точки (ПВЗ ↔ постамат ↔ отделение) НЕ мержим:
+      //   у каждого свой список точек и свой фильтр пикера.
+      var carrierGroups = {}; // methodKey → лучший (самый дешёвый) кандидат
+      var carrierOrder = [];  // порядок появления методов (стабильность до сортировки)
 
       // Кандидат дешевле/быстрее: цена, затем меньший maxDays, затем minDays.
-      function cdekBetter(a, b) {
+      function candidateBetter(a, b) {
         if (a.priceCents !== b.priceCents) return a.priceCents < b.priceCents;
         var am = a.periodMax == null ? Infinity : a.periodMax;
         var bm = b.periodMax == null ? Infinity : b.periodMax;
@@ -499,11 +519,19 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         var bn = b.periodMin == null ? Infinity : b.periodMin;
         return an < bn;
       }
-      // Понятное описание метода (если магазин не задал своё в тарифе).
-      function cdekDefaultDesc(methodKey) {
-        if (methodKey === 'door') return 'Привезём по вашему адресу';
-        if (methodKey === 'POSTAMAT') return 'Ячейка по коду из СМС, круглосуточно';
-        return 'Заберёте в офисе СДЭК, с сотрудником';
+      // Понятное описание метода, если магазин не задал своё в тарифе
+      // (o.description). Для СДЭК — байт-в-байт прежний текст (замер
+      // calculator.service.ts: description у тарифа обычно undefined, значит
+      // этот фолбэк реально виден покупателю — менять слова нельзя, «для СДЭК
+      // как сейчас»). Для остальных перевозчиков — нейтральная формулировка.
+      function defaultMethodDesc(carrier, mode, pickupPointKind) {
+        if (mode === 'door') return 'Привезём по вашему адресу';
+        if (carrier === 'cdek') {
+          return pickupPointKind === 'POSTAMAT'
+            ? 'Ячейка по коду из СМС, круглосуточно'
+            : 'Заберёте в офисе СДЭК, с сотрудником';
+        }
+        return 'Заберёте в пункте выдачи, с сотрудником';
       }
 
       for (var i = 0; i < deliveryOptions.length; i++) {
@@ -513,58 +541,64 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           ? 'от ' + o.minDays + ' до ' + o.maxDays + ' рабочих дней'
           : '';
 
-        if (o.type === 'PARTNER') {
-          // CDEK (PARTNER) — адрес-зависимая служба. Без адреса не показываем,
-          // появится сама после ввода адреса (checkout:address-changed).
-          if (!addressKnown) continue;
-          var isDoor = o.deliveryMode === 'door';
-          // Метод покупателя: дверь / постамат / ПВЗ. Тип точки (postamat/pvz)
-          // разводит карточки — постамат больше не маскируется под ПВЗ.
-          var methodKey = isDoor
-            ? 'door'
-            : (o.pickupPointKind === 'POSTAMAT' ? 'POSTAMAT' : 'PVZ');
-          var cand = {
-            cardType: isDoor ? 'cdek_door' : 'cdek_pickup',
-            methodKey: methodKey,
-            tariffCode: (o.cdekTariffCode != null ? o.cdekTariffCode : null),
-            label: isDoor
-              ? cdekDoorLabel
-              : (methodKey === 'POSTAMAT' ? cdekPostamatLabel : cdekPvzLabel),
-            priceCents: priceCents,
-            periodMin: o.minDays,
-            periodMax: o.maxDays,
-            period: period,
-            description: o.description || '',
-            // Тип точки тарифа (ПВЗ/постамат) — пикер по нему фильтрует список.
-            pickupPointKind: o.pickupPointKind || null,
-          };
-          if (!cdekGroups[methodKey]) {
-            cdekGroups[methodKey] = cand;
-            cdekOrder.push(methodKey);
-          } else if (cdekBetter(cand, cdekGroups[methodKey])) {
-            cdekGroups[methodKey] = cand;
-          }
-        } else {
-          // OWN — собственный тариф магазина (бывшие customProfiles).
+        if (!o.carrier) {
+          // Свой тариф магазина (бывшие customProfiles, mode:'own').
           options.push({
             type: 'custom',
+            carrier: null,
+            mode: o.mode || 'own',
+            requiresPickupPoint: false,
+            shipmentRequired: !!o.shipmentRequired,
             tariffCode: null,
             customTariffId: o.id,
             label: o.name,
             meta: o.description || period,
             priceCents: priceCents,
           });
+          continue;
+        }
+
+        // Перевозчик — адрес-зависимая служба. Без адреса не показываем,
+        // появится сама после ввода адреса (checkout:address-changed).
+        if (!addressKnown) continue;
+        var methodKey = o.carrier + '|' + o.mode + '|' + (o.pickupPointKind || '');
+        var cand = {
+          cardType: o.carrier + '_' + o.mode,
+          carrier: o.carrier,
+          mode: o.mode,
+          methodKey: methodKey,
+          tariffCode: (o.tariffCode != null ? String(o.tariffCode) : null),
+          label: o.label,
+          priceCents: priceCents,
+          periodMin: o.minDays,
+          periodMax: o.maxDays,
+          period: period,
+          description: o.description || '',
+          // Тип точки тарифа (ПВЗ/постамат/отделение) — пикер по нему фильтрует список.
+          pickupPointKind: o.pickupPointKind || null,
+          requiresPickupPoint: !!o.requiresPickupPoint,
+          shipmentRequired: !!o.shipmentRequired,
+        };
+        if (!carrierGroups[methodKey]) {
+          carrierGroups[methodKey] = cand;
+          carrierOrder.push(methodKey);
+        } else if (candidateBetter(cand, carrierGroups[methodKey])) {
+          carrierGroups[methodKey] = cand;
         }
       }
 
-      // Материализуем дедуплицированные CDEK-карточки. Подзаголовок = понятное
-      // описание метода (приоритет — текст магазина) + срок.
-      for (var ci = 0; ci < cdekOrder.length; ci++) {
-        var best = cdekGroups[cdekOrder[ci]];
-        var desc = best.description || cdekDefaultDesc(best.methodKey);
+      // Материализуем дедуплицированные карточки перевозчиков. Подзаголовок =
+      // понятное описание метода (приоритет — текст магазина) + срок.
+      for (var ci = 0; ci < carrierOrder.length; ci++) {
+        var best = carrierGroups[carrierOrder[ci]];
+        var desc = best.description || defaultMethodDesc(best.carrier, best.mode, best.pickupPointKind);
         var bestMeta = best.period ? (desc + ' · ' + best.period) : desc;
         options.push({
           type: best.cardType,
+          carrier: best.carrier,
+          mode: best.mode,
+          requiresPickupPoint: best.requiresPickupPoint,
+          shipmentRequired: best.shipmentRequired,
           tariffCode: best.tariffCode,
           label: best.label,
           meta: bestMeta,
@@ -636,6 +670,10 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         return '<label class="' + cls + '"'
           + ' data-delivery-option'
           + ' data-delivery-type="' + esc(opt.type) + '"'
+          + ' data-delivery-carrier="' + esc(opt.carrier || '') + '"'
+          + ' data-delivery-mode="' + esc(opt.mode || '') + '"'
+          + ' data-delivery-requires-pickup="' + String(!!opt.requiresPickupPoint) + '"'
+          + ' data-delivery-shipment-required="' + String(!!opt.shipmentRequired) + '"'
           + ' data-delivery-tariff-code="' + esc(opt.tariffCode == null ? '' : String(opt.tariffCode)) + '"'
           + ' data-delivery-custom-id="' + esc(opt.customTariffId || '') + '"'
           + ' data-delivery-pickup-id="' + esc(opt.pickupPointId || '') + '"'
@@ -664,13 +702,18 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     }
 
     // Только отправка события (без управления пикером) — для re-emit при выборе
-    // точки, когда пикер уже открыт. pickupPointCode непуст только для cdek_pickup
-    // и только когда точка реально выбрана.
+    // точки, когда пикер уже открыт. pickupPointCode непуст только когда варианту
+    // «нужен пункт выдачи» (requiresPickupPoint) и точка реально выбрана — признак
+    // из расчёта, не завязан на конкретного перевозчика.
     function emitSelection(opt) {
-      var isPvz = opt.type === 'cdek_pickup';
+      var needsPickupPoint = !!opt.requiresPickupPoint;
       document.dispatchEvent(new CustomEvent('checkout:delivery-changed', {
         detail: {
           type: opt.type,
+          carrier: opt.carrier || null,
+          mode: opt.mode || null,
+          requiresPickupPoint: needsPickupPoint,
+          shipmentRequired: !!opt.shipmentRequired,
           tariffCode: opt.tariffCode,
           customTariffId: opt.customTariffId || null,
           pickupPointId: opt.pickupPointId || null,
@@ -678,8 +721,8 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           periodMin: opt.periodMin || null,
           periodMax: opt.periodMax || null,
           label: opt.label,
-          pickupPointCode: isPvz ? selectedPvzCode : null,
-          pickupPointAddress: isPvz ? selectedPvzAddress : null,
+          pickupPointCode: needsPickupPoint ? selectedPvzCode : null,
+          pickupPointAddress: needsPickupPoint ? selectedPvzAddress : null,
         },
       }));
     }
@@ -724,7 +767,12 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var labelEl = card.querySelector('[data-delivery-label]');
       dispatchSelection({
         type: card.getAttribute('data-delivery-type') || '',
-        tariffCode: card.getAttribute('data-delivery-tariff-code') ? parseInt(card.getAttribute('data-delivery-tariff-code'), 10) : null,
+        carrier: card.getAttribute('data-delivery-carrier') || null,
+        mode: card.getAttribute('data-delivery-mode') || null,
+        requiresPickupPoint: card.getAttribute('data-delivery-requires-pickup') === 'true',
+        shipmentRequired: card.getAttribute('data-delivery-shipment-required') === 'true',
+        // tariffCode — строка (общий формат, не только числовые коды СДЭК).
+        tariffCode: card.getAttribute('data-delivery-tariff-code') || null,
         customTariffId: card.getAttribute('data-delivery-custom-id') || null,
         pickupPointId: card.getAttribute('data-delivery-pickup-id') || null,
         priceCents: parseInt(card.getAttribute('data-delivery-price-cents') || '0', 10),
@@ -766,6 +814,12 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       if (!getAddressRequired()) { neutralizeForDigital(); return; }
       var cityFiasId = (addr && addr.cityFiasId) || '';
       var postalCode = (addr && addr.postalCode) || '';
+      // Перевозчики без кодов ФИАС (ПЭК) ищут по имени города/региону/координатам —
+      // шлём их вместе с cityFiasId, когда есть; СДЭК их игнорирует (как сейчас).
+      var city = (addr && addr.city) || '';
+      var region = (addr && addr.region) || '';
+      var lat = addr && addr.lat != null ? addr.lat : null;
+      var lon = addr && addr.lon != null ? addr.lon : null;
       var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
       var shopId = getShopId();
       var apiBase = getApiBase();
@@ -805,6 +859,10 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var body = {};
       if (cityFiasId) body.cityFiasId = cityFiasId;
       if (postalCode) body.postalCode = postalCode;
+      if (city) body.city = city;
+      if (region) body.region = region;
+      if (lat != null) body.lat = lat;
+      if (lon != null) body.lon = lon;
 
       if (calcInFlight && calcInFlight.abort) {
         try { calcInFlight.abort(); } catch (e) {}
@@ -908,7 +966,14 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var lastFiasId = section.getAttribute('data-last-fias-id') || '';
       var lastPostal = section.getAttribute('data-last-postal') || '';
       if (lastFiasId) {
-        recalculate({ cityFiasId: lastFiasId, postalCode: lastPostal });
+        recalculate({
+          cityFiasId: lastFiasId,
+          postalCode: lastPostal,
+          city: section.getAttribute('data-last-city') || '',
+          region: section.getAttribute('data-last-region') || '',
+          lat: section.getAttribute('data-last-lat') ? parseFloat(section.getAttribute('data-last-lat')) : null,
+          lon: section.getAttribute('data-last-lon') ? parseFloat(section.getAttribute('data-last-lon')) : null,
+        });
       } else if (getShopId() && (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId'))) {
         // Адрес ещё не вводили, но корзина готова → показываем адрес-независимые
         // опции (OWN + самовывоз) сразу, не дожидаясь ввода города.
@@ -925,6 +990,10 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       if (e && e.detail) {
         section.setAttribute('data-last-fias-id', e.detail.cityFiasId || '');
         section.setAttribute('data-last-postal', e.detail.postalCode || '');
+        section.setAttribute('data-last-city', e.detail.city || '');
+        section.setAttribute('data-last-region', e.detail.region || '');
+        if (e.detail.lat != null) section.setAttribute('data-last-lat', String(e.detail.lat)); else section.removeAttribute('data-last-lat');
+        if (e.detail.lon != null) section.setAttribute('data-last-lon', String(e.detail.lon)); else section.removeAttribute('data-last-lon');
       }
     });
 

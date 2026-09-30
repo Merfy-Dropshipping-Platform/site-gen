@@ -186,6 +186,9 @@ describe("CheckoutSubmit — /delivery/select для cdek_pickup вернул о
     runScript(section);
     selectDelivery({
       type: "cdek_pickup",
+      carrier: "cdek",
+      mode: "pickup",
+      requiresPickupPoint: true,
       label: "ПВЗ",
       costCents: 30000,
       tariffCode: 136,

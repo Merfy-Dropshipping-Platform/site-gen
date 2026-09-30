@@ -56,11 +56,15 @@ function calcData(deliveryOptions: any[], pickupPoints: any[] = []) {
   return { success: true, data: { deliveryOptions, pickupPoints } };
 }
 
+// carrier/mode/tariffCode/label/requiresPickupPoint — поля расчёта (spec 117,
+// messaging.md §1); label теперь готовая строка из логистики (манифест
+// перевозчика), а не построена блоком из cdekDoorLabel/cdekPvzLabel/
+// cdekPostamatLabel — этих пропсов у блока больше нет.
 const DEDUP_OPTIONS = [
-  { id: 'o136', name: 'Посылка склад-склад', type: 'PARTNER', price: 255, minDays: 2, maxDays: 4, description: '', cdekTariffCode: 136, deliveryMode: 'pickup', pickupPointKind: 'PVZ' },
-  { id: 'o138', name: 'Посылка дверь-склад', type: 'PARTNER', price: 510, minDays: 1, maxDays: 3, description: '', cdekTariffCode: 138, deliveryMode: 'pickup', pickupPointKind: 'PVZ' },
-  { id: 'o366', name: 'Посылка дверь-постамат', type: 'PARTNER', price: 300, minDays: 2, maxDays: 4, description: '', cdekTariffCode: 366, deliveryMode: 'pickup', pickupPointKind: 'POSTAMAT' },
-  { id: 'o137', name: 'Посылка дверь-дверь', type: 'PARTNER', price: 795, minDays: 1, maxDays: 2, description: '', cdekTariffCode: 137, deliveryMode: 'door' },
+  { id: 'o136', name: 'Посылка склад-склад', type: 'PARTNER', price: 255, minDays: 2, maxDays: 4, description: '', carrier: 'cdek', mode: 'pickup', tariffCode: '136', requiresPickupPoint: true, shipmentRequired: true, pickupPointKind: 'PVZ', label: 'Пункт выдачи СДЭК' },
+  { id: 'o138', name: 'Посылка дверь-склад', type: 'PARTNER', price: 510, minDays: 1, maxDays: 3, description: '', carrier: 'cdek', mode: 'pickup', tariffCode: '138', requiresPickupPoint: true, shipmentRequired: true, pickupPointKind: 'PVZ', label: 'Пункт выдачи СДЭК' },
+  { id: 'o366', name: 'Посылка дверь-постамат', type: 'PARTNER', price: 300, minDays: 2, maxDays: 4, description: '', carrier: 'cdek', mode: 'pickup', tariffCode: '366', requiresPickupPoint: true, shipmentRequired: true, pickupPointKind: 'POSTAMAT', label: 'Постамат СДЭК' },
+  { id: 'o137', name: 'Посылка дверь-дверь', type: 'PARTNER', price: 795, minDays: 1, maxDays: 2, description: '', carrier: 'cdek', mode: 'door', tariffCode: '137', requiresPickupPoint: false, shipmentRequired: true, label: 'Курьер СДЭК до двери' },
   { id: 'own1', name: 'Своя доставка', type: 'OWN', price: 150, minDays: 1, maxDays: 1, description: 'Развозим сами' },
 ];
 

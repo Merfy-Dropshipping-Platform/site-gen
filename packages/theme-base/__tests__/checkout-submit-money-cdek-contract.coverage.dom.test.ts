@@ -135,6 +135,9 @@ describe("CheckoutSubmit — цепочка URL целиком по способ
     runScript(section);
     selectDelivery({
       type: "cdek_pickup",
+      carrier: "cdek",
+      mode: "pickup",
+      requiresPickupPoint: true,
       label: "До пункта выдачи",
       costCents: 30000,
       tariffCode: 138,
@@ -159,6 +162,8 @@ describe("CheckoutSubmit — цепочка URL целиком по способ
     runScript(section);
     selectDelivery({
       type: "cdek_door",
+      carrier: "cdek",
+      mode: "door",
       label: "Курьер до двери",
       costCents: 79500,
       tariffCode: 137,
@@ -182,6 +187,9 @@ describe("CheckoutSubmit — тело POST /delivery/select целиком (cdek
     runScript(section);
     selectDelivery({
       type: "cdek_pickup",
+      carrier: "cdek",
+      mode: "pickup",
+      requiresPickupPoint: true,
       label: "До пункта выдачи",
       costCents: 30000,
       tariffCode: 138,
@@ -190,8 +198,12 @@ describe("CheckoutSubmit — тело POST /delivery/select целиком (cdek
     });
     await submit(section);
 
+    // carrier/mode — новые поля контракта отправления (spec 117): logistics
+    // читает ИХ, чтобы понять перевозчика и режим точки, а не строку type.
     expect(bodyOf(fetchMock, /\/delivery\/select$/)).toEqual({
       type: "cdek_pickup",
+      carrier: "cdek",
+      mode: "pickup",
       deliveryCostCents: 30000, // ненулевая цена ушла как есть
       tariffCode: 138,
       pickupPointCode: "PVZ77",
@@ -217,6 +229,9 @@ describe("CheckoutSubmit — metadata.deliveryMethod в /checkout целиком
     runScript(section);
     selectDelivery({
       type: "cdek_pickup",
+      carrier: "cdek",
+      mode: "pickup",
+      requiresPickupPoint: true,
       label: "До пункта выдачи",
       costCents: 30000,
       tariffCode: 138,
@@ -225,8 +240,15 @@ describe("CheckoutSubmit — metadata.deliveryMethod в /checkout целиком
     });
     await submit(section);
 
+    // carrier/mode/requiresPickupPoint/shipmentRequired — новые поля способа
+    // доставки (spec 117), едут в metadata.deliveryMethod как есть (весь
+    // state.deliveryMethod целиком, без урезания).
     expect(bodyOf(fetchMock, /\/checkout$/).metadata.deliveryMethod).toEqual({
       type: "cdek_pickup",
+      carrier: "cdek",
+      mode: "pickup",
+      requiresPickupPoint: true,
+      shipmentRequired: false,
       label: "До пункта выдачи",
       costCents: 30000,
       tariffCode: 138,
@@ -246,6 +268,8 @@ describe("CheckoutSubmit — metadata.deliveryMethod в /checkout целиком
     runScript(section);
     selectDelivery({
       type: "cdek_door",
+      carrier: "cdek",
+      mode: "door",
       label: "Курьер до двери",
       costCents: 79500,
       tariffCode: 137,
@@ -254,6 +278,10 @@ describe("CheckoutSubmit — metadata.deliveryMethod в /checkout целиком
 
     expect(bodyOf(fetchMock, /\/checkout$/).metadata.deliveryMethod).toEqual({
       type: "cdek_door",
+      carrier: "cdek",
+      mode: "door",
+      requiresPickupPoint: false,
+      shipmentRequired: false,
       label: "Курьер до двери",
       costCents: 79500,
       tariffCode: 137,

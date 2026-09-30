@@ -527,9 +527,12 @@ describe('CheckoutSubmit — FIX 1: гейт имени при fullName-раск
 // «не-курьер»). Курьерские типы (cdek_door / custom) по-прежнему требуют адрес,
 // cdek_door дополнительно — building, cdek_pickup — выбранный pickupPointCode.
 describe('CheckoutSubmit — M16: pickup адрес-независим, курьер требует адрес', () => {
-  const CDEK_PICKUP_NO_CODE = { type: 'cdek_pickup', label: 'CDEK ПВЗ', costCents: 30000, tariffCode: 136 };
+  const CDEK_PICKUP_NO_CODE = {
+    type: 'cdek_pickup', carrier: 'cdek', mode: 'pickup', requiresPickupPoint: true,
+    label: 'CDEK ПВЗ', costCents: 30000, tariffCode: 136,
+  };
   const CDEK_PICKUP_WITH_CODE = { ...CDEK_PICKUP_NO_CODE, pickupPointCode: 'MSK123' };
-  const CDEK_DOOR = { type: 'cdek_door', label: 'CDEK курьер', costCents: 40000, tariffCode: 137 };
+  const CDEK_DOOR = { type: 'cdek_door', carrier: 'cdek', mode: 'door', label: 'CDEK курьер', costCents: 40000, tariffCode: 137 };
 
   beforeEach(() => {
     sessionStorage.clear();

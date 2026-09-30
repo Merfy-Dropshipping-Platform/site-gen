@@ -118,14 +118,18 @@ describe("CheckoutDeliveryMethod — деньги и данные СДЭК в ch
         },
         {
           id: "door1",
-          name: "неважно (label берётся из data-cdek-door-label)",
+          name: "неважно (label теперь готовая строка из расчёта, не из data-* пропсов — их больше нет)",
           type: "PARTNER",
           price: 450,
           minDays: 1,
           maxDays: 2,
           description: "",
-          cdekTariffCode: 137,
-          deliveryMode: "door",
+          carrier: "cdek",
+          mode: "door",
+          tariffCode: "137",
+          requiresPickupPoint: false,
+          shipmentRequired: true,
+          label: "Курьер СДЭК до двери",
         },
         {
           id: "pvz1",
@@ -135,9 +139,13 @@ describe("CheckoutDeliveryMethod — деньги и данные СДЭК в ch
           minDays: 2,
           maxDays: 5,
           description: "",
-          cdekTariffCode: 138,
-          deliveryMode: "pickup",
+          carrier: "cdek",
+          mode: "pickup",
+          tariffCode: "138",
+          requiresPickupPoint: true,
+          shipmentRequired: true,
           pickupPointKind: "PVZ",
+          label: "Пункт выдачи СДЭК",
         },
       ],
       pickupPoints: [{ id: "shop-pp-1", address: "Шоурум, ул. Тестовая, 10" }],
@@ -195,13 +203,17 @@ describe("CheckoutDeliveryMethod — деньги и данные СДЭК в ch
 
     expect(cap.last()).toEqual({
       type: "cdek_door",
-      tariffCode: 137,
+      carrier: "cdek",
+      mode: "door",
+      requiresPickupPoint: false,
+      shipmentRequired: true,
+      tariffCode: "137",
       customTariffId: null,
       pickupPointId: null,
       costCents: 45000, // 450₽ → копейки
       periodMin: 1,
       periodMax: 2,
-      label: "Курьер СДЭК до двери", // из data-cdek-door-label, не из name тарифа
+      label: "Курьер СДЭК до двери", // готовая строка из расчёта
       pickupPointCode: null,
       pickupPointAddress: null,
     });
@@ -221,7 +233,11 @@ describe("CheckoutDeliveryMethod — деньги и данные СДЭК в ch
 
     expect(cap.last()).toEqual({
       type: "cdek_pickup",
-      tariffCode: 138,
+      carrier: "cdek",
+      mode: "pickup",
+      requiresPickupPoint: true,
+      shipmentRequired: true,
+      tariffCode: "138",
       customTariffId: null,
       pickupPointId: null,
       costCents: 30000, // 300₽
@@ -251,7 +267,11 @@ describe("CheckoutDeliveryMethod — деньги и данные СДЭК в ch
 
     expect(cap.last()).toEqual({
       type: "cdek_pickup",
-      tariffCode: 138,
+      carrier: "cdek",
+      mode: "pickup",
+      requiresPickupPoint: true,
+      shipmentRequired: true,
+      tariffCode: "138",
       customTariffId: null,
       pickupPointId: null,
       costCents: 30000,
@@ -276,6 +296,10 @@ describe("CheckoutDeliveryMethod — деньги и данные СДЭК в ch
 
     expect(cap.last()).toEqual({
       type: "custom",
+      carrier: null,
+      mode: "own",
+      requiresPickupPoint: false,
+      shipmentRequired: false,
       tariffCode: null,
       customTariffId: "own1", // строка — id тарифа как есть, не парсится в число
       pickupPointId: null,
@@ -301,6 +325,10 @@ describe("CheckoutDeliveryMethod — деньги и данные СДЭК в ch
 
     expect(cap.last()).toEqual({
       type: "self_pickup",
+      carrier: null,
+      mode: "self_pickup",
+      requiresPickupPoint: false,
+      shipmentRequired: false,
       tariffCode: null,
       customTariffId: null,
       pickupPointId: "shop-pp-1",
@@ -448,9 +476,13 @@ describe("CheckoutDeliveryMethod — полный URL и тело запроса
                   price: 300,
                   minDays: 1,
                   maxDays: 3,
-                  cdekTariffCode: 138,
-                  deliveryMode: "pickup",
+                  carrier: "cdek",
+                  mode: "pickup",
+                  tariffCode: "138",
+                  requiresPickupPoint: true,
+                  shipmentRequired: true,
                   pickupPointKind: "PVZ",
+                  label: "Пункт выдачи СДЭК",
                 },
               ],
               pickupPoints: [],
@@ -480,8 +512,10 @@ describe("CheckoutDeliveryMethod — полный URL и тело запроса
     const call = fetchMock.mock.calls.find((c) =>
       /\/delivery\/pickup-points/.test(String(c[0])),
     )!;
+    // carrier — обязательный параметр (contracts/117 http.md §5): без него шлюз
+    // молча считает СДЭК, а под несколько перевозчиков так отдал бы чужие точки.
     expect(String(call[0])).toBe(
-      "https://gateway.test/api/store/carts/cart1/delivery/pickup-points?store_id=shop1&cityFiasId=77000000000",
+      "https://gateway.test/api/store/carts/cart1/delivery/pickup-points?store_id=shop1&carrier=cdek&cityFiasId=77000000000",
     );
   });
 });

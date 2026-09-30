@@ -76,11 +76,14 @@ describe('CheckoutSubmit — CDEK самовывоз guard', () => {
     runScript(section);
     const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
 
-    selectDelivery({ type: 'cdek_pickup', label: 'До пункта выдачи', costCents: 51000, tariffCode: 138 });
+    selectDelivery({
+      type: 'cdek_pickup', carrier: 'cdek', mode: 'pickup', requiresPickupPoint: true,
+      label: 'До пункта выдачи', costCents: 51000, tariffCode: 138,
+    });
     expect(btn.disabled).toBe(true);
 
     selectDelivery({
-      type: 'cdek_pickup',
+      type: 'cdek_pickup', carrier: 'cdek', mode: 'pickup', requiresPickupPoint: true,
       label: 'До пункта выдачи',
       costCents: 51000,
       tariffCode: 138,
@@ -95,7 +98,10 @@ describe('CheckoutSubmit — CDEK самовывоз guard', () => {
     runScript(section);
     const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
 
-    selectDelivery({ type: 'cdek_door', label: 'Курьер до двери', costCents: 79500, tariffCode: 137 });
+    selectDelivery({
+      type: 'cdek_door', carrier: 'cdek', mode: 'door',
+      label: 'Курьер до двери', costCents: 79500, tariffCode: 137,
+    });
     expect(btn.disabled).toBe(false);
   });
 });
@@ -138,7 +144,7 @@ describe('CheckoutSubmit — Step 0 /delivery/select', () => {
     const section = mountSubmitDom();
     runScript(section);
     selectDelivery({
-      type: 'cdek_pickup',
+      type: 'cdek_pickup', carrier: 'cdek', mode: 'pickup', requiresPickupPoint: true,
       label: 'До пункта выдачи',
       costCents: 51000,
       tariffCode: 138,
@@ -157,7 +163,10 @@ describe('CheckoutSubmit — Step 0 /delivery/select', () => {
 
     const body = JSON.parse(fetchMock.mock.calls[selectIdx][1].body);
     expect(body.pickupPointCode).toBe('PVZ77');
+    // carrier/mode — новые поля рядом с прежним type (для СДЭК он не меняется).
     expect(body.type).toBe('cdek_pickup');
+    expect(body.carrier).toBe('cdek');
+    expect(body.mode).toBe('pickup');
     expect(body.tariffCode).toBe(138);
     expect(body.address.house).toBe('1'); // building → house
   });
@@ -165,7 +174,7 @@ describe('CheckoutSubmit — Step 0 /delivery/select', () => {
   it('для cdek_door НЕ шлёт /delivery/select', async () => {
     const section = mountSubmitDom();
     runScript(section);
-    selectDelivery({ type: 'cdek_door', label: 'Курьер', costCents: 79500, tariffCode: 137 });
+    selectDelivery({ type: 'cdek_door', carrier: 'cdek', mode: 'door', label: 'Курьер', costCents: 79500, tariffCode: 137 });
     (section.querySelector('[data-checkout-submit]') as HTMLButtonElement).click();
     await new Promise((r) => setTimeout(r, 10));
     expect(urlsOf().some((u) => /\/delivery\/select$/.test(u))).toBe(false);

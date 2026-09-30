@@ -6,6 +6,26 @@ import { timeout } from "rxjs/operators";
 import type * as schemaTypes from "../db/schema";
 import { applyHeaderSiteTitles } from "./header-title";
 
+/** Публичные настройки оплаты магазина из billing (`get_public`). */
+interface PublicPaymentSettings {
+  success?: boolean;
+  yookassaEnabled?: boolean;
+  yookassaShopId?: string | null;
+  /** С этапа 3.4 оплат: активная платёжка, если принимает оплату, иначе null. */
+  activeProvider?: string | null;
+}
+
+/**
+ * Принимает ли магазин оплату онлайн. billing до этапа 3.4 поля
+ * `activeProvider` не знает — тогда как раньше: ЮKassa включена и её номер
+ * магазина есть (публичная дверь отдаёт номер только при включённом приёме).
+ */
+function acceptsOnlinePayments(pub: PublicPaymentSettings | null): boolean {
+  if (!pub?.success) return false;
+  if (pub.activeProvider !== undefined) return pub.activeProvider !== null;
+  return Boolean(pub.yookassaEnabled && pub.yookassaShopId);
+}
+
 export interface FooterDataDeps {
   db: NodePgDatabase<typeof schemaTypes>;
   schema: typeof schemaTypes;
@@ -199,18 +219,20 @@ export async function applyFooterData(
       (f) => f !== emailField && f !== phoneField,
     );
 
-    // Подключена ли касса (YooKassa) → платёжные бейджи. shopId == siteId.
+    // Принимает ли магазин оплату онлайн → платёжные значки. shopId == siteId.
+    // Спрашиваем ПУБЛИЧНЫЕ настройки оплаты (оплаты, задача 3.6): раньше ради
+    // этого флажка по очереди ехал расшифрованный ключ ЮKassa (`get_credentials`).
     let paymentEnabled = false;
     if (deps.billingClient) {
       try {
-        const cred = (await firstValueFrom(
+        const pub = (await firstValueFrom(
           deps.billingClient
-            .send("billing.shop_payment_settings.get_credentials", {
+            .send("billing.shop_payment_settings.get_public", {
               shopId: siteId,
             })
             .pipe(timeout(4000)),
-        )) as { success?: boolean; yookassaShopId?: string | null } | null;
-        paymentEnabled = Boolean(cred?.success && cred?.yookassaShopId);
+        )) as PublicPaymentSettings | null;
+        paymentEnabled = acceptsOnlinePayments(pub);
       } catch (e) {
         logger?.warn(
           `[footer-data] payment status check failed (badges hidden): ${e instanceof Error ? e.message : String(e)}`,

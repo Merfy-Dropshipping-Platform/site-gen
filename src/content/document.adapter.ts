@@ -26,7 +26,8 @@
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, desc, eq, isNull, lt } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { migrateRevisionData } from "../utils/revision-migrations";
@@ -47,11 +48,13 @@ import type {
   DiffOptions,
   DiffResult,
   GetOptions,
+  HistoryCursor,
   HistoryItem,
   HistoryOptions,
   HistoryPage,
   LoadOptions,
   LoadResult,
+  RevisionEnvelope,
   RevisionItem,
   RollbackParams,
   RollbackResult,
@@ -173,6 +176,23 @@ function kindOfMeta(meta: Record<string, unknown> | undefined): string | null {
   return typeof kind === "string" ? kind : null;
 }
 
+/**
+ * Условие «строго раньше курсора» по паре (createdAt, id) — keyset-пагинация:
+ * либо дата меньше, либо та же дата и id меньше (тай-брейк на совпавший
+ * createdAt). Тот же порядок, что ORDER BY в history().
+ */
+function beforeCursor(cursor: HistoryCursor): SQL {
+  // or() с двумя заданными условиями не возвращает undefined — приведение
+  // типа только для этого (drizzle типизирует or() с запасом на пустой вызов).
+  return or(
+    lt(schema.siteRevision.createdAt, cursor.createdAt),
+    and(
+      eq(schema.siteRevision.createdAt, cursor.createdAt),
+      lt(schema.siteRevision.id, cursor.id),
+    ),
+  ) as SQL;
+}
+
 /** R3: строка истории из конверта + `meta` (И5: actor/source/changes/restoredFrom). */
 function historyItemOf(row: {
   id: string;
@@ -238,7 +258,7 @@ export class DocumentAdapter implements StoreContent {
   async history(siteId: string, opts: HistoryOptions): Promise<HistoryPage> {
     const limit = opts.limit ?? 50;
     const conditions = [eq(schema.siteRevision.siteId, siteId), isStoreVersion()];
-    if (opts.before) conditions.push(lt(schema.siteRevision.createdAt, opts.before));
+    if (opts.before) conditions.push(beforeCursor(opts.before));
     const rows = await this.db
       .select({
         id: schema.siteRevision.id,
@@ -247,12 +267,37 @@ export class DocumentAdapter implements StoreContent {
       })
       .from(schema.siteRevision)
       .where(and(...conditions))
-      .orderBy(desc(schema.siteRevision.createdAt))
+      // Сортировка ПАРОЙ — id тай-брейк на совпавший createdAt (та же
+      // миллисекунда); тот же порядок использует beforeCursor() ниже.
+      .orderBy(desc(schema.siteRevision.createdAt), desc(schema.siteRevision.id))
       .limit(limit);
+    const last = rows[rows.length - 1];
     return {
       items: rows.map(historyItemOf),
-      nextBefore: rows.length === limit ? rows[rows.length - 1].createdAt : null,
+      nextBefore:
+        rows.length === limit ? { createdAt: last.createdAt, id: last.id } : null,
     };
+  }
+
+  /**
+   * Второй круг (R1): число версий магазина (без снимков клиента) для ПАЧКИ
+   * сайтов одним запросом — `admin/bulk` (экспорт) считал это сам, выбирая
+   * ВСЕ строки пачки и фильтруя в памяти (`revisions.filter(r => r.siteId
+   * === site.id).length`); здесь — `GROUP BY site_id, count(*)` в базе.
+   * Отсутствующих в ответе siteId (нет ни одной версии) вызывающий код
+   * читает как 0 через `Map.get(id) ?? 0`.
+   */
+  async historyCounts(siteIds: string[]): Promise<Map<string, number>> {
+    if (siteIds.length === 0) return new Map();
+    const rows = await this.db
+      .select({
+        siteId: schema.siteRevision.siteId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(schema.siteRevision)
+      .where(and(inArray(schema.siteRevision.siteId, siteIds), isStoreVersion()))
+      .groupBy(schema.siteRevision.siteId);
+    return new Map(rows.map((r) => [r.siteId, r.count]));
   }
 
   /**
@@ -279,7 +324,21 @@ export class DocumentAdapter implements StoreContent {
     revisionId: string,
     opts: GetOptions,
   ): Promise<RevisionItem> {
-    const [envelope] = await this.db
+    const envelope = await this.envelope(siteId, revisionId, opts);
+    if (!envelope) throw new Error("revision_not_found");
+    // Как и раньше (getRevision): конверт прокидывается КАК ЕСТЬ, без
+    // нормализации отсутствующих полей — байт-в-байт форма ответа не меняется
+    // (золотые документы сравнивают именно её).
+    const loaded = await this.load(siteId, { revisionId, site: opts.site });
+    return { ...envelope, data: loaded.document } as RevisionItem;
+  }
+
+  async envelope(
+    siteId: string,
+    revisionId: string,
+    _opts: GetOptions,
+  ): Promise<RevisionEnvelope | null> {
+    const [row] = await this.db
       .select({
         id: schema.siteRevision.id,
         siteId: schema.siteRevision.siteId,
@@ -294,12 +353,7 @@ export class DocumentAdapter implements StoreContent {
           eq(schema.siteRevision.siteId, siteId),
         ),
       );
-    if (!envelope) throw new Error("revision_not_found");
-    // Как и раньше (getRevision): конверт прокидывается КАК ЕСТЬ, без
-    // нормализации отсутствующих полей — байт-в-байт форма ответа не меняется
-    // (золотые документы сравнивают именно её).
-    const loaded = await this.load(siteId, { revisionId, site: opts.site });
-    return { ...envelope, data: loaded.document } as RevisionItem;
+    return (row as RevisionEnvelope | undefined) ?? null;
   }
 
   /**
@@ -314,10 +368,7 @@ export class DocumentAdapter implements StoreContent {
       site: params.site,
       asStored: true,
     });
-    const restored = {
-      success: true as const,
-      restoredFrom: params.revisionId,
-    };
+    const restored = { restoredFrom: params.revisionId };
     if (params.revisionId === params.site.currentRevisionId) {
       return { ...restored, revisionId: params.revisionId };
     }
@@ -463,10 +514,14 @@ export class DocumentAdapter implements StoreContent {
           });
         }
         if (write.current === undefined) return;
+        // Защитный порядок (ревью главного треда): sitePatch — СНАЧАЛА, указатель
+        // и updatedAt — ПОСЛЕ. Объектный литерал берёт последнее значение ключа,
+        // поэтому даже если SitePatch когда-нибудь обзаведётся полем
+        // currentRevisionId, патч не сможет им сдвинуть указатель мимо CAS.
         const sitePatch: Record<string, unknown> = {
+          ...write.sitePatch,
           currentRevisionId: write.current,
           updatedAt: new Date(),
-          ...write.sitePatch,
         };
         if (write.expected === undefined) {
           await tx

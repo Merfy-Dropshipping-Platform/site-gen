@@ -858,25 +858,29 @@ export async function trySnapshotDeploy(
   }
 
   // 4. Check revision — must be empty/default or absent
+  const snapshotStoreContent = new StoreContentService(new DocumentAdapter(deps.db));
+  const snapshotSite = {
+    themeId: null,
+    publicUrl: siteRow.publicUrl ?? null,
+    currentRevisionId: siteRow.currentRevisionId ?? null,
+  };
   let revisionId: string | null = null;
   if (siteRow.currentRevisionId) {
-    const [rev] = await deps.db
-      .select({
-        id: schema.siteRevision.id,
-        data: schema.siteRevision.data,
+    // Сырое содержимое (без миграций/досева) — эта проверка ищет РЕАЛЬНУЮ
+    // правку мерчанта в том виде, как она хранится, не то, во что её
+    // разворачивают шаги чтения.
+    const loaded = await snapshotStoreContent
+      .load(params.siteId, {
+        revisionId: siteRow.currentRevisionId,
+        site: snapshotSite,
+        asStored: true,
       })
-      .from(schema.siteRevision)
-      .where(
-        and(
-          eq(schema.siteRevision.id, siteRow.currentRevisionId),
-          eq(schema.siteRevision.siteId, params.siteId),
-        ),
-      );
+      .catch(() => null);
 
-    if (rev) {
-      revisionId = rev.id;
+    if (loaded) {
+      revisionId = siteRow.currentRevisionId;
       // Check if content is non-default (has real user edits)
-      const data = rev.data as { content?: unknown[]; pages?: unknown[] } | null;
+      const data = loaded.document as { content?: unknown[]; pages?: unknown[] } | null;
       const hasContent =
         (Array.isArray(data?.content) && data!.content.length > 0) ||
         (Array.isArray(data?.pages) && data!.pages.length > 0);
@@ -889,15 +893,17 @@ export async function trySnapshotDeploy(
 
   // Create revision if missing
   if (!revisionId) {
-    revisionId = randomUUID();
     const data = getDefaultRevisionData(params.templateId);
-    await deps.db.insert(schema.siteRevision).values({
-      id: revisionId,
-      siteId: params.siteId,
-      data,
+    // Вставка вслепую, БЕЗ setCurrent — как и раньше: не становится текущей
+    // ревизией магазина, id просто ложится в site_build ниже.
+    const saved = await snapshotStoreContent.save(params.siteId, {
+      mode: "blind",
+      document: data,
+      tenantId: params.tenantId,
       meta: { title: "Мой сайт", mode: params.mode ?? "draft" },
-      createdAt: new Date(),
+      site: snapshotSite,
     });
+    revisionId = saved.version;
   }
 
   // ── All conditions met → snapshot deploy ──
@@ -1878,59 +1884,59 @@ async function stageMerge(
   ctx.settings = (siteRow.settings as BuildContext["settings"]) ?? undefined;
   ctx.siteName = siteRow.name ?? undefined;
 
-  // Load or create revision
-  let revisionId: string | null = null;
-
-  if (siteRow.currentRevisionId) {
-    const [rev] = await deps.db
-      .select({ id: schema.siteRevision.id })
-      .from(schema.siteRevision)
-      .where(
-        and(
-          eq(schema.siteRevision.id, siteRow.currentRevisionId),
-          eq(schema.siteRevision.siteId, params.siteId),
-        ),
-      );
-    if (rev) revisionId = rev.id;
-  }
-
-  if (!revisionId) {
-    revisionId = randomUUID();
-    const data = getDefaultRevisionData(ctx.templateId);
-    await deps.db.insert(schema.siteRevision).values({
-      id: revisionId,
-      siteId: params.siteId,
-      data,
-      meta: { title: "Мой сайт", mode: ctx.mode },
-      createdAt: new Date(),
-    });
-    logger.log(`[merge] Created initial revision ${revisionId} with default theme blocks (template: ${ctx.templateId})`);
-  }
-
   // Ревизия темы — через порт (DocumentAdapter): migrateRevisionData →
   // normalizeRevision → seedContentPagesFromTheme (B17) → resolveAssetUrls.
   // Тот же путь, что у конструктора (SitesDomainService.getRevision) и
   // превью (PreviewController.loadRevisionData). Замер до/после — сборка
   // satin-стенда без отличий в dist (merfy-mcp/docs/proofs/p2-wave1-content-port.txt).
   const storeContent = new StoreContentService(new DocumentAdapter(deps.db));
+  const mergeSite = {
+    themeId: siteRow.themeId,
+    publicUrl: siteRow.publicUrl,
+    name: siteRow.name ?? null,
+    contentModel: siteRow.contentModel ?? null,
+  };
+
+  // Load or create revision
+  let revisionId: string | null = null;
+
+  if (siteRow.currentRevisionId) {
+    // Конверт (без .data) — дешёвая проверка, что ревизия существует.
+    const envelope = await storeContent.envelope(
+      params.siteId,
+      siteRow.currentRevisionId,
+      { site: mergeSite },
+    );
+    if (envelope) revisionId = envelope.id;
+  }
+
+  if (!revisionId) {
+    const data = getDefaultRevisionData(ctx.templateId);
+    // Вставка вслепую, БЕЗ setCurrent — как и раньше: указатель магазина эта
+    // ревизия не двигает, её id просто уходит в ctx.revisionId ниже.
+    const saved = await storeContent.save(params.siteId, {
+      mode: "blind",
+      document: data,
+      tenantId: params.tenantId,
+      meta: { title: "Мой сайт", mode: ctx.mode },
+      site: mergeSite,
+    });
+    revisionId = saved.version;
+    logger.log(`[merge] Created initial revision ${revisionId} with default theme blocks (template: ${ctx.templateId})`);
+  }
+
   const loaded = await storeContent.load(params.siteId, {
     revisionId,
-    site: {
-      themeId: siteRow.themeId,
-      publicUrl: siteRow.publicUrl,
-      name: siteRow.name ?? null,
-      contentModel: siteRow.contentModel ?? null,
-    },
+    site: mergeSite,
   });
   ctx.revisionId = revisionId;
   ctx.revisionData = loaded.document;
 
-  // meta (title/mode) — конверт ревизии, не содержимое: отдельным SELECT,
+  // meta (title/mode) — конверт ревизии, не содержимое: отдельным вызовом,
   // как и раньше (порт несёт только data, не эти поля).
-  const [revMetaRow] = await deps.db
-    .select({ meta: schema.siteRevision.meta })
-    .from(schema.siteRevision)
-    .where(eq(schema.siteRevision.id, revisionId));
+  const revMetaRow = await storeContent.envelope(params.siteId, revisionId, {
+    site: mergeSite,
+  });
 
   // Название магазина из админки — в подвал, ВСЕГДА, когда оно задано.
   //

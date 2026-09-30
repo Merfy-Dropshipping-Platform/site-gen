@@ -274,17 +274,29 @@ export interface HistoryItem {
   restoredFrom: string | null;
 }
 
+/**
+ * Курсор постраничности истории (ревью главного треда, второй круг): пара
+ * (createdAt, id), не голая дата — у двух версий `createdAt` может совпасть
+ * (та же миллисекунда), и курсор только по дате на границе страниц пропускал
+ * бы вторую. `id` — детерминированный довесок сортировки (`ORDER BY
+ * created_at DESC, id DESC`), не смысловое поле.
+ */
+export interface HistoryCursor {
+  createdAt: Date;
+  id: string;
+}
+
 export interface HistoryOptions {
   site: StoreContentSite;
   limit?: number;
-  /** Курсор постраничности: строго раньше этой даты создания. */
-  before?: Date;
+  /** Курсор постраничности: строго раньше этой пары (createdAt, id). */
+  before?: HistoryCursor;
 }
 
 export interface HistoryPage {
   items: HistoryItem[];
   /** Курсор следующей страницы (`HistoryOptions.before`); `null` — дальше версий нет. */
-  nextBefore: Date | null;
+  nextBefore: HistoryCursor | null;
 }
 
 /** Метаданные ревизии — без содержимого (`data` несёт `load`/`get`). */
@@ -318,8 +330,12 @@ export interface RollbackParams {
   base?: string | null;
 }
 
+/**
+ * Домен несёт только факты; `success` — обёртка транспорта (RPC), а не часть
+ * доменного результата (ревью главного треда) — добавляет её вызывающий на
+ * проводе (`sites.microservice.controller.ts`), как и у всех остальных RPC.
+ */
 export interface RollbackResult {
-  success: true;
   /** Текущая ревизия после отката (копия `revisionId`, либо он же, если уже текущая). */
   revisionId: string;
   /** Ревизия, из которой восстановили. */
@@ -343,6 +359,15 @@ export interface StoreContent {
   history(siteId: string, opts: HistoryOptions): Promise<HistoryPage>;
   /** Конкретная ревизия: конверт + содержимое (шаги чтения адаптера). */
   get(siteId: string, revisionId: string, opts: GetOptions): Promise<RevisionItem>;
+  /**
+   * Второй круг (R1): конверт БЕЗ содержимого — дешёвая проверка «есть ли
+   * такая ревизия у этого магазина» и чтение только `meta`/`createdAt`/
+   * `createdBy`, без миграций и без второго прогона `load()` там, где
+   * содержимое уже прочитано отдельно (сборка). Нет такой ревизии — `null`,
+   * не исключение (в отличие от `get`/`load`, которым «ревизии нет» — ошибка
+   * по контракту конструктора).
+   */
+  envelope(siteId: string, revisionId: string, opts: GetOptions): Promise<RevisionEnvelope | null>;
   /** Откат (И6): новая ревизия — точная копия выбранной, со сверкой текущей. */
   rollback(siteId: string, params: RollbackParams): Promise<RollbackResult>;
   /**

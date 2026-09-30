@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   Logger,
+  Optional,
   BadRequestException,
 } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -35,11 +36,13 @@ import {
 } from "./bulk.dto";
 import { SiteGeneratorService } from "../../generator/generator.service";
 import { TraefikRouterService } from "../../deployments/traefik-router.service";
-import { isStoreVersion } from "../../content/revision-kinds";
+import {
+  StoreContentService,
+  resolveStoreContent,
+} from "../../content/store-content.service";
 
 type SiteRow = typeof schema.site.$inferSelect;
 type SiteDomainRow = typeof schema.siteDomain.$inferSelect;
-type SiteRevisionRow = typeof schema.siteRevision.$inferSelect;
 
 const BATCH_SIZE = 25; // Reduced for complex operations with external services
 
@@ -58,7 +61,22 @@ export class BulkOperationsService {
     private readonly domainClient: ClientProxy,
     private readonly generator: SiteGeneratorService,
     private readonly traefik: TraefikRouterService,
+    // Второй круг (R1): число версий на экспорт — только через модуль
+    // (historyCounts, пачкой). Optional — тот же приём, что в
+    // SitesDomainService: тесты, собирающие сервис напрямую, не обязаны
+    // передавать.
+    @Optional()
+    private readonly injectedStoreContent?: StoreContentService,
   ) {}
+
+  private storeContentInstance?: StoreContentService;
+
+  private get storeContent(): StoreContentService {
+    return (this.storeContentInstance ??= resolveStoreContent(
+      this.injectedStoreContent,
+      this.db,
+    ));
+  }
 
   /**
    * Bulk change site status with transition validation
@@ -675,7 +693,7 @@ export class BulkOperationsService {
 
       // Fetch related data if needed
       let domains: any[] = [];
-      let revisions: any[] = [];
+      let revisionCounts: Map<string, number> = new Map();
       let deployments: any[] = [];
 
       if (params.includeDomains) {
@@ -687,17 +705,9 @@ export class BulkOperationsService {
 
       if (params.includeRevisions) {
         // Снимки документа клиента (этап 2) — не версии магазина: ни в
-        // счётчик, ни в «последнюю ревизию» не входят.
-        revisions = await this.db
-          .select({
-            siteId: schema.siteRevision.siteId,
-            revisionCount: schema.siteRevision.id, // Will be counted later
-            latestRevision: schema.siteRevision.createdAt,
-          })
-          .from(schema.siteRevision)
-          .where(
-            and(inArray(schema.siteRevision.siteId, ids), isStoreVersion()),
-          );
+        // счётчик, ни в «последнюю ревизию» не входят (historyCounts уже
+        // фильтрует их, см. DocumentAdapter.historyCounts).
+        revisionCounts = await this.storeContent.historyCounts(ids);
       }
 
       if (params.includeDeployments) {
@@ -718,7 +728,7 @@ export class BulkOperationsService {
           exportData = this.generateSitesCSV(
             sites,
             domains,
-            revisions,
+            revisionCounts,
             deployments,
             params,
           );
@@ -729,7 +739,7 @@ export class BulkOperationsService {
           exportData = await this.generateSitesExcel(
             sites,
             domains,
-            revisions,
+            revisionCounts,
             deployments,
             params,
           );
@@ -740,7 +750,7 @@ export class BulkOperationsService {
           exportData = this.generateSitesJSON(
             sites,
             domains,
-            revisions,
+            revisionCounts,
             deployments,
             params,
           );
@@ -1025,7 +1035,7 @@ export class BulkOperationsService {
   private generateSitesCSV(
     sites: any[],
     domains: any[],
-    revisions: any[],
+    revisionCounts: Map<string, number>,
     deployments: any[],
     params: any,
   ): string {
@@ -1068,7 +1078,7 @@ export class BulkOperationsService {
   private async generateSitesExcel(
     sites: any[],
     domains: any[],
-    revisions: any[],
+    revisionCounts: Map<string, number>,
     deployments: any[],
     params: any,
   ): Promise<any> {
@@ -1105,7 +1115,7 @@ export class BulkOperationsService {
   private generateSitesJSON(
     sites: any[],
     domains: any[],
-    revisions: any[],
+    revisionCounts: Map<string, number>,
     deployments: any[],
     params: any,
   ): any {
@@ -1124,7 +1134,7 @@ export class BulkOperationsService {
           deployments: deployments.filter((d) => d.siteId === site.id),
         }),
         ...(params.includeRevisions && {
-          revisionCount: revisions.filter((r) => r.siteId === site.id).length,
+          revisionCount: revisionCounts.get(site.id) ?? 0,
         }),
       }));
     }

@@ -500,13 +500,18 @@ export class PagesService {
     // а не 404.
     if (!site.currentRevisionId) return { pages: [] };
 
-    const [rev] = await this.db
-      .select()
-      .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.id, site.currentRevisionId));
-    if (!rev) return { pages: [] };
+    // Сырое содержимое (без миграций/досева) — тем же путём, что readCurrent():
+    // normalizeRevision() ниже уже делает нужную этому эндпойнту нормализацию
+    // сам, полный `load()` со всеми шагами чтения тут не нужен.
+    const loaded = await this.storeContent
+      .load(site.id, { site: toStoreContentSite(site), asStored: true })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.message === "revision_not_found") return null;
+        throw e;
+      });
+    if (!loaded) return { pages: [] };
 
-    const revData = rev.data as Record<string, any>;
+    const revData = loaded.document as Record<string, any>;
     let pages: any[] = Array.isArray(revData.pages) ? revData.pages : [];
 
     // Нормализуем тем же resolver-путём, что deletePage — гарантирует

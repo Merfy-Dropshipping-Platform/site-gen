@@ -21,6 +21,7 @@ import type {
   HistoryPage,
   LoadOptions,
   LoadResult,
+  RevisionEnvelope,
   RevisionItem,
   RollbackParams,
   RollbackResult,
@@ -52,6 +53,14 @@ export class StoreContentService implements StoreContent {
     opts: GetOptions,
   ): Promise<RevisionItem> {
     return this.resolveAdapter(opts.site).get(siteId, revisionId, opts);
+  }
+
+  async envelope(
+    siteId: string,
+    revisionId: string,
+    opts: GetOptions,
+  ): Promise<RevisionEnvelope | null> {
+    return this.resolveAdapter(opts.site).envelope(siteId, revisionId, opts);
   }
 
   async rollback(siteId: string, params: RollbackParams): Promise<RollbackResult> {
@@ -100,6 +109,17 @@ export class StoreContentService implements StoreContent {
     const contentModel = site.contentModel ?? 'document';
     if (contentModel === 'document') return this.documentAdapter;
     throw new Error('content_model_not_supported');
+  }
+
+  /**
+   * Число версий магазина (без снимков клиента) для ПАЧКИ сайтов —
+   * `admin/bulk` (экспорт). Ниже диспетчера по `content_model`: считает
+   * пачкой, а не по адаптеру на сайт — сегодня модель одна ('document'), и
+   * заводить дозвон на каждый сайт ради будущей гипотетической модели —
+   * пока не нужно (пересмотреть, когда появится вторая модель).
+   */
+  async historyCounts(siteIds: string[]): Promise<Map<string, number>> {
+    return this.documentAdapter.historyCounts(siteIds);
   }
 }
 

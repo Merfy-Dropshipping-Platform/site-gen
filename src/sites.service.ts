@@ -42,6 +42,7 @@ import { StoreContentService, resolveStoreContent } from "./content/store-conten
 import { rewriteCurrent } from "./content/rewrite-current";
 import { toStoreContentSite } from "./content/store-content.port";
 import type {
+  HistoryCursor,
   StaleBasePolicy,
   StoreContentSite,
   WriteActor,
@@ -1280,16 +1281,21 @@ export class SitesDomainService {
         const currentRevId = current?.currentRevisionId;
         let hasThemeSettings = false;
         // Данные текущей ревизии нужны дважды: для hasThemeSettings и для
-        // переноса страниц мерчанта в пересеянную ревизию.
+        // переноса страниц мерчанта в пересеянную ревизию. Сырое содержимое
+        // (без миграций/досева) — легаси-путь пересева сравнивает и переносит
+        // документ ровно как он хранится, тем же приёмом, что откат
+        // (DocumentAdapter.rollback, asStored: true).
         let prevRevisionData: unknown = null;
         if (currentRevId) {
-          const [rev] = await this.db
-            .select({ data: schema.siteRevision.data })
-            .from(schema.siteRevision)
-            .where(eq(schema.siteRevision.id, currentRevId))
-            .limit(1);
-          const d = (rev?.data ?? {}) as Record<string, unknown>;
-          prevRevisionData = rev?.data ?? null;
+          const loaded = await this.storeContent
+            .load(params.siteId, {
+              revisionId: currentRevId,
+              site: { themeId: null, publicUrl: null, currentRevisionId: currentRevId },
+              asStored: true,
+            })
+            .catch(() => null);
+          const d = (loaded?.document ?? {}) as Record<string, unknown>;
+          prevRevisionData = loaded?.document ?? null;
           const ts = (d as any).themeSettings;
           hasThemeSettings = Boolean(
             ts &&
@@ -1389,37 +1395,6 @@ export class SitesDomainService {
         siteId: params.siteId,
         patch: params.patch ?? {},
       });
-    return Boolean(row);
-  }
-
-  /**
-   * Выбор темы магазином — строка `site` после команды `SetTheme` (этап 3,
-   * кусок 3.3): `themeId` и дата выбора темы (`themeAppliedAt`, см. `update()`).
-   * Ревизию команда пишет сама через порт StoreContent и ДО этого вызова —
-   * чтобы при сбое записи магазин не остался с новой темой и старым содержимым.
-   */
-  async recordThemeChoice(params: {
-    tenantId: string;
-    siteId: string;
-    themeId: string;
-    actorUserId?: string;
-  }): Promise<boolean> {
-    const now = new Date();
-    const [row] = await this.db
-      .update(schema.site)
-      .set({
-        themeId: params.themeId,
-        themeAppliedAt: now,
-        updatedAt: now,
-        ...(params.actorUserId ? { updatedBy: params.actorUserId } : {}),
-      })
-      .where(
-        and(
-          eq(schema.site.id, params.siteId),
-          eq(schema.site.tenantId, params.tenantId),
-        ),
-      )
-      .returning({ id: schema.site.id });
     return Boolean(row);
   }
 
@@ -1927,7 +1902,7 @@ export class SitesDomainService {
     tenantId: string,
     siteId: string,
     limit = 50,
-    before?: Date,
+    before?: HistoryCursor,
   ) {
     const site = await this.get(tenantId, siteId);
     if (!site) throw new Error("site_not_found");

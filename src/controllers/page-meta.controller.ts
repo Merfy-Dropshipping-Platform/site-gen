@@ -1,9 +1,11 @@
-import { Controller, Get, Inject, Logger, Param, Query, Res } from '@nestjs/common';
+import { Controller, Get, Inject, Logger, Optional, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import { PG_CONNECTION } from '../constants';
+import { StoreContentService, resolveStoreContent } from '../content/store-content.service';
+import type { StoreContent } from '../content/store-content.port';
 
 /**
  * GET /api/sites/:id/page-meta?pageId=... — public read-only endpoint
@@ -19,7 +21,21 @@ export class PageMetaController {
   constructor(
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    // Второй круг (R1): содержимое ревизии — только через порт. Optional —
+    // тот же приём, что в SitesDomainService/PagesService: тесты, которые
+    // собирают контроллер напрямую, не обязаны его передавать.
+    @Optional()
+    private readonly injectedStoreContent?: StoreContentService,
   ) {}
+
+  private storeContentInstance?: StoreContent;
+
+  private get storeContent(): StoreContent {
+    return (this.storeContentInstance ??= resolveStoreContent(
+      this.injectedStoreContent,
+      this.db,
+    ));
+  }
 
   @Get()
   async get(
@@ -40,15 +56,21 @@ export class PageMetaController {
         res.status(200).json({ page: null });
         return;
       }
-      const [rev] = await this.db
-        .select({ data: schema.siteRevision.data })
-        .from(schema.siteRevision)
-        .where(eq(schema.siteRevision.id, site.currentRevisionId));
-      if (!rev?.data) {
+      // Сырое содержимое (без миграций/досева) — как и раньше: этот эндпойнт
+      // только достаёт id/slug/name из `data.pages`, применять шаги чтения
+      // (нормализацию манифеста темы) ему незачем.
+      const loaded = await this.storeContent
+        .load(siteId, {
+          revisionId: site.currentRevisionId,
+          site: { themeId: null, publicUrl: site.publicUrl, currentRevisionId: site.currentRevisionId },
+          asStored: true,
+        })
+        .catch(() => null);
+      if (!loaded?.document) {
         res.status(200).json({ page: null });
         return;
       }
-      const data = rev.data as Record<string, unknown>;
+      const data = loaded.document;
       const pages = (data.pages ?? []) as Array<Record<string, unknown>>;
       const found = pages.find(
         (p) => p.id === pageId || p.slug === pageId,

@@ -3,7 +3,9 @@
 Здесь живёт единственный путь к ревизии магазина: содержимое — `load`/`save`, метаданные и версии —
 `history`/`get`/`rollback` (плюс удобные обёртки `createRevision`, `buildInitialRevision` — сахар над
 `save`/канон темы, не части интерфейса порта). Мимо порта содержимое не читают и не пишут: за этим
-следят сторожа `__tests__/no-direct-revision-reads.spec.ts` и `__tests__/no-direct-revision-writes.spec.ts`.
+следит один сторож `__tests__/revision-table-only-in-content.spec.ts` — любое упоминание
+`schema.siteRevision` в `src/` вне модуля (кроме тестов) красное, кроме именованных исключений с
+причиной прямо в файле сторожа (второй круг, R1: список сведён почти к пустому).
 `sites.service.ts` держит только тонкие обёртки (сайт по tenantId ищет он сам — порт своего `SELECT`
 по `schema.site` не делает, см. ниже), реализация — здесь. Замысел этапа 2 — план
 `merfy-mcp/docs/plans/2026-09-24-stage2-safe-write.md`, R1–R3 (перенос читателей, один конвейер
@@ -23,7 +25,7 @@
 | `change-kinds.ts` | правила «не правка»: автозначения панели конструктора, копии шапки и подвала на внутренних страницах | `write-model` |
 | `panel-defaults.ts` | значения по умолчанию панели из того же puck-config, что получает конструктор | `document.adapter`, дымовая проверка `scripts/smoke-panel-defaults.mjs` |
 | `rewrite-current.ts` | повтор «прочитал → посчитал → записал» при споре о том же месте | `pages.service`, `sites.service.resetContentPages` |
-| `revision-kinds.ts` | условие «ревизия — версия магазина, а не снимок клиента»; R3 — читает колонку `kind`, не `meta->>'kind'` | `document.adapter.history` (было — `sites.service.listRevisions` до R1), `admin/bulk` |
+| `revision-kinds.ts` | условие «ревизия — версия магазина, а не снимок клиента»: `coalesce(kind, meta->>'kind', '') <> 'client-snapshot'` — колонка в приоритете, `meta->>'kind'` только запасной путь на переходный период выкатки миграции 0020 (второй круг, R1) | `document.adapter.history`/`historyCounts` (было — `sites.service.listRevisions` до R1), `admin/bulk` (через `historyCounts`) |
 | `operations/` | движок: `diff`, `apply`, `merge3`, адреса; чистые функции без базы | `save-on-base`, `change-kinds`, `write-model` |
 
 ## Инварианты этапа 2
@@ -94,6 +96,12 @@
 - ~~Колонка `kind` у `site_revision` вместо `meta->>'kind'`~~ — снято R3 (миграция 0020, см. выше).
   `meta.kind` продолжает писаться (совместимость на время выкатки) — убрать дубль отдельной задачей,
   когда прод перейдёт на колонку везде, где ещё смотрит в `meta`.
+- **Запасной `meta->>'kind'` в `isStoreVersion()`** (второй круг, R1): пока старый (до-0020) контейнер
+  ещё может стоять рядом с новым во время выкатки (rolling deploy), он пишет `meta.kind =
+  'client-snapshot'`, но колонку `kind` не знает — она осталась бы `NULL`, и новый код без запасного
+  пути посчитал бы такую строку версией магазина. `revision-kinds.ts` поэтому читает
+  `coalesce(kind, meta->>'kind', '')`, не голую колонку. Через релиз (когда старый контейнер больше не
+  запускается) — убрать запасной `meta->>'kind'` и вернуться к голой колонке `kind`.
 - **Источник значений по умолчанию панели** (`panel-defaults.ts`) создаёт HTTP-контроллер
   `ThemePuckConfigController`, так что слой контента зависит от контроллера. Чтобы это исправить,
   нужно вынести сборку puck-config с кэшем в провайдер уровня `themes/`, а это правка старого

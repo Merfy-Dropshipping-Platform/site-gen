@@ -8,7 +8,7 @@
  *
  * Pipeline mode emits progress events via RabbitMQ and tracks build status in site_build table.
  */
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import * as path from "path";
 import * as fs from "fs/promises";
@@ -20,6 +20,11 @@ import { PG_CONNECTION, PRODUCT_RMQ_SERVICE, BILLING_RMQ_SERVICE } from "../cons
 import * as schema from "../db/schema";
 import { buildWithAstro } from "./astro.builder";
 import { S3StorageService } from "../storage/s3.service";
+import {
+  StoreContentService,
+  resolveStoreContent,
+} from "../content/store-content.service";
+import type { StoreContent } from "../content/store-content.port";
 import {
   assertPipelineModeForTheme,
   bareThemeName,
@@ -61,7 +66,21 @@ export class SiteGeneratorService {
     @Inject(BILLING_RMQ_SERVICE)
     private readonly billingClient: ClientProxy,
     private readonly s3: S3StorageService,
+    // Второй круг (R1): легаси-генератор — содержимое ревизии только через
+    // порт. Optional — тот же приём, что в SitesDomainService: тесты,
+    // собирающие сервис напрямую, не обязаны его передавать.
+    @Optional()
+    private readonly injectedStoreContent?: StoreContentService,
   ) {}
+
+  private storeContentInstance?: StoreContent;
+
+  private get storeContent(): StoreContent {
+    return (this.storeContentInstance ??= resolveStoreContent(
+      this.injectedStoreContent,
+      this.db,
+    ));
+  }
 
   /**
    * Получить товары для сайта: сначала RPC из product-service, затем fallback на site_product.
@@ -284,19 +303,20 @@ export class SiteGeneratorService {
       pipelineEnabled,
     );
 
+    const genSite = {
+      themeId: siteRow?.themeId ?? null,
+      publicUrl: siteRow?.publicUrl ?? null,
+      currentRevisionId: siteRow?.currentRevisionId ?? null,
+    };
     if (siteRow?.currentRevisionId) {
-      // Проверяем, что ревизия существует
-      const [rev] = await this.db
-        .select({ id: schema.siteRevision.id })
-        .from(schema.siteRevision)
-        .where(
-          and(
-            eq(schema.siteRevision.id, siteRow.currentRevisionId),
-            eq(schema.siteRevision.siteId, params.siteId),
-          ),
-        );
-      if (rev) {
-        revisionId = rev.id;
+      // Проверяем, что ревизия существует — конверт (без .data), дешёвая проверка.
+      const envelope = await this.storeContent.envelope(
+        params.siteId,
+        siteRow.currentRevisionId,
+        { site: genSite },
+      );
+      if (envelope) {
+        revisionId = envelope.id;
       }
     }
 
@@ -312,14 +332,17 @@ export class SiteGeneratorService {
       } catch (e) {
         this.logger.warn(`Failed to load default content: ${e instanceof Error ? e.message : e}`);
       }
-      revisionId = randomUUID();
-      await this.db.insert(schema.siteRevision).values({
-        id: revisionId,
-        siteId: params.siteId,
-        data,
+      // Вставка вслепую, БЕЗ setCurrent — как и раньше: эта ревизия не
+      // становится текущей у магазина, её id просто уходит в site_build
+      // (см. вызов ниже).
+      const saved = await this.storeContent.save(params.siteId, {
+        mode: "blind",
+        document: data,
+        tenantId: params.tenantId,
         meta: { ...(data?.meta ?? {}), mode: params.mode ?? "draft" },
-        createdAt: now,
+        site: genSite,
       });
+      revisionId = saved.version;
     }
 
     // queued
@@ -383,18 +406,18 @@ export class SiteGeneratorService {
           workingDir,
           outDir: artifactsDir,
           outFileName: `${buildId}.zip`,
-          // Для Astro потребуются данные; если брали ревизию, можно вычитать её
-          data: (await this.db
-            .select({
-              data: schema.siteRevision.data,
-              meta: schema.siteRevision.meta,
-            })
-            .from(schema.siteRevision)
-            .where(eq(schema.siteRevision.id, revisionId))
-            .then((r) => ({
-              ...(r[0]?.data ?? {}),
-              meta: r[0]?.meta ?? {},
-            }))) as any,
+          // Для Astro потребуются данные; если брали ревизию, можно вычитать её.
+          // Сырое содержимое (без миграций/досева) — как и раньше; конверт
+          // (meta) — отдельно, тем же приёмом, что build.service.ts.stageMerge.
+          data: (await Promise.all([
+            this.storeContent
+              .load(params.siteId, { revisionId, site: genSite, asStored: true })
+              .catch(() => null),
+            this.storeContent.envelope(params.siteId, revisionId, { site: genSite }),
+          ]).then(([loaded, envelope]) => ({
+            ...((loaded?.document as Record<string, unknown>) ?? {}),
+            meta: envelope?.meta ?? {},
+          }))) as any,
           theme: params.templateOverride ?? siteRow?.templateId ?? "default",
           products,
           tenantId: params.siteId, // shopId для checkout (site ID, не org ID)

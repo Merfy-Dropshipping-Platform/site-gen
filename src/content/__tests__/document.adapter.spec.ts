@@ -253,6 +253,58 @@ describe('DocumentAdapter — специфичные проверки адапт
     );
   });
 
+  // Ревью главного треда (второй круг): на время выкатки миграции 0020 рядом
+  // со старым контейнером тот пишет снимки с meta.kind, но колонку kind не
+  // знает (осталась бы NULL) — coalesce(kind, meta->>'kind', '') в
+  // revision-kinds.ts обязан такую строку тоже считать снимком клиента.
+  it('history(): переходный период 0020 — снимок с meta.kind при пустой колонке kind в историю не попадает', async () => {
+    const siteId = nextId('site');
+    const rows = [
+      {
+        id: 'r-old-snapshot',
+        createdAt: new Date('2026-01-02T00:00:00.000Z'),
+        kind: null as string | null, // старый контейнер колонку не писал
+        meta: { kind: 'client-snapshot' },
+      },
+      {
+        id: 'r-normal',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        kind: null as string | null,
+        meta: { actor: 'merchant' },
+      },
+    ];
+    const db: any = {
+      select: () => ({
+        from: () => ({
+          where: (cond: unknown) => {
+            // Рыхлая проверка на "coalesce" одна не различила бы саботаж:
+            // coalesce(kind, '') — тоже "coalesce", но без запасного пути на
+            // meta. Нужен именно запасной путь meta->>'kind' в тексте SQL.
+            expect(sqlOf(cond)).toContain('coalesce');
+            expect(sqlOf(cond)).toContain(`"meta"->>'kind'`);
+            // Имитация Postgres: coalesce(kind, meta->>'kind', '') <> 'client-snapshot'.
+            const visible = rows.filter(
+              (r) => (r.kind ?? (r.meta as { kind?: string }).kind ?? '') !== 'client-snapshot',
+            );
+            return {
+              orderBy: () => ({
+                limit: async (n: number) =>
+                  [...visible]
+                    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                    .slice(0, n),
+              }),
+            };
+          },
+        }),
+      }),
+    };
+    const adapter = new DocumentAdapter(db);
+    const site = { themeId: 'rose', publicUrl: null, currentRevisionId: null };
+
+    const page = await adapter.history(siteId, { site, limit: 10 });
+    expect(page.items.map((i) => i.id)).toEqual(['r-normal']);
+  });
+
   // R2 (В4, `merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): ревизия и
   // правка строки site (например, смена темы) — ОДНА транзакция. Раньше
   // (SetTheme) это были два отдельных запроса: при сбое между ними ревизия
@@ -414,17 +466,22 @@ describe('DocumentAdapter — специфичные проверки адапт
       restoredFrom: null,
     });
 
-    // Курсор `before` — тот же адрес, что limit: свежий вызов действительно
-    // строит "раньше даты", а не молча её игнорирует.
-    const cursor = new Date('2026-01-02T00:00:00.000Z');
+    // Курсор `before` — пара (createdAt, id), не голая дата (ревью главного
+    // треда): свежий вызов действительно строит условие "раньше пары", а не
+    // молча её игнорирует.
+    const cursor = { createdAt: new Date('2026-01-02T00:00:00.000Z'), id: 'r2' };
     await adapter.history(siteId, { site, limit: 1, before: cursor });
     expect(sqlOf(capturedWhere)).toContain('"site_revision"."created_at" <');
-    // drizzle сериализует Date в параметре как ISO-строку.
-    expect(paramsOf(capturedWhere)).toContainEqual(cursor.toISOString());
+    expect(sqlOf(capturedWhere)).toContain('"site_revision"."id" <');
+    // drizzle сериализует Date в параметре как ISO-строку; курсор входит и в
+    // lt(createdAt), и в eq(createdAt) (тай-брейк по id на совпавшую дату).
+    const params = paramsOf(capturedWhere);
+    expect(params).toContainEqual(cursor.createdAt.toISOString());
+    expect(params).toContainEqual(cursor.id);
   });
 
-  // nextBefore = дата последней строки страницы — ровно когда страница полна
-  // (rows.length === limit): дальше могут быть ещё версии.
+  // nextBefore = (createdAt, id) последней строки страницы — ровно когда
+  // страница полна (rows.length === limit): дальше могут быть ещё версии.
   it('history(): nextBefore есть, когда строк ровно limit', async () => {
     const siteId = nextId('site');
     const rows = [
@@ -450,7 +507,140 @@ describe('DocumentAdapter — специфичные проверки адапт
 
     const page = await adapter.history(siteId, { site, limit: 1 });
     expect(page.items.map((i) => i.id)).toEqual(['r2']);
-    expect(page.nextBefore).toEqual(rows[1].createdAt);
+    expect(page.nextBefore).toEqual({ createdAt: rows[1].createdAt, id: rows[1].id });
+  });
+
+  // Ревью главного треда (второй круг): курсор ТОЛЬКО по дате пропускал бы
+  // версии на границе страницы, если у них совпал createdAt (та же
+  // миллисекунда) — пара (createdAt, id) с keyset-фильтром по настоящему
+  // WHERE (через sqlOf/paramsOf, а не ручную имитацию) обе версии находит.
+  it('history(): две версии с одинаковым createdAt на границе страницы — обе попадают, ни одна не повторяется', async () => {
+    const siteId = nextId('site');
+    const T = new Date('2026-01-01T00:00:00.000Z');
+    const rows = [
+      { id: 'r-a', createdAt: T, meta: {} },
+      { id: 'r-b', createdAt: T, meta: {} }, // та же миллисекунда, что r-a
+      { id: 'r-c', createdAt: new Date('2025-12-31T00:00:00.000Z'), meta: {} },
+    ];
+    const ordered = [...rows].sort((x, y) => {
+      const byTime = y.createdAt.getTime() - x.createdAt.getTime();
+      return byTime !== 0 ? byTime : y.id.localeCompare(x.id); // id DESC — тай-брейк
+    });
+    const db: any = {
+      select: () => ({
+        from: () => ({
+          where: (cond: unknown) => {
+            const sql = sqlOf(cond);
+            const params = paramsOf(cond);
+            const hasCursor = sql.includes('"site_revision"."created_at" <');
+            const visible = !hasCursor
+              ? ordered
+              : ordered.filter((r) => {
+                  const cursorCreatedAt = params[params.length - 2] as string;
+                  const cursorId = params[params.length - 1] as string;
+                  const t = r.createdAt.toISOString();
+                  return t < cursorCreatedAt || (t === cursorCreatedAt && r.id < cursorId);
+                });
+            return {
+              orderBy: () => ({ limit: async (n: number) => visible.slice(0, n) }),
+            };
+          },
+        }),
+      }),
+    };
+    const adapter = new DocumentAdapter(db);
+    const site = { themeId: 'rose', publicUrl: null, currentRevisionId: null };
+
+    const page1 = await adapter.history(siteId, { site, limit: 2 });
+    expect(page1.items.map((i) => i.id)).toEqual(['r-b', 'r-a']);
+    expect(page1.nextBefore).toEqual({ createdAt: T, id: 'r-a' });
+
+    const page2 = await adapter.history(siteId, { site, limit: 2, before: page1.nextBefore! });
+    expect(page2.items.map((i) => i.id)).toEqual(['r-c']);
+    expect(page2.nextBefore).toBeNull();
+
+    const seenAcrossPages = [...page1.items, ...page2.items].map((i) => i.id).sort();
+    expect(seenAcrossPages).toEqual(['r-a', 'r-b', 'r-c']);
+  });
+
+  // Второй круг (R1): envelope() — дешёвая проверка «есть ли такая ревизия»
+  // без содержимого; в отличие от get()/load(), отсутствие — не исключение.
+  it('envelope(): конверт без data; нет такой ревизии — null, не исключение', async () => {
+    const siteId = nextId('site');
+    const site = { id: siteId, tenantId: nextId('tenant'), currentRevisionId: null as string | null };
+    const store = makeFakeDb(site);
+    store.revisions.set('rev-1', {
+      id: 'rev-1',
+      siteId,
+      data: { pages: ['должно остаться недоступным вызывающему'] },
+      meta: { actor: 'merchant' },
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      createdBy: 'u1',
+    });
+    const adapter = new DocumentAdapter(store.db);
+    const opts = { site: { themeId: 'rose', publicUrl: null, currentRevisionId: null } };
+
+    // makeFakeDb не разбирает проекцию .select({...}) (всегда отдаёт всю
+    // сохранённую строку) — сама проекция (envelope без .data) проверена в
+    // document.adapter.ts (см. get(): envelope() + отдельный load() за
+    // содержимым, а не двойное чтение блоба). Здесь — форма ответа и
+    // поведение на отсутствующую ревизию.
+    const envelope = await adapter.envelope(siteId, 'rev-1', opts);
+    expect(envelope).toMatchObject({
+      id: 'rev-1',
+      siteId,
+      meta: { actor: 'merchant' },
+      createdBy: 'u1',
+    });
+
+    const missing = await adapter.envelope(siteId, 'rev-does-not-exist', opts);
+    expect(missing).toBeNull();
+  });
+
+  // Второй круг (R1): historyCounts() — число версий (без снимков клиента)
+  // ПАЧКОЙ сайтов одним запросом (admin/bulk экспорт).
+  it('historyCounts(): считает версии на сайт пачкой, снимки клиента не считает, пустой сайт — 0', async () => {
+    const [siteA, siteB, siteC] = [nextId('site'), nextId('site'), nextId('site')];
+    const rows = [
+      { siteId: siteA, kind: null as string | null },
+      { siteId: siteA, kind: null as string | null },
+      { siteId: siteA, kind: 'client-snapshot' }, // не считается
+      { siteId: siteB, kind: null as string | null },
+      // siteC — вообще нет ревизий
+    ];
+    const db: any = {
+      select: () => ({
+        from: () => ({
+          where: (cond: unknown) => {
+            const params = paramsOf(cond);
+            // inArray(siteId, [...]) разворачивается в ОТДЕЛЬНЫЙ параметр на
+            // каждый id (проверено эмпирически: "in ($1, $2, $3)"), последний
+            // параметр — литерал isStoreVersion() ('client-snapshot').
+            const ids = params.slice(0, -1) as string[];
+            const visible = rows.filter(
+              (r) => ids.includes(r.siteId) && r.kind !== 'client-snapshot',
+            );
+            return {
+              groupBy: () => {
+                const counts = new Map<string, number>();
+                for (const r of visible) counts.set(r.siteId, (counts.get(r.siteId) ?? 0) + 1);
+                return Promise.resolve(
+                  [...counts.entries()].map(([siteId, count]) => ({ siteId, count })),
+                );
+              },
+            };
+          },
+        }),
+      }),
+    };
+    const adapter = new DocumentAdapter(db);
+
+    const counts = await adapter.historyCounts([siteA, siteB, siteC]);
+    expect(counts.get(siteA)).toBe(2);
+    expect(counts.get(siteB)).toBe(1);
+    expect(counts.get(siteC) ?? 0).toBe(0);
+
+    expect(await adapter.historyCounts([])).toEqual(new Map());
   });
 
   it('diff(): читает from/to тем же путём, что load, и строит операции движка', async () => {

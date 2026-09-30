@@ -105,11 +105,15 @@ export const CheckoutAPI = {
   /**
    * Оформить заказ (checkout)
    * @param {string} cartId
+   * @param {{deliveryMethod?: object}} [metadata] — тот же контракт, что у
+   *   живого чекаута (CheckoutSubmit.astro): {type, carrier, mode, ...}.
+   *   Заказы принимают и старую форму (только type), и новую (+carrier/mode).
    * @returns {Promise<{success: boolean, data: {id: string, orderNumber: string}}>}
    */
-  async checkout(cartId) {
+  async checkout(cartId, metadata) {
     return request(`/orders/cart/${cartId}/checkout`, {
       method: 'POST',
+      body: JSON.stringify(metadata ? { metadata } : {}),
     });
   },
 
@@ -160,26 +164,48 @@ export const CheckoutAPI = {
   },
 
   /**
-   * Рассчитать тарифы доставки СДЭК
+   * Рассчитать варианты доставки — перевозчика и режим знает только логистика
+   * (spec 117). Ответ: {deliveryOptions: Array<{carrier, mode, requiresPickupPoint,
+   * label, price, minDays, maxDays, tariffCode, ...}>, pickupPoints: Array} —
+   * pickupPoints здесь это самовывоз МАГАЗИНА, не пункты выдачи перевозчика.
    * @param {string} cartId
-   * @param {{cityFiasId: string, postalCode?: string}} data
-   * @returns {Promise<{success: boolean, data: {tariffs: Array, pickupAvailable: boolean, pickupAddress?: string}}>}
+   * @param {{cityFiasId?: string, postalCode?: string}} data
+   * @returns {Promise<{success: boolean, data: {deliveryOptions: Array, pickupPoints: Array}}>}
    */
   async calculateDelivery(cartId, data) {
-    return request(`/orders/cart/${cartId}/delivery/calculate`, {
+    const { shopId } = getConfig();
+    return request(`/store/carts/${cartId}/delivery/calculate?store_id=${encodeURIComponent(shopId)}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
   /**
-   * Выбрать способ доставки
+   * Пункты выдачи (ПВЗ/постамат/отделение) ВЫБРАННОГО перевозчика для города.
+   * carrier обязателен: без него шлюз молча считает СДЭК (contracts/117
+   * http.md §5, до шага 7 плана) — под несколько перевозчиков это отдало бы
+   * чужие точки.
    * @param {string} cartId
-   * @param {{type: string, tariffCode?: number|null, deliveryCostCents: number}} data
+   * @param {{carrier: string, cityFiasId?: string, kind?: string}} params
+   * @returns {Promise<{success: boolean, data: Array<{code: string, name: string, address: string, workTime?: string, type: string}>}>}
+   */
+  async getPickupPoints(cartId, params) {
+    const { shopId } = getConfig();
+    const query = new URLSearchParams({ store_id: shopId, carrier: params.carrier });
+    if (params.kind) query.set('kind', params.kind);
+    if (params.cityFiasId) query.set('cityFiasId', params.cityFiasId);
+    return request(`/store/carts/${cartId}/delivery/pickup-points?${query.toString()}`);
+  },
+
+  /**
+   * Выбрать способ доставки (персистит выбор на корзине — вызывается только
+   * когда нужен пункт выдачи, см. CheckoutSubmit.astro).
+   * @param {string} cartId
+   * @param {{type: string, carrier?: string|null, mode?: string|null, tariffCode?: string|null, deliveryCostCents: number, address?: object, pickupPointCode?: string, pickupPointAddress?: string}} data
    * @returns {Promise<{success: boolean, data: object}>}
    */
   async selectDelivery(cartId, data) {
-    return request(`/orders/cart/${cartId}/delivery/select`, {
+    return request(`/store/carts/${cartId}/delivery/select`, {
       method: 'POST',
       body: JSON.stringify(data),
     });

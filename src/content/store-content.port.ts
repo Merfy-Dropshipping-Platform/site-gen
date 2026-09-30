@@ -155,6 +155,44 @@ export interface BlindSaveParams extends WriteCommon {
 /** Форма записи выбирается явно: сочетания вроде «база + жёсткий CAS» тип не пропустит. */
 export type SaveParams = SaveOnBaseParams | BlindSaveParams;
 
+/**
+ * Удобный вход для писателей с «плоским» историческим контрактом (RPC
+ * `sites.revisions.create`, создание магазина, легаси-пересев): сам решает,
+ * какая форма `SaveParams` нужна (`base` задан — от базы, иначе — вслепую), и
+ * возвращает ответ в старой форме (`revisionId`/`currentRevisionId`/…),
+ * которую уже знают клиенты. Реализация — `StoreContentService.createRevision`.
+ */
+export interface CreateRevisionParams {
+  site: StoreContentSite;
+  tenantId: string;
+  data: Record<string, unknown>;
+  meta?: Record<string, unknown>;
+  actorUserId?: string;
+  setCurrent?: boolean;
+  /** Жёсткий CAS вне слияния (форма `blind`) — прежнее поведение до этапа 2. */
+  expectedCurrentRevisionId?: string | null;
+  /** B17: серверный фильтр досеянных страниц перед записью. */
+  filterSeededPages?: boolean;
+  /**
+   * База записи (этап 2, И2). Задана (в т.ч. `null`) — запись от базы; не
+   * задана вовсе — запись вслепую, `expectedCurrentRevisionId` — её CAS.
+   */
+  base?: string | null;
+  actor?: WriteActor;
+  source?: WriteSource;
+  mergePolicy?: StaleBasePolicy;
+}
+
+export interface CreateRevisionResult {
+  /** Ревизия, равная документу клиента (см. `SaveEffect.clientVersion`). */
+  revisionId: string;
+  /** Есть только при записи от базы: текущая ревизия магазина после записи. */
+  currentRevisionId?: string;
+  merged?: boolean;
+  overwritten?: ContestedValue[];
+  conflicts?: ContestedValue[];
+}
+
 /** Эффект записи с базой — то, что видит клиент (раздел «Контракт записи» плана этапа 2). */
 export interface SaveEffect {
   /** База устарела, и запись слита с чужими правками. */
@@ -200,9 +238,69 @@ export class RevisionMergeConflictError extends Error {
   }
 }
 
+/** Одна запись истории магазина (без служебных снимков клиента). */
+export interface HistoryItem {
+  id: string;
+  createdAt: Date;
+}
+
+export interface HistoryOptions {
+  site: StoreContentSite;
+  limit?: number;
+}
+
+export interface HistoryPage {
+  items: HistoryItem[];
+}
+
+/** Метаданные ревизии — без содержимого (`data` несёт `load`/`get`). */
+export interface RevisionEnvelope {
+  id: string;
+  siteId: string;
+  meta: Record<string, unknown> | null;
+  createdAt: Date;
+  createdBy: string | null;
+}
+
+/** Конкретная ревизия целиком: конверт + содержимое, прошедшее шаги чтения. */
+export interface RevisionItem extends RevisionEnvelope {
+  data: Record<string, unknown>;
+}
+
+export interface GetOptions {
+  site: StoreContentSite;
+}
+
+export interface RollbackParams {
+  tenantId: string;
+  site: StoreContentSite;
+  revisionId: string;
+  actorUserId?: string;
+  /**
+   * База отката — текущая ревизия, которую видел клиент. Не передана —
+   * текущая на момент чтения. `null` — «ревизии нет»: явное значение, не
+   * подменяется текущей.
+   */
+  base?: string | null;
+}
+
+export interface RollbackResult {
+  success: true;
+  /** Текущая ревизия после отката (копия `revisionId`, либо он же, если уже текущая). */
+  revisionId: string;
+  /** Ревизия, из которой восстановили. */
+  restoredFrom: string;
+}
+
 export interface StoreContent {
   load(siteId: string, opts: LoadOptions): Promise<LoadResult>;
   save(siteId: string, params: SaveParams): Promise<SaveResult>;
+  /** История версий магазина, без служебных снимков клиента (И4). */
+  history(siteId: string, opts: HistoryOptions): Promise<HistoryPage>;
+  /** Конкретная ревизия: конверт + содержимое (шаги чтения адаптера). */
+  get(siteId: string, revisionId: string, opts: GetOptions): Promise<RevisionItem>;
+  /** Откат (И6): новая ревизия — точная копия выбранной, со сверкой текущей. */
+  rollback(siteId: string, params: RollbackParams): Promise<RollbackResult>;
 }
 
 /** Модели контента, которые понимает `StoreContentService`. Сегодня — только 'document'. */

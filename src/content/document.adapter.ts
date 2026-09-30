@@ -44,14 +44,21 @@ import type { RevisionStore } from "./save-on-base";
 import { RevisionConflictError } from "./store-content.port";
 import type {
   BlindSaveParams,
+  GetOptions,
+  HistoryOptions,
+  HistoryPage,
   LoadOptions,
   LoadResult,
+  RevisionItem,
+  RollbackParams,
+  RollbackResult,
   SaveOnBaseParams,
   SaveParams,
   SaveResult,
   StoreContent,
   StoreContentSite,
 } from "./store-content.port";
+import { isStoreVersion } from "./revision-kinds";
 
 // Тот же флаг, что в sites.service.ts/preview.controller.ts — поведение шага
 // normalize не меняется, просто у него теперь собственная копия условия.
@@ -198,6 +205,84 @@ export class DocumentAdapter implements StoreContent {
       return saveOnBase(this.revisionStore, siteId, params, this.logger);
     }
     return this.saveWithoutBase(siteId, params);
+  }
+
+  /** История версий магазина (R1/R3): без служебных снимков клиента (И4). */
+  async history(siteId: string, opts: HistoryOptions): Promise<HistoryPage> {
+    const rows = await this.db
+      .select({
+        id: schema.siteRevision.id,
+        createdAt: schema.siteRevision.createdAt,
+      })
+      .from(schema.siteRevision)
+      .where(and(eq(schema.siteRevision.siteId, siteId), isStoreVersion()))
+      .limit(opts.limit ?? 50);
+    return { items: rows };
+  }
+
+  /** Конкретная ревизия: конверт (без `data`) отдельным SELECT + содержимое через `load`. */
+  async get(
+    siteId: string,
+    revisionId: string,
+    opts: GetOptions,
+  ): Promise<RevisionItem> {
+    const [envelope] = await this.db
+      .select({
+        id: schema.siteRevision.id,
+        siteId: schema.siteRevision.siteId,
+        meta: schema.siteRevision.meta,
+        createdAt: schema.siteRevision.createdAt,
+        createdBy: schema.siteRevision.createdBy,
+      })
+      .from(schema.siteRevision)
+      .where(
+        and(
+          eq(schema.siteRevision.id, revisionId),
+          eq(schema.siteRevision.siteId, siteId),
+        ),
+      );
+    if (!envelope) throw new Error("revision_not_found");
+    // Как и раньше (getRevision): конверт прокидывается КАК ЕСТЬ, без
+    // нормализации отсутствующих полей — байт-в-байт форма ответа не меняется
+    // (золотые документы сравнивают именно её).
+    const loaded = await this.load(siteId, { revisionId, site: opts.site });
+    return { ...envelope, data: loaded.document } as RevisionItem;
+  }
+
+  /**
+   * Откат (этап 2, И6): новая ревизия — точная копия выбранной версии (как
+   * она хранится), со сверкой «текущая = та, что видел клиент». Сменилась —
+   * `revision_conflict`, ничего не пишется. Выбранная версия и так текущая —
+   * ничего не пишется, ответ несёт её же id.
+   */
+  async rollback(siteId: string, params: RollbackParams): Promise<RollbackResult> {
+    const target = await this.load(siteId, {
+      revisionId: params.revisionId,
+      site: params.site,
+      asStored: true,
+    });
+    const restored = {
+      success: true as const,
+      restoredFrom: params.revisionId,
+    };
+    if (params.revisionId === params.site.currentRevisionId) {
+      return { ...restored, revisionId: params.revisionId };
+    }
+    const seen =
+      params.base !== undefined ? params.base : params.site.currentRevisionId;
+    const saved = await this.save(siteId, {
+      mode: "on-base",
+      document: target.document,
+      base: seen ?? null,
+      tenantId: params.tenantId,
+      actor: "merchant",
+      source: "rollback",
+      mergePolicy: "refuse",
+      meta: { restoredFrom: params.revisionId },
+      actorUserId: params.actorUserId,
+      site: params.site,
+    });
+    return { ...restored, revisionId: saved.version };
   }
 
   /**

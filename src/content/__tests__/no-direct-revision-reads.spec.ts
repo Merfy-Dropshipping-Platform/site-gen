@@ -42,11 +42,13 @@ type Allowance = {
 
 /**
  * Пять файлов из брифа (`pages.service`, `page-meta`, `generator.service`,
- * `theme-preset`, `bulk`) — плюс два файла ПОРТА волны 1 (`sites.service.ts`,
- * `generator/build.service.ts`), у которых `getRevision`/`createRevision` и
- * `stageMerge` теперь идут через `storeContent.load/save`, но ОСТАЮТСЯ
- * другие, не относящиеся к волне 1 места, читающие содержимое ревизии
- * напрямую — они не в объёме этого брифа (см. причину у каждого).
+ * `theme-preset`, `bulk`) — плюс `generator/build.service.ts` (волна 1) —
+ * читают содержимое ревизии напрямую по причинам, не относящимся к волне 1
+ * или к R1 (см. причину у каждого). `sites.service.ts` (волна 1 + R1,
+ * `merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): все пять функций
+ * ревизий (listRevisions/getRevision/buildInitialRevision/createRevision/
+ * setCurrentRevision) переехали в `content/` — единственный оставшийся
+ * прямой читатель ниже не входит в их число.
  */
 const ALLOWANCES: Allowance[] = [
   {
@@ -54,11 +56,13 @@ const ALLOWANCES: Allowance[] = [
     literalData: 1,
     bareSelect: 0,
     reason:
-      'literalData×1: update() решает, нужен ли пересев темы, по themeSettings ' +
-      'ПРЕДЫДУЩЕЙ ревизии (до вызова порта, не относится к load/save; этап 3). ' +
-      'resetContentPages() читает базу через порт (этап 2). getRevision() читает конверт ревизии ' +
-      '(id/siteId/meta/createdAt/createdBy) ПРОЕКЦИЕЙ без data — содержимое ' +
-      'отдельно приходит из storeContent.load(), блоб не читается дважды.',
+      'literalData×1 (R1: единственный оставшийся): update() решает, нужен ли ' +
+      'пересев темы, по themeSettings ПРЕДЫДУЩЕЙ ревизии — легаси PATCH-путь ' +
+      'смены темы (не относится к R1: тот двигает только пять именованных ' +
+      'функций, update() среди них нет; переезд на команду SetTheme — этап 3, ' +
+      'кусок 3.5). Остальные прямые чтения этого файла — listRevisions/' +
+      'getRevision/setCurrentRevision/resetContentPages — теперь идут через ' +
+      'storeContent.history/get/rollback/load (модуль content/, см. README.md).',
   },
   {
     path: 'generator/build.service.ts',

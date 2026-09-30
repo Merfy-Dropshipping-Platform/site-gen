@@ -23,6 +23,7 @@ import {
   carryOverUserPages,
   THEMES_RESEED_ON_SWITCH,
 } from "../sites.service";
+import { legacySeed } from "../content/canon";
 import * as schema from "../db/schema";
 import { UserListenerController } from "../user/user.listener";
 import { makeCreateStoreHarness } from "../store/__tests__/support/create-store-harness";
@@ -338,11 +339,14 @@ describe("buildInitialRevision(): источник стартового конт
 });
 
 // ---------------------------------------------------------------------------
-// 3. getDefaultContent() — легаси JSON-сид (сегодня доступен только как
-//    fallback для неизвестных тем или при падении PageResolver)
+// 3. legacySeed() — легаси JSON-сид (сегодня доступен только как fallback
+//    для неизвестных тем или при падении PageResolver). R1 (`merfy-mcp/docs/
+//    plans/2026-09-30-revisions-clean.md`) переехал из sites.service.ts
+//    (`getDefaultContent`) в content/canon.ts как чистая функция — поведение
+//    то же, только вход теперь свободная функция, не приватный метод сервиса.
 // ---------------------------------------------------------------------------
 
-describe("getDefaultContent(): легаси JSON-сид по теме (sites.service.ts:~1652)", () => {
+describe("legacySeed(): легаси JSON-сид по теме (content/canon.ts)", () => {
   function loadDefaultsJson(theme: string) {
     return JSON.parse(
       readFileSync(
@@ -360,20 +364,15 @@ describe("getDefaultContent(): легаси JSON-сид по теме (sites.ser
   }
 
   it("текущее поведение: известная тема грузит defaults/<theme>.json", () => {
-    const service = makeBareService();
-    expect(service.getDefaultContent("flux")).toEqual(loadDefaultsJson("flux"));
+    expect(legacySeed("flux")).toEqual(loadDefaultsJson("flux"));
   });
 
   it("текущее поведение: тема без файла defaults/<theme>.json откатывается на rose.json", () => {
-    const service = makeBareService();
-    expect(service.getDefaultContent("no-such-theme")).toEqual(
-      loadDefaultsJson("rose"),
-    );
+    expect(legacySeed("no-such-theme")).toEqual(loadDefaultsJson("rose"));
   });
 
   it("текущее поведение: без аргумента тоже используется rose", () => {
-    const service = makeBareService();
-    expect(service.getDefaultContent()).toEqual(loadDefaultsJson("rose"));
+    expect(legacySeed()).toEqual(loadDefaultsJson("rose"));
   });
 });
 

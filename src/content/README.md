@@ -1,24 +1,92 @@
 # Контент магазина: порт `StoreContent`
 
 Здесь живёт единственный путь к ревизии магазина: содержимое — `load`/`save`, метаданные и версии —
-`history`/`get`/`rollback` (плюс удобные обёртки `createRevision`, `buildInitialRevision` — сахар над
-`save`/канон темы, не части интерфейса порта). Мимо порта содержимое не читают и не пишут: за этим
-следит один сторож `__tests__/revision-table-only-in-content.spec.ts` — любое упоминание
-`schema.siteRevision` в `src/` вне модуля (кроме тестов) красное, кроме именованных исключений с
-причиной прямо в файле сторожа (второй круг, R1: список сведён почти к пустому).
+`history`/`get`/`envelope`/`rollback`/`diff` (плюс удобные обёртки `createRevision`,
+`buildInitialRevision` — сахар над `save`/канон темы, не части интерфейса порта). Мимо порта
+содержимое не читают и не пишут: за этим следит один сторож
+`__tests__/revision-table-only-in-content.spec.ts` — любое упоминание `schema.siteRevision` в `src/`
+вне модуля (кроме тестов) красное, кроме именованных исключений с причиной прямо в файле сторожа
+(второй круг, R1: список сведён почти к пустому — см. «Долг» ниже).
 `sites.service.ts` держит только тонкие обёртки (сайт по tenantId ищет он сам — порт своего `SELECT`
 по `schema.site` не делает, см. ниже), реализация — здесь. Замысел этапа 2 — план
-`merfy-mcp/docs/plans/2026-09-24-stage2-safe-write.md`, R1–R3 (перенос читателей, один конвейер
-записи, история/разница/откат с базой) — `merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`,
-грамматика адресов и операции — в `operations/README.md`.
+`merfy-mcp/docs/plans/2026-09-24-stage2-safe-write.md`, R1–R5 (перенос читателей, один конвейер
+записи, история/разница/откат с базой, таблица шагов формата, этот README) —
+`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`, грамматика адресов и операции —
+в `operations/README.md`.
+
+## Как: пять операций коротко
+
+Везде `site: StoreContentSite` — минимум полей строки `site`, которые нужны шагам чтения/записи
+(`themeId`, `publicUrl`, опционально `name`/`currentRevisionId`/`contentModel`); готовый хелпер —
+`toStoreContentSite(site)` из `store-content.port.ts`, если строка `site` уже на руках.
+
+**Прочитать** — текущую ревизию или конкретную, с полным конвейером чтения (миграции формата →
+нормализация манифеста темы → досев страниц → адреса ассетов):
+```ts
+const { document, version } = await storeContent.load(siteId, { site });
+// конкретная версия: storeContent.load(siteId, { site, revisionId })
+// побайтовая копия без миграций/досева (нужно откату) — { site, revisionId, asStored: true }
+```
+
+**Сохранить от базы** — конструктор/кабинет, «я видел ревизию `base` и правил её»; при устаревшей
+базе порт сам сольёт или откажет по `mergePolicy` (таблица «Писатели» ниже):
+```ts
+const res = await storeContent.save(siteId, {
+  mode: "on-base",
+  tenantId, site,
+  base: currentRevisionIdClientSaw, // null — ревизии у магазина ещё нет
+  mergePolicy: "last-writer-wins", // | "reject-conflicts" | "refuse"
+  document: nextDocument,
+  actor: { type: "user", id: actorUserId },
+});
+// res.version — id новой ревизии; res.effect?.merged (bool),
+// res.effect?.overwritten (что перезаписано слиянием, только при merged)
+```
+
+**Сохранить вслепую** — создание магазина, пересев при смене темы: документ целиком поверх текущей,
+без слияния и меток; `setCurrent` — сделать текущей, `sitePatch` — заодно поправить `site` (В4,
+одна транзакция):
+```ts
+const res = await storeContent.save(siteId, {
+  mode: "blind",
+  tenantId, site,
+  document: seededDocument,
+  setCurrent: true,
+  sitePatch: { themeId, themeAppliedAt: new Date() },
+});
+```
+
+**История** — новые версии магазина сверху, без служебных снимков клиента, курсором:
+```ts
+const page = await storeContent.history(siteId, { site, limit: 20 });
+// ещё есть: storeContent.history(siteId, { site, limit: 20, before: page.nextBefore })
+```
+
+**Разница** — список операций движка между двумя версиями (обе читаются как `load`, «одна версия формата»):
+```ts
+const { ops } = await storeContent.diff(siteId, fromRevisionId, toRevisionId, { site });
+```
+
+**Откат** — новая ревизия, побайтовая копия выбранной, со сверкой текущей (И6):
+```ts
+const { revisionId, restoredFrom } = await storeContent.rollback(siteId, {
+  tenantId, site, revisionId: targetRevisionId,
+  base: currentRevisionIdClientSaw, // не задан — текущая на момент чтения; null — «ревизии нет»
+});
+```
+
+Дешёвая проверка «есть ли такая ревизия» без содержимого (используется сборкой — см. `envelope` в
+карте модулей) — `storeContent.envelope(siteId, revisionId, { site })`, возвращает `null`, не бросает.
 
 ## Карта модулей
 
 | Файл | За что отвечает | Кто зовёт |
 |---|---|---|
-| `store-content.port.ts` | контракт порта: `load`/`save`/`history`/`get`/`rollback`/`diff`, формы записи `SaveParams` (`"on-base"` / `"blind"`), `SitePatch` (В4), результат, ошибки `RevisionConflictError` и `RevisionMergeConflictError` | все ниже, `sites.service`, `pages.service`, RPC-контроллер, команды `store/` |
-| `store-content.service.ts` | Nest-провайдер: диспетчер по `site.content_model` (сегодня только `document`) + `createRevision`/`buildInitialRevision` (не диспетчеризуются — общие для всех моделей) | `sites.service`, `pages.service`, `build.service`, `preview.controller`, команды `store/theme-switch`, `store/lifecycle` |
-| `document.adapter.ts` | адаптер модели `document`: шаги чтения (миграции, досев, адреса), `history`/`get`/`rollback`, единая функция фиксации `commit()` (вставка + сдвиг указателя + `sitePatch`, одна транзакция — что раньше было «записью от базы» и отдельно «вслепую» с дублированным SQL) | `store-content.service` |
+| `store-content.port.ts` | контракт порта: `load`/`save`/`history`/`get`/`envelope`/`rollback`/`diff`, формы записи `SaveParams` (`"on-base"` / `"blind"`), `SitePatch` (В4), результаты, ошибки `RevisionConflictError` и `RevisionMergeConflictError` | все ниже, `sites.service`, `pages.service`, RPC-контроллер, команды `store/` |
+| `store-content.service.ts` | Nest-провайдер: диспетчер по `site.content_model` (сегодня только `document`) + `createRevision`/`buildInitialRevision`/`historyCounts` (не диспетчеризуются — общие для всех моделей) | `sites.service`, `pages.service`, `build.service`, `generator.service`, `preview.controller`, `page-meta.controller`, `admin/bulk`, команды `store/theme-switch`, `store/lifecycle` |
+| `document.adapter.ts` | адаптер модели `document`: конвейер чтения `LOAD_STEPS` (migrate → normalize → seed → resolve, таблица из 4 шагов), `history`/`get`/`envelope`/`rollback`/`diff`, единая функция фиксации `commit()` (вставка + сдвиг указателя + `sitePatch`, одна транзакция) | `store-content.service` |
+| `format/run.ts` + `format/steps/*.ts` | R4: сам шаг `migrate` конвейера чтения — таблица `MIGRATION_STEPS` (~28 шагов формата ревизии: миграции страниц, бэкфиллы, сидеры системных страниц, унификация хрома с `home`) вместо лестницы `if`; `after` в каждом шаге — задокументированная зависимость порядка, проверяется `validateStepOrder()` на загрузке модуля. Публичный вход остался на старом месте — `utils/revision-migrations.ts` (см. ниже) | `document.adapter.ts` (через фасад) |
+| `utils/revision-migrations.ts` | тонкий фасад: реэкспорт `migrateRevisionData`/`unifyHeaderWithHome`/`storeChromeOnCheckoutResult`/`unifyFooterWithHome`/`GALLERY_CANON_ITEMS` из `format/` — путь не переехал, потому что у него ~45 внешних импортёров (тесты тем, `canon-reference.ts`, `revision-write-filter.ts`) | `document.adapter.ts`, `store/theme-switch/canon-reference.ts`, `utils/revision-write-filter.ts`, тесты тем |
 | `canon.ts` | канон темы — стартовый документ без базы данных (PageResolver для тем с полным манифестом, иначе легаси JSON из `generator/templates/defaults`) | `store-content.service.buildInitialRevision` |
 | `save-on-base.ts` | алгоритм записи от базы без SQL: CAS, слияние, снимок клиента, метки `meta`; хранилище (`RevisionStore.commit`) даёт адаптер | `document.adapter` |
 | `write-model.ts` | что записи нужно знать о документе: приведение к одной версии формата, фильтр досеянного, «что не правка» | `document.adapter` (строит), `save-on-base` (пользуется) |
@@ -106,5 +174,20 @@
   `ThemePuckConfigController`, так что слой контента зависит от контроллера. Чтобы это исправить,
   нужно вынести сборку puck-config с кэшем в провайдер уровня `themes/`, а это правка старого
   контроллера, которую этап 2 не трогал. Делается отдельной задачей.
-- **Шаги чтения** (`migrate`, `normalize`, `seed`, `resolve`) лежат внутри `document.adapter.ts`
-  с волны 1. Выносить их в свой файл — тоже отдельная задача.
+- ~~Шаги чтения (`migrate`, `normalize`, `seed`, `resolve`) лежат внутри `document.adapter.ts`~~ —
+  частично снято R4: `migrate` был не тонкой обёрткой, а 2 532-строчной лестницей `if`
+  (`utils/revision-migrations.ts`) — теперь таблица шагов в `format/steps/*.ts`
+  (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`). Осталось: сама таблица оркестрации четырёх
+  шагов (`LOAD_STEPS`/`runLoadSteps`, тонкие обёртки `migrateStep`/`normalizeStep`/`seedStep`/
+  `resolveStep`) — по-прежнему в `document.adapter.ts`; `normalize`/`seed`/`resolve` каждый уже тонкая
+  обёртка над внешней функцией (`PageResolver.normalizeRevision`, `seedContentPagesFromTheme`,
+  `resolveAssetUrls`) — выносить оркестрацию в свой файл, если понадобится, отдельной задачей.
+- **R4, пропуск миграций для «свежего» документа — рассмотрели и НЕ стали делать.** Замер
+  `migrateRevisionData` на золотых документах пяти тем (`src/__tests__/golden/*/fresh-store.json`,
+  33–66 КБ) — 0,12–0,22 мс за прогон; весь конвейер чтения (миграции + normalize + seed + resolve) по
+  замеру плана — 0,4–1,3 мс. Даже полный пропуск ВСЕХ шагов миграции экономил бы меньше миллисекунды,
+  а корректная реализация (метка версии формата в `meta`, не в `data` — иначе золотые документы
+  изменились бы; шаги на манифесте темы, например `seedCheckoutResultPage`, пропускать нельзя никогда;
+  доказательство равносильности «пропуск = повтор» по всем золотым документам и фикстурам) добавляет
+  риск на горячий путь, который выполняется на КАЖДЫЙ GET. Не стоит того — «при любом сомнении не
+  делай» (бриф R4).

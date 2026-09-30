@@ -220,6 +220,12 @@ describe("золотой документ: смена темы rose → satin п
           where: (_c: any) => withReturning([{ id: "site-1" }]),
         }),
       }),
+      // R2 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): единый
+      // конвейер записи — DocumentAdapter.commit() всегда идёт через
+      // транзакцию (см. тот же комментарий в
+      // site-create-theme.characterization.spec.ts).
+      transaction: async (cb: (tx: unknown) => Promise<void>) =>
+        cb({ insert: db.insert, update: db.update }),
     };
     return { db, inserted };
   }

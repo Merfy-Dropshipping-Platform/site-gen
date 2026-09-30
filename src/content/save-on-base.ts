@@ -34,6 +34,7 @@ import type {
   SaveOnBaseParams,
   SaveParams,
   SaveResult,
+  SitePatch,
 } from "./store-content.port";
 
 export interface NewRevision {
@@ -59,16 +60,22 @@ export interface RevisionStore {
     storedCurrent: Doc | undefined,
   ): Promise<WriteModel>;
   /**
-   * Одна транзакция: вставить `rows`, переставить указатель на `current`, если
-   * он сейчас равен `expected`. `false` — CAS не прошёл, ничего не записано.
+   * Одна транзакция: вставить `rows`; `current` задан — переставить указатель
+   * (и заодно применить `sitePatch` к строке `site`, этап 3, В4); `current` не
+   * задан — вставка без переезда указателя вовсе (запись не текущая). `expected`
+   * задан — CAS (`null` — «указателя ещё нет», строка — конкретная прежняя
+   * ревизия); не задан — переезд безусловный. Единая точка фиксации для обеих
+   * форм записи (`save-on-base.ts` и `document.adapter.ts`.`saveWithoutBase`),
+   * без дублирования SQL. CAS не прошёл — `false`, ничего не записано.
    */
   commit(write: {
     siteId: string;
     tenantId: string;
     rows: NewRevision[];
-    current: string;
-    expected: string | null;
+    current?: string;
+    expected?: string | null;
     createdBy?: string;
+    sitePatch?: SitePatch;
   }): Promise<boolean>;
 }
 
@@ -331,6 +338,7 @@ class WriteOnBase {
       current,
       expected,
       createdBy: this.params.actorUserId,
+      sitePatch: this.params.sitePatch,
     });
   }
 }

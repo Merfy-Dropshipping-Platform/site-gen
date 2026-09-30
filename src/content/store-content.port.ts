@@ -113,6 +113,21 @@ interface WriteCommon {
   meta?: Record<string, unknown>;
   /** B17: серверный фильтр досеянных страниц перед записью (revision-write-filter). */
   filterSeeded?: boolean;
+  /**
+   * Правка строки `site` В ТОЙ ЖЕ транзакции, что вставка ревизии и сдвиг
+   * указателя (этап 3, В4: смена темы). Закрытый набор полей — умышленно, чтобы
+   * его нельзя было спутать с самим указателем (`currentRevisionId` сюда не
+   * попадёт даже случайно). Требует `setCurrent` — иначе строку `site` эта
+   * запись вообще не трогает, и патчу не на что сесть.
+   */
+  sitePatch?: SitePatch;
+}
+
+/** Поля строки `site`, которые запись может поменять заодно с ревизией (В4). */
+export interface SitePatch {
+  themeId?: string;
+  themeAppliedAt?: Date;
+  updatedBy?: string;
 }
 
 /**

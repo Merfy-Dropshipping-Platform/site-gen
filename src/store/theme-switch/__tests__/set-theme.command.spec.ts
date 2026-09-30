@@ -30,8 +30,23 @@ function catalogOf(ids: readonly string[]): ThemeCatalog {
   };
 }
 
-/** БД-заглушка ровно под `DocumentAdapter`: ревизии в памяти, одна текущая. */
-function revisionStore() {
+/**
+ * БД-заглушка ровно под `DocumentAdapter`: ревизии в памяти, одна текущая.
+ *
+ * R2 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`, В4): `SetTheme`
+ * больше не зовёт отдельный `recordThemeChoice()` — `themeId`/`themeAppliedAt`
+ * едут в `UPDATE site` той же транзакцией, что и сдвиг указателя (`sitePatch`
+ * в `content.save()`). Заглушка отражает это: `siteRef` — тот же объект
+ * `site`, что видит `sites.get()`, и обе ветки `update()` (безусловная и под
+ * `.returning()`) копируют на него `themeId`/`themeAppliedAt`/`updatedBy` из
+ * патча, когда они в нём есть — иначе `expect(site.themeId)...` по всему
+ * файлу проверял бы не то, что реально записано.
+ */
+function revisionStore(siteRef: {
+  themeId: string;
+  themeAppliedAt: Date | null;
+  updatedBy?: string;
+}) {
   const revisions = new Map<
     string,
     { data: any; meta: any; createdBy?: string }
@@ -43,6 +58,12 @@ function revisionStore() {
       meta: v.meta,
       createdBy: v.createdBy,
     });
+  };
+  const applySitePatch = (v: any) => {
+    if (v.currentRevisionId) state.current = v.currentRevisionId;
+    if (v.themeId !== undefined) siteRef.themeId = v.themeId;
+    if (v.themeAppliedAt !== undefined) siteRef.themeAppliedAt = v.themeAppliedAt;
+    if (v.updatedBy !== undefined) siteRef.updatedBy = v.updatedBy;
   };
   const db: any = {
     select: () => ({
@@ -62,9 +83,7 @@ function revisionStore() {
     insert: () => ({ values: insertRevision }),
     update: () => ({
       set: (v: any) => ({
-        where: async () => {
-          if (v.currentRevisionId) state.current = v.currentRevisionId;
-        },
+        where: async () => applySitePatch(v),
       }),
     }),
     transaction: async (work: (tx: any) => Promise<void>) => {
@@ -74,7 +93,7 @@ function revisionStore() {
           set: (v: any) => ({
             where: () => ({
               returning: async () => {
-                state.current = v.currentRevisionId;
+                applySitePatch(v);
                 return [{ id: "site-1" }];
               },
             }),
@@ -95,9 +114,6 @@ function makeBareSites(): SitesDomainService {
 function setup(
   opts: { themeId?: string; status?: string; initial?: any } = {},
 ) {
-  const store = revisionStore();
-  const content = new DocumentAdapter(store.db);
-  const bare = makeBareSites();
   const site = {
     id: "site-1",
     tenantId: "t1",
@@ -108,7 +124,11 @@ function setup(
     currentRevisionId: null as string | null,
     contentModel: "document",
     themeAppliedAt: null as Date | null,
+    updatedBy: undefined as string | undefined,
   };
+  const store = revisionStore(site);
+  const content = new DocumentAdapter(store.db);
+  const bare = makeBareSites();
   if (opts.initial) {
     store.revisions.set("rev-0", { data: opts.initial, meta: {} });
     store.state.current = "rev-0";
@@ -123,11 +143,6 @@ function setup(
     buildInitialRevision: jest.fn((themeId: string) =>
       bare.buildInitialRevision(themeId),
     ),
-    recordThemeChoice: jest.fn(async ({ themeId }: { themeId: string }) => {
-      site.themeId = themeId;
-      site.themeAppliedAt = new Date();
-      return true;
-    }),
     publish: jest.fn(async () => ({
       url: "https://shop.merfy.ru",
       buildId: "b-1",
@@ -427,7 +442,6 @@ describe("SetTheme: проверки входа и тема по каталог�
     });
     expect(store.revisions.size).toBe(1);
     expect(site.themeId).toBe("rose");
-    expect(sites.recordThemeChoice).not.toHaveBeenCalled();
   });
 
   it("чужой или несуществующий магазин — site_not_found", async () => {
@@ -518,7 +532,6 @@ describe("SetTheme: запись и переиздание", () => {
     });
 
     expect(result).toEqual({ ok: false, error: { code: "revision_conflict" } });
-    expect(sites.recordThemeChoice).not.toHaveBeenCalled();
     expect(site.themeId).toBe("rose");
   });
 

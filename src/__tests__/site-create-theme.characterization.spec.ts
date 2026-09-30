@@ -103,6 +103,12 @@ describe("reserve(): создание магазина (sites.service.ts:~463-57
           return { where: async (_c: any) => [] };
         },
       }),
+      // R2: единый конвейер записи — DocumentAdapter.commit() всегда идёт
+      // через транзакцию (раньше «вслепую без CAS» шло двумя отдельными
+      // вызовами db.insert/db.update мимо неё). tx делит insert/update с
+      // верхним уровнем — те же массивы inserted/siteUpdates.
+      transaction: async (cb: (tx: unknown) => Promise<void>) =>
+        cb({ insert: db.insert, update: db.update }),
     };
     return { db, inserted, siteUpdates };
   }
@@ -547,6 +553,10 @@ describe("update(): смена темы у существующего магаз
           return { where: (_c: any) => withReturning([{ id: "site-1" }]) };
         },
       }),
+      // R2: см. тот же комментарий в makeReserveDb() — единый конвейер
+      // записи всегда идёт через транзакцию.
+      transaction: async (cb: (tx: unknown) => Promise<void>) =>
+        cb({ insert: db.insert, update: db.update }),
     };
     return { db, inserted, siteUpdates };
   }

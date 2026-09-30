@@ -1,24 +1,29 @@
 # Контент магазина: порт `StoreContent`
 
-Здесь живёт единственный путь к содержимому ревизии магазина (`site_revision.data`):
-чтение — `load`, запись — `save`. Мимо порта содержимое не читают и не пишут: за этим следят
-сторожа `__tests__/no-direct-revision-reads.spec.ts` и `__tests__/no-direct-revision-writes.spec.ts`.
-Весь замысел — в плане этапа 2 (`merfy-mcp/docs/plans/2026-09-24-stage2-safe-write.md`),
+Здесь живёт единственный путь к ревизии магазина: содержимое — `load`/`save`, метаданные и версии —
+`history`/`get`/`rollback` (плюс удобные обёртки `createRevision`, `buildInitialRevision` — сахар над
+`save`/канон темы, не части интерфейса порта). Мимо порта содержимое не читают и не пишут: за этим
+следят сторожа `__tests__/no-direct-revision-reads.spec.ts` и `__tests__/no-direct-revision-writes.spec.ts`.
+`sites.service.ts` держит только тонкие обёртки (сайт по tenantId ищет он сам — порт своего `SELECT`
+по `schema.site` не делает, см. ниже), реализация — здесь. Замысел этапа 2 — план
+`merfy-mcp/docs/plans/2026-09-24-stage2-safe-write.md`, R1–R3 (перенос читателей, один конвейер
+записи, история/разница/откат с базой) — `merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`,
 грамматика адресов и операции — в `operations/README.md`.
 
 ## Карта модулей
 
 | Файл | За что отвечает | Кто зовёт |
 |---|---|---|
-| `store-content.port.ts` | контракт порта: формы записи `SaveParams` (`"on-base"` / `"blind"`), результат, ошибки `RevisionConflictError` и `RevisionMergeConflictError` | все ниже, `sites.service`, `pages.service`, RPC-контроллер |
-| `store-content.service.ts` | Nest-провайдер: выбирает адаптер по `site.content_model` (сегодня только `document`) | `sites.service`, `pages.service`, `build.service`, `preview.controller` |
-| `document.adapter.ts` | адаптер модели `document`: шаги чтения (миграции, досев, адреса), SQL ревизий и указателя, запись вслепую | `store-content.service` |
-| `save-on-base.ts` | алгоритм записи от базы без SQL: CAS, слияние, снимок клиента, метки `meta` | `document.adapter` |
+| `store-content.port.ts` | контракт порта: `load`/`save`/`history`/`get`/`rollback`, формы записи `SaveParams` (`"on-base"` / `"blind"`), `SitePatch` (В4), результат, ошибки `RevisionConflictError` и `RevisionMergeConflictError` | все ниже, `sites.service`, `pages.service`, RPC-контроллер, команды `store/` |
+| `store-content.service.ts` | Nest-провайдер: диспетчер по `site.content_model` (сегодня только `document`) + `createRevision`/`buildInitialRevision` (не диспетчеризуются — общие для всех моделей) | `sites.service`, `pages.service`, `build.service`, `preview.controller`, команды `store/theme-switch`, `store/lifecycle` |
+| `document.adapter.ts` | адаптер модели `document`: шаги чтения (миграции, досев, адреса), `history`/`get`/`rollback`, единая функция фиксации `commit()` (вставка + сдвиг указателя + `sitePatch`, одна транзакция — что раньше было «записью от базы» и отдельно «вслепую» с дублированным SQL) | `store-content.service` |
+| `canon.ts` | канон темы — стартовый документ без базы данных (PageResolver для тем с полным манифестом, иначе легаси JSON из `generator/templates/defaults`) | `store-content.service.buildInitialRevision` |
+| `save-on-base.ts` | алгоритм записи от базы без SQL: CAS, слияние, снимок клиента, метки `meta`; хранилище (`RevisionStore.commit`) даёт адаптер | `document.adapter` |
 | `write-model.ts` | что записи нужно знать о документе: приведение к одной версии формата, фильтр досеянного, «что не правка» | `document.adapter` (строит), `save-on-base` (пользуется) |
 | `change-kinds.ts` | правила «не правка»: автозначения панели конструктора, копии шапки и подвала на внутренних страницах | `write-model` |
 | `panel-defaults.ts` | значения по умолчанию панели из того же puck-config, что получает конструктор | `document.adapter`, дымовая проверка `scripts/smoke-panel-defaults.mjs` |
 | `rewrite-current.ts` | повтор «прочитал → посчитал → записал» при споре о том же месте | `pages.service`, `sites.service.resetContentPages` |
-| `revision-kinds.ts` | SQL-условие «ревизия — версия магазина, а не снимок клиента» | `sites.service.listRevisions`, `admin/bulk` |
+| `revision-kinds.ts` | условие «ревизия — версия магазина, а не снимок клиента» | `document.adapter.history` (было — `sites.service.listRevisions` до R1), `admin/bulk` |
 | `operations/` | движок: `diff`, `apply`, `merge3`, адреса; чистые функции без базы | `save-on-base`, `change-kinds`, `write-model` |
 
 ## Инварианты этапа 2
@@ -45,8 +50,9 @@
 | конструктор (`sites.revisions.create`) | `on-base` | слить, `last-writer-wins`; чужое — в `overwritten` |
 | страницы кабинета (`pages.service`) | `on-base` | слить, `reject-conflicts`; спор — пересчитать правку (`rewriteCurrent`) |
 | сброс контент-страниц (`resetContentPages`) | `on-base` | так же, как страницы кабинета |
-| откат (`setCurrentRevision`) | `on-base` | `refuse`: не сливать, `RevisionConflictError` (409) |
-| создание магазина, смена темы (этап 3) | `blind` | не проверяется; с `expectedVersion` — жёсткий CAS |
+| откат (`rollback`) | `on-base` | `refuse`: не сливать, `RevisionConflictError` (409) |
+| создание магазина, сид саги рождения (`store/lifecycle`) | `blind` | не проверяется; с `expectedVersion` — жёсткий CAS |
+| смена темы (`store/theme-switch/SetThemeCommand`) | `blind` | жёсткий CAS по прочитанной версии; `sitePatch` (`themeId`/`themeAppliedAt`/`updatedBy`) едет в ТОЙ ЖЕ транзакции, что ревизия (R2, В4) |
 
 Повторы: гонку CAS (кто-то записал между чтением и записью) отрабатывает сам порт, до
 `CAS_ATTEMPTS` раз. `rewriteCurrent` повторяет правку только при `RevisionMergeConflictError`,
@@ -54,11 +60,16 @@
 
 ## Долг
 
-- **`saveWithoutBase` в адаптере** — второй путь записи рядом с `saveOnBase`. Он уходит при стыковке
-  с этапом 3: сид и смена темы переходят на форму `blind` (или на `on-base` с `base: null`), потом
-  оба пути сводятся в один.
-- **Колонка `kind` у `site_revision` вместо `meta->>'kind'`.** Делать вместе с миграцией черновиков
-  (кусок 2.6), одной аддитивной миграцией.
+- ~~`saveWithoutBase` в адаптере — второй путь записи рядом с `saveOnBase`~~ — снято R2
+  (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): обе формы (`on-base`/`blind`) сходятся в
+  ОДНУ функцию фиксации, `DocumentAdapter.commit()` — она одна решает, двигать ли указатель, проверять
+  ли CAS и патчить ли `site` заодно (`sitePatch`). `saveWithoutBase` осталась как имя метода (перевод
+  `BlindSaveParams` → аргументы `commit()`), но SQL под ней теперь общий с записью от базы.
+- ~~Ревизия и `site.themeId` двумя транзакциями (В4)~~ — снято R2: `SetTheme` передаёт `sitePatch` в
+  `content.save({mode: "blind", ...})`, `commit()` пишет ревизию, сдвигает указатель и патчит `site`
+  одной транзакцией. Сбой между вставкой и патчем — ничего не записано (тест-саботаж:
+  `document.adapter.spec.ts` → «sitePatch: сбой ПОСЛЕ вставки ревизии…»).
+- **Колонка `kind` у `site_revision` вместо `meta->>'kind'`.** R3.
 - **Источник значений по умолчанию панели** (`panel-defaults.ts`) создаёт HTTP-контроллер
   `ThemePuckConfigController`, так что слой контента зависит от контроллера. Чтобы это исправить,
   нужно вынести сборку puck-config с кэшем в провайдер уровня `themes/`, а это правка старого

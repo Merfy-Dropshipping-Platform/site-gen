@@ -287,43 +287,39 @@ export class DocumentAdapter implements StoreContent {
 
   /**
    * Запись вслепую (создание магазина, смена темы, жёсткий CAS по
-   * `expectedVersion`) — как до этапа 2. Второй путь записи рядом с
-   * `saveOnBase`: уходит при стыковке с этапом 3 (долг — `README.md`).
+   * `expectedVersion`) — как до этапа 2, но теперь ОДНИМ конвейером с
+   * записью от базы: обе формы сходятся в единственную `commit()` (этап 3,
+   * R2 `merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`). Раньше здесь
+   * был второй путь (`insertRevision`+`setCurrentUnconditional` — два
+   * отдельных, не завёрнутых в транзакцию запроса рядом с CAS-веткой,
+   * дублирующей SQL из `commit()`); теперь `commit()` сама решает по
+   * `current`/`expected`, двигать ли указатель и проверять ли CAS.
    */
   private async saveWithoutBase(
     siteId: string,
     params: BlindSaveParams,
   ): Promise<SaveResult> {
+    if (params.sitePatch && !params.setCurrent) {
+      // sitePatch садится на UPDATE site, который делает только setCurrent —
+      // без него патчу не на что сесть, и он молча пропал бы.
+      throw new Error("site_patch_requires_set_current");
+    }
     const id = randomUUID();
     const dataToPersist = params.filterSeeded
       ? await this.stripSeededPages(siteId, params.site, params.document)
       : params.document;
     const meta = this.legacyMeta(params);
 
-    const expectedVersion = params.expectedVersion;
-    if (params.setCurrent && expectedVersion !== undefined) {
-      const ok = await this.commit({
-        siteId,
-        tenantId: params.tenantId,
-        rows: [{ id, data: dataToPersist, meta: meta ?? {} }],
-        current: id,
-        expected: expectedVersion,
-        createdBy: params.actorUserId,
-      });
-      if (!ok) throw new RevisionConflictError();
-      return { version: id };
-    }
-
-    await this.insertRevision(
-      id,
+    const ok = await this.commit({
       siteId,
-      dataToPersist,
-      meta,
-      params.actorUserId,
-    );
-    if (params.setCurrent) {
-      await this.setCurrentUnconditional(siteId, params.tenantId, id);
-    }
+      tenantId: params.tenantId,
+      rows: [{ id, data: dataToPersist, meta: meta ?? {} }],
+      current: params.setCurrent ? id : undefined,
+      expected: params.setCurrent ? params.expectedVersion : undefined,
+      createdBy: params.actorUserId,
+      sitePatch: params.sitePatch,
+    });
+    if (!ok) throw new RevisionConflictError();
     return { version: id };
   }
 
@@ -383,14 +379,20 @@ export class DocumentAdapter implements StoreContent {
     return row.currentRevisionId ?? null;
   }
 
-  /** Вставка ревизий + CAS указателя одной транзакцией; CAS не прошёл — откат и `false`. */
+  /**
+   * Единственная точка фиксации записи (R2): вставка ревизий + (если задан
+   * `current`) сдвиг указателя, при необходимости под CAS, плюс `sitePatch` на
+   * ту же строку `site` — одной транзакцией. И на быстром пути (без базы), и
+   * при записи от базы SQL один и тот же — дублирования нет.
+   *
+   * `current` не задан — только вставка, указатель не трогаем (запись не
+   * становится текущей). `expected` не задан — переезд безусловный (как раньше
+   * `setCurrentUnconditional`); `expected` задан — CAS: 0 обновлённых строк →
+   * `CasMiss`, транзакция откатывается целиком (вставленные ревизии тоже).
+   */
   private async commit(
     write: Parameters<RevisionStore["commit"]>[0],
   ): Promise<boolean> {
-    const expectedPredicate =
-      write.expected === null
-        ? isNull(schema.site.currentRevisionId)
-        : eq(schema.site.currentRevisionId, write.expected);
     try {
       await this.db.transaction(async (tx) => {
         for (const row of write.rows) {
@@ -403,9 +405,31 @@ export class DocumentAdapter implements StoreContent {
             createdBy: write.createdBy,
           });
         }
+        if (write.current === undefined) return;
+        const sitePatch: Record<string, unknown> = {
+          currentRevisionId: write.current,
+          updatedAt: new Date(),
+          ...write.sitePatch,
+        };
+        if (write.expected === undefined) {
+          await tx
+            .update(schema.site)
+            .set(sitePatch)
+            .where(
+              and(
+                eq(schema.site.id, write.siteId),
+                eq(schema.site.tenantId, write.tenantId),
+              ),
+            );
+          return;
+        }
+        const expectedPredicate =
+          write.expected === null
+            ? isNull(schema.site.currentRevisionId)
+            : eq(schema.site.currentRevisionId, write.expected);
         const updated = await tx
           .update(schema.site)
-          .set({ currentRevisionId: write.current, updatedAt: new Date() })
+          .set(sitePatch)
           .where(
             and(
               eq(schema.site.id, write.siteId),
@@ -490,33 +514,4 @@ export class DocumentAdapter implements StoreContent {
     return (prev?.data as Record<string, unknown> | undefined) ?? null;
   }
 
-  private async insertRevision(
-    id: string,
-    siteId: string,
-    data: Record<string, unknown>,
-    meta: Record<string, unknown> | undefined,
-    actorUserId: string | undefined,
-  ): Promise<void> {
-    await this.db.insert(schema.siteRevision).values({
-      id,
-      siteId,
-      data: data ?? {},
-      meta: meta ?? {},
-      createdAt: new Date(),
-      createdBy: actorUserId,
-    });
-  }
-
-  private async setCurrentUnconditional(
-    siteId: string,
-    tenantId: string,
-    revisionId: string,
-  ): Promise<void> {
-    await this.db
-      .update(schema.site)
-      .set({ currentRevisionId: revisionId, updatedAt: new Date() })
-      .where(
-        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
-      );
-  }
 }

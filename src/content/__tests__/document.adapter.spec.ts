@@ -218,4 +218,99 @@ describe('DocumentAdapter — специфичные проверки адапт
     expect(site.currentRevisionId).toBe('rev-old');
     expect(result.version).not.toBe('rev-old');
   });
+
+  // R2 (В4, `merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): ревизия и
+  // правка строки site (например, смена темы) — ОДНА транзакция. Раньше
+  // (SetTheme) это были два отдельных запроса: при сбое между ними ревизия
+  // новой темы уже текущая, а themeId — ещё старый.
+  it('save({mode: "blind", sitePatch}) применяет sitePatch к site в ТОЙ ЖЕ транзакции', async () => {
+    const siteId = nextId('site');
+    const site = { id: siteId, tenantId: nextId('tenant'), currentRevisionId: 'rev-old' };
+    const store = makeFakeDb(site);
+    store.revisions.set('rev-old', {
+      id: 'rev-old',
+      siteId,
+      data: {},
+      meta: {},
+      createdAt: new Date(0),
+    });
+    const adapter = new DocumentAdapter(store.db);
+
+    const result = await adapter.save(siteId, {
+      mode: 'blind',
+      document: { pages: [] },
+      filterSeeded: false,
+      tenantId: site.tenantId,
+      setCurrent: true,
+      expectedVersion: 'rev-old',
+      sitePatch: { themeId: 'flux', themeAppliedAt: new Date(0) },
+      site: { themeId: 'rose', publicUrl: null, currentRevisionId: site.currentRevisionId },
+    });
+
+    expect(result.version).not.toBe('rev-old');
+    expect(site.currentRevisionId).toBe(result.version);
+    expect((site as { themeId?: string }).themeId).toBe('flux');
+  });
+
+  // Саботаж этого теста (описан в отчёте): вернуть sitePatch отдельным
+  // db.update ПОСЛЕ commit() — тест ниже (сбой между вставкой и обновлением)
+  // красится, потому что вставка ревизии тогда уже не в одной транзакции с
+  // патчем и переживает якобы «откаченный» сбой.
+  it('sitePatch: сбой ПОСЛЕ вставки ревизии, но ДО обновления site — в базе нет ни новой ревизии, ни новой темы', async () => {
+    const siteId = nextId('site');
+    const tenantId = nextId('tenant');
+    const revisions: unknown[] = [];
+    let siteRow = { id: siteId, tenantId, currentRevisionId: 'rev-old', themeId: 'rose' };
+    const db: any = {
+      // fetchRevision(expectedVersion) — save() читает базу перед записью
+      // не обязан, но readPointer/fetchData порта могут понадобиться другим
+      // веткам; здесь используется только вставка + один UPDATE.
+      select: () => ({ from: () => ({ where: () => Promise.resolve([]) }) }),
+      transaction: async (cb: (tx: unknown) => Promise<void>) => {
+        const staged: unknown[] = [];
+        const tx = {
+          insert: (_tbl: unknown) => ({
+            values: async (value: unknown) => {
+              staged.push(value);
+            },
+          }),
+          update: (_tbl: unknown) => ({
+            set: (_patch: unknown) => ({
+              where: () => ({
+                returning: async () => {
+                  // Имитация обрыва (сеть/процесс) ровно между вставкой
+                  // ревизии и сдвигом указателя+sitePatch — то самое «сбой
+                  // между вставкой и обновлением магазина» из брифа R2.
+                  throw new Error('simulated crash between insert and site update');
+                },
+              }),
+            }),
+          }),
+        };
+        await cb(tx);
+        // Не должно достигаться: cb выше всегда бросает.
+        revisions.push(...staged);
+      },
+    };
+    const adapter = new DocumentAdapter(db);
+
+    await expect(
+      adapter.save(siteId, {
+        mode: 'blind',
+        document: { pages: [] },
+        filterSeeded: false,
+        tenantId,
+        setCurrent: true,
+        expectedVersion: 'rev-old',
+        sitePatch: { themeId: 'flux' },
+        site: { themeId: 'rose', publicUrl: null, currentRevisionId: siteRow.currentRevisionId },
+      }),
+    ).rejects.toThrow('simulated crash between insert and site update');
+
+    // Ни новой ревизии (транзакция откатила вставку — staged не попал в revisions)…
+    expect(revisions).toEqual([]);
+    // …ни новой темы (сама строка site — та же ссылка, её никто не менял).
+    expect(siteRow.themeId).toBe('rose');
+    expect(siteRow.currentRevisionId).toBe('rev-old');
+  });
 });

@@ -155,7 +155,14 @@ describe("SitesDomainService.createRevision CAS", () => {
     expect(fixture.committedRevisionIds).toEqual([]);
   });
 
-  it("keeps the legacy non-transactional path when expected current is omitted", async () => {
+  // R2 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): было — «без
+  // expectedCurrentRevisionId» шло ДВУМЯ отдельными вызовами db.insert/
+  // db.update мимо транзакции («второй путь записи» рядом с CAS-веткой).
+  // Стало — единственная функция фиксации (DocumentAdapter.commit): вставка
+  // ревизии и (безусловный, без CAS-предиката) сдвиг указателя одной
+  // транзакцией, тем же кодом, что и CAS-ветка выше. Данные на выходе те же
+  // (И7 путём одного писателя) — поменялся только SQL-конвейер под капотом.
+  it("uses the same transactional commit when expected current is omitted", async () => {
     const fixture = createDb("rev-a", true);
     const service = makeService(fixture.db);
     jest.spyOn(service, "get").mockResolvedValue({ id: "site-1" } as never);
@@ -167,7 +174,7 @@ describe("SitesDomainService.createRevision CAS", () => {
       setCurrent: true,
     });
 
-    expect(fixture.db.transaction).not.toHaveBeenCalled();
+    expect(fixture.db.transaction).toHaveBeenCalledTimes(1);
     expect(fixture.committedRevisionIds).toEqual([result.revisionId]);
   });
 });

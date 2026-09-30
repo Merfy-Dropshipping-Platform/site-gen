@@ -15,6 +15,15 @@ interface Props extends CheckoutDeliveryMethodProps { id?: string; }
 const {
   id,
   heading,
+  // cdek* — временное исключение сторожа словаря (спека 117, шаг 5.2):
+  // 458 сайтов на проде хранят в ревизии свой текст этих полей (напр.
+  // «Курьер до двери» вместо дефолта «Курьер СДЭК до двери») — правка
+  // после 5.1, владелец «интерфейс не меняем». Читается ниже только для
+  // carrier==='cdek'; у остальных перевозчиков подпись всегда из расчёта.
+  cdekEnabled,
+  cdekDoorLabel,
+  cdekPvzLabel,
+  cdekPostamatLabel,
   pickupEnabled,
   pickupLabel,
   freeShippingThresholdCents,
@@ -26,6 +35,10 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
   class={C.root}
   data-puck-component-id={id}
   data-checkout-delivery-method
+  data-cdek-enabled={String(cdekEnabled)}
+  data-cdek-door-label={cdekDoorLabel}
+  data-cdek-pvz-label={cdekPvzLabel}
+  data-cdek-postamat-label={cdekPostamatLabel}
   data-pickup-enabled={String(pickupEnabled)}
   data-pickup-label={pickupLabel}
   data-free-shipping-threshold={freeShippingThresholdCents != null ? String(freeShippingThresholdCents) : ''}
@@ -80,6 +93,22 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
     var pickupEnabled = section.getAttribute('data-pickup-enabled') === 'true';
     var pickupLabel = section.getAttribute('data-pickup-label') || 'Самовывоз';
+    // cdek* — из сохранённых настроек блока (совместимость с 458 сайтами,
+    // см. комментарий у Props выше). null — атрибут не задан вовсе (прóпс
+    // не передан родителем) — тогда подпись СДЭК берём из расчёта, как для
+    // любого другого перевозчика. "" — задан пустой строкой (продавец стёр
+    // текст) — до 5.1 пустая строка тоже давала дефолт через `|| 'текст'`,
+    // это поведение сохраняем через тот же `|| 'текст'` НИЖЕ, отдельно от
+    // случая null.
+    // data-cdek-enabled сюда сознательно НЕ читаем: до 5.1 он рисовался
+    // атрибутом, но скрипт его не проверял нигде (carrier==='cdek' варианты
+    // никогда от него не зависели) — оставляем то же самое отсутствие эффекта.
+    var cdekDoorLabelAttr = section.getAttribute('data-cdek-door-label');
+    var cdekPvzLabelAttr = section.getAttribute('data-cdek-pvz-label');
+    var cdekPostamatLabelAttr = section.getAttribute('data-cdek-postamat-label');
+    var cdekDoorLabel = cdekDoorLabelAttr === null ? null : (cdekDoorLabelAttr || 'Курьер СДЭК до двери');
+    var cdekPvzLabel = cdekPvzLabelAttr === null ? null : (cdekPvzLabelAttr || 'Пункт выдачи СДЭК');
+    var cdekPostamatLabel = cdekPostamatLabelAttr === null ? null : (cdekPostamatLabelAttr || 'Постамат СДЭК');
     var freeThresholdRaw = section.getAttribute('data-free-shipping-threshold') || '';
     var freeShippingThreshold = freeThresholdRaw ? parseInt(freeThresholdRaw, 10) : null;
 
@@ -533,6 +562,14 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         }
         return 'Заберёте в пункте выдачи, с сотрудником';
       }
+      // Подпись СДЭК: приоритет — настройка блока (cdekDoorLabel/cdekPvzLabel/
+      // cdekPostamatLabel), null здесь означает «пропс не передан» — тогда
+      // берём готовую подпись из расчёта, как у любого другого перевозчика.
+      // У прочих carrier таких пропсов нет — для них всегда label из расчёта.
+      function cdekLabelOverride(mode, pickupPointKind) {
+        if (mode === 'door') return cdekDoorLabel;
+        return pickupPointKind === 'POSTAMAT' ? cdekPostamatLabel : cdekPvzLabel;
+      }
 
       for (var i = 0; i < deliveryOptions.length; i++) {
         var o = deliveryOptions[i];
@@ -593,6 +630,11 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         var best = carrierGroups[carrierOrder[ci]];
         var desc = best.description || defaultMethodDesc(best.carrier, best.mode, best.pickupPointKind);
         var bestMeta = best.period ? (desc + ' · ' + best.period) : desc;
+        var bestLabel = best.label;
+        if (best.carrier === 'cdek') {
+          var cdekOverride = cdekLabelOverride(best.mode, best.pickupPointKind);
+          if (cdekOverride != null) bestLabel = cdekOverride;
+        }
         options.push({
           type: best.cardType,
           carrier: best.carrier,
@@ -600,7 +642,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           requiresPickupPoint: best.requiresPickupPoint,
           shipmentRequired: best.shipmentRequired,
           tariffCode: best.tariffCode,
-          label: best.label,
+          label: bestLabel,
           meta: bestMeta,
           priceCents: best.priceCents,
           periodMin: best.periodMin,

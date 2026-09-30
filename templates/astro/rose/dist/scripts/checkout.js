@@ -17,14 +17,17 @@ class CheckoutFlow {
     this.cart = null;
     this.dadataToken = null;
     this.selectedAddress = null; // Stores full DaData suggestion data
-    this.deliveryTariffs = []; // CDEK tariffs from calculation
-    this.selectedDelivery = null; // { type, tariffCode, deliveryCostCents }
+    // Доставка: перевозчика и режим знает только логистика (spec 117). Карточки
+    // строятся из ОДНОГО ответа /delivery/calculate — deliveryOptions[] (свои
+    // тарифы магазина + тарифы любого подключённого перевозчика) и
+    // pickupPoints[] (точки самовывоза МАГАЗИНА, не перевозчика).
+    this.deliveryOptions = []; // deliveryOptions[] из последнего расчёта
+    this.shopPickupPoints = []; // pickupPoints[] из последнего расчёта — самовывоз магазина
+    this.selectedDelivery = null; // { type, carrier, mode, requiresPickupPoint, tariffCode, costCents, label, ... }
     this.deliveryCostCents = 0; // Current delivery cost for totals
-    this.pickupPoints = []; // CDEK pickup points for selected city
+    this.carrierPickupPoints = null; // ПВЗ/постаматы/отделения выбранного перевозчика (null = ещё грузим)
     this.selectedPvz = null; // { code, name, address, workTime, type }
-    this.lastCityFiasId = null; // Cache to avoid re-fetching PVZ for same city
-    this.deliveryMethods = { cdekAvailable: false, pickupAvailable: false, pickupAddress: null, pickupNotification: null, pickupExpectedDate: null, customProfiles: [] };
-    this.selectedDeliveryMethod = null; // 'cdek' | 'pickup' | null
+    this.lastPvzCacheKey = null; // "<carrier>|<cityFiasId>" — сброс точки при смене города/перевозчика
 
     this.init();
   }
@@ -386,11 +389,12 @@ class CheckoutFlow {
   resetDadataAddress() {
     this.selectedAddress = null;
     this.selectedDelivery = null;
-    this.deliveryTariffs = [];
+    this.deliveryOptions = [];
+    this.shopPickupPoints = [];
     this.deliveryCostCents = 0;
     this.selectedPvz = null;
-    this.pickupPoints = [];
-    this.lastCityFiasId = null;
+    this.carrierPickupPoints = null;
+    this.lastPvzCacheKey = null;
 
     // Reset delivery UI back to placeholder
     this.setDeliveryState('placeholder');
@@ -460,175 +464,57 @@ class CheckoutFlow {
 
   // --- End DaData ---
 
-  // --- Pickup-only check (no CDEK) ---
+  // --- Доставка: перевозчик и режим — из расчёта логистики -------------------
+  // Единая точка входа для обоих сценариев (без адреса — на старте; с адресом —
+  // после выбора города в DaData): /delivery/calculate всегда отдаёт
+  // {deliveryOptions[], pickupPoints[]} независимо от того, известен адрес или
+  // нет (без адреса тарифы перевозчика просто не приходят — свои тарифы
+  // магазина и самовывоз магазина приходят всегда). Раньше здесь было два
+  // метода, каждый разбирал СВОЮ, уже устаревшую форму ответа
+  // (`cdekAvailable`/`tariffs`) — обе не совпадали ни друг с другом, ни с
+  // текущим контрактом логистики.
 
   async checkDeliveryOptions() {
-    try {
-      const res = await CheckoutAPI.calculateDelivery(this.cartId, {});
-      if (!res.success) return;
-
-      const { cdekAvailable, cdekError, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles } = res.data;
-      this.deliveryMethods = { cdekAvailable, cdekError, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles: customProfiles || [] };
-
-      const methodEl = document.getElementById('co-delivery-method');
-      const addressGroup = document.getElementById('co-address-group');
-      const placeholder = document.getElementById('co-delivery-placeholder');
-      const hasCustom = customProfiles && customProfiles.length > 0;
-
-      // Case 1: Both available — show delivery method radio selector
-      if (cdekAvailable && pickupAvailable) {
-        if (placeholder) placeholder.classList.add('hidden');
-        if (methodEl) methodEl.classList.remove('hidden');
-        if (addressGroup) addressGroup.style.display = 'none';
-        // Fill pickup address in method selector
-        const addrEl = document.getElementById('co-delivery-method-pickup-addr');
-        if (addrEl && pickupAddress) addrEl.textContent = pickupAddress;
-        this.bindDeliveryMethodSelection();
-        // If custom profiles exist, render them immediately (no address needed)
-        if (hasCustom) {
-          this.renderDeliveryTariffs([], pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles);
-          this.setDeliveryState('tariffs');
-        }
-        return;
-      }
-
-      // Case 2: CDEK only — show address immediately (old behavior)
-      if (cdekAvailable && !pickupAvailable) {
-        if (hasCustom) {
-          this.renderDeliveryTariffs([], false, null, null, null, customProfiles);
-          this.setDeliveryState('tariffs');
-        }
-        return;
-      }
-
-      // Case 3: Pickup only — auto-select pickup, hide address
-      if (!cdekAvailable && pickupAvailable) {
-        if (placeholder) placeholder.classList.add('hidden');
-        if (addressGroup) addressGroup.style.display = 'none';
-        this.renderDeliveryTariffs([], true, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles);
-        this.setDeliveryState('tariffs');
-        if (cdekError) this.showCdekErrorNote(cdekError);
-        return;
-      }
-
-      // Case 5: Custom profiles only — no CDEK, no pickup
-      if (!cdekAvailable && !pickupAvailable && hasCustom) {
-        if (placeholder) placeholder.classList.add('hidden');
-        if (addressGroup) addressGroup.style.display = 'none';
-        this.renderDeliveryTariffs([], false, null, null, null, customProfiles);
-        this.setDeliveryState('tariffs');
-        if (cdekError) this.showCdekErrorNote(cdekError);
-        return;
-      }
-
-      // Case 4: Nothing available
-      this.setDeliveryState('unavailable');
-    } catch (e) {
-      // Silently fail — user can still try address for CDEK calculation
-    }
+    // Стартовый расчёт без адреса — тихо: сеть ещё не должна пугать покупателя
+    // ошибкой, пока он не ввёл город (совпадает с прежним поведением).
+    await this.recalcDelivery(null, { silent: true });
   }
-
-  bindDeliveryMethodSelection() {
-    const methodEl = document.getElementById('co-delivery-method');
-    if (!methodEl) return;
-
-    const options = methodEl.querySelectorAll('.checkout-delivery-method-option');
-    options.forEach(option => {
-      option.addEventListener('click', () => {
-        // Visual selection
-        options.forEach(o => o.classList.remove('checkout-shipping-option--selected'));
-        option.classList.add('checkout-shipping-option--selected');
-        const radio = option.querySelector('input[type="radio"]');
-        if (radio) radio.checked = true;
-
-        const method = option.dataset.method;
-        this.selectedDeliveryMethod = method;
-
-        const addressGroup = document.getElementById('co-address-group');
-        const tariffs = document.getElementById('co-delivery-tariffs');
-        const pickupEl = document.getElementById('co-delivery-pickup');
-        const placeholder = document.getElementById('co-delivery-placeholder');
-        const pvzSection = document.getElementById('co-pvz-section');
-
-        if (method === 'cdek') {
-          // Show address block, hide pickup, reset CDEK tariffs
-          if (addressGroup) addressGroup.style.display = '';
-          if (pickupEl) pickupEl.classList.add('hidden');
-          if (pvzSection) pvzSection.classList.add('hidden');
-          // Re-render custom profiles (if any) while clearing CDEK tariffs
-          const dm = this.deliveryMethods || {};
-          const hasCustom = dm.customProfiles && dm.customProfiles.length > 0;
-          if (hasCustom) {
-            this.renderDeliveryTariffs([], false, null, null, null, dm.customProfiles);
-            if (tariffs) tariffs.classList.remove('hidden');
-          } else {
-            if (tariffs) { tariffs.classList.add('hidden'); tariffs.innerHTML = ''; }
-          }
-          if (placeholder && !hasCustom) {
-            placeholder.classList.remove('hidden');
-          } else if (placeholder) {
-            placeholder.classList.add('hidden');
-          }
-          // Reset delivery selection
-          this.selectedDelivery = null;
-          this.deliveryCostCents = 0;
-          this.updateDeliveryTotals();
-        } else if (method === 'pickup') {
-          // Hide address, show pickup + custom profiles
-          if (addressGroup) addressGroup.style.display = 'none';
-          if (pvzSection) pvzSection.classList.add('hidden');
-          if (placeholder) placeholder.classList.add('hidden');
-          // Render pickup + custom profiles together
-          const dm = this.deliveryMethods || {};
-          this.renderDeliveryTariffs([], true, dm.pickupAddress, dm.pickupNotification, dm.pickupExpectedDate, dm.customProfiles);
-          if (tariffs) tariffs.classList.remove('hidden');
-          if (pickupEl) pickupEl.classList.remove('hidden');
-          // Auto-select pickup
-          this.selectedDelivery = { type: 'pickup', tariffCode: null, deliveryCostCents: 0 };
-          this.deliveryCostCents = 0;
-          this.updateDeliveryTotals();
-          this.sendDeliverySelection('pickup', null, 0, null, null, null, null);
-        }
-      });
-    });
-  }
-
-  // --- CDEK Delivery Calculation & Selection ---
 
   async calculateDelivery(cityFiasId, postalCode) {
-    this.setDeliveryState('loading');
+    await this.recalcDelivery({ cityFiasId, postalCode: postalCode || undefined }, { silent: false });
+  }
+
+  async recalcDelivery(addr, options) {
+    const silent = !!(options && options.silent);
+    const addressKnown = !!(addr && addr.cityFiasId);
+
     this.hidePvzSection();
-    this.selectedDelivery = null;
     this.selectedPvz = null;
-    this.deliveryTariffs = [];
-    this.pickupPoints = [];
-    this.lastCityFiasId = null;
+    this.carrierPickupPoints = null;
+    this.lastPvzCacheKey = null;
+
+    if (addressKnown) this.setDeliveryState('loading');
 
     try {
-      const res = await CheckoutAPI.calculateDelivery(this.cartId, {
-        cityFiasId,
-        postalCode: postalCode || undefined,
-      });
-
+      const res = await CheckoutAPI.calculateDelivery(this.cartId, addr || {});
       if (!res.success) {
-        this.setDeliveryState('error');
+        if (!silent) this.setDeliveryState('error');
         return;
       }
 
-      const { tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles } = res.data;
+      const data = res.data || {};
+      this.deliveryOptions = Array.isArray(data.deliveryOptions) ? data.deliveryOptions : [];
+      this.shopPickupPoints = Array.isArray(data.pickupPoints) ? data.pickupPoints : [];
 
-      const hasCustom = customProfiles && customProfiles.length > 0;
-      if ((!tariffs || tariffs.length === 0) && !pickupAvailable && !hasCustom) {
-        this.setDeliveryState('unavailable');
+      const hasCards = this.renderDeliveryOptions(addressKnown);
+      if (!hasCards) {
+        this.setDeliveryState(addressKnown ? 'unavailable' : 'placeholder');
         return;
       }
-
-      this.deliveryTariffs = tariffs || [];
-      this.renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles);
       this.setDeliveryState('tariffs');
     } catch (e) {
       console.error('Delivery calculation error:', e);
-      this.setDeliveryState('error');
+      if (!silent) this.setDeliveryState('error');
     }
   }
 
@@ -636,11 +522,10 @@ class CheckoutFlow {
     const placeholder = document.getElementById('co-delivery-placeholder');
     const loading = document.getElementById('co-delivery-loading');
     const tariffs = document.getElementById('co-delivery-tariffs');
-    const pickup = document.getElementById('co-delivery-pickup');
     const error = document.getElementById('co-delivery-error');
     const unavailable = document.getElementById('co-delivery-unavailable');
 
-    // Hide all (except pickup — managed by renderDeliveryTariffs)
+    // Hide all
     [placeholder, loading, tariffs, error, unavailable].forEach(el => {
       if (el) el.classList.add('hidden');
     });
@@ -648,222 +533,241 @@ class CheckoutFlow {
     // Show the right one
     switch (state) {
       case 'placeholder':
-        if (pickup) pickup.classList.add('hidden');
         if (placeholder) placeholder.classList.remove('hidden');
         break;
       case 'loading':
-        if (pickup) pickup.classList.add('hidden');
         if (loading) loading.classList.remove('hidden');
         break;
       case 'tariffs':
         if (tariffs) tariffs.classList.remove('hidden');
-        // pickup is shown/hidden independently by renderDeliveryTariffs (called before setDeliveryState)
         break;
       case 'error':
-        if (pickup) pickup.classList.add('hidden');
         if (error) error.classList.remove('hidden');
         break;
       case 'unavailable':
-        if (pickup) pickup.classList.add('hidden');
         if (unavailable) unavailable.classList.remove('hidden');
         break;
     }
   }
 
-  showCdekErrorNote(errorMsg) {
-    const tariffs = document.getElementById('co-delivery-tariffs');
-    if (!tariffs) return;
-    // Remove existing note if any
-    const existing = tariffs.querySelector('.checkout-cdek-error-note');
-    if (existing) existing.remove();
-    const note = document.createElement('div');
-    note.className = 'checkout-cdek-error-note';
-    note.style.cssText = 'padding: 8px 12px; margin-top: 8px; font-size: 13px; color: var(--color-muted, #6b7280); background: var(--color-surface-alt, #f9fafb); border-radius: 8px;';
-    note.textContent = `Доставка СДЭК недоступна: ${errorMsg}`;
-    tariffs.appendChild(note);
+  // Бейдж + подзаголовок карточки. Для СДЭК — байт-в-байт прежний текст
+  // (адрес курьеру ссылкой на карту, «Пункт выдачи СДЭК в <город>»): владелец
+  // 29.09 — «для СДЭК вид и тексты как сейчас в снимке». Для любого другого
+  // перевозчика (ПЭК и далее) — та же разметка (бейдж + подзаголовок), общая
+  // формулировка без имени перевозчика в тексте: имя уже есть в o.label из
+  // расчёта («Курьер ПЭК до двери», «Отделение ПЭК»).
+  deliveryCardMeta(o, ctx) {
+    const fullAddress = ctx.fullAddress;
+    const destCity = ctx.destCity;
+    const mapsUrl = fullAddress ? `https://yandex.ru/maps/?text=${encodeURIComponent(fullAddress)}` : '';
+    let badge = '';
+    let desc = '';
+    if (o.mode === 'door') {
+      badge = '<span class="checkout-shipping-badge checkout-shipping-badge--door font-body">Курьер</span>';
+      if (fullAddress) {
+        desc = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="checkout-shipping-addr">${fullAddress}</a>`;
+      } else {
+        desc = destCity ? `Доставка курьером в ${destCity}` : 'Доставка курьером до двери';
+      }
+    } else if (o.requiresPickupPoint) {
+      badge = o.pickupPointKind === 'POSTAMAT'
+        ? '<span class="checkout-shipping-badge checkout-shipping-badge--pvz font-body">Постамат</span>'
+        : '<span class="checkout-shipping-badge checkout-shipping-badge--pvz font-body">ПВЗ</span>';
+      if (o.carrier === 'cdek') {
+        desc = destCity ? `Пункт выдачи СДЭК в ${destCity}` : 'Пункт выдачи СДЭК';
+      } else {
+        desc = destCity ? `Пункт выдачи в ${destCity}` : 'Пункт выдачи';
+      }
+    }
+    return { badge, desc };
   }
 
-  renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles) {
+  // Строит карточки одним плоским списком — свои тарифы магазина, самовывоз
+  // магазина, тарифы любого перевозчика — так же, как их строит логистика для
+  // живого чекаута (CheckoutDeliveryMethod.astro); здесь только другая
+  // разметка/CSS (свои классы checkout-shipping-* этого снимка). Возвращает
+  // true, если есть хотя бы одна карточка.
+  renderDeliveryOptions(addressKnown) {
     const container = document.getElementById('co-delivery-tariffs');
-    const pickupEl = document.getElementById('co-delivery-pickup');
+    if (!container) return false;
 
-    if (!container) return;
-
-    // Destination address from selected DaData suggestion
     const selectedText = document.getElementById('co-address-selected-text');
     const fullAddress = selectedText ? selectedText.textContent : '';
     const cityEl = document.getElementById('co-city');
     const destCity = cityEl ? cityEl.value : '';
-    const mapsUrl = fullAddress ? `https://yandex.ru/maps/?text=${encodeURIComponent(fullAddress)}` : '';
+    const ctx = { fullAddress, destCity };
 
-    // Render CDEK tariffs
-    let html = (tariffs || []).map((t, i) => {
-      const deliverySum = t.deliverySumRub ?? t.deliverySum ?? 0;
-      const priceCents = Math.round(deliverySum * 100);
-      const priceText = priceCents > 0 ? `${Math.round(priceCents / 100)} ₽` : 'Бесплатно';
-      const periodText = t.periodMin && t.periodMax
-        ? `${t.periodMin}-${t.periodMax} дн.`
-        : t.periodMin ? `от ${t.periodMin} дн.` : '';
+    const cards = [];
 
-      // Mode badge and description with address
-      let modeBadge = '';
-      let modeDesc = '';
-      if (t.deliveryMode === 'door') {
-        modeBadge = '<span class="checkout-shipping-badge checkout-shipping-badge--door font-body">Курьер</span>';
-        if (fullAddress) {
-          modeDesc = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="checkout-shipping-addr">${fullAddress}</a>`;
-        } else {
-          modeDesc = destCity ? `Доставка курьером в ${destCity}` : 'Доставка курьером до двери';
-        }
-      } else if (t.deliveryMode === 'pickup') {
-        modeBadge = '<span class="checkout-shipping-badge checkout-shipping-badge--pvz font-body">ПВЗ</span>';
-        modeDesc = destCity ? `Пункт выдачи СДЭК в ${destCity}` : 'Пункт выдачи СДЭК';
+    // Самовывоз из магазина — адрес-независим, одна карточка на точку.
+    const shopPoints = this.shopPickupPoints || [];
+    const multiShopPickup = shopPoints.length > 1;
+    shopPoints.forEach((p, i) => {
+      const label = multiShopPickup
+        ? `Самовывоз — ${p.city || p.address || 'точка ' + (i + 1)}`
+        : 'Самовывоз из магазина';
+      cards.push({
+        type: 'self_pickup', carrier: null, mode: 'self_pickup',
+        requiresPickupPoint: false, tariffCode: null, pickupPointId: p.id || null,
+        label, meta: p.address || 'Заберите из нашего магазина', priceCents: 0,
+      });
+    });
+
+    // Свои тарифы магазина + тарифы перевозчиков — deliveryOptions[] из расчёта.
+    (this.deliveryOptions || []).forEach((o) => {
+      const priceCents = Math.round((o.price || 0) * 100);
+      const period = (o.minDays != null && o.maxDays != null)
+        ? `${o.minDays}-${o.maxDays} дн.`
+        : (o.minDays != null ? `от ${o.minDays} дн.` : '');
+
+      if (!o.carrier) {
+        cards.push({
+          type: 'custom', carrier: null, mode: o.mode || 'own',
+          requiresPickupPoint: false, tariffCode: null, customTariffId: o.id,
+          label: o.name, meta: o.description || period, priceCents,
+        });
+        return;
       }
 
+      // Перевозчик — адрес-зависимая служба: без адреса появится сама после
+      // ввода города (calculateDelivery() повторит расчёт).
+      if (!addressKnown) return;
+
+      const { badge, desc } = this.deliveryCardMeta(o, ctx);
+      cards.push({
+        type: `${o.carrier}_${o.mode}`, carrier: o.carrier, mode: o.mode,
+        requiresPickupPoint: !!o.requiresPickupPoint, shipmentRequired: !!o.shipmentRequired,
+        tariffCode: o.tariffCode != null ? String(o.tariffCode) : null,
+        pickupPointKind: o.pickupPointKind || null,
+        label: o.label, badge, meta: desc, period, priceCents,
+        periodMin: o.minDays, periodMax: o.maxDays,
+      });
+    });
+
+    if (cards.length === 0) {
+      container.innerHTML = '';
+      return false;
+    }
+
+    // Порядок карточек — как раньше: без сортировки по цене (её не было и до
+    // этой правки), просто в порядке поступления: самовывоз магазина, затем
+    // deliveryOptions[] в порядке, в котором их вернул расчёт.
+    container.innerHTML = cards.map((c, i) => {
+      const priceText = c.priceCents > 0 ? `${Math.round(c.priceCents / 100)} ₽` : 'Бесплатно';
+      const periodText = c.period ? `<span class="checkout-shipping-days font-body">${c.period}</span>` : '';
       return `
-        <label class="checkout-shipping-option" data-delivery="cdek" data-tariff-code="${t.tariffCode}" data-cost="${priceCents}" data-delivery-mode="${t.deliveryMode || ''}" data-period-min="${t.periodMin || ''}" data-period-max="${t.periodMax || ''}" data-index="${i}">
+        <label class="checkout-shipping-option" data-delivery-type="${c.type}" data-delivery-carrier="${c.carrier || ''}" data-delivery-mode="${c.mode || ''}" data-delivery-requires-pickup="${!!c.requiresPickupPoint}" data-delivery-tariff-code="${c.tariffCode == null ? '' : c.tariffCode}" data-delivery-custom-id="${c.customTariffId || ''}" data-delivery-pickup-id="${c.pickupPointId || ''}" data-delivery-price-cents="${c.priceCents}" data-delivery-period-min="${c.periodMin != null ? c.periodMin : ''}" data-delivery-period-max="${c.periodMax != null ? c.periodMax : ''}" data-delivery-pvz-kind="${c.pickupPointKind || ''}" data-index="${i}">
           <div class="checkout-shipping-left">
-            <input type="radio" name="delivery" value="cdek-${t.tariffCode}" class="checkout-radio">
+            <input type="radio" name="delivery" value="${c.type}-${i}" class="checkout-radio">
             <div class="checkout-shipping-info">
               <div class="checkout-shipping-name-row">
-                <span class="checkout-shipping-name font-body">${t.tariffName || 'СДЭК'}</span>
-                ${modeBadge}
+                <span class="checkout-shipping-name font-body" data-delivery-label>${c.label || ''}</span>
+                ${c.badge || ''}
               </div>
-              ${modeDesc ? `<div class="checkout-shipping-desc font-body">${modeDesc}</div>` : ''}
+              ${c.meta ? `<div class="checkout-shipping-desc font-body">${c.meta}</div>` : ''}
             </div>
           </div>
           <div class="checkout-shipping-right">
             <span class="checkout-shipping-price font-body">${priceText}</span>
-            ${periodText ? `<span class="checkout-shipping-days font-body">${periodText}</span>` : ''}
+            ${periodText}
           </div>
         </label>
       `;
     }).join('');
 
-    // Render custom profile tariffs
-    if (customProfiles && customProfiles.length > 0) {
-      for (const profile of customProfiles) {
-        for (const t of profile.tariffs) {
-          const priceText = t.priceCents > 0 ? `${Math.round(t.priceCents / 100)} ₽` : 'Бесплатно';
-          html += `
-            <label class="checkout-shipping-option" data-delivery="custom" data-tariff-code="${t.id}" data-cost="${t.priceCents}" data-delivery-mode="custom" data-period-min="" data-period-max="">
-              <div class="checkout-shipping-left">
-                <input type="radio" name="delivery" value="custom-${t.id}" class="checkout-radio">
-                <div class="checkout-shipping-info">
-                  <div class="checkout-shipping-name-row">
-                    <span class="checkout-shipping-name font-body">${t.name}</span>
-                    <span class="checkout-shipping-badge checkout-shipping-badge--custom font-body">${profile.name}</span>
-                  </div>
-                  ${t.description ? `<div class="checkout-shipping-desc font-body">${t.description}</div>` : ''}
-                </div>
-              </div>
-              <div class="checkout-shipping-right">
-                <span class="checkout-shipping-price font-body">${priceText}</span>
-              </div>
-            </label>
-          `;
-        }
-      }
-    }
-
-    container.innerHTML = html;
-
-    // Show/hide pickup
-    if (pickupEl) {
-      if (pickupAvailable) {
-        pickupEl.classList.remove('hidden');
-        const addrEl = document.getElementById('co-pickup-address');
-        if (addrEl && pickupAddress) addrEl.textContent = pickupAddress;
-        // Show notification and expected date if set by shop owner
-        const notifEl = document.getElementById('co-pickup-notification');
-        if (notifEl) {
-          if (pickupNotification) {
-            notifEl.textContent = pickupNotification;
-            notifEl.classList.remove('hidden');
-          } else {
-            notifEl.classList.add('hidden');
-          }
-        }
-        const dateEl = document.getElementById('co-pickup-expected-date');
-        if (dateEl) {
-          if (pickupExpectedDate) {
-            dateEl.textContent = `Ожидаемая дата: ${pickupExpectedDate}`;
-            dateEl.classList.remove('hidden');
-          } else {
-            dateEl.classList.add('hidden');
-          }
-        }
-      } else {
-        pickupEl.classList.add('hidden');
-      }
-    }
-
-    // Bind click events for tariff selection
     this.bindDeliverySelection();
+    return true;
   }
 
   bindDeliverySelection() {
-    const allOptions = document.querySelectorAll('#co-delivery-tariffs .checkout-shipping-option, #co-delivery-pickup .checkout-shipping-option');
+    const options = document.querySelectorAll('#co-delivery-tariffs .checkout-shipping-option');
 
-    allOptions.forEach(option => {
+    options.forEach(option => {
       option.addEventListener('click', () => {
         // Update visual selection
-        allOptions.forEach(o => o.classList.remove('checkout-shipping-option--selected'));
+        options.forEach(o => o.classList.remove('checkout-shipping-option--selected'));
         option.classList.add('checkout-shipping-option--selected');
 
-        // Check the radio
         const radio = option.querySelector('input[type="radio"]');
         if (radio) radio.checked = true;
 
-        // Determine selection
-        const deliveryType = option.dataset.delivery;
-        const costCents = parseInt(option.dataset.cost || '0', 10);
-        const rawTariffCode = option.dataset.tariffCode;
-        const tariffCode = deliveryType === 'custom' ? rawTariffCode : (rawTariffCode ? parseInt(rawTariffCode, 10) : null);
-        const deliveryMode = option.dataset.deliveryMode || 'door';
-        const periodMin = option.dataset.periodMin ? parseInt(option.dataset.periodMin, 10) : null;
-        const periodMax = option.dataset.periodMax ? parseInt(option.dataset.periodMax, 10) : null;
-
-        this.selectDeliveryOption(deliveryType, tariffCode, costCents, deliveryMode, periodMin, periodMax);
+        const labelEl = option.querySelector('[data-delivery-label]');
+        this.selectDeliveryOption({
+          type: option.getAttribute('data-delivery-type') || '',
+          carrier: option.getAttribute('data-delivery-carrier') || null,
+          mode: option.getAttribute('data-delivery-mode') || null,
+          requiresPickupPoint: option.getAttribute('data-delivery-requires-pickup') === 'true',
+          tariffCode: option.getAttribute('data-delivery-tariff-code') || null,
+          customTariffId: option.getAttribute('data-delivery-custom-id') || null,
+          pickupPointId: option.getAttribute('data-delivery-pickup-id') || null,
+          pickupPointKind: option.getAttribute('data-delivery-pvz-kind') || null,
+          priceCents: parseInt(option.getAttribute('data-delivery-price-cents') || '0', 10),
+          periodMin: option.getAttribute('data-delivery-period-min') ? parseInt(option.getAttribute('data-delivery-period-min'), 10) : null,
+          periodMax: option.getAttribute('data-delivery-period-max') ? parseInt(option.getAttribute('data-delivery-period-max'), 10) : null,
+          label: labelEl ? labelEl.textContent : '',
+        });
       });
     });
   }
 
-  async selectDeliveryOption(type, tariffCode, deliveryCostCents, deliveryMode, periodMin, periodMax) {
-    this.selectedDelivery = { type, tariffCode, deliveryCostCents, deliveryMode, periodMin, periodMax };
-    this.deliveryCostCents = deliveryCostCents;
-
-    // Update totals UI immediately
+  selectDeliveryOption(opt) {
+    this.selectedDelivery = {
+      type: opt.type, carrier: opt.carrier || null, mode: opt.mode || null,
+      requiresPickupPoint: !!opt.requiresPickupPoint, tariffCode: opt.tariffCode || null,
+      customTariffId: opt.customTariffId || null, pickupPointId: opt.pickupPointId || null,
+      costCents: opt.priceCents, periodMin: opt.periodMin, periodMax: opt.periodMax,
+      label: opt.label, pickupPointCode: null, pickupPointAddress: null,
+    };
+    this.deliveryCostCents = opt.priceCents;
     this.updateDeliveryTotals();
 
-    // Handle PVZ flow: if pickup tariff → show PVZ selection, don't send to backend yet
-    if (deliveryMode === 'pickup') {
+    // Пункт выдачи нужен ЛЮБОМУ перевозчику, у которого requiresPickupPoint —
+    // признак из расчёта, а не имя перевозчика (СДЭК ПВЗ/постамат, отделение
+    // ПЭК, и так далее для следующих перевозчиков).
+    if (opt.requiresPickupPoint) {
       this.selectedPvz = null;
       this.showPvzSection();
-      this.loadPickupPoints();
-      return; // Wait for PVZ selection before sending to backend
+      this.loadPickupPoints(opt.carrier, opt.pickupPointKind);
+      return; // на сервер уедет после выбора точки (bindPvzSelection)
     }
 
-    // Door delivery — hide PVZ section and send selection immediately
+    // Дверь / самовывоз магазина / свой тариф — точка не нужна. Выбор целиком
+    // локальный; на сервер уедет вместе с оформлением заказа (processPayment) —
+    // тот же контракт, что и у живого чекаута (CheckoutSubmit.astro:
+    // /delivery/select вызывается только когда requiresPickupPoint).
     this.hidePvzSection();
     this.selectedPvz = null;
-    await this.sendDeliverySelection(type, tariffCode, deliveryCostCents, null, null, periodMin, periodMax);
   }
 
-  async sendDeliverySelection(type, tariffCode, deliveryCostCents, pickupPointCode, pickupPointAddress, periodMin, periodMax) {
+  // Сохраняет выбор на корзине — только когда нужен пункт выдачи, после того
+  // как покупатель выбрал конкретную точку (bindPvzSelection). Для двери,
+  // самовывоза магазина и своего тарифа выбор передаётся только при
+  // оформлении заказа — см. processPayment().
+  async persistDeliverySelection() {
+    const dm = this.selectedDelivery;
+    if (!dm || !this.cartId) return;
     try {
+      const addr = this.getAddressData();
       const payload = {
-        type,
-        tariffCode: tariffCode || null,
-        deliveryCostCents,
+        type: dm.type,
+        // carrier/mode — контракт заказов для отправления ЛЮБОГО перевозчика
+        // (spec 117): logistics.producer читает их, чтобы понять, кто и как везёт.
+        carrier: dm.carrier || null,
+        mode: dm.mode || null,
+        deliveryCostCents: dm.costCents || 0,
+        address: {
+          city: addr.city, street: addr.street, house: addr.building,
+          apartment: addr.apartment, postalCode: addr.postalCode, fiasId: addr.fiasId,
+          fullAddress: [addr.city, addr.street, addr.building].filter(Boolean).join(', '),
+        },
       };
-      if (pickupPointCode) payload.pickupPointCode = pickupPointCode;
-      if (pickupPointAddress) payload.pickupPointAddress = pickupPointAddress;
-      if (periodMin != null) payload.periodMin = periodMin;
-      if (periodMax != null) payload.periodMax = periodMax;
+      if (dm.tariffCode != null) payload.tariffCode = dm.tariffCode;
+      if (dm.periodMin != null) payload.periodMin = dm.periodMin;
+      if (dm.periodMax != null) payload.periodMax = dm.periodMax;
+      if (dm.pickupPointCode) payload.pickupPointCode = dm.pickupPointCode;
+      if (dm.pickupPointAddress) payload.pickupPointAddress = dm.pickupPointAddress;
 
       const res = await CheckoutAPI.selectDelivery(this.cartId, payload);
-
       if (res.success && res.data) {
         this.cart = res.data;
         this.updateDeliveryTotals();
@@ -892,33 +796,35 @@ class CheckoutFlow {
     if (error) error.classList.add('hidden');
   }
 
-  async loadPickupPoints() {
+  async loadPickupPoints(carrier, kind) {
     const cityFiasId = document.getElementById('co-city-fias-id')?.value;
-    if (!cityFiasId || !this.cartId) {
+    if (!cityFiasId || !this.cartId || !carrier) {
       this.setPvzState('error');
       return;
     }
 
-    // If same city and we already have points, just re-render
-    if (this.lastCityFiasId === cityFiasId && this.pickupPoints.length > 0) {
-      this.renderPickupPoints(this.pickupPoints);
+    // Ключ кэша — перевозчик + город: у разных перевозчиков разные точки в
+    // одном городе (нельзя показать точки СДЭК под тарифом ПЭК).
+    const cacheKey = `${carrier}|${cityFiasId}`;
+    if (this.lastPvzCacheKey === cacheKey && this.carrierPickupPoints && this.carrierPickupPoints.length > 0) {
+      this.renderPickupPoints(this.carrierPickupPoints);
       this.setPvzState('list');
       return;
     }
 
     this.setPvzState('loading');
-    this.pickupPoints = [];
-    this.lastCityFiasId = cityFiasId;
+    this.carrierPickupPoints = [];
+    this.lastPvzCacheKey = cacheKey;
 
     try {
-      const res = await CheckoutAPI.getPickupPoints(this.cartId, cityFiasId);
+      const res = await CheckoutAPI.getPickupPoints(this.cartId, { carrier, cityFiasId, kind: kind || undefined });
 
       if (!res.success || !res.data || res.data.length === 0) {
         this.setPvzState('error');
         return;
       }
 
-      this.pickupPoints = res.data;
+      this.carrierPickupPoints = res.data;
       this.renderPickupPoints(res.data);
       this.setPvzState('list');
     } catch (e) {
@@ -985,27 +891,17 @@ class CheckoutFlow {
         // Get selected point
         const idx = parseInt(item.dataset.pvzIndex, 10);
         const point = points[idx];
-        if (!point) return;
+        if (!point || !this.selectedDelivery) return;
 
         this.selectedPvz = point;
-
-        // Now send delivery selection with pickup point data
-        if (this.selectedDelivery) {
-          this.sendDeliverySelection(
-            this.selectedDelivery.type,
-            this.selectedDelivery.tariffCode,
-            this.selectedDelivery.deliveryCostCents,
-            point.code,
-            point.address,
-            this.selectedDelivery.periodMin,
-            this.selectedDelivery.periodMax,
-          );
-        }
+        this.selectedDelivery.pickupPointCode = point.code;
+        this.selectedDelivery.pickupPointAddress = point.address;
+        this.persistDeliverySelection();
       });
     });
   }
 
-  // --- End PVZ ---
+  // --- End пункта выдачи ---
 
   updateDeliveryTotals() {
     // Update "Доставка" line in the order summary panel
@@ -1037,7 +933,7 @@ class CheckoutFlow {
     }
   }
 
-  // --- End CDEK Delivery ---
+  // --- End доставки ---
 
   /**
    * Collect customer and address data from single-page form fields.
@@ -1092,8 +988,10 @@ class CheckoutFlow {
       }
       this.cart = customerRes.data;
 
-      // 2. Сохранить адрес доставки (пропускаем для самовывоза)
-      const isPickup = this.selectedDelivery?.type === 'pickup';
+      // 2. Сохранить адрес доставки (пропускаем для самовывоза магазина и для
+      // пункта выдачи перевозчика — requiresPickupPoint, признак из расчёта,
+      // а не имя перевозчика; адрес уже ушёл через persistDeliverySelection).
+      const isPickup = !!(this.selectedDelivery && (this.selectedDelivery.type === 'self_pickup' || this.selectedDelivery.requiresPickupPoint));
       if (!isPickup) {
         const addressData = this.getAddressData();
         if (!addressData.city) {
@@ -1116,8 +1014,26 @@ class CheckoutFlow {
         this.cart = addressRes.data;
       }
 
-      // 3. Оформить заказ
-      const checkoutRes = await CheckoutAPI.checkout(this.cartId);
+      // 3. Оформить заказ — довозим выбор доставки тем же контрактом, что и
+      // живой чекаут (carrier/mode + старое поле type — заказы принимают оба).
+      const deliveryMethod = this.selectedDelivery
+        ? {
+            type: this.selectedDelivery.type,
+            carrier: this.selectedDelivery.carrier || null,
+            mode: this.selectedDelivery.mode || null,
+            requiresPickupPoint: !!this.selectedDelivery.requiresPickupPoint,
+            tariffCode: this.selectedDelivery.tariffCode || null,
+            customTariffId: this.selectedDelivery.customTariffId || null,
+            pickupPointId: this.selectedDelivery.pickupPointId || null,
+            costCents: this.deliveryCostCents || 0,
+            periodMin: this.selectedDelivery.periodMin || null,
+            periodMax: this.selectedDelivery.periodMax || null,
+            label: this.selectedDelivery.label || '',
+            pickupPointCode: this.selectedDelivery.pickupPointCode || null,
+            pickupPointAddress: this.selectedDelivery.pickupPointAddress || null,
+          }
+        : { type: 'none', costCents: 0 };
+      const checkoutRes = await CheckoutAPI.checkout(this.cartId, { deliveryMethod });
       if (!checkoutRes.success) {
         throw new Error(checkoutRes.message || 'Не удалось оформить заказ');
       }

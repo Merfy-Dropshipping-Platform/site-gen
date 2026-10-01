@@ -43,7 +43,26 @@ export interface StoreProvisioning {
   ensureSiteHosting(
     siteId: string,
   ): Promise<{ coolifyAppUuid: string | null; error?: string }>;
+  /** Маршрут хостинга — центральный прокси (проект тенанта в Coolify ему не нужен). */
+  usesCentralProxy(): boolean;
 }
+
+type ProvisioningPart = "domain" | "project";
+
+/**
+ * Какая часть подключения обязательна для следующего шага саги. Поддомен нужен
+ * всегда — из него маршрут. Проект тенанта в Coolify нужен только приложению на
+ * магазин: при центральном прокси маршрут обходится без него, и сбой проекта
+ * (например, dev без доступа к API Coolify) не должен останавливать сагу — так
+ * же его пропускает старый путь регистрации, только в лог.
+ */
+const PART_REQUIRED: Record<
+  ProvisioningPart,
+  (sites: StoreProvisioning) => boolean
+> = {
+  domain: () => true,
+  project: (sites) => !sites.usesCentralProxy(),
+};
 
 @Injectable()
 export class StoreLifecycleSteps implements LifecycleStepRunner {
@@ -103,9 +122,9 @@ export class StoreLifecycleSteps implements LifecycleStepRunner {
       row.tenantId,
       companyName,
     );
-    const failures = Object.entries(result.failures ?? {}).map(
-      ([part, reason]) => `${part}: ${reason}`,
-    );
+    const failures = Object.entries(result.failures ?? {})
+      .filter(([part]) => PART_REQUIRED[part as ProvisioningPart](this.sites))
+      .map(([part, reason]) => `${part}: ${reason}`);
     if (failures.length) throw new Error(failures.join("; "));
   }
 

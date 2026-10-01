@@ -11502,3 +11502,79 @@ Chromium 1440. Скрины до/после: scratchpad сессии `flux-mobil
 - Отсутствующий `dist/scripts/dadata.js` — из-за него ES-модуль `checkout.js` не грузится в
   браузере вовсе; чинить — значит добавлять новый файл в снимок за рамками доставки.
 - Прочие страницы снимка (главная, каталог, корзина, контакты, о нас) — не трогал.
+
+## 2026-10-01 — платёжки витрин: один вид оплаты на всех живых входах (спец 3а.1+3а.2, `feat/payments-3a2`, базово от `e648dfd8`)
+
+### Контекст
+
+Задача «один вид оплаты на ВСЕХ живых входах в оплату» (3а.2). 3а.1 (PR #216,
+коммит `e648dfd8`, уже в `dev`) уже добавила в `packages/theme-base/blocks/CheckoutPayment/CheckoutPayment.astro`
+таблицу `PROVIDER_PAGE_PROVIDERS` (tochka/robokassa/prodamus) + `resolveActiveProvider(data)`
+по ответу `GET .../billing/shops/:shopId/payment-config/public` → `data.activeProvider`: у этих
+трёх платёжек — вид «страница платёжки» (поля карты нет, SDK ЮKassa не грузится и не
+вызывается), у `yookassa` — «карта у нас» как раньше, `null`/без поля — прежнее правило
+`yookassaEnabled`. Касается всех пяти живых тем сразу — `CheckoutPayment` общий
+`theme-base`-блок, темы его не переопределяют.
+
+### Карта живых/мёртвых входов (аудит перед кодом)
+
+Темы: bloom, flux, rose, satin, vanilla. Все пять в `MIGRATED_THEMES`
+(`src/generator/build.service.ts:99`) — прод-сборка идёт через themes-v2
+(`dist/theme-live/<theme>`, собирается `pnpm build:themes` из `packages/theme-base` +
+`packages/theme-<theme>` + `templates/astro/<theme>/src/{pages,lib,…}` поверх), НЕ через
+legacy `astro.builder.ts` (тот гейтится `resolveThemePipeline`, для мигрированных тем кидает
+исключение, если нет пред-собранного диста — запасного пути нет).
+
+| Место | Живое/мёртвое | Доказательство | Что сделано |
+|---|---|---|---|
+| `packages/theme-base/blocks/CheckoutPayment/CheckoutPayment.astro` + `CheckoutSubmit/CheckoutSubmit.astro`, вызываются из `CheckoutForm.astro` | **Живое**, единственный реальный вход на всех 5 темах | `checkout.json` всех 5 тем: `content=[CheckoutHeader, CheckoutLayout, CheckoutForm, CheckoutSummary]`; `CheckoutForm.astro` импортирует `CheckoutPayment`+`CheckoutSubmit` напрямую (не Puck-слотом); темы `CheckoutForm`/`CheckoutSubmit`/`CheckoutPayment` не переопределяют (`find packages/theme-{bloom,flux,rose,satin,vanilla}/blocks -iname "Checkout{Form,Submit,Payment}*"` — пусто) | Вид — 3а.1 (готово). Сабмит (`CheckoutSubmit.astro`) уже был provider-agnostic ДО 3а.2: `paymentToken` шлётся в `POST /create-payment` только если `window.__checkoutTokenizeCard()` вернул непустую строку (у tochka/robokassa/prodamus она всегда `''` — SDK не грузился), редирект на `confirmationUrl` — безусловный. Новый тест на этот путь (см. ниже) |
+| `packages/storefront/checkout/sections/PaymentSection.tsx` + `hooks/useYooKassa.ts` + `SubmitSection.tsx`/`ContactSection`/`DeliverySection`/`DeliveryMethodSection`/`OrderSummarySection`/`TotalsSection` (и 4 копии в `templates/astro/{bloom,rose,satin,vanilla}/src/lib/storefront/checkout/`) | **Мёртвое** на всех живых страницах | `CheckoutFlow.tsx` монтируется (`mountCheckoutFlow` в `templates/astro/{bloom,rose,satin,vanilla}/src/pages/checkout.astro`, у flux такого острова нет вовсе), но порталит React ТОЛЬКО в DOM-узлы `[data-checkout-slot="…"]`, а в `HYDRATABLE_SLOTS` (`contact,delivery,delivery-method,payment,order-summary,totals,submit,summary-toggle`) реально существующий в разметке — только `summary-toggle` (`CheckoutSummaryToggle.astro`). У `CheckoutContactForm/DeliveryForm/DeliveryMethod/Payment/OrderSummary/Totals/Submit.astro` атрибута `data-checkout-slot` больше нет (только `data-block="…"`) — найдено `grep -rn "data-checkout-slot" packages/theme-base/blocks/*/*.astro`, список полный: header/layout/terms/summary-toggle. `PaymentSection` нигде кроме `CheckoutFlow.tsx` не импортируется | Не трогал (мёртвый код, брифом запрещено) |
+| `packages/theme-base/blocks/CheckoutSection/CheckoutSection.astro` (puck-блок, зарегистрирован в реестрах тем) | **Мёртвое** — ни в одном `checkout.json` пяти тем не используется (`python3` по всем пяти `pages/checkout.json`: типы блоков — только `CheckoutHeader/CheckoutLayout/CheckoutForm/CheckoutSummary`); сам файл — заглушка Phase 1c («Full checkout logic… hydrated via React island») | Не трогал |
+| `templates/astro/{bloom,rose,satin,vanilla,flux}/src/components/CheckoutSection.astro` (legacy-копии темы) | **Мёртвое** — при сборке themes-v2 перезаписывается файлом с тем же именем из base-pass `packages/theme-base/blocks/CheckoutSection/` (`copyBlocksFromPackage`, overwrite=true), и даже итоговый файл нигде не импортируется страницами | Не трогал |
+| `src/generator/astro.builder.ts` (строка ~344, своя мини-форма чекаута в fallback-генераторе страницы товара) | **Мёртвое** для всех 5 живых тем (`assertPipelineModeForTheme`/`resolveThemePipeline` запрещают legacy-конвейер для `MIGRATED_THEMES`); даже если бы использовалось — полей карты там нет вообще, редирект сразу на `confirmationUrl` | Не трогал |
+| `templates/astro/rose/dist/scripts/checkout.js` + `checkout-api.js` (закоммиченный stale build-артефакт) | **Мёртвое**, уже задокументировано в записи «2026-09-30 — …rose-snapshot-delivery» этого журнала («её JS физически не выполняется, до и после») | Не трогал |
+| «Быстрый заказ» (`ProductActions.astro`, `data-product-action="buy-now"`) | Не отдельный вход — добавляет в корзину и переходит на `/checkout` (та же живая страница) | — |
+
+### Что сделано
+
+Код CheckoutPayment/CheckoutSubmit не менялся — единственный живой вход уже был полностью
+унифицирован 3а.1 (вид) и уже был provider-agnostic по конструкции (сабмит, `confirmationUrl`).
+Добавлен один тест, закрывающий инвариант, которого не было: не только вид, но и РЕАЛЬНАЯ
+отправка заказа под активную платёжку:
+- `packages/theme-base/__tests__/checkout-payment-provider-submit.dom.test.ts` — исполняет оба
+  инлайн-скрипта (`CheckoutPayment.astro` + `CheckoutSubmit.astro`) вместе, как на живой
+  странице. Для tochka/robokassa/prodamus, включая жёсткий сценарий «billing всё ещё шлёт
+  `yookassaShopId`, SDK ЮKassa уже где-то в `window`» (как у 3а.1): `paymentToken` отсутствует в
+  теле `POST /create-payment`, редирект идёт на `confirmationUrl`. Контроль — yookassa:
+  `paymentToken` присутствует, тот же редирект.
+
+Ломал: временно убрал `prodamus` из таблицы `PROVIDER_PAGE_PROVIDERS` — упал
+`checkout-payment-provider-view.dom.test.ts` (ожидаемо, старый тест 3а.1). Отдельно, точнее под
+новый тест — закомментировал гейт `isProviderPageView(...)` внутри `ensureYookassaSdk` (`if
+(false && isProviderPageView(...))`) — все три кейса tochka/robokassa/prodamus в новом файле
+покраснели (`paymentToken` утёк в тело `create-payment`), вернул — снова зелёные. Оба раза diff
+по `CheckoutPayment.astro` после отката — пустой (`git diff --stat`).
+
+### Проверки
+
+- `CI=true pnpm exec jest --config jest.config.ts --runInBand` по шаблону CI «Тесты чекаута
+  магазина» (`.github/workflows/ci.yml:212`) — 29 наборов, 492 проверки, 0 красных.
+- `pnpm checks` (полный набор) — ИТОГО 10230 проверок, 1 красный (`gallery-bottoms-align.spec.ts`
+  — не про чекаут/оплату, в изоляции `pnpm exec jest --runInBand` зелёный 16/16, нагрузка машины,
+  см. `.claude/rules/site-gen-checks.md` «Красное под нагрузкой»), 15 пропущено.
+
+### Разведка — конструктор (код не писал, брифом запрещено)
+
+Поля формы карты в конструкторе (`cardForm.{cvvHelpEnabled,nameOnCardEnabled,warningText}`,
+`CheckoutPayment.puckConfig.ts`) приходят в редактор ОДНИМ путём на все магазины: конструктор
+(`backend/services/constructor/src/lib/puckConfigResolver.ts: buildPuckConfig`) тянет
+`GET {API_ORIGIN}/api/themes/:themeId/puck-config` — этот эндпоинт в данном репозитории
+(`src/controllers/theme-puck-config.controller.ts`) ключуется ТОЛЬКО по `themeId`, без `shopId`:
+один и тот же JSON для всех магазинов на теме, про активную платёжку магазина ничего не знает.
+Чтобы панель скрывала `cardForm` не у «карта у нас» — нужно либо (а) контроллеру в этом
+репозитории принимать `shopId`/`siteId` и дергать billing `payment-config/public` перед отдачей
+конфига (кэш по теме сломается, придётся кэшировать по паре тема+магазин), либо (б) отдельный
+запрос из конструктора (`puckConfigResolver.ts`/компонент сайдбара полей) и фильтрация поля
+`cardForm` на фронте после получения статичного конфига — ближе к тому, как уже фильтруются поля
+по `visibleWhen`. Само поле `cardForm` в `CheckoutPaymentPuckConfig.fields` — безусловный объект,
+условной видимости (`visibleWhen`) сейчас нет вовсе.

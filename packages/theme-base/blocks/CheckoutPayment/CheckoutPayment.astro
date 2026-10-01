@@ -161,6 +161,34 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
       nameOnCard: section.querySelector('[data-card-field="nameOnCard"]'),
     };
 
+    // Спец 3а.1 — вид чекаута по активной платёжке магазина: ЮKassa — «карта у
+    // нас» (эта страница токенизирует карту через SDK ЮKassa — поведение НЕ
+    // меняется); Точка/Робокасса/Prodamus — «страница платёжки» (полей карты
+    // нет, SDK ЮKassa не грузится и не вызывается; выбранный способ — только
+    // подсказка платёжке, уходит тем же полем paymentMethod, что и сейчас).
+    // Таблица вместо if/else под конкретную платёжку.
+    var PROVIDER_PAGE_PROVIDERS = { tochka: true, robokassa: true, prodamus: true };
+
+    function resolveActiveProvider(data) {
+      // На проде шлюз ещё не отдаёт activeProvider (ключа нет в ответе вовсе) —
+      // прежнее правило: yookassaEnabled → 'yookassa', иначе «не подключено».
+      if (data && typeof data.activeProvider !== 'undefined') return data.activeProvider;
+      return (data && data.yookassaEnabled) ? 'yookassa' : null;
+    }
+    function isProviderPageView(provider) {
+      return Boolean(provider && PROVIDER_PAGE_PROVIDERS[provider]);
+    }
+
+    var providerPageView = false;
+    var currentMethod = null;
+
+    // Форма карты скрыта у вида «страница платёжки» ВСЕГДА, даже если выбрана
+    // «Банковская карта» — там это просто ещё один способ-подсказка, без токена.
+    function updateCardVisibility() {
+      if (!cardWrapper) return;
+      cardWrapper.hidden = providerPageView || currentMethod !== 'bank_card';
+    }
+
     function updateSelectionStyle(method) {
       labels.forEach(function (lbl) {
         var isSelected = lbl.getAttribute('data-payment-key') === method;
@@ -190,7 +218,8 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
     }
 
     function setMethod(method) {
-      if (cardWrapper) cardWrapper.hidden = method !== 'bank_card';
+      currentMethod = method;
+      updateCardVisibility();
       updateSelectionStyle(method);
       document.dispatchEvent(new CustomEvent('checkout:payment-method-changed', {
         detail: { method: method, key: method },
@@ -245,6 +274,27 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
     }
     filterEnabledMethods();
 
+    /**
+     * Вид чекаута (3а.1) — прячет форму карты, даже если выбрана «Банковская
+     * карта», у магазинов на Точке/Робокассе/Prodamus. Асинхронный (свой
+     * запрос payment-config/public, как и filterEnabledMethods выше): до
+     * ответа форма карты временно видна как способ по умолчанию, затем
+     * прячется — та же lenient-схема, что уже используется для методов.
+     */
+    function applyPaymentView() {
+      var apiBase = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
+      var shopId = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
+      if (!shopId) return;
+      fetch(apiBase + '/billing/shops/' + shopId + '/payment-config/public')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          providerPageView = isProviderPageView(resolveActiveProvider(j && j.data));
+          updateCardVisibility();
+        })
+        .catch(function () { /* silent — вид «карта у нас» остаётся как есть */ });
+    }
+    applyPaymentView();
+
     // Card number mask
     if (cardInputs.number) {
       cardInputs.number.addEventListener('input', function () {
@@ -295,7 +345,15 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
       fetch(apiBase + '/billing/shops/' + shopId + '/payment-config/public')
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (j) {
-          var yk = j && j.data && j.data.yookassaShopId;
+          var data = j && j.data;
+          // «Страница платёжки» — карты у нас нет, SDK ЮKassa не грузим и не
+          // вызываем ни при каких обстоятельствах.
+          if (isProviderPageView(resolveActiveProvider(data))) {
+            window.__YOOKASSA_SDK_LOADING__ = false;
+            setSdkStatus('', false);
+            return;
+          }
+          var yk = data && data.yookassaShopId;
           if (!yk) {
             window.__YOOKASSA_SDK_LOADING__ = false;
             setSdkStatus('', false);

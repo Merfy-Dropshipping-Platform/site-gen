@@ -189,7 +189,7 @@ jobs:
         working-directory: packages/theme-base
         run: >-
           pnpm exec jest --config jest.config.ts --runInBand
-          '__tests__/(astro-inline-script-helper\.test|account-order-delivery\.coverage\.dom\.test|order-confirmation-delivery\.coverage\.dom\.test|checkout-(contact|delivery|submit)-[^/]*\.dom\.test)\.ts$'
+          '__tests__/(astro-inline-script-helper\.test|account-order-delivery\.coverage\.dom\.test|order-confirmation-delivery\.coverage\.dom\.test|checkout-(contact|delivery|submit|payment)-[^/]*\.dom\.test)\.ts$'
 
       # Публикации и блоги (контракт «Публикации», 20.10.2026): правила адресов,
       # анонса и статусов, коды ошибок RPC, сервисы на Postgres и миграция 0027

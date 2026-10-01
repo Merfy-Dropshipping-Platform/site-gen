@@ -116,6 +116,20 @@ describe('CheckoutPayment — вид «страница платёжки» (То
     },
   );
 
+  it('активна Точка, а ответ всё же несёт yookassaShopId — SDK ЮKassa не грузится', async () => {
+    // billing сейчас отдаёт yookassaShopId только при активной ЮKassa, но
+    // вид решает activeProvider, а не наличие ключа ЮKassa в ответе.
+    setConfig();
+    mockPaymentConfig({ yookassaEnabled: true, yookassaShopId: 'yk_1', activeProvider: 'tochka' });
+    const section = mountPaymentDom();
+    runScript(section);
+    await flush();
+
+    const cardWrapper = section.querySelector('[data-card-form-wrapper]') as HTMLElement;
+    expect(cardWrapper.hidden).toBe(true);
+    expect(document.head.querySelector(`script[src="${SDK_SRC}"]`)).toBeNull();
+  });
+
   it('способ (СБП) всё равно выбирается — это подсказка платёжке, не блокируется', async () => {
     setConfig();
     mockPaymentConfig({ yookassaEnabled: false, yookassaShopId: null, activeProvider: 'tochka' });

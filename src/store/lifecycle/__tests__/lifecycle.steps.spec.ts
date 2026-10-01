@@ -37,6 +37,7 @@ function makeDeps() {
     ensureSiteHosting: jest.fn(async () => ({
       coolifyAppUuid: "central-proxy",
     })),
+    usesCentralProxy: jest.fn(() => false),
   };
   const content = {
     load: jest.fn(),
@@ -158,7 +159,7 @@ describe("шаг provision: домен REG.RU + проект Coolify, имя к�
     );
   });
 
-  it("Coolify не создал проект — шаг бросает с причиной", async () => {
+  it("приложение на магазин: Coolify не создал проект — шаг бросает с причиной", async () => {
     const { steps, sites } = makeDeps();
     sites.finishProvisioning.mockResolvedValueOnce({
       publicUrl: "https://abc.merfy.ru",
@@ -167,6 +168,33 @@ describe("шаг provision: домен REG.RU + проект Coolify, имя к�
 
     await expect(steps.provision(row())).rejects.toThrow(
       "project: coolify_project_create_failed",
+    );
+  });
+
+  it("центральный прокси: сбой проекта Coolify шаг не останавливает — маршруту проект не нужен", async () => {
+    const { steps, sites } = makeDeps();
+    sites.usesCentralProxy.mockReturnValue(true);
+    sites.finishProvisioning.mockResolvedValueOnce({
+      publicUrl: "https://abc.merfy.ru",
+      failures: { project: "Coolify API not configured" },
+    });
+
+    await expect(steps.provision(row())).resolves.toBeUndefined();
+  });
+
+  it("центральный прокси: сбой поддомена по-прежнему останавливает шаг", async () => {
+    const { steps, sites } = makeDeps();
+    sites.usesCentralProxy.mockReturnValue(true);
+    sites.finishProvisioning.mockResolvedValueOnce({
+      publicUrl: undefined as any,
+      failures: {
+        domain: "REG.RU timeout",
+        project: "Coolify API not configured",
+      },
+    });
+
+    await expect(steps.provision(row())).rejects.toThrow(
+      "domain: REG.RU timeout",
     );
   });
 });

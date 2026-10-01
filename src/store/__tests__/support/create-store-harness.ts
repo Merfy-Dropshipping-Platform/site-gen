@@ -68,6 +68,7 @@ export function makeCreateStoreHarness(
       repo.rows.get(siteId)!.coolifyAppUuid = "central-proxy";
       return { coolifyAppUuid: "central-proxy" };
     }),
+    usesCentralProxy: jest.fn(() => true),
   };
   const content = {
     load: jest.fn(),

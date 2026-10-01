@@ -270,6 +270,7 @@ suite("сага рождения на настоящем Postgres", () => {
           .set({ coolifyAppUuid: "central-proxy" })
           .where(eq(schema.site.id, row.id));
       },
+      projectRequired: () => true,
     };
 
     /** Отдельная команда на своём drizzle — как две реплики сервиса. */

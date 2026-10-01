@@ -49,21 +49,6 @@ export interface StoreProvisioning {
 
 type ProvisioningPart = "domain" | "project";
 
-/**
- * Какая часть подключения обязательна для следующего шага саги. Поддомен нужен
- * всегда — из него маршрут. Проект тенанта в Coolify нужен только приложению на
- * магазин: при центральном прокси маршрут обходится без него, и сбой проекта
- * (например, dev без доступа к API Coolify) не должен останавливать сагу — так
- * же его пропускает старый путь регистрации, только в лог.
- */
-const PART_REQUIRED: Record<
-  ProvisioningPart,
-  (sites: StoreProvisioning) => boolean
-> = {
-  domain: () => true,
-  project: (sites) => !sites.usesCentralProxy(),
-};
-
 @Injectable()
 export class StoreLifecycleSteps implements LifecycleStepRunner {
   constructor(
@@ -122,10 +107,24 @@ export class StoreLifecycleSteps implements LifecycleStepRunner {
       row.tenantId,
       companyName,
     );
+    const required: Record<ProvisioningPart, boolean> = {
+      domain: true,
+      project: this.projectRequired(),
+    };
     const failures = Object.entries(result.failures ?? {})
-      .filter(([part]) => PART_REQUIRED[part as ProvisioningPart](this.sites))
+      .filter(([part]) => required[part as ProvisioningPart])
       .map(([part, reason]) => `${part}: ${reason}`);
     if (failures.length) throw new Error(failures.join("; "));
+  }
+
+  /**
+   * Проект тенанта в Coolify нужен только приложению на магазин. При
+   * центральном прокси маршрут обходится без него, и сбой проекта (dev без
+   * доступа к API Coolify) не останавливает сагу — старый путь регистрации
+   * тоже лишь пишет его в лог. То же правило читает доводчик в фактах саги.
+   */
+  projectRequired(): boolean {
+    return !this.sites.usesCentralProxy();
   }
 
   async route(row: LifecycleRow): Promise<void> {

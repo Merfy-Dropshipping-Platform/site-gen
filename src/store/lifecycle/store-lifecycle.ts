@@ -39,6 +39,11 @@ export interface LifecycleFacts {
   hasDomain: boolean;
   /** `coolify_project_uuid` заполнен — проект тенанта в Coolify есть. */
   hasProject: boolean;
+  /**
+   * Проект тенанта нужен маршруту: только приложению на магазин. При
+   * центральном прокси маршрут обходится без проекта.
+   */
+  projectRequired: boolean;
   /** `coolify_app_uuid` заполнен — маршрут хостинга (роутер центрального прокси или app). */
   hasHosting: boolean;
 }
@@ -57,7 +62,7 @@ export const LIFECYCLE_STEPS: readonly StepRule[] = [
   {
     step: "provision",
     reaches: "provisioned",
-    satisfied: (f) => f.hasDomain && f.hasProject,
+    satisfied: (f) => f.hasDomain && (f.hasProject || !f.projectRequired),
   },
   { step: "route", reaches: "ready", satisfied: (f) => f.hasHosting },
 ];

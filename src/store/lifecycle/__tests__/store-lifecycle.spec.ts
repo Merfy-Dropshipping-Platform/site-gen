@@ -33,6 +33,7 @@ const none: LifecycleFacts = {
   hasDomain: false,
   hasProject: false,
   hasHosting: false,
+  projectRequired: true,
 };
 
 describe("observeLifecycle: следующий шаг выводится из фактов строки", () => {
@@ -61,6 +62,18 @@ describe("observeLifecycle: следующий шаг выводится из ф
       { hasRevision: true, hasDomain: true, hasProject: true },
       "provisioned",
       "route",
+    ],
+    [
+      "центральный прокси: домен есть, проекта нет — провижининг закончен",
+      { hasRevision: true, hasDomain: true, projectRequired: false },
+      "provisioned",
+      "route",
+    ],
+    [
+      "центральный прокси: без домена провижининг не закончен",
+      { hasRevision: true, projectRequired: false },
+      "seeded",
+      "provision",
     ],
     [
       "всё на месте — готов",

@@ -41,6 +41,8 @@ export interface LifecycleStepRunner {
   seed(row: LifecycleRow): Promise<void>;
   provision(row: LifecycleRow): Promise<void>;
   route(row: LifecycleRow): Promise<void>;
+  /** Нужен ли маршруту проект тенанта в Coolify (нет при центральном прокси). */
+  projectRequired(): boolean;
 }
 
 export const LIFECYCLE_STEP_RUNNER = Symbol("LIFECYCLE_STEP_RUNNER");
@@ -63,8 +65,12 @@ export interface AdvanceResult {
   leaseKept: boolean;
 }
 
-export function factsOf(row: LifecycleRow): LifecycleFacts {
+export function factsOf(
+  row: LifecycleRow,
+  projectRequired: boolean,
+): LifecycleFacts {
   return {
+    projectRequired,
     hasRevision: Boolean(row.currentRevisionId),
     hasDomain: Boolean(row.domainId),
     hasProject: Boolean(row.coolifyProjectUuid),
@@ -168,13 +174,15 @@ export class StoreLifecycleReconciler {
     row: LifecycleRow,
     opts: AdvanceOptions,
   ): Promise<StepOutcome> {
-    const seen = observeLifecycle(factsOf(row));
+    const seen = observeLifecycle(factsOf(row, this.steps.projectRequired()));
     const step = stepToRun(seen, opts);
     if (!step) return { kind: "done", row, seen };
 
     const failure = await this.runStep(step, row);
     const current = (await this.repo.read(row.id)) ?? row;
-    const after = observeLifecycle(factsOf(current));
+    const after = observeLifecycle(
+      factsOf(current, this.steps.projectRequired()),
+    );
     const reason =
       failure ?? (after.next === step ? REQUIREMENT_NOT_MET : null);
     if (reason !== null) return { kind: "failed", row: current, step, reason };

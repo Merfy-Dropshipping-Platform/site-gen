@@ -981,6 +981,11 @@ export class SitesDomainService {
    * не перетирает app, который успела записать параллельная публикация.
    * Провал не бросает — возвращает причину, её сага кладёт в `lifecycle_error`.
    */
+  /** Маршрут магазина — центральный прокси, а не приложение на магазин (`SITES_USE_CENTRAL_PROXY`). */
+  usesCentralProxy(): boolean {
+    return this.deployments.centralProxyEnabled;
+  }
+
   async ensureSiteHosting(
     siteId: string,
   ): Promise<{ coolifyAppUuid: string | null; error?: string }> {

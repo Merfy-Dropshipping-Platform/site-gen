@@ -43,7 +43,11 @@ export interface StoreProvisioning {
   ensureSiteHosting(
     siteId: string,
   ): Promise<{ coolifyAppUuid: string | null; error?: string }>;
+  /** Маршрут хостинга — центральный прокси (проект тенанта в Coolify ему не нужен). */
+  usesCentralProxy(): boolean;
 }
+
+type ProvisioningPart = "domain" | "project";
 
 @Injectable()
 export class StoreLifecycleSteps implements LifecycleStepRunner {
@@ -103,10 +107,24 @@ export class StoreLifecycleSteps implements LifecycleStepRunner {
       row.tenantId,
       companyName,
     );
-    const failures = Object.entries(result.failures ?? {}).map(
-      ([part, reason]) => `${part}: ${reason}`,
-    );
+    const required: Record<ProvisioningPart, boolean> = {
+      domain: true,
+      project: this.projectRequired(),
+    };
+    const failures = Object.entries(result.failures ?? {})
+      .filter(([part]) => required[part as ProvisioningPart])
+      .map(([part, reason]) => `${part}: ${reason}`);
     if (failures.length) throw new Error(failures.join("; "));
+  }
+
+  /**
+   * Проект тенанта в Coolify нужен только приложению на магазин. При
+   * центральном прокси маршрут обходится без него, и сбой проекта (dev без
+   * доступа к API Coolify) не останавливает сагу — старый путь регистрации
+   * тоже лишь пишет его в лог. То же правило читает доводчик в фактах саги.
+   */
+  projectRequired(): boolean {
+    return !this.sites.usesCentralProxy();
   }
 
   async route(row: LifecycleRow): Promise<void> {

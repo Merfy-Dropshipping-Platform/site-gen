@@ -25,7 +25,7 @@ import {
   makeSiteRow,
 } from "../../__tests__/support/in-memory-lifecycle";
 
-type StepName = keyof LifecycleStepRunner;
+type StepName = Exclude<keyof LifecycleStepRunner, "projectRequired">;
 
 /** Шаги-заглушки: считают вызовы и меняют факты строки, как настоящие. */
 function makeSteps(repo: InMemoryLifecycleRepository) {
@@ -61,6 +61,7 @@ function makeSteps(repo: InMemoryLifecycleRepository) {
     seed: run("seed"),
     provision: run("provision"),
     route: run("route"),
+    projectRequired: () => true,
   };
   const count = (step: StepName, siteId?: string) =>
     calls.filter((c) => c.step === step && (!siteId || c.siteId === siteId))
@@ -229,6 +230,7 @@ describe("доводчик: падения внешних служб и повт
         dropRevision(id, { domainId: "dom", coolifyProjectUuid: "proj" }),
       route: async ({ id }) =>
         dropRevision(id, { coolifyAppUuid: "central-proxy" }),
+      projectRequired: () => true,
     };
 
     const result = await new StoreLifecycleReconciler(repo, steps).advance(

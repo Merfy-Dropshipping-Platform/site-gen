@@ -209,7 +209,7 @@ jobs:
         working-directory: packages/theme-base
         run: >-
           pnpm exec jest --config jest.config.ts --runInBand
-          '__tests__/(astro-inline-script-helper\.test|account-order-delivery\.coverage\.dom\.test|order-confirmation-delivery\.coverage\.dom\.test|checkout-(contact|delivery|submit)-[^/]*\.dom\.test)\.ts$'
+          '__tests__/(astro-inline-script-helper\.test|account-order-delivery\.coverage\.dom\.test|order-confirmation-delivery\.coverage\.dom\.test|checkout-(contact|delivery|submit|payment)-[^/]*\.dom\.test)\.ts$'
 
       # Этап 3 «Магазин одной командой» (src/store/): сага рождения и её
       # доводчик, команды CreateStore/SetTheme, каталог тем, регистрация через

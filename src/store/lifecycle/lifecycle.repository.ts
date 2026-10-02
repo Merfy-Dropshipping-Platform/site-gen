@@ -69,7 +69,7 @@ export interface LifecycleRepository {
 
 export const LIFECYCLE_REPOSITORY = Symbol("LIFECYCLE_REPOSITORY");
 
-const ROW = {
+export const LIFECYCLE_ROW_COLUMNS = {
   id: schema.site.id,
   tenantId: schema.site.tenantId,
   name: schema.site.name,
@@ -119,13 +119,13 @@ export class DrizzleLifecycleRepository implements LifecycleRepository {
         lifecycleNextAt: leaseEndSql,
       })
       .where(and(eq(schema.site.id, siteId), inFlight, due))
-      .returning(ROW);
+      .returning(LIFECYCLE_ROW_COLUMNS);
     return (rows[0] as LifecycleRow | undefined) ?? null;
   }
 
   async read(siteId: string): Promise<LifecycleRow | null> {
     const rows = await this.db
-      .select(ROW)
+      .select(LIFECYCLE_ROW_COLUMNS)
       .from(schema.site)
       .where(eq(schema.site.id, siteId))
       .limit(1);
@@ -137,7 +137,7 @@ export class DrizzleLifecycleRepository implements LifecycleRepository {
     siteId: string,
   ): Promise<LifecycleRow | null> {
     const rows = await this.db
-      .select(ROW)
+      .select(LIFECYCLE_ROW_COLUMNS)
       .from(schema.site)
       .where(
         and(

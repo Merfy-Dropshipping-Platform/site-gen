@@ -45,6 +45,34 @@ DATABASE_URL=$PROD_URL DRY_RUN=false pnpm rollback:theme-schemes
 
 Idempotent; running multiple times keeps restoring from the same snapshot.
 
+## `adopt-lifecycle.ts` — этап 3.8
+
+Переводит магазины ОДНОГО аккаунта (`TENANT_ID`) в сагу рождения. Правило готовности — то же, что у доводчика
+(`planAdoption` → `observeLifecycle(factsOf(row))`): переводим только готовые (`adopt`), у них перевод — только учёт,
+доводчик готовые не трогает. Неготовые остаются старым cron.
+
+**Запуск:**
+
+```bash
+DATABASE_URL=… TENANT_ID=… pnpm site:adopt-lifecycle                                       # план, без записи
+DATABASE_URL=… TENANT_ID=… SITE_ID=… DRY_RUN=false pnpm site:adopt-lifecycle               # перевести один магазин
+DATABASE_URL=… TENANT_ID=… SITE_ID=… ROLLBACK=true DRY_RUN=false pnpm site:adopt-lifecycle # вернуть его старым cron
+```
+
+Столбцы плана:
+
+- `siteId` — id магазина;
+- `name` — название магазина;
+- `action` — `adopt` (переводим) или `skip` (оставляем);
+- `reason` — причина пропуска: `already_in_saga` (магазин уже в саге) или `not_ready`;
+- `missing` — при `not_ready`: какой шаг саги не выполнен (`seed`, `provision` или `route`).
+
+Запускать только по сигналу владельца, по одному магазину, сначала dev. `SITES_USE_CENTRAL_PROXY=true` задавать так
+же, как в окружении sites целевого контура.
+
+Откат: вернуть магазин старым cron можно той же командой с `ROLLBACK=true` — строка снова станет `lifecycle IS NULL`.
+Откат принимается только для переведённого (`ready`) магазина.
+
 ## `compile-astro-blocks.mjs` / `compile-preview-tailwind.mjs`
 
 Build-time asset compilation. Run from the Dockerfile — no manual invocation needed.

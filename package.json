@@ -28,6 +28,7 @@
     "qa:section-gaps": "tsx scripts/qa/measure-section-gaps.ts --rules",
     "backfill:theme-schemes": "tsx scripts/backfill-theme-colorschemes.ts",
     "rollback:theme-schemes": "tsx scripts/rollback-theme-colorschemes.ts",
+    "site:adopt-lifecycle": "tsx scripts/adopt-lifecycle.ts",
     "visual-diff:themes": "node scripts/visual-diff-themes.mjs",
     "sites:seed-presets": "tsx scripts/seed-theme-presets.ts",
     "sites:generate-seed-presets": "tsx scripts/generate-seed-presets.ts",

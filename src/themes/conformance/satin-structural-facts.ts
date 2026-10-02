@@ -436,11 +436,36 @@ function loadSourceFacts(): SatinSourceFacts {
   // Цель миграции читаем из самой миграции, а не из константы: захардкоженный
   // 'CartSection' пережил разворот корзины обратно в CartBody+CartSummary
   // (баг-репорт 12) и оставил ложный GAP «резолвер читает легаси».
-  const cartMigrationCode =
-    readSource('src/utils/revision-migrations.ts') ?? '';
-  const cartMigratedTarget = /type:\s*'CartBody'/.test(cartMigrationCode)
-    ? 'CartBody'
-    : 'CartSection';
+  //
+  // R4 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): сама сидер-
+  // функция корзины переехала из `utils/revision-migrations.ts` (теперь
+  // 21-строчный фасад-реэкспорт) в `content/format/steps/cart-page.ts`.
+  // Громкий отказ ниже — НАМЕРЕННОЕ исключение из общего правила файла
+  // («нет источника → безопасный факт», см. шапку модуля): для ЭТОГО факта
+  // тихий запасной вариант уже один раз спрятал реальный разъезд (находка
+  // `satin.flow.cart.drawer-cart-section-source` после переезда файла R4) —
+  // регэксп молча не находил
+  // `CartBody` по старому пути и подставлял `'CartSection'`, не поднимая
+  // тревогу. Больше — падать явно, а не гадать.
+  const CART_MIGRATION_SOURCE = 'src/content/format/steps/cart-page.ts';
+  const cartMigrationCode = readSource(CART_MIGRATION_SOURCE);
+  if (cartMigrationCode === null) {
+    throw new Error(
+      `satin-structural-facts: cart migration source not found at "${CART_MIGRATION_SOURCE}" ` +
+        `(cartMigratedTarget probe) — путь переехал снова? Обновите его здесь, а не ` +
+        `дайте факту молча подставить запасное значение.`,
+    );
+  }
+  const cartMigrationHasCartBody = /type:\s*['"]CartBody['"]/.test(cartMigrationCode);
+  const cartMigrationHasCartSection = /type:\s*['"]CartSection['"]/.test(cartMigrationCode);
+  if (!cartMigrationHasCartBody && !cartMigrationHasCartSection) {
+    throw new Error(
+      `satin-structural-facts: "${CART_MIGRATION_SOURCE}" не содержит ни 'CartBody', ` +
+        `ни 'CartSection' (cartMigratedTarget probe) — цель миграции корзины неясна. ` +
+        `Обновите пробу вместо молчаливого запасного значения.`,
+    );
+  }
+  const cartMigratedTarget = cartMigrationHasCartBody ? 'CartBody' : 'CartSection';
 
   // cart safe-dom: the cart line render interpolates line.name into innerHTML
   // WITHOUT an allowlisted sanitizer/text adapter dominating it.

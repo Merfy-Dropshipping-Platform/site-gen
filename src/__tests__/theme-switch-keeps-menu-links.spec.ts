@@ -174,6 +174,11 @@ describe("update({ themeId }): меню магазина переезжает в
           },
         }),
       }),
+      // R2: единый конвейер записи — DocumentAdapter.commit() всегда идёт
+      // через транзакцию (см. тот же комментарий в
+      // site-create-theme.characterization.spec.ts).
+      transaction: async (cb: (tx: unknown) => Promise<void>) =>
+        cb({ insert: db.insert, update: db.update }),
     };
     const dep = {} as any;
     const events = { emit: () => undefined };

@@ -113,6 +113,21 @@ interface WriteCommon {
   meta?: Record<string, unknown>;
   /** B17: серверный фильтр досеянных страниц перед записью (revision-write-filter). */
   filterSeeded?: boolean;
+  /**
+   * Правка строки `site` В ТОЙ ЖЕ транзакции, что вставка ревизии и сдвиг
+   * указателя (этап 3, В4: смена темы). Закрытый набор полей — умышленно, чтобы
+   * его нельзя было спутать с самим указателем (`currentRevisionId` сюда не
+   * попадёт даже случайно). Требует `setCurrent` — иначе строку `site` эта
+   * запись вообще не трогает, и патчу не на что сесть.
+   */
+  sitePatch?: SitePatch;
+}
+
+/** Поля строки `site`, которые запись может поменять заодно с ревизией (В4). */
+export interface SitePatch {
+  themeId?: string;
+  themeAppliedAt?: Date;
+  updatedBy?: string;
 }
 
 /**
@@ -154,6 +169,44 @@ export interface BlindSaveParams extends WriteCommon {
 
 /** Форма записи выбирается явно: сочетания вроде «база + жёсткий CAS» тип не пропустит. */
 export type SaveParams = SaveOnBaseParams | BlindSaveParams;
+
+/**
+ * Удобный вход для писателей с «плоским» историческим контрактом (RPC
+ * `sites.revisions.create`, создание магазина, легаси-пересев): сам решает,
+ * какая форма `SaveParams` нужна (`base` задан — от базы, иначе — вслепую), и
+ * возвращает ответ в старой форме (`revisionId`/`currentRevisionId`/…),
+ * которую уже знают клиенты. Реализация — `StoreContentService.createRevision`.
+ */
+export interface CreateRevisionParams {
+  site: StoreContentSite;
+  tenantId: string;
+  data: Record<string, unknown>;
+  meta?: Record<string, unknown>;
+  actorUserId?: string;
+  setCurrent?: boolean;
+  /** Жёсткий CAS вне слияния (форма `blind`) — прежнее поведение до этапа 2. */
+  expectedCurrentRevisionId?: string | null;
+  /** B17: серверный фильтр досеянных страниц перед записью. */
+  filterSeededPages?: boolean;
+  /**
+   * База записи (этап 2, И2). Задана (в т.ч. `null`) — запись от базы; не
+   * задана вовсе — запись вслепую, `expectedCurrentRevisionId` — её CAS.
+   */
+  base?: string | null;
+  actor?: WriteActor;
+  source?: WriteSource;
+  mergePolicy?: StaleBasePolicy;
+}
+
+export interface CreateRevisionResult {
+  /** Ревизия, равная документу клиента (см. `SaveEffect.clientVersion`). */
+  revisionId: string;
+  /** Есть только при записи от базы: текущая ревизия магазина после записи. */
+  currentRevisionId?: string;
+  merged?: boolean;
+  overwritten?: ContestedValue[];
+  conflicts?: ContestedValue[];
+}
 
 /** Эффект записи с базой — то, что видит клиент (раздел «Контракт записи» плана этапа 2). */
 export interface SaveEffect {
@@ -200,9 +253,178 @@ export class RevisionMergeConflictError extends Error {
   }
 }
 
+/**
+ * Ревизии нет — типизированная ошибка,
+ * не голая строка. `load`/`get`/`diff`/`rollback` бросают её вместо
+ * `new Error("revision_not_found")`, и вызывающий код различает «ревизии
+ * нет» от сбоя базы через `instanceof`, а не хрупкое сравнение `e.message`.
+ * `message` остаётся `"revision_not_found"` — эту строку уже читают
+ * `sites.microservice.controller.ts` (ответ RPC) и `pages.service.ts`
+ * (catch-блоки); менять её не нужно, `instanceof` работает поверх нового
+ * класса без изменения текста.
+ *
+ * Конвенция имён порта: метод БЕЗ суффикса (`load`, `get`) — «ревизии нет»
+ * бросает эту ошибку. Метод С суффиксом `OrNull` (`loadOrNull`,
+ * `envelopeOrNull`) — «ревизии нет» отдаёт `null`; ЛЮБАЯ другая ошибка (сбой
+ * базы, таймаут) пробрасывается всегда, независимо от суффикса — `OrNull`
+ * гасит только `RevisionNotFoundError`, не ошибки вообще.
+ */
+export class RevisionNotFoundError extends Error {
+  constructor() {
+    super("revision_not_found");
+    this.name = "RevisionNotFoundError";
+  }
+}
+
+/**
+ * Одна запись истории магазина (без служебных снимков клиента, И5). Поля
+ * ниже — R3 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`):
+ * совместимое расширение `sites.revisions.list` (только новые поля, старые
+ * `id`/`createdAt` не переименованы и не удалены). Кто/откуда/что не
+ * записано (например, ревизии до И5, создание магазина) — `null`, а не
+ * ошибка.
+ */
+export interface HistoryItem {
+  id: string;
+  createdAt: Date;
+  /** Кто сделал версию (И5). */
+  actor: WriteActor | null;
+  /** Откуда пришла запись (И5). */
+  source: WriteSource | null;
+  /** Адреса правок мерчанта относительно прежней текущей; не посчиталось/первая ревизия — `null`. */
+  changes: string[] | null;
+  /** Эта версия — восстановление; значение — id ревизии-источника. */
+  restoredFrom: string | null;
+}
+
+/**
+ * Курсор постраничности истории: пара
+ * (createdAt, id), не голая дата — у двух версий `createdAt` может совпасть
+ * (та же миллисекунда), и курсор только по дате на границе страниц пропускал
+ * бы вторую. `id` — детерминированный довесок сортировки (`ORDER BY
+ * created_at DESC, id DESC`), не смысловое поле.
+ */
+export interface HistoryCursor {
+  createdAt: Date;
+  id: string;
+}
+
+export interface HistoryOptions {
+  site: StoreContentSite;
+  limit?: number;
+  /** Курсор постраничности: строго раньше этой пары (createdAt, id). */
+  before?: HistoryCursor;
+}
+
+export interface HistoryPage {
+  items: HistoryItem[];
+  /** Курсор следующей страницы (`HistoryOptions.before`); `null` — дальше версий нет. */
+  nextBefore: HistoryCursor | null;
+}
+
+/** Метаданные ревизии — без содержимого (`data` несёт `load`/`get`). */
+export interface RevisionEnvelope {
+  id: string;
+  siteId: string;
+  meta: Record<string, unknown> | null;
+  createdAt: Date;
+  createdBy: string | null;
+}
+
+/** Конкретная ревизия целиком: конверт + содержимое, прошедшее шаги чтения. */
+export interface RevisionItem extends RevisionEnvelope {
+  data: Record<string, unknown>;
+}
+
+export interface GetOptions {
+  site: StoreContentSite;
+}
+
+export interface RollbackParams {
+  tenantId: string;
+  site: StoreContentSite;
+  revisionId: string;
+  actorUserId?: string;
+  /**
+   * База отката — текущая ревизия, которую видел клиент. Не передана —
+   * текущая на момент чтения. `null` — «ревизии нет»: явное значение, не
+   * подменяется текущей.
+   */
+  base?: string | null;
+}
+
+/**
+ * Домен несёт только факты; `success` — обёртка транспорта (RPC), а не часть
+ * доменного результата — добавляет её вызывающий на
+ * проводе (`sites.microservice.controller.ts`), как и у всех остальных RPC.
+ */
+export interface RollbackResult {
+  /** Текущая ревизия после отката (копия `revisionId`, либо он же, если уже текущая). */
+  revisionId: string;
+  /** Ревизия, из которой восстановили. */
+  restoredFrom: string;
+}
+
+/** Опции для операций, которым нужен только `site` (диспетчер адаптера). */
+export interface DiffOptions {
+  site: StoreContentSite;
+}
+
+/** Разница двух версий — список операций движка (R3). */
+export interface DiffResult {
+  ops: Op[];
+}
+
 export interface StoreContent {
+  /** «Ревизии нет» — бросает {@link RevisionNotFoundError}. Нужен именно результат без исключения — см. `loadOrNull`. */
   load(siteId: string, opts: LoadOptions): Promise<LoadResult>;
+  /**
+   * Как `load`, но «ревизии нет» — `null`, не исключение; ЛЮБАЯ другая ошибка (сбой базы, таймаут)
+   * пробрасывается как есть — вызывающему запрещено гасить её в `null`
+   * блинным `.catch(() => null)` (так сбой базы на быстром пути снэпшота
+   * читался бы как «мерчант ничего не менял», и магазину с реальным
+   * содержимым выкладывался бы шаблон темы). Используют места, где «ревизии
+   * нет» — штатный, ожидаемый исход: `generator.service.ts` (финальные
+   * данные для Astro), `build.service.ts` (быстрый путь снэпшота),
+   * легаси-чтение в `sites.service.ts`/`page-meta.controller.ts`.
+   */
+  loadOrNull(siteId: string, opts: LoadOptions): Promise<LoadResult | null>;
   save(siteId: string, params: SaveParams): Promise<SaveResult>;
+  /** История версий магазина, без служебных снимков клиента (И4). */
+  history(siteId: string, opts: HistoryOptions): Promise<HistoryPage>;
+  /** Конкретная ревизия: конверт + содержимое (шаги чтения адаптера). «Ревизии нет» — бросает {@link RevisionNotFoundError}. */
+  get(
+    siteId: string,
+    revisionId: string,
+    opts: GetOptions,
+  ): Promise<RevisionItem>;
+  /**
+   * Конверт БЕЗ содержимого — дешёвая проверка «есть ли
+   * такая ревизия у этого магазина» и чтение только `meta`/`createdAt`/
+   * `createdBy`, без миграций и без второго прогона `load()` там, где
+   * содержимое уже прочитано отдельно (сборка). Суффикс `OrNull` — «ревизии
+   * нет» отдаёт `null` (не исключение, в отличие от `get`/`load`); сбой базы
+   * пробрасывается как есть, тем же правилом, что `loadOrNull`.
+   */
+  envelopeOrNull(
+    siteId: string,
+    revisionId: string,
+    opts: GetOptions,
+  ): Promise<RevisionEnvelope | null>;
+  /** Откат (И6): новая ревизия — точная копия выбранной, со сверкой текущей. «Ревизии нет» — бросает {@link RevisionNotFoundError}. */
+  rollback(siteId: string, params: RollbackParams): Promise<RollbackResult>;
+  /**
+   * Разница `from` → `to` (R3): оба документа проходят те же шаги чтения, что
+   * и обычное `load` (та же «одна версия формата», что у слияния), затем
+   * движок (`operations/diff`) строит список операций. Любая из двух версий
+   * не найдена — бросает {@link RevisionNotFoundError} (через `load`).
+   */
+  diff(
+    siteId: string,
+    from: string,
+    to: string,
+    opts: DiffOptions,
+  ): Promise<DiffResult>;
 }
 
 /** Модели контента, которые понимает `StoreContentService`. Сегодня — только 'document'. */

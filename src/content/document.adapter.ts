@@ -26,7 +26,8 @@
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { migrateRevisionData } from "../utils/revision-migrations";
@@ -41,17 +42,33 @@ import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
 import type { PanelDefaultsSource } from "./panel-defaults";
 import { saveOnBase, writeLabels } from "./save-on-base";
 import type { RevisionStore } from "./save-on-base";
-import { RevisionConflictError } from "./store-content.port";
+import {
+  RevisionConflictError,
+  RevisionNotFoundError,
+} from "./store-content.port";
 import type {
   BlindSaveParams,
+  DiffOptions,
+  DiffResult,
+  GetOptions,
+  HistoryCursor,
+  HistoryItem,
+  HistoryOptions,
+  HistoryPage,
   LoadOptions,
   LoadResult,
+  RevisionEnvelope,
+  RevisionItem,
+  RollbackParams,
+  RollbackResult,
   SaveOnBaseParams,
   SaveParams,
   SaveResult,
   StoreContent,
   StoreContentSite,
 } from "./store-content.port";
+import { diff as diffDocuments } from "./operations";
+import { isStoreVersion } from "./revision-kinds";
 
 // Тот же флаг, что в sites.service.ts/preview.controller.ts — поведение шага
 // normalize не меняется, просто у него теперь собственная копия условия.
@@ -156,6 +173,53 @@ function stepContextFor(
 /** CAS не прошёл внутри транзакции — откатить вставку и сообщить наружу `false`. */
 class CasMiss extends Error {}
 
+/** R3: колонка `kind` из `meta.kind` — та же метка, только не внутри jsonb. */
+function kindOfMeta(meta: Record<string, unknown> | undefined): string | null {
+  const kind = meta?.kind;
+  return typeof kind === "string" ? kind : null;
+}
+
+/**
+ * Условие «строго раньше курсора» по паре (createdAt, id) — keyset-пагинация:
+ * либо дата меньше, либо та же дата и id меньше (тай-брейк на совпавший
+ * createdAt). Тот же порядок, что ORDER BY в history().
+ */
+function beforeCursor(cursor: HistoryCursor): SQL {
+  // or() с двумя заданными условиями не возвращает undefined — приведение
+  // типа только для этого (drizzle типизирует or() с запасом на пустой вызов).
+  return or(
+    lt(schema.siteRevision.createdAt, cursor.createdAt),
+    and(
+      eq(schema.siteRevision.createdAt, cursor.createdAt),
+      lt(schema.siteRevision.id, cursor.id),
+    ),
+  ) as SQL;
+}
+
+/** R3: строка истории из конверта + `meta` (И5: actor/source/changes/restoredFrom). */
+function historyItemOf(row: {
+  id: string;
+  createdAt: Date;
+  meta: unknown;
+}): HistoryItem {
+  const meta = (row.meta ?? {}) as Record<string, unknown>;
+  return {
+    id: row.id,
+    createdAt: row.createdAt,
+    actor:
+      typeof meta.actor === "string"
+        ? (meta.actor as HistoryItem["actor"])
+        : null,
+    source:
+      typeof meta.source === "string"
+        ? (meta.source as HistoryItem["source"])
+        : null,
+    changes: Array.isArray(meta.changes) ? (meta.changes as string[]) : null,
+    restoredFrom:
+      typeof meta.restoredFrom === "string" ? meta.restoredFrom : null,
+  };
+}
+
 @Injectable()
 export class DocumentAdapter implements StoreContent {
   private readonly logger = new Logger(DocumentAdapter.name);
@@ -177,9 +241,9 @@ export class DocumentAdapter implements StoreContent {
   async load(siteId: string, opts: LoadOptions): Promise<LoadResult> {
     const revisionId =
       opts.revisionId ?? opts.site.currentRevisionId ?? undefined;
-    if (!revisionId) throw new Error("revision_not_found");
+    if (!revisionId) throw new RevisionNotFoundError();
     const rev = await this.fetchRevision(revisionId, siteId);
-    if (!rev) throw new Error("revision_not_found");
+    if (!rev) throw new RevisionNotFoundError();
     if (opts.asStored) {
       return {
         document: (rev.data ?? {}) as Record<string, unknown>,
@@ -193,6 +257,23 @@ export class DocumentAdapter implements StoreContent {
     return { document, version: revisionId };
   }
 
+  /**
+   * Как `load`, но «ревизии нет» — `null`.
+   * ЛЮБАЯ другая ошибка (в т.ч. `fetchRevision`'s сбой базы) пробрасывается —
+   * ловим строго `RevisionNotFoundError` через `instanceof`, не любой catch.
+   */
+  async loadOrNull(
+    siteId: string,
+    opts: LoadOptions,
+  ): Promise<LoadResult | null> {
+    try {
+      return await this.load(siteId, opts);
+    } catch (e) {
+      if (e instanceof RevisionNotFoundError) return null;
+      throw e;
+    }
+  }
+
   async save(siteId: string, params: SaveParams): Promise<SaveResult> {
     if (params.mode === "on-base") {
       return saveOnBase(this.revisionStore, siteId, params, this.logger);
@@ -200,45 +281,189 @@ export class DocumentAdapter implements StoreContent {
     return this.saveWithoutBase(siteId, params);
   }
 
+  /** История версий магазина (R1/R3): без служебных снимков клиента (И4). */
+  async history(siteId: string, opts: HistoryOptions): Promise<HistoryPage> {
+    const limit = opts.limit ?? 50;
+    const conditions = [
+      eq(schema.siteRevision.siteId, siteId),
+      isStoreVersion(),
+    ];
+    if (opts.before) conditions.push(beforeCursor(opts.before));
+    const rows = await this.db
+      .select({
+        id: schema.siteRevision.id,
+        createdAt: schema.siteRevision.createdAt,
+        meta: schema.siteRevision.meta,
+      })
+      .from(schema.siteRevision)
+      .where(and(...conditions))
+      // Сортировка ПАРОЙ — id тай-брейк на совпавший createdAt (та же
+      // миллисекунда); тот же порядок использует beforeCursor() ниже.
+      .orderBy(
+        desc(schema.siteRevision.createdAt),
+        desc(schema.siteRevision.id),
+      )
+      .limit(limit);
+    const last = rows[rows.length - 1];
+    return {
+      items: rows.map(historyItemOf),
+      nextBefore:
+        rows.length === limit
+          ? { createdAt: last.createdAt, id: last.id }
+          : null,
+    };
+  }
+
+  /**
+   * Число версий магазина (без снимков клиента) для ПАЧКИ
+   * сайтов одним запросом — `admin/bulk` (экспорт) считал это сам, выбирая
+   * ВСЕ строки пачки и фильтруя в памяти (`revisions.filter(r => r.siteId
+   * === site.id).length`); здесь — `GROUP BY site_id, count(*)` в базе.
+   * Отсутствующих в ответе siteId (нет ни одной версии) вызывающий код
+   * читает как 0 через `Map.get(id) ?? 0`.
+   */
+  async historyCounts(siteIds: string[]): Promise<Map<string, number>> {
+    if (siteIds.length === 0) return new Map();
+    const rows = await this.db
+      .select({
+        siteId: schema.siteRevision.siteId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(schema.siteRevision)
+      .where(
+        and(inArray(schema.siteRevision.siteId, siteIds), isStoreVersion()),
+      )
+      .groupBy(schema.siteRevision.siteId);
+    return new Map(rows.map((r) => [r.siteId, r.count]));
+  }
+
+  /**
+   * Разница `from` → `to` (R3): оба документа читаются тем же путём, что и
+   * обычное `load` (миграции, досев, адреса — «одна версия формата», как у
+   * слияния), затем движок строит список операций.
+   */
+  async diff(
+    siteId: string,
+    from: string,
+    to: string,
+    opts: DiffOptions,
+  ): Promise<DiffResult> {
+    const [a, b] = await Promise.all([
+      this.load(siteId, { revisionId: from, site: opts.site }),
+      this.load(siteId, { revisionId: to, site: opts.site }),
+    ]);
+    return { ops: diffDocuments(a.document, b.document) };
+  }
+
+  /** Конкретная ревизия: конверт (без `data`) отдельным SELECT + содержимое через `load`. */
+  async get(
+    siteId: string,
+    revisionId: string,
+    opts: GetOptions,
+  ): Promise<RevisionItem> {
+    const envelope = await this.envelopeOrNull(siteId, revisionId, opts);
+    if (!envelope) throw new RevisionNotFoundError();
+    // Как и раньше (getRevision): конверт прокидывается КАК ЕСТЬ, без
+    // нормализации отсутствующих полей — байт-в-байт форма ответа не меняется
+    // (золотые документы сравнивают именно её).
+    const loaded = await this.load(siteId, { revisionId, site: opts.site });
+    return { ...envelope, data: loaded.document } as RevisionItem;
+  }
+
+  async envelopeOrNull(
+    siteId: string,
+    revisionId: string,
+    _opts: GetOptions,
+  ): Promise<RevisionEnvelope | null> {
+    const [row] = await this.db
+      .select({
+        id: schema.siteRevision.id,
+        siteId: schema.siteRevision.siteId,
+        meta: schema.siteRevision.meta,
+        createdAt: schema.siteRevision.createdAt,
+        createdBy: schema.siteRevision.createdBy,
+      })
+      .from(schema.siteRevision)
+      .where(
+        and(
+          eq(schema.siteRevision.id, revisionId),
+          eq(schema.siteRevision.siteId, siteId),
+        ),
+      );
+    return (row as RevisionEnvelope | undefined) ?? null;
+  }
+
+  /**
+   * Откат (этап 2, И6): новая ревизия — точная копия выбранной версии (как
+   * она хранится), со сверкой «текущая = та, что видел клиент». Сменилась —
+   * `revision_conflict`, ничего не пишется. Выбранная версия и так текущая —
+   * ничего не пишется, ответ несёт её же id.
+   */
+  async rollback(
+    siteId: string,
+    params: RollbackParams,
+  ): Promise<RollbackResult> {
+    const target = await this.load(siteId, {
+      revisionId: params.revisionId,
+      site: params.site,
+      asStored: true,
+    });
+    const restored = { restoredFrom: params.revisionId };
+    if (params.revisionId === params.site.currentRevisionId) {
+      return { ...restored, revisionId: params.revisionId };
+    }
+    const seen =
+      params.base !== undefined ? params.base : params.site.currentRevisionId;
+    const saved = await this.save(siteId, {
+      mode: "on-base",
+      document: target.document,
+      base: seen ?? null,
+      tenantId: params.tenantId,
+      actor: "merchant",
+      source: "rollback",
+      mergePolicy: "refuse",
+      meta: { restoredFrom: params.revisionId },
+      actorUserId: params.actorUserId,
+      site: params.site,
+    });
+    return { ...restored, revisionId: saved.version };
+  }
+
   /**
    * Запись вслепую (создание магазина, смена темы, жёсткий CAS по
-   * `expectedVersion`) — как до этапа 2. Второй путь записи рядом с
-   * `saveOnBase`: уходит при стыковке с этапом 3 (долг — `README.md`).
+   * `expectedVersion`) — как до этапа 2, но теперь ОДНИМ конвейером с
+   * записью от базы: обе формы сходятся в единственную `commit()` (этап 3,
+   * R2 `merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`). Раньше здесь
+   * был второй путь (`insertRevision`+`setCurrentUnconditional` — два
+   * отдельных, не завёрнутых в транзакцию запроса рядом с CAS-веткой,
+   * дублирующей SQL из `commit()`); теперь `commit()` сама решает по
+   * `current`/`expected`, двигать ли указатель и проверять ли CAS.
    */
   private async saveWithoutBase(
     siteId: string,
     params: BlindSaveParams,
   ): Promise<SaveResult> {
+    if (params.sitePatch && !params.setCurrent) {
+      // sitePatch садится на UPDATE site, который делает только setCurrent —
+      // без него патчу не на что сесть, и он молча пропал бы.
+      throw new Error("site_patch_requires_set_current");
+    }
     const id = randomUUID();
     const dataToPersist = params.filterSeeded
       ? await this.stripSeededPages(siteId, params.site, params.document)
       : params.document;
     const meta = this.legacyMeta(params);
 
-    const expectedVersion = params.expectedVersion;
-    if (params.setCurrent && expectedVersion !== undefined) {
-      const ok = await this.commit({
-        siteId,
-        tenantId: params.tenantId,
-        rows: [{ id, data: dataToPersist, meta: meta ?? {} }],
-        current: id,
-        expected: expectedVersion,
-        createdBy: params.actorUserId,
-      });
-      if (!ok) throw new RevisionConflictError();
-      return { version: id };
-    }
-
-    await this.insertRevision(
-      id,
+    const ok = await this.commit({
       siteId,
-      dataToPersist,
-      meta,
-      params.actorUserId,
-    );
-    if (params.setCurrent) {
-      await this.setCurrentUnconditional(siteId, params.tenantId, id);
-    }
+      tenantId: params.tenantId,
+      rows: [{ id, data: dataToPersist, meta: meta ?? {} }],
+      current: params.setCurrent ? id : undefined,
+      expected: params.setCurrent ? params.expectedVersion : undefined,
+      createdBy: params.actorUserId,
+      sitePatch: params.sitePatch,
+    });
+    if (!ok) throw new RevisionConflictError();
     return { version: id };
   }
 
@@ -298,14 +523,20 @@ export class DocumentAdapter implements StoreContent {
     return row.currentRevisionId ?? null;
   }
 
-  /** Вставка ревизий + CAS указателя одной транзакцией; CAS не прошёл — откат и `false`. */
+  /**
+   * Единственная точка фиксации записи (R2): вставка ревизий + (если задан
+   * `current`) сдвиг указателя, при необходимости под CAS, плюс `sitePatch` на
+   * ту же строку `site` — одной транзакцией. И на быстром пути (без базы), и
+   * при записи от базы SQL один и тот же — дублирования нет.
+   *
+   * `current` не задан — только вставка, указатель не трогаем (запись не
+   * становится текущей). `expected` не задан — переезд безусловный (как раньше
+   * `setCurrentUnconditional`); `expected` задан — CAS: 0 обновлённых строк →
+   * `CasMiss`, транзакция откатывается целиком (вставленные ревизии тоже).
+   */
   private async commit(
     write: Parameters<RevisionStore["commit"]>[0],
   ): Promise<boolean> {
-    const expectedPredicate =
-      write.expected === null
-        ? isNull(schema.site.currentRevisionId)
-        : eq(schema.site.currentRevisionId, write.expected);
     try {
       await this.db.transaction(async (tx) => {
         for (const row of write.rows) {
@@ -314,13 +545,43 @@ export class DocumentAdapter implements StoreContent {
             siteId: write.siteId,
             data: row.data ?? {},
             meta: row.meta ?? {},
+            // R3: колонка зеркалит meta.kind (совместимость на время
+            // выкатки, revision-kinds.ts читает колонку). Сегодня непустой
+            // kind пишет только снимок клиента (save-on-base.ts, snapshotRow).
+            kind: kindOfMeta(row.meta),
             createdAt: new Date(),
             createdBy: write.createdBy,
           });
         }
+        if (write.current === undefined) return;
+        // Защитный порядок: sitePatch — СНАЧАЛА, указатель
+        // и updatedAt — ПОСЛЕ. Объектный литерал берёт последнее значение ключа,
+        // поэтому даже если SitePatch когда-нибудь обзаведётся полем
+        // currentRevisionId, патч не сможет им сдвинуть указатель мимо CAS.
+        const sitePatch: Record<string, unknown> = {
+          ...write.sitePatch,
+          currentRevisionId: write.current,
+          updatedAt: new Date(),
+        };
+        if (write.expected === undefined) {
+          await tx
+            .update(schema.site)
+            .set(sitePatch)
+            .where(
+              and(
+                eq(schema.site.id, write.siteId),
+                eq(schema.site.tenantId, write.tenantId),
+              ),
+            );
+          return;
+        }
+        const expectedPredicate =
+          write.expected === null
+            ? isNull(schema.site.currentRevisionId)
+            : eq(schema.site.currentRevisionId, write.expected);
         const updated = await tx
           .update(schema.site)
-          .set({ currentRevisionId: write.current, updatedAt: new Date() })
+          .set(sitePatch)
           .where(
             and(
               eq(schema.site.id, write.siteId),
@@ -403,35 +664,5 @@ export class DocumentAdapter implements StoreContent {
       .from(schema.siteRevision)
       .where(eq(schema.siteRevision.id, currentRevisionId));
     return (prev?.data as Record<string, unknown> | undefined) ?? null;
-  }
-
-  private async insertRevision(
-    id: string,
-    siteId: string,
-    data: Record<string, unknown>,
-    meta: Record<string, unknown> | undefined,
-    actorUserId: string | undefined,
-  ): Promise<void> {
-    await this.db.insert(schema.siteRevision).values({
-      id,
-      siteId,
-      data: data ?? {},
-      meta: meta ?? {},
-      createdAt: new Date(),
-      createdBy: actorUserId,
-    });
-  }
-
-  private async setCurrentUnconditional(
-    siteId: string,
-    tenantId: string,
-    revisionId: string,
-  ): Promise<void> {
-    await this.db
-      .update(schema.site)
-      .set({ currentRevisionId: revisionId, updatedAt: new Date() })
-      .where(
-        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
-      );
   }
 }

@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
  * Сторож п.7 брифа `merfy-mcp/docs/plans/2026-09-23-vanilla-seed-into-package.md`:
- * «в `revision-migrations.ts` не появляется новых `if (themeId === '…')` —
+ * «в коде миграций ревизии не появляется новых `if (themeId === '…')» —
  * тема — это данные её пакета `packages/theme-<t>`, а не код в общем пути
  * чтения ревизии».
  *
@@ -16,9 +16,22 @@ import { resolve } from "node:path";
  * документацию) и белый список ниже — то, что осталось осознанно, вне
  * периметра этого брифа, с указанной причиной. Если список нужно расширить —
  * это должно быть решение агента с записью причины, а не молчаливый рост.
+ *
+ * R4 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): реализация
+ * переехала из одного `revision-migrations.ts` в `content/format/**`
+ * (таблица шагов вместо лестницы); `revision-migrations.ts` — теперь тонкий
+ * фасад (реэкспорты). Сторож читает ВСЕ файлы новой реализации, не старый
+ * путь — иначе он молча перестал бы что-либо проверять.
  */
 
-const FILE = resolve(__dirname, "../revision-migrations.ts");
+const FORMAT_DIR = resolve(__dirname, "../../content/format");
+const STEPS_DIR = resolve(FORMAT_DIR, "steps");
+const SOURCE_FILES = [
+  resolve(FORMAT_DIR, "run.ts"),
+  ...readdirSync(STEPS_DIR)
+    .filter((f) => f.endsWith(".ts") && !f.includes("__tests__"))
+    .map((f) => resolve(STEPS_DIR, f)),
+];
 const THEME_NAMES = ["vanilla", "bloom", "rose", "flux", "satin"] as const;
 
 /** Снимает `/* … *\/` и `// …` комментарии — грубо, но для grep-сторожа хватает
@@ -34,7 +47,7 @@ function stripComments(src: string): string {
  */
 const WHITELIST: Array<{ needle: string; reason: string }> = [
   {
-    needle: "const CART_THEME_SCHEME_THEMES = new Set(['bloom']);",
+    needle: 'const CART_THEME_SCHEME_THEMES = new Set(["bloom"]);',
     reason:
       "dropSeededCartScheme (b*: cart-scheme) — отдельная, более ранняя задача " +
       "(схема корзины из theme.json.blockDefaults для тем, где она задана). " +
@@ -43,11 +56,14 @@ const WHITELIST: Array<{ needle: string; reason: string }> = [
   },
 ];
 
-describe("revision-migrations.ts не содержит литеральных if(themeId === на конкретную тему)", () => {
-  const rawSource = readFileSync(FILE, "utf-8");
+describe("код миграций не содержит литеральных if(themeId === на конкретную тему)", () => {
+  const rawSource = SOURCE_FILES.map((f) => readFileSync(f, "utf-8")).join(
+    "\n\n",
+  );
   const codeOnly = stripComments(rawSource);
 
-  it("файл существует и непустой (страховка от опечатки в пути)", () => {
+  it("файлы существуют и непустые (страховка от опечатки в пути)", () => {
+    expect(SOURCE_FILES.length).toBeGreaterThanOrEqual(16);
     expect(rawSource.length).toBeGreaterThan(1000);
   });
 
@@ -74,7 +90,10 @@ describe("revision-migrations.ts не содержит литеральных if
 
   it("checkout-result сеется по манифесту темы, а не по literal themeId", () => {
     // Раньше: `themeId === 'rose' || themeId === 'flux' ? seedCheckoutResultPage(out) : out`.
-    expect(codeOnly).toMatch(/themeHasCheckoutResultPage\(themeId\)/);
+    // R4: вызов теперь из таблицы шагов через ctx (`themeHasCheckoutResultPage(ctx.themeId)`,
+    // table.ts) — тот же параметр, обёрнутый в контекст, тот же манифест-based
+    // helper внутри (checkout.ts), поэтому допускаем обе формы вызова.
+    expect(codeOnly).toMatch(/themeHasCheckoutResultPage\((?:ctx\.)?themeId\)/);
     expect(codeOnly).not.toMatch(
       /themeId\s*===\s*['"]rose['"]\s*\|\|\s*themeId\s*===\s*['"]flux['"]/,
     );

@@ -89,12 +89,6 @@ export interface ThemeSwitchSites {
   buildInitialRevision(
     themeId: string,
   ): Promise<Record<string, unknown> | null>;
-  recordThemeChoice(params: {
-    tenantId: string;
-    siteId: string;
-    themeId: string;
-    actorUserId?: string;
-  }): Promise<boolean>;
   publish(params: {
     tenantId: string;
     siteId: string;
@@ -112,7 +106,9 @@ export class SetThemeCommand {
 
   constructor(
     @Inject(SitesDomainService) private readonly sites: ThemeSwitchSites,
-    @Inject(StoreContentService) private readonly content: StoreContent,
+    // Команде нужны только чтение и запись документа — зависимость ровно на них.
+    @Inject(StoreContentService)
+    private readonly content: Pick<StoreContent, "load" | "save">,
     @Inject(THEME_CATALOG) private readonly catalog: ThemeCatalog,
     @Inject(SitesEventsService)
     private readonly events: Pick<SitesEventsService, "emit">,
@@ -159,12 +155,6 @@ export class SetThemeCommand {
     );
     if (!revisionId) return refused("revision_conflict");
 
-    await this.sites.recordThemeChoice({
-      tenantId: input.tenantId,
-      siteId: site.id,
-      themeId: theme.id,
-      actorUserId: input.actorUserId,
-    });
     this.events.emit("sites.site.updated", {
       tenantId: input.tenantId,
       siteId: site.id,
@@ -198,7 +188,13 @@ export class SetThemeCommand {
     return canonAsLoadedByPort(canon, site.themeId, site);
   }
 
-  /** Новая ревизия через порт с CAS; `null` — чужая запись успела раньше. */
+  /**
+   * Новая ревизия И `site.themeId`/`themeAppliedAt` — ОДНОЙ транзакцией через
+   * порт (этап 3, В4; было — отдельный `recordThemeChoice()` после этой
+   * записи: при сбое между ними ревизия новой темы уже текущая, а `themeId`
+   * ещё старый). CAS не прошёл — `null`, чужая запись успела раньше, в базе
+   * ничего нового (ни ревизии, ни смены темы).
+   */
   private async write(
     site: SiteRow,
     input: SetThemeInput,
@@ -222,6 +218,11 @@ export class SetThemeCommand {
           toThemeId,
         },
         site: toStoreContentSite(site),
+        sitePatch: {
+          themeId: toThemeId,
+          themeAppliedAt: new Date(),
+          ...(input.actorUserId ? { updatedBy: input.actorUserId } : {}),
+        },
       });
       return saved.version;
     } catch (e) {

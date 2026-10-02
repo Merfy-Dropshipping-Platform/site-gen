@@ -23,6 +23,7 @@ import {
   carryOverUserPages,
   THEMES_RESEED_ON_SWITCH,
 } from "../sites.service";
+import { legacySeed } from "../content/canon";
 import * as schema from "../db/schema";
 import { UserListenerController } from "../user/user.listener";
 import { makeCreateStoreHarness } from "../store/__tests__/support/create-store-harness";
@@ -102,6 +103,12 @@ describe("reserve(): создание магазина (sites.service.ts:~463-57
           return { where: async (_c: any) => [] };
         },
       }),
+      // R2: единый конвейер записи — DocumentAdapter.commit() всегда идёт
+      // через транзакцию (раньше «вслепую без CAS» шло двумя отдельными
+      // вызовами db.insert/db.update мимо неё). tx делит insert/update с
+      // верхним уровнем — те же массивы inserted/siteUpdates.
+      transaction: async (cb: (tx: unknown) => Promise<void>) =>
+        cb({ insert: db.insert, update: db.update }),
     };
     return { db, inserted, siteUpdates };
   }
@@ -338,11 +345,14 @@ describe("buildInitialRevision(): источник стартового конт
 });
 
 // ---------------------------------------------------------------------------
-// 3. getDefaultContent() — легаси JSON-сид (сегодня доступен только как
-//    fallback для неизвестных тем или при падении PageResolver)
+// 3. legacySeed() — легаси JSON-сид (сегодня доступен только как fallback
+//    для неизвестных тем или при падении PageResolver). R1 (`merfy-mcp/docs/
+//    plans/2026-09-30-revisions-clean.md`) переехал из sites.service.ts
+//    (`getDefaultContent`) в content/canon.ts как чистая функция — поведение
+//    то же, только вход теперь свободная функция, не приватный метод сервиса.
 // ---------------------------------------------------------------------------
 
-describe("getDefaultContent(): легаси JSON-сид по теме (sites.service.ts:~1652)", () => {
+describe("legacySeed(): легаси JSON-сид по теме (content/canon.ts)", () => {
   function loadDefaultsJson(theme: string) {
     return JSON.parse(
       readFileSync(
@@ -360,20 +370,15 @@ describe("getDefaultContent(): легаси JSON-сид по теме (sites.ser
   }
 
   it("текущее поведение: известная тема грузит defaults/<theme>.json", () => {
-    const service = makeBareService();
-    expect(service.getDefaultContent("flux")).toEqual(loadDefaultsJson("flux"));
+    expect(legacySeed("flux")).toEqual(loadDefaultsJson("flux"));
   });
 
   it("текущее поведение: тема без файла defaults/<theme>.json откатывается на rose.json", () => {
-    const service = makeBareService();
-    expect(service.getDefaultContent("no-such-theme")).toEqual(
-      loadDefaultsJson("rose"),
-    );
+    expect(legacySeed("no-such-theme")).toEqual(loadDefaultsJson("rose"));
   });
 
   it("текущее поведение: без аргумента тоже используется rose", () => {
-    const service = makeBareService();
-    expect(service.getDefaultContent()).toEqual(loadDefaultsJson("rose"));
+    expect(legacySeed()).toEqual(loadDefaultsJson("rose"));
   });
 });
 
@@ -548,6 +553,10 @@ describe("update(): смена темы у существующего магаз
           return { where: (_c: any) => withReturning([{ id: "site-1" }]) };
         },
       }),
+      // R2: см. тот же комментарий в makeReserveDb() — единый конвейер
+      // записи всегда идёт через транзакцию.
+      transaction: async (cb: (tx: unknown) => Promise<void>) =>
+        cb({ insert: db.insert, update: db.update }),
     };
     return { db, inserted, siteUpdates };
   }

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { migrateRevisionData } from '../revision-migrations';
 
@@ -23,7 +23,18 @@ import { migrateRevisionData } from '../revision-migrations';
  * результат.
  */
 
-const FILE = resolve(__dirname, '../revision-migrations.ts');
+// R4: реализация переехала в `content/format/` (таблица шагов вместо
+// лестницы — `merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`).
+// `../revision-migrations.ts` — теперь тонкий фасад (только реэкспорты), сам
+// код (и Date.now(), если бы он туда закрался) — в этих файлах.
+const FORMAT_DIR = resolve(__dirname, '../../content/format');
+const STEPS_DIR = resolve(FORMAT_DIR, 'steps');
+const SOURCE_FILES = [
+  resolve(FORMAT_DIR, 'run.ts'),
+  ...readdirSync(STEPS_DIR)
+    .filter((f) => f.endsWith('.ts') && !f.includes('__tests__'))
+    .map((f) => resolve(STEPS_DIR, f)),
+];
 
 /** «Чистая» легаси-ревизия — как лежит в БД у сайта, который не открывал ни
  * каталог (082+), ни коллекцию (082+), ни товар (078+) после появления этих
@@ -158,12 +169,13 @@ describe('b45-fix: catalog/collection/product — id не зависят от Da
 });
 
 /**
- * Сторож: `revision-migrations.ts` больше не зовёт `Date.now()` в коде (вне
- * комментариев). Тот же приём, что `no-theme-branches-in-migrations.spec.ts`
- * — грубый strip `/* … *\/` и `// …`, затем точный поиск подстроки. Белый
- * список пуст: сейчас в файле не осталось ни одного осознанно оставленного
- * `Date.now()`. Если появится обоснованный случай — добавить запись
- * `{ needle, reason }` сюда, а не молча расширять допуск.
+ * Сторож: код миграций (`content/format/**`) больше не зовёт `Date.now()`
+ * нигде (вне комментариев). Тот же приём, что
+ * `no-theme-branches-in-migrations.spec.ts` — грубый strip `/* … *\/` и
+ * `// …`, затем точный поиск подстроки. Белый список пуст: сейчас в файлах
+ * не осталось ни одного осознанно оставленного `Date.now()`. Если появится
+ * обоснованный случай — добавить запись `{ needle, reason }` сюда, а не
+ * молча расширять допуск.
  */
 const WHITELIST: Array<{ needle: string; reason: string }> = [];
 
@@ -171,11 +183,16 @@ function stripComments(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 }
 
-describe('revision-migrations.ts не содержит Date.now() вне комментариев', () => {
-  const rawSource = readFileSync(FILE, 'utf-8');
+describe('код миграций не содержит Date.now() вне комментариев', () => {
+  // Все файлы конкатенированы в один текст — b45-fix-проверка ниже ищет
+  // «функция … затем комментарий» внутри 800 символов; после переезда на
+  // отдельные файлы (R4) это расстояние только СОКРАТИЛОСЬ (меньше
+  // постороннего кода вокруг), так что найти легче, чем раньше.
+  const rawSource = SOURCE_FILES.map((f) => readFileSync(f, 'utf-8')).join('\n\n');
   const codeOnly = stripComments(rawSource);
 
-  it('файл существует и непустой (страховка от опечатки в пути)', () => {
+  it('файлы существуют и непустые (страховка от опечатки в пути)', () => {
+    expect(SOURCE_FILES.length).toBeGreaterThanOrEqual(16);
     expect(rawSource.length).toBeGreaterThan(1000);
   });
 

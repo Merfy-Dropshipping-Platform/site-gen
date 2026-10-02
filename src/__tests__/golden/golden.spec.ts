@@ -21,7 +21,11 @@ import { dirname, resolve } from "node:path";
 
 import { SitesDomainService } from "../../sites.service";
 import * as schema from "../../db/schema";
-import { normalizeGoldenSnapshot, toGoldenJson } from "./normalize";
+import {
+  normalizeGoldenSnapshot,
+  toGoldenJson,
+  type GoldenRevisionResult,
+} from "./normalize";
 
 // ---------------------------------------------------------------------------
 // Общие помощники (тот же паттерн, что в site-create-theme.characterization.spec.ts)
@@ -144,7 +148,7 @@ function goldenFile(...parts: string[]): string {
  */
 function expectMatchesGolden(
   filePath: string,
-  rawResult: { item: Record<string, unknown> },
+  rawResult: GoldenRevisionResult,
 ) {
   if (process.env.UPDATE_GOLDEN === "1") {
     mkdirSync(dirname(filePath), { recursive: true });
@@ -220,6 +224,12 @@ describe("золотой документ: смена темы rose → satin п
           where: (_c: any) => withReturning([{ id: "site-1" }]),
         }),
       }),
+      // R2 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): единый
+      // конвейер записи — DocumentAdapter.commit() всегда идёт через
+      // транзакцию (см. тот же комментарий в
+      // site-create-theme.characterization.spec.ts).
+      transaction: async (cb: (tx: unknown) => Promise<void>) =>
+        cb({ insert: db.insert, update: db.update }),
     };
     return { db, inserted };
   }

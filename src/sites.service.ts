@@ -38,22 +38,16 @@ import { DomainClient } from "./domain";
 import { BillingClient, isStorefrontSuspended } from "./billing/billing.client";
 import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
-import { getPageResolver } from "./themes/page-resolver-instance";
-import { getThemeManifest } from "./themes/theme-manifest-loader";
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
-import { isStoreVersion } from "./content/revision-kinds";
 import { rewriteCurrent } from "./content/rewrite-current";
 import { toStoreContentSite } from "./content/store-content.port";
 import type {
-  SaveParams,
+  HistoryCursor,
   StaleBasePolicy,
-  StoreContent,
   StoreContentSite,
   WriteActor,
   WriteSource,
 } from "./content/store-content.port";
-
-const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== 'false'; // default ON, set to 'false' to disable
 
 function slugify(input: string) {
   return input
@@ -323,11 +317,14 @@ export class SitesDomainService {
     private readonly injectedStoreContent?: StoreContentService,
   ) {}
 
-  private storeContentInstance?: StoreContent;
+  // Тип — конкретный класс, не порт StoreContent: R1 добавил на сервис
+  // удобные обёртки (createRevision, buildInitialRevision) сверх контракта
+  // порта (load/save/history/get/rollback), и этому классу они тоже нужны.
+  private storeContentInstance?: StoreContentService;
 
   /** Ленивый фолбэк: вне Nest-контейнера (тесты) строит DocumentAdapter сам
    * (фабрика — content/store-content.service.ts, общая с PreviewController). */
-  private get storeContent(): StoreContent {
+  private get storeContent(): StoreContentService {
     return (this.storeContentInstance ??= resolveStoreContent(this.injectedStoreContent, this.db));
   }
 
@@ -1289,16 +1286,23 @@ export class SitesDomainService {
         const currentRevId = current?.currentRevisionId;
         let hasThemeSettings = false;
         // Данные текущей ревизии нужны дважды: для hasThemeSettings и для
-        // переноса страниц мерчанта в пересеянную ревизию.
+        // переноса страниц мерчанта в пересеянную ревизию. Сырое содержимое
+        // (без миграций/досева) — легаси-путь пересева сравнивает и переносит
+        // документ ровно как он хранится, тем же приёмом, что откат
+        // (DocumentAdapter.rollback, asStored: true).
         let prevRevisionData: unknown = null;
         if (currentRevId) {
-          const [rev] = await this.db
-            .select({ data: schema.siteRevision.data })
-            .from(schema.siteRevision)
-            .where(eq(schema.siteRevision.id, currentRevId))
-            .limit(1);
-          const d = (rev?.data ?? {}) as Record<string, unknown>;
-          prevRevisionData = rev?.data ?? null;
+          // `loadOrNull`, не голый
+          // `.catch(() => null)` — тот гасил бы и сбой базы, а не только
+          // «ревизии нет», и пересев тихо потерял бы страницы мерчанта
+          // (hasThemeSettings/prevRevisionData читались бы как «пусто»).
+          const loaded = await this.storeContent.loadOrNull(params.siteId, {
+            revisionId: currentRevId,
+            site: { themeId: null, publicUrl: null, currentRevisionId: currentRevId },
+            asStored: true,
+          });
+          const d = (loaded?.document ?? {}) as Record<string, unknown>;
+          prevRevisionData = loaded?.document ?? null;
           const ts = (d as any).themeSettings;
           hasThemeSettings = Boolean(
             ts &&
@@ -1398,37 +1402,6 @@ export class SitesDomainService {
         siteId: params.siteId,
         patch: params.patch ?? {},
       });
-    return Boolean(row);
-  }
-
-  /**
-   * Выбор темы магазином — строка `site` после команды `SetTheme` (этап 3,
-   * кусок 3.3): `themeId` и дата выбора темы (`themeAppliedAt`, см. `update()`).
-   * Ревизию команда пишет сама через порт StoreContent и ДО этого вызова —
-   * чтобы при сбое записи магазин не остался с новой темой и старым содержимым.
-   */
-  async recordThemeChoice(params: {
-    tenantId: string;
-    siteId: string;
-    themeId: string;
-    actorUserId?: string;
-  }): Promise<boolean> {
-    const now = new Date();
-    const [row] = await this.db
-      .update(schema.site)
-      .set({
-        themeId: params.themeId,
-        themeAppliedAt: now,
-        updatedAt: now,
-        ...(params.actorUserId ? { updatedBy: params.actorUserId } : {}),
-      })
-      .where(
-        and(
-          eq(schema.site.id, params.siteId),
-          eq(schema.site.tenantId, params.tenantId),
-        ),
-      )
-      .returning({ id: schema.site.id });
     return Boolean(row);
   }
 
@@ -1924,119 +1897,54 @@ export class SitesDomainService {
     return { url: finalUrl, buildId, artifactUrl };
   }
 
-  // Revisions API
-  async listRevisions(tenantId: string, siteId: string, limit = 50) {
+  // Revisions API — тонкие обёртки (R1, `merfy-mcp/docs/plans/2026-09-30-
+  // revisions-clean.md`): сайт по tenantId ищет ЭТОТ сервис (как и раньше,
+  // порт своего SELECT по schema.site не делает — см. store-content.port.ts),
+  // сама работа с таблицей ревизий — в content/ (store-content.service.ts,
+  // document.adapter.ts). Обёртки остаются: RPC-контроллер
+  // (sites.microservice.controller.ts) и тесты собирают его напрямую с ОДНИМ
+  // аргументом (SitesDomainService) — без обёрток пришлось бы менять сигнатуру
+  // конструктора контроллера и переписывать эти тесты (вне объёма ревизий).
+  async listRevisions(
+    tenantId: string,
+    siteId: string,
+    limit = 50,
+    before?: HistoryCursor,
+  ) {
     const site = await this.get(tenantId, siteId);
     if (!site) throw new Error("site_not_found");
-    // Снимки документа клиента (этап 2, «линия клиента») — служебные базы
-    // слияния, не версии магазина: в истории их нет.
-    const rows = await this.db
-      .select({
-        id: schema.siteRevision.id,
-        createdAt: schema.siteRevision.createdAt,
-      })
-      .from(schema.siteRevision)
-      .where(and(eq(schema.siteRevision.siteId, siteId), isStoreVersion()))
-      .limit(limit);
-    return { items: rows };
+    return this.storeContent.history(siteId, {
+      site: toStoreContentSite(site),
+      limit,
+      before,
+    });
+  }
+
+  /** Разница двух версий (R3) — список операций движка (см. content/operations). */
+  async diffRevisions(tenantId: string, siteId: string, from: string, to: string) {
+    const site = await this.get(tenantId, siteId);
+    if (!site) throw new Error("site_not_found");
+    return this.storeContent.diff(siteId, from, to, {
+      site: toStoreContentSite(site),
+    });
   }
 
   async getRevision(tenantId: string, siteId: string, revisionId: string) {
     const site = await this.get(tenantId, siteId);
     if (!site) throw new Error("site_not_found");
-    // Конверт ревизии (id/meta/createdAt/createdBy) — как и раньше, отдельным
-    // SELECT: порт StoreContent несёт только содержимое (data), не эти поля.
-    // Без `data` в проекции: блоб ревизии за этим же revisionId сейчас читает
-    // storeContent.load() (в DocumentAdapter) — второй раз здесь его не тянем.
-    const [rev] = await this.db
-      .select({
-        id: schema.siteRevision.id,
-        siteId: schema.siteRevision.siteId,
-        meta: schema.siteRevision.meta,
-        createdAt: schema.siteRevision.createdAt,
-        createdBy: schema.siteRevision.createdBy,
-      })
-      .from(schema.siteRevision)
-      .where(
-        and(
-          eq(schema.siteRevision.id, revisionId),
-          eq(schema.siteRevision.siteId, siteId),
-        ),
-      );
-    if (!rev) throw new Error("revision_not_found");
-    // Содержимое ревизии — через порт (DocumentAdapter): migrateRevisionData →
-    // normalizeRevision → seedContentPagesFromTheme (B17) → resolveAssetUrls.
-    const loaded = await this.storeContent.load(siteId, {
-      revisionId,
+    const item = await this.storeContent.get(siteId, revisionId, {
       site: toStoreContentSite(site),
     });
-    return { item: { ...rev, data: loaded.document } };
+    return { item };
   }
 
   /**
-   * Build initial revision data using PageResolver. Replaces getDefaultContent
-   * legacy seed path. Gated by USE_PAGE_RESOLVER ENV flag.
-   *
-   * Публичный с этапа 3: канон темы берут шаг `seed` саги рождения и команда
-   * `SetTheme` (src/store/) — тот же источник, что у `reserve()`/`update()`.
+   * Канон темы (создание магазина, сага рождения, смена темы) — см.
+   * `content/canon.ts`. Публичный с этапа 3: тот же источник у `reserve()`/
+   * `update()` здесь и у команды `SetTheme` (src/store/).
    */
   async buildInitialRevision(themeId: string): Promise<any> {
-    if (!USE_PAGE_RESOLVER) {
-      return this.getDefaultContent(themeId);
-    }
-    // Resolver-путь годится только для тем с ПОЛНЫМ Puck-driven манифестом
-    // (ровно одна страница isHome — сейчас это лишь rose). Темы с ЧАСТИЧНЫМ
-    // manifest.pages (flux/bloom/satin/vanilla засеяны только системными
-    // catalog/collection для превью-секций — без home/about/etc) НЕ должны
-    // строить начальную ревизию через resolver: он взял бы pages[0]
-    // (page-catalog) как «домашнюю» и создал новый сайт без home-контента.
-    // Для них используем legacy seed (getDefaultContent), который несёт home.
-    // normalizeRevision (getRevision/preview) при этом всё равно домёрджит
-    // системные страницы из манифеста в существующую ревизию — превью каталога
-    // продолжает резолвиться lazy-seed'ом из pages/catalog.json.
-    const manifest = getThemeManifest(themeId) as
-      | { pages?: Array<{ isHome?: boolean }> }
-      | null;
-    const manifestPages = Array.isArray(manifest?.pages) ? manifest!.pages : [];
-    const hasHomePage = manifestPages.some((p) => p?.isHome === true);
-    if (!hasHomePage) {
-      return this.getDefaultContent(themeId);
-    }
-    try {
-      const resolver = getPageResolver(themeId);
-      const revision = await resolver.buildInitialRevision();
-      return revision;
-    } catch (e) {
-      this.logger.warn(`buildInitialRevision failed for ${themeId}, falling back to legacy seed: ${e}`);
-      return this.getDefaultContent(themeId);
-    }
-  }
-
-  /**
-   * Загружает дефолтный контент для указанной темы из JSON-файла.
-   * Если файл темы не найден, используется rose.json как fallback.
-   */
-  private getDefaultContent(theme?: string): any {
-    const themeName = theme || "rose";
-    const defaultsDir = path.join(
-      __dirname,
-      "generator",
-      "templates",
-      "defaults",
-    );
-    let filePath = path.join(defaultsDir, `${themeName}.json`);
-    if (!fs.existsSync(filePath)) {
-      filePath = path.join(defaultsDir, "rose.json");
-    }
-    try {
-      const raw = fs.readFileSync(filePath, "utf-8");
-      return JSON.parse(raw);
-    } catch (e) {
-      this.logger.warn(
-        `Failed to load default content for theme "${themeName}": ${e instanceof Error ? e.message : e}`,
-      );
-      return null;
-    }
+    return this.storeContent.buildInitialRevision(themeId);
   }
 
   async createRevision(params: {
@@ -2067,68 +1975,18 @@ export class SitesDomainService {
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
-    const saved = await this.storeContent.save(
-      params.siteId,
-      this.revisionWrite(params, toStoreContentSite(site)),
-    );
-    if (!saved.effect) return { revisionId: saved.version };
-    // Контракт записи для клиентов (план этапа 2): `revisionId` — ревизия,
-    // равная документу клиента (база его следующего сохранения), текущая
-    // ревизия магазина — `currentRevisionId`.
-    return {
-      revisionId: saved.effect.clientVersion,
-      currentRevisionId: saved.version,
-      merged: saved.effect.merged,
-      overwritten: saved.effect.overwritten,
-      conflicts: saved.effect.conflicts,
-    };
-  }
-
-  /** Параметры `createRevision` → форма записи порта: с базой — от базы, без неё — вслепую. */
-  private revisionWrite(
-    params: Parameters<SitesDomainService["createRevision"]>[0],
-    site: StoreContentSite,
-  ): SaveParams {
-    const common = {
-      document: params.data,
-      tenantId: params.tenantId,
-      meta: params.meta,
-      actorUserId: params.actorUserId,
-      filterSeeded: params.filterSeededPages,
-      actor: params.actor,
-      source: params.source,
-      site,
-    };
-    if (params.base === undefined) {
-      return {
-        mode: "blind",
-        setCurrent: params.setCurrent,
-        expectedVersion: params.expectedCurrentRevisionId,
-        ...common,
-      };
-    }
-    // Запись от базы всегда делает ревизию текущей и не знает жёсткого CAS:
-    // такие сочетания — явная ошибка, а не тихий уход в другой путь.
-    if (!params.setCurrent) throw new Error("base_requires_set_current");
-    if (params.expectedCurrentRevisionId !== undefined) {
-      throw new Error("base_and_expected_version_are_exclusive");
-    }
-    return {
-      mode: "on-base",
-      base: params.base,
-      mergePolicy: params.mergePolicy ?? "reject-conflicts",
-      ...common,
-    };
+    return this.storeContent.createRevision(params.siteId, {
+      ...params,
+      site: toStoreContentSite(site),
+    });
   }
 
   /**
-   * Откат (этап 2, И6): новая ревизия — ТОЧНАЯ копия выбранной версии (как
-   * она хранится) — через порт со сверкой «текущая = та, что видел клиент»
-   * и пометкой `restoredFrom`. Раньше — безусловная перестановка указателя на
-   * старую строку. Откат — осознанное действие: если текущая сменилась
-   * (автосейв успел раньше), он НЕ сливается и не перезаписывает чужое —
-   * `revision_conflict` (409), в базе ничего нового. Выбранная версия и так
-   * текущая — ничего не пишется.
+   * Откат (этап 2, И6): новая ревизия — ТОЧНАЯ копия выбранной версии, со
+   * сверкой «текущая = та, что видел клиент» — см. `content/document.
+   * adapter.ts` (`rollback`). Сменилась (автосейв успел раньше) — `revision_
+   * conflict` (409), в базе ничего нового. Выбранная версия и так текущая —
+   * ничего не пишется.
    */
   async setCurrentRevision(params: {
     tenantId: string;
@@ -2144,36 +2002,10 @@ export class SitesDomainService {
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
-    const storeSite = toStoreContentSite(site);
-    // Копия ревизии как она лежит (без шагов чтения и фильтра досеянного):
-    // восстановленная версия читается ровно как выбранная.
-    const target = await this.storeContent.load(params.siteId, {
-      revisionId: params.revisionId,
-      site: storeSite,
-      asStored: true,
+    return this.storeContent.rollback(params.siteId, {
+      ...params,
+      site: toStoreContentSite(site),
     });
-    const restored = {
-      success: true,
-      restoredFrom: params.revisionId,
-    } as const;
-    if (params.revisionId === storeSite.currentRevisionId) {
-      return { ...restored, revisionId: params.revisionId };
-    }
-    const seen =
-      params.base !== undefined ? params.base : storeSite.currentRevisionId;
-    const saved = await this.storeContent.save(params.siteId, {
-      mode: "on-base",
-      document: target.document,
-      base: seen ?? null,
-      tenantId: params.tenantId,
-      actor: "merchant",
-      source: "rollback",
-      mergePolicy: "refuse",
-      meta: { restoredFrom: params.revisionId },
-      actorUserId: params.actorUserId,
-      site: storeSite,
-    });
-    return { ...restored, revisionId: saved.version };
   }
 
   async freezeTenant(tenantId: string) {

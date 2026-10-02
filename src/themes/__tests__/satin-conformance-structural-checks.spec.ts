@@ -39,7 +39,7 @@ import {
 import { SATIN_RELEASE_CONTRACT } from '../conformance/satin-release-contract';
 import { loadThemeSourceSnapshot } from '../conformance/source-snapshot';
 import { buildSatinStructuralFacts } from '../conformance/satin-structural-facts';
-import { runSatinStructuralChecks } from '../conformance/satin-structural-checks';
+import { runSatinStructuralChecks, type SatinStructuralFacts } from '../conformance/satin-structural-checks';
 
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 const THEME = 'satin';
@@ -357,11 +357,12 @@ function refFile(ref: string): string {
 // ---------------------------------------------------------------------------
 
 let CURRENT: TieredStructuralIssue[] = [];
+let FACTS: SatinStructuralFacts;
 
 beforeAll(async () => {
   const snapshot = await loadThemeSourceSnapshot(THEME);
-  const facts = buildSatinStructuralFacts(snapshot);
-  CURRENT = runSatinStructuralChecks(facts, SATIN_RELEASE_CONTRACT);
+  FACTS = buildSatinStructuralFacts(snapshot);
+  CURRENT = runSatinStructuralChecks(FACTS, SATIN_RELEASE_CONTRACT);
 }, 120_000);
 
 /** The synthetic-complete fixture: every STRUCTURAL source/contract repaired. */
@@ -431,6 +432,24 @@ describe('Satin known-current classification — REAL pipeline reproduces the ta
         expect(existsSync(resolve(SITES_ROOT, file))).toBe(true);
       }
     }
+  });
+
+  // `cartMigratedTarget` эта
+  // проба читает файл ТЕКСТОМ, ища `type: 'CartBody'`/`'CartSection'`. Раньше
+  // источником был `utils/revision-migrations.ts`; R4 сделал его 21-строчным
+  // фасадом-реэкспортом — регэксп молча переставал находить `CartBody`,
+  // проба тихо подставляла запасное `'CartSection'`, и находка
+  // `satin.flow.cart.drawer-cart-section-source` возвращалась как ложный GAP.
+  // Явная проверка факта — быстрый, точный сигнал регресса пути; отсутствие
+  // такой проверки и позволило разъезду проскочить незамеченным в первый раз.
+  it('cartMigratedTarget читает РЕАЛЬНЫЙ источник миграции корзины (content/format/steps/cart-page.ts после R4)', () => {
+    expect(FACTS.source.cartMigratedTarget).toBe('CartBody');
+    // Резолвер дровера инспектирует легаси-типы (CartBody/CartSummary) — сама
+    // находка `drawer-cart-section-source` рождается, когда цель миграции НЕ
+    // входит в этот список (satin-structural-checks.ts:656-657).
+    expect(FACTS.source.cartResolverInspectsLegacyTypes).toContain(FACTS.source.cartMigratedTarget);
+    // Закрытая находка не должна тихо вернуться.
+    expect(CURRENT.some((i) => i.id === 'satin.flow.cart.drawer-cart-section-source')).toBe(false);
   });
 
   it('marks the two canonical decisions as NEEDS_DECISION (never a silent waiver)', () => {

@@ -58,8 +58,15 @@ describe("список сайтов отдаёт даты САМОГО мага�
     // Волна 1: логика переехала из sites.service.ts в
     // content/document.adapter.ts (DocumentAdapter.save), сама выдача
     // sites.list — ниже, в описанных выше проверках — не изменилась.
+    // R2 (`merfy-mcp/docs/plans/2026-09-30-revisions-clean.md`): раньше это
+    // был инлайновый объект `.set({ currentRevisionId: id, updatedAt: new
+    // Date() })`; единый конвейер записи (DocumentAdapter.commit) собирает
+    // тот же патч в переменную (`currentRevisionId: write.current,
+    // updatedAt: new Date(), ...write.sitePatch`) — updatedAt всё так же
+    // бьётся при КАЖДОМ сдвиге указателя, то есть при каждом сохранении,
+    // которое становится текущим.
     expect(DOCUMENT_ADAPTER).toMatch(
-      /\.set\(\{ currentRevisionId: (id|revisionId), updatedAt: new Date\(\) \}\)/,
+      /currentRevisionId: write\.current,\s*\n\s*updatedAt: new Date\(\)/,
     );
   });
 });

@@ -287,17 +287,40 @@ export class SitesMicroserviceController {
   @MessagePattern("sites.revisions.list")
   async listRevisions(@Payload() data: any) {
     try {
-      const { tenantId, siteId, limit } = data ?? {};
+      const { tenantId, siteId, limit, before } = data ?? {};
       if (!tenantId || !siteId)
         return { success: false, message: "tenantId and siteId required" };
+      // R3: курсор постраничности — совместимое расширение (поле новое,
+      // старые items/лимит не меняются; без before — первая страница, как
+      // раньше). На проводе курсор — пара {createdAt, id}: голая дата на
+      // границе страниц с одинаковым createdAt пропускала бы версии.
       const res = await this.service.listRevisions(
         tenantId,
         siteId,
         limit ?? 50,
+        before ? { createdAt: new Date(before.createdAt), id: before.id } : undefined,
       );
       return { success: true, ...res };
     } catch (e: any) {
       this.logger.error("revisions.list failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  // R3: разница двух версий — список операций движка (content/operations).
+  @MessagePattern("sites.revisions.diff")
+  async diffRevisions(@Payload() data: any) {
+    try {
+      const { tenantId, siteId, from, to } = data ?? {};
+      if (!tenantId || !siteId || !from || !to)
+        return {
+          success: false,
+          message: "tenantId, siteId, from and to required",
+        };
+      const res = await this.service.diffRevisions(tenantId, siteId, from, to);
+      return { success: true, ...res };
+    } catch (e: any) {
+      this.logger.error("revisions.diff failed", e);
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }
@@ -377,6 +400,8 @@ export class SitesMicroserviceController {
         };
       // Этап 2 (И6): откат — точная копия со сверкой текущей; сменилась —
       // REVISION_CONFLICT (шлюз отдаст 409), ничего не записано.
+      // Домен отдаёт только факты (revisionId/restoredFrom) — success
+      // добавляет проводной слой, как у всех остальных RPC этого контроллера.
       const res = await this.service.setCurrentRevision({
         tenantId,
         siteId,
@@ -384,7 +409,7 @@ export class SitesMicroserviceController {
         actorUserId,
         base,
       });
-      return res;
+      return { success: true, ...res };
     } catch (e: any) {
       this.logger.error("revisions.set_current failed", e);
       return revisionWriteFailure(e);

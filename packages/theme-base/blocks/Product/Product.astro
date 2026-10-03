@@ -30,6 +30,7 @@ import { pickDefaultCombination } from '../../runtime/variant-default';
 import { resolveVariantDisplay } from '../../runtime/variant-display';
 import ProductCounter from './ProductCounter.astro';
 import ProductActions from './ProductActions.astro';
+import { REQUESTS_FORM_RUNTIME_SOURCE } from '../../runtime/requests-form';
 import ProductDescription from './ProductDescription.astro';
 import ProductShare from './ProductShare.astro';
 
@@ -38,12 +39,23 @@ interface Props extends ProductProps {
   siteId?: string;
   /** Theme-side visual variants (theme.json blockDefaults.Product.visualConfig). */
   visualConfig?: Partial<ProductVisualConfig>;
+  /**
+   * Спека 118 §5: тумблер features.requests темы (хардкодится сидом страницы
+   * товара при включении фичи — тот же механизм, каким theme.json features
+   * гейтит компоненты). true → рядом с кнопками появляется контейнер
+   * [data-request-form]: рантайм запросит дескриптор формы товара
+   * (GET /store/requests/product/:id) и, если форма назначена, заменит
+   * действия товара (скроет [data-product-actions]) живой формой заявки.
+   * false/undefined → контейнера и острова в разметке нет вовсе.
+   */
+  requestsEnabled?: boolean;
 }
 
 const {
   id,
   siteId,
   productId,
+  requestsEnabled,
   text,
   title: titleProp,
   price: priceProp,
@@ -395,6 +407,7 @@ const cartImage = view.gallery.hero?.src ?? '';
             data-puck-subsection-parent={id}
             data-puck-subsection-index="105"
             data-puck-subsection-field="buttons"
+            data-product-actions={requestsEnabled ? 'true' : undefined}
           >
             <ProductActions
               addToCartLabel={addBtnText}
@@ -411,6 +424,19 @@ const cartImage = view.gallery.hero?.src ?? '';
               variantOptions={defaultVariantOptions}
             />
           </div>
+        )}
+
+        {/* Спека 118 §5 (T013b): секция «Форма заявки» вместо «В корзину».
+            Контейнер и остров РЕНДЕРЯТСЯ ТОЛЬКО при requestsEnabled (флаг
+            темы features.requests) — выключен → в разметке нет вовсе.
+            Остров тих: дескриптор null/сеть → корзина работает как была;
+            форма назначена → [data-product-actions] выше скрывается. */}
+        {requestsEnabled && (
+          <div
+            class="rq-sf"
+            data-request-form
+            data-request-form-product-id={cartProductId || ''}
+          ></div>
         )}
 
         {field === 'description' && visual.showDescription && (view.description || '').trim() && !isFieldHidden('description') && (
@@ -438,6 +464,31 @@ const cartImage = view.gallery.hero?.src ?? '';
     </div>
   </div>
 </section>
+
+{requestsEnabled && <script is:inline set:html={REQUESTS_FORM_RUNTIME_SOURCE} />}
+{requestsEnabled && (
+<script is:inline define:vars={{ blockId: id, apiBase, siteId: siteId || '', productId: cartProductId || '' }}>
+  // Спека 118 §5, T013b — остров «Формы заявки». Корень — через общий
+  // примитив Spec 102 (не document-level): секций «Товар» на странице может
+  // быть несколько. productId — SSR-значение, с фолбэком на data-product-id
+  // корня (live-PDP гидрирует товар после SSG — один повтор через 1.2 с).
+  (function () {
+    var root = window.__merfyRoot(blockId);
+    if (!root || !window.__merfyRequestsForm) return;
+    function start() {
+      var p = productId || root.getAttribute('data-product-id') || '';
+      if (!p) return false;
+      window.__merfyRequestsForm.mountRequestsForm(root, {
+        productId: String(p),
+        storeId: siteId || '',
+        apiBase: apiBase || ''
+      });
+      return true;
+    }
+    if (!start()) setTimeout(start, 1200);
+  })();
+</script>
+)}
 
 <script is:inline define:vars={{ siteId, apiBase, productId, blockId: id }}>
   // Hydration: live SSG already rendered real data via headless normaliser.

@@ -9,6 +9,7 @@ import {
   visibleFields,
   validate,
   renderFormHTML,
+  requestSuccessHTML,
   REQUESTS_FORM_RUNTIME_SOURCE,
   type RequestFormDescriptor,
 } from '../runtime/requests-form';
@@ -288,9 +289,72 @@ describe('requests-form runtime (T013a)', () => {
       expect(REQUESTS_FORM_RUNTIME_SOURCE).toContain('function visibleFields(');
       expect(REQUESTS_FORM_RUNTIME_SOURCE).toContain('function validate(');
       expect(REQUESTS_FORM_RUNTIME_SOURCE).toContain('function renderFormHTML(');
+      expect(REQUESTS_FORM_RUNTIME_SOURCE).toContain('function mountRequestsForm(');
+      expect(REQUESTS_FORM_RUNTIME_SOURCE).toContain('function requestSuccessHTML(');
       expect(REQUESTS_FORM_RUNTIME_SOURCE).toContain('__merfyRequestsForm');
       // строка — это JS: типов TS внутри быть не должно
       expect(REQUESTS_FORM_RUNTIME_SOURCE).not.toContain('RequestFormDescriptor');
+    });
+  });
+
+  describe('requests: renderFormHTML с состоянием (T013b)', () => {
+    it('requests: errors → класс bad, aria-invalid и sf-e у поля и контактов', () => {
+      const html = renderFormHTML(BOOK, {}, {
+        errors: { f2: 'Выберите вариант', _email: 'Нужна почта: сюда придёт ответ магазина' },
+      });
+      expect(html).toMatch(/class="sf-in bad"[^>]*aria-invalid="true"/);
+      expect(html).toContain('<p class="sf-e" id="sf-rq-f2-e">Выберите вариант</p>');
+      expect(html).toContain('id="sf-rq-_email-e"');
+    });
+
+    it('requests: files → миниатюры фото (blob) и строки видео/файла с data-sfdel', () => {
+      const photo = renderFormHTML(BOOK, {}, {
+        files: { f1: [{ name: 'a.jpg', size: '3,4 МБ', url: 'blob:x', bytes: 1 }] },
+      });
+      expect(photo).toContain('class="sf-thumbs"');
+      expect(photo).toContain('src="blob:x"');
+      expect(photo).toContain('data-sfdel="f1|0"');
+      expect(photo).toContain('Добавить ещё');
+      expect(photo).toContain('выбрано 1');
+      const video = renderFormHTML(
+        { phone: 'off', fields: [{ id: 'v1', type: 'video', label: 'Видео', max: 1 }] },
+        {},
+        { files: { v1: [{ name: 'clip.mp4', size: '184 МБ', uploading: true }] } },
+      );
+      expect(video).toContain('▶');
+      expect(video).toContain('clip.mp4');
+      expect(video).toContain('загрузка…');
+      const doc = renderFormHTML(
+        { phone: 'off', fields: [{ id: 'd1', type: 'file', label: 'Чертёж', max: 3 }] },
+        {},
+        { files: { d1: [{ name: 'plan.pdf', size: '84 КБ', failed: true }] } },
+      );
+      expect(doc).toContain('PDF');
+      expect(doc).toContain('не загрузился');
+    });
+
+    it('requests: heic-фото без конвертации — плашка HEIC, не битый img', () => {
+      const html = renderFormHTML(BOOK, {}, {
+        files: { f1: [{ name: 'ios.heic', heic: true, url: 'blob:h' }] },
+      });
+      expect(html).toContain('<span class="more">HEIC</span>');
+    });
+
+    it('requests: note → сообщение-alert над формой', () => {
+      const html = renderFormHTML(BOOK, {}, { note: 'Загрузка файлов временно недоступна' });
+      expect(html).toContain('data-request-note');
+      expect(html).toContain('role="alert"');
+    });
+  });
+
+  describe('requests: requestSuccessHTML (T013b)', () => {
+    it('requests: экран успеха — номер, done-текст, почта, кнопка сброса', () => {
+      const html = requestSuccessHTML(BOOK, 2083, 'olga@example.ru');
+      expect(html).toContain('Заявка №2083 отправлена');
+      expect(html).toContain('Спасибо! Посмотрим фото и ответим в течение дня.');
+      expect(html).toContain('olga@example.ru');
+      expect(html).toContain('data-request-again');
+      expect(html).toContain('Отправить ещё одну');
     });
   });
 });

@@ -1,13 +1,14 @@
 /**
- * requests-form — чистый рантайм «Формы заявки» для витрины (спека 118,
- * задача T013a; заготовка под T013b).
+ * requests-form — рантайм «Формы заявки» для витрины (спека 118, T013a+T013b).
  *
- * ЧТО ЭТО. Три функции без DOM и событий: visibleFields (условия показа
- * полей), validate (тексты ошибок мокапа — один в один из прототипа
- * scratchpad/zayavki-screens/prototype.js, submitSite) и renderFormHTML
- * (sf-разметка мокапа: sfForm/sfField → строка HTML). Потребитель — блок
- * blocks/RequestForm (каркас) и, в T013b, встраивание в Product: контейнер
- * [data-request-form] + window-обвязка + загрузка файлов.
+ * ЧТО ЭТО. Чистые функции рендера/валидации (T013a): visibleFields (условия
+ * показа полей), validate (тексты ошибок мокапа — один в один из прототипа
+ * scratchpad/zayavki-screens/prototype.js, submitSite), renderFormHTML
+ * (sf-разметка мокапа: sfForm/sfField → строка HTML, включая состояние
+ * файлов и ошибок). Плюс mountRequestsForm (T013b) — обвязка острова на
+ * странице товара: дескриптор из GET /store/requests/product/:id, события,
+ * файлы (blob-превью + загрузка POST /store/requests-files), отправка
+ * POST /store/requests, экран «Заявка №N отправлена».
  *
  * ФОРМАТ ДЕСКРИПТОРА — спека 118 §6 / @merfy/forms (T006): 10 типов полей
  * (text, textarea, select, buttons, checkbox, date, number, photo, video,
@@ -19,18 +20,26 @@
  * блоки theme-base гидрируются только через `<script is:inline
  * set:html={…}>`, поэтому рантайм собран в строку REQUESTS_FORM_RUNTIME_SOURCE
  * из `.toString()` РОВНО тех же деклараций, что экспортированы ниже и
- * покрыты тестами (`__tests__/requests-form.test.ts` импортирует функции
- * напрямую). Один текст — и на витрине, и в проверке. Все объявления —
+ * покрыты тестами (`__tests__/requests-form.test.ts` и
+ * `__tests__/requests-form.dom.test.ts` импортируют функции напрямую).
+ * Один текст — и на витрине, и в проверке. Все объявления —
  * `function name(…)`, чтобы при конкатенации поднимались (hoisting) в общую
  * область видимости инжектированного скрипта; тела функций не ссылаются на
  * модульные константы — только на другие function-декларации из этого же
- * набора.
+ * набора (в т.ч. лимиты файлов — через requestMediaInfo, не FILE_LIMITS).
  *
- * НЕ ЗДЕСЬ (T013b): UI-обвязка и события (input/change/submit), загрузка
- * файлов в MinIO, «Заявка №N отправлена», подстановка дескриптора с бэка
- * (GET /store/requests/product/:id). Серверные лимиты (дата ≥ minDays,
- * число min/max, размер файла) проверяет @merfy/forms на сервере (T002) —
- * у мокапа нет своих текстов для них, здесь они не придумываются.
+ * КОНТРАКТЫ ЭНДПОИНТОВ (шлюз, спека §3; появляются в T004/T005 — до них
+ * формы работают с моками в тестах, на живом сайте просто не включены):
+ *   GET  /store/requests/product/:productId?store_id= → {success, data:
+ *       дескриптор | null} — null = форма не назначена, корзина как была;
+ *   POST /store/requests-files?store_id= — multipart, поле `file`, по одному
+ *       файлу на запрос → {success, data: {key, url, name, size, mime}};
+ *   POST /store/requests — {productId, values, contacts, files:[мета]} →
+ *       {success, data: {id, …}}.
+ *
+ * НЕ ЗДЕСЬ: страницы «Мои заявки» (T014), серверные лимиты (дата ≥ minDays,
+ * число min/max) — их проверяет @merfy/forms на сервере (T002); у мокапа нет
+ * своих текстов для них, здесь они не придумываются.
  */
 
 /** 10 типов полей дескриптора @merfy/forms (спека §6). */
@@ -97,8 +106,12 @@ export const REQUEST_CONTACT_KEYS = {
   consent: '_ok',
 } as const;
 
-/** Типы-файлы: лимиты и подписи мокапа (спека §7; FILE_LIMITS в @merfy/forms). */
-export const REQUEST_FILE_LIMITS: Record<
+/**
+ * Лимиты файлов мокапа (спека §7) — те же значения, что FILE_LIMITS пакета
+ * @merfy/forms (T006): когда пакет появится, заменить импортом. Инлайн-строка
+ * рантайма читает их через requestMediaInfo — НЕ через этот объект.
+ */
+export const FILE_LIMITS: Record<
   'photo' | 'video' | 'file',
   { maxMb: number; accept: string; fmt: string; unit: string }
 > = {
@@ -121,6 +134,33 @@ export const REQUEST_FILE_LIMITS: Record<
     unit: 'файл',
   },
 };
+
+/** @deprecated использовать FILE_LIMITS (имя пакета @merfy/forms). */
+export const REQUEST_FILE_LIMITS = FILE_LIMITS;
+
+/**
+ * Клиентский вид файла поля-файла: до ответа сервера — blob-превью
+ * (uploading), после — мета загрузки (key/url/name из ответа).
+ */
+export interface RequestFileView {
+  name: string;
+  /** «3,4 МБ» — подпись в списке. */
+  size?: string;
+  /** Точный размер в байтах (уходит в POST /store/requests). */
+  bytes?: number;
+  /** blob:-превью или url загруженного файла. */
+  url?: string;
+  heic?: boolean;
+  /** Загрузка идёт (кнопка отправки ждёт). */
+  uploading?: boolean;
+  /** Загрузка не удалась (эндпоинт недоступен) — файл не попадёт в заявку. */
+  failed?: boolean;
+  /** Ключ MinIO из ответа /store/requests-files — файл попал в заявку. */
+  key?: string;
+  mime?: string;
+  /** Сам File (живёт только в mountRequestsForm, в рендер не идёт). */
+  file?: unknown;
+}
 
 /** `&`/`<`/`>`/`"`/`'` → сущности — весь текст дескриптора идёт в innerHTML. */
 export function escapeRequestHtml(raw: unknown): string {
@@ -182,6 +222,12 @@ export function requestMinDateISO(days: unknown): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Байты → «3,4 МБ» (мокап, fileAdd). */
+export function requestFormatFileSize(bytes: unknown): string {
+  const n = typeof bytes === 'number' && isFinite(bytes) ? bytes : 0;
+  return (n / 1048576).toFixed(1).replace('.', ',') + ' МБ';
+}
+
 /**
  * Поля, видимые при данных значениях: без cond — всегда; с cond — когда
  * значение поля-условия совпадает (мокап, visible()). Дескриптор-мусор
@@ -192,9 +238,7 @@ export function visibleFields(
   values: Record<string, unknown> | null | undefined,
 ): RequestFieldDescriptor[] {
   const src: unknown[] =
-    descriptor &&
-    typeof descriptor === 'object' &&
-    Array.isArray(descriptor.fields)
+    descriptor && typeof descriptor === 'object' && Array.isArray(descriptor.fields)
       ? (descriptor.fields as unknown[])
       : [];
   const vals = values || {};
@@ -282,21 +326,96 @@ export function requestFieldIconSvg(type: string): string {
   );
 }
 
+/** Разметка списка выбранных файлов поля (мокап: sf-thumbs/sf-vids + data-sfdel). */
+export function requestFilesHTML(
+  f: RequestFieldDescriptor,
+  files: RequestFileView[] | null | undefined,
+): string {
+  const list = files || [];
+  if (!list.length) return '';
+  if (f.type === 'photo') {
+    const show = list.slice(0, 23);
+    return (
+      '<div class="sf-thumbs">' +
+      show
+        .map((x, i) => {
+          const inner = x.heic
+            ? '<span class="more">HEIC</span>'
+            : '<img alt="" src="' + escapeRequestHtml(x.url) + '">';
+          return (
+            '<div>' +
+            inner +
+            '<button type="button" data-sfdel="' +
+            escapeRequestHtml(f.id) +
+            '|' +
+            i +
+            '" aria-label="Убрать ' +
+            escapeRequestHtml(x.name) +
+            '">×</button></div>'
+          );
+        })
+        .join('') +
+      (list.length > 23 ? '<div class="more">+' + (list.length - 23) + '</div>' : '') +
+      '</div>'
+    );
+  }
+  return (
+    '<div class="sf-vids">' +
+    list
+      .map((x, i) => {
+        const status = x.uploading
+          ? ' · загрузка…'
+          : x.failed
+            ? ' · не загрузился'
+            : '';
+        return (
+          '<div class="sf-vid"><i aria-hidden="true">' +
+          (f.type === 'video' ? '▶' : 'PDF') +
+          '</i><span>' +
+          escapeRequestHtml(x.name) +
+          '</span><small>' +
+          escapeRequestHtml(x.size) +
+          status +
+          '</small><button type="button" data-sfdel="' +
+          escapeRequestHtml(f.id) +
+          '|' +
+          i +
+          '" aria-label="Убрать ' +
+          escapeRequestHtml(x.name) +
+          '">×</button></div>'
+        );
+      })
+      .join('') +
+    '</div>'
+  );
+}
+
 /**
- * Разметка одного поля — порт sfField мокапа (статичное состояние: без
- * выбранных файлов и ошибок; values — предзаполнение). Хуки для T013b:
- * data-sf (значение), data-sfbtn (кнопки-варианты «fieldId|option»),
- * data-sfile (файл-инпут). idPrefix изолирует id при нескольких формах
- * на странице.
+ * Разметка одного поля — порт sfField мокапа + состояние файлов/ошибок
+ * (T013b). values — текущие значения, files/…[f.id] — выбранные файлы,
+ * errors/…[f.id] — текст ошибки (класс bad, aria-invalid, sf-e под полем).
+ * Хуки для событий: data-sf (значение), data-sfbtn (кнопки-варианты
+ * «fieldId|option»), data-sfile (файл-инпут), data-sfdel («fieldId|index»).
+ * idPrefix изолирует id при нескольких формах на странице.
  */
 export function requestFieldHTML(
   f: RequestFieldDescriptor,
   values: Record<string, unknown> | null | undefined,
   idPrefix: string,
+  files?: RequestFileView[] | null,
+  errors?: Record<string, string> | null,
 ): string {
   const vals = values || {};
   const v = vals[f.id];
   const id = (idPrefix || 'sf-rq') + '-' + f.id;
+  const e = errors ? errors[f.id] : '';
+  const bad = e ? ' bad' : '';
+  const aria = e
+    ? ' aria-invalid="true" aria-describedby="' + id + '-e"'
+    : '';
+  const errHtml = e
+    ? '<p class="sf-e" id="' + id + '-e">' + escapeRequestHtml(e) + '</p>'
+    : '';
   const lab =
     '<div class="sf-l"><label for="' +
     id +
@@ -322,6 +441,7 @@ export function requestFieldHTML(
       (f.req ? '' : ' · необязательно') +
       '</span></label>' +
       hint +
+      errHtml +
       '</div>'
     );
   }
@@ -330,7 +450,9 @@ export function requestFieldHTML(
   if (f.type === 'text') {
     const max = f.len || 200;
     inp =
-      '<input class="sf-in" id="' +
+      '<input class="sf-in' +
+      bad +
+      '" id="' +
       id +
       '" data-sf="' +
       escapeRequestHtml(f.id) +
@@ -338,29 +460,39 @@ export function requestFieldHTML(
       max +
       '" value="' +
       escapeRequestHtml(v) +
-      '" autocomplete="off"><p class="sf-h">' +
+      '" autocomplete="off"' +
+      aria +
+      '><p class="sf-h">' +
       (v ? String(v).length : 0) +
       ' из ' +
       max +
       '</p>';
   } else if (f.type === 'textarea') {
     inp =
-      '<textarea class="sf-in" id="' +
+      '<textarea class="sf-in' +
+      bad +
+      '" id="' +
       id +
       '" data-sf="' +
       escapeRequestHtml(f.id) +
       '" maxlength="' +
       (f.len || 1000) +
-      '">' +
+      '"' +
+      aria +
+      '>' +
       escapeRequestHtml(v) +
       '</textarea>';
   } else if (f.type === 'select') {
     inp =
-      '<select class="sf-in" id="' +
+      '<select class="sf-in' +
+      bad +
+      '" id="' +
       id +
       '" data-sf="' +
       escapeRequestHtml(f.id) +
-      '"><option value="">Выберите</option>' +
+      '"' +
+      aria +
+      '><option value="">Выберите</option>' +
       (f.opts || [])
         .map(
           (o) =>
@@ -396,7 +528,9 @@ export function requestFieldHTML(
       '</div>';
   } else if (f.type === 'date') {
     inp =
-      '<input type="date" class="sf-in" id="' +
+      '<input type="date" class="sf-in' +
+      bad +
+      '" id="' +
       id +
       '" data-sf="' +
       escapeRequestHtml(f.id) +
@@ -404,10 +538,14 @@ export function requestFieldHTML(
       requestMinDateISO(f.minDays) +
       '" value="' +
       escapeRequestHtml(v) +
-      '">';
+      '"' +
+      aria +
+      '>';
   } else if (f.type === 'number') {
     inp =
-      '<input type="number" class="sf-in" id="' +
+      '<input type="number" class="sf-in' +
+      bad +
+      '" id="' +
       id +
       '" data-sf="' +
       escapeRequestHtml(f.id) +
@@ -416,12 +554,16 @@ export function requestFieldHTML(
       '"' +
       (f.min !== undefined && f.min !== null ? ' min="' + f.min + '"' : '') +
       (f.max !== undefined && f.max !== null ? ' max="' + f.max + '"' : '') +
+      aria +
       '>';
   } else if (isRequestMediaField(f.type)) {
     const mm = requestMediaInfo(f.type);
     const maxCount = f.max || 1;
+    const list = files || [];
     inp =
-      '<label class="sf-up" for="' +
+      '<label class="sf-up' +
+      bad +
+      '" for="' +
       id +
       '"><input type="file" id="' +
       id +
@@ -433,15 +575,17 @@ export function requestFieldHTML(
       (maxCount > 1 ? ' multiple' : '') +
       '><span class="ic" aria-hidden="true">' +
       requestFieldIconSvg(f.type) +
-      '</span><span class="tx"><span>Выбрать ' +
-      (f.type === 'photo' ? 'фото' : f.type === 'video' ? 'видео' : 'файл') +
+      '</span><span class="tx"><span>' +
+      (list.length ? 'Добавить ещё' : 'Выбрать ' + (f.type === 'photo' ? 'фото' : f.type === 'video' ? 'видео' : 'файл')) +
       '</span><small>' +
       mm.fmt +
       ' · до ' +
       maxCount +
       ' ' +
       (f.type === 'photo' ? 'фото' : f.type === 'video' ? 'видео' : 'файлов') +
-      '</small></span></label>';
+      (list.length ? ' · выбрано ' + list.length : '') +
+      '</small></span></label>' +
+      requestFilesHTML(f, list);
   }
 
   // Кнопкам-вариантам label нужен отдельным блоком (label for на группу
@@ -450,10 +594,19 @@ export function requestFieldHTML(
     f.type === 'buttons'
       ? '<div class="sf-l"><span id="' + id + '-g">' + escapeRequestHtml(f.label) + '</span><span class="sf-q">' + (f.req ? 'обязательно' : 'необязательно') + '</span></div>'
       : lab;
-  return '<div class="sf-f"' + (f.type === 'buttons' ? ' role="group"' : '') + '>' + labelRow + inp + hint + '</div>';
+  return (
+    '<div class="sf-f"' +
+    (f.type === 'buttons' ? ' role="group"' : '') +
+    '>' +
+    labelRow +
+    inp +
+    hint +
+    errHtml +
+    '</div>'
+  );
 }
 
-/** Контактное поле (имя/почта/телефон) — порт helper'а c() мокапа. */
+/** Контактное поле (имя/почта/телефон) — порт helper'а c() мокапа + ошибки. */
 export function requestContactHTML(
   key: string,
   label: string,
@@ -462,8 +615,16 @@ export function requestContactHTML(
   value: unknown,
   idPrefix: string,
   placeholder?: string,
+  error?: string,
 ): string {
   const id = (idPrefix || 'sf-rq') + '-' + key;
+  const bad = error ? ' bad' : '';
+  const aria = error
+    ? ' aria-invalid="true" aria-describedby="' + id + '-e"'
+    : '';
+  const errHtml = error
+    ? '<p class="sf-e" id="' + id + '-e">' + escapeRequestHtml(error) + '</p>'
+    : '';
   return (
     '<div class="sf-f"><div class="sf-l"><label for="' +
     id +
@@ -471,7 +632,9 @@ export function requestContactHTML(
     label +
     '</label><span class="sf-q">' +
     reqLabel +
-    '</span></div><input class="sf-in" id="' +
+    '</span></div><input class="sf-in' +
+    bad +
+    '" id="' +
     id +
     '" data-sf="' +
     key +
@@ -483,35 +646,70 @@ export function requestContactHTML(
     (placeholder ? ' placeholder="' + placeholder + '"' : '') +
     ' autocomplete="' +
     (key === '_email' ? 'email' : key === '_phone' ? 'tel' : 'name') +
-    '"></div>'
+    '"' +
+    aria +
+    '>' +
+    errHtml +
+    '</div>'
   );
+}
+
+/** Опции рендера формы (T013b): файлы, ошибки, сообщение-статус над формой. */
+export interface RenderFormOptions {
+  files?: Record<string, RequestFileView[]> | null;
+  errors?: Record<string, string> | null;
+  /** Сообщение над формой (ошибки сети/загрузки) — sf-e с role="alert". */
+  note?: string;
 }
 
 /**
  * Полная sf-разметка формы — порт sfForm мокапа: заголовок-кнопка (btn),
- * видимые поля, контакты («Как с вами связаться»: имя + почта, телефон по
- * режиму descriptor.phone), согласие, кнопка отправки (data-request-submit —
- * событие вешает T013b), примечание. values — предзаполнение (влияет и на
- * условия показа). Стили — RequestFormSfStyles (контейнер .rq-sf).
+ * видимые поля (values влияет и на условия показа), контакты («Как с вами
+ * связаться»: имя + почта, телефон по режиму descriptor.phone), согласие,
+ * кнопка отправки (data-request-submit), примечание. Стили —
+ * RequestFormSfStyles (контейнер .rq-sf).
  */
 export function renderFormHTML(
   descriptor: RequestFormDescriptor | null | undefined,
   values?: Record<string, unknown> | null,
+  opts?: RenderFormOptions | null,
 ): string {
   const d = descriptor && typeof descriptor === 'object' ? descriptor : {};
   const vals = values || {};
+  const o = opts || {};
   const prefix = 'sf-rq';
   const btn = d.btn || 'Оставить заявку';
   const phone = d.phone;
+  const errors = o.errors || {};
 
   const fields = visibleFields(d, vals)
-    .map((f) => requestFieldHTML(f, vals, prefix))
+    .map((f) =>
+      requestFieldHTML(f, vals, prefix, o.files ? o.files[f.id] : null, errors),
+    )
     .join('');
 
   const contacts =
     '<div class="sf-sec">Как с вами связаться</div><div class="sf-two">' +
-    requestContactHTML('_name', 'Имя', 'text', 'обязательно', vals._name, prefix) +
-    requestContactHTML('_email', 'Почта', 'email', 'сюда придёт ответ', vals._email, prefix, 'name@mail.ru') +
+    requestContactHTML(
+      '_name',
+      'Имя',
+      'text',
+      'обязательно',
+      vals._name,
+      prefix,
+      undefined,
+      errors._name,
+    ) +
+    requestContactHTML(
+      '_email',
+      'Почта',
+      'email',
+      'сюда придёт ответ',
+      vals._email,
+      prefix,
+      'name@mail.ru',
+      errors._email,
+    ) +
     '</div>' +
     (phone === 'off'
       ? ''
@@ -523,6 +721,7 @@ export function renderFormHTML(
           vals._phone,
           prefix,
           '+7',
+          errors._phone,
         ));
 
   const consent =
@@ -532,7 +731,17 @@ export function renderFormHTML(
     prefix +
     '-_ok" data-sf="_ok"' +
     (vals._ok ? ' checked' : '') +
-    '><span>Согласна(сен) на обработку персональных данных и файлов по политике магазина</span></label></div>';
+    '><span>Согласна(сен) на обработку персональных данных и файлов по политике магазина</span></label>' +
+    (errors._ok
+      ? '<p class="sf-e">' + escapeRequestHtml(errors._ok) + '</p>'
+      : '') +
+    '</div>';
+
+  const note = o.note
+    ? '<p class="sf-e" data-request-note role="alert">' +
+      escapeRequestHtml(o.note) +
+      '</p>'
+    : '';
 
   const submit =
     '<button type="button" class="sf-sub" data-request-submit>' +
@@ -540,6 +749,7 @@ export function renderFormHTML(
     '</button><p class="sf-note">Ответ придёт на почту и в «Мои заявки». Платить сейчас не нужно.</p>';
 
   return (
+    note +
     '<div class="sf"><div class="sf-box"><h4>' +
     escapeRequestHtml(btn) +
     '</h4>' +
@@ -551,22 +761,453 @@ export function renderFormHTML(
   );
 }
 
+/** Экран успеха после отправки (мокап, site-ok) — sf-стиль, без отдельного CSS. */
+export function requestSuccessHTML(
+  descriptor: RequestFormDescriptor | null | undefined,
+  requestNo: unknown,
+  email?: string,
+): string {
+  const d = descriptor && typeof descriptor === 'object' ? descriptor : {};
+  const done = d.done || 'Спасибо! Мы посмотрим заявку и ответим.';
+  return (
+    '<div class="sf"><div class="sf-box" data-request-success role="status"><h4>Заявка №' +
+    escapeRequestHtml(requestNo) +
+    ' отправлена</h4><p class="sf-h">' +
+    escapeRequestHtml(done) +
+    ' Ответ придёт на ' +
+    escapeRequestHtml(email || 'почту') +
+    ' и в «Мои заявки».</p>' +
+    '<button type="button" class="sf-sub" data-request-again>Отправить ещё одну</button></div></div>'
+  );
+}
+
+/**
+ * Остров формы на странице товара (T013b). `rootEl` — корень БЛОКА
+ * (window.__merfyRoot(blockId), правило Spec 102): внутри ищет контейнер
+ * `[data-request-form]` и действия товара `[data-product-actions]`.
+ *
+ * Поведение: GET дескриптора → null/ошибка = тихо ничего (корзина как была);
+ * дескриптор есть → форма отрисована, действия товара скрыты (hidden).
+ * События — делегированные на контейнер формы; перерисовка — как в мокапе
+ * (select/checkbox/кнопки-варианты перерисовывают форму, текст — точечный
+ * счётчик). Файлы: blob-превью сразу, загрузка POST /store/requests-files
+ * по одному (мета из ответа); эндпоинт недоступен → note «Загрузка файлов
+ * временно недоступна», файл не попадёт в заявку. Отправка: validate →
+ * скролл к первой ошибке → POST /store/requests → «Заявка №N отправлена».
+ */
+export function mountRequestsForm(
+  rootEl: HTMLElement | null | undefined,
+  opts: {
+    productId: string;
+    apiBase?: string;
+    storeId?: string;
+  },
+): Promise<void> {
+  if (!rootEl || !opts || !opts.productId) return Promise.resolve();
+  const root = rootEl;
+  const found = root.querySelector('[data-request-form]');
+  if (!found) return Promise.resolve();
+  // Сужение для вложенных function-деклараций (TS не несёт null-check в замыкания).
+  const formEl = found as HTMLElement;
+
+  const w =
+    typeof window !== 'undefined'
+      ? (window as unknown as Record<string, any>)
+      : ({} as Record<string, any>);
+  const apiBase =
+    opts.apiBase ||
+    (w.__MERFY_CONFIG__ && w.__MERFY_CONFIG__.apiUrl) ||
+    'https://gateway.merfy.ru/api';
+  const storeId =
+    opts.storeId ||
+    (w.__MERFY_CONFIG__ && (w.__MERFY_CONFIG__.shopId || w.__MERFY_CONFIG__.storeId)) ||
+    '';
+  const productId = opts.productId;
+
+  let descriptor: RequestFormDescriptor | null = null;
+  const values: Record<string, unknown> = {};
+  const files: Record<string, RequestFileView[]> = {};
+  let errors: Record<string, string> = {};
+  let note = '';
+
+  function fieldById(fid: string): RequestFieldDescriptor | null {
+    const fields = (descriptor && descriptor.fields) || [];
+    for (let i = 0; i < fields.length; i++) {
+      if (fields[i] && fields[i].id === fid) return fields[i];
+    }
+    return null;
+  }
+
+  function contacts(): RequestFormContacts {
+    return {
+      name: typeof values._name === 'string' ? values._name : undefined,
+      email: typeof values._email === 'string' ? values._email : undefined,
+      phone: typeof values._phone === 'string' ? values._phone : undefined,
+      consent: !!values._ok,
+    };
+  }
+
+  function filesCounts(): Record<string, number> {
+    const counts: Record<string, number> = {};
+    Object.keys(files).forEach((fid) => {
+      counts[fid] = (files[fid] || []).filter((x) => !x.failed).length;
+    });
+    return counts;
+  }
+
+  function uploadedFileMetas(): Array<Record<string, unknown>> {
+    const metas: Array<Record<string, unknown>> = [];
+    Object.keys(files).forEach((fid) => {
+      (files[fid] || []).forEach((x) => {
+        if (x.key)
+          metas.push({
+            fieldId: fid,
+            key: x.key,
+            url: x.url,
+            name: x.name,
+            size: x.bytes,
+            mime: x.mime,
+          });
+      });
+    });
+    return metas;
+  }
+
+  function anyUploading(): boolean {
+    let busy = false;
+    Object.keys(files).forEach((fid) => {
+      (files[fid] || []).forEach((x) => {
+        if (x.uploading) busy = true;
+      });
+    });
+    return busy;
+  }
+
+  function rerender(): void {
+    if (!descriptor) return;
+    formEl.innerHTML = renderFormHTML(descriptor, values, {
+      files,
+      errors,
+      note,
+    });
+  }
+
+  function focusFirstError(): void {
+    const first = formEl.querySelector('.bad, .sf-e');
+    if (!first) return;
+    try {
+      first.scrollIntoView({ block: 'center' });
+    } catch {
+      /* jsdom/старые браузеры — просто фокус ниже */
+    }
+    const wrap = first.closest('.sf-f');
+    const input: HTMLElement | null = wrap
+      ? wrap.querySelector('input,textarea,select,button')
+      : null;
+    if (input && typeof input.focus === 'function') {
+      input.focus();
+    }
+  }
+
+  function uploadEntry(
+    f: RequestFieldDescriptor,
+    entry: RequestFileView,
+  ): void {
+    const file = entry.file as File | null;
+    if (!file || typeof FormData === 'undefined') {
+      entry.uploading = false;
+      entry.failed = true;
+      note = 'Загрузка файлов временно недоступна';
+      rerender();
+      return;
+    }
+    const fd = new FormData();
+    fd.append('file', file);
+    fetch(
+      apiBase +
+        '/store/requests-files?store_id=' +
+        encodeURIComponent(storeId),
+      { method: 'POST', body: fd, credentials: 'omit' },
+    )
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((json: { success?: boolean; data?: Record<string, unknown> } | null) => {
+        const d = json && json.success ? json.data : null;
+        entry.uploading = false;
+        if (d && d.key) {
+          entry.key = String(d.key);
+          entry.url = (d.url as string) || entry.url;
+          entry.name = (d.name as string) || entry.name;
+          entry.mime = d.mime as string;
+        } else {
+          entry.failed = true;
+          note = 'Загрузка файлов временно недоступна';
+        }
+        rerender();
+      })
+      .catch(() => {
+        entry.uploading = false;
+        entry.failed = true;
+        note = 'Загрузка файлов временно недоступна';
+        rerender();
+      });
+  }
+
+  function fileAdd(fid: string, list: ArrayLike<File>): void {
+    const f = fieldById(fid);
+    if (!f || !isRequestMediaField(f.type)) return;
+    const mm = requestMediaInfo(f.type);
+    const arr = files[fid] || (files[fid] = []);
+    const maxCount = f.max || 1;
+    let skipped = 0;
+    let big = 0;
+    Array.prototype.forEach.call(list, (file: File) => {
+      if (arr.length >= maxCount) {
+        skipped++;
+        return;
+      }
+      const okType =
+        f.type === 'photo'
+          ? /^image\//.test(file.type) || /\.heic$/i.test(file.name)
+          : f.type === 'video'
+            ? /^video\//.test(file.type)
+            : /\.(pdf|zip)$/i.test(file.name);
+      if (!okType) {
+        skipped++;
+        return;
+      }
+      if (file.size > mm.maxMb * 1048576) {
+        big++;
+        return;
+      }
+      const heic = /heic|heif/i.test(file.type) || /\.heic$/i.test(file.name);
+      const entry: RequestFileView = {
+        name: file.name,
+        size: requestFormatFileSize(file.size),
+        bytes: file.size,
+        url:
+          typeof URL !== 'undefined' && URL.createObjectURL
+            ? URL.createObjectURL(file)
+            : undefined,
+        heic,
+        uploading: true,
+        file,
+      };
+      arr.push(entry);
+      uploadEntry(f, entry);
+    });
+    delete errors[fid];
+    note =
+      big > 0
+        ? 'Файлы больше ' + mm.maxMb + ' МБ пропущены: ' + big
+        : skipped > 0
+          ? 'Пропущено: ' +
+            skipped +
+            '. Лимит — ' +
+            maxCount +
+            ', формат — ' +
+            mm.fmt
+          : note;
+    rerender();
+  }
+
+  function submit(): void {
+    if (anyUploading()) {
+      note = 'Дождитесь загрузки файлов';
+      rerender();
+      return;
+    }
+    errors = validate(descriptor, values, contacts(), filesCounts());
+    const keys = Object.keys(errors);
+    if (keys.length) {
+      rerender();
+      focusFirstError();
+      return;
+    }
+    note = '';
+    const body = {
+      productId,
+      values,
+      contacts: contacts(),
+      files: uploadedFileMetas(),
+    };
+    fetch(apiBase + '/store/requests?store_id=' + encodeURIComponent(storeId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'omit',
+      body: JSON.stringify(body),
+    })
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((json: { success?: boolean; data?: Record<string, unknown> } | null) => {
+        if (json && json.success && json.data) {
+          const n =
+            json.data.id ?? json.data.number ?? json.data.requestId ?? '';
+          formEl.innerHTML = requestSuccessHTML(
+            descriptor,
+            n,
+            String(values._email || ''),
+          );
+          return;
+        }
+        note = 'Не удалось отправить заявку. Попробуйте ещё раз.';
+        rerender();
+      })
+      .catch(() => {
+        note = 'Не удалось отправить заявку. Попробуйте ещё раз.';
+        rerender();
+      });
+  }
+
+  function resetForm(): void {
+    Object.keys(files).forEach((fid) => {
+      (files[fid] || []).forEach((x) => {
+        if (
+          x.url &&
+          typeof URL !== 'undefined' &&
+          URL.revokeObjectURL &&
+          String(x.url).indexOf('blob:') === 0
+        ) {
+          try {
+            URL.revokeObjectURL(x.url);
+          } catch {
+            /* noop */
+          }
+        }
+      });
+    });
+    Object.keys(values).forEach((k) => delete values[k]);
+    Object.keys(files).forEach((k) => delete files[k]);
+    errors = {};
+    note = '';
+    rerender();
+  }
+
+  formEl.addEventListener('input', (ev) => {
+    const t = ev.target as HTMLInputElement | null;
+    if (!t || !t.getAttribute) return;
+    const key = t.getAttribute('data-sf');
+    if (!key || t.type === 'checkbox' || t.type === 'file') return;
+    values[key] = t.value;
+    if (errors[key]) delete errors[key];
+    // Точечный счётчик символов — без перерисовки (фокус не теряется).
+    if (t.tagName === 'INPUT' && t.type === 'text' && t.maxLength > 0) {
+      const wrap = t.closest ? t.closest('.sf-f') : null;
+      const cnt = wrap && wrap.querySelector ? wrap.querySelector('.sf-h') : null;
+      if (cnt && /из \d+$/.test(cnt.textContent || '')) {
+        cnt.textContent = String(t.value).length + ' из ' + t.maxLength;
+      }
+    }
+  });
+
+  formEl.addEventListener('change', (ev) => {
+    const t = ev.target as HTMLInputElement | null;
+    if (!t || !t.getAttribute) return;
+    const fid = t.getAttribute('data-sfile');
+    if (fid) {
+      fileAdd(fid, t.files || []);
+      t.value = '';
+      return;
+    }
+    const key = t.getAttribute('data-sf');
+    if (!key) return;
+    if (t.type === 'checkbox') values[key] = t.checked;
+    else if (t.tagName === 'SELECT') values[key] = t.value;
+    else return;
+    if (errors[key]) delete errors[key];
+    rerender();
+  });
+
+  formEl.addEventListener('click', (ev) => {
+    const t = ev.target as HTMLElement | null;
+    if (!t || !t.closest) return;
+    const btn = t.closest('[data-sfbtn]');
+    if (btn) {
+      const raw = btn.getAttribute('data-sfbtn') || '';
+      const sep = raw.indexOf('|');
+      const fid = raw.slice(0, sep);
+      const opt = raw.slice(sep + 1);
+      values[fid] = values[fid] === opt ? '' : opt;
+      if (errors[fid]) delete errors[fid];
+      rerender();
+      return;
+    }
+    const del = t.closest('[data-sfdel]');
+    if (del) {
+      const parts = (del.getAttribute('data-sfdel') || '').split('|');
+      const fid = parts[0];
+      const idx = parseInt(parts[1], 10);
+      const arr = files[fid] || [];
+      const removed = arr.splice(idx, 1)[0];
+      if (
+        removed &&
+        removed.url &&
+        typeof URL !== 'undefined' &&
+        URL.revokeObjectURL &&
+        String(removed.url).indexOf('blob:') === 0
+      ) {
+        try {
+          URL.revokeObjectURL(removed.url);
+        } catch {
+          /* noop */
+        }
+      }
+      rerender();
+      return;
+    }
+    if (t.closest('[data-request-submit]')) {
+      submit();
+      return;
+    }
+    if (t.closest('[data-request-again]')) {
+      resetForm();
+    }
+  });
+
+  // Действия товара (корзина/«Купить сейчас») прячет ТОЛЬКО когда форма
+  // реально пришла — до этого страница работает как без фичи (спека §5).
+  return fetch(
+    apiBase +
+      '/store/requests/product/' +
+      encodeURIComponent(productId) +
+      '?store_id=' +
+      encodeURIComponent(storeId),
+    { credentials: 'omit' },
+  )
+    .then((r) => (r && r.ok ? r.json() : null))
+    .then((json: { success?: boolean; data?: unknown } | null) => {
+      const d = json && json.success ? json.data : null;
+      if (!d || typeof d !== 'object' || !Array.isArray((d as RequestFormDescriptor).fields)) {
+        return;
+      }
+      descriptor = d as RequestFormDescriptor;
+      const actions = root.querySelector('[data-product-actions]');
+      if (actions) actions.setAttribute('hidden', '');
+      rerender();
+    })
+    .catch(() => {
+      /* сеть/шлюз недоступны — корзина работает как раньше */
+    });
+}
+
 /**
  * Строковый рантайм для `<script is:inline set:html={…}>` (паттерн
  * EXTENSION_POINTS_RUNTIME_SOURCE): собран из `.toString()` тех же
  * function-деклараций, что выше, — правка функции обновляет строку сама.
- * T013b вызовет window.__merfyRequestsForm.renderFormHTML(descriptor) и т.д.
+ * Блок вызывает window.__merfyRequestsForm.mountRequestsForm(root, opts).
  */
 export const REQUESTS_FORM_RUNTIME_SOURCE = `
 ${escapeRequestHtml.toString()}
 ${isRequestMediaField.toString()}
 ${requestMediaInfo.toString()}
 ${requestMinDateISO.toString()}
+${requestFormatFileSize.toString()}
 ${visibleFields.toString()}
 ${requestFieldIconSvg.toString()}
+${requestFilesHTML.toString()}
 ${requestFieldHTML.toString()}
 ${requestContactHTML.toString()}
 ${renderFormHTML.toString()}
+${requestSuccessHTML.toString()}
 ${validate.toString()}
-if (typeof window !== 'undefined') { window.__merfyRequestsForm = { visibleFields: visibleFields, validate: validate, renderFormHTML: renderFormHTML }; }
+${mountRequestsForm.toString()}
+if (typeof window !== 'undefined') { window.__merfyRequestsForm = { visibleFields: visibleFields, validate: validate, renderFormHTML: renderFormHTML, mountRequestsForm: mountRequestsForm }; }
 `.trim();

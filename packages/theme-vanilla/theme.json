@@ -294,6 +294,7 @@
     "cart-drawer": true,
     "otp-auth": true,
     "wishlist": false,
+    "requests": false,
     "color-swatches": false,
     "filter-sidebar": true,
     "puckDrivenPages": true

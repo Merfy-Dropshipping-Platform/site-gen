@@ -1,0 +1,59 @@
+---
+// RequestForm — витринный каркас секции «Форма заявки» (спека 118, T013a).
+//
+// Блок НЕ попадает в палитру конструктора: по спеке §5 секция хардкодом
+// встраивается в карточку товара (Product) вместо кнопки «В корзину»,
+// когда включены features.requests И у товара назначена форма. Поэтому
+// puckConfig на этом этапе отсутствует (появится, если блок когда-нибудь
+// станет самостоятельной секцией).
+//
+// Что рендерит T013a: статичную заглушку «Форма заявки (каркас)», порт
+// стилей sf-* мокапа (инлайн <style> ниже, изолирован префиксом .rq-sf,
+// собственные переменные --st-*) и ПУСТОЙ контейнер [data-request-form].
+// Поля по дескриптору @merfy/forms (спека §6) отрисует T013b:
+// renderFormHTML(descriptor) из runtime/requests-form.ts + события.
+import { RequestFormClasses as C } from './RequestForm.classes';
+import { RequestFormSfStyles } from './RequestForm.sf-styles';
+
+interface Props {
+  /**
+   * Дескриптор формы @merfy/forms (спека 118 §6: 10 типов полей, условие
+   * показа, лимиты, телефон, кнопка, сообщение). На этапе T013a блок
+   * показывает только факт его наличия — рендер полей в T013b.
+   */
+  descriptor?: unknown;
+  /** Товар, к которому относится заявка (для запроса дескриптора в T013b). */
+  productId?: string;
+  /** Условие видимости секции: features.requests && форма назначена. */
+  enabled?: boolean;
+}
+
+const { descriptor, productId, enabled } = Astro.props as Props;
+const hasDescriptor = descriptor !== undefined && descriptor !== null;
+---
+{enabled !== false && (
+  <section
+    class:list={[C.root]}
+    data-block="request-form"
+    data-request-product-id={productId ?? ''}
+    data-has-descriptor={hasDescriptor ? 'true' : 'false'}
+  >
+    <div class={C.container}>
+      <div class={C.inner}>
+        <h2 class={C.heading}>Форма заявки (каркас)</h2>
+        <p class={C.note}>
+          Каркас секции (T013a): поля по дескриптору формы отрисует T013b в
+          контейнер ниже — renderFormHTML() из runtime/requests-form.ts.
+        </p>
+        {/* Пустой контейнер формы: класс rq-sf включает --st-* переменные
+            мокапа; T013b наполнит его sf-разметкой по дескриптору. */}
+        <div
+          class={C.formShell}
+          data-request-form
+          data-request-form-product-id={productId ?? ''}
+        ></div>
+      </div>
+    </div>
+  </section>
+)}
+<style is:inline set:html={RequestFormSfStyles} />

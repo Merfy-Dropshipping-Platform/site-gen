@@ -43,6 +43,16 @@ export * as CheckoutTerms from './blocks/CheckoutTerms';
 // Thank-you / order confirmation (Spec 103 — post-payment секция)
 export * as OrderConfirmation from './blocks/OrderConfirmation';
 
+// Requests extension storefront (Spec 118, T013a — каркас; НЕ в палитре
+// конструктора: встраивается в Product в T013b)
+export * as RequestForm from './blocks/RequestForm';
+export { REQUESTS_FORM_RUNTIME_SOURCE } from './runtime/requests-form';
+export {
+  visibleFields as requestsVisibleFields,
+  validate as requestsValidate,
+  renderFormHTML as requestsRenderFormHTML,
+} from './runtime/requests-form';
+
 // SEO TS modules (Phase 1b)
 export { buildSitemap } from './seo/SitemapBuilder';
 export type { SitemapUrl } from './seo/SitemapBuilder';

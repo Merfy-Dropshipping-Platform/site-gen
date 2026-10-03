@@ -1180,7 +1180,12 @@ export function mountRequestsForm(
       }
       descriptor = d as RequestFormDescriptor;
       const actions = root.querySelector('[data-product-actions]');
-      if (actions) actions.setAttribute('hidden', '');
+      if (actions) {
+        // hidden И display:none: у тем-портов кнопки несут flex-классы,
+        // которые перебивают [hidden]{display:none} префлайта.
+        actions.setAttribute('hidden', '');
+        (actions as HTMLElement).style.display = 'none';
+      }
       rerender();
     })
     .catch(() => {

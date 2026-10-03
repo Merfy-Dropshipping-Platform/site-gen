@@ -190,6 +190,25 @@ export async function extractPageBlocks(
           selfPageId: page,
         });
       }
+      // Спека 118 §5 (T013c): тумблер features.requests из theme.json →
+      // проп requestsEnabled секции «Товар» (контейнер+остров формы заявки
+      // вместо «В корзину», когда у товара назначена форма; рендер и логика —
+      // theme-base Product.astro + runtime/requests-form). Механизм — тот же
+      // оверрайд-приём, что productIdOverride выше: ОБЩАЯ точка extractPageBlocks
+      // (её идут превью, live-пересадка /product и per-slug renderProductSectionForId),
+      // значение решает МАНИФЕСТ ТЕМЫ. Проп ревизии может включить форму и без
+      // флага; при флаге false (дефолт всех тем) поведение не меняется вовсе.
+      if (
+        b.type === "Product" &&
+        (page === "page-product" || page === "product")
+      ) {
+        const featureOn =
+          themeId != null &&
+          getThemeManifest(themeId)?.features?.requests === true;
+        if (featureOn || finalProps.requestsEnabled === true) {
+          finalProps.requestsEnabled = true;
+        }
+      }
       return { type: b.type, props: finalProps };
     });
 }

@@ -43,6 +43,17 @@ interface Props {
 
 const { product, id, siteId } = Astro.props;
 
+// Спека 118 §5 (T013c): тумблер features.requests темы (theme.json) → на
+// fallback/demo-PDP темы появляется контейнер+остров «Формы заявки» (логика —
+// theme-base runtime/requests-form, БЕЗ копирования в тему). Живой /product у
+// всех тем рендерит общий порт Product (theme-base), куда флаг инжектит
+// extractPageBlocks. Дефолт false → разметка не меняется вовсе.
+import { REQUESTS_FORM_RUNTIME_SOURCE } from "../../../../../packages/theme-base/runtime/requests-form";
+import { RequestFormSfStyles } from "../../../../../packages/theme-base/blocks/RequestForm/RequestForm.sf-styles";
+import themeManifestRaw from "../../../../../packages/theme-vanilla/theme.json";
+const requestsEnabled =
+	(themeManifestRaw as { features?: Record<string, boolean> }).features?.requests === true;
+
 // ── Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Товар». ──
 // Когда товар НЕ выбран мерчантом (demo `[id].astro` с catalogProduct без
 // products.json, или нейтральный skeleton `/product`), секция рендерит
@@ -321,6 +332,7 @@ const pdpHeartSvg =
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="105"
 				data-puck-subsection-field="buttons"
+				data-product-actions={requestsEnabled ? "true" : undefined}
 			>
 				<button
 					type="button"
@@ -348,6 +360,17 @@ const pdpHeartSvg =
 					Купить сейчас
 				</button>
 			</div>
+
+			{/* Спека 118 §5 (T013c): контейнер «Формы заявки» — ТОЛЬКО при включённом
+			    флаге темы; дескриптор null → корзина (кнопки выше) работает как была. */}
+			{requestsEnabled && (
+				<div
+					class="rq-sf"
+					id="pdp-requests-form"
+					data-request-form
+					data-request-form-product-id={String(product?.id || "")}
+				></div>
+			)}
 
 			<div class="flex max-w-[628px] flex-col gap-3">
 				{/* Описание: Figma-плейсхолдер «Товар» (пустое состояние) описания НЕ
@@ -1147,3 +1170,33 @@ const pdpHeartSvg =
 		document.addEventListener("astro:page-load", bootProduct);
 	})();
 </script>
+
+{/* Спека 118 §5 (T013c): остров «Формы заявки» — общие стиль+рантайм из
+    theme-base (как Footer.astro импортирует runtime/footer-logo), без
+    копирования логики в тему. Скрипты и контейнер выше — за флагом темы. */}
+{requestsEnabled && <style is:inline set:html={RequestFormSfStyles} />}
+{requestsEnabled && <script is:inline set:html={REQUESTS_FORM_RUNTIME_SOURCE} />}
+{requestsEnabled && (
+<script is:inline define:vars={{ productId: String(product?.id || "") }}>
+	// Контейнер один на странице (PDP) → getElementById допустим (прецедент
+	// OrdersSection); productId подтягивается live-гидрацией компонента
+	// (data-add-to-cart), поэтому один повтор через 1.2 с.
+	(function () {
+		var formEl = document.getElementById("pdp-requests-form");
+		if (!formEl || !window.__merfyRequestsForm) return;
+		function start() {
+			var p = productId ||
+				(formEl.getAttribute("data-request-form-product-id") || "");
+			if (!p) return false;
+			var w = window.__MERFY_CONFIG__ || {};
+			window.__merfyRequestsForm.mountRequestsForm(formEl.parentElement || formEl, {
+				productId: String(p),
+				apiBase: w.apiUrl || "",
+				storeId: w.shopId || w.storeId || ""
+			});
+			return true;
+		}
+		if (!start()) setTimeout(start, 1200);
+	})();
+</script>
+)}

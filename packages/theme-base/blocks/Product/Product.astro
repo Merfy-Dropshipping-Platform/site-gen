@@ -44,7 +44,7 @@ interface Props extends ProductProps {
    * товара при включении фичи — тот же механизм, каким theme.json features
    * гейтит компоненты). true → рядом с кнопками появляется контейнер
    * [data-request-form]: рантайм запросит дескриптор формы товара
-   * (GET /store/requests/product/:id) и, если форма назначена, заменит
+   * (POST /store/extensions/requests/fn/productForm) и, если форма назначена, заменит
    * действия товара (скроет [data-product-actions]) живой формой заявки.
    * false/undefined → контейнера и острова в разметке нет вовсе.
    */

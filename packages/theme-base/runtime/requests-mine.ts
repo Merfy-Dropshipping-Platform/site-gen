@@ -18,11 +18,17 @@
  * логин, а пустое состояние «Здесь появятся ваши заявки — ссылки приходят
  * на почту» (нейтрально).
  *
- * КОНТРАКТ ЭНДПОИНТОВ (шлюз, спека §3 `/store/requests/mine*`; появляются в
- * T003/T005 — в тестах замоканы, на живом сайте до них просто пусто/ошибка):
- *   GET  /store/requests/mine?store_id=  → {success, data: RequestMineListItem[]}
- *   GET  /store/requests/mine/:id?store_id= → {success, data: RequestMineDetail}
- *   POST /store/requests/mine/:id?store_id= {text} → {success, data}
+ * КОНТРАКТ ЭНДПОИНТОВ (fn-канал расширения `requests`, спека §3:
+ * POST /store/extensions/requests/fn/mine*?store_id= — см. api-gateway
+ * extension-fn.controller.ts; метод всегда POST, тело — JSON-объект input,
+ * ответ {success, data}; в тестах замоканы, на живом сайте до них просто
+ * пусто/ошибка):
+ *   POST /store/extensions/requests/fn/mineList?store_id= {} →
+ *       {success, data: RequestMineListItem[]}
+ *   POST /store/extensions/requests/fn/mineGet?store_id= {id} →
+ *       {success, data: RequestMineDetail}
+ *   POST /store/extensions/requests/fn/mineReply?store_id= {id, text} →
+ *       {success, data}
  * Подписи статусов приходят данными (statusText); фолбек-подписи — здесь.
  */
 import { escapeRequestHtml } from './requests-form';
@@ -39,7 +45,7 @@ export const REQUEST_MINE_STATUS_LABELS: Record<string, string> = {
   closed: 'Закрыта',
 };
 
-/** Строка списка «Мои заявки» (контракт GET /store/requests/mine). */
+/** Строка списка «Мои заявки» (контракт fn/mineList). */
 export interface RequestMineListItem {
   id: string | number;
   /** Человекочитаемый номер (№2083); fallback — id. */
@@ -81,7 +87,7 @@ export interface RequestMineMessage {
   file?: string;
 }
 
-/** Карточка заявки (контракт GET /store/requests/mine/:id). */
+/** Карточка заявки (контракт fn/mineGet). */
 export interface RequestMineDetail extends RequestMineListItem {
   fields?: RequestMineField[];
   offer?: RequestMineOffer;
@@ -179,14 +185,21 @@ function mineStoreId(): string {
   return (w.__MERFY_CONFIG__ && (w.__MERFY_CONFIG__.shopId || w.__MERFY_CONFIG__.storeId)) || '';
 }
 
-/** GET /store/requests/mine (Bearer). */
+/** POST fn/mineList (Bearer). */
 export async function fetchMyRequests(): Promise<MineFetchResult<RequestMineListItem[]>> {
   const token = getRequestsMineToken();
   if (!token) return { ok: false, status: 0 };
   try {
     const r = await fetch(
-      mineApiBase() + '/store/requests/mine?store_id=' + encodeURIComponent(mineStoreId()),
-      { headers: { Authorization: 'Bearer ' + token }, credentials: 'omit' },
+      mineApiBase() +
+        '/store/extensions/requests/fn/mineList?store_id=' +
+        encodeURIComponent(mineStoreId()),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        credentials: 'omit',
+        body: JSON.stringify({}),
+      },
     );
     const json = await r.json().catch(() => null);
     const data = json && json.success ? json.data : null;
@@ -196,18 +209,21 @@ export async function fetchMyRequests(): Promise<MineFetchResult<RequestMineList
   }
 }
 
-/** GET /store/requests/mine/:id (Bearer). */
+/** POST fn/mineGet {id} (Bearer). */
 export async function fetchMyRequest(id: string): Promise<MineFetchResult<RequestMineDetail>> {
   const token = getRequestsMineToken();
   if (!token || !id) return { ok: false, status: 0 };
   try {
     const r = await fetch(
       mineApiBase() +
-        '/store/requests/mine/' +
-        encodeURIComponent(id) +
-        '?store_id=' +
+        '/store/extensions/requests/fn/mineGet?store_id=' +
         encodeURIComponent(mineStoreId()),
-      { headers: { Authorization: 'Bearer ' + token }, credentials: 'omit' },
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        credentials: 'omit',
+        body: JSON.stringify({ id }),
+      },
     );
     const json = await r.json().catch(() => null);
     const data = json && json.success ? json.data : null;
@@ -217,7 +233,7 @@ export async function fetchMyRequest(id: string): Promise<MineFetchResult<Reques
   }
 }
 
-/** POST /store/requests/mine/:id {text} (Bearer). */
+/** POST fn/mineReply {id, text} (Bearer). */
 export async function replyMyRequest(
   id: string,
   text: string,
@@ -227,15 +243,13 @@ export async function replyMyRequest(
   try {
     const r = await fetch(
       mineApiBase() +
-        '/store/requests/mine/' +
-        encodeURIComponent(id) +
-        '?store_id=' +
+        '/store/extensions/requests/fn/mineReply?store_id=' +
         encodeURIComponent(mineStoreId()),
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         credentials: 'omit',
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ id, text }),
       },
     );
     const json = await r.json().catch(() => null);
@@ -456,9 +470,9 @@ export function initRequestsMineList(): void {
 }
 
 /**
- * Карточка заявки: ?id= → GET mine/:id → что заполнил + галерея + предложение
- * + переписка + ответ (POST mine/:id {text}). Ответ добавляется в тред без
- * перезагрузки; ошибка — сообщение под формой.
+ * Карточка заявки: ?id= → fn/mineGet {id} → что заполнил + галерея +
+ * предложение + переписка + ответ (fn/mineReply {id, text}). Ответ
+ * добавляется в тред без перезагрузки; ошибка — сообщение под формой.
  */
 export function initRequestsMineDetail(): void {
   const root = document.getElementById('request-content');

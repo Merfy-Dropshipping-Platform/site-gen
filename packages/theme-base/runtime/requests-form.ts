@@ -6,9 +6,10 @@
  * scratchpad/zayavki-screens/prototype.js, submitSite), renderFormHTML
  * (sf-разметка мокапа: sfForm/sfField → строка HTML, включая состояние
  * файлов и ошибок). Плюс mountRequestsForm (T013b) — обвязка острова на
- * странице товара: дескриптор из GET /store/requests/product/:id, события,
- * файлы (blob-превью + загрузка POST /store/requests-files), отправка
- * POST /store/requests, экран «Заявка №N отправлена».
+ * странице товара: дескриптор из fn-канала расширения `requests`
+ * (POST /store/extensions/requests/fn/productForm), события, файлы
+ * (blob-превью + загрузка POST /store/requests-files), отправка
+ * POST /store/extensions/requests/fn/submit, экран «Заявка №N отправлена».
  *
  * ФОРМАТ ДЕСКРИПТОРА — спека 118 §6 / @merfy/forms (T006): 10 типов полей
  * (text, textarea, select, buttons, checkbox, date, number, photo, video,
@@ -28,14 +29,18 @@
  * модульные константы — только на другие function-декларации из этого же
  * набора (в т.ч. лимиты файлов — через requestMediaInfo, не FILE_LIMITS).
  *
- * КОНТРАКТЫ ЭНДПОИНТОВ (шлюз, спека §3; появляются в T004/T005 — до них
- * формы работают с моками в тестах, на живом сайте просто не включены):
- *   GET  /store/requests/product/:productId?store_id= → {success, data:
- *       дескриптор | null} — null = форма не назначена, корзина как была;
+ * КОНТРАКТЫ ЭНДПОИНТОВ (fn-канал расширения `requests`, спека §3:
+ * POST /store/extensions/:id/fn/:name?store_id= — см.
+ * api-gateway extension-fn.controller.ts; метод всегда POST, тело —
+ * JSON-объект input, ответ {success, data}):
+ *   POST /store/extensions/requests/fn/productForm?store_id= {productId} →
+ *       {success, data: дескриптор | null} — null = форма не назначена,
+ *       корзина как была;
  *   POST /store/requests-files?store_id= — multipart, поле `file`, по одному
- *       файлу на запрос → {success, data: {key, url, name, size, mime}};
- *   POST /store/requests — {productId, values, contacts, files:[мета]} →
- *       {success, data: {id, …}}.
+ *       файлу на запрос → {success, data: {key, url, name, size, mime}}
+ *       (загрузка файлов идёт напрямую через sites/S3, НЕ через fn-канал);
+ *   POST /store/extensions/requests/fn/submit?store_id=
+ *       {productId, values, contacts, files:[мета]} → {success, data: {id, …}}.
  *
  * НЕ ЗДЕСЬ: страницы «Мои заявки» (T014), серверные лимиты (дата ≥ minDays,
  * число min/max) — их проверяет @merfy/forms на сервере (T002); у мокапа нет
@@ -146,7 +151,7 @@ export interface RequestFileView {
   name: string;
   /** «3,4 МБ» — подпись в списке. */
   size?: string;
-  /** Точный размер в байтах (уходит в POST /store/requests). */
+  /** Точный размер в байтах (уходит в fn/submit). */
   bytes?: number;
   /** blob:-превью или url загруженного файла. */
   url?: string;
@@ -786,14 +791,14 @@ export function requestSuccessHTML(
  * (window.__merfyRoot(blockId), правило Spec 102): внутри ищет контейнер
  * `[data-request-form]` и действия товара `[data-product-actions]`.
  *
- * Поведение: GET дескриптора → null/ошибка = тихо ничего (корзина как была);
+ * Поведение: дескриптор из fn/productForm → null/ошибка = тихо ничего (корзина как была);
  * дескриптор есть → форма отрисована, действия товара скрыты (hidden).
  * События — делегированные на контейнер формы; перерисовка — как в мокапе
  * (select/checkbox/кнопки-варианты перерисовывают форму, текст — точечный
  * счётчик). Файлы: blob-превью сразу, загрузка POST /store/requests-files
  * по одному (мета из ответа); эндпоинт недоступен → note «Загрузка файлов
  * временно недоступна», файл не попадёт в заявку. Отправка: validate →
- * скролл к первой ошибке → POST /store/requests → «Заявка №N отправлена».
+ * скролл к первой ошибке → POST fn/submit → «Заявка №N отправлена».
  */
 export function mountRequestsForm(
   rootEl: HTMLElement | null | undefined,
@@ -1030,12 +1035,17 @@ export function mountRequestsForm(
       contacts: contacts(),
       files: uploadedFileMetas(),
     };
-    fetch(apiBase + '/store/requests?store_id=' + encodeURIComponent(storeId), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'omit',
-      body: JSON.stringify(body),
-    })
+    fetch(
+      apiBase +
+        '/store/extensions/requests/fn/submit?store_id=' +
+        encodeURIComponent(storeId),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'omit',
+        body: JSON.stringify(body),
+      },
+    )
       .then((r) => (r && r.ok ? r.json() : null))
       .then((json: { success?: boolean; data?: Record<string, unknown> } | null) => {
         if (json && json.success && json.data) {
@@ -1166,11 +1176,14 @@ export function mountRequestsForm(
   // реально пришла — до этого страница работает как без фичи (спека §5).
   return fetch(
     apiBase +
-      '/store/requests/product/' +
-      encodeURIComponent(productId) +
-      '?store_id=' +
+      '/store/extensions/requests/fn/productForm?store_id=' +
       encodeURIComponent(storeId),
-    { credentials: 'omit' },
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'omit',
+      body: JSON.stringify({ productId }),
+    },
   )
     .then((r) => (r && r.ok ? r.json() : null))
     .then((json: { success?: boolean; data?: unknown } | null) => {

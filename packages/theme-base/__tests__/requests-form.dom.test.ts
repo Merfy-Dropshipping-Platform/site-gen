@@ -53,7 +53,7 @@ function mockFetch(overrides?: {
   const fn = jest.fn((url: string, opts?: RequestInit) => {
     calls.push({ url, opts });
     let data: unknown = null;
-    if (url.indexOf('/store/requests/product/') >= 0) {
+    if (url.indexOf('/store/extensions/requests/fn/productForm') >= 0) {
       const d =
         overrides && 'descriptor' in overrides ? overrides.descriptor : DESC;
       data = { success: true, data: d };
@@ -62,7 +62,7 @@ function mockFetch(overrides?: {
         overrides && overrides.upload !== undefined
           ? overrides.upload
           : { success: true, data: { key: 'minio-key-1', url: 'https://files/x.jpg', name: 'a.jpg', size: 123, mime: 'image/jpeg' } };
-    } else if (url.indexOf('/store/requests') >= 0) {
+    } else if (url.indexOf('/store/extensions/requests/fn/submit') >= 0) {
       data =
         overrides && overrides.submit !== undefined
           ? overrides.submit
@@ -362,9 +362,10 @@ describe('requests-form отправка (T013b)', () => {
     (form.querySelector('[data-request-submit]') as HTMLElement).click();
     await flush();
     const post = ((window as any).fetch as jest.Mock).mock.calls.find(
-      (c: any[]) => String(c[0]).indexOf('/store/requests?') >= 0,
+      (c: any[]) => String(c[0]).indexOf('/store/extensions/requests/fn/submit') >= 0,
     )!;
     expect(post).toBeTruthy();
+    expect((post[1] as RequestInit).method).toBe('POST');
     const body = JSON.parse((post[1] as RequestInit).body as string);
     expect(body.productId).toBe('book');
     expect(body.contacts).toEqual({ name: 'Ольга', email: 'olga@example.ru', phone: undefined, consent: true });

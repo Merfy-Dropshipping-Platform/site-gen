@@ -112,7 +112,7 @@ describe('requests-mine токен (T014)', () => {
   it('requests-mine: страница списка чистит token из URL после захвата', async () => {
     window.history.replaceState({}, '', '/account/requests?token=tk1');
     mountListPage();
-    mockFetchOk({ '/store/requests/mine?': { success: true, data: [] } });
+    mockFetchOk({ '/store/extensions/requests/fn/mineList': { success: true, data: [] } });
     initRequestsMineList();
     expect(getRequestsMineToken()).toBe('tk1');
     expect(window.location.search).not.toContain('token=');
@@ -133,7 +133,7 @@ describe('requests-mine список (T014)', () => {
   it('requests-mine: с токеном — строки с номером/товаром/статусом + Bearer', async () => {
     localStorage.setItem(REQUESTS_MINE_TOKEN_KEY, 'tk1');
     mountListPage();
-    const fn = mockFetchOk({ '/store/requests/mine?': { success: true, data: LIST } });
+    const fn = mockFetchOk({ '/store/extensions/requests/fn/mineList': { success: true, data: LIST } });
     initRequestsMineList();
     await flush();
     const rows = document.querySelectorAll('.account-order-row');
@@ -143,7 +143,7 @@ describe('requests-mine список (T014)', () => {
     expect(rows[0].innerHTML).toContain('Новая');
     expect(rows[1].innerHTML).toContain('Закрыта: не договорились');
     expect(rows[0].innerHTML).toContain('href="/account/request?id=2083"');
-    expect(fn.mock.calls[0][0]).toContain('/store/requests/mine?store_id=shop1');
+    expect(fn.mock.calls[0][0]).toContain('/store/extensions/requests/fn/mineList?store_id=shop1');
     expect((fn.mock.calls[0][1] as RequestInit).headers).toMatchObject({
       Authorization: 'Bearer tk1',
     });
@@ -152,7 +152,7 @@ describe('requests-mine список (T014)', () => {
   it('requests-mine: пустой список → пустое состояние; ошибка → сообщение', async () => {
     localStorage.setItem(REQUESTS_MINE_TOKEN_KEY, 'tk1');
     mountListPage();
-    mockFetchOk({ '/store/requests/mine?': { success: true, data: [] } });
+    mockFetchOk({ '/store/extensions/requests/fn/mineList': { success: true, data: [] } });
     initRequestsMineList();
     await flush();
     expect(document.getElementById('requests-empty')!.classList.contains('hidden')).toBe(false);
@@ -181,7 +181,7 @@ describe('requests-mine карточка (T014)', () => {
     window.history.replaceState({}, '', '/account/request?id=2083');
     localStorage.setItem(REQUESTS_MINE_TOKEN_KEY, 'tk1');
     mountDetailPage();
-    const fn = mockFetchOk({ '/store/requests/mine/2083': { success: true, data: DETAIL } });
+    const fn = mockFetchOk({ '/store/extensions/requests/fn/mineGet': { success: true, data: DETAIL } });
     initRequestsMineDetail();
     await flush();
     const content = document.getElementById('request-content')!;
@@ -198,32 +198,39 @@ describe('requests-mine карточка (T014)', () => {
     expect(content.innerHTML).toContain('Заявка отправлена с сайта');
     expect(content.innerHTML).toContain('Лён — плюс 400 ₽');
     expect(document.getElementById('request-reply-send')).not.toBe(null);
-    expect(fn.mock.calls[0][0]).toContain('/store/requests/mine/2083?store_id=shop1');
+    expect(fn.mock.calls[0][0]).toContain('/store/extensions/requests/fn/mineGet?store_id=shop1');
     expect((fn.mock.calls[0][1] as RequestInit).headers).toMatchObject({
       Authorization: 'Bearer tk1',
     });
+    expect(JSON.parse((fn.mock.calls[0][1] as RequestInit).body as string)).toEqual({ id: '2083' });
   });
 
-  it('requests-mine: ответ покупателя — POST {text}, сообщение добавляется в тред', async () => {
+  it('requests-mine: ответ покупателя — POST {id, text}, сообщение добавляется в тред', async () => {
     window.history.replaceState({}, '', '/account/request?id=2083');
     localStorage.setItem(REQUESTS_MINE_TOKEN_KEY, 'tk1');
     mountDetailPage();
     mockFetchOk({
-      '/store/requests/mine/2083': { success: true, data: DETAIL },
+      '/store/extensions/requests/fn/mineGet': { success: true, data: DETAIL },
     });
     initRequestsMineDetail();
     await flush();
     // переопределяем fetch после загрузки карточки: POST теперь ок
     const fn = mockFetchOk({
-      '/store/requests/mine/2083': { success: true, data: {} },
+      '/store/extensions/requests/fn/mineReply': { success: true, data: {} },
     });
     const text = document.getElementById('request-reply-text') as HTMLTextAreaElement;
     text.value = 'Отправил список файлом.';
     (document.getElementById('request-reply-send') as HTMLElement).click();
     await flush();
-    const post = fn.mock.calls.find((c: any[]) => (c[1] as RequestInit).method === 'POST')!;
+    const post = fn.mock.calls.find((c: any[]) =>
+      String(c[0]).indexOf('/store/extensions/requests/fn/mineReply') >= 0,
+    )!;
     expect(post).toBeTruthy();
-    expect(JSON.parse((post[1] as RequestInit).body as string)).toEqual({ text: 'Отправил список файлом.' });
+    expect((post[1] as RequestInit).method).toBe('POST');
+    expect((post[1] as RequestInit).headers).toMatchObject({
+      Authorization: 'Bearer tk1',
+    });
+    expect(JSON.parse((post[1] as RequestInit).body as string)).toEqual({ id: '2083', text: 'Отправил список файлом.' });
     const thread = document.getElementById('request-thread')!;
     expect(thread.innerHTML).toContain('Отправил список файлом.');
     expect((document.getElementById('request-reply-send') as HTMLButtonElement).disabled).toBe(false);
@@ -233,7 +240,7 @@ describe('requests-mine карточка (T014)', () => {
     window.history.replaceState({}, '', '/account/request?id=2083');
     localStorage.setItem(REQUESTS_MINE_TOKEN_KEY, 'tk1');
     mountDetailPage();
-    mockFetchOk({ '/store/requests/mine/2083': { success: true, data: DETAIL } });
+    mockFetchOk({ '/store/extensions/requests/fn/mineGet': { success: true, data: DETAIL } });
     initRequestsMineDetail();
     await flush();
     (window as any).fetch = jest.fn(() =>

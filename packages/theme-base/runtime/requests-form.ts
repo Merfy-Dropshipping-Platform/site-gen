@@ -1182,7 +1182,7 @@ export function mountRequestsForm(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'omit',
-      body: JSON.stringify({ productId }),
+      body: JSON.stringify({ product: productId }),
     },
   )
     .then((r) => (r && r.ok ? r.json() : null))

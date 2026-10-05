@@ -184,7 +184,10 @@ describe("BuildQueueConsumer", () => {
     it("connects through the connection manager with the configured url", async () => {
       await createConsumer().onModuleInit();
 
-      expect(mockConnect).toHaveBeenCalledWith(["amqp://localhost"]);
+      expect(mockConnect).toHaveBeenCalledWith(["amqp://localhost"], {
+        heartbeatIntervalInSeconds: 60,
+        reconnectTimeInSeconds: 5,
+      });
       expect(mockCreateChannel).toHaveBeenCalledWith(
         expect.objectContaining({ setup: expect.any(Function) }),
       );

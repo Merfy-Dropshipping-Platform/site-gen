@@ -1,0 +1,259 @@
+{
+  "$comment": "Сгенерировано из словаря командой generate — руками не править.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "v": {
+      "type": "number",
+      "const": 1
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "color",
+              "font",
+              "weight",
+              "text",
+              "tracking",
+              "radius",
+              "border-width",
+              "shadow",
+              "spacing",
+              "width",
+              "choice",
+              "scheme"
+            ]
+          },
+          "about": {
+            "type": "string",
+            "minLength": 3
+          },
+          "group": {
+            "type": "string"
+          },
+          "derive": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "rule": {
+                    "type": "string",
+                    "const": "alias"
+                  },
+                  "from": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "rule",
+                  "from"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "rule": {
+                    "type": "string",
+                    "const": "mix"
+                  },
+                  "from": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "weight": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "rule",
+                  "from",
+                  "weight"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "rule": {
+                    "type": "string",
+                    "const": "hover"
+                  },
+                  "from": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "rule",
+                  "from",
+                  "text"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "rule": {
+                    "type": "string",
+                    "const": "contrast"
+                  },
+                  "from": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "rule",
+                  "from"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  },
+                  "leading": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max",
+                  "leading"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "blur": {
+                    "type": "number"
+                  },
+                  "spread": {
+                    "type": "number"
+                  },
+                  "opacity": {
+                    "type": "number"
+                  },
+                  "color": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "blur",
+                  "spread",
+                  "opacity"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "about",
+          "group"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "v",
+    "groups",
+    "tokens"
+  ],
+  "additionalProperties": false
+}

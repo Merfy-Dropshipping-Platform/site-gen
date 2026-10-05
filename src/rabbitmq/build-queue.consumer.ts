@@ -47,6 +47,14 @@ import { S3StorageService } from "../storage/s3.service";
 const MAX_CONCURRENT_BUILDS = 3;
 const BUILD_PATTERN = "sites.build_queued";
 
+// A build holds its message unacked for seconds to minutes; if the connection
+// drops meanwhile, the broker redelivers the message and the build runs again.
+// So keep the 60 s heartbeat this consumer had with plain amqplib (the broker
+// default) instead of the connection manager's 5 s: a stalled host must not
+// drop it. A broker restart closes the socket and is noticed at once anyway.
+const HEARTBEAT_SECONDS = 60;
+const RECONNECT_SECONDS = 5;
+
 interface BuildJob {
   tenantId: string;
   siteId: string;
@@ -175,7 +183,10 @@ export class BuildQueueConsumer implements OnModuleInit, OnModuleDestroy {
    * manager keeps reconnecting and re-runs `setupChannel` on every new channel.
    */
   private startConsuming(rabbitmqUrl: string): void {
-    this.connection = amqp.connect([rabbitmqUrl]);
+    this.connection = amqp.connect([rabbitmqUrl], {
+      heartbeatIntervalInSeconds: HEARTBEAT_SECONDS,
+      reconnectTimeInSeconds: RECONNECT_SECONDS,
+    });
 
     this.connection.on("connect", () => {
       this.logger.log("BuildQueueConsumer connected to RabbitMQ");

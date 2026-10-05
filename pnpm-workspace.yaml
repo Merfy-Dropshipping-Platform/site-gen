@@ -3,3 +3,4 @@ packages:
   - packages/theme-base
   - packages/theme-bloom
   - packages/theme-satin
+  - packages/tokens

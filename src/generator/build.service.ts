@@ -1523,10 +1523,7 @@ export async function runBuildPipeline(
               }
               // canonical всегда на slug → одна и та же мета в обеих копиях.
               let patched = patchPdpMeta(baseHtml, p, slug);
-            if (requestsFlagOn) {
-              if (p === (v2Store.products as unknown as Array<Record<string, unknown>>)[0]) {
-                this.logger.log(`[themes-v2][requests] per-slug inject ON: theme=${bareTheme} api=${resolveApiUrl(process.env)}`);
-              }
+            if (unifyProduct) {
               const reqPid = (p.id as string) ?? "";
               const reqInject =
                 `<script>${REQUESTS_FORM_RUNTIME_SOURCE}</script>` +

@@ -274,7 +274,12 @@ const defaultComponentResolver: ComponentResolver = async (
   // Cascade theme-<id> override → theme-base. Skip the override tier for
   // themeId 'base' or when none is provided.
   const packages: string[] = [];
-  if (themeId && themeId !== 'base') packages.push(`theme-${themeId}`);
+  // Спека 119: Product — всегда общий блок theme-base (форма заявок
+  // интегрирована только там; порты тем, напр. theme-flux__Product, без неё).
+  const skipThemeOverride = blockName === 'Product';
+  if (themeId && themeId !== 'base' && !skipThemeOverride) {
+    packages.push(`theme-${themeId}`);
+  }
   packages.push('theme-base');
 
   const { resolve } = await import('node:path');

@@ -18,9 +18,6 @@ import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom } from "rxjs";
 import { timeout } from "rxjs/operators";
 import { variantSwatchShapeFromRevision } from "../../packages/theme-base/runtime/variant-display";
-import { REQUESTS_FORM_RUNTIME_SOURCE } from "../../packages/theme-base/runtime/requests-form";
-import { getThemeManifest } from "../themes/theme-manifest-loader";
-import { resolveApiUrl } from "./api-url";
 import { PRODUCT_UNIFIED_THEMES } from "../themes/page-registry";
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from "../common/block-root-inline";
 // Shared cart-drawer globals resolver — same export the preview controller
@@ -1495,15 +1492,6 @@ export async function runBuildPipeline(
             // настройки секции. Verbatim-темы — прежнее поведение (копия
             // универсальной страницы, товар определяется клиентом по URL-slug).
             const unifyProduct = PRODUCT_UNIFIED_THEMES.has(bareTheme);
-            // Спека 119: runtime формы заявок на per-slug странице. Флаг —
-            // features.requests темы; инжект на уровне страницы покрывает и
-            // кастомные PDP (flux cfg-порт без data-request-form) — рантайм
-            // сам ставит контейнер фолбэком (см. mount-скрипт ниже).
-            const requestsFlagOn =
-              getThemeManifest(bareTheme)?.features?.requests === true;
-            this.logger.log(
-              `[themes-v2][requests] per-slug: theme=${bareTheme} flag=${requestsFlagOn}`,
-            );
             for (const p of v2Store.products as unknown as Array<Record<string, unknown>>) {
               const slug = (p.slug ?? p.handle ?? p.id) as string | undefined;
               if (!slug || typeof slug !== "string") continue;
@@ -1522,14 +1510,7 @@ export async function runBuildPipeline(
                 }
               }
               // canonical всегда на slug → одна и та же мета в обеих копиях.
-              let patched = patchPdpMeta(baseHtml, p, slug);
-            if (unifyProduct) {
-              const reqPid = (p.id as string) ?? "";
-              const reqInject =
-                `<script>${REQUESTS_FORM_RUNTIME_SOURCE}</script>` +
-                `<script>(function(){var PID=${JSON.stringify(reqPid)};var SHOP=${JSON.stringify(String(params.siteId))};var API=${JSON.stringify(resolveApiUrl(process.env))};function boot(){if(!window.__merfyRequestsForm)return false;var root=document.querySelector("[data-request-form]");if(!root){var buy=document.querySelector("[data-cfg-buy]");if(!buy)return false;var holder=buy.closest("[data-puck-subsection-parent]")||buy.parentElement;if(!holder)return false;holder.setAttribute("data-product-actions","true");root=document.createElement("div");root.className="rq-sf";root.setAttribute("data-request-form","");root.setAttribute("data-request-form-product-id",PID);holder.parentElement.insertBefore(root,holder);}if((root.innerHTML||"").length>100)return true;window.__merfyRequestsForm.mountRequestsForm(root.parentElement||root,{productId:String(PID),storeId:String(SHOP),apiBase:String(API)});return true;}if(!boot())setTimeout(boot,1200);})();</script>`;
-              patched = patched.replace(/<\/body>/i, `${reqInject}\n</body>`);
-            }
+              const patched = patchPdpMeta(baseHtml, p, slug);
               const slugDir = path.join(ctx.distDir, "product", slug);
               await fs.mkdir(slugDir, { recursive: true });
               await fs.writeFile(path.join(slugDir, "index.html"), patched, "utf8");

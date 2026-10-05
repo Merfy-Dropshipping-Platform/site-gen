@@ -261,8 +261,14 @@ const defaultComponentResolver: ComponentResolver = async (
   // v2 themes: секция компилится в dist/theme-sections/<themeId>/. Gated
   // манифестом — legacy-темы (cascade ниже) не задеваются.
   if (themeId && themeId !== 'base') {
-    const v2 = await resolveV2Section(blockName, themeId);
-    if (v2) return v2;
+    // Спека 119: блок Product всегда из theme-base — v2-порты тем (flux
+    // featured-product cfg) не имеют интеграции формы заявок
+    // (data-request-form + скрытие data-product-actions + runtime-остров).
+    // Остальные блоки тем резолвятся как раньше.
+    if (blockName !== 'Product') {
+      const v2 = await resolveV2Section(blockName, themeId);
+      if (v2) return v2;
+    }
   }
 
   // Cascade theme-<id> override → theme-base. Skip the override tier for

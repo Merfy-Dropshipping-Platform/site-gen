@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { rebuildEventsFileSchema } from './events';
 import { storefrontConfigSchema } from './schema';
 
 // Что пишет команда generate: путь от папки пакета → текст файла. Тест расхождения строит то же в памяти
@@ -11,5 +12,6 @@ const jsonSchemaText = (schema: z.ZodType): string =>
 export function generatedFiles(): Record<string, string> {
   return {
     'generated/storefront-config.schema.json': jsonSchemaText(storefrontConfigSchema),
+    'generated/rebuild-events.schema.json': jsonSchemaText(rebuildEventsFileSchema),
   };
 }

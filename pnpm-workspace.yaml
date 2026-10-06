@@ -2,6 +2,7 @@ packages:
   - packages/stand-check
   - packages/theme-contract
   - packages/theme-base
+  - packages/storefront-config
   - packages/theme-bloom
   - packages/theme-satin
   - packages/tokens

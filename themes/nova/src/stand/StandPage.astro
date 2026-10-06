@@ -1,0 +1,119 @@
+---
+// Страница стенда (design.md блока 2, 5.2): служебная, покупателю не видна. Лежит вне src/pages — адрес /theme-stand
+// даёт интеграция standRoute, и только при сборке с MERFY_THEME_STAND=1.
+// Образцы токенов: переменные — tokensCss из @merfy/tokens по theme.json темы, классы — Tailwind блока 1. Цвета, шрифты,
+// размеры текста, скругления и тени — только токены. Отступы каркаса страницы — шкала Tailwind: у словаря нет токенов
+// отступов кнопок и полей. Разделы помечены data-stand — по меткам их проверяют сценарии, а не по вёрстке.
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/600.css";
+import { parseTheme, tokensCss } from "../../../../packages/tokens/src/index";
+import themeJson from "../../../../packages/theme-nova/theme.json";
+import "./stand.css";
+
+const theme = parseTheme(themeJson.tokens);
+const tokens = tokensCss(theme.dictionary, theme.tokens, {});
+const schemes = Object.keys(theme.tokens.schemes);
+const textSizes = ["text-xs", "text-sm", "text-base", "text-lg", "text-xl", "text-2xl", "text-3xl", "text-4xl", "text-5xl"];
+const radii = ["rounded-button", "rounded-input", "rounded-card", "rounded-media", "rounded-popover", "rounded-badge"];
+const spacings = ["w-section", "w-section-gap", "w-card", "w-grid-column", "w-grid-row"];
+const shadows = ["shadow-button", "shadow-input", "shadow-card", "shadow-media", "shadow-popover", "shadow-drawer"];
+---
+
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex" />
+		<title>Стенд темы</title>
+		<style id="merfy-tokens" is:inline set:html={tokens}></style>
+	</head>
+	<body>
+		<main class="mx-auto flex max-w-page flex-col gap-8 px-4 py-section">
+			<h1 class="text-3xl">Стенд темы</h1>
+
+			<section data-stand="schemes" class="flex flex-col gap-grid-row">
+				<h2 class="text-xl">Схемы</h2>
+				<div class="grid gap-grid-column md:grid-cols-2">
+					{
+						schemes.map((scheme) => (
+							<div class={`color-${scheme} flex flex-col gap-4 rounded-card border-width-card border-border p-6`}>
+								<p class="text-lg">{scheme}</p>
+								<p class="text-muted-foreground">Текст на фоне схемы</p>
+								<button
+									type="button"
+									class="self-start rounded-button border-width-button border-primary-border bg-primary px-4 py-2 text-primary-foreground shadow-button"
+								>
+									Купить
+								</button>
+							</div>
+						))
+					}
+				</div>
+			</section>
+
+			<section data-stand="type-scale" class="flex flex-col gap-2">
+				<h2 class="text-xl">Шкала текста</h2>
+				{textSizes.map((size) => <p class={size}>{size} — Съешь ещё этих мягких французских булок</p>)}
+			</section>
+
+			<section data-stand="radii-spacing" class="flex flex-col gap-4">
+				<h2 class="text-xl">Скругления и отступы</h2>
+				<div class="flex flex-wrap gap-4">
+					{radii.map((radius) => <div class={`${radius} border-width-input border-border p-4 text-sm`}>{radius}</div>)}
+				</div>
+				<div class="flex flex-col gap-2">
+					{
+						spacings.map((spacing) => (
+							<div class="flex items-center gap-4 text-sm">
+								<span class={`${spacing} h-2 bg-accent`} />
+								{spacing}
+							</div>
+						))
+					}
+				</div>
+			</section>
+
+			<section data-stand="shadows" class="flex flex-col gap-4">
+				<h2 class="text-xl">Тени</h2>
+				<div class="flex flex-wrap gap-6">
+					{shadows.map((shadow) => <div class={`${shadow} rounded-card bg-card p-4 text-sm text-card-foreground`}>{shadow}</div>)}
+				</div>
+			</section>
+
+			<section data-stand="controls" class="flex flex-col gap-4">
+				<h2 class="text-xl">Кнопки и поля</h2>
+				<div class="flex flex-wrap items-center gap-4">
+					<button
+						type="button"
+						class="rounded-button border-width-button border-primary-border bg-primary px-4 py-2 text-primary-foreground shadow-button"
+					>
+						В корзину
+					</button>
+					<button
+						type="button"
+						class="rounded-button border-width-button border-secondary-border bg-secondary px-4 py-2 text-secondary-foreground"
+					>
+						Подробнее
+					</button>
+					<label class="flex flex-col gap-1 text-sm">
+						Электронная почта
+						<input
+							type="email"
+							class="rounded-input border-width-input border-input bg-background px-3 py-2 text-foreground shadow-input"
+						/>
+					</label>
+				</div>
+			</section>
+
+			<section data-stand="price" class="flex flex-col gap-4">
+				<h2 class="text-xl">Цена</h2>
+				<div class="flex flex-wrap items-center gap-3">
+					<span class="text-xl text-price weight-heading">2 990 ₽</span>
+					<span class="text-price-old line-through">3 490 ₽</span>
+					<span class="rounded-badge bg-sale px-2 py-1 text-sm text-sale-foreground">−14%</span>
+					<span class="rounded-badge bg-badge px-2 py-1 text-sm text-badge-foreground">Новинка</span>
+				</div>
+			</section>
+		</main>
+	</body>
+</html>

@@ -1,0 +1,51 @@
+{
+  "$comment": "Сгенерировано командой pnpm generate:schemas из схемы zod — руками не править.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "apiPrefix": {
+      "type": "string",
+      "pattern": "^\\/.*\\/$"
+    },
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^\\/.*"
+          },
+          "file": {
+            "type": "string",
+            "pattern": ".*\\.json$"
+          }
+        },
+        "required": [
+          "method",
+          "path",
+          "file"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "apiPrefix",
+    "routes"
+  ],
+  "additionalProperties": false
+}

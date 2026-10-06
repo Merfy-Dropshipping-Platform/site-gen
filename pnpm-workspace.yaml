@@ -1,4 +1,5 @@
 packages:
+  - packages/stand-check
   - packages/theme-contract
   - packages/theme-base
   - packages/theme-bloom

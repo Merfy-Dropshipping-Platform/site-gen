@@ -1,0 +1,16 @@
+{
+  "$schema": "./scenario.schema.json",
+  "id": "samples-present",
+  "title": "Образцы на месте",
+  "since": "задача 1",
+  "open": "/theme-stand",
+  "steps": [],
+  "expect": [
+    { "kind": "tokens-present", "set": "base" },
+    { "kind": "sections-present", "ids": ["schemes", "type-scale", "radii-spacing", "shadows", "controls", "price"] },
+    { "kind": "fonts-loaded" },
+    { "kind": "no-errors" },
+    { "kind": "no-globals" }
+  ],
+  "eyes": ["схемы читаются", "кнопки видны во всех схемах"]
+}

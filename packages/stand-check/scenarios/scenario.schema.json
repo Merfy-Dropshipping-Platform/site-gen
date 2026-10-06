@@ -1,0 +1,134 @@
+{
+  "$comment": "Сгенерировано командой pnpm generate:schemas из схемы zod — руками не править.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 3
+    },
+    "since": {
+      "type": "string",
+      "minLength": 3
+    },
+    "open": {
+      "type": "string",
+      "pattern": "^\\/.*"
+    },
+    "steps": {
+      "type": "array",
+      "prefixItems": []
+    },
+    "expect": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "tokens-present"
+              },
+              "set": {
+                "type": "string",
+                "const": "base"
+              }
+            },
+            "required": [
+              "kind",
+              "set"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "sections-present"
+              },
+              "ids": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "ids"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "fonts-loaded"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "no-errors"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "no-globals"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "eyes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 3
+      }
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "since",
+    "open",
+    "steps",
+    "expect",
+    "eyes"
+  ],
+  "additionalProperties": false
+}

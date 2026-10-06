@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "page": "/theme-stand",
+  "target": "local",
+  "scripts": [],
+  "globals": {},
+  "storage": [],
+  "cookies": [],
+  "requests": [
+    {
+      "url": "/_astro/StandPage.*.css",
+      "status": 200
+    },
+    {
+      "url": "/_astro/manrope-cyrillic-400-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/manrope-cyrillic-600-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/manrope-latin-400-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/manrope-latin-600-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/manrope-latin-ext-400-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/manrope-latin-ext-600-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/theme-stand",
+      "status": 200
+    }
+  ],
+  "errors": [],
+  "tokens": {
+    "--accent": "#f1f1f1",
+    "--accent-foreground": "#111111",
+    "--background": "#ffffff",
+    "--badge": "#111111",
+    "--badge-foreground": "#ffffff",
+    "--border": "#e2e2e2",
+    "--border-width-button": "0",
+    "--border-width-card": "0",
+    "--border-width-input": "1px",
+    "--border-width-media": "0",
+    "--border-width-popover": "1px",
+    "--card": "#ffffff",
+    "--card-foreground": "#111111",
+    "--destructive": "#dc2626",
+    "--destructive-foreground": "#ffffff",
+    "--font-body": "Manrope, system-ui, sans-serif",
+    "--font-heading": "Manrope, system-ui, sans-serif",
+    "--foreground": "#111111",
+    "--heading": "#111111",
+    "--input": "#e2e2e2",
+    "--muted": "#f5f5f5",
+    "--muted-foreground": "#707070",
+    "--popover": "#ffffff",
+    "--popover-foreground": "#111111",
+    "--price": "#111111",
+    "--price-old": "#707070",
+    "--primary": "#111111",
+    "--primary-border": "#111111",
+    "--primary-foreground": "#ffffff",
+    "--primary-hover": "#2e2e2e",
+    "--primary-hover-foreground": "#ffffff",
+    "--radius-badge": "0.5rem",
+    "--radius-button": "0.5rem",
+    "--radius-card": "0.75rem",
+    "--radius-input": "0.5rem",
+    "--radius-media": "0.75rem",
+    "--radius-popover": "0.75rem",
+    "--ring": "#111111",
+    "--sale": "#dc2626",
+    "--sale-foreground": "#ffffff",
+    "--secondary": "#f1f1f1",
+    "--secondary-border": "#f1f1f1",
+    "--secondary-foreground": "#111111",
+    "--secondary-hover": "#d4d4d4",
+    "--secondary-hover-foreground": "#111111",
+    "--shadow-button": "none",
+    "--shadow-card": "none",
+    "--shadow-drawer": "0 0 2rem 0 #00000029",
+    "--shadow-input": "none",
+    "--shadow-media": "none",
+    "--shadow-popover": "0 0.5rem 1.5rem 0 #0000001f",
+    "--spacing-card": "0",
+    "--spacing-grid-column": "1rem",
+    "--spacing-grid-row": "1.5rem",
+    "--spacing-section": "clamp(3rem, 1.8261rem + 5.2174vw, 6rem)",
+    "--spacing-section-gap": "0",
+    "--text-2xl": "clamp(1.5rem, 1.3043rem + 0.8696vw, 2rem)",
+    "--text-3xl": "clamp(1.75rem, 1.4565rem + 1.3043vw, 2.5rem)",
+    "--text-4xl": "clamp(2rem, 1.6087rem + 1.7391vw, 3rem)",
+    "--text-5xl": "clamp(2.5rem, 1.913rem + 2.6087vw, 4rem)",
+    "--text-base": "1rem",
+    "--text-lg": "clamp(1.125rem, 1.0761rem + 0.2174vw, 1.25rem)",
+    "--text-sm": "0.875rem",
+    "--text-xl": "clamp(1.25rem, 1.1522rem + 0.4348vw, 1.5rem)",
+    "--text-xs": "0.75rem",
+    "--tracking-body": "0",
+    "--tracking-heading": "0",
+    "--weight-body": "400",
+    "--weight-heading": "600",
+    "--width-logo": "7.5rem",
+    "--width-page": "80rem"
+  },
+  "fonts": [
+    "Manrope 400 normal",
+    "Manrope 600 normal"
+  ]
+}

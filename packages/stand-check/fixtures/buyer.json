@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "data": {
+    "customer": {
+      "id": "cust_stand",
+      "email": "buyer@stand.example",
+      "name": "Покупатель стенда"
+    }
+  }
+}

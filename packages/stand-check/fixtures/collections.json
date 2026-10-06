@@ -1,0 +1,12 @@
+{
+  "collections": [
+    {
+      "id": "col_stand",
+      "handle": "stand-collection",
+      "title": "Коллекция стенда",
+      "description": "Все три товара стенда.",
+      "productCount": 3
+    }
+  ],
+  "total": 1
+}

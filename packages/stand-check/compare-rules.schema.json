@@ -1,0 +1,109 @@
+{
+  "$comment": "Сгенерировано командой pnpm generate:schemas из схемы zod — руками не править.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "scripts",
+              "globals",
+              "storage",
+              "cookies",
+              "requests",
+              "errors",
+              "tokens",
+              "fonts"
+            ]
+          },
+          "shape": {
+            "type": "string",
+            "enum": [
+              "list",
+              "map",
+              "set"
+            ]
+          },
+          "key": {
+            "type": "string",
+            "enum": [
+              "src",
+              "url"
+            ]
+          },
+          "severity": {
+            "type": "object",
+            "properties": {
+              "added": {
+                "type": "string",
+                "enum": [
+                  "red",
+                  "amber"
+                ]
+              },
+              "removed": {
+                "type": "string",
+                "enum": [
+                  "red",
+                  "amber"
+                ]
+              },
+              "changed": {
+                "type": "string",
+                "enum": [
+                  "red",
+                  "amber"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "reason": {
+            "type": "object",
+            "properties": {
+              "all": {
+                "type": "string",
+                "minLength": 3
+              },
+              "added": {
+                "type": "string",
+                "minLength": 3
+              },
+              "removed": {
+                "type": "string",
+                "minLength": 3
+              },
+              "changed": {
+                "type": "string",
+                "minLength": 3
+              }
+            },
+            "required": [
+              "all"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "field",
+          "shape",
+          "severity",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "rules"
+  ],
+  "additionalProperties": false
+}

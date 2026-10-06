@@ -20,6 +20,7 @@ ENV NODE_AUTH_TOKEN=${NODE_AUTH_TOKEN}
 # a --frozen-lockfile install. Cache boundary (this layer only invalidates when
 # a manifest/lock/workspace/npmrc changes) is preserved.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY packages/stand-check/package.json ./packages/stand-check/package.json
 COPY packages/theme-contract/package.json ./packages/theme-contract/package.json
 COPY packages/theme-base/package.json ./packages/theme-base/package.json
 COPY packages/theme-bloom/package.json ./packages/theme-bloom/package.json

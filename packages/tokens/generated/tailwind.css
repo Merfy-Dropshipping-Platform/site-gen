@@ -1,0 +1,101 @@
+/* Сгенерировано из словаря командой generate — руками не править. */
+@theme inline reference {
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-hover-foreground: var(--primary-hover-foreground);
+  --color-primary-border: var(--primary-border);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-hover-foreground: var(--secondary-hover-foreground);
+  --color-secondary-border: var(--secondary-border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-heading: var(--heading);
+  --color-price: var(--price);
+  --color-price-old: var(--price-old);
+  --color-sale: var(--sale);
+  --color-sale-foreground: var(--sale-foreground);
+  --color-badge: var(--badge);
+  --color-badge-foreground: var(--badge-foreground);
+  --font-body: var(--font-body);
+  --font-heading: var(--font-heading);
+  --text-xs: var(--text-xs);
+  --text-xs--line-height: var(--text-xs--line-height);
+  --text-sm: var(--text-sm);
+  --text-sm--line-height: var(--text-sm--line-height);
+  --text-base: var(--text-base);
+  --text-base--line-height: var(--text-base--line-height);
+  --text-lg: var(--text-lg);
+  --text-lg--line-height: var(--text-lg--line-height);
+  --text-xl: var(--text-xl);
+  --text-xl--line-height: var(--text-xl--line-height);
+  --text-2xl: var(--text-2xl);
+  --text-2xl--line-height: var(--text-2xl--line-height);
+  --text-3xl: var(--text-3xl);
+  --text-3xl--line-height: var(--text-3xl--line-height);
+  --text-4xl: var(--text-4xl);
+  --text-4xl--line-height: var(--text-4xl--line-height);
+  --text-5xl: var(--text-5xl);
+  --text-5xl--line-height: var(--text-5xl--line-height);
+  --tracking-body: var(--tracking-body);
+  --tracking-heading: var(--tracking-heading);
+  --radius-button: var(--radius-button);
+  --radius-input: var(--radius-input);
+  --radius-card: var(--radius-card);
+  --radius-media: var(--radius-media);
+  --radius-popover: var(--radius-popover);
+  --radius-badge: var(--radius-badge);
+  --shadow-button: var(--shadow-button);
+  --shadow-input: var(--shadow-input);
+  --shadow-card: var(--shadow-card);
+  --shadow-media: var(--shadow-media);
+  --shadow-popover: var(--shadow-popover);
+  --shadow-drawer: var(--shadow-drawer);
+  --spacing-section: var(--spacing-section);
+  --spacing-section-gap: var(--spacing-section-gap);
+  --spacing-card: var(--spacing-card);
+  --spacing-grid-column: var(--spacing-grid-column);
+  --spacing-grid-row: var(--spacing-grid-row);
+  --container-page: var(--width-page);
+  --container-logo: var(--width-logo);
+}
+@utility weight-body { font-weight: var(--weight-body); }
+@utility weight-heading { font-weight: var(--weight-heading); }
+@utility border-width-button { border-style: solid; border-width: var(--border-width-button); }
+@utility border-width-input { border-style: solid; border-width: var(--border-width-input); }
+@utility border-width-card { border-style: solid; border-width: var(--border-width-card); }
+@utility border-width-media { border-style: solid; border-width: var(--border-width-media); }
+@utility border-width-popover { border-style: solid; border-width: var(--border-width-popover); }
+@custom-variant card-style-standard (&:where([data-card-style="standard"], [data-card-style="standard"] *));
+@custom-variant card-style-card (&:where([data-card-style="card"], [data-card-style="card"] *));
+@custom-variant card-align-left (&:where([data-card-align="left"], [data-card-align="left"] *));
+@custom-variant card-align-center (&:where([data-card-align="center"], [data-card-align="center"] *));
+@custom-variant card-align-right (&:where([data-card-align="right"], [data-card-align="right"] *));
+@custom-variant motion-reveal-off (&:where([data-motion-reveal="off"], [data-motion-reveal="off"] *));
+@custom-variant motion-reveal-on (&:where([data-motion-reveal="on"], [data-motion-reveal="on"] *));
+@custom-variant motion-hover-none (&:where([data-motion-hover="none"], [data-motion-hover="none"] *));
+@custom-variant motion-hover-lift (&:where([data-motion-hover="lift"], [data-motion-hover="lift"] *));
+@layer base {
+  body { font-family: var(--font-body); font-weight: var(--weight-body); letter-spacing: var(--tracking-body); }
+  h1, h2, h3, h4, h5, h6 { color: var(--heading); font-family: var(--font-heading); font-weight: var(--weight-heading); letter-spacing: var(--tracking-heading); }
+}

@@ -1,5 +1,6 @@
 packages:
   - packages/stand-check
+  - packages/storefront-build
   - packages/theme-contract
   - packages/theme-base
   - packages/storefront-config

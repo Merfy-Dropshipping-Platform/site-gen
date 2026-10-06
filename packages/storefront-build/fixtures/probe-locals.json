@@ -1,0 +1,12 @@
+{
+  "head": {
+    "lang": "ru-RU",
+    "title": "Стенд Nova",
+    "description": "Магазин-стенд новой темы",
+    "canonical": "https://nova-stand.example/",
+    "configHtml": "<script type=\"application/json\" id=\"merfy-config\">{\"v\":1}</script>",
+    "tokensCss": ":root{--color-primary:#1f6feb}"
+  },
+  "shop": { "name": "Стенд Nova" },
+  "year": 2026
+}

@@ -1,0 +1,22 @@
+---
+// Главная магазина (блок 4). Рисует её только рисовальщик: данные — только из Astro.locals.merfy, без сети, окружения,
+// часов и случайного (сторож блока 4). Секций пока нет: имя магазина и год в подвале.
+import ShopHead from "../ShopHead.astro";
+
+const page = Astro.locals.merfy;
+if (page === undefined) throw new Error("Страницу магазина рисует только сборщик: нет Astro.locals.merfy");
+---
+
+<html lang={page.head.lang}>
+	<head>
+		<ShopHead head={page.head} />
+	</head>
+	<body>
+		<main>
+			<h1>{page.shop.name}</h1>
+		</main>
+		<footer>
+			<p>© {page.year} {page.shop.name}</p>
+		</footer>
+	</body>
+</html>

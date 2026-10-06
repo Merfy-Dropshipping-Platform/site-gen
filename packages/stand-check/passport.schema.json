@@ -1,0 +1,141 @@
+{
+  "$comment": "Сгенерировано командой pnpm generate:schemas из схемы zod — руками не править.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "page": {
+      "type": "string",
+      "pattern": "^\\/.*"
+    },
+    "target": {
+      "type": "string",
+      "enum": [
+        "local",
+        "dev"
+      ]
+    },
+    "scripts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "external",
+              "inline",
+              "module",
+              "json"
+            ]
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "hash": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "src",
+          "kind",
+          "bytes"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "globals": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^__MERFY_\\w+__$"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "storage": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(local|session):.+$"
+      }
+    },
+    "cookies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 599
+          }
+        },
+        "required": [
+          "url",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^--.*"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "fonts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "version",
+    "page",
+    "target",
+    "scripts",
+    "globals",
+    "storage",
+    "cookies",
+    "requests",
+    "errors",
+    "tokens",
+    "fonts"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,46 @@
+{
+  "products": [
+    {
+      "id": "prod_stand_1",
+      "handle": "stand-tee",
+      "title": "Футболка стенда",
+      "description": "Товар со старой ценой: на нём видны цена, зачёркнутая цена и скидка.",
+      "price": 299000,
+      "compareAtPrice": 349000,
+      "images": [],
+      "variants": [
+        { "id": "var_stand_1_s", "title": "S", "price": 299000, "available": true, "options": { "size": "S" } },
+        { "id": "var_stand_1_m", "title": "M", "price": 299000, "available": true, "options": { "size": "M" } },
+        { "id": "var_stand_1_l", "title": "L", "price": 299000, "available": false, "options": { "size": "L" } }
+      ],
+      "tags": ["стенд"],
+      "vendor": "Merfy",
+      "productType": "Футболки"
+    },
+    {
+      "id": "prod_stand_2",
+      "handle": "stand-mug",
+      "title": "Кружка стенда",
+      "description": "Товар без вариантов выбора: один вариант.",
+      "price": 89000,
+      "images": [],
+      "variants": [{ "id": "var_stand_2", "title": "Один размер", "price": 89000, "available": true }],
+      "tags": ["стенд"],
+      "vendor": "Merfy",
+      "productType": "Посуда"
+    },
+    {
+      "id": "prod_stand_3",
+      "handle": "stand-bag",
+      "title": "Сумка стенда",
+      "description": "Товар, которого нет в наличии.",
+      "price": 459000,
+      "images": [],
+      "variants": [{ "id": "var_stand_3", "title": "Один размер", "price": 459000, "available": false }],
+      "tags": ["стенд"],
+      "vendor": "Merfy",
+      "productType": "Сумки"
+    }
+  ],
+  "total": 3
+}

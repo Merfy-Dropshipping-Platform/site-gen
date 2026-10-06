@@ -1,0 +1,9 @@
+{
+  "$schema": "./routes.schema.json",
+  "apiPrefix": "/api/",
+  "routes": [
+    { "method": "GET", "path": "/api/store/products", "file": "fixtures/products.json" },
+    { "method": "GET", "path": "/api/store/collections", "file": "fixtures/collections.json" },
+    { "method": "GET", "path": "/api/store/auth/me", "file": "fixtures/buyer.json" }
+  ]
+}

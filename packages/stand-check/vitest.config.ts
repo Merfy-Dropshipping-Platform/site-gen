@@ -23,6 +23,7 @@ export default defineConfig({
     },
     projects: [
       {
+        extends: true,
         test: {
           name: 'nova',
           include: NOVA_FILES,
@@ -31,6 +32,7 @@ export default defineConfig({
         },
       },
       {
+        extends: true,
         test: {
           name: 'unit',
           include: ['__tests__/**/*.test.ts'],

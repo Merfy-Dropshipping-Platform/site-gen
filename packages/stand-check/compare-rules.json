@@ -1,0 +1,75 @@
+{
+  "$schema": "./compare-rules.schema.json",
+  "rules": [
+    {
+      "field": "scripts",
+      "shape": "list",
+      "key": "src",
+      "severity": { "added": "red", "removed": "red", "changed": "amber" },
+      "reason": {
+        "all": "Новый скрипт — лишний вес и чужой код на каждой странице.",
+        "removed": "Скрипт пропал — то, что он делал, на странице не работает.",
+        "changed": "Новый хэш или размер — код скрипта поменялся. Посмотри, что в него добавили."
+      }
+    },
+    {
+      "field": "globals",
+      "shape": "map",
+      "severity": { "added": "red", "removed": "red", "changed": "red" },
+      "reason": { "all": "На стенде глобалов нет (И9): данные приходят из конфига и SDK." }
+    },
+    {
+      "field": "storage",
+      "shape": "set",
+      "severity": { "added": "red", "removed": "red" },
+      "reason": {
+        "all": "Нынешнее оформление заказа читает корзину по ключу merfy:cartId.",
+        "added": "Новый ключ в браузере покупателя — проверь, чей он: корзина и вход живут в каркасе."
+      }
+    },
+    {
+      "field": "cookies",
+      "shape": "set",
+      "severity": { "added": "red", "removed": "red" },
+      "reason": { "all": "Новая cookie — вопрос согласия покупателя." }
+    },
+    {
+      "field": "requests",
+      "shape": "list",
+      "key": "url",
+      "severity": { "added": "amber", "removed": "amber", "changed": "red" },
+      "reason": {
+        "all": "Ответ сервера поменялся: что-то не загрузилось.",
+        "added": "Страница грузит что-то новое — чей это запрос?",
+        "removed": "Страница больше не грузит это — так и задумано?"
+      }
+    },
+    {
+      "field": "errors",
+      "shape": "set",
+      "severity": { "added": "red", "removed": "amber" },
+      "reason": {
+        "all": "Ошибка в консоли — что-то на странице не работает.",
+        "removed": "Ошибка ушла — проверь, что её исправили, а не спрятали."
+      }
+    },
+    {
+      "field": "tokens",
+      "shape": "map",
+      "severity": { "added": "amber", "removed": "red", "changed": "amber" },
+      "reason": {
+        "all": "После правки из панели так и надо. Посмотри глазами, что перекрасилось.",
+        "removed": "Токен пропал — секции возьмут запасное значение."
+      }
+    },
+    {
+      "field": "fonts",
+      "shape": "set",
+      "severity": { "added": "amber", "removed": "red" },
+      "reason": {
+        "all": "Шрифт не загрузился — страница рисуется запасным.",
+        "added": "Новый шрифт — лишний вес, проверь, что он нужен."
+      }
+    }
+  ]
+}

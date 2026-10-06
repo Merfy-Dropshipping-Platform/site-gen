@@ -1,0 +1,69 @@
+{
+  "platform": { "renderHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111" },
+  "theme": {
+    "id": "nova",
+    "version": "0.0.1",
+    "contentHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "shell": null,
+  "revision": { "tokens": { "root": { "radius-button": 4 } } },
+  "site": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "name": "Стенд Nova",
+    "publicUrl": "https://nova-stand.example",
+    "description": "Магазин-стенд новой темы",
+    "updatedAt": "2026-10-06T09:00:00.000Z"
+  },
+  "env": { "apiUrl": "http://localhost:4321/api" },
+  "year": 2026,
+  "data": {
+    "status": "received",
+    "entities": [
+      {
+        "type": "product",
+        "id": "00000000-0000-4000-8000-000000000101",
+        "updatedAt": "2026-10-05T12:00:00.000Z",
+        "data": { "title": "Шарф изо льна", "price": 2500, "inStock": true }
+      },
+      {
+        "type": "product",
+        "id": "00000000-0000-4000-8000-000000000102",
+        "updatedAt": "2026-10-04T12:00:00.000Z",
+        "data": { "title": "Плед из шерсти", "price": 5900, "inStock": false }
+      },
+      {
+        "type": "collection",
+        "id": "00000000-0000-4000-8000-000000000201",
+        "updatedAt": "2026-10-03T12:00:00.000Z",
+        "data": {
+          "title": "Зима",
+          "productIds": ["00000000-0000-4000-8000-000000000101", "00000000-0000-4000-8000-000000000102"]
+        }
+      },
+      {
+        "type": "policy",
+        "id": "privacy",
+        "updatedAt": "2026-10-01T12:00:00.000Z",
+        "data": { "title": "Политика конфиденциальности" }
+      },
+      {
+        "type": "contacts",
+        "id": "main",
+        "updatedAt": "2026-10-01T12:00:00.000Z",
+        "data": { "phone": "+7 900 000-00-00" }
+      },
+      {
+        "type": "publication",
+        "id": "00000000-0000-4000-8000-000000000301",
+        "updatedAt": "2026-10-02T12:00:00.000Z",
+        "data": { "title": "Как ухаживать за льном" }
+      },
+      {
+        "type": "billing",
+        "id": "main",
+        "updatedAt": "2026-10-01T12:00:00.000Z",
+        "data": { "provider": "robokassa" }
+      }
+    ]
+  }
+}

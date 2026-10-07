@@ -9,6 +9,9 @@ import "@fontsource/manrope/600.css";
 import { parseTheme, tokensCss } from "../../../../packages/tokens/src/index";
 import themeJson from "../../../../packages/theme-nova/theme.json";
 import "./stand.css";
+import { buildStorefrontConfig, configTag } from "../../../../packages/storefront-config/src/index";
+import standInput from "../../../../packages/storefront-config/fixtures/stand-input.json";
+import { STAND_PATH } from "../../../../packages/stand-check/src/stand-path.mjs";
 
 const theme = parseTheme(themeJson.tokens);
 const tokens = tokensCss(theme.dictionary, theme.tokens, {});
@@ -17,6 +20,19 @@ const textSizes = ["text-xs", "text-sm", "text-base", "text-lg", "text-xl", "tex
 const radii = ["rounded-button", "rounded-input", "rounded-card", "rounded-media", "rounded-popover", "rounded-badge"];
 const spacings = ["w-section", "w-section-gap", "w-card", "w-grid-column", "w-grid-row"];
 const shadows = ["shadow-button", "shadow-input", "shadow-card", "shadow-media", "shadow-popover", "shadow-drawer"];
+
+// Конфиг магазина (design.md блока 3, 5.6): писатель зовётся при сборке страницы, тег — первым делом в <head>.
+// Адрес API — из окружения сборки, команда stand задаёт его сама. Переменной нет — сборка падает и называет её.
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL;
+if (!apiUrl) throw new Error("Стенду нужна переменная окружения PUBLIC_MERFY_API_URL — адрес API стенда");
+const storefrontConfig = buildStorefrontConfig({
+	site: standInput.site,
+	theme: { id: themeJson.name, version: themeJson.version },
+	env: { apiUrl },
+	page: { id: "theme-stand", path: STAND_PATH },
+	mode: "preview",
+});
+const configHtml = configTag(storefrontConfig);
 ---
 
 <html lang="ru">
@@ -24,6 +40,7 @@ const shadows = ["shadow-button", "shadow-input", "shadow-card", "shadow-media",
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="robots" content="noindex" />
+		<Fragment set:html={configHtml} />
 		<title>Стенд темы</title>
 		<style id="merfy-tokens" is:inline set:html={tokens}></style>
 	</head>
@@ -113,6 +130,27 @@ const shadows = ["shadow-button", "shadow-input", "shadow-card", "shadow-media",
 					<span class="rounded-badge bg-sale px-2 py-1 text-sm text-sale-foreground">−14%</span>
 					<span class="rounded-badge bg-badge px-2 py-1 text-sm text-badge-foreground">Новинка</span>
 				</div>
+			</section>
+
+			<section data-stand="config" class="flex flex-col gap-4">
+				<h2 class="text-xl">Конфиг магазина</h2>
+				<dl class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
+					<dt class="text-muted-foreground">Магазин</dt>
+					<dd data-config-field="shop.name">—</dd>
+					<dt class="text-muted-foreground">Режим</dt>
+					<dd data-config-field="mode">—</dd>
+					<dt class="text-muted-foreground">Версия темы</dt>
+					<dd data-config-field="theme.version">—</dd>
+					<dt class="text-muted-foreground">Страница</dt>
+					<dd data-config-field="page.id">—</dd>
+				</dl>
+				<p data-config-error class="text-destructive" hidden></p>
+				<script>
+					import { renderConfigSection } from "./config-section";
+
+					const section = document.querySelector('[data-stand="config"]');
+					if (section !== null) renderConfigSection(section);
+				</script>
 			</section>
 		</main>
 	</body>

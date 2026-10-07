@@ -6,7 +6,7 @@
   "scripts": {
     "build": "astro build",
     "preview": "astro preview",
-    "stand": "MERFY_THEME_STAND=1 astro build && astro preview --port 4321",
+    "stand": "MERFY_THEME_STAND=1 PUBLIC_MERFY_API_URL=http://localhost:4321/api astro build && astro preview --port 4321",
     "astro": "astro"
   },
   "dependencies": {

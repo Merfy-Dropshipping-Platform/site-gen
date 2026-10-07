@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import configJson from '../scenarios/config-present.json';
 import samplesJson from '../scenarios/samples-present.json';
 import { collectPassport, type Collected } from '../src/browser/collect';
 import { openPage } from '../src/browser/session';
@@ -39,8 +40,16 @@ describe('стенд темы nova', () => {
     expect(stand.passport.fonts).toEqual(['Manrope 400 normal', 'Manrope 600 normal']);
   });
 
-  it('на стенде нет скриптов, глобалов, ключей хранилища и cookie', () => {
-    expect(stand.passport.scripts).toEqual([]);
+  it('сценарий config-present проходит целиком: конфиг магазина читается без ошибок', () => {
+    const results = checkScenario(parseScenario(configJson), stand);
+    expect(results.filter((result) => !result.ok)).toEqual([]);
+  });
+
+  it('на стенде только тег конфига и скрипт его раздела; глобалов, ключей хранилища и cookie нет', () => {
+    expect(stand.passport.scripts.map((script) => [script.src, script.kind])).toEqual([
+      ['#merfy-config', 'json'],
+      ['inline:1', 'module'],
+    ]);
     expect(stand.passport.globals).toEqual({});
     expect(stand.passport.storage).toEqual([]);
     expect(stand.passport.cookies).toEqual([]);

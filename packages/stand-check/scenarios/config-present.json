@@ -1,0 +1,13 @@
+{
+  "$schema": "./scenario.schema.json",
+  "id": "config-present",
+  "title": "Конфиг магазина читается",
+  "since": "блок 3",
+  "open": "/theme-stand",
+  "steps": [],
+  "expect": [
+    { "kind": "sections-present", "ids": ["config"] },
+    { "kind": "no-errors" }
+  ],
+  "eyes": ["в разделе «Конфиг магазина»: Стенд Nova, preview, версия темы и theme-stand"]
+}

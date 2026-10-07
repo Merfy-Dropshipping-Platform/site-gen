@@ -13,6 +13,7 @@
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:stand": "vitest run --config vitest.stand.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write --no-error-on-unmatched-pattern src __tests__ scripts",

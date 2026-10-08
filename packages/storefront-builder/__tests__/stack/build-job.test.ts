@@ -84,6 +84,31 @@ describe('сборка: правка доходит до витрины', () => 
     expect(await liveHome(harness.store, labelOf(site))).toContain('<h1>Новое имя</h1>');
   });
 
+  // Владелец 08.10: «SEO-описание пользователь может не заполнить, но при этом сайт должен работать».
+  it('мерчант не заполнил имя и SEO-описание — магазин у покупателя: заголовок — адрес, тега description нет', async () => {
+    const site = await insertSite(harness.db, { name: '' });
+    await event(site.id);
+    const job = await runNext(site.id);
+    expect(await buildRow(site.id, job.build)).toMatchObject({ outcome: 'live', error: null });
+    const home = await liveHome(harness.store, labelOf(site));
+    expect(home).toContain(`<title>${site.publicUrl ?? ''}</title>`);
+    expect(home).not.toContain('name="description"');
+  });
+
+  // Владелец 08.10: что мерчант заполнил, то и работает — SEO из настроек магазина (branding.seo) у покупателя.
+  it('мерчант заполнил SEO-заголовок, описание и ключевые слова — всё на главной у покупателя', async () => {
+    const site = await insertSite(harness.db);
+    const seo = { title: 'Шарфы изо льна', description: 'Льняные шарфы', keywords: 'шарфы, лён' };
+    await harness.db.query('UPDATE site SET branding = $2 WHERE id = $1', [site.id, JSON.stringify({ seo })]);
+    await event(site.id);
+    await runNext(site.id);
+    const home = await liveHome(harness.store, labelOf(site));
+    expect(home).toContain('<title>Шарфы изо льна</title>');
+    expect(home).toContain('<meta name="description" content="Льняные шарфы">');
+    expect(home).toContain('<meta name="keywords" content="шарфы, лён">');
+    expect(home).toContain('<h1>Шарфы</h1>');
+  });
+
   it('правка во время сборки — «ещё раз»: сразу после текущей ровно одно следующее задание', async () => {
     const site = await insertSite(harness.db);
     await event(site.id);

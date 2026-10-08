@@ -48,9 +48,13 @@ const buildInputsSchema = z.strictObject({
   revision: z.strictObject({ tokens: jsonObject }),
   site: z.strictObject({
     id: z.uuid(),
-    name: z.string().min(1).max(SHOP_NAME_MAX),
+    // Имя и SEO мерчант может оставить пустыми: страница берёт вместо имени адрес магазина, пустое SEO не рисует.
+    name: z.string().max(SHOP_NAME_MAX),
     publicUrl: z.url({ protocol: /^https$/, error: 'нужен адрес https://…' }),
+    // SEO главной из настроек магазина (site.branding.seo): описание, заголовок и ключевые слова.
     description: z.string(),
+    seoTitle: z.string(),
+    keywords: z.string(),
     updatedAt: instantSchema,
   }),
   env: z.strictObject({

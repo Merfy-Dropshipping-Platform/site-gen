@@ -20,10 +20,13 @@ import type { StartedJob } from '../../src/shop-state';
 import { STACK, openPool, wait } from './stack';
 
 // Сборщик на стенде: настоящие база, брокер и MinIO, тема — подставная: рисует по данным страницы HTML, который проходит
-// SEO-проверку блока 4. Задержка рисования — чтобы поймать «правку во время сборки»; hangOnce — следующая страница
-// рисуется минуту: так сборщик «умирает» посреди сборки.
+// SEO-проверку блока 4, — как nova: описания и ключевых слов нет — тегов нет. Задержка рисования — чтобы поймать «правку
+// во время сборки»; hangOnce — следующая страница рисуется минуту: так сборщик «умирает» посреди сборки.
 export const render = { delayMs: 0, hangOnce: false };
 const HANG_MS = 60_000;
+
+const metaTag = (name: string, content: string): string =>
+  content === '' ? '' : `<meta name="${name}" content="${content}">`;
 
 async function fakeRender(path: string, locals: ShopPageLocals): Promise<string> {
   const delay = render.hangOnce ? HANG_MS : render.delayMs;
@@ -32,7 +35,8 @@ async function fakeRender(path: string, locals: ShopPageLocals): Promise<string>
   const { head, shop } = locals;
   return [
     `<!doctype html><html lang="${head.lang}"><head><title>${head.title}</title>`,
-    `<meta name="description" content="${head.description}"><link rel="canonical" href="${head.canonical}">`,
+    `${metaTag('description', head.description)}${metaTag('keywords', head.keywords)}`,
+    `<link rel="canonical" href="${head.canonical}">`,
     `</head><body><h1>${shop.name}</h1><p>${path}</p></body></html>`,
   ].join('');
 }

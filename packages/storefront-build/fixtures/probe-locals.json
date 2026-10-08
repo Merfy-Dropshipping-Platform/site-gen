@@ -3,6 +3,7 @@
     "lang": "ru-RU",
     "title": "Стенд Nova",
     "description": "Магазин-стенд новой темы",
+    "keywords": "шарфы, лён",
     "canonical": "https://nova-stand.example/",
     "configHtml": "<script type=\"application/json\" id=\"merfy-config\">{\"v\":1}</script>",
     "tokensCss": ":root{--color-primary:#1f6feb}"

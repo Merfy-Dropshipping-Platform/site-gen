@@ -4,7 +4,10 @@
 export interface ShopPageHead {
   lang: string;
   title: string;
+  // Пустая строка — мерчант описание не заполнил: тег <meta name="description"> не рисуется (seo.ts).
   description: string;
+  // Ключевые слова мерчанта; пустая строка — не заполнил: тег <meta name="keywords"> не рисуется (seo.ts).
+  keywords: string;
   canonical: string;
   configHtml: string;
   tokensCss: string;

@@ -26,10 +26,11 @@ describe('рисовальщик темы nova', () => {
     await renderer.close();
   });
 
-  it('главная: язык, заголовок, описание, канонический адрес — в HTML', () => {
+  it('главная: язык, заголовок, описание, ключевые слова, канонический адрес — в HTML', () => {
     expect(html).toContain('<html lang="ru-RU">');
     expect(html).toContain('<title>Стенд Nova</title>');
     expect(html).toContain('<meta name="description" content="Магазин-стенд новой темы">');
+    expect(html).toContain('<meta name="keywords" content="шарфы, лён">');
     expect(html).toContain('<link rel="canonical" href="https://nova-stand.example/">');
   });
 

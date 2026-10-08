@@ -2,6 +2,8 @@
 // Договор рисовальщика (блок 4, SEO): всё индексируемое пишет сборка в HTML — язык (у <html> страницы), заголовок,
 // описание, канонический адрес. Конфиг магазина (блок 3) и CSS токенов с правками мерчанта (блок 1) приходят от
 // сборщика готовыми строками и встают одним проходом, без правки готового HTML.
+// Описание и ключевые слова мерчант может не заполнить — тогда тега нет совсем, как у Dawn (Shopify): пустой тег —
+// ошибка договора.
 import "@fontsource/manrope/400.css";
 import "@fontsource/manrope/600.css";
 import type { ShopPageHead } from "../../../../packages/storefront-build/src/locals";
@@ -17,6 +19,7 @@ const { head } = Astro.props;
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <Fragment set:html={head.configHtml} />
 <title>{head.title}</title>
-<meta name="description" content={head.description} />
+{head.description && <meta name="description" content={head.description} />}
+{head.keywords && <meta name="keywords" content={head.keywords} />}
 <link rel="canonical" href={head.canonical} />
 <style id="merfy-tokens" is:inline set:html={head.tokensCss}></style>

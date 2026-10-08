@@ -74,6 +74,21 @@ describe('снимок входов', () => {
     expect(inputs.data.entities[0]).toMatchObject({ data: { content: 'новый текст' } });
   });
 
+  // SEO главной — из настроек магазина (branding.seo): заполненное — во входах, незаполненное — пустая строка.
+  it('SEO мерчанта: заголовок, описание и ключевые слова из branding.seo; не заполнено — пусто', async () => {
+    const filled = await insertSite(db);
+    const seo = { title: 'Шарфы изо льна', description: 'Льняные шарфы', keywords: 'шарфы, лён' };
+    await db.query('UPDATE site SET branding = $2 WHERE id = $1', [filled.id, JSON.stringify({ seo })]);
+    const plain = await insertSite(db);
+    const site = async (siteId: string) => parseBuildInputs((await readSnapshot(deps(), siteId)).inputs).site;
+    expect(await site(filled.id)).toMatchObject({
+      seoTitle: seo.title,
+      description: seo.description,
+      keywords: seo.keywords,
+    });
+    expect(await site(plain.id)).toMatchObject({ seoTitle: '', description: '', keywords: '' });
+  });
+
   it.each(['fail', 'error', 'silent'] as const)('товары: %s — снимок не получен, сборки не будет', async (answer) => {
     const site = await insertSite(db);
     products.answers.set(site.id, answer);

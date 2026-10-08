@@ -1,6 +1,6 @@
 {
   "name": "nova",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "tokens": {
     "root": {
       "font-body": "Manrope, system-ui, sans-serif",

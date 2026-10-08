@@ -18,7 +18,10 @@
     "format:check": "prettier --check --no-error-on-unmatched-pattern src __tests__ scripts",
     "minio:up": "docker compose -f compose.minio.yml up -d --wait",
     "minio:stop": "docker compose -f compose.minio.yml stop",
-    "probe:pointer": "tsx scripts/probe-pointer.ts"
+    "probe:pointer": "tsx scripts/probe-pointer.ts",
+    "pointer": "tsx scripts/pointer.ts",
+    "cleanup": "tsx scripts/cleanup.ts",
+    "publish:stand": "tsx scripts/publish-stand.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.978.0",

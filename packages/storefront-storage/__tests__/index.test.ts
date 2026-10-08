@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest';
+import * as storage from '../src/index';
+
+// API пакета для сборщика (блок 6), раздачи и служебных команд: имена — договор, их не теряем молча.
+describe('вход пакета', () => {
+  it('отдаёт функции и постоянные API', () => {
+    expect(Object.keys(storage).sort()).toEqual([
+      'CACHE_CLASSES',
+      'DEFAULT_CONTENT_TYPE',
+      'FORMAT_VERSION',
+      'GONE_DAYS',
+      'GONE_ENTITY_TYPES',
+      'HISTORY_LIMIT',
+      'KEEP_LAST_BUILDS',
+      'KEEP_VERSION_PAIRS',
+      'KEEP_YOUNGER_MS',
+      'NOT_FOUND_FILE',
+      'PUBLISH_RULES',
+      'SITEMAP_LIMIT',
+      'STOREFRONT_PREFIX',
+      'StorefrontStorageError',
+      'UPDATE_ATTEMPTS',
+      'UPLOAD_CONCURRENCY',
+      'addEntityPaths',
+      'blobKey',
+      'buildRoutesTable',
+      'cacheClassOf',
+      'changePointer',
+      'contentTypeOf',
+      'createS3Store',
+      'drawnKey',
+      'entitiesKey',
+      'hasLiveBuild',
+      'hexOf',
+      'manifestKey',
+      'nextPointer',
+      'parseDrawnList',
+      'parseEntityList',
+      'parsePointer',
+      'parseRoutesTable',
+      'planCleanup',
+      'pointerKey',
+      'publishBuild',
+      'publishProblems',
+      'readObject',
+      'readPointer',
+      'recordDrawnPage',
+      'removeEntityPaths',
+      'routesKey',
+      'runCleanup',
+      'seoFiles',
+      'updateObject',
+      'uploadBuild',
+      'writeObject',
+    ]);
+  });
+});

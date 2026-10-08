@@ -21,6 +21,8 @@
     "build:stand": "tsx scripts/build-stand.ts"
   },
   "dependencies": {
+    "@merfy/storefront-config": "workspace:*",
+    "@merfy/tokens": "workspace:*",
     "zod": "4.3.6"
   },
   "devDependencies": {

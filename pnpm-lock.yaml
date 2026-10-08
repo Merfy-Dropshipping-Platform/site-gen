@@ -250,6 +250,12 @@ importers:
 
   packages/storefront-build:
     dependencies:
+      '@merfy/storefront-config':
+        specifier: workspace:*
+        version: link:../storefront-config
+      '@merfy/tokens':
+        specifier: workspace:*
+        version: link:../tokens
       zod:
         specifier: 4.3.6
         version: 4.3.6

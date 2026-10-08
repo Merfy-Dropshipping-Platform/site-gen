@@ -15,8 +15,19 @@ export const themeRenderFiles = (themeId: string): string[] => [
   `packages/theme-${themeId}/theme.json`,
 ];
 
-// Код платформы, который рисует страницы новой темы. Тест «импорт не учтён» идёт по импортам src/ пакета и проверяет,
-// что каждый файл, до которого они доходят, — в этом списке.
-export const PLATFORM_RENDER_FILES = ['packages/storefront-build/package.json', 'packages/storefront-build/src/**'];
+// Код платформы, который рисует страницы новой темы: этот пакет, конфиг витрины (блок 3) и токены (блок 1). Тест
+// «импорт не учтён» идёт по импортам src/ пакета и проверяет, что каждый файл, до которого они доходят, — в этом списке.
+export const PLATFORM_RENDER_FILES = [
+  'packages/storefront-build/package.json',
+  'packages/storefront-build/src/**',
+  'packages/storefront-config/package.json',
+  'packages/storefront-config/src/**',
+  'packages/storefront-config/rebuild-events.json',
+  'packages/tokens/package.json',
+  'packages/tokens/src/**',
+  'packages/tokens/dictionary.json',
+  'packages/tokens/not-tokens.json',
+  'packages/tokens/search-words.json',
+];
 
 export const platformRenderHash = (root: string): Promise<string> => contentHash(root, PLATFORM_RENDER_FILES);

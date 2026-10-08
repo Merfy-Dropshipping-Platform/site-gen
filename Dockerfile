@@ -22,6 +22,7 @@ ENV NODE_AUTH_TOKEN=${NODE_AUTH_TOKEN}
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/stand-check/package.json ./packages/stand-check/package.json
 COPY packages/storefront-build/package.json ./packages/storefront-build/package.json
+COPY packages/storefront-storage/package.json ./packages/storefront-storage/package.json
 COPY packages/theme-contract/package.json ./packages/theme-contract/package.json
 COPY packages/theme-base/package.json ./packages/theme-base/package.json
 COPY packages/storefront-config/package.json ./packages/storefront-config/package.json

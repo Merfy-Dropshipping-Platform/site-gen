@@ -1,0 +1,73 @@
+import { acceptIncoming } from './accept';
+import { EVENTS_QUEUE, JOBS_QUEUE, type Broker } from './broker';
+import { runBuildJob, settle, type BuilderDeps } from './build-job';
+import { errorText } from './errors';
+import { parseIncoming, parseJob } from './events';
+import type { Log } from './log';
+import { reconcileShops } from './reconcile';
+import { expiredJobs, renewLostJobs, startDueRetries, type StartedJob } from './shop-state';
+
+// Сборщик в работе (design.md блока 6): два потребителя и два таймера. Таймеры — только на сбоях (владелец 08.10:
+// «я хочу на событийность упираться»): раз в секунду — повторы, у которых прошла пауза, и задания с истёкшим замком;
+// раз в час — сверка ключей (Св-3 А). Склейку таймеры не держит: её делает строка магазина.
+
+export interface RuntimeDeps extends BuilderDeps {
+  broker: Broker;
+  themeIds: readonly string[];
+  // Мест для одновременных сборок (на dev — 1, раздел 4). Событиям хватает одного: приём — две записи в базу.
+  slots: number;
+  reconcileMs: number;
+}
+
+export interface Runtime {
+  stop: () => void;
+}
+
+const SWEEP_MS = 1_000;
+const EVENT_PREFETCH = 1;
+const LEASE_EXPIRED = 'замок истёк: сборщик не закончил сборку';
+
+// Задание — в очередь сборок с приоритетом из строки магазина.
+export const enqueueVia =
+  (broker: Broker, log: Log) =>
+  async (job: StartedJob): Promise<void> => {
+    await broker.publishJob({ siteId: job.siteId, build: job.build }, job.priority);
+    log('job-queued', { shopId: job.siteId, buildId: job.build, priority: job.priority });
+  };
+
+// Повторять задачу через ms после конца прошлого прогона: прогоны не накладываются. Ошибка — в журнал, не стоп.
+export function every(ms: number, task: () => Promise<unknown>, log: Log): () => void {
+  let timer: NodeJS.Timeout | undefined;
+  let stopped = false;
+  const run = async (): Promise<void> => {
+    try {
+      await task();
+    } catch (error) {
+      log('timer-failed', { error: errorText(error) });
+    }
+    if (!stopped) timer = setTimeout(() => void run(), ms);
+  };
+  timer = setTimeout(() => void run(), ms);
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+  };
+}
+
+export async function sweep(deps: RuntimeDeps): Promise<void> {
+  for (const job of await expiredJobs(deps.db)) await settle(deps, job, LEASE_EXPIRED);
+  const due = [...(await startDueRetries(deps.db, deps.shopState)), ...(await renewLostJobs(deps.db, deps.shopState))];
+  for (const job of due) await deps.enqueue(job);
+}
+
+export async function startRuntime(deps: RuntimeDeps): Promise<Runtime> {
+  await deps.broker.consume(EVENTS_QUEUE, EVENT_PREFETCH, async ({ exchange, body }) => {
+    await acceptIncoming(deps, parseIncoming(exchange, body, deps.clock().toISOString()));
+  });
+  await deps.broker.consume(JOBS_QUEUE, deps.slots, ({ body }) => runBuildJob(deps, parseJob(body)));
+  const timers = [
+    every(SWEEP_MS, () => sweep(deps), deps.log),
+    every(deps.reconcileMs, () => reconcileShops(deps), deps.log),
+  ];
+  return { stop: () => timers.forEach((stop) => stop()) };
+}

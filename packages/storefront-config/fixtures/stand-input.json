@@ -1,0 +1,7 @@
+{
+  "site": { "id": "00000000-0000-4000-8000-000000000001", "name": "Стенд Nova", "publicUrl": null },
+  "theme": { "id": "nova", "version": "0.0.1" },
+  "env": { "apiUrl": "http://localhost:4321/api" },
+  "page": { "id": "theme-stand", "path": "/theme-stand" },
+  "mode": "preview"
+}

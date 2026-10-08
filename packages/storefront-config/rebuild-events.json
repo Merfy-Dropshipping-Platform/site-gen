@@ -1,0 +1,122 @@
+{
+  "$schema": "./generated/rebuild-events.schema.json",
+  "events": [
+    {
+      "id": "merchant-publish",
+      "title": "Мерчант публикует магазин",
+      "trigger": { "file": "src/sites.microservice.controller.ts", "name": "sites.publish" },
+      "themes": "all",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "works"
+    },
+    {
+      "id": "product-change",
+      "title": "Правка товара: сейчас — полная пересборка через 45 с",
+      "trigger": { "file": "src/listeners/product-update.listener.ts", "name": "debounceBuild" },
+      "themes": "all",
+      "scope": "dependent-pages",
+      "delayMs": 45000,
+      "status": "works"
+    },
+    {
+      "id": "theme-change",
+      "title": "Смена темы у опубликованного сайта: перепубликация сразу",
+      "trigger": { "file": "src/sites.microservice.controller.ts", "name": "sites.update_site" },
+      "themes": "all",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "works"
+    },
+    {
+      "id": "branding-change",
+      "title": "Брендинг у опубликованного сайта: фавиконы, цвета, SEO главной — перепубликация через 8 с",
+      "trigger": { "file": "src/sites.service.ts", "name": "scheduleBrandingRepublish" },
+      "themes": "all",
+      "scope": "store",
+      "delayMs": 8000,
+      "status": "works"
+    },
+    {
+      "id": "theme-release",
+      "title": "Выпуск версии темы: кода ещё нет, его пишет блок 10",
+      "trigger": null,
+      "themes": "new",
+      "scope": "theme-stores",
+      "delayMs": 0,
+      "status": "block-10"
+    },
+    {
+      "id": "domain-change",
+      "title": "Смена домена магазина: подключение — switchDomain, отключение — restoreFallbackDomain",
+      "trigger": { "file": "src/sites.service.ts", "name": "switchDomain" },
+      "themes": "new",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "block-6"
+    },
+    {
+      "id": "shop-name-change",
+      "title": "Смена имени магазина",
+      "trigger": { "file": "src/sites.microservice.controller.ts", "name": "sites.update_site" },
+      "themes": "new",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "block-6"
+    },
+    {
+      "id": "policy-change",
+      "title": "Правка политики: страницы /legal/* и ссылки подвала на каждой странице",
+      "trigger": { "file": "src/policy/policy.service.ts", "name": "upsert" },
+      "themes": "new",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "block-6"
+    },
+    {
+      "id": "contacts-change",
+      "title": "Правка контактов и реквизитов: подвал на каждой странице",
+      "trigger": { "file": "src/policy/contacts.service.ts", "name": "upsert" },
+      "themes": "new",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "block-6"
+    },
+    {
+      "id": "publication-change",
+      "title": "Публикация блога: создана, изменена или удалена",
+      "trigger": { "file": "src/publications/publications.service.ts", "name": "triggerRebuild" },
+      "themes": "new",
+      "scope": "dependent-pages",
+      "delayMs": 0,
+      "status": "block-6"
+    },
+    {
+      "id": "collection-change",
+      "title": "Коллекция: создание, имя, slug, описание, порядок товаров, удаление",
+      "trigger": { "service": "product", "description": "CollectionsService: create, update, remove, reorderProducts" },
+      "themes": "new",
+      "scope": "dependent-pages",
+      "delayMs": 0,
+      "status": "block-6"
+    },
+    {
+      "id": "payment-settings-change",
+      "title": "Настройки оплаты магазина: значок кассы в подвале",
+      "trigger": { "service": "billing", "description": "смена кассы магазина" },
+      "themes": "new",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "block-6"
+    },
+    {
+      "id": "stock-change",
+      "title": "Остаток товара: только переход «в наличии ↔ нет»",
+      "trigger": { "service": "inventory", "description": "издателя событий остатка в inventory сейчас нет" },
+      "themes": "new",
+      "scope": "dependent-pages",
+      "delayMs": 0,
+      "status": "block-6"
+    }
+  ]
+}

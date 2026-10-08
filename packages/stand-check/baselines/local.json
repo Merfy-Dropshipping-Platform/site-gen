@@ -2,7 +2,18 @@
   "version": 1,
   "page": "/theme-stand",
   "target": "local",
-  "scripts": [],
+  "scripts": [
+    {
+      "src": "#merfy-config",
+      "kind": "json",
+      "bytes": 279
+    },
+    {
+      "src": "inline:1",
+      "kind": "module",
+      "bytes": 2326
+    }
+  ],
   "globals": {},
   "storage": [],
   "cookies": [],

@@ -23,6 +23,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/stand-check/package.json ./packages/stand-check/package.json
 COPY packages/theme-contract/package.json ./packages/theme-contract/package.json
 COPY packages/theme-base/package.json ./packages/theme-base/package.json
+COPY packages/storefront-config/package.json ./packages/storefront-config/package.json
 COPY packages/theme-bloom/package.json ./packages/theme-bloom/package.json
 COPY packages/theme-satin/package.json ./packages/theme-satin/package.json
 COPY packages/tokens/package.json ./packages/tokens/package.json

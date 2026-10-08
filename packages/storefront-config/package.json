@@ -1,0 +1,37 @@
+{
+  "name": "@merfy/storefront-config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./read": "./src/read.ts",
+    "./rebuild-events.json": "./rebuild-events.json"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:stand": "vitest run --config vitest.stand.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write --no-error-on-unmatched-pattern src __tests__ scripts",
+    "format:check": "prettier --check --no-error-on-unmatched-pattern src __tests__ scripts",
+    "generate": "tsx scripts/generate.ts"
+  },
+  "dependencies": {
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.2",
+    "@types/node": "22.20.1",
+    "@vitest/coverage-v8": "3.2.7",
+    "eslint": "9.39.2",
+    "prettier": "3.8.0",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.53.0",
+    "vitest": "3.2.7"
+  }
+}

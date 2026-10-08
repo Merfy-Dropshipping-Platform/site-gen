@@ -1,5 +1,6 @@
 import type { Pool } from 'pg';
 import { z } from 'zod';
+import { PRIORITY } from './events';
 
 // Строка магазина в базе sites (design.md блока 6, В6-3 Б и В6-4 Б) — вся память сборщика: идёт ли сборка, номер,
 // замок со сроком, «ещё раз», повтор упавшей. Каждое решение — один условный UPDATE … RETURNING: из двух сборщиков,
@@ -7,10 +8,13 @@ import { z } from 'zod';
 //   idle     — магазин свободен;
 //   busy     — задание в очереди или собирается; замок до lease_until;
 //   retrying — сборка упала, повтор в retry_at;
-//   stopped  — упали все запуски: тревога ушла, ждём события или команды перезапуска.
-// pending — сколько событий пришло, пока магазин занят: это «ещё раз», следующая сборка одна на все.
+//   stopped  — упали все запуски: тревога ушла, ждём события или команды перезапуска;
+//   held     — выпуск темы ждёт места: в работе уже K заданий выпуска (В6-2 В, drizzle/0022).
+// pending — сколько событий пришло, пока магазин занят или ждёт места: это «ещё раз», следующая сборка одна на все.
 
 export type Queryable = Pick<Pool, 'query'>;
+// База с отдельным подключением — для транзакции под замком (порции выпуска).
+export type Database = Pick<Pool, 'query' | 'connect'>;
 
 export interface ShopStateOptions {
   leaseMs: number;
@@ -25,10 +29,11 @@ export interface StartedJob {
 }
 
 // started — задание ушло в очередь; coalesced — событие склеено: events — сколько событий в ждущем задании, pending —
-// сколько ждут следующей сборки («ещё раз»).
+// сколько ждут следующей сборки («ещё раз»); held — выпуск ждёт места, pending — сколько событий ждут вместе с ним.
 export type Accepted =
   | ({ outcome: 'started' } & StartedJob)
-  | { outcome: 'coalesced'; siteId: string; events: number; pending: number };
+  | { outcome: 'coalesced'; siteId: string; events: number; pending: number }
+  | { outcome: 'held'; siteId: string; pending: number };
 
 export interface ShopEvent {
   siteId: string;
@@ -43,6 +48,7 @@ const lease = (param: string): string => `now() + ${param} * interval '1 millise
 
 const startedRow = z.object({ site_id: z.string(), build: z.coerce.number().int(), priority: z.int() });
 const coalescedRow = z.object({ events: z.int(), pending: z.int() });
+const heldRow = z.object({ pending: z.int() });
 
 const toStarted = (row: z.infer<typeof startedRow>): StartedJob => ({
   siteId: row.site_id,
@@ -50,12 +56,13 @@ const toStarted = (row: z.infer<typeof startedRow>): StartedJob => ({
   priority: row.priority,
 });
 
-// Свободен или остановлен — сборка сразу. События, что ждали в остановленном магазине, едут в неё же.
+// Свободен, остановлен или ждёт места выпуска — сборка сразу. События, что ждали в строке, едут в неё же: правка
+// или публикация магазина из волны выпуска не стоит в очереди волны.
 const START_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${NEXT_BUILD}, lease_until = ${lease('$2')},
   queued_at = now(), started_at = NULL, attempt = 0, retry_at = NULL, error = NULL,
   events = 1 + pending, priority = GREATEST($3, pending_priority), event_at = LEAST($4::timestamptz, pending_event_at),
   pending = 0, pending_priority = 0, pending_event_at = NULL
-  WHERE site_id = $1 AND state IN ('idle', 'stopped') RETURNING site_id, build, priority`;
+  WHERE site_id = $1 AND state IN ('idle', 'stopped', 'held') RETURNING site_id, build, priority`;
 
 // Занят. Задание ещё в очереди (started_at пуст) — событие едет в него: данные сборка прочтёт при старте. Сборка уже
 // идёт или ждёт повтора — «ещё раз»: счётчик, самый высокий приоритет и самое раннее время правки среди ждущих.
@@ -69,21 +76,93 @@ const COALESCE_SQL = `UPDATE storefront_shop SET
   pending_event_at = CASE WHEN ${QUEUED} THEN pending_event_at ELSE LEAST(pending_event_at, $3::timestamptz) END
   WHERE site_id = $1 AND state IN ('busy', 'retrying') RETURNING events, pending`;
 
+// Выпуск ждёт места: свободный или остановленный магазин встаёт в held, события копятся в pending. Задание ставит
+// startHeldReleases — по порядку прихода, не больше K в работе.
+const HOLD_SQL = `UPDATE storefront_shop SET state = 'held', pending = pending + 1,
+  pending_priority = GREATEST(pending_priority, $2), pending_event_at = LEAST(pending_event_at, $3::timestamptz)
+  WHERE site_id = $1 AND state IN ('idle', 'stopped', 'held') RETURNING pending`;
+
 // Между двумя запросами состояние может смениться (сборка кончилась) — тогда пробуем снова.
 const ACCEPT_ATTEMPTS = 5;
 
-// Событие пришло: магазин свободен — сборка сразу (started); занят — «ещё раз» (coalesced).
-export async function acceptEvent(db: Queryable, event: ShopEvent, options: ShopStateOptions): Promise<Accepted> {
+type AcceptStep = (db: Queryable, event: ShopEvent, options: ShopStateOptions) => Promise<Accepted | null>;
+
+const start: AcceptStep = async (db, event, options) => {
+  const values = [event.siteId, options.leaseMs, event.priority, event.eventAt];
+  const rows = (await db.query(START_SQL, values)).rows.map((row) => startedRow.parse(row));
+  return rows.length === 0 ? null : { outcome: 'started', ...toStarted(rows[0]) };
+};
+
+const coalesce: AcceptStep = async (db, event) => {
+  const values = [event.siteId, event.priority, event.eventAt];
+  const rows = (await db.query(COALESCE_SQL, values)).rows.map((row) => coalescedRow.parse(row));
+  return rows.length === 0 ? null : { outcome: 'coalesced', siteId: event.siteId, ...rows[0] };
+};
+
+const hold: AcceptStep = async (db, event) => {
+  const values = [event.siteId, event.priority, event.eventAt];
+  const rows = (await db.query(HOLD_SQL, values)).rows.map((row) => heldRow.parse(row));
+  return rows.length === 0 ? null : { outcome: 'held', siteId: event.siteId, ...rows[0] };
+};
+
+// Шаги по порядку: первый, что изменил строку, — итог. Ни один не подошёл — строку только что поменяли, ещё раз.
+async function acceptBy(steps: readonly AcceptStep[], db: Queryable, event: ShopEvent, options: ShopStateOptions) {
   await db.query('INSERT INTO storefront_shop (site_id) VALUES ($1) ON CONFLICT (site_id) DO NOTHING', [event.siteId]);
-  for (let attempt = 1; attempt <= ACCEPT_ATTEMPTS; attempt += 1) {
-    const start = [event.siteId, options.leaseMs, event.priority, event.eventAt];
-    const started = (await db.query(START_SQL, start)).rows.map((row) => startedRow.parse(row));
-    if (started.length > 0) return { outcome: 'started', ...toStarted(started[0]) };
-    const coalesce = [event.siteId, event.priority, event.eventAt];
-    const coalesced = (await db.query(COALESCE_SQL, coalesce)).rows.map((row) => coalescedRow.parse(row));
-    if (coalesced.length > 0) return { outcome: 'coalesced', siteId: event.siteId, ...coalesced[0] };
+  for (let tried = 0; tried < ACCEPT_ATTEMPTS * steps.length; tried += 1) {
+    const accepted = await steps[tried % steps.length](db, event, options);
+    if (accepted !== null) return accepted;
   }
   throw new Error(`storefront_shop ${event.siteId}: состояние меняется слишком часто`);
+}
+
+// Событие пришло: магазин свободен — сборка сразу (started); занят — «ещё раз» (coalesced).
+export const acceptEvent = (db: Queryable, event: ShopEvent, options: ShopStateOptions): Promise<Accepted> =>
+  acceptBy([start, coalesce], db, event, options);
+
+// Событие выпуска темы: магазин занят — склейка, как у любого события; свободен — ждёт места (held).
+export const holdRelease = (db: Queryable, event: ShopEvent, options: ShopStateOptions): Promise<Accepted> =>
+  acceptBy([coalesce, hold], db, event, options);
+
+// В работе — в очереди, собирается или ждёт повтора — заданий выпуска не больше K (В6-2 В): так публикации и правке
+// всегда остаётся место. Считают и ставят несколько копий сборщика разом — под одним замком базы, иначе двое увидят
+// одно свободное место и превысят K.
+const RELEASE_LOCK = 'storefront_builder:release';
+const RELEASES_IN_WORK = `SELECT count(*) FROM storefront_shop
+  WHERE state IN ('busy', 'retrying') AND priority = ${PRIORITY.release}`;
+const START_HELD_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${NEXT_BUILD}, lease_until = ${lease('$1')},
+  queued_at = now(), started_at = NULL, attempt = 0, retry_at = NULL, error = NULL,
+  events = pending, priority = pending_priority, event_at = pending_event_at,
+  pending = 0, pending_priority = 0, pending_event_at = NULL
+  WHERE site_id IN (SELECT site_id FROM storefront_shop WHERE state = 'held' ORDER BY pending_event_at, site_id
+    LIMIT GREATEST($2 - (${RELEASES_IN_WORK}), 0))
+  RETURNING site_id, build, priority`;
+
+async function underReleaseLock<T>(db: Database, work: (client: Queryable) => Promise<T>): Promise<T> {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [RELEASE_LOCK]);
+    const result = await work(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+// Место выпуска освободилось (сборка кончилась, пришёл новый выпуск) — задания самым давним ждущим, до K в работе.
+export async function startHeldReleases(
+  db: Database,
+  options: ShopStateOptions,
+  releaseSlots: number,
+): Promise<StartedJob[]> {
+  const values = [options.leaseMs, releaseSlots];
+  return underReleaseLock(db, async (client) =>
+    (await client.query(START_HELD_SQL, values)).rows.map((row) => toStarted(startedRow.parse(row))),
+  );
 }
 
 const claimedRow = z.object({

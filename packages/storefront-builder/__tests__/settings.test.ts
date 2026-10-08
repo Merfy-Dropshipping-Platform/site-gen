@@ -26,6 +26,7 @@ describe('настройки', () => {
       commit: ENV.SOURCE_COMMIT,
       port: 8080,
       buildSlots: 1,
+      releaseSlots: 1,
       drawSlots: 1,
       drawTimeoutMs: 3000,
       leaseMs: 300_000,
@@ -42,6 +43,22 @@ describe('настройки', () => {
     expect(settings).toMatchObject({ buildSlots: 2, drawSlots: 4, indexable: true });
     const indexNow = readSettings({ ...ENV, INDEXNOW_KEY: 'key-12345678' }).indexNow;
     expect(indexNow).toEqual({ key: 'key-12345678', endpoint: 'https://yandex.com/indexnow' });
+  });
+
+  // Предел выпуска K (В6-2 В): меньше числа мест, при одном месте — 1.
+  it.each([
+    ['1', undefined, 1],
+    ['3', undefined, 2],
+    ['3', '1', 1],
+  ])('мест %s, RELEASE_SLOTS %s — выпуску %i', (slots, release, expected) => {
+    expect(readSettings({ ...ENV, BUILD_SLOTS: slots, RELEASE_SLOTS: release }).releaseSlots).toBe(expected);
+  });
+
+  it('RELEASE_SLOTS не меньше мест сборки — settings-invalid: публикации не останется места', () => {
+    expect(() => readSettings({ ...ENV, BUILD_SLOTS: '3', RELEASE_SLOTS: '3' })).toThrow(
+      'env#RELEASE_SLOTS: больше 2: при 3 местах сборки публикации нужно свободное место',
+    );
+    expect(() => readSettings({ ...ENV, RELEASE_SLOTS: '2' })).toThrow(/^env#RELEASE_SLOTS: больше 1/);
   });
 
   it('нет переменной или коммит не 40 знаков — settings-invalid с именем переменной, без значения', () => {

@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { StorefrontBuilderError } from './errors';
 import { INDEXNOW_URL } from './indexnow';
 import { parseWith } from './parse';
+import { releaseSlotsFor } from './release';
 
 // Настройки сборщика — из переменных окружения приложения Coolify (design.md блока 6, раздел 4: «число мест — из
 // настроек; на dev — 1»). Ошибка называет переменную, но не значение: значения бывают секретами.
@@ -19,6 +21,8 @@ const envSchema = z.object({
   SOURCE_COMMIT: z.string().regex(/^[0-9a-f]{40}$/),
   PORT: count(8080),
   BUILD_SLOTS: count(1),
+  // Предел выпуска K (В6-2 В): нет — на одно меньше мест, но не меньше одного (release.ts).
+  RELEASE_SLOTS: z.coerce.number().int().positive().optional(),
   DRAW_SLOTS: count(1),
   DRAW_TIMEOUT_MS: count(3_000),
   BUILD_LEASE_MS: count(300_000),
@@ -42,6 +46,7 @@ export interface Settings {
   commit: string;
   port: number;
   buildSlots: number;
+  releaseSlots: number;
   drawSlots: number;
   drawTimeoutMs: number;
   leaseMs: number;
@@ -49,6 +54,14 @@ export interface Settings {
   productTimeoutMs: number;
   indexable: boolean;
   indexNow: { key: string; endpoint: string } | null;
+}
+
+// K больше «мест − 1» — волна выпуска займёт все места, и публикация будет ждать её целиком.
+function releaseSlotsOf(buildSlots: number, configured: number | undefined): number {
+  const limit = releaseSlotsFor(buildSlots);
+  if (configured === undefined || configured <= limit) return configured ?? limit;
+  const text = `больше ${limit}: при ${buildSlots} местах сборки публикации нужно свободное место`;
+  throw new StorefrontBuilderError('settings-invalid', text, { path: 'env#RELEASE_SLOTS' });
 }
 
 export function readSettings(env: NodeJS.ProcessEnv): Settings {
@@ -66,6 +79,7 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
     commit: value.SOURCE_COMMIT,
     port: value.PORT,
     buildSlots: value.BUILD_SLOTS,
+    releaseSlots: releaseSlotsOf(value.BUILD_SLOTS, value.RELEASE_SLOTS),
     drawSlots: value.DRAW_SLOTS,
     drawTimeoutMs: value.DRAW_TIMEOUT_MS,
     leaseMs: value.BUILD_LEASE_MS,

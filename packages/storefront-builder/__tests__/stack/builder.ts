@@ -84,6 +84,7 @@ export function openHarness(overrides: Partial<RuntimeDeps> = {}): Harness {
     platformCommit: COMMIT,
     indexable: false,
     shopState: { leaseMs: 60_000, retryDelaysMs: [100, 200] },
+    releaseSlots: 1,
     clock,
     log,
     enqueue: (job) => Promise.resolve(void queued.push(job)),

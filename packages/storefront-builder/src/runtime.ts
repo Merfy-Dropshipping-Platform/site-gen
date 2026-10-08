@@ -6,6 +6,7 @@ import { parseIncoming, parseJob } from './events';
 import type { Log } from './log';
 import type { Preview } from './preview';
 import { reconcileShops } from './reconcile';
+import { queueHeldReleases } from './release';
 import { expiredJobs, renewLostJobs, startDueRetries, type StartedJob } from './shop-state';
 
 // Сборщик в работе (design.md блока 6): два потребителя и два таймера. Таймеры — только на сбоях (владелец 08.10:
@@ -61,6 +62,8 @@ export async function sweep(deps: RuntimeDeps): Promise<void> {
   for (const job of await expiredJobs(deps.db)) await settle(deps, job, LEASE_EXPIRED);
   const due = [...(await startDueRetries(deps.db, deps.shopState)), ...(await renewLostJobs(deps.db, deps.shopState))];
   for (const job of due) await deps.enqueue(job);
+  // Место выпуска ставит конец сборки; здесь — на случай, если сборщик умер между концом сборки и постановкой.
+  await queueHeldReleases(deps);
 }
 
 export async function startRuntime(deps: RuntimeDeps): Promise<Runtime> {

@@ -40,6 +40,7 @@ const deps: RuntimeDeps = {
   platformCommit: settings.commit,
   indexable: settings.indexable,
   shopState: { leaseMs: settings.leaseMs, retryDelaysMs: RETRY_DELAYS_MS },
+  releaseSlots: settings.releaseSlots,
   clock,
   log,
   enqueue: enqueueVia(broker, log),
@@ -56,7 +57,8 @@ const runtime = await startRuntime(deps);
 const drawDeps = { store, snapshot, themes: loaded.themes, renderHash: platform.renderHash, log };
 const slots = createSlots(settings.drawSlots);
 const server = await startDrawServer({ ...drawDeps, slots, timeoutMs: settings.drawTimeoutMs }, settings.port);
-log('builder-started', { port: settings.port, themes: deps.themeIds.join(','), renderHash: platform.renderHash });
+const started = { port: settings.port, slots: settings.buildSlots, releaseSlots: settings.releaseSlots };
+log('builder-started', { ...started, themes: deps.themeIds.join(','), renderHash: platform.renderHash });
 
 // Остановка по сигналу Coolify: новые задания не берём, недоделанные вернёт брокер — их возьмёт следующий запуск.
 async function shutdown(): Promise<void> {

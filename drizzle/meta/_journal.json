@@ -155,6 +155,13 @@
       "when": 1791417600000,
       "tag": "0021_storefront_builder",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791504000000,
+      "tag": "0022_storefront_release_hold",
+      "breakpoints": true
     }
   ]
 }

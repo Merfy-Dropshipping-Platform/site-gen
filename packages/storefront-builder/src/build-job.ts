@@ -4,13 +4,14 @@ import { StorefrontBuilderError, errorText } from './errors';
 import type { Announce } from './indexnow';
 import { liveManifest } from './live';
 import type { Log } from './log';
+import { queueHeldReleases } from './release';
 import {
   claimJob,
   finishFailure,
   finishSuccess,
   type ClaimedJob,
+  type Database,
   type Finished,
-  type Queryable,
   type ShopStateOptions,
   type StartedJob,
 } from './shop-state';
@@ -30,13 +31,15 @@ export interface LoadedTheme {
 }
 
 export interface BuilderDeps {
-  db: Queryable;
+  db: Database;
   store: ObjectStore;
   snapshot: SnapshotDeps;
   themes: ReadonlyMap<string, LoadedTheme>;
   platformCommit: string;
   indexable: boolean;
   shopState: ShopStateOptions;
+  // Предел выпуска K (В6-2 В, release.ts): конец сборки освобождает место — его берёт самый давний ждущий выпуск.
+  releaseSlots: number;
   clock: () => Date;
   log: Log;
   enqueue: (job: StartedJob) => Promise<void>;
@@ -120,6 +123,7 @@ export async function settle(deps: BuilderDeps, job: StartedJob, error: string |
       : await finishFailure(deps.db, job, error, deps.shopState);
   if (next === null) return deps.log('build-lost', { shopId: job.siteId, buildId: job.build });
   await AFTER[next.state](deps, job, next, error ?? '');
+  await queueHeldReleases(deps);
 }
 
 export async function runBuildJob(deps: BuilderDeps, job: BuildJob): Promise<void> {

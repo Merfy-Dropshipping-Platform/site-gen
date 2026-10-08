@@ -1,13 +1,22 @@
 import { z } from 'zod';
-import { priorityOf, type IncomingEvent } from './events';
+import { PRIORITY, priorityOf, type IncomingEvent } from './events';
 import type { Log } from './log';
 import { previewSignal, type Preview } from './preview';
-import { acceptEvent, type Accepted, type Queryable, type ShopStateOptions, type StartedJob } from './shop-state';
+import { queueHeldReleases } from './release';
+import {
+  acceptEvent,
+  holdRelease,
+  type Accepted,
+  type Database,
+  type ShopStateOptions,
+  type StartedJob,
+} from './shop-state';
 
 // Приём события (design.md блока 6, В6-3 Б): чьи это магазины → строка каждого → свободен — задание в очередь, занят —
 // склейка. Сборщик берёт только магазины новой архитектуры (тема — из theme-versions.json блока 4): нынешние
 // магазины пересобирает старый конвейер, как раньше. Событие подтверждается сразу после записи в строку магазина —
-// prefetch не держит ждущих.
+// prefetch не держит ждущих. Выпуск темы (theme-release) свободный магазин не собирает сразу, а ставит ждать места:
+// в работе не больше K заданий выпуска (В6-2 В, release.ts).
 
 // Собирать — только опубликованные магазины. Публикация и команда перезапуска — для любого: сама публикация ставит
 // статус published уже после события (sites.service.ts, publish).
@@ -21,13 +30,18 @@ const TENANT_SQL =
 const shopRow = z.object({ id: z.string(), status: z.string() });
 
 export interface AcceptDeps {
-  db: Queryable;
+  db: Database;
   themeIds: readonly string[];
   shopState: ShopStateOptions;
+  // Предел выпуска K (В6-2 В, release.ts).
+  releaseSlots: number;
   log: Log;
   enqueue: (job: StartedJob) => Promise<void>;
   preview?: Preview;
 }
+
+// Выпуск темы ждёт места (held), остальные события — как всегда: свободен — сборка сразу, занят — склейка.
+const acceptByPriority = (priority: number) => (priority === PRIORITY.release ? holdRelease : acceptEvent);
 
 async function shopsOf(deps: AcceptDeps, event: IncomingEvent): Promise<string[]> {
   const [sql, owner] = event.owner === 'site' ? [SITE_SQL, event.siteId] : [TENANT_SQL, event.tenantId];
@@ -38,10 +52,11 @@ async function shopsOf(deps: AcceptDeps, event: IncomingEvent): Promise<string[]
 
 async function acceptForShop(deps: AcceptDeps, event: IncomingEvent, siteId: string): Promise<Accepted> {
   const shopEvent = { siteId, priority: priorityOf(event.type), eventAt: event.eventAt };
-  const accepted = await acceptEvent(deps.db, shopEvent, deps.shopState);
+  const accepted = await acceptByPriority(shopEvent.priority)(deps.db, shopEvent, deps.shopState);
   const { outcome, ...fields } = accepted;
   deps.log('event-accepted', { type: event.type, shopId: siteId, outcome, ...fields });
   if (accepted.outcome === 'started') await deps.enqueue(accepted);
+  if (accepted.outcome === 'held') await queueHeldReleases(deps);
   await deps.preview?.(previewSignal(event.type, siteId));
   return accepted;
 }

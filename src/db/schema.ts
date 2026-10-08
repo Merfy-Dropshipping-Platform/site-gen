@@ -522,7 +522,8 @@ export type NewSiteThemeMigration = typeof siteThemeMigrations.$inferInsert;
  *
  * storefront_shop — строка магазина: идёт ли сборка (state), номер сборки,
  * замок со сроком (lease_until), «ещё раз» (pending — событий ждут следующей
- * сборки), повтор упавшей (attempt, retry_at) и «остановлено».
+ * сборки), повтор упавшей (attempt, retry_at), «остановлено» и held — выпуск
+ * темы ждёт места (drizzle/0022, предел K).
  */
 export const storefrontShop = pgTable(
   "storefront_shop",
@@ -546,7 +547,7 @@ export const storefrontShop = pgTable(
   (table) => ({
     stateCheck: check(
       "storefront_shop_state_check",
-      sql`${table.state} IN ('idle', 'busy', 'retrying', 'stopped')`,
+      sql`${table.state} IN ('idle', 'busy', 'retrying', 'stopped', 'held')`,
     ),
   }),
 );

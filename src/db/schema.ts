@@ -22,7 +22,11 @@ import {
   varchar,
   uniqueIndex,
   index,
+  bigint,
+  check,
+  primaryKey,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 // Состояния саги рождения магазина объявлены в одном месте — в модуле саги.
 import type { LifecycleState } from "../store/lifecycle/store-lifecycle";
 
@@ -509,3 +513,63 @@ export const siteThemeMigrations = pgTable(
 
 export type SiteThemeMigration = typeof siteThemeMigrations.$inferSelect;
 export type NewSiteThemeMigration = typeof siteThemeMigrations.$inferInsert;
+
+/**
+ * Сборщик магазинов новой темы (drizzle/0021, пакет packages/storefront-builder;
+ * merfy-mcp/docs/plans/storefront-shell/06-builder-queue/design.md). Пишет и
+ * читает их только сборщик — условными UPDATE … RETURNING; здесь схема, чтобы
+ * drizzle-kit видел таблицы.
+ *
+ * storefront_shop — строка магазина: идёт ли сборка (state), номер сборки,
+ * замок со сроком (lease_until), «ещё раз» (pending — событий ждут следующей
+ * сборки), повтор упавшей (attempt, retry_at) и «остановлено».
+ */
+export const storefrontShop = pgTable(
+  "storefront_shop",
+  {
+    siteId: text("site_id").primaryKey(),
+    state: text("state").default("idle").notNull(),
+    build: bigint("build", { mode: "number" }).default(0).notNull(),
+    priority: integer("priority").default(0).notNull(),
+    events: integer("events").default(0).notNull(),
+    eventAt: timestamp("event_at", { withTimezone: true }),
+    queuedAt: timestamp("queued_at", { withTimezone: true }),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    leaseUntil: timestamp("lease_until", { withTimezone: true }),
+    attempt: integer("attempt").default(0).notNull(),
+    retryAt: timestamp("retry_at", { withTimezone: true }),
+    pending: integer("pending").default(0).notNull(),
+    pendingPriority: integer("pending_priority").default(0).notNull(),
+    pendingEventAt: timestamp("pending_event_at", { withTimezone: true }),
+    error: text("error"),
+  },
+  (table) => ({
+    stateCheck: check(
+      "storefront_shop_state_check",
+      sql`${table.state} IN ('idle', 'busy', 'retrying', 'stopped')`,
+    ),
+  }),
+);
+
+/** storefront_build — строка на каждую сборку: время правки, постановки, старта и конца, итог, время шагов. */
+export const storefrontBuild = pgTable(
+  "storefront_build",
+  {
+    siteId: text("site_id").notNull(),
+    build: bigint("build", { mode: "number" }).notNull(),
+    attempt: integer("attempt").notNull(),
+    priority: integer("priority").notNull(),
+    events: integer("events").notNull(),
+    eventAt: timestamp("event_at", { withTimezone: true }).notNull(),
+    queuedAt: timestamp("queued_at", { withTimezone: true }).notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }).notNull(),
+    outcome: text("outcome").notNull(),
+    steps: jsonb("steps").notNull(),
+    error: text("error"),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.siteId, table.build] }),
+    finishedAtIdx: index("idx_storefront_build_finished_at").on(table.finishedAt),
+  }),
+);

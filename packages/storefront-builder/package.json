@@ -1,0 +1,43 @@
+{
+  "name": "@merfy/storefront-builder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:stack": "vitest run --coverage --config vitest.stack.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write --no-error-on-unmatched-pattern src __tests__ scripts",
+    "format:check": "prettier --check --no-error-on-unmatched-pattern src __tests__ scripts",
+    "stack:up": "docker compose -f compose.stack.yml up -d --wait && docker compose -f compose.stack.yml exec -T minio mc mb --ignore-existing local/storefront-test",
+    "stack:stop": "docker compose -f compose.stack.yml stop",
+    "start": "tsx src/main.ts",
+    "renderer": "tsx scripts/build-renderer.ts",
+    "shop": "tsx scripts/shop.ts",
+    "probe": "tsx scripts/probe.ts"
+  },
+  "dependencies": {
+    "@merfy/storefront-build": "workspace:*",
+    "@merfy/storefront-storage": "workspace:*",
+    "@merfy/tokens": "workspace:*",
+    "amqp-connection-manager": "4.1.15",
+    "amqplib": "0.10.9",
+    "pg": "8.16.3",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.2",
+    "@types/amqplib": "0.10.8",
+    "@types/node": "22.20.1",
+    "@types/pg": "8.16.0",
+    "@vitest/coverage-v8": "3.2.7",
+    "eslint": "9.39.2",
+    "prettier": "3.8.0",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.53.0",
+    "vitest": "3.2.7"
+  }
+}

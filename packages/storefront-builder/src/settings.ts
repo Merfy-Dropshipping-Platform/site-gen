@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { INDEXNOW_URL } from './indexnow';
 import { parseWith } from './parse';
 
 // Настройки сборщика — из переменных окружения приложения Coolify (design.md блока 6, раздел 4: «число мест — из
@@ -25,6 +26,9 @@ const envSchema = z.object({
   PRODUCT_TIMEOUT_MS: count(10_000),
   // Магазины для поиска: robots.txt открыт и есть карта сайта (блок 5). На dev — нет.
   STOREFRONT_INDEXABLE: z.enum(['true', 'false']).default('false'),
+  // IndexNow (design.md, раздел 4): ключ — тот же, что у раздачи (блок 5); нет ключа — уведомлений нет.
+  INDEXNOW_KEY: z.string().min(8).optional(),
+  INDEXNOW_URL: z.url().default(INDEXNOW_URL),
 });
 
 // Паузы перед повторами упавшей сборки: три запуска — первый и два повтора (раздел 4, В6-4).
@@ -44,6 +48,7 @@ export interface Settings {
   reconcileMs: number;
   productTimeoutMs: number;
   indexable: boolean;
+  indexNow: { key: string; endpoint: string } | null;
 }
 
 export function readSettings(env: NodeJS.ProcessEnv): Settings {
@@ -67,5 +72,6 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
     reconcileMs: value.RECONCILE_MS,
     productTimeoutMs: value.PRODUCT_TIMEOUT_MS,
     indexable: value.STOREFRONT_INDEXABLE === 'true',
+    indexNow: value.INDEXNOW_KEY === undefined ? null : { key: value.INDEXNOW_KEY, endpoint: value.INDEXNOW_URL },
   };
 }

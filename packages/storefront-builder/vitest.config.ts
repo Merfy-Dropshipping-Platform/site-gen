@@ -8,7 +8,7 @@ export default defineConfig({
     include: ['__tests__/*.test.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/{errors,parse,log,events,settings,slots,themes}.ts'],
+      include: ['src/{errors,parse,log,events,settings,slots,themes,indexnow,preview}.ts'],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },

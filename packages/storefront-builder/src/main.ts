@@ -5,7 +5,9 @@ import { Pool } from 'pg';
 import { raiseAlert } from './alert';
 import { openBroker } from './broker';
 import { startDrawServer } from './draw';
+import { createIndexNow } from './indexnow';
 import { jsonLog } from './log';
+import { previewVia } from './preview';
 import { openRpc } from './rpc';
 import { enqueueVia, startRuntime, type RuntimeDeps } from './runtime';
 import { RETRY_DELAYS_MS, readSettings } from './settings';
@@ -42,6 +44,8 @@ const deps: RuntimeDeps = {
   log,
   enqueue: enqueueVia(broker, log),
   alert: (stopped) => raiseAlert({ db, publishActivity: broker.publishActivity, log, clock }, stopped),
+  announce: settings.indexNow === null ? undefined : createIndexNow({ ...settings.indexNow, log }),
+  preview: previewVia(broker.publishPreview, log),
   broker,
   themeIds: [...loaded.themes.keys()],
   slots: settings.buildSlots,

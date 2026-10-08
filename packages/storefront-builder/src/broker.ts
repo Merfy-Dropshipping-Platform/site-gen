@@ -12,6 +12,7 @@ import {
   type ContentEvent,
 } from './events';
 import type { Log } from './log';
+import { PREVIEW_EXCHANGE, type PreviewSignal } from './preview';
 
 // RabbitMQ сборщика (design.md блока 6, В6-2 В, Св-3 А). Имена — новые: нынешние sites_queue, sites_build_queue и
 // sites_product_events сборщик не объявляет и не читает. Классические очереди: у RabbitMQ 3.13 приоритеты есть только
@@ -41,6 +42,7 @@ export interface Broker {
   publishJob: (job: BuildJob, priority: number) => Promise<void>;
   publishEvent: (event: ContentEvent) => Promise<void>;
   publishActivity: (routingKey: string, envelope: Record<string, unknown>) => Promise<void>;
+  publishPreview: (signal: PreviewSignal) => Promise<void>;
   consume: (queue: string, prefetch: number, handler: Handler) => Promise<void>;
   close: () => Promise<void>;
 }
@@ -49,6 +51,7 @@ export async function declareTopology(channel: ConfirmChannel): Promise<void> {
   await channel.assertExchange(CONTENT_EXCHANGE, 'topic', { durable: true });
   await channel.assertExchange(PRODUCT_EXCHANGE, 'fanout', { durable: true });
   await channel.assertExchange(ACTIVITY_EXCHANGE, 'topic', { durable: true });
+  await channel.assertExchange(PREVIEW_EXCHANGE, 'fanout', { durable: true });
   await channel.assertQueue(EVENTS_QUEUE, { durable: true });
   await channel.bindQueue(EVENTS_QUEUE, CONTENT_EXCHANGE, '#');
   await channel.bindQueue(EVENTS_QUEUE, PRODUCT_EXCHANGE, '');
@@ -105,6 +108,9 @@ export function openBroker(url: string, log: Log): Broker {
     },
     publishActivity: async (routingKey, envelope) => {
       await publisher.publish(ACTIVITY_EXCHANGE, routingKey, json(envelope), persistent());
+    },
+    publishPreview: async (signal) => {
+      await publisher.publish(PREVIEW_EXCHANGE, '', json(signal), { contentType: 'application/json' });
     },
     consume,
     close: async () => {

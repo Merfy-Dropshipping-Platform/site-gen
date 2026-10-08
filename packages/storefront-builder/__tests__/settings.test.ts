@@ -32,6 +32,7 @@ describe('настройки', () => {
       reconcileMs: 3_600_000,
       productTimeoutMs: 10_000,
       indexable: false,
+      indexNow: null,
     });
     expect(RETRY_DELAYS_MS).toEqual([5000, 30_000]);
   });
@@ -39,6 +40,8 @@ describe('настройки', () => {
   it('числа и флаг поиска — из строк окружения', () => {
     const settings = readSettings({ ...ENV, BUILD_SLOTS: '2', DRAW_SLOTS: '4', STOREFRONT_INDEXABLE: 'true' });
     expect(settings).toMatchObject({ buildSlots: 2, drawSlots: 4, indexable: true });
+    const indexNow = readSettings({ ...ENV, INDEXNOW_KEY: 'key-12345678' }).indexNow;
+    expect(indexNow).toEqual({ key: 'key-12345678', endpoint: 'https://yandex.com/indexnow' });
   });
 
   it('нет переменной или коммит не 40 знаков — settings-invalid с именем переменной, без значения', () => {

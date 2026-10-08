@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { priorityOf, type IncomingEvent } from './events';
 import type { Log } from './log';
+import { previewSignal, type Preview } from './preview';
 import { acceptEvent, type Accepted, type Queryable, type ShopStateOptions, type StartedJob } from './shop-state';
 
 // Приём события (design.md блока 6, В6-3 Б): чьи это магазины → строка каждого → свободен — задание в очередь, занят —
@@ -25,6 +26,7 @@ export interface AcceptDeps {
   shopState: ShopStateOptions;
   log: Log;
   enqueue: (job: StartedJob) => Promise<void>;
+  preview?: Preview;
 }
 
 async function shopsOf(deps: AcceptDeps, event: IncomingEvent): Promise<string[]> {
@@ -40,6 +42,7 @@ async function acceptForShop(deps: AcceptDeps, event: IncomingEvent, siteId: str
   const { outcome, ...fields } = accepted;
   deps.log('event-accepted', { type: event.type, shopId: siteId, outcome, ...fields });
   if (accepted.outcome === 'started') await deps.enqueue(accepted);
+  await deps.preview?.(previewSignal(event.type, siteId));
   return accepted;
 }
 

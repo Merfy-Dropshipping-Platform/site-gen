@@ -4,12 +4,13 @@ import { runBuildJob, settle, type BuilderDeps } from './build-job';
 import { errorText } from './errors';
 import { parseIncoming, parseJob } from './events';
 import type { Log } from './log';
+import type { Preview } from './preview';
 import { reconcileShops } from './reconcile';
 import { expiredJobs, renewLostJobs, startDueRetries, type StartedJob } from './shop-state';
 
 // Сборщик в работе (design.md блока 6): два потребителя и два таймера. Таймеры — только на сбоях (владелец 08.10:
 // «я хочу на событийность упираться»): раз в секунду — повторы, у которых прошла пауза, и задания с истёкшим замком;
-// раз в час — сверка ключей (Св-3 А). Склейку таймеры не держит: её делает строка магазина.
+// раз в час — сверка ключей (Св-3 А). Склейка таймеров не держит: её делает строка магазина.
 
 export interface RuntimeDeps extends BuilderDeps {
   broker: Broker;
@@ -17,6 +18,8 @@ export interface RuntimeDeps extends BuilderDeps {
   // Мест для одновременных сборок (на dev — 1, раздел 4). Событиям хватает одного: приём — две записи в базу.
   slots: number;
   reconcileMs: number;
+  // Сигнал превью на каждое принятое событие (design.md, раздел 4, Св-2).
+  preview?: Preview;
 }
 
 export interface Runtime {

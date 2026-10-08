@@ -1,7 +1,8 @@
 import { buildKey, buildStorefront, parseBuildInputs, type ThemeBuild } from '@merfy/storefront-build';
 import { publishBuild, type ObjectStore } from '@merfy/storefront-storage';
 import { StorefrontBuilderError, errorText } from './errors';
-import { liveKey } from './live';
+import type { Announce } from './indexnow';
+import { liveManifest } from './live';
 import type { Log } from './log';
 import {
   claimJob,
@@ -40,6 +41,8 @@ export interface BuilderDeps {
   log: Log;
   enqueue: (job: StartedJob) => Promise<void>;
   alert: (stopped: StoppedShop) => Promise<void>;
+  // После переключения указателя у магазина для поиска — IndexNow (design.md, раздел 4).
+  announce?: Announce;
 }
 
 interface Attempt {
@@ -71,17 +74,20 @@ async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, t
   const build = await buildStorefront(snapshot.inputs, references, theme);
   const request = { label: snapshot.address.label, build: job.build, manifest: build.manifest, files: build.files };
   const now = deps.clock().toISOString();
-  return publishBuild(deps.store, { ...request, publicUrl: snapshot.address.url, indexable: deps.indexable, now });
+  const options = { ...request, publicUrl: snapshot.address.url, indexable: deps.indexable, now };
+  return { ...(await publishBuild(deps.store, options)), pages: build.manifest.pages };
 }
 
 async function attempt(deps: BuilderDeps, job: ClaimedJob, steps: Steps): Promise<Attempt> {
   const time = stepTimer(deps, job, steps);
   const snapshot = await time('snapshot', () => readSnapshot(deps.snapshot, job.siteId));
   const key = buildKey(parseBuildInputs(snapshot.inputs));
-  if ((await time('compare', () => liveKey(deps.store, snapshot.address.label))) === key)
-    return { outcome: 'skipped', error: null };
+  const live = await time('compare', () => liveManifest(deps.store, snapshot.address.label));
+  if (live?.key === key) return { outcome: 'skipped', error: null };
   const theme = themeFor(deps, snapshot);
   const result = await time('build', () => publish(deps, job, snapshot, theme));
+  if (result.status === 'live' && deps.indexable)
+    await deps.announce?.(snapshot.address.url, live?.pages ?? [], result.pages);
   if (result.status !== 'blocked') return { outcome: result.status, error: null };
   const problems = result.problems.map((problem) => `${problem.rule}: ${problem.text}`).join('; ');
   throw new StorefrontBuilderError('build-blocked', problems, { path: `site/${job.siteId}` });

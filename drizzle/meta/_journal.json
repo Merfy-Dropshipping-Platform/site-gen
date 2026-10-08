@@ -162,6 +162,13 @@
       "when": 1791504000000,
       "tag": "0022_storefront_release_hold",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791590400000,
+      "tag": "0023_storefront_next_build",
+      "breakpoints": true
     }
   ]
 }

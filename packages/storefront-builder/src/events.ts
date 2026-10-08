@@ -5,7 +5,8 @@ import { parseWith } from './parse';
 // точки обмена RabbitMQ:
 //   content.events — события из site-gen: { v: 1, type, siteId, eventAt, source }; type — id события блока 3
 //                    (rebuild-events.json) или служебное: old-path — старый путь сборки отдал магазин сборщику,
-//                    reconcile — сверка нашла расхождение, restart — служебная команда перезапуска;
+//                    reconcile — сверка нашла расхождение, restart — служебная команда перезапуска; у публикации —
+//                    адрес ответа (replyTo, correlationId): сборщик отвечает номером сборки (buildReplyBody);
 //   product.events — готовые события сервиса product: { event, tenantId, productIds, timestamp }; tenantId — id
 //                    организации или id сайта (product-update.listener.ts:207-219).
 // Задание сборки в очереди storefront_builds — { v: 1, siteId, build }: всё остальное лежит в строке магазина.
@@ -77,6 +78,10 @@ export function parseIncoming(exchange: string, body: unknown, receivedAt: strin
 }
 
 export const contentEventBody = (event: ContentEvent) => ({ v: FORMAT_VERSION, ...event });
+
+// Ответ на событие с адресом ответа — публикацию из site-gen (StorefrontHandoff.requestBuild): номер сборки, в которую
+// вошло событие, или null — магазин не новой темы, удалён или ждёт места выпуска.
+export const buildReplyBody = (build: number | null) => ({ v: FORMAT_VERSION, build });
 
 const jobSchema = z.strictObject({
   v: z.literal(FORMAT_VERSION),

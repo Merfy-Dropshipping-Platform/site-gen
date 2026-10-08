@@ -18,7 +18,9 @@ import {
 } from "../../generator/generator.service";
 import {
   CONTENT_EXCHANGE,
+  REPLY_QUEUE,
   StorefrontHandoff,
+  parseBuildReply,
   readNewThemeIds,
 } from "../storefront-handoff.service";
 
@@ -26,6 +28,7 @@ const mockPublish = jest.fn().mockResolvedValue(true);
 const mockSendToQueue = jest.fn().mockResolvedValue(true);
 const mockAssertExchange = jest.fn().mockResolvedValue(undefined);
 const mockAssertQueue = jest.fn().mockResolvedValue(undefined);
+const mockConsume = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("amqp-connection-manager", () => ({
   connect: () => ({
@@ -33,6 +36,7 @@ jest.mock("amqp-connection-manager", () => ({
       void opts.setup?.({
         assertExchange: mockAssertExchange,
         assertQueue: mockAssertQueue,
+        consume: mockConsume,
       });
       return {
         publish: mockPublish,
@@ -59,13 +63,24 @@ function fakeDb(theme: string | null | Error): any {
 const config = (values: Record<string, string>) =>
   ({ get: (key: string) => values[key] }) as any;
 
-function handoff(theme: string | null | Error): StorefrontHandoff {
+function handoff(
+  theme: string | null | Error,
+  values: Record<string, string> = {},
+): StorefrontHandoff {
   const service = new StorefrontHandoff(
-    config({ RABBITMQ_URL: "amqp://test" }),
+    config({ RABBITMQ_URL: "amqp://test", ...values }),
     fakeDb(theme),
   );
   service.onModuleInit();
   return service;
+}
+
+// Ответ сборщика на канал прямого ответа: обработчик, который сервис
+// подписал на REPLY_QUEUE при подключении.
+async function replyFromBuilder(correlationId: string, body: string) {
+  await new Promise((resolve) => setImmediate(resolve));
+  const [, onReply] = mockConsume.mock.calls.at(-1);
+  onReply({ properties: { correlationId }, content: Buffer.from(body) });
 }
 
 const published = () =>
@@ -158,6 +173,49 @@ describe("StorefrontHandoff", () => {
         (l) => l.includes("publish policy-change") && l.includes("broker down"),
       ),
     ).toBe(true);
+  });
+
+  it("публикация: merchant-publish с адресом ответа, ответ сборщика — номер сборки", async () => {
+    const service = handoff("nova");
+    const pending = service.requestBuild(
+      NOVA_SITE,
+      "SitesDomainService.publish",
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+    const [exchange, key, , options] = mockPublish.mock.calls[0];
+    expect([exchange, key]).toEqual([CONTENT_EXCHANGE, "merchant-publish"]);
+    expect(options).toMatchObject({ replyTo: REPLY_QUEUE, persistent: true });
+    expect(mockConsume).toHaveBeenCalledWith(
+      REPLY_QUEUE,
+      expect.any(Function),
+      {
+        noAck: true,
+      },
+    );
+    await replyFromBuilder(
+      options.correlationId,
+      '{"v":1,"build":1791590400123}',
+    );
+    expect(await pending).toBe(1791590400123);
+  });
+
+  it("сборщик не ответил за тайм-аут или брокер недоступен — null и строка в логе", async () => {
+    const quiet = handoff("nova", { STOREFRONT_BUILD_REPLY_MS: "30" });
+    expect(await quiet.requestBuild(NOVA_SITE, "test")).toBeNull();
+    expect(logs.some((l) => l.startsWith("сборщик не ответил за 30 мс"))).toBe(
+      true,
+    );
+    mockPublish.mockRejectedValueOnce(new Error("broker down"));
+    const started = Date.now();
+    expect(await handoff("nova").requestBuild(NOVA_SITE, "test")).toBeNull();
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
+
+  it("ответ сборщика: номер, null или мусор — номер только целый", () => {
+    expect(parseBuildReply(Buffer.from('{"v":1,"build":42}'))).toBe(42);
+    expect(parseBuildReply(Buffer.from('{"v":1,"build":null}'))).toBeNull();
+    expect(parseBuildReply(Buffer.from('{"v":1,"build":4.5}'))).toBeNull();
+    expect(parseBuildReply(Buffer.from("не json"))).toBeNull();
   });
 
   it("без RABBITMQ_URL — событие не отправить, но и не упасть", async () => {

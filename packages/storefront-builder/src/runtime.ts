@@ -1,13 +1,13 @@
 import { acceptIncoming } from './accept';
-import { EVENTS_QUEUE, JOBS_QUEUE, type Broker } from './broker';
+import { EVENTS_QUEUE, JOBS_QUEUE, type Broker, type Delivery } from './broker';
 import { runBuildJob, settle, type BuilderDeps } from './build-job';
 import { errorText } from './errors';
-import { parseIncoming, parseJob } from './events';
+import { buildReplyBody, parseIncoming, parseJob } from './events';
 import type { Log } from './log';
 import type { Preview } from './preview';
 import { reconcileShops } from './reconcile';
 import { queueHeldReleases } from './release';
-import { expiredJobs, renewLostJobs, startDueRetries, type StartedJob } from './shop-state';
+import { buildOf, expiredJobs, renewLostJobs, startDueRetries, type Accepted, type StartedJob } from './shop-state';
 
 // Сборщик в работе (design.md блока 6): два потребителя и два таймера. Таймеры — только на сбоях (владелец 08.10:
 // «я хочу на событийность упираться»): раз в секунду — повторы, у которых прошла пауза, и задания с истёкшим замком;
@@ -66,9 +66,22 @@ export async function sweep(deps: RuntimeDeps): Promise<void> {
   await queueHeldReleases(deps);
 }
 
+// Публикация из site-gen ждёт номер сборки (StorefrontHandoff.requestBuild) — ответ после записи в строку магазина и
+// постановки задания. Ответ не ушёл (site-gen уже не ждёт) — только строка журнала: событие принято, повторять его нельзя.
+async function replyBuild(deps: RuntimeDeps, delivery: Delivery, accepted: Accepted[]): Promise<void> {
+  if (delivery.replyTo === undefined) return;
+  const build = accepted.map(buildOf).find((value) => value !== null) ?? null;
+  try {
+    await deps.broker.reply(delivery.replyTo, delivery.correlationId, buildReplyBody(build));
+  } catch (error) {
+    deps.log('reply-failed', { build, error: errorText(error) });
+  }
+}
+
 export async function startRuntime(deps: RuntimeDeps): Promise<Runtime> {
-  await deps.broker.consume(EVENTS_QUEUE, EVENT_PREFETCH, async ({ exchange, body }) => {
-    await acceptIncoming(deps, parseIncoming(exchange, body, deps.clock().toISOString()));
+  await deps.broker.consume(EVENTS_QUEUE, EVENT_PREFETCH, async (delivery) => {
+    const event = parseIncoming(delivery.exchange, delivery.body, deps.clock().toISOString());
+    await replyBuild(deps, delivery, await acceptIncoming(deps, event));
   });
   await deps.broker.consume(JOBS_QUEUE, deps.slots, ({ body }) => runBuildJob(deps, parseJob(body)));
   const timers = [

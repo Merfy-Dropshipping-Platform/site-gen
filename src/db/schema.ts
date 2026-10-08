@@ -543,6 +543,9 @@ export const storefrontShop = pgTable(
     pendingPriority: integer("pending_priority").default(0).notNull(),
     pendingEventAt: timestamp("pending_event_at", { withTimezone: true }),
     error: text("error"),
+    // Номер следующей сборки в резерве: публикация, вставшая в «ещё раз»,
+    // сразу знает номер своей сборки (drizzle/0023).
+    nextBuild: bigint("next_build", { mode: "number" }),
   },
   (table) => ({
     stateCheck: check(

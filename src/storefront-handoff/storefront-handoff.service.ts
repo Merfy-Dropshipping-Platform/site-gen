@@ -9,7 +9,13 @@
  *   вместо старой сборки событие сборщику и `true`; нынешний — `false`, старый
  *   путь идёт как раньше.
  * - `notify(siteId, type, source)` — событие сборщику из источника внутри
- *   site-gen (имя, домен, политики, контакты), только для магазина новой темы.
+ *   site-gen (имя, домен, политики, контакты, брендинг), только для магазина
+ *   новой темы.
+ * - `requestBuild(siteId, source)` — публикация магазина новой темы: событие
+ *   merchant-publish с адресом ответа, сборщик отвечает номером сборки, в
+ *   которую вошла публикация (прямой ответ RabbitMQ, direct reply-to). Не
+ *   ответил за STOREFRONT_BUILD_REPLY_MS (по умолчанию 3 с) — null: событие
+ *   уже в очереди сборщика, публикация отвечает «queued».
  *
  * Новые темы — ключи packages/storefront-build/theme-versions.json (блок 4).
  * Событие — в точку обмена `content.events` (topic), ключ маршрута — тип
@@ -27,15 +33,20 @@ import {
 import { ConfigService } from "@nestjs/config";
 import * as amqp from "amqp-connection-manager";
 import type { ChannelWrapper } from "amqp-connection-manager";
-import type { Channel } from "amqplib";
+import type { Channel, ConsumeMessage } from "amqplib";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { readFileSync } from "fs";
 import * as path from "path";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 
 export const CONTENT_EXCHANGE = "content.events";
+// Прямой ответ RabbitMQ: своей очереди нет, ответ приходит на канал, который
+// опубликовал событие (https://www.rabbitmq.com/docs/direct-reply-to).
+export const REPLY_QUEUE = "amq.rabbitmq.reply-to";
+const REPLY_TIMEOUT_MS = 3_000;
 export const THEME_VERSIONS_FILE =
   "packages/storefront-build/theme-versions.json";
 
@@ -56,18 +67,36 @@ export function readNewThemeIds(root: string): ReadonlySet<string> {
 const message = (e: unknown): string =>
   e instanceof Error ? e.message : String(e);
 
+// Ответ сборщика: { v: 1, build } — номер сборки или null (магазин не его).
+export function parseBuildReply(content: Buffer): number | null {
+  try {
+    const build: unknown = JSON.parse(content.toString("utf8"))?.build;
+    return typeof build === "number" && Number.isSafeInteger(build)
+      ? build
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 @Injectable()
 export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(StorefrontHandoff.name);
   private readonly newThemes = readNewThemeIds(process.cwd());
   private connection: amqp.AmqpConnectionManager | null = null;
   private channel: ChannelWrapper | null = null;
+  // Ждущие ответа сборщика публикации: correlationId → кому отдать номер.
+  private readonly replies = new Map<string, (build: number | null) => void>();
+  private readonly replyTimeoutMs: number;
 
   constructor(
     private readonly config: ConfigService,
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
-  ) {}
+  ) {
+    const configured = Number(config.get<string>("STOREFRONT_BUILD_REPLY_MS"));
+    this.replyTimeoutMs = configured > 0 ? configured : REPLY_TIMEOUT_MS;
+  }
 
   onModuleInit(): void {
     const rabbitmqUrl = this.config.get<string>("RABBITMQ_URL");
@@ -80,9 +109,19 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
     this.connection = amqp.connect([rabbitmqUrl]);
     this.channel = this.connection.createChannel({
       json: false,
-      setup: (ch: Channel) =>
-        ch.assertExchange(CONTENT_EXCHANGE, "topic", { durable: true }),
+      setup: async (ch: Channel) => {
+        await ch.assertExchange(CONTENT_EXCHANGE, "topic", { durable: true });
+        // Прямой ответ — только без подтверждений и на том же канале.
+        await ch.consume(REPLY_QUEUE, (msg) => this.onReply(msg), {
+          noAck: true,
+        });
+      },
     });
+  }
+
+  private onReply(msg: ConsumeMessage | null): void {
+    const answer = this.replies.get(msg?.properties.correlationId);
+    if (msg && answer) answer(parseBuildReply(msg.content));
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -121,14 +160,50 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
     await this.publish(siteId, type, source);
   }
 
+  /**
+   * Публикация магазина новой темы: событие merchant-publish и номер сборки,
+   * в которую оно вошло. null — сборщик не ответил за тайм-аут или брокер
+   * недоступен; событие, если ушло, сборщик возьмёт позже.
+   */
+  async requestBuild(siteId: string, source: string): Promise<number | null> {
+    const correlationId = randomUUID();
+    const reply = this.waitReply(correlationId);
+    const sent = await this.publish(siteId, "merchant-publish", source, {
+      replyTo: REPLY_QUEUE,
+      correlationId,
+    });
+    if (!sent) this.replies.get(correlationId)?.(null);
+    const build = await reply;
+    if (build === null)
+      this.logger.warn(
+        `сборщик не ответил за ${this.replyTimeoutMs} мс: site=${siteId}, публикация — queued`,
+      );
+    return build;
+  }
+
+  private waitReply(correlationId: string): Promise<number | null> {
+    return new Promise((resolve) => {
+      const timer = setTimeout(
+        () => this.replies.get(correlationId)?.(null),
+        this.replyTimeoutMs,
+      );
+      this.replies.set(correlationId, (build) => {
+        clearTimeout(timer);
+        this.replies.delete(correlationId);
+        resolve(build);
+      });
+    });
+  }
+
   private async publish(
     siteId: string,
     type: string,
     source: string,
-  ): Promise<void> {
+    reply: { replyTo?: string; correlationId?: string } = {},
+  ): Promise<boolean> {
     if (!this.channel) {
       this.logger.warn(`broker not ready, dropping ${type} for ${siteId}`);
-      return;
+      return false;
     }
     const body = {
       v: 1,
@@ -145,10 +220,13 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
         {
           persistent: true,
           contentType: "application/json",
+          ...reply,
         },
       );
+      return true;
     } catch (e) {
       this.logger.warn(`publish ${type} for ${siteId} failed: ${message(e)}`);
+      return false;
     }
   }
 }

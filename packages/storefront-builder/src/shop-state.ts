@@ -10,7 +10,8 @@ import { PRIORITY } from './events';
 //   retrying — сборка упала, повтор в retry_at;
 //   stopped  — упали все запуски: тревога ушла, ждём события или команды перезапуска;
 //   held     — выпуск темы ждёт места: в работе уже K заданий выпуска (В6-2 В, drizzle/0022).
-// pending — сколько событий пришло, пока магазин занят или ждёт места: это «ещё раз», следующая сборка одна на все.
+// pending — сколько событий пришло, пока магазин занят или ждёт места: это «ещё раз», следующая сборка одна на все;
+// next_build — её номер в резерве (drizzle/0023).
 
 export type Queryable = Pick<Pool, 'query'>;
 // База с отдельным подключением — для транзакции под замком (порции выпуска).
@@ -29,11 +30,15 @@ export interface StartedJob {
 }
 
 // started — задание ушло в очередь; coalesced — событие склеено: events — сколько событий в ждущем задании, pending —
-// сколько ждут следующей сборки («ещё раз»); held — выпуск ждёт места, pending — сколько событий ждут вместе с ним.
+// сколько ждут следующей сборки («ещё раз»), build — номер сборки, в которую войдёт событие; held — выпуск ждёт места,
+// pending — сколько событий ждут вместе с ним, номера ещё нет.
 export type Accepted =
   | ({ outcome: 'started' } & StartedJob)
-  | { outcome: 'coalesced'; siteId: string; events: number; pending: number }
+  | { outcome: 'coalesced'; siteId: string; events: number; pending: number; build: number }
   | { outcome: 'held'; siteId: string; pending: number };
+
+// Номер сборки, в которую вошло событие: его ждёт публикация (site-gen). Выпуск, что ждёт места, номера ещё не имеет.
+export const buildOf = (accepted: Accepted): number | null => ('build' in accepted ? accepted.build : null);
 
 export interface ShopEvent {
   siteId: string;
@@ -44,10 +49,14 @@ export interface ShopEvent {
 // Номер сборки: время в миллисекундах, но не меньше прошлого номера плюс один. Сборка, начатая позже, — с большим
 // номером; указатель блока 5 пишет «только если новее», и номер не откатится, даже если строку магазина создали заново.
 const NEXT_BUILD = 'GREATEST(build + 1, (extract(epoch FROM clock_timestamp()) * 1000)::bigint)';
+// Номер следующей сборки резервируется, когда первое событие встаёт в «ещё раз» (next_build, drizzle/0023): так
+// публикация сразу знает номер сборки, в которую войдёт. Резерв больше номера идущей сборки, а сборка, которая его
+// возьмёт, начнётся после неё, — «только если новее» блока 5 держится.
+const TAKE_BUILD = `COALESCE(next_build, ${NEXT_BUILD})`;
 const lease = (param: string): string => `now() + ${param} * interval '1 millisecond'`;
 
 const startedRow = z.object({ site_id: z.string(), build: z.coerce.number().int(), priority: z.int() });
-const coalescedRow = z.object({ events: z.int(), pending: z.int() });
+const coalescedRow = z.object({ events: z.int(), pending: z.int(), build: z.coerce.number().int() });
 const heldRow = z.object({ pending: z.int() });
 
 const toStarted = (row: z.infer<typeof startedRow>): StartedJob => ({
@@ -58,23 +67,26 @@ const toStarted = (row: z.infer<typeof startedRow>): StartedJob => ({
 
 // Свободен, остановлен или ждёт места выпуска — сборка сразу. События, что ждали в строке, едут в неё же: правка
 // или публикация магазина из волны выпуска не стоит в очереди волны.
-const START_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${NEXT_BUILD}, lease_until = ${lease('$2')},
-  queued_at = now(), started_at = NULL, attempt = 0, retry_at = NULL, error = NULL,
+const START_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${TAKE_BUILD}, next_build = NULL,
+  lease_until = ${lease('$2')}, queued_at = now(), started_at = NULL, attempt = 0, retry_at = NULL, error = NULL,
   events = 1 + pending, priority = GREATEST($3, pending_priority), event_at = LEAST($4::timestamptz, pending_event_at),
   pending = 0, pending_priority = 0, pending_event_at = NULL
   WHERE site_id = $1 AND state IN ('idle', 'stopped', 'held') RETURNING site_id, build, priority`;
 
 // Занят. Задание ещё в очереди (started_at пуст) — событие едет в него: данные сборка прочтёт при старте. Сборка уже
-// идёт или ждёт повтора — «ещё раз»: счётчик, самый высокий приоритет и самое раннее время правки среди ждущих.
+// идёт или ждёт повтора — «ещё раз»: счётчик, самый высокий приоритет и самое раннее время правки среди ждущих, номер
+// следующей сборки — в резерв. В ответе — номер сборки, в которую войдёт событие.
 const QUEUED = "(state = 'busy' AND started_at IS NULL)";
 const COALESCE_SQL = `UPDATE storefront_shop SET
+  next_build = CASE WHEN ${QUEUED} THEN next_build ELSE ${TAKE_BUILD} END,
   events = CASE WHEN ${QUEUED} THEN events + 1 ELSE events END,
   priority = CASE WHEN ${QUEUED} THEN GREATEST(priority, $2) ELSE priority END,
   event_at = CASE WHEN ${QUEUED} THEN LEAST(event_at, $3::timestamptz) ELSE event_at END,
   pending = CASE WHEN ${QUEUED} THEN pending ELSE pending + 1 END,
   pending_priority = CASE WHEN ${QUEUED} THEN pending_priority ELSE GREATEST(pending_priority, $2) END,
   pending_event_at = CASE WHEN ${QUEUED} THEN pending_event_at ELSE LEAST(pending_event_at, $3::timestamptz) END
-  WHERE site_id = $1 AND state IN ('busy', 'retrying') RETURNING events, pending`;
+  WHERE site_id = $1 AND state IN ('busy', 'retrying')
+  RETURNING events, pending, CASE WHEN ${QUEUED} THEN build ELSE next_build END AS build`;
 
 // Выпуск ждёт места: свободный или остановленный магазин встаёт в held, события копятся в pending. Задание ставит
 // startHeldReleases — по порядку прихода, не больше K в работе.
@@ -129,8 +141,8 @@ export const holdRelease = (db: Queryable, event: ShopEvent, options: ShopStateO
 const RELEASE_LOCK = 'storefront_builder:release';
 const RELEASES_IN_WORK = `SELECT count(*) FROM storefront_shop
   WHERE state IN ('busy', 'retrying') AND priority = ${PRIORITY.release}`;
-const START_HELD_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${NEXT_BUILD}, lease_until = ${lease('$1')},
-  queued_at = now(), started_at = NULL, attempt = 0, retry_at = NULL, error = NULL,
+const START_HELD_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${TAKE_BUILD}, next_build = NULL,
+  lease_until = ${lease('$1')}, queued_at = now(), started_at = NULL, attempt = 0, retry_at = NULL, error = NULL,
   events = pending, priority = pending_priority, event_at = pending_event_at,
   pending = 0, pending_priority = 0, pending_event_at = NULL
   WHERE site_id IN (SELECT site_id FROM storefront_shop WHERE state = 'held' ORDER BY pending_event_at, site_id
@@ -213,7 +225,7 @@ export type Finished =
 
 const SUCCESS_SQL = `UPDATE storefront_shop SET
   state = CASE WHEN pending > 0 THEN 'busy' ELSE 'idle' END,
-  build = CASE WHEN pending > 0 THEN ${NEXT_BUILD} ELSE build END,
+  build = CASE WHEN pending > 0 THEN ${TAKE_BUILD} ELSE build END, next_build = NULL,
   lease_until = CASE WHEN pending > 0 THEN ${lease('$2')} END,
   queued_at = CASE WHEN pending > 0 THEN now() END,
   started_at = NULL, attempt = 0, error = NULL,
@@ -262,8 +274,8 @@ export const finishFailure = (
 ): Promise<Finished | null> => finish(db, FAILURE_SQL, [job.siteId, options.retryDelaysMs, job.build, error]);
 
 // Пауза перед повтором прошла — задание снова, с новым номером. События, пришедшие за паузу, едут в этот же повтор.
-const RETRY_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${NEXT_BUILD}, lease_until = ${lease('$1')},
-  queued_at = now(), started_at = NULL, retry_at = NULL,
+const RETRY_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${TAKE_BUILD}, next_build = NULL,
+  lease_until = ${lease('$1')}, queued_at = now(), started_at = NULL, retry_at = NULL,
   events = events + pending, priority = GREATEST(priority, pending_priority),
   event_at = LEAST(event_at, pending_event_at),
   pending = 0, pending_priority = 0, pending_event_at = NULL

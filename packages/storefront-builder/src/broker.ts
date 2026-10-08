@@ -31,9 +31,12 @@ const PUBLISH_TIMEOUT_MS = 4_000;
 const REQUEUE_DELAY_MS = 1_000;
 const RECONNECT_SECONDS = 2;
 
+// replyTo и correlationId — у события, на которое ждут ответа (публикация из site-gen ждёт номер сборки).
 export interface Delivery {
   exchange: string;
   body: unknown;
+  replyTo?: string;
+  correlationId?: string;
 }
 
 export type Handler = (delivery: Delivery) => Promise<void>;
@@ -41,6 +44,7 @@ export type Handler = (delivery: Delivery) => Promise<void>;
 export interface Broker {
   publishJob: (job: BuildJob, priority: number) => Promise<void>;
   publishEvent: (event: ContentEvent) => Promise<void>;
+  reply: (replyTo: string, correlationId: string | undefined, body: unknown) => Promise<void>;
   publishActivity: (routingKey: string, envelope: Record<string, unknown>) => Promise<void>;
   publishPreview: (signal: PreviewSignal) => Promise<void>;
   consume: (queue: string, prefetch: number, handler: Handler) => Promise<void>;
@@ -72,11 +76,23 @@ function bodyOf(message: ConsumeMessage): unknown {
 const isDropped = (error: unknown): boolean =>
   error instanceof StorefrontBuilderError && error.code === 'message-invalid';
 
+const text = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined);
+
+function deliveryOf(message: ConsumeMessage): Delivery {
+  const properties: { replyTo?: unknown; correlationId?: unknown } = message.properties;
+  return {
+    exchange: message.fields.exchange,
+    body: bodyOf(message),
+    replyTo: text(properties.replyTo),
+    correlationId: text(properties.correlationId),
+  };
+}
+
 // Сообщение обработано — подтверждаем. Сообщение негодное — в журнал и подтверждаем: повтор его не починит. Упало
 // что-то другое — в журнал и через секунду обратно в очередь.
 async function deliver(channel: ChannelWrapper, message: ConsumeMessage, handler: Handler, log: Log) {
   try {
-    await handler({ exchange: message.fields.exchange, body: bodyOf(message) });
+    await handler(deliveryOf(message));
     channel.ack(message);
   } catch (error) {
     log('message-failed', { queue: message.fields.routingKey, error: errorText(error), dropped: isDropped(error) });
@@ -89,6 +105,28 @@ function openChannel(connection: AmqpConnectionManager): ChannelWrapper {
   return connection.createChannel({ setup: declareTopology, publishTimeout: PUBLISH_TIMEOUT_MS });
 }
 
+type Publishers = Omit<Broker, 'consume' | 'close'>;
+
+// Всё, что сборщик отправляет, — через один канал с подтверждениями брокера.
+const publishersOf = (publisher: ChannelWrapper): Publishers => ({
+  publishJob: async (job, priority) => {
+    await publisher.sendToQueue(JOBS_QUEUE, json(jobBody(job)), persistent(priority));
+  },
+  publishEvent: async (event) => {
+    await publisher.publish(CONTENT_EXCHANGE, event.type, json(contentEventBody(event)), persistent());
+  },
+  // Ответ — в очередь по умолчанию на адрес ответа: у прямого ответа RabbitMQ (direct reply-to) своей очереди нет.
+  reply: async (replyTo, correlationId, body) => {
+    await publisher.sendToQueue(replyTo, json(body), { correlationId, contentType: 'application/json' });
+  },
+  publishActivity: async (routingKey, envelope) => {
+    await publisher.publish(ACTIVITY_EXCHANGE, routingKey, json(envelope), persistent());
+  },
+  publishPreview: async (signal) => {
+    await publisher.publish(PREVIEW_EXCHANGE, '', json(signal), { contentType: 'application/json' });
+  },
+});
+
 export function openBroker(url: string, log: Log): Broker {
   const connection = amqp.connect([url], { reconnectTimeInSeconds: RECONNECT_SECONDS });
   connection.on('disconnect', ({ err }: { err?: Error }) => log('broker-disconnected', { error: errorText(err) }));
@@ -100,18 +138,7 @@ export function openBroker(url: string, log: Log): Broker {
     await channel.consume(queue, (message) => void deliver(channel, message, handler, log), { prefetch });
   };
   return {
-    publishJob: async (job, priority) => {
-      await publisher.sendToQueue(JOBS_QUEUE, json(jobBody(job)), persistent(priority));
-    },
-    publishEvent: async (event) => {
-      await publisher.publish(CONTENT_EXCHANGE, event.type, json(contentEventBody(event)), persistent());
-    },
-    publishActivity: async (routingKey, envelope) => {
-      await publisher.publish(ACTIVITY_EXCHANGE, routingKey, json(envelope), persistent());
-    },
-    publishPreview: async (signal) => {
-      await publisher.publish(PREVIEW_EXCHANGE, '', json(signal), { contentType: 'application/json' });
-    },
+    ...publishersOf(publisher),
     consume,
     close: async () => {
       await Promise.all([publisher, ...consumers].map((channel) => channel.close()));

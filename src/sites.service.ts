@@ -1778,13 +1778,18 @@ export class SitesDomainService {
         await coolifyPromise;
       }
 
-      await this.buildQueue.queueBuild({
-        tenantId: params.tenantId,
-        siteId: params.siteId,
-        mode: params.mode,
-        priority,
-        trigger: "publish",
-      });
+      // Магазин новой темы собирает сборщик витрин (блок 6): событие уходит
+      // после записи статуса и адреса ниже, ответ — номер его сборки.
+      const newTheme =
+        (await this.storefrontHandoff?.isNewTheme(params.siteId)) === true;
+      if (!newTheme)
+        await this.buildQueue.queueBuild({
+          tenantId: params.tenantId,
+          siteId: params.siteId,
+          mode: params.mode,
+          priority,
+          trigger: "publish",
+        });
 
       await this.db
         .update(schema.site)
@@ -1799,6 +1804,10 @@ export class SitesDomainService {
             eq(schema.site.tenantId, params.tenantId),
           ),
         );
+
+      const queuedBuildId = newTheme
+        ? await this.storefrontBuildId(params.siteId)
+        : "queued";
 
       this.events.emit("sites.site.published", {
         tenantId: params.tenantId,
@@ -1826,7 +1835,7 @@ export class SitesDomainService {
           meta: {
             url: finalUrl ?? null,
             queued: true,
-            buildId: "queued",
+            buildId: queuedBuildId,
           },
         },
       });
@@ -1836,19 +1845,26 @@ export class SitesDomainService {
       );
       return {
         url: finalUrl,
-        buildId: "queued",
+        buildId: queuedBuildId,
         artifactUrl: "",
         queued: true,
       };
     }
 
     // === SYNCHRONOUS BUILD PATH (legacy) ===
+    // Магазин новой темы собирает сборщик витрин (блок 6): старой сборки и
+    // перевыкладки nginx нет, событие уходит после записи статуса ниже.
+    const newTheme =
+      (await this.storefrontHandoff?.isNewTheme(params.siteId)) === true;
     // Build runs in parallel with Coolify app creation
-    const { buildId, artifactUrl } = await this.generator.build({
-      tenantId: params.tenantId,
-      siteId: params.siteId,
-      mode: params.mode,
-    });
+    const built = newTheme
+      ? { buildId: "", artifactUrl: "" }
+      : await this.generator.build({
+          tenantId: params.tenantId,
+          siteId: params.siteId,
+          mode: params.mode,
+        });
+    const { artifactUrl } = built;
 
     // Wait for Coolify creation to finish (if it was running)
     if (coolifyPromise) {
@@ -1859,12 +1875,12 @@ export class SitesDomainService {
     // freshly built artifact from MinIO. Без этого build пишет файлы в bucket,
     // но nginx serves старый snapshot до restart (live визуально не обновляется
     // даже после успешной публикации).
-    if (coolifyAppUuid) {
+    if (coolifyAppUuid && !newTheme) {
       try {
         await this.deployments.deploy({
           tenantId: params.tenantId,
           siteId: params.siteId,
-          buildId,
+          buildId: built.buildId,
           artifactUrl,
         });
       } catch (e) {
@@ -1891,6 +1907,10 @@ export class SitesDomainService {
           eq(schema.site.tenantId, params.tenantId),
         ),
       );
+
+    const buildId = newTheme
+      ? await this.storefrontBuildId(params.siteId)
+      : built.buildId;
 
     this.events.emit("sites.site.published", {
       tenantId: params.tenantId,
@@ -1924,6 +1944,20 @@ export class SitesDomainService {
 
     this.logger.log(`Published site ${params.siteId} at ${finalUrl}`);
     return { url: finalUrl, buildId, artifactUrl };
+  }
+
+  /**
+   * Публикация магазина новой темы — с очередью и без: событие сборщику витрин
+   * (блок 6) и номер его сборки строкой. Сборщик не ответил за
+   * STOREFRONT_BUILD_REPLY_MS (по умолчанию 3 с) — "queued": событие уже в его
+   * очереди, магазин соберётся, когда сборщик до него дойдёт.
+   */
+  private async storefrontBuildId(siteId: string): Promise<string> {
+    const build = await this.storefrontHandoff?.requestBuild(
+      siteId,
+      "SitesDomainService.publish",
+    );
+    return typeof build === "number" ? String(build) : "queued";
   }
 
   // Revisions API — тонкие обёртки (R1, `merfy-mcp/docs/plans/2026-09-30-

@@ -38,6 +38,7 @@ import { DomainClient } from "./domain";
 import { BillingClient, isStorefrontSuspended } from "./billing/billing.client";
 import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
+import { StorefrontHandoff } from "./storefront-handoff/storefront-handoff.service";
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
 import { rewriteCurrent } from "./content/rewrite-current";
 import { toStoreContentSite } from "./content/store-content.port";
@@ -315,6 +316,10 @@ export class SitesDomainService {
     // ниже сам строит DocumentAdapter на этом же this.db.
     @Optional()
     private readonly injectedStoreContent?: StoreContentService,
+    // Сборщик витрин (блок 6): события имени и домена магазина новой темы.
+    // Optional — по той же причине, что и выше.
+    @Optional()
+    private readonly storefrontHandoff?: StorefrontHandoff,
   ) {}
 
   // Тип — конкретный класс, не порт StoreContent: R1 добавил на сервис
@@ -1393,7 +1398,7 @@ export class SitesDomainService {
       !themeAlreadyRepublished &&
       brandingChanged
     ) {
-      this.scheduleBrandingRepublish(params.tenantId, params.siteId);
+      void this.republishBranding(params.tenantId, params.siteId);
     }
 
     if (row)
@@ -1402,7 +1407,31 @@ export class SitesDomainService {
         siteId: params.siteId,
         patch: params.patch ?? {},
       });
+    if (row && typeof params.patch?.name === "string")
+      void this.storefrontHandoff?.notify(
+        params.siteId,
+        "shop-name-change",
+        "SitesDomainService.update",
+      );
     return Boolean(row);
+  }
+
+  /**
+   * Брендинг опубликованного сайта сменился. Магазин новой темы — сразу событие
+   * сборщику витрин (блок 6): правки склеивает он, таймер не нужен. Нынешние
+   * темы — debounced republish, как раньше.
+   */
+  private async republishBranding(
+    tenantId: string,
+    siteId: string,
+  ): Promise<void> {
+    if (await this.storefrontHandoff?.isNewTheme(siteId))
+      return this.storefrontHandoff?.notify(
+        siteId,
+        "branding-change",
+        "SitesDomainService.update",
+      );
+    this.scheduleBrandingRepublish(tenantId, siteId);
   }
 
   /**
@@ -3470,6 +3499,12 @@ export class SitesDomainService {
 
     this.logger.log(
       `[switchDomain] DONE site ${siteId}: ${siteRow.publicUrl} -> ${newPublicUrl}`,
+    );
+    // restoreFallbackDomain тоже заканчивается здесь — одно событие на оба пути.
+    void this.storefrontHandoff?.notify(
+      siteId,
+      "domain-change",
+      "SitesDomainService.switchDomain",
     );
   }
 

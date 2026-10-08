@@ -5,11 +5,12 @@
  * - Получение всех политик сайта по siteId
  * - Создание или обновление политики (select + insert/update)
  */
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, and, isNull } from "drizzle-orm";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 import { setExtensionBlock } from "./extension-block";
 
 /** Типы политик, в которые расширения могут дописывать свой блок. */
@@ -51,6 +52,9 @@ export class PolicyService {
   constructor(
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    // Optional — тесты, собирающие сервис напрямую, не обязаны его передавать.
+    @Optional()
+    private readonly handoff?: StorefrontHandoff,
   ) {}
 
   /**
@@ -68,10 +72,23 @@ export class PolicyService {
   }
 
   /**
-   * Создать или обновить политику.
-   * Так как нет уникального ограничения (site_id, type), используем select + insert/update.
+   * Создать или обновить политику. Магазину новой темы — событие сборщику
+   * витрин (блок 6) после записи.
    */
   async upsert(
+    siteId: string,
+    type: string,
+    content: string,
+  ): Promise<PolicyData> {
+    const saved = await this.save(siteId, type, content);
+    void this.handoff?.notify(siteId, "policy-change", "PolicyService.upsert");
+    return saved;
+  }
+
+  /**
+   * Так как нет уникального ограничения (site_id, type), используем select + insert/update.
+   */
+  private async save(
     siteId: string,
     type: string,
     content: string,

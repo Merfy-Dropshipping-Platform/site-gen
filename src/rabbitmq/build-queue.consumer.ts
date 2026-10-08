@@ -17,6 +17,7 @@ import {
   Logger,
   OnModuleDestroy,
   OnModuleInit,
+  Optional,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as amqp from "amqp-connection-manager";
@@ -43,6 +44,7 @@ import {
   type BuildDependencies,
 } from "../generator/build.service";
 import { S3StorageService } from "../storage/s3.service";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 
 const MAX_CONCURRENT_BUILDS = 3;
 const BUILD_PATTERN = "sites.build_queued";
@@ -137,6 +139,8 @@ export class BuildQueueConsumer implements OnModuleInit, OnModuleDestroy {
     @Inject(BILLING_RMQ_SERVICE)
     private readonly billingClient: ClientProxy,
     private readonly s3: S3StorageService,
+    // Optional — тесты, собирающие потребителя напрямую, не обязаны его передавать.
+    @Optional() private readonly handoff?: StorefrontHandoff,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -293,6 +297,10 @@ export class BuildQueueConsumer implements OnModuleInit, OnModuleDestroy {
     this.logger.log(
       `Processing build: site=${job.siteId}, retry=${job.retryCount}, priority=${msg.properties.priority ?? "default"}`,
     );
+    // Задание, вставшее до блока 6: магазин новой темы собирает сборщик витрин.
+    if (await this.handoff?.handOff(job.siteId, "sites_build_queue")) {
+      return acknowledge;
+    }
 
     try {
       await this.markBuildStarted(job);

@@ -53,7 +53,7 @@
       "themes": "new",
       "scope": "store",
       "delayMs": 0,
-      "status": "block-6"
+      "status": "works"
     },
     {
       "id": "shop-name-change",
@@ -62,7 +62,7 @@
       "themes": "new",
       "scope": "store",
       "delayMs": 0,
-      "status": "block-6"
+      "status": "works"
     },
     {
       "id": "policy-change",
@@ -71,7 +71,7 @@
       "themes": "new",
       "scope": "store",
       "delayMs": 0,
-      "status": "block-6"
+      "status": "works"
     },
     {
       "id": "contacts-change",
@@ -80,7 +80,7 @@
       "themes": "new",
       "scope": "store",
       "delayMs": 0,
-      "status": "block-6"
+      "status": "works"
     },
     {
       "id": "publication-change",
@@ -89,7 +89,7 @@
       "themes": "new",
       "scope": "dependent-pages",
       "delayMs": 0,
-      "status": "block-6"
+      "status": "works"
     },
     {
       "id": "collection-change",
@@ -98,7 +98,7 @@
       "themes": "new",
       "scope": "dependent-pages",
       "delayMs": 0,
-      "status": "block-6"
+      "status": "with-sections"
     },
     {
       "id": "payment-settings-change",
@@ -107,7 +107,7 @@
       "themes": "new",
       "scope": "store",
       "delayMs": 0,
-      "status": "block-6"
+      "status": "with-sections"
     },
     {
       "id": "stock-change",
@@ -116,7 +116,7 @@
       "themes": "new",
       "scope": "dependent-pages",
       "delayMs": 0,
-      "status": "block-6"
+      "status": "with-sections"
     }
   ]
 }

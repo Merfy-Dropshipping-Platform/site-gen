@@ -5,11 +5,12 @@
  * - Получение контактов сайта по siteId
  * - Создание или обновление контактов (onConflictDoUpdate по site_id)
  */
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 
 export interface ContactField {
   id: string;
@@ -32,6 +33,9 @@ export class ContactsService {
   constructor(
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    // Optional — тесты, собирающие сервис напрямую, не обязаны его передавать.
+    @Optional()
+    private readonly handoff?: StorefrontHandoff,
   ) {}
 
   /**
@@ -75,6 +79,12 @@ export class ContactsService {
       })
       .returning();
 
+    // Магазину новой темы — событие сборщику витрин (блок 6) после записи.
+    void this.handoff?.notify(
+      siteId,
+      "contacts-change",
+      "ContactsService.upsert",
+    );
     return row as ContactsData;
   }
 }

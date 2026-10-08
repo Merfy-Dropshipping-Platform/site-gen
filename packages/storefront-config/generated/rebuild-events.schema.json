@@ -91,8 +91,8 @@
             "type": "string",
             "enum": [
               "works",
-              "block-6",
-              "block-10"
+              "block-10",
+              "with-sections"
             ]
           }
         },

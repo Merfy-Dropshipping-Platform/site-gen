@@ -60,14 +60,14 @@ describe('события пересборки (design.md блока 3, 5.7)', ()
       ['theme-change', 'all', 'store', 'works'],
       ['branding-change', 'all', 'store', 'works'],
       ['theme-release', 'new', 'theme-stores', 'block-10'],
-      ['domain-change', 'new', 'store', 'block-6'],
-      ['shop-name-change', 'new', 'store', 'block-6'],
-      ['policy-change', 'new', 'store', 'block-6'],
-      ['contacts-change', 'new', 'store', 'block-6'],
-      ['publication-change', 'new', 'dependent-pages', 'block-6'],
-      ['collection-change', 'new', 'dependent-pages', 'block-6'],
-      ['payment-settings-change', 'new', 'store', 'block-6'],
-      ['stock-change', 'new', 'dependent-pages', 'block-6'],
+      ['domain-change', 'new', 'store', 'works'],
+      ['shop-name-change', 'new', 'store', 'works'],
+      ['policy-change', 'new', 'store', 'works'],
+      ['contacts-change', 'new', 'store', 'works'],
+      ['publication-change', 'new', 'dependent-pages', 'works'],
+      ['collection-change', 'new', 'dependent-pages', 'with-sections'],
+      ['payment-settings-change', 'new', 'store', 'with-sections'],
+      ['stock-change', 'new', 'dependent-pages', 'with-sections'],
     ]);
   });
 

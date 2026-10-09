@@ -2,6 +2,7 @@ packages:
   - packages/stand-check
   - packages/storefront-build
   - packages/storefront-storage
+  - packages/storefront-builder
   - packages/theme-contract
   - packages/theme-base
   - packages/storefront-config

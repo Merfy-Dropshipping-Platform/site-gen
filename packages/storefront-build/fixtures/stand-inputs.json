@@ -12,6 +12,8 @@
     "name": "Стенд Nova",
     "publicUrl": "https://nova-stand.example",
     "description": "Магазин-стенд новой темы",
+    "seoTitle": "",
+    "keywords": "",
     "updatedAt": "2026-10-06T09:00:00.000Z"
   },
   "env": { "apiUrl": "http://localhost:4321/api" },

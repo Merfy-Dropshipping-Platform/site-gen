@@ -34,6 +34,26 @@ describe('страница магазина на рисовальщике nova',
     expect(html).toContain('<link rel="canonical" href="https://nova-stand.example/">');
   });
 
+  // Владелец 08.10: «SEO-описание пользователь может не заполнить, но при этом сайт должен работать».
+  it('мерчант не заполнил SEO-описание — главная собрана, тега description нет', async () => {
+    const plain = changedInputs((inputs) => (inputs.site.description = ''));
+    const html = text((await renderShopPage(plain, '/', theme)).file.content);
+    expect(html).toContain('<title>Стенд Nova</title>');
+    expect(html).not.toContain('name="description"');
+    expect(html).not.toContain('name="keywords"');
+  });
+
+  // Заполненное мерчантом попадает в страницу (владелец 08.10).
+  it('мерчант заполнил SEO-заголовок и ключевые слова — они в <title> и <meta name="keywords">, имя — в <h1>', async () => {
+    const seo = changedInputs((inputs) =>
+      Object.assign(inputs.site, { seoTitle: 'Шарфы изо льна', keywords: 'шарфы, лён' }),
+    );
+    const html = text((await renderShopPage(seo, '/', theme)).file.content);
+    expect(html).toContain('<title>Шарфы изо льна</title>');
+    expect(html).toContain('<meta name="keywords" content="шарфы, лён">');
+    expect(html).toContain('<h1>Стенд Nova</h1>');
+  });
+
   it('конфиг магазина в живом режиме и CSS токенов с правкой мерчанта — в <head>', async () => {
     const html = text((await renderShopPage(standInputs, '/', theme)).file.content);
     const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));

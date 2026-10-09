@@ -44,6 +44,15 @@ import {
   type ThemeSettingsGroup,
   type ThemeColorScheme,
 } from "./theme-bridge";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
+
+// Ответ build() для магазина новой темы: сборку ведёт сборщик витрин (блок 6),
+// артефакта старого конвейера нет.
+export const HANDED_OFF_BUILD = {
+  buildId: "storefront-builder",
+  revisionId: "",
+  artifactUrl: "",
+} as const;
 
 interface ProductData {
   id: string;
@@ -71,6 +80,9 @@ export class SiteGeneratorService {
     // собирающие сервис напрямую, не обязаны его передавать.
     @Optional()
     private readonly injectedStoreContent?: StoreContentService,
+    // Optional — по той же причине: магазины новой темы отдаются сборщику.
+    @Optional()
+    private readonly handoff?: StorefrontHandoff,
   ) {}
 
   private storeContentInstance?: StoreContent;
@@ -150,6 +162,10 @@ export class SiteGeneratorService {
     mode?: "draft" | "production";
     templateOverride?: string; // Force specific template (e.g., 'rose')
   }) {
+    // Магазин новой темы собирает сборщик витрин (блок 6), не старый конвейер.
+    if (await this.handoff?.handOff(params.siteId, "generator.build")) {
+      return { ...HANDED_OFF_BUILD };
+    }
     // Check if new pipeline is enabled
     const pipelineEnabled =
       (process.env.BUILD_PIPELINE_ENABLED ?? "false").toLowerCase() === "true";

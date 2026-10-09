@@ -28,8 +28,33 @@ describe('pageLocals', () => {
       lang: 'ru-RU',
       title: 'Стенд Nova',
       description: 'Магазин-стенд новой темы',
+      keywords: '',
       canonical: 'https://nova-stand.example/',
     });
+  });
+
+  // Заполненное мерчантом попадает в страницу (владелец 08.10): SEO-заголовок — в <title>, ключевые слова — в head.
+  // Имя магазина в конфиге и на странице остаётся именем.
+  it('SEO-заголовок и ключевые слова мерчанта — в заголовке страницы и head', () => {
+    const seo = changedInputs((inputs) =>
+      Object.assign(inputs.site, { seoTitle: ' Шарфы изо льна — Стенд Nova ', keywords: ' шарфы, лён ' }),
+    );
+    const { head, shop } = pageLocals(seo, HOME, novaTokens);
+    expect(head).toMatchObject({ title: 'Шарфы изо льна — Стенд Nova', keywords: 'шарфы, лён' });
+    expect(shop).toEqual({ name: 'Стенд Nova' });
+    expect(configOf(head.configHtml)).toMatchObject({ shop: { name: 'Стенд Nova' } });
+  });
+
+  // Незаполненное мерчантом сборку не валит (владелец 08.10): описания и ключевых слов нет — теги не рисуются; ни
+  // SEO-заголовка, ни имени — в заголовке, конфиге и на странице адрес магазина.
+  it('имя и SEO из пробелов — описания и ключевых слов нет, вместо заголовка и имени адрес магазина', () => {
+    const empty = changedInputs((inputs) =>
+      Object.assign(inputs.site, { name: '  ', description: ' ', seoTitle: ' ', keywords: ' ' }),
+    );
+    const { head, shop } = pageLocals(empty, HOME, novaTokens);
+    expect(head).toMatchObject({ title: 'nova-stand.example', description: '', keywords: '' });
+    expect(shop).toEqual({ name: 'nova-stand.example' });
+    expect(configOf(head.configHtml)).toMatchObject({ shop: { name: 'nova-stand.example' } });
   });
 
   it('CSS токенов — с правками мерчанта из ревизии', () => {

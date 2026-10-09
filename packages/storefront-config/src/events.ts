@@ -27,6 +27,8 @@ const triggerSchema = z.union([codeTriggerSchema, serviceTriggerSchema], {
 });
 
 // trigger: null — кода ещё нет, его напишет блок из status. У работающего события место в коде есть всегда.
+// with-sections — издатель встанет вместе с секциями, когда эти данные появятся на страницах новой темы (design.md
+// блока 6, раздел 4, «Свежесть»).
 const rebuildEventSchema = z
   .strictObject({
     id: z.string().regex(EVENT_ID, { error: 'нужны строчные латинские буквы, цифры и дефис' }),
@@ -35,7 +37,7 @@ const rebuildEventSchema = z
     themes: z.enum(['all', 'new']),
     scope: z.enum(['store', 'dependent-pages', 'theme-stores']),
     delayMs: z.int().min(0),
-    status: z.enum(['works', 'block-6', 'block-10']),
+    status: z.enum(['works', 'block-10', 'with-sections']),
   })
   .refine((event) => event.status !== 'works' || event.trigger !== null, {
     path: ['trigger'],

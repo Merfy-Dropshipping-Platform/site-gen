@@ -13,12 +13,14 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Optional,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as amqp from "amqp-connection-manager";
 import type { ChannelWrapper } from "amqp-connection-manager";
 import type { Channel } from "amqplib";
 import { SITES_BUILD_QUEUE } from "./retry-setup.service";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 
 export interface QueueBuildParams {
   tenantId: string;
@@ -35,7 +37,11 @@ export class BuildQueuePublisher implements OnModuleInit, OnModuleDestroy {
   private connection: amqp.AmqpConnectionManager | null = null;
   private channel: ChannelWrapper | null = null;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    // Optional — тесты, собирающие сервис напрямую, не обязаны его передавать.
+    @Optional() private readonly handoff?: StorefrontHandoff,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     const rabbitmqUrl = this.config.get<string>("RABBITMQ_URL");
@@ -67,6 +73,12 @@ export class BuildQueuePublisher implements OnModuleInit, OnModuleDestroy {
    * @returns true if the message was published, false otherwise
    */
   async queueBuild(params: QueueBuildParams): Promise<boolean> {
+    // Магазин новой темы собирает сборщик витрин (блок 6), не эта очередь.
+    if (
+      await this.handoff?.handOff(params.siteId, params.trigger ?? "manual")
+    ) {
+      return true;
+    }
     if (!this.channel) {
       this.logger.warn(
         "Build queue publisher not initialized, cannot queue build",

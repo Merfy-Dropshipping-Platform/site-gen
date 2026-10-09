@@ -23,6 +23,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/stand-check/package.json ./packages/stand-check/package.json
 COPY packages/storefront-build/package.json ./packages/storefront-build/package.json
 COPY packages/storefront-storage/package.json ./packages/storefront-storage/package.json
+COPY packages/storefront-builder/package.json ./packages/storefront-builder/package.json
 COPY packages/theme-contract/package.json ./packages/theme-contract/package.json
 COPY packages/theme-base/package.json ./packages/theme-base/package.json
 COPY packages/storefront-config/package.json ./packages/storefront-config/package.json
@@ -92,9 +93,20 @@ RUN test -f /app/dist/theme-sections/rose/manifest.json \
     || (echo "FATAL: compile-theme-sections did not produce rose manifest" && exit 1)
 
 # ========================
+# Stage 1b: рисовальщик сборщика витрин (блок 6 «Каркаса витрины») — серверная
+# сборка каждой темы новой архитектуры (theme-versions.json) в
+# themes/<тема>/dist-renderer. Зависимости тем поставил build:themes выше.
+# Образ sites эту стадию не собирает: она нужна только цели storefront-builder.
+# ========================
+FROM builder AS storefront-renderer
+RUN pnpm --filter @merfy/storefront-builder renderer
+RUN test -f /app/themes/nova/dist-renderer/server/entry.mjs \
+    || (echo "FATAL: storefront-builder renderer did not produce themes/nova/dist-renderer" && exit 1)
+
+# ========================
 # Stage 2: Production
 # ========================
-FROM node:24-alpine
+FROM node:24-alpine AS runtime
 
 WORKDIR /app
 
@@ -121,3 +133,19 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:${PORT:-3114}/health || exit 1
 
 CMD ["sh", "-c", "node dist/src/db/manual-migrate.js && node dist/src/main.js"]
+
+# ========================
+# Stage 3: сборщик витрин (блок 6, В6-1 А) — тот же образ, своя команда запуска.
+# В Coolify: отдельное приложение, Docker Build Stage Target = storefront-builder.
+# ========================
+FROM runtime AS storefront-builder
+
+# Тема nova с её зависимостями и сборкой рисовальщика — только в образе сборщика.
+COPY --from=storefront-renderer /app/themes/nova /app/themes/nova
+ENV PORT=8080
+EXPOSE 8080
+WORKDIR /app/packages/storefront-builder
+CMD ["node_modules/.bin/tsx", "src/main.ts"]
+
+# Последняя стадия — образ sites как прежде: без цели сборки Coolify собирает её.
+FROM runtime

@@ -1,0 +1,34 @@
+# @merfy/storefront-sections
+
+Приём кода секций (блок 7 «Каркаса витрины», `merfy-mcp/docs/plans/storefront-shell/07-sdk-shell/design.md`): одна
+функция приёма для секций платформы, темы, своих секций магазина и расширений (С7-11 А, п. 21) и общая таблица секций
+с историей правок (С7-10 Б, С7-20 Б).
+
+## Формат секции (п. 20)
+
+Папка: `section.json`, `template.html`, `styles.css`, `script.ts` или `script.js` и его файлы `.ts`/`.js`.
+
+```json
+{ "v": 1, "name": "scarf-colors", "kind": "section", "title": "Цвета шарфа", "fields": [] }
+```
+
+- `kind`: `section` — секция с местом на странице; `global` — глобальный скрипт без места (С7-21 А): без шаблона и
+  стилей, со скриптом.
+- `fields` — поля настроек по схеме блока 8 (п. 23); до схемы хранятся как есть.
+- Скрипт необязателен (п. 16). Импорт — только `@merfy/shell` и свои файлы; нужен `export default defineSection(…)`.
+- Стили получают рамку `merfy-section[data-section="<имя>"]`; `:scope` — сама обёртка. `html`, `body`, `:root`,
+  `@import`, `@font-face` — отказ; цвет мимо токенов — предупреждение.
+
+## Двери (п. 21, 22, 24)
+
+| Дверь | Когда | Приставка | Выпуск |
+|---|---|---|---|
+| платформа | старт сборщика, секции `packages/storefront-shell/sections` | `platform:` | версия `@merfy/shell` |
+| тема | старт сборщика, `themes/<тема>/sections` | `<id темы>:` | версия темы |
+| своя секция | `pnpm sections accept --shop` (потом — конструктор и MCP) | `shop:` | — (черновик → публикация) |
+| расширение | `pnpm sections accept --extension` (потом — регистрация версии) | `<id расширения>:` | версия расширения |
+
+## Команды
+
+- `pnpm test`, `pnpm test:coverage` — без базы; `pnpm test:stack` — на стенде сборщика (Postgres, MinIO).
+- `pnpm sections accept|history|rollback` — двери и история своей секции из командной строки (задача 10).

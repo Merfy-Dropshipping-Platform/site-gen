@@ -7,10 +7,29 @@
   "steps": [],
   "expect": [
     { "kind": "tokens-present", "set": "base" },
-    { "kind": "sections-present", "ids": ["schemes", "type-scale", "radii-spacing", "shadows", "controls", "price"] },
+    {
+      "kind": "sections-present",
+      "ids": [
+        "logo",
+        "schemes",
+        "type-scale",
+        "radii-spacing",
+        "shadows",
+        "controls",
+        "price",
+        "product-card",
+        "socials",
+        "cart",
+        "cookie-banner"
+      ]
+    },
     { "kind": "fonts-loaded" },
     { "kind": "no-errors" },
     { "kind": "no-globals" }
   ],
-  "eyes": ["схемы читаются", "кнопки видны во всех схемах"]
+  "eyes": [
+    "схемы читаются",
+    "кнопки видны во всех схемах",
+    "есть образцы логотипа (имя магазина), карточки товара, корзины-шторки и баннера cookie"
+  ]
 }

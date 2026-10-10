@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 // без вложенных тернарников, без `as` (кроме `as const`), без `!`, без console. Комментарии-отключения
 // не действуют: noInlineConfig. Копия движка поиска MCP не линтуется — её нельзя менять (design.md 8.8).
 export default tseslint.config(
-  { ignores: ['eslint.config.mjs', 'coverage/**', 'generated/**', 'fixtures/**', 'src/search/engine.ts'] },
+  { ignores: ['eslint.config.mjs', 'coverage/**', 'dist/**', 'generated/**', 'fixtures/**', 'src/search/engine.ts'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

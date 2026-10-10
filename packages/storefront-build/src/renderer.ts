@@ -2,20 +2,25 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from 'node:net';
 import { pathToFileURL } from 'node:url';
 import { StorefrontBuildError, type StorefrontBuildErrorCode } from './errors';
-import type { ShopPageLocals } from './locals';
+import type { ShopPageLocals, StandPageLocals } from './locals';
 
 // Рисовальщик (design.md блока 4, В4-4 Б): серверная сборка темы (@astrojs/node в режиме middleware) отдаёт
 // handler(req, res, next, locals). Рисовальщик поднимает его на 127.0.0.1 со случайным портом и рисует страницу
 // запросом к себе. Данные страницы идут в Astro.locals.merfy по номеру запроса — не в адресе и не в заголовках. Vite
 // здесь нет: только node и собранный бандл.
+// Стенд темы для превью (блок 8) рисуется тем же рисовальщиком: адрес /theme-stand, данные — в Astro.locals.merfyStand.
+
+// Адрес стенда в серверной сборке темы — тот же, что STAND_PATH стенда блока 2 (stand-check/src/stand-path.mjs).
+export const STAND_PAGE_PATH = '/theme-stand';
 
 // Функции, а не методы: render можно отдать отдельно от рисовальщика — this у них нет.
 export interface Renderer {
   render: (path: string, locals: ShopPageLocals) => Promise<string>;
+  renderStand: (locals: StandPageLocals) => Promise<string>;
   close: () => Promise<void>;
 }
 
-type AstroLocals = { merfy?: ShopPageLocals };
+type AstroLocals = { merfy?: ShopPageLocals; merfyStand?: StandPageLocals };
 type NodeHandler = (req: IncomingMessage, res: ServerResponse, next: undefined, locals: AstroLocals) => unknown;
 
 const RENDER_ID_HEADER = 'x-merfy-render-id';
@@ -67,14 +72,14 @@ function checkResponse(path: string, status: number): void {
 // Поднять рисовальщик из серверной сборки темы. После работы — close(): порт и соединения освобождаются.
 export async function startRenderer(serverEntry: string): Promise<Renderer> {
   const handler = await loadHandler(serverEntry);
-  const pending = new Map<string, ShopPageLocals>();
+  const pending = new Map<string, AstroLocals>();
   const server = createServer((req, res) => {
     const id = req.headers[RENDER_ID_HEADER];
-    void handler(req, res, undefined, { merfy: typeof id === 'string' ? pending.get(id) : undefined });
+    void handler(req, res, undefined, (typeof id === 'string' ? pending.get(id) : undefined) ?? {});
   });
   const base = `http://${LOOPBACK}:${await listen(server)}`;
   let requests = 0;
-  const render = async (path: string, locals: ShopPageLocals): Promise<string> => {
+  const draw = async (path: string, locals: AstroLocals): Promise<string> => {
     checkPath(path);
     const id = String((requests += 1));
     pending.set(id, locals);
@@ -87,5 +92,9 @@ export async function startRenderer(serverEntry: string): Promise<Renderer> {
       pending.delete(id);
     }
   };
-  return { render, close: () => close(server) };
+  return {
+    render: (path, locals) => draw(path, { merfy: locals }),
+    renderStand: (locals) => draw(STAND_PAGE_PATH, { merfyStand: locals }),
+    close: () => close(server),
+  };
 }

@@ -1,0 +1,346 @@
+{
+  "$schema": "../../tokens/generated/panel.schema.json",
+  "v": 1,
+  "groups": [
+    {
+      "id": "logo",
+      "title": "Логотип",
+      "fields": [
+        {
+          "id": "logo-image",
+          "label": "Картинка",
+          "setting": { "kind": "image", "default": "", "maxBytes": 512000 }
+        },
+        {
+          "id": "logo-width",
+          "label": "Размер",
+          "token": "width-logo",
+          "control": "slider",
+          "range": { "min": 0, "max": 100, "step": 4 }
+        }
+      ]
+    },
+    {
+      "id": "colors",
+      "title": "Цвета",
+      "layout": "schemes",
+      "fields": [
+        { "id": "color-background", "label": "Фон", "token": "background", "control": "color" },
+        { "id": "color-heading", "label": "Заголовок", "token": "heading", "control": "color" },
+        { "id": "color-foreground", "label": "Текст", "token": "foreground", "control": "color" },
+        {
+          "id": "color-primary",
+          "label": "Фон",
+          "section": "Основная кнопка",
+          "token": "primary",
+          "control": "color"
+        },
+        {
+          "id": "color-primary-hover",
+          "label": "Фон",
+          "sublabel": "При наведении",
+          "section": "Основная кнопка",
+          "token": "primary-hover",
+          "control": "color"
+        },
+        {
+          "id": "color-primary-foreground",
+          "label": "Текст",
+          "section": "Основная кнопка",
+          "token": "primary-foreground",
+          "control": "color"
+        },
+        {
+          "id": "color-primary-hover-foreground",
+          "label": "Текст",
+          "sublabel": "При наведении",
+          "section": "Основная кнопка",
+          "token": "primary-hover-foreground",
+          "control": "color"
+        },
+        {
+          "id": "color-primary-border",
+          "label": "Обводка",
+          "section": "Основная кнопка",
+          "token": "primary-border",
+          "control": "color"
+        },
+        {
+          "id": "color-secondary",
+          "label": "Фон",
+          "section": "Дополнительная кнопка",
+          "token": "secondary",
+          "control": "color"
+        },
+        {
+          "id": "color-secondary-hover",
+          "label": "Фон",
+          "sublabel": "При наведении",
+          "section": "Дополнительная кнопка",
+          "token": "secondary-hover",
+          "control": "color"
+        },
+        {
+          "id": "color-secondary-foreground",
+          "label": "Текст",
+          "section": "Дополнительная кнопка",
+          "token": "secondary-foreground",
+          "control": "color"
+        },
+        {
+          "id": "color-secondary-hover-foreground",
+          "label": "Текст",
+          "sublabel": "При наведении",
+          "section": "Дополнительная кнопка",
+          "token": "secondary-hover-foreground",
+          "control": "color"
+        },
+        {
+          "id": "color-secondary-border",
+          "label": "Обводка",
+          "section": "Дополнительная кнопка",
+          "token": "secondary-border",
+          "control": "color"
+        }
+      ]
+    },
+    {
+      "id": "typography",
+      "title": "Типографика",
+      "fields": [
+        { "id": "heading-font", "label": "Шрифт", "row": "Заголовок", "token": "font-heading", "control": "font" },
+        {
+          "id": "heading-weight",
+          "label": "Насыщенность",
+          "row": "Заголовок",
+          "token": "weight-heading",
+          "control": "weight"
+        },
+        { "id": "body-font", "label": "Шрифт", "row": "Текст", "token": "font-body", "control": "font" },
+        { "id": "body-weight", "label": "Насыщенность", "row": "Текст", "token": "weight-body", "control": "weight" }
+      ]
+    },
+    {
+      "id": "page",
+      "title": "Страница",
+      "fields": [
+        {
+          "id": "section-gap",
+          "label": "Отступы",
+          "sublabel": "Между секций",
+          "token": "spacing-section-gap",
+          "control": "slider",
+          "range": { "min": 0, "max": 120, "step": 4 }
+        }
+      ]
+    },
+    {
+      "id": "buttons",
+      "title": "Кнопки",
+      "fields": [
+        {
+          "id": "button-radius",
+          "label": "Скругление",
+          "token": "radius-button",
+          "control": "slider",
+          "range": { "min": 0, "max": 100, "step": 4 }
+        }
+      ]
+    },
+    {
+      "id": "inputs",
+      "title": "Поля ввода",
+      "fields": [
+        {
+          "id": "input-radius",
+          "label": "Скругление",
+          "token": "radius-input",
+          "control": "slider",
+          "range": { "min": 0, "max": 48, "step": 4 }
+        }
+      ]
+    },
+    {
+      "id": "product-cards",
+      "title": "Карточки товара",
+      "fields": [
+        {
+          "id": "card-style",
+          "label": "Стиль",
+          "token": "choice-card-style",
+          "control": "segment",
+          "options": [
+            { "value": "standard", "label": "Стандарт" },
+            { "value": "card", "label": "Карточка" }
+          ]
+        },
+        {
+          "id": "card-align",
+          "label": "Выравнивание",
+          "token": "choice-card-align",
+          "control": "align",
+          "options": [
+            { "value": "left", "label": "Слева" },
+            { "value": "center", "label": "По центру" },
+            { "value": "right", "label": "Справа" }
+          ]
+        },
+        {
+          "id": "card-border",
+          "label": "Обводка",
+          "token": "border-width-card",
+          "control": "slider",
+          "range": { "min": 0, "max": 4, "step": 1 }
+        },
+        {
+          "id": "card-radius",
+          "label": "Скругление",
+          "token": "radius-card",
+          "control": "slider",
+          "range": { "min": 0, "max": 48, "step": 4 }
+        },
+        {
+          "id": "card-padding",
+          "label": "Отступ",
+          "token": "spacing-card",
+          "control": "slider",
+          "range": { "min": 0, "max": 32, "step": 2 }
+        },
+        { "id": "card-scheme", "label": "Цветовая схема", "token": "scheme-card", "control": "scheme" }
+      ]
+    },
+    {
+      "id": "media",
+      "title": "Медиа",
+      "fields": [
+        {
+          "id": "media-radius",
+          "label": "Скругление",
+          "token": "radius-media",
+          "control": "slider",
+          "range": { "min": 0, "max": 48, "step": 4 }
+        }
+      ]
+    },
+    {
+      "id": "social",
+      "title": "Социальные сети",
+      "fields": [
+        {
+          "id": "social-telegram",
+          "label": "Telegram",
+          "setting": { "kind": "url", "default": "", "placeholder": "https://t.me/..." }
+        },
+        {
+          "id": "social-vk",
+          "label": "Вконтакте",
+          "setting": { "kind": "url", "default": "", "placeholder": "https://vk.com/..." }
+        },
+        {
+          "id": "social-dzen",
+          "label": "Дзен",
+          "setting": { "kind": "url", "default": "", "placeholder": "https://dzen.ru/..." }
+        },
+        {
+          "id": "social-youtube",
+          "label": "Youtube",
+          "setting": { "kind": "url", "default": "", "placeholder": "https://youtube.com/..." }
+        },
+        {
+          "id": "social-tiktok",
+          "label": "TikTok",
+          "setting": { "kind": "url", "default": "", "placeholder": "https://tiktok.com/..." }
+        },
+        {
+          "id": "social-max",
+          "label": "MAX",
+          "setting": { "kind": "url", "default": "", "placeholder": "https://max.ru/..." }
+        }
+      ]
+    },
+    {
+      "id": "cart",
+      "title": "Корзина",
+      "fields": [
+        {
+          "id": "cart-type",
+          "label": "Вид корзины",
+          "control": "segment",
+          "setting": {
+            "kind": "select",
+            "default": "drawer",
+            "options": [
+              { "value": "drawer", "label": "Сайдбар" },
+              { "value": "page", "label": "Страница" }
+            ]
+          }
+        },
+        {
+          "id": "cart-drawer-scheme",
+          "label": "Цветовая схема",
+          "token": "scheme-cart-drawer",
+          "control": "scheme",
+          "visibleWhen": { "setting": "cart-type", "equals": "drawer" }
+        }
+      ]
+    },
+    {
+      "id": "banner",
+      "title": "Баннер",
+      "fields": [
+        {
+          "id": "cookie-banner-enabled",
+          "label": "Баннер cookie",
+          "setting": { "kind": "toggle", "default": true, "labels": { "on": "Вкл", "off": "Выкл" } }
+        },
+        {
+          "id": "cookie-banner-scheme",
+          "label": "Цветовая схема",
+          "token": "scheme-cookie-banner",
+          "control": "scheme",
+          "visibleWhen": { "setting": "cookie-banner-enabled", "equals": true }
+        }
+      ],
+      "sidebar": {
+        "title": "Баннер",
+        "fields": [
+          { "id": "cookie-banner-title", "label": "Заголовок", "setting": { "kind": "string", "default": "" } },
+          {
+            "id": "cookie-banner-text",
+            "label": "Текст",
+            "setting": {
+              "kind": "text",
+              "default": "Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием."
+            }
+          },
+          {
+            "id": "cookie-banner-primary-label",
+            "label": "Основная",
+            "section": "Кнопки",
+            "setting": { "kind": "string", "default": "Принять" }
+          },
+          {
+            "id": "cookie-banner-secondary-label",
+            "label": "Дополнительная",
+            "section": "Кнопки",
+            "setting": { "kind": "string", "default": "" }
+          },
+          {
+            "id": "cookie-banner-position",
+            "label": "Расположение",
+            "setting": {
+              "kind": "select",
+              "default": "bottom-left",
+              "options": [
+                { "value": "bottom-left", "label": "Снизу слева" },
+                { "value": "bottom-center", "label": "Снизу по центру" },
+                { "value": "bottom-right", "label": "Снизу справа" },
+                { "value": "bar", "label": "Полоса во всю ширину" }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

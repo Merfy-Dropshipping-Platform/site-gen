@@ -7,7 +7,7 @@
   "describe-primary": "primary — цвет, свой в каждой схеме. Главная кнопка: «В корзину», «Оформить».\nСейчас: scheme-1 #111111 (тема), scheme-2 #ffffff (тема).\nБез правки: задаёт тема.\nМожно: #rrggbb строчными.\nВслед пересчитаются: primary-foreground, primary-hover, primary-hover-foreground, primary-border, ring, badge, badge-foreground.\nНа нём пишут: primary-foreground.\nКласс: bg-primary text-primary border-primary. В панели: Цвета: кнопки.",
   "check-green": "scheme-1 primary: #111111 → #16a34a\nscheme-2 primary: #ffffff → #22c55e\nВслед в scheme-1 (7): primary-foreground #000000, primary-hover #32ae60, primary-hover-foreground #000000, primary-border #16a34a, ring #16a34a, badge #16a34a, badge-foreground #000000.\nВслед в scheme-2 (4): primary-hover #3dcc71, primary-border #22c55e, ring #22c55e, badge #22c55e.\nЧитаемость: новых проблем нет.",
   "set-green": "Записано: 2, вслед пересчитано 11.",
-  "find-cart-type": "«Вид корзины» — не токен. Шторка или отдельная страница — это настройка секции. Цвета шторки — scheme-cart-drawer, тень — shadow-drawer.",
+  "find-cart-type": "«Вид корзины» — не токен. Шторка или отдельная страница — настройка «Вид корзины» в «Настройках темы», группа «Корзина». Цвета шторки — scheme-cart-drawer, тень — shadow-drawer.",
   "find-link-color": "Слова «ссылок» в словаре токенов нет — такое не настроить. Разделы — groups.",
   "check-grid": "Не годится:\nroot.choice-card-style: нужно standard или card",
   "set-grid": "Не записано:\nroot.choice-card-style: нужно standard или card",

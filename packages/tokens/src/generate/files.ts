@@ -1,3 +1,4 @@
+import { panelJsonSchema } from '../panel/shape';
 import type { Dictionary, JsonSchema } from '../types';
 import { dictionaryJsonSchema, themeTokensJsonSchema } from './json-schema';
 import { tokensMarkdown } from './markdown';
@@ -10,13 +11,15 @@ export type GeneratedFiles = Record<string, string>;
 const jsonText = (schema: JsonSchema): string =>
   `${JSON.stringify({ $comment: GENERATED_NOTE, ...schema }, null, 2)}\n`;
 
-// Пакет: четыре файла в generated/.
+// Пакет: пять файлов в generated/. panel.schema.json — форма схемы панели темы (блок 8), её JSON лежит в
+// packages/theme-contract/panel/.
 export function packageFiles(dictionary: Dictionary): GeneratedFiles {
   return {
     'generated/tailwind.css': tailwindCss(dictionary),
     'generated/TOKENS.md': tokensMarkdown(dictionary),
     'generated/theme.schema.json': jsonText(themeTokensJsonSchema(dictionary)),
     'generated/dictionary.schema.json': jsonText(dictionaryJsonSchema()),
+    'generated/panel.schema.json': jsonText(panelJsonSchema()),
   };
 }
 

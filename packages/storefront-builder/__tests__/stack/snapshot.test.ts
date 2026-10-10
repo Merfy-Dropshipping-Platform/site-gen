@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { openRpc, type RpcClient } from '../../src/rpc';
 import { PRODUCT_QUEUE, readSnapshot, type SnapshotDeps } from '../../src/snapshot';
 import { startFakeProducts, type FakeProducts } from './fake-product';
-import { STACK, insertSite, openPool } from './stack';
+import { STACK, insertRevision, insertSite, openPool } from './stack';
 
 // Снимок входов на настоящей базе sites и брокере: сайт, политики, контакты, публикации из базы; товары — у
 // подставного сервиса product по RPC так, как отвечает Nest.
@@ -87,6 +87,20 @@ describe('снимок входов', () => {
       keywords: seo.keywords,
     });
     expect(await site(plain.id)).toMatchObject({ seoTitle: '', description: '', keywords: '' });
+  });
+
+  // Блок 8: правки токенов мерчанта — из текущей ревизии (ключ tokens). Нет ревизии или ключа — пустые правки.
+  it('правки токенов — из текущей ревизии; нет ревизии, ключа или он не объект — {}', async () => {
+    const edited = await insertSite(db);
+    const tokens = { schemes: { 'scheme-1': { primary: '#16a34a' } } };
+    await insertRevision(db, edited.id, { pages: [], tokens, settings: { 'cart-type': 'page' } });
+    const plain = await insertSite(db);
+    const broken = await insertSite(db);
+    await insertRevision(db, broken.id, { tokens: ['не объект'] });
+    const revision = async (siteId: string) => parseBuildInputs((await readSnapshot(deps(), siteId)).inputs).revision;
+    expect(await revision(edited.id)).toEqual({ tokens });
+    expect(await revision(plain.id)).toEqual({ tokens: {} });
+    expect(await revision(broken.id)).toEqual({ tokens: {} });
   });
 
   it.each(['fail', 'error', 'silent'] as const)('товары: %s — снимок не получен, сборки не будет', async (answer) => {

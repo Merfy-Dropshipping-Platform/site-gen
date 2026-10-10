@@ -26,6 +26,12 @@
    дольше `BUILD_DRAIN_MS`. Не дождался — строка сборки `interrupted`, замок магазина снят, задание с новым номером
    и событиями «ещё раз» берёт ближайший обход любого сборщика (второго контейнера при выкатке или следующего запуска)
    — сразу, а не через срок замка; процесс выходит.
+8. Превью конструктора (блок 8): `GET /preview?shop=<id>` — стенд темы (`/theme-stand` рисовальщика) в `mode: preview`
+   с правками текущей ревизии (ключи `tokens` и `settings`), одним HTML: CSS темы и шрифты woff2 внутри страницы;
+   `POST /preview/tokens?shop=<id>` с `{ tokens }` — `{ css, attributes }` для слушателя превью, неподходящие правки —
+   400 `{ problems }`; `GET /theme-panel?theme=<id>` — ответ puck-config новой темы: секций нет, `themePanel` — схема
+   панели и токены темы. Данные — заново на каждый запрос, ответы `no-store`. Их зовёт sites (`STOREFRONT_BUILDER_URL`).
+   Правки токенов текущей ревизии идут и во входы живой сборки (`revision.tokens` блока 4); настройки — нет.
 
 ## Команды (из `packages/storefront-builder`)
 
@@ -34,6 +40,7 @@
 | `pnpm test` / `pnpm test:coverage` | быстрые тесты без сети |
 | `pnpm stack:up` → `pnpm test:stack` | стенд Docker `storefront-builder-test` и тесты на нём (покрытие всего `src/`) |
 | `pnpm stack:stop` | остановить стенд |
+| `COMPOSE_PROJECT_NAME=<имя> STACK_PG_PORT=… STACK_AMQP_PORT=… STACK_S3_PORT=… pnpm stack:up` | второй стенд рядом: своё имя и порты; те же переменные — у `pnpm test:stack` |
 | `pnpm renderer` | серверная сборка рисовальщика тем новой архитектуры |
 | `pnpm start` | сборщик (нужны переменные ниже) |
 | `pnpm probe` | проба целиком на стенде: публикация, правки, сто правок подряд, дорисовка, p95, остановка |

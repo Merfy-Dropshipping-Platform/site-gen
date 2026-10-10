@@ -54,7 +54,8 @@ const deps: RuntimeDeps = {
 };
 
 const runtime = await startRuntime(deps);
-const drawDeps = { store, snapshot, themes: loaded.themes, renderHash: platform.renderHash, log };
+const preview = { db, themes: loaded.previews, apiUrl: settings.apiUrl, log };
+const drawDeps = { store, snapshot, themes: loaded.themes, renderHash: platform.renderHash, log, preview };
 const slots = createSlots(settings.drawSlots);
 const server = await startDrawServer({ ...drawDeps, slots, timeoutMs: settings.drawTimeoutMs }, settings.port);
 const started = { port: settings.port, slots: settings.buildSlots, releaseSlots: settings.releaseSlots };

@@ -1,0 +1,71 @@
+name: Tokens release
+
+# Публикация @merfy/tokens в GitHub Packages (npm.pkg.github.com) по тегу tokens-v* (например, tokens-v0.1.0).
+# Решение владельца 06.10 (блок 8 «Панель темы», П8-2 А): пакет — как @merfy/forms, конструктор ставит точную
+# версию. В реестре — имя организации @merfy-dropshipping-platform/tokens; потребители ставят алиасом
+# `@merfy/tokens@npm:@merfy-dropshipping-platform/tokens@<версия>`. В репозитории пакет остаётся private и отдаёт
+# исходники; перед публикацией шаг ниже меняет имя и снимает private, publishConfig подставляет dist.
+# Тег ставит только владелец или основной тред по его «да».
+
+on:
+  push:
+    tags: ['tokens-v*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/tokens
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10.14.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.19.0'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@merfy-dropshipping-platform'
+
+      - name: Configure GitHub Packages auth
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
+
+      - name: Tag matches package version
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "tokens-v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "Тег ${GITHUB_REF_NAME} не совпадает с версией пакета tokens-v${version}" >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter @merfy/tokens
+
+      - name: Lint, types, tests with coverage (gate ≥80%)
+        run: pnpm lint && pnpm typecheck && pnpm test:coverage
+
+      - name: Build
+        run: pnpm build
+
+      - name: Name for the registry
+        run: npm pkg set name=@merfy-dropshipping-platform/tokens && npm pkg delete private
+
+      - name: Publish to GitHub Packages
+        run: pnpm publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

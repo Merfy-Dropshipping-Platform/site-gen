@@ -1,0 +1,5 @@
+/* Классы стенда — Tailwind по словарю токенов (generated/tailwind.css блока 1). Значения переменных Tailwind сам
+   не печатает: их даёт только tokensCss в <style id="merfy-tokens"> страницы. Файл общий у стенда блока 2
+   (src/stand/StandPage.astro) и стенда в превью конструктора (src/shop/pages/theme-stand.astro, блок 8). */
+@import "tailwindcss";
+@import "../../../../../packages/tokens/generated/tailwind.css";

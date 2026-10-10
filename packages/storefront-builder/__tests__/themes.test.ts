@@ -27,6 +27,26 @@ describe('темы новой архитектуры', () => {
     await loaded.close();
   });
 
+  // Превью конструктора (блок 8): схема панели платформы, файлы клиента по адресу, стенд рисуется тем же рисовальщиком.
+  it('nova для превью: 44 поля панели, CSS среди файлов клиента, стенд рисуется', async () => {
+    const loaded = await loadThemes(ROOT);
+    const preview = loaded.previews.get('nova');
+    expect(preview?.version).toBe(loaded.themes.get('nova')?.version);
+    expect(preview?.panel.groups).toHaveLength(11);
+    expect([...(preview?.assets.keys() ?? [])].some((path) => /^\/_astro\/.+\.css$/.test(path))).toBe(true);
+    const locals = {
+      head: { title: 'Стенд темы', configHtml: '', tokensCss: '', previewScript: '' },
+      attributes: {},
+      settings: {},
+      shop: { name: 'Пледы' },
+      schemes: [],
+      config: {},
+      problems: [],
+    };
+    expect(await preview?.renderStand(locals)).toContain('data-stand="logo"');
+    await loaded.close();
+  });
+
   it('нет серверной сборки — renderer-missing с подсказкой команды', async () => {
     // Корень с одной темой demo: theme.json и запись версии есть, сборки рисовальщика нет.
     const root = await mkdtemp(join(tmpdir(), 'builder-themes-'));

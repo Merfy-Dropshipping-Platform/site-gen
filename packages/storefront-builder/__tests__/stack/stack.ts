@@ -3,11 +3,14 @@ import { Pool } from 'pg';
 
 // Стенд compose.stack.yml (`pnpm stack:up`): учётки — только этого стенда. Схему базы sites пишут миграции site-gen
 // (`pnpm db:migrate` в корне, «Подготовка» плана), тесты её только читают и пишут строки со своими id.
+// Порты — по умолчанию стенда блока 6; второй стенд рядом (блок 8, своё имя проекта compose) задаёт свои переменными
+// STACK_PG_PORT, STACK_AMQP_PORT, STACK_S3_PORT — те же, что читает compose.stack.yml.
+const port = (name: string, fallback: number): number => Number(process.env[name] ?? fallback);
 export const STACK = {
-  databaseUrl: 'postgres://builder-test:builder-test-only@127.0.0.1:15432/sites_service',
-  rabbitmqUrl: 'amqp://builder-test:builder-test-only@127.0.0.1:15682',
+  databaseUrl: `postgres://builder-test:builder-test-only@127.0.0.1:${port('STACK_PG_PORT', 15432)}/sites_service`,
+  rabbitmqUrl: `amqp://builder-test:builder-test-only@127.0.0.1:${port('STACK_AMQP_PORT', 15682)}`,
   s3: {
-    endpoint: 'http://127.0.0.1:19200',
+    endpoint: `http://127.0.0.1:${port('STACK_S3_PORT', 19200)}`,
     bucket: 'storefront-test',
     accessKeyId: 'builder-test',
     secretAccessKey: 'builder-test-only',
@@ -49,6 +52,15 @@ export async function insertSite(db: Pool, fields: Partial<SiteFields> = {}): Pr
     [site.id, site.tenantId, site.name, site.themeId, site.status, site.publicUrl],
   );
   return site;
+}
+
+// Текущая ревизия магазина с данными конструктора (блок 8: ключи tokens и settings) — как её пишет sites.
+export async function insertRevision(db: Pool, siteId: string, data: Record<string, unknown>): Promise<string> {
+  const id = randomUUID();
+  const sql = 'INSERT INTO site_revision (id, site_id, data, created_at) VALUES ($1, $2, $3, now())';
+  await db.query(sql, [id, siteId, JSON.stringify(data)]);
+  await db.query('UPDATE site SET current_revision_id = $2 WHERE id = $1', [siteId, id]);
+  return id;
 }
 
 const shopRowSql = `SELECT state, build::float8 AS build, events, pending, attempt, error FROM storefront_shop

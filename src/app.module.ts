@@ -39,6 +39,7 @@ import { ThemesMicroserviceController } from "./themes.microservice.controller";
 import { EventsModule } from "./events/events.module";
 import { ActivityLogModule } from "./activity-log/activity-log.module";
 import { StorefrontHandoffModule } from "./storefront-handoff/storefront-handoff.module";
+import { StorefrontPreviewModule } from "./storefront-preview/storefront-preview.module";
 import { BillingListenerController } from "./billing/billing.listener";
 import { BillingClient } from "./billing/billing.client";
 import { BillingEventsConsumer } from "./billing/billing-events.consumer";
@@ -92,6 +93,7 @@ import { STORE_CONTROLLERS, STORE_PROVIDERS } from "./store/store.providers";
     RabbitMQModule,
     ActivityLogModule,
     StorefrontHandoffModule,
+    StorefrontPreviewModule,
     EventsModule,
     DatabaseModule,
     DomainModule,

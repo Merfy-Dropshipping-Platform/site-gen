@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import themeWithExtension from '../fixtures/theme-with-extension/theme.json';
 import { platformDictionary } from '../src/dictionary';
-import { checkEdits, dependentsOf, groupsOf, limitsOf, mergeEdits, searchCatalog, sourceOf } from '../src/helpers';
+import {
+  checkEdits,
+  compactEdits,
+  dependentsOf,
+  groupsOf,
+  limitsOf,
+  mergeEdits,
+  searchCatalog,
+  sourceOf,
+} from '../src/helpers';
 import { parseTheme } from '../src/values';
 import { sample } from './support';
 
@@ -116,6 +125,18 @@ describe('mergeEdits', () => {
       schemes: { 'scheme-1': { primary: '#16a34a' }, 'scheme-2': { primary: '#22c55e' } },
     });
     expect(mergeEdits({}, {})).toEqual({ root: {}, schemes: {} });
+  });
+});
+
+describe('compactEdits', () => {
+  it('одна правка цвета — без пустого корня и пустых схем (design.md блока 8, раздел 5, шаг 1)', () => {
+    const merged = mergeEdits({}, { schemes: { 'scheme-1': { primary: '#16a34a' }, 'scheme-2': {} } });
+    expect(compactEdits(merged)).toEqual({ schemes: { 'scheme-1': { primary: '#16a34a' } } });
+  });
+
+  it('правка корня остаётся, пустые правки — пустой объект', () => {
+    expect(compactEdits({ root: { 'radius-button': 0 }, schemes: {} })).toEqual({ root: { 'radius-button': 0 } });
+    expect(compactEdits({ root: {}, schemes: {} })).toEqual({});
   });
 });
 

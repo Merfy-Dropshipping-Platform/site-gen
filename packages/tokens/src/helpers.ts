@@ -89,6 +89,18 @@ export function mergeEdits(current: TokenEdits, proposed: TokenEdits): TokenEdit
   return { root: merged('root'), schemes: Object.fromEntries(ids.map((id): [string, TokenSet] => [id, merged(id)])) };
 }
 
+const notEmpty = ([, set]: [string, TokenSet]): boolean => Object.keys(set).length > 0;
+
+// Правки без пустых наборов (design.md блока 8, П-2 Б): в ревизию — только изменённое, без "root": {} и пустых схем.
+export function compactEdits(edits: TokenEdits): TokenEdits {
+  const schemes = Object.entries(edits.schemes ?? {}).filter(notEmpty);
+  const root = editsAt(edits, 'root');
+  return {
+    ...(Object.keys(root).length > 0 ? { root } : {}),
+    ...(schemes.length > 0 ? { schemes: Object.fromEntries(schemes) } : {}),
+  };
+}
+
 const namesOfScope = (dictionary: Dictionary, scope: KindScope): string[] =>
   dictionaryNames(dictionary).filter((name) => KINDS[dictionary.tokens[name].kind].scope === scope);
 

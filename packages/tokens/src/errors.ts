@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-export type TokenErrorCode = 'dictionary-invalid' | 'extension-invalid' | 'theme-invalid' | 'edits-invalid';
+export type TokenErrorCode =
+  | 'dictionary-invalid'
+  | 'extension-invalid'
+  | 'theme-invalid'
+  | 'edits-invalid'
+  | 'panel-invalid'
+  | 'settings-invalid';
 
 // Одна ошибка пакета. В тексте — все проблемы сразу, по строке на каждую; каждая называет токен или поле.
 export class TokenError extends Error {

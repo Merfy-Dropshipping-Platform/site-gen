@@ -211,6 +211,12 @@ jobs:
           pnpm exec jest --config jest.config.ts --runInBand
           '__tests__/(astro-inline-script-helper\.test|account-order-delivery\.coverage\.dom\.test|order-confirmation-delivery\.coverage\.dom\.test|checkout-(contact|delivery|submit|payment)-[^/]*\.dom\.test)\.ts$'
 
+      # Копия пакета форм в theme-base: руками не правят (хеш из VERSION.json), версия 0.2.0,
+      # общий набор случаев validateV2 проходит на копии так же, как в самом пакете.
+      - name: Копия @merfy/forms в theme-base
+        working-directory: packages/theme-base
+        run: pnpm exec jest --config jest.config.ts --runInBand __tests__/forms-vendor.test.ts
+
       # Этап 3 «Магазин одной командой» (src/store/): сага рождения и её
       # доводчик, команды CreateStore/SetTheme, каталог тем, регистрация через
       # команду под флагом `newLogic` (без флага и cron «без магазина» — старый

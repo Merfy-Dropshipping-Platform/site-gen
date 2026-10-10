@@ -10,7 +10,27 @@
     "./tailwind.css": "./generated/tailwind.css",
     "./dictionary.json": "./dictionary.json"
   },
+  "files": [
+    "dist",
+    "generated/tailwind.css",
+    "generated/panel.schema.json",
+    "dictionary.json",
+    "README.md"
+  ],
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/types/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./tailwind.css": "./generated/tailwind.css",
+      "./dictionary.json": "./dictionary.json"
+    }
+  },
   "scripts": {
+    "build": "pnpm dlx esbuild@0.25.12 src/index.ts --bundle --format=esm --platform=neutral --target=es2022 --external:zod --log-level=warning --outfile=dist/index.js && tsc -p tsconfig.build.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit -p tsconfig.json",

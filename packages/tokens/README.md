@@ -6,6 +6,11 @@
 Пакет отдаёт исходники TypeScript без сборки, как `theme-contract`. Работает в браузере и на сервере, ничего про ИИ
 не импортирует.
 
+Вне site-gen (конструктор) пакет ставится из GitHub Packages: `@merfy/tokens@npm:@merfy-dropshipping-platform/tokens`
+точной версии. Публикует workflow `tokens-release.yml` по тегу `tokens-v<версия>`: `pnpm build` собирает
+`dist/index.js` и типы в `dist/types`, `publishConfig` подставляет их вместо исходников. Без реестра — `pnpm build`
+и `pnpm pack`: архив `merfy-tokens-<версия>.tgz` ставится как `file:`.
+
 ## Как подключить
 
 ```ts
@@ -28,7 +33,8 @@ pnpm test:coverage   # тесты с покрытием, порог 80 %
 pnpm typecheck
 pnpm lint
 pnpm format:check
-pnpm generate                      # generated/: tailwind.css, TOKENS.md, theme.schema.json, dictionary.schema.json
+pnpm build                         # dist/: пакет для GitHub Packages (esbuild через pnpm dlx, типы — tsc)
+pnpm generate                      # generated/: tailwind.css, TOKENS.md, theme.schema.json, dictionary.schema.json, panel.schema.json
 pnpm generate --theme <папка темы> # <папка темы>/generated/tokens/: tailwind.css, TOKENS.md, theme.schema.json
 ```
 
@@ -62,12 +68,28 @@ pnpm generate --theme <папка темы> # <папка темы>/generated/to
 - `stopWords`, `actionWords` — стоп-слова и слова действий;
 - `forms` — формы, на которых ошибается стеммер: `"кнопок": "кнопки"`.
 
-Поля не про вид — картинка логотипа, соцсети, вид корзины, баннер cookie — это настройки секций, они в
-`not-tokens.json`: поиск отвечает, где это меняется. После правки — `pnpm test`: 134 проверочных запроса в
+Поля не про вид — картинка логотипа, соцсети, вид корзины, баннер cookie — настройки темы (блок 8, раздел ниже),
+они в `not-tokens.json`: поиск отвечает, где это меняется. После правки — `pnpm test`: 134 проверочных запроса в
 `fixtures/search-queries.json` должны пройти.
 
 Движок поиска — `src/search/engine.ts`, копия `merfy-mcp/src/search.ts` без изменений. Её не правят: тест сверяет
 хэш тела с шапкой.
+
+## Схема панели темы
+
+Панель «Настройки темы» конструктора рисуется по JSON-схеме (блок 8): группы, в группе поля. Поле — либо токен
+(`token` + `control`: `color`, `slider` с `range`, `font`, `weight`, `segment`/`align` с `options`, `scheme`), либо
+настройка не про вид (`setting`: `image`, `url`, `string`, `text`, `select`, `toggle` — с умолчанием). У группы может
+быть `sidebar` — правая колонка с полями; у поля — `visibleWhen` (видно, когда настройка равна значению).
+
+- `parsePanel(raw, dictionary)` — форма и смысл: токен есть в словаре, поле подходит виду, ползунок в пределах вида,
+  варианты — ровно значения токена; ошибка `panel-invalid` со списком проблем;
+- `panelForTheme(panel, themeJson.panel)` — тема скрывает ненужные поля (`{ "hidden": ["…"] }`);
+- `readSettingsEdits` / `parseSettingsEdits` / `resolveSettings` — правки настроек мерчанта (ревизия, ключ
+  `settings`): проверка и умолчание ⊕ правка; ошибка `settings-invalid`;
+- `compactEdits` — правки токенов без пустых наборов: в ревизию пишется только изменённое.
+
+JSON-схему файла панели пишет `pnpm generate` в `generated/panel.schema.json`.
 
 ## Как подключить ИИ
 

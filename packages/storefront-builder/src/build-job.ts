@@ -46,6 +46,13 @@ export interface BuilderDeps {
   alert: (stopped: StoppedShop) => Promise<void>;
   // После переключения указателя у магазина для поиска — IndexNow (design.md, раздел 4).
   announce?: Announce;
+  // Идущие сборки: их отмечает «прервана» штатная остановка, если не дождалась (runtime.ts, shutdown).
+  running?: Set<RunningBuild>;
+}
+
+export interface RunningBuild {
+  job: ClaimedJob;
+  steps: Steps;
 }
 
 interface Attempt {
@@ -130,11 +137,17 @@ export async function runBuildJob(deps: BuilderDeps, job: BuildJob): Promise<voi
   const claimed = await claimJob(deps.db, { ...job, priority: 0 }, deps.shopState.leaseMs);
   if (claimed === null) return deps.log('job-skipped', { shopId: job.siteId, buildId: job.build });
   deps.log('build-start', { shopId: claimed.siteId, buildId: claimed.build, events: claimed.events });
-  const steps: Steps = {};
-  const result = await attemptSafely(deps, claimed, steps);
-  const finishedAt = deps.clock();
-  await recordBuild(deps.db, { job: claimed, ...result, steps, finishedAt });
-  const total = finishedAt.getTime() - claimed.startedAt.getTime();
-  deps.log('build-finish', { shopId: claimed.siteId, buildId: claimed.build, ...result, ms: total });
-  await settle(deps, claimed, result.error);
+  const running: RunningBuild = { job: claimed, steps: {} };
+  deps.running?.add(running);
+  try {
+    const { steps } = running;
+    const result = await attemptSafely(deps, claimed, steps);
+    const finishedAt = deps.clock();
+    await recordBuild(deps.db, { job: claimed, ...result, steps, finishedAt });
+    const total = finishedAt.getTime() - claimed.startedAt.getTime();
+    deps.log('build-finish', { shopId: claimed.siteId, buildId: claimed.build, ...result, ms: total });
+    await settle(deps, claimed, result.error);
+  } finally {
+    deps.running?.delete(running);
+  }
 }

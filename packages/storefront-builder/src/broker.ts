@@ -48,6 +48,8 @@ export interface Broker {
   publishActivity: (routingKey: string, envelope: Record<string, unknown>) => Promise<void>;
   publishPreview: (signal: PreviewSignal) => Promise<void>;
   consume: (queue: string, prefetch: number, handler: Handler) => Promise<void>;
+  // Штатная остановка: новых сообщений не брать. Взятые обработчики доделывают, отправка работает до close.
+  pause: () => Promise<void>;
   close: () => Promise<void>;
 }
 
@@ -105,7 +107,7 @@ function openChannel(connection: AmqpConnectionManager): ChannelWrapper {
   return connection.createChannel({ setup: declareTopology, publishTimeout: PUBLISH_TIMEOUT_MS });
 }
 
-type Publishers = Omit<Broker, 'consume' | 'close'>;
+type Publishers = Omit<Broker, 'consume' | 'pause' | 'close'>;
 
 // Всё, что сборщик отправляет, — через один канал с подтверждениями брокера.
 const publishersOf = (publisher: ChannelWrapper): Publishers => ({
@@ -140,6 +142,9 @@ export function openBroker(url: string, log: Log): Broker {
   return {
     ...publishersOf(publisher),
     consume,
+    pause: async () => {
+      await Promise.all(consumers.map((channel) => channel.cancelAll()));
+    },
     close: async () => {
       await Promise.all([publisher, ...consumers].map((channel) => channel.close()));
       await connection.close();

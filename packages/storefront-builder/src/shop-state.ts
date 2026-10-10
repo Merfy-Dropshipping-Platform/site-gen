@@ -273,6 +273,55 @@ export const finishFailure = (
   options: ShopStateOptions,
 ): Promise<Finished | null> => finish(db, FAILURE_SQL, [job.siteId, options.retryDelaysMs, job.build, error]);
 
+// Штатная остановка сборщика не дождалась сборки (SIGTERM от Coolify, runtime.ts): строка сборки «interrupted» и снятый
+// замок — одним запросом. Условие — номер тот же, сборка идёт и замок ещё наш: успела кончиться или замок истёк —
+// ничего не меняем. Задание получает новый номер (под старым уже записана «interrupted»; указатель блока 5 пишется
+// только если новее — поздний конец прерванной сборки новую не затрёт) и истёкший замок без старта: его ставит в очередь
+// ближайший обход любого живого сборщика (renewLostJobs) — второго контейнера при выкатке или следующего запуска. События
+// «ещё раз» едут в это же задание, номер из резерва next_build — тоже: публикация, что ждёт его, получит эту сборку.
+const INTERRUPT_SQL = `WITH released AS (
+  UPDATE storefront_shop SET build = ${TAKE_BUILD}, next_build = NULL, lease_until = now(), queued_at = now(),
+    started_at = NULL, events = events + pending, priority = GREATEST(priority, pending_priority),
+    event_at = LEAST(event_at, pending_event_at), pending = 0, pending_priority = 0, pending_event_at = NULL
+  WHERE site_id = $1 AND build = $2 AND state = 'busy' AND started_at IS NOT NULL AND lease_until > now()
+  RETURNING build),
+recorded AS (
+  INSERT INTO storefront_build (site_id, build, attempt, priority, events, event_at, queued_at, started_at, finished_at,
+    outcome, steps, error)
+  SELECT $1::text, $2::bigint, $3::int, $4::int, $5::int, $6::timestamptz, $7::timestamptz, $8::timestamptz,
+    $9::timestamptz, 'interrupted', $10::jsonb, $11::text FROM released
+  ON CONFLICT (site_id, build) DO NOTHING)
+SELECT build FROM released`;
+
+const interruptedRow = z.object({ build: z.coerce.number().int() });
+
+export interface InterruptedBuild {
+  job: ClaimedJob;
+  steps: Record<string, number>;
+  error: string;
+  finishedAt: Date;
+}
+
+// Номер задания, которое заменило прерванную сборку; null — строку уже поменяли, записывать нечего.
+export async function interruptBuild(db: Queryable, interrupted: InterruptedBuild): Promise<number | null> {
+  const { job } = interrupted;
+  const values = [
+    job.siteId,
+    job.build,
+    job.attempt,
+    job.priority,
+    job.events,
+    job.eventAt,
+    job.queuedAt,
+    job.startedAt,
+    interrupted.finishedAt,
+    JSON.stringify(interrupted.steps),
+    interrupted.error,
+  ];
+  const rows = (await db.query(INTERRUPT_SQL, values)).rows.map((row) => interruptedRow.parse(row));
+  return rows.length === 0 ? null : rows[0].build;
+}
+
 // Пауза перед повтором прошла — задание снова, с новым номером. События, пришедшие за паузу, едут в этот же повтор.
 const RETRY_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${TAKE_BUILD}, next_build = NULL,
   lease_until = ${lease('$1')}, queued_at = now(), started_at = NULL, retry_at = NULL,

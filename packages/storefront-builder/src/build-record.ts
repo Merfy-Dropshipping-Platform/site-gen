@@ -4,8 +4,9 @@ import type { ClaimedJob, Queryable } from './shop-state';
 // По ней p95 «правка → витрина» считается одним запросом (README пакета).
 
 // Итог: live, paused, stale, unchanged — ответ выкладки блока 5; skipped — ключ совпал с живой сборкой, собирать
-// нечего; failed — сборка упала, ошибка в error.
-export type BuildOutcome = 'live' | 'paused' | 'stale' | 'unchanged' | 'skipped' | 'failed';
+// нечего; failed — сборка упала, ошибка в error; interrupted — штатная остановка сборщика её не дождалась
+// (shop-state.ts, interruptBuild), задание переставлено под новым номером.
+export type BuildOutcome = 'live' | 'paused' | 'stale' | 'unchanged' | 'skipped' | 'failed' | 'interrupted';
 
 // Время шагов, мс: queue — ожидание в очереди, snapshot, compare, build (сборка и выкладка).
 export type Steps = Record<string, number>;

@@ -60,9 +60,16 @@ const server = await startDrawServer({ ...drawDeps, slots, timeoutMs: settings.d
 const started = { port: settings.port, slots: settings.buildSlots, releaseSlots: settings.releaseSlots };
 log('builder-started', { ...started, themes: deps.themeIds.join(','), renderHash: platform.renderHash });
 
-// Остановка по сигналу Coolify: новые задания не берём, недоделанные вернёт брокер — их возьмёт следующий запуск.
+// Остановка по сигналу Coolify (`docker stop -t 30`): новые события и задания не берём, идущие сборки ждём не дольше
+// BUILD_DRAIN_MS. Не дождались — сборка «прервана», замок снят (runtime.ts, shutdown), и процесс выходит сразу: брошенная
+// сборка не должна идти рядом с той, что возьмёт задание в другом сборщике. Брокер вернёт её сообщение в очередь, а
+// взять его по старому номеру уже нельзя (claimJob).
 async function shutdown(): Promise<void> {
-  runtime.stop();
+  const interrupted = await runtime.shutdown(settings.drainMs);
+  if (interrupted > 0) {
+    log('builder-stopped', { interrupted });
+    process.exit(0);
+  }
   server.close();
   await broker.close();
   await rpc.close();

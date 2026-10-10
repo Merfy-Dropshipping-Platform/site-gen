@@ -26,6 +26,9 @@ const envSchema = z.object({
   DRAW_SLOTS: count(1),
   DRAW_TIMEOUT_MS: count(3_000),
   BUILD_LEASE_MS: count(300_000),
+  // Сколько штатная остановка ждёт идущие сборки. Coolify останавливает контейнер `docker stop -t 30`: через 30 с —
+  // SIGKILL, поэтому предел — 25 с, по умолчанию 20 с: остаток — на «прервана», снятие замка и выход.
+  BUILD_DRAIN_MS: z.coerce.number().int().positive().max(25_000).default(20_000),
   RECONCILE_MS: count(3_600_000),
   PRODUCT_TIMEOUT_MS: count(10_000),
   // Магазины для поиска: robots.txt открыт и есть карта сайта (блок 5). На dev — нет.
@@ -50,6 +53,7 @@ export interface Settings {
   drawSlots: number;
   drawTimeoutMs: number;
   leaseMs: number;
+  drainMs: number;
   reconcileMs: number;
   productTimeoutMs: number;
   indexable: boolean;
@@ -83,6 +87,7 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
     drawSlots: value.DRAW_SLOTS,
     drawTimeoutMs: value.DRAW_TIMEOUT_MS,
     leaseMs: value.BUILD_LEASE_MS,
+    drainMs: value.BUILD_DRAIN_MS,
     reconcileMs: value.RECONCILE_MS,
     productTimeoutMs: value.PRODUCT_TIMEOUT_MS,
     indexable: value.STOREFRONT_INDEXABLE === 'true',

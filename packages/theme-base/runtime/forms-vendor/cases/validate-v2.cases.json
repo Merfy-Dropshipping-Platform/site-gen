@@ -1,0 +1,451 @@
+{
+  "version": 1,
+  "forms": {
+    "photobook": {
+      "version": 2,
+      "items": [
+        {
+          "id": "f1",
+          "kind": "field",
+          "type": "photo",
+          "title": "Фото для книги",
+          "visible": true,
+          "required": true,
+          "maxFiles": 200
+        },
+        {
+          "id": "f2",
+          "kind": "field",
+          "type": "buttons",
+          "title": "Формат",
+          "visible": true,
+          "required": true,
+          "options": ["20 × 20 см", "30 × 30 см"]
+        },
+        {
+          "id": "f3",
+          "kind": "field",
+          "type": "select",
+          "title": "Обложка",
+          "visible": true,
+          "required": false,
+          "options": ["Лён", "Кожа"]
+        },
+        {
+          "id": "f4",
+          "kind": "field",
+          "type": "textarea",
+          "title": "Пожелания",
+          "visible": false,
+          "required": false,
+          "maxLength": 2000
+        },
+        {
+          "id": "c-name",
+          "kind": "contact",
+          "key": "name",
+          "title": "Имя",
+          "visible": true,
+          "required": false
+        },
+        {
+          "id": "c-email",
+          "kind": "contact",
+          "key": "email",
+          "title": "Почта",
+          "visible": true,
+          "required": true
+        },
+        {
+          "id": "c-phone",
+          "kind": "contact",
+          "key": "phone",
+          "title": "Телефон",
+          "visible": true,
+          "required": true
+        },
+        {
+          "id": "c-social",
+          "kind": "contact",
+          "key": "social",
+          "title": "Соцсеть",
+          "visible": false,
+          "required": false
+        }
+      ]
+    },
+    "extras": {
+      "version": 2,
+      "items": [        {
+          "id": "x1",
+          "kind": "field",
+          "type": "buttons",
+          "title": "Способ связи",
+          "visible": true,
+          "required": false,
+          "options": ["Телеграм", "Звонок"]
+        },
+        {
+          "id": "x2",
+          "kind": "field",
+          "type": "text",
+          "title": "Промокод",
+          "visible": true,
+          "required": true,
+          "maxLength": 30
+        },
+        {
+          "id": "x3",
+          "kind": "field",
+          "type": "checkbox",
+          "title": "Срочная сборка",
+          "visible": true,
+          "required": true
+        },
+        {
+          "id": "x4",
+          "kind": "field",
+          "type": "select",
+          "title": "Размер",
+          "visible": true,
+          "required": true,
+          "options": ["A4", "A5"]
+        },
+        {
+          "id": "x5",
+          "kind": "field",
+          "type": "number",
+          "title": "Тираж",
+          "visible": true,
+          "required": false,
+          "min": 1,
+          "max": 10
+        },
+        {
+          "id": "x6",
+          "kind": "field",
+          "type": "date",
+          "title": "Дата вручения",
+          "visible": true,
+          "required": false,
+          "minDays": 3
+        },
+        {
+          "id": "x7",
+          "kind": "field",
+          "type": "file",
+          "title": "Макет обложки",
+          "visible": true,
+          "required": false,
+          "maxFiles": 3
+        },
+        {
+          "id": "x8",
+          "kind": "field",
+          "type": "text",
+          "title": "Внутренний комментарий",
+          "visible": false,
+          "required": true
+        },
+        {
+          "id": "x9",
+          "kind": "field",
+          "type": "text",
+          "title": "Комментарий к звонку",
+          "visible": true,
+          "required": true,
+          "condition": { "field": "x1", "equals": "Звонок" }
+        },
+        {
+          "id": "c-name",
+          "kind": "contact",
+          "key": "name",
+          "title": "Имя",
+          "visible": true,
+          "required": true
+        },
+        {
+          "id": "c-email",
+          "kind": "contact",
+          "key": "email",
+          "title": "Почта",
+          "visible": true,
+          "required": true
+        },
+        {
+          "id": "c-phone",
+          "kind": "contact",
+          "key": "phone",
+          "title": "Телефон",
+          "visible": true,
+          "required": false
+        },
+        {
+          "id": "c-social",
+          "kind": "contact",
+          "key": "social",
+          "title": "Соцсеть",
+          "visible": true,
+          "required": true
+        }
+      ]
+    },
+    "requireds": {
+      "version": 2,
+      "items": [
+        {
+          "id": "v1",
+          "kind": "field",
+          "type": "video",
+          "title": "Видео обзора",
+          "visible": true,
+          "required": true,
+          "maxFiles": 10
+        },
+        {
+          "id": "f1",
+          "kind": "field",
+          "type": "file",
+          "title": "Чертёж изделия",
+          "visible": true,
+          "required": true,
+          "maxFiles": 5
+        },
+        {
+          "id": "t1",
+          "kind": "field",
+          "type": "textarea",
+          "title": "Пожелания",
+          "visible": true,
+          "required": true,
+          "maxLength": 500
+        },
+        {
+          "id": "d1",
+          "kind": "field",
+          "type": "date",
+          "title": "Дата съёмки",
+          "visible": true,
+          "required": true,
+          "minDays": 0
+        },
+        {
+          "id": "n1",
+          "kind": "field",
+          "type": "number",
+          "title": "Возраст ребёнка",
+          "visible": true,
+          "required": true,
+          "min": 18,
+          "max": 99
+        },
+        {
+          "id": "c-name",
+          "kind": "contact",
+          "key": "name",
+          "title": "Имя",
+          "visible": false,
+          "required": false
+        },
+        {
+          "id": "c-email",
+          "kind": "contact",
+          "key": "email",
+          "title": "Почта",
+          "visible": true,
+          "required": true
+        },
+        {
+          "id": "c-phone",
+          "kind": "contact",
+          "key": "phone",
+          "title": "Телефон",
+          "visible": false,
+          "required": false
+        },
+        {
+          "id": "c-social",
+          "kind": "contact",
+          "key": "social",
+          "title": "Соцсеть",
+          "visible": false,
+          "required": false
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "пустая форма — все обязательные, почта и согласие",
+      "form": "photobook",
+      "values": {},
+      "contacts": {},
+      "filesCounts": {},
+      "expected": {
+        "items": {
+          "f1": "Приложите хотя бы один файл",
+          "f2": "Выберите вариант",
+          "c-email": "Проверьте почту",
+          "c-phone": "Нужен телефон"
+        },
+        "consent": "Без согласия заявку не отправить"
+      }
+    },
+    {
+      "name": "обязательный checkbox не отмечен",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "PROMO2026", "x3": false, "x4": "A4" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": { "x3": "Отметьте, чтобы продолжить" } }
+    },
+    {
+      "name": "обязательный select пуст",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "PROMO2026", "x3": true, "x4": "" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": { "x4": "Выберите вариант" } }
+    },
+    {
+      "name": "обязательный текст пуст после trim",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "   ", "x3": true, "x4": "A4" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": { "x2": "Заполните поле" } }
+    },
+    {
+      "name": "обязательное имя пусто",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "PROMO2026", "x3": true, "x4": "A4" },
+      "contacts": { "name": "", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": { "c-name": "Как к вам обращаться?" } }
+    },
+    {
+      "name": "почта anna@mail — не похоже на почту",
+      "form": "photobook",
+      "values": { "f2": "20 × 20 см" },
+      "contacts": { "name": "Анна", "email": "anna@mail", "phone": "+7 900 111-22-33", "consent": true },
+      "filesCounts": { "f1": 1 },
+      "expected": { "items": { "c-email": "Проверьте почту" } }
+    },
+    {
+      "name": "телефон +7 (900) 111-22- — 9 цифр",
+      "form": "photobook",
+      "values": { "f2": "20 × 20 см" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "phone": "+7 (900) 111-22-", "consent": true },
+      "filesCounts": { "f1": 1 },
+      "expected": { "items": { "c-phone": "Нужен телефон" } }
+    },
+    {
+      "name": "обязательная соцсеть пуста",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "PROMO2026", "x3": true, "x4": "A4" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": { "c-social": "Укажите ник или ссылку" } }
+    },
+    {
+      "name": "согласие не отмечено",
+      "form": "photobook",
+      "values": { "f2": "20 × 20 см" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "phone": "+7 900 111-22-33" },
+      "filesCounts": { "f1": 1 },
+      "expected": { "items": {}, "consent": "Без согласия заявку не отправить" }
+    },
+    {
+      "name": "скрытый обязательный пункт без значения — ошибки нет",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "PROMO2026", "x3": true, "x4": "A4" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": {} }
+    },
+    {
+      "name": "условие показа не выполнено — ошибки нет",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "PROMO2026", "x3": true, "x4": "A4" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": {} }
+    },
+    {
+      "name": "телефон +7 900 111-22-33 — ошибки нет",
+      "form": "photobook",
+      "values": { "f2": "20 × 20 см" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "phone": "+7 900 111-22-33", "consent": true },
+      "filesCounts": { "f1": 1 },
+      "expected": { "items": {} }
+    },
+    {
+      "name": "файлов больше maxFiles — текст v1",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "PROMO2026", "x3": true, "x4": "A4" },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": { "x7": 4 },
+      "expected": { "items": { "x7": "Не больше 3 файлов" } }
+    },
+    {
+      "name": "длина текста больше maxLength — текст v1",
+      "form": "extras",
+      "values": {
+        "x1": "Телеграм",
+        "x2": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "x3": true,
+        "x4": "A4"
+      },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": { "x2": "До 30 символов" } }
+    },
+    {
+      "name": "число вне min и max — текст v1",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "PROMO2026", "x3": true, "x4": "A4", "x5": 50 },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": { "x5": "От 1 до 10" } }
+    },
+    {
+      "name": "всё заполнено верно — ошибок нет",
+      "form": "photobook",
+      "values": { "f2": "30 × 30 см", "f3": "Лён" },
+      "contacts": {
+        "name": "Анна",
+        "email": "anna@example.com",
+        "phone": "+7 900 111-22-33",
+        "consent": true
+      },
+      "filesCounts": { "f1": 12 },
+      "expected": { "items": {} }
+    },
+    {
+      "name": "пустая форма обязательных — видео, файл, текст, дата и число",
+      "form": "requireds",
+      "values": {},
+      "contacts": {},
+      "filesCounts": {},
+      "expected": {
+        "items": {
+          "v1": "Приложите хотя бы один файл",
+          "f1": "Приложите хотя бы один файл",
+          "t1": "Заполните поле",
+          "d1": "Заполните поле",
+          "n1": "Заполните поле",
+          "c-email": "Проверьте почту"
+        },
+        "consent": "Без согласия заявку не отправить"
+      }
+    },
+    {
+      "name": "число меньше min — текст v1",
+      "form": "extras",
+      "values": { "x1": "Телеграм", "x2": "PROMO2026", "x3": true, "x4": "A4", "x5": 0 },
+      "contacts": { "name": "Анна", "email": "anna@mail.ru", "social": "tg:@anna", "consent": true },
+      "filesCounts": {},
+      "expected": { "items": { "x5": "От 1 до 10" } }
+    }
+  ]
+}

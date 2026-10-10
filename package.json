@@ -12,6 +12,7 @@
     "lint:check": "eslint \"{src,test}/**/*.ts\"",
     "test": "jest",
     "checks": "node scripts/release/checks.mjs",
+    "forms:sync": "node scripts/sync-forms.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node -r ts-node/register src/db/migrate.ts",
     "db:migrate:fix": "node -r ts-node/register src/db/migrate-fix.ts",

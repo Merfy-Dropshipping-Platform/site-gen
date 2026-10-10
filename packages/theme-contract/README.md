@@ -24,6 +24,12 @@ my-theme/
       react/*.tsx       # React components (Puck preview + islands)
 ```
 
+## Схема панели «Настройки темы» для новых тем (блок 8)
+
+`panel/theme-panel.json` — панель новых тем: 11 групп и правый сайдбар баннера, 44 поля (30 токенов вида и
+14 настроек не про вид). Формат и проверка — в `@merfy/tokens` (`parsePanel`, README пакета, раздел «Схема
+панели темы»); тест `packages/tokens/__tests__/platform-panel.test.ts`. Старые темы этот файл не читают.
+
 ## theme.json Manifest
 
 Required fields: `name`, `version`.

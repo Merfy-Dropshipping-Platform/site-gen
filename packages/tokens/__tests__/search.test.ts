@@ -117,7 +117,7 @@ describe('данные поиска', () => {
     expect(parts.filter((part) => !segments.has(part))).toEqual([]);
   });
 
-  it('пять записей «не токен» — настройки секций', () => {
+  it('пять записей «не токен»: четыре — настройки темы (блок 8, П8-4 Б), схема секции — в её настройках', () => {
     expect(NOT_TOKENS.map((record) => record.id)).toEqual([
       'cart-type',
       'cookie-banner',

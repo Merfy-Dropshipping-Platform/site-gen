@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import probeLocals from '../fixtures/probe-locals.json';
-import type { ShopPageLocals } from '../src/locals';
+import type { ShopPageLocals, StandPageLocals } from '../src/locals';
 import { startRenderer, type Renderer } from '../src/renderer';
 
 // Быстрые тесты рисовальщика — на подставной серверной сборке: тот же handler, что у @astrojs/node, без Astro.
@@ -29,6 +29,19 @@ describe('рисовальщик на подставной сборке', () => 
     const names = ['Первый', 'Второй', 'Третий', 'Четвёртый'];
     const pages = await Promise.all(names.map((name) => renderer.render('/', localsOf(name))));
     expect(pages).toEqual(names.map((name) => `<h1>${name}</h1><p>© 2026</p>`));
+  });
+
+  it('стенд темы (блок 8): /theme-stand, данные — в locals.merfyStand', async () => {
+    const stand: StandPageLocals = {
+      head: { title: 'Стенд темы', configHtml: '', tokensCss: '', previewScript: '' },
+      attributes: {},
+      settings: {},
+      shop: { name: 'Шарфы' },
+      schemes: [],
+      config: {},
+      problems: [],
+    };
+    await expect(renderer.renderStand(stand)).resolves.toBe('<h1>Шарфы</h1><p>Стенд темы</p>');
   });
 
   it('такой страницы у темы нет — page-unknown', async () => {

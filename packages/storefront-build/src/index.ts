@@ -26,9 +26,13 @@ export { buildJsonOf } from './build-json';
 
 // Рисовальщик темы
 export { buildRendererBundle, type RendererBundle } from './theme-build';
-export { startRenderer, type Renderer } from './renderer';
+export { STAND_PAGE_PATH, startRenderer, type Renderer } from './renderer';
 export { readClientFiles, type BuildFile } from './client-files';
-export type { ShopPageHead, ShopPageLocals } from './locals';
+export type { ShopPageHead, ShopPageLocals, StandPageHead, StandPageLocals } from './locals';
+
+// Стенд темы в превью конструктора (блок 8)
+export { previewTokens, standLocals, type PreviewTokens, type StandInputs, type StandTheme } from './stand';
+export { PREVIEW_AGENT } from './preview-agent';
 
 // Отпечатки, версии тем, сторожа
 export { PLATFORM_RENDER_FILES, THEME_FILES, platformRenderHash, themeRenderFiles } from './render-files';

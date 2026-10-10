@@ -22,6 +22,10 @@
 5. `/draw` — дорисовка страницы для раздачи (блок 5): свои места и тайм-аут, мимо очереди сборок.
 6. Раз в час сверка: опубликованные магазины, у которых живая сборка не та, что дал бы ключ сейчас, получают событие
    `reconcile`.
+7. Остановка по SIGTERM (Coolify — `docker stop -t 30`): новых событий и заданий не берёт, идущие сборки ждёт не
+   дольше `BUILD_DRAIN_MS`. Не дождался — строка сборки `interrupted`, замок магазина снят, задание с новым номером
+   и событиями «ещё раз» берёт ближайший обход любого сборщика (второго контейнера при выкатке или следующего запуска)
+   — сразу, а не через срок замка; процесс выходит.
 
 ## Команды (из `packages/storefront-builder`)
 
@@ -42,7 +46,7 @@
 `S3_SECRET_KEY`, `STOREFRONT_API_URL`, `SOURCE_COMMIT` (40 знаков; Coolify задаёт сам).
 По умолчанию: `PORT=8080`, `BUILD_SLOTS=1`, `DRAW_SLOTS=1`, `DRAW_TIMEOUT_MS=3000`, `BUILD_LEASE_MS=300000`,
 `RECONCILE_MS=3600000`, `PRODUCT_TIMEOUT_MS=10000`, `STOREFRONT_INDEXABLE=false`,
-`INDEXNOW_URL=https://yandex.com/indexnow`.
+`INDEXNOW_URL=https://yandex.com/indexnow`, `BUILD_DRAIN_MS=20000` (не больше 25000: через 30 с Coolify шлёт SIGKILL).
 `RELEASE_SLOTS` — предел выпуска K: по умолчанию на одно меньше `BUILD_SLOTS`, но не меньше 1; больше — ошибка
 запуска. При одном месте (dev) K = 1: публикация ждёт не дольше одной сборки выпуска — той, что уже идёт.
 `INDEXNOW_KEY` — ключ IndexNow, тот же, что у раздачи (блок 5); нет ключа — уведомлений нет.
@@ -50,7 +54,8 @@
 ## Журнал и p95
 
 Одна строка JSON на событие: `event-accepted`, `job-queued`, `build-start`, `step` (`buildId`, `shopId`, `step`, `ms`,
-`queueWaitMs`), `build-finish`, `build-retry`, `ALERT`. Каждая сборка — строка в `storefront_build`.
+`queueWaitMs`), `build-finish`, `build-retry`, `build-interrupted`, `ALERT`. Каждая сборка — строка в
+`storefront_build`.
 
 p95 «правка → витрина» за сутки:
 

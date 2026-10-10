@@ -6,7 +6,13 @@
  *
  * Это гарантирует что активные пользователи всегда имеют работающие сайты.
  */
-import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Optional,
+} from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { PG_CONNECTION } from "../constants";
@@ -14,6 +20,7 @@ import * as schema from "../db/schema";
 import { and, eq, sql, inArray } from "drizzle-orm";
 import { S3StorageService } from "../storage/s3.service";
 import { SiteGeneratorService } from "../generator/generator.service";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 
 @Injectable()
 export class ContentSyncScheduler implements OnModuleInit {
@@ -23,6 +30,8 @@ export class ContentSyncScheduler implements OnModuleInit {
     @Inject(PG_CONNECTION) private readonly db: NodePgDatabase<typeof schema>,
     private readonly storage: S3StorageService,
     private readonly generator: SiteGeneratorService,
+    // Optional — тесты, собирающие планировщик напрямую, не обязаны его передавать.
+    @Optional() private readonly handoff?: StorefrontHandoff,
   ) {}
 
   /**
@@ -94,7 +103,9 @@ export class ContentSyncScheduler implements OnModuleInit {
           // Проверяем наличие index.html
           const check = await this.storage.checkSiteFiles(prefix);
 
-          if (!check.hasIndex) {
+          // Магазин новой темы лежит не в прежней раскладке — его сверяет
+          // сборщик витрин (блок 6, reconcile), не этот проход.
+          if (!check.hasIndex && !(await this.handoff?.isNewTheme(site.id))) {
             this.logger.log(
               `Content sync: site ${site.id} (${site.publicUrl ?? "no url"}) has no content, building...`,
             );

@@ -30,6 +30,7 @@ describe('настройки', () => {
       drawSlots: 1,
       drawTimeoutMs: 3000,
       leaseMs: 300_000,
+      drainMs: 20_000,
       reconcileMs: 3_600_000,
       productTimeoutMs: 10_000,
       indexable: false,
@@ -43,6 +44,12 @@ describe('настройки', () => {
     expect(settings).toMatchObject({ buildSlots: 2, drawSlots: 4, indexable: true });
     const indexNow = readSettings({ ...ENV, INDEXNOW_KEY: 'key-12345678' }).indexNow;
     expect(indexNow).toEqual({ key: 'key-12345678', endpoint: 'https://yandex.com/indexnow' });
+  });
+
+  // Coolify останавливает контейнер `docker stop -t 30`: ждать сборки дольше 25 с — не успеть снять замок до SIGKILL.
+  it('BUILD_DRAIN_MS — до 25 с, больше — settings-invalid', () => {
+    expect(readSettings({ ...ENV, BUILD_DRAIN_MS: '25000' }).drainMs).toBe(25_000);
+    expect(() => readSettings({ ...ENV, BUILD_DRAIN_MS: '30000' })).toThrow(StorefrontBuilderError);
   });
 
   // Предел выпуска K (В6-2 В): меньше числа мест, при одном месте — 1.

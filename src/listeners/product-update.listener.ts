@@ -36,6 +36,7 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   Inject,
+  Optional,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as amqp from "amqp-connection-manager";
@@ -47,6 +48,7 @@ import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { BuildQueuePublisher } from "../rabbitmq/build-queue.service";
 import { FragmentPatcher } from "./fragment-patcher.service";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 
 const PRODUCT_EVENTS_EXCHANGE = "product.events";
 const SITES_PRODUCT_EVENTS_QUEUE = "sites_product_events";
@@ -86,6 +88,8 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly buildQueue: BuildQueuePublisher,
     private readonly fragmentPatcher: FragmentPatcher,
+    // Optional — тесты, собирающие слушатель напрямую, не обязаны его передавать.
+    @Optional() private readonly handoff?: StorefrontHandoff,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -229,6 +233,15 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
 
         // Skip draft/archived sites — only rebuild published sites
         if (site.status !== "published") {
+          continue;
+        }
+
+        // Магазин новой темы: `product.events` слушает сам сборщик витрин
+        // (блок 6, Св-3 А) — ни заплаток прежнего хранилища, ни таймера сборки.
+        if (await this.handoff?.isNewTheme(site.id)) {
+          this.logger.debug(
+            `Skipping new-theme site ${site.id}: storefront builder handles product events`,
+          );
           continue;
         }
 

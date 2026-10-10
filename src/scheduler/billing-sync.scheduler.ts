@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Optional,
+} from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
@@ -13,6 +19,7 @@ import { SitesDomainService } from "../sites.service";
 import { S3StorageService } from "../storage/s3.service";
 import { SiteGeneratorService } from "../generator/generator.service";
 import { isStorefrontSuspended } from "../billing/billing.client";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 
 @Injectable()
 export class BillingSyncScheduler implements OnModuleInit {
@@ -25,6 +32,8 @@ export class BillingSyncScheduler implements OnModuleInit {
     private readonly sites: SitesDomainService,
     private readonly storage: S3StorageService,
     private readonly generator: SiteGeneratorService,
+    // Optional — тесты, собирающие планировщик напрямую, не обязаны его передавать.
+    @Optional() private readonly handoff?: StorefrontHandoff,
   ) {}
 
   /**
@@ -180,7 +189,9 @@ export class BillingSyncScheduler implements OnModuleInit {
             : this.storage.getSitePrefixBySubdomain(site.publicUrl);
           const check = await this.storage.checkSiteFiles(prefix);
 
-          if (!check.hasIndex) {
+          // Магазин новой темы лежит не в прежней раскладке — его сверяет
+          // сборщик витрин (блок 6, reconcile), не этот проход.
+          if (!check.hasIndex && !(await this.handoff?.isNewTheme(site.id))) {
             this.logger.log(
               `Site ${site.id} has no static content, triggering build...`,
             );

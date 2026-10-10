@@ -21,15 +21,14 @@ import { STACK, openPool, wait } from './stack';
 
 // Сборщик на стенде: настоящие база, брокер и MinIO, тема — подставная: рисует по данным страницы HTML, который проходит
 // SEO-проверку блока 4, — как nova: описания и ключевых слов нет — тегов нет. Задержка рисования — чтобы поймать «правку
-// во время сборки»; hangOnce — следующая страница рисуется минуту: так сборщик «умирает» посреди сборки.
-export const render = { delayMs: 0, hangOnce: false };
-const HANG_MS = 60_000;
+// во время сборки»; hangOnce — следующая страница рисуется hangMs (минуту): так сборщик «умирает» посреди сборки.
+export const render = { delayMs: 0, hangOnce: false, hangMs: 60_000 };
 
 const metaTag = (name: string, content: string): string =>
   content === '' ? '' : `<meta name="${name}" content="${content}">`;
 
 async function fakeRender(path: string, locals: ShopPageLocals): Promise<string> {
-  const delay = render.hangOnce ? HANG_MS : render.delayMs;
+  const delay = render.hangOnce ? render.hangMs : render.delayMs;
   render.hangOnce = false;
   await wait(delay);
   const { head, shop } = locals;

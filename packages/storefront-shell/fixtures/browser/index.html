@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ядро витрины — фикстура</title>
+    <script type="application/json" id="merfy-config">
+      {"v":1,"mode":"live","shop":{"id":"7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70","name":"Шарфы","url":"https://scarves.example"},"currency":"RUB","locale":"ru-RU","api":{"url":"https://gateway.dev.merfy.ru/api"},"theme":{"id":"nova","version":"0.0.4"},"page":{"id":"home","path":"/"}}
+    </script>
+    <script type="application/json" id="merfy-modules">
+      {"v":1,"modules":[
+        {"kind":"section","name":"platform:cart-badge","src":"/m/cart-badge.js"},
+        {"kind":"section","name":"nova:scarf-colors","src":"/m/scarf-colors.js"},
+        {"kind":"section","name":"shop:broken","src":"/m/broken.js"},
+        {"kind":"section","name":"reviews:list","src":"/m/flaky.js"},
+        {"kind":"section","name":"shop:clicky","src":"/m/clicky.js"},
+        {"kind":"section","name":"shop:down","src":"/m/down.js"},
+        {"kind":"global","name":"geo:locate","src":"/m/geo.js"}
+      ]}
+    </script>
+    <script type="importmap">{"imports":{"@merfy/shell":"/_merfy/shell/__SHELL__/shell.js"}}</script>
+    <link rel="modulepreload" href="/_merfy/shell/__SHELL__/shell.js" />
+    <script type="module" src="/_merfy/shell/__SHELL__/shell.js"></script>
+  </head>
+  <body>
+    <merfy-section data-section="platform:cart-badge">Корзина <span data-count>0</span></merfy-section>
+    <merfy-section data-section="nova:scarf-colors">
+      <button type="button" data-color="чёрный">Чёрный</button>
+      <p data-picked></p>
+    </merfy-section>
+    <merfy-section data-section="shop:broken"><button type="button">Подобрать</button></merfy-section>
+    <merfy-section data-section="reviews:list">
+      <button type="button" data-buy="scarf-1">Купить такой же</button>
+    </merfy-section>
+    <merfy-section data-section="shop:clicky"><button type="button" data-boom>Сломать</button></merfy-section>
+    <merfy-section data-section="shop:down"><p>Файл секции не отдаётся</p></merfy-section>
+    <merfy-section data-section="shop:static"><p>Секция без скрипта</p></merfy-section>
+  </body>
+</html>

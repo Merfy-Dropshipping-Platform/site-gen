@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: builder-test
       POSTGRES_PASSWORD: builder-test-only
       POSTGRES_DB: sites_service
-    ports: ["15432:5432"]
+    ports: ["${STACK_PG_PORT:-15432}:5432"]
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "builder-test", "-d", "sites_service"]
       interval: 2s
@@ -20,7 +20,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: builder-test
       RABBITMQ_DEFAULT_PASS: builder-test-only
-    ports: ["15682:5672"]
+    ports: ["${STACK_AMQP_PORT:-15682}:5672"]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 3s
@@ -32,7 +32,7 @@ services:
       MINIO_ROOT_USER: builder-test
       MINIO_ROOT_PASSWORD: builder-test-only
       MC_HOST_local: http://builder-test:builder-test-only@127.0.0.1:9000
-    ports: ["19200:9000"]
+    ports: ["${STACK_S3_PORT:-19200}:9000"]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 2s

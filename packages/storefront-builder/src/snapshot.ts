@@ -128,6 +128,22 @@ async function rowsOf<T>(db: Queryable, sql: string, siteId: string, schema: z.Z
   return (await db.query(sql, [siteId])).rows.map((row) => schema.parse(row));
 }
 
+// Ключ текущей ревизии магазина (design.md блока 8, раздел 4): tokens — правки токенов в форме блока 1, settings —
+// настройки не про вид. Ключа нет или он не объект — пустые правки: пустое не ломает. Ревизия — текущая
+// (site.current_revision_id), как у нынешней сборки.
+export const revisionKeySql = (key: 'tokens' | 'settings'): string =>
+  `CASE WHEN jsonb_typeof(r.data->'${key}') = 'object' THEN r.data->'${key}' ELSE '{}'::jsonb END`;
+const REVISION_SQL = `SELECT ${revisionKeySql('tokens')} AS tokens FROM site s
+  LEFT JOIN site_revision r ON r.id = s.current_revision_id WHERE s.id = $1`;
+const jsonObject = z.record(z.string(), z.json());
+export type JsonObject = z.infer<typeof jsonObject>;
+
+// Правки токенов мерчанта из текущей ревизии: во входы сборки (revision.tokens блока 4).
+export async function readRevisionTokens(db: Queryable, siteId: string): Promise<JsonObject> {
+  const rows = await rowsOf(db, REVISION_SQL, siteId, z.object({ tokens: jsonObject }));
+  return rows[0]?.tokens ?? {};
+}
+
 // Сущности магазина из базы sites: политики, контакты, опубликованные статьи блога.
 export async function readSiteEntities(db: Queryable, siteId: string): Promise<Entity[]> {
   const [policies, contacts, publications] = await Promise.all([
@@ -180,6 +196,7 @@ export interface InputsParts {
   year: number;
   entities: readonly Entity[];
   received: boolean;
+  tokens: JsonObject;
 }
 
 // Тема магазина — только новой архитектуры: те, что записаны в theme-versions.json блока 4 и загружены сборщиком.
@@ -212,22 +229,24 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<
   if (shop === null) throw new StorefrontBuilderError('shop-invalid', 'магазина нет', { path: `site/${siteId}` });
   const theme = themeOf(deps.themes, shop);
   const address = shopAddress(shop);
-  const [siteEntities, products] = await Promise.all([
+  const [siteEntities, products, tokens] = await Promise.all([
     readSiteEntities(deps.db, siteId),
     fetchProducts(deps.products, shop),
+    readRevisionTokens(deps.db, siteId),
   ]);
   const entities = [...siteEntities, ...(products ?? [])];
   const year = deps.clock().getUTCFullYear();
-  const parts = { platform: deps.platform, theme, shop, address, year, entities, received: products !== null };
+  const parts = { platform: deps.platform, theme, shop, address, year, entities, received: products !== null, tokens };
   return { shop, address, inputs: buildInputsOf(parts) };
 }
 
-// Входы сборки блока 4 одним объектом. Правок токенов мерчанта у новой темы пока нет — их пишет панель темы (блок 8).
+// Входы сборки блока 4 одним объектом. Правки токенов мерчанта — из текущей ревизии (их пишет панель темы, блок 8).
+// Настройки не про вид в живую сборку не идут: в конфиге v1 их нет, читатель появится с секциями (блок 8, раздел 4).
 export const buildInputsOf = (parts: InputsParts) => ({
   platform: { renderHash: parts.platform.renderHash },
   theme: parts.theme,
   shell: null,
-  revision: { tokens: {} },
+  revision: { tokens: parts.tokens },
   site: {
     id: parts.shop.id,
     name: parts.shop.name,

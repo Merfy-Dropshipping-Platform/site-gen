@@ -122,7 +122,7 @@
     "--tracking-heading": "0",
     "--weight-body": "400",
     "--weight-heading": "600",
-    "--width-logo": "7.5rem",
+    "--width-logo": "6.25rem",
     "--width-page": "80rem"
   },
   "fonts": [

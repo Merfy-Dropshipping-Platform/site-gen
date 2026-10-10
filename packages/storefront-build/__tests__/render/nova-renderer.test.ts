@@ -45,11 +45,12 @@ describe('рисовальщик темы nova', () => {
     expect(head).toContain(`<style id="merfy-tokens">${probeLocals.head.tokensCss}</style>`);
   });
 
-  it('файлы клиента: CSS страницы и шрифты, в HTML — ссылка на этот CSS', () => {
+  // CSS два: главной (шрифты) и стенда в превью (Tailwind, блок 8). Главная ссылается ровно на один из них.
+  it('файлы клиента: CSS и шрифты, в HTML главной — ссылка на один CSS из них', () => {
     const css = clientFiles.filter((file) => file.path.endsWith('.css')).map((file) => file.path);
-    expect(css).toHaveLength(1);
+    expect(css).toHaveLength(2);
     expect(clientFiles.some((file) => file.path.endsWith('.woff2'))).toBe(true);
-    expect(html).toContain(`href="/${css[0]}"`);
+    expect(css.filter((path) => html.includes(`href="/${path}"`))).toHaveLength(1);
   });
 
   it('такой страницы у темы нет — page-unknown', async () => {

@@ -1,0 +1,61 @@
+---
+// Стенд темы в превью конструктора (design.md блока 8, П8-1 А). Рисует его только сборщик по запросу превью: данные —
+// из Astro.locals.merfyStand (токены и настройки мерчанта из текущей ревизии, конфиг в mode: preview). В сборку
+// магазина страница не входит: её нет в SHOP_ROUTES блока 4. Слушатель правок токенов приходит строкой
+// head.previewScript — в коде темы сети нет (сторож рендера). Конфиг магазина здесь печатается при отрисовке, без
+// скрипта на странице: превью отдаётся одним HTML.
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/600.css";
+import StandBody from "../stand/StandBody.astro";
+import "../stand/stand.css";
+
+const page = Astro.locals.merfyStand;
+if (page === undefined) throw new Error("Стенд превью рисует только сборщик: нет Astro.locals.merfyStand");
+const configRows = [
+	["Магазин", "shop.name"],
+	["Режим", "mode"],
+	["Версия темы", "theme.version"],
+	["Страница", "page.id"],
+];
+---
+
+<html lang="ru" {...page.attributes}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex" />
+		<Fragment set:html={page.head.configHtml} />
+		<title>{page.head.title}</title>
+		<style id="merfy-tokens" is:inline set:html={page.head.tokensCss}></style>
+		<script is:inline set:html={page.head.previewScript}></script>
+	</head>
+	<body class="bg-background">
+		<StandBody schemes={page.schemes} settings={page.settings} shopName={page.shop.name}>
+			<section data-stand="config" class="flex flex-col gap-4">
+				<h2 class="text-xl font-heading weight-heading text-heading">Конфиг магазина</h2>
+				<dl class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
+					{
+						configRows.map(([label, field]) => (
+							<>
+								<dt class="text-muted-foreground">{label}</dt>
+								<dd data-config-field={field}>{page.config[field] ?? "—"}</dd>
+							</>
+						))
+					}
+				</dl>
+			</section>
+			{
+				page.problems.length > 0 && (
+					<section data-stand="problems" class="flex flex-col gap-2 text-sm text-destructive">
+						<h2 class="text-xl font-heading weight-heading">Правки не подошли теме</h2>
+						<ul>
+							{page.problems.map((problem) => (
+								<li>{problem}</li>
+							))}
+						</ul>
+					</section>
+				)
+			}
+		</StandBody>
+	</body>
+</html>

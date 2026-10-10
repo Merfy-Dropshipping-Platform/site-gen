@@ -1,6 +1,6 @@
 {
   "name": "nova",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "tokens": {
     "root": {
       "font-body": "Manrope, system-ui, sans-serif",
@@ -18,7 +18,8 @@
       "radius-button": 8,
       "radius-card": 12,
       "spacing-section": { "min": 48, "max": 96 },
-      "width-page": 1280
+      "width-page": 1280,
+      "width-logo": 100
     },
     "schemes": {
       "scheme-1": { "background": "#ffffff", "foreground": "#111111", "primary": "#111111", "destructive": "#dc2626" },

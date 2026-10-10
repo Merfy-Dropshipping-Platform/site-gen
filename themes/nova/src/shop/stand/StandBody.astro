@@ -1,0 +1,210 @@
+---
+// Образцы стенда (design.md блока 2, 5.2; блока 8 — «Стенд в превью»): общие у стенда блока 2 и стенда в превью
+// конструктора. Каждое поле «Настроек темы» меняет хотя бы один образец: токен — классом Tailwind по словарю, настройка
+// не про вид — разметкой. Пустое значение образец не ломает: нет картинки логотипа — имя магазина, пустая ссылка — без
+// значка, пустой текст баннера — без него, баннер выключен — образца нет. Разделы помечены data-stand — по меткам их
+// проверяют сценарии, а не по вёрстке. Данные — только из свойств: компонент рисует и рисовальщик (сторож блока 4).
+interface Props {
+	schemes: string[];
+	settings: Record<string, string | boolean>;
+	shopName: string;
+}
+
+const { schemes, settings, shopName } = Astro.props;
+const text = (id: string): string => {
+	const value = settings[id];
+	return typeof value === "string" ? value.trim() : "";
+};
+const on = (id: string): boolean => settings[id] === true;
+
+const textSizes = ["text-xs", "text-sm", "text-base", "text-lg", "text-xl", "text-2xl", "text-3xl", "text-4xl", "text-5xl"];
+const radii = ["rounded-button", "rounded-input", "rounded-card", "rounded-media", "rounded-popover", "rounded-badge"];
+const spacings = ["w-section", "w-section-gap", "w-card", "w-grid-column", "w-grid-row"];
+const shadows = ["shadow-button", "shadow-input", "shadow-card", "shadow-media", "shadow-popover", "shadow-drawer"];
+const socials = [
+	["social-telegram", "Telegram"],
+	["social-vk", "Вконтакте"],
+	["social-dzen", "Дзен"],
+	["social-youtube", "Youtube"],
+	["social-tiktok", "TikTok"],
+	["social-max", "MAX"],
+]
+	.map(([id, label]) => ({ id, label, url: text(id) }))
+	.filter((social) => social.url !== "");
+const bannerPlace: Record<string, string> = {
+	"bottom-left": "self-start max-w-sm",
+	"bottom-center": "self-center max-w-sm",
+	"bottom-right": "self-end max-w-sm",
+	bar: "w-full",
+};
+const logoImage = text("logo-image");
+const bannerTitle = text("cookie-banner-title");
+const bannerText = text("cookie-banner-text");
+const bannerPrimary = text("cookie-banner-primary-label");
+const bannerSecondary = text("cookie-banner-secondary-label");
+const bannerPosition = text("cookie-banner-position");
+const primaryButton =
+	"rounded-button border-width-button border-primary-border bg-primary px-4 py-2 text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground";
+const secondaryButton =
+	"rounded-button border-width-button border-secondary-border bg-secondary px-4 py-2 text-secondary-foreground hover:bg-secondary-hover hover:text-secondary-hover-foreground";
+const heading = "font-heading weight-heading text-heading";
+---
+
+<main class="mx-auto flex max-w-page flex-col gap-section-gap px-4 py-section font-body weight-body text-foreground">
+	<h1 class={`text-3xl ${heading}`}>Стенд темы</h1>
+
+	<section data-stand="logo" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Логотип</h2>
+		<a href="/" data-stand-logo class="block w-logo">
+			{
+				logoImage === "" ? (
+					<span class={`text-xl ${heading}`}>{shopName}</span>
+				) : (
+					<img src={logoImage} alt={shopName} class="block h-auto w-full" />
+				)
+			}
+		</a>
+	</section>
+
+	<section data-stand="schemes" class="flex flex-col gap-grid-row">
+		<h2 class={`text-xl ${heading}`}>Схемы</h2>
+		<div class="grid gap-grid-column md:grid-cols-2">
+			{
+				schemes.map((scheme) => (
+					<div class={`color-${scheme} flex flex-col gap-4 rounded-card border-width-card border-border bg-background p-6 text-foreground`}>
+						<p class={`text-lg ${heading}`}>{scheme}</p>
+						<p class="text-muted-foreground">Текст на фоне схемы</p>
+						<div class="flex flex-wrap gap-3">
+							<button type="button" class={primaryButton}>
+								Купить
+							</button>
+							<button type="button" class={secondaryButton}>
+								Подробнее
+							</button>
+						</div>
+					</div>
+				))
+			}
+		</div>
+	</section>
+
+	<section data-stand="type-scale" class="flex flex-col gap-2">
+		<h2 class={`text-xl ${heading}`}>Шкала текста</h2>
+		{textSizes.map((size) => <p class={size}>{size} — Съешь ещё этих мягких французских булок</p>)}
+	</section>
+
+	<section data-stand="radii-spacing" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Скругления и отступы</h2>
+		<div class="flex flex-wrap gap-4">
+			{radii.map((radius) => <div class={`${radius} border-width-input border-border p-4 text-sm`}>{radius}</div>)}
+		</div>
+		<div class="flex flex-col gap-2">
+			{
+				spacings.map((spacing) => (
+					<div class="flex items-center gap-4 text-sm">
+						<span class={`${spacing} h-2 bg-accent`} />
+						{spacing}
+					</div>
+				))
+			}
+		</div>
+	</section>
+
+	<section data-stand="shadows" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Тени</h2>
+		<div class="flex flex-wrap gap-6">
+			{shadows.map((shadow) => <div class={`${shadow} rounded-card bg-card p-4 text-sm text-card-foreground`}>{shadow}</div>)}
+		</div>
+	</section>
+
+	<section data-stand="controls" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Кнопки и поля</h2>
+		<div class="flex flex-wrap items-center gap-4">
+			<button type="button" class={primaryButton}>В корзину</button>
+			<button type="button" class={secondaryButton}>Подробнее</button>
+			<label class="flex flex-col gap-1 text-sm">
+				Электронная почта
+				<input type="email" class="rounded-input border-width-input border-input bg-background px-3 py-2 text-foreground shadow-input" />
+			</label>
+		</div>
+	</section>
+
+	<section data-stand="price" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Цена</h2>
+		<div class="flex flex-wrap items-center gap-3">
+			<span class="text-xl text-price weight-heading">2 990 ₽</span>
+			<span class="text-price-old line-through">3 490 ₽</span>
+			<span class="rounded-badge bg-sale px-2 py-1 text-sm text-sale-foreground">−14%</span>
+			<span class="rounded-badge bg-badge px-2 py-1 text-sm text-badge-foreground">Новинка</span>
+		</div>
+	</section>
+
+	<section data-stand="product-card" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Карточка товара</h2>
+		<article
+			class="scheme-card flex max-w-xs flex-col gap-3 rounded-card border-width-card border-border bg-background p-card text-foreground card-style-card:bg-card card-style-card:text-card-foreground card-style-card:shadow-card card-align-left:text-left card-align-center:text-center card-align-right:text-right"
+		>
+			<div class="aspect-square rounded-media bg-muted"></div>
+			<h3 class={`text-base ${heading}`}>Шарф изо льна</h3>
+			<p class="text-price">2 500 ₽</p>
+			<button type="button" class={primaryButton}>В корзину</button>
+		</article>
+	</section>
+
+	<section data-stand="socials" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Социальные сети</h2>
+		{
+			socials.length === 0 ? (
+				<p class="text-sm text-muted-foreground">Ссылок нет</p>
+			) : (
+				<ul class="flex flex-wrap gap-4 text-sm">
+					{socials.map((social) => (
+						<li>
+							<a href={social.url} data-social={social.id} class="underline">
+								{social.label}
+							</a>
+						</li>
+					))}
+				</ul>
+			)
+		}
+	</section>
+
+	<section data-stand="cart" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Корзина</h2>
+		{
+			settings["cart-type"] === "page" ? (
+				<a href="/cart" data-cart="page" class="self-start underline">
+					Корзина — отдельной страницей
+				</a>
+			) : (
+				<aside data-cart="drawer" class="scheme-cart-drawer flex max-w-sm flex-col gap-3 rounded-popover bg-background p-6 text-foreground shadow-drawer">
+					<p class={`text-lg ${heading}`}>Корзина</p>
+					<p class="text-sm text-muted-foreground">Шарф изо льна × 1</p>
+					<button type="button" class={primaryButton}>Оформить заказ</button>
+				</aside>
+			)
+		}
+	</section>
+
+	<section data-stand="cookie-banner" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Баннер cookie</h2>
+		{
+			on("cookie-banner-enabled") && (
+				<div
+					data-cookie-banner={bannerPosition}
+					class={`scheme-cookie-banner flex flex-col gap-3 rounded-popover bg-background p-4 text-foreground shadow-popover ${bannerPlace[bannerPosition] ?? ""}`}
+				>
+					{bannerTitle !== "" && <p class={`text-base ${heading}`}>{bannerTitle}</p>}
+					{bannerText !== "" && <p class="text-sm">{bannerText}</p>}
+					<div class="flex flex-wrap gap-2">
+						{bannerPrimary !== "" && <button type="button" class={primaryButton}>{bannerPrimary}</button>}
+						{bannerSecondary !== "" && <button type="button" class={secondaryButton}>{bannerSecondary}</button>}
+					</div>
+				</div>
+			)
+		}
+	</section>
+
+	<slot />
+</main>

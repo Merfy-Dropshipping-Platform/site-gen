@@ -1,3 +1,4 @@
+import { publishDrafts } from '@merfy/storefront-sections';
 import { z } from 'zod';
 import { PRIORITY, priorityOf, type IncomingEvent } from './events';
 import type { Log } from './log';
@@ -43,6 +44,16 @@ export interface AcceptDeps {
 // Выпуск темы ждёт места (held), остальные события — как всегда: свободен — сборка сразу, занят — склейка.
 const acceptByPriority = (priority: number) => (priority === PRIORITY.release ? holdRelease : acceptEvent);
 
+// До сборки по событию (design.md блока 7, п. 15 и С7-20 Б): публикация магазина выносит на витрину текущие правки его
+// своих секций — сборка возьмёт опубликованные. Остальным событиям здесь делать нечего.
+type BeforeBuild = (deps: AcceptDeps, siteId: string) => Promise<void>;
+const BEFORE_BUILD: Partial<Record<string, BeforeBuild>> = {
+  'merchant-publish': async (deps, siteId) => {
+    const names = await publishDrafts(deps.db, siteId);
+    deps.log('sections-published', { shopId: siteId, sections: names.join(',') });
+  },
+};
+
 async function shopsOf(deps: AcceptDeps, event: IncomingEvent): Promise<string[]> {
   const [sql, owner] = event.owner === 'site' ? [SITE_SQL, event.siteId] : [TENANT_SQL, event.tenantId];
   const shops = (await deps.db.query(sql, [owner, deps.themeIds])).rows.map((row) => shopRow.parse(row));
@@ -51,6 +62,7 @@ async function shopsOf(deps: AcceptDeps, event: IncomingEvent): Promise<string[]
 }
 
 async function acceptForShop(deps: AcceptDeps, event: IncomingEvent, siteId: string): Promise<Accepted> {
+  await BEFORE_BUILD[event.type]?.(deps, siteId);
   const shopEvent = { siteId, priority: priorityOf(event.type), eventAt: event.eventAt };
   const accepted = await acceptByPriority(shopEvent.priority)(deps.db, shopEvent, deps.shopState);
   const { outcome, ...fields } = accepted;

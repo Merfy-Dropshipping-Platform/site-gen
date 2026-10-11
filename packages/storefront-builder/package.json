@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@merfy/storefront-build": "workspace:*",
+    "@merfy/storefront-sections": "workspace:*",
     "@merfy/storefront-storage": "workspace:*",
     "@merfy/tokens": "workspace:*",
     "amqp-connection-manager": "4.1.15",

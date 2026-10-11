@@ -30,6 +30,40 @@ export const instantSchema = z.iso.datetime({
 });
 const jsonObject = z.record(z.string(), z.json());
 
+// Код секций (design.md блока 7, п. 19 и 22): полное имя — приставка автора и имя секции, как в списке модулей ядра.
+const SECTION_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// Файл сборки ядра: shell.js и part-<хэш>.js.
+const SHELL_FILE = /^[A-Za-z0-9_-]+\.js$/;
+const CODE_KINDS = ['section', 'global'] as const;
+const sectionNameSchema = z.string().regex(SECTION_NAME, { error: 'нужно полное имя секции: nova:scarf-colors' });
+
+// Ядро @merfy/shell: версия — для людей и манифеста; отпечаток файлов — путь _merfy/shell/<16 знаков>/ и ключ;
+// подсказки modulepreload — файлы ядра, которые нужны сразу (dist/shell.json, задача 3 блока 7).
+const shellSchema = z.strictObject({
+  version: versionSchema,
+  hash: hashSchema,
+  preload: z.array(z.string().regex(SHELL_FILE)).min(1),
+});
+
+// Принятая правка секции из реестра блока 7 (storefront_section): отпечаток правки, разметка, стили в рамке секции и
+// отпечаток файла скрипта; null — секция без скрипта (п. 16).
+const codeSectionSchema = z.strictObject({
+  name: sectionNameSchema,
+  kind: z.enum(CODE_KINDS),
+  hash: hashSchema,
+  html: z.string(),
+  css: z.string(),
+  script: hashSchema.nullable(),
+});
+
+// Код магазина: видимые ему секции, которые где-то стоят, и глобальные скрипты. Места — по id страницы в порядке
+// мерчанта, секция может стоять дважды; у глобальных скриптов места нет (С7-21 А).
+const codeSchema = z.strictObject({
+  sections: z.array(codeSectionSchema),
+  pages: z.record(kebabIdSchema, z.array(sectionNameSchema)),
+  globals: z.array(sectionNameSchema),
+});
+
 const entitySchema = z.strictObject({
   type: z.enum(ENTITY_TYPES),
   id: z.string().min(1),
@@ -42,8 +76,10 @@ const buildInputsSchema = z.strictObject({
   platform: z.strictObject({ renderHash: hashSchema }),
   // Версия — единица выпуска для людей и волн; отпечаток файлов темы — в ключе (В4-1 В).
   theme: z.strictObject({ id: kebabIdSchema, version: versionSchema, contentHash: hashSchema }),
-  // Слот блока 7: версия каркаса входит в ключ. До блока 7 каркаса нет — null.
-  shell: z.strictObject({ version: versionSchema }).nullable(),
+  // Ядро @merfy/shell (блок 7). null — у магазина нет скриптов секций: ядро на страницы не идёт.
+  shell: shellSchema.nullable(),
+  // Код секций магазина (блок 7).
+  code: codeSchema,
   // Ревизия мерчанта — по содержимому, не по id (факт 6). Пока в ней только правки токенов (блок 1).
   revision: z.strictObject({ tokens: jsonObject }),
   site: z.strictObject({
@@ -74,6 +110,10 @@ const buildInputsSchema = z.strictObject({
 export type BuildInputs = z.infer<typeof buildInputsSchema>;
 export type Entity = z.infer<typeof entitySchema>;
 export type EntityType = Entity['type'];
+export type ShellInput = z.infer<typeof shellSchema>;
+export type CodeInput = z.infer<typeof codeSchema>;
+export type CodeSection = z.infer<typeof codeSectionSchema>;
+type CodeKind = CodeSection['kind'];
 
 function checkReceived(inputs: BuildInputs): void {
   if (inputs.data.status === 'received') return;
@@ -95,10 +135,63 @@ function checkUniqueEntities(entities: readonly Entity[]): void {
   });
 }
 
-// Входы — внешние данные: схема, потом признак «получен», потом одна сущность — один раз.
+interface CodeIssue {
+  path: string;
+  text: string;
+}
+
+interface Place {
+  path: string;
+  name: string;
+  kind: CodeKind;
+}
+
+const MISSING_TEXT: Record<CodeKind, string> = { section: 'такой секции', global: 'такого глобального скрипта' };
+const place = (path: string, name: string, kind: CodeKind): Place => ({ path, name, kind });
+
+// Где код ставит имя: место на странице ждёт секцию, строка globals — глобальный скрипт.
+const placesOf = (code: CodeInput): Place[] => [
+  ...Object.entries(code.pages).flatMap(([page, names]) =>
+    names.map((name, index) => place(`code.pages.${page}.${index}`, name, 'section')),
+  ),
+  ...code.globals.map((name, index) => place(`code.globals.${index}`, name, 'global')),
+];
+
+const twice = (code: CodeInput): CodeIssue[] =>
+  code.sections.flatMap((section, index) =>
+    code.sections.findIndex((other) => other.name === section.name) === index
+      ? []
+      : [{ path: `code.sections.${index}`, text: `секция ${section.name} в коде дважды` }],
+  );
+
+function misplaced(code: CodeInput): CodeIssue[] {
+  const kinds = new Map(code.sections.map((section): [string, CodeKind] => [section.name, section.kind]));
+  return placesOf(code)
+    .filter((entry) => kinds.get(entry.name) !== entry.kind)
+    .map((entry) => ({ path: entry.path, text: `${entry.name}: в code.sections нет ${MISSING_TEXT[entry.kind]}` }));
+}
+
+// Скрипт без ядра не запустится: сборщик такого не пишет.
+function scriptsWithoutShell(inputs: BuildInputs): CodeIssue[] {
+  if (inputs.shell !== null) return [];
+  return inputs.code.sections.flatMap((section, index) =>
+    section.script === null ? [] : [{ path: `code.sections.${index}.script`, text: 'у секции скрипт, а ядра нет' }],
+  );
+}
+
+// Код приходит из реестра блока 7 через сборщик: имя — один раз, место на странице — секция из кода, строка globals —
+// глобальный скрипт из кода, скрипты — только при ядре. Первая ошибка — с путём.
+function checkCode(inputs: BuildInputs): void {
+  const issue = [...twice(inputs.code), ...misplaced(inputs.code), ...scriptsWithoutShell(inputs)].at(0);
+  if (issue === undefined) return;
+  throw new StorefrontBuildError('code-invalid', issue.text, { path: issue.path });
+}
+
+// Входы — внешние данные: схема, потом признак «получен», потом одна сущность — один раз, потом код секций.
 export function parseBuildInputs(raw: unknown): BuildInputs {
   const inputs = parseWith(buildInputsSchema, raw, 'inputs-invalid');
   checkReceived(inputs);
   checkUniqueEntities(inputs.data.entities);
+  checkCode(inputs);
   return inputs;
 }

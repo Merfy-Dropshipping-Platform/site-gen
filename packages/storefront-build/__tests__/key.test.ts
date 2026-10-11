@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseBuildInputs, type BuildInputs } from '../src/inputs';
 import { buildKey } from '../src/key';
 import { changedInputs, standInputs } from './support';
+import { SHELL, STYLE_ONLY, codeInputs } from './support-code';
 
 const OTHER_HASH = `sha256:${'f'.repeat(64)}`;
 
@@ -12,7 +13,8 @@ const EDITS: Record<string, (inputs: BuildInputs) => void> = {
   'theme.id': (inputs) => (inputs.theme.id = 'nova-next'),
   'theme.version': (inputs) => (inputs.theme.version = '0.0.2'),
   'theme.contentHash': (inputs) => (inputs.theme.contentHash = OTHER_HASH),
-  shell: (inputs) => (inputs.shell = { version: '0.1.0' }),
+  shell: (inputs) => (inputs.shell = structuredClone(SHELL)),
+  code: (inputs) => (inputs.code = structuredClone(STYLE_ONLY)),
   'revision.tokens': (inputs) => (inputs.revision.tokens = { root: { 'radius-button': 6 } }),
   'site.id': (inputs) => (inputs.site.id = '00000000-0000-4000-8000-000000000002'),
   'site.name': (inputs) => (inputs.site.name = 'Стенд Nova 2'),
@@ -27,8 +29,8 @@ const EDITS: Record<string, (inputs: BuildInputs) => void> = {
 };
 // Признак «получен» — не вход ключа: без него сборки нет вовсе (data-not-received).
 const NOT_KEY = new Set(['data.status']);
-// Открытый JSON: любая правка внутри — правка одного входа.
-const OPEN_JSON = new Set(['revision.tokens', 'data.entities']);
+// Открытый JSON: любая правка внутри — правка одного входа. Правки внутри кода секций — отдельный тест ниже.
+const OPEN_JSON = new Set(['revision.tokens', 'data.entities', 'code']);
 
 function leafPaths(value: unknown, path = ''): string[] {
   if (OPEN_JSON.has(path) || typeof value !== 'object' || value === null) return [path];
@@ -63,5 +65,17 @@ describe('buildKey', () => {
     const removed = changedInputs((inputs) => inputs.data.entities.pop());
     expect(buildKey(added)).not.toBe(buildKey(standInputs));
     expect(buildKey(removed)).not.toBe(buildKey(standInputs));
+  });
+
+  it('правка внутри кода секций — другой ключ: разметка, стили, скрипт, порядок мест, место убрали', () => {
+    const base = buildKey(codeInputs());
+    const edits: ((inputs: BuildInputs) => void)[] = [
+      (inputs) => (inputs.code.sections[1].html = '<p>Другая разметка</p>'),
+      (inputs) => (inputs.code.sections[1].css = 'p{margin:0}'),
+      (inputs) => (inputs.code.sections[2].script = inputs.code.sections[3].script),
+      (inputs) => inputs.code.pages.home.reverse(),
+      (inputs) => inputs.code.pages.home.pop(),
+    ];
+    expect(edits.map((edit) => buildKey(codeInputs(edit))).filter((key) => key === base)).toEqual([]);
   });
 });

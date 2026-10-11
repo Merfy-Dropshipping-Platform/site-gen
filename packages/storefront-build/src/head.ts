@@ -1,5 +1,6 @@
 import { buildStorefrontConfig, configTag } from '@merfy/storefront-config';
 import { parseTokenEdits, tokensCss, type ParsedTheme, type TokenEdits } from '@merfy/tokens';
+import { codeHead, pageSections } from './code';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
@@ -42,6 +43,8 @@ export function pageLocals(inputs: BuildInputs, route: ShopRoute, theme: ParsedT
     canonical: new URL(route.path, inputs.site.publicUrl).href,
     configHtml: configTag(config),
     tokensCss: tokensCss(theme.dictionary, theme.tokens, editsOf(inputs, theme)),
+    // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены.
+    codeHtml: codeHead(inputs, route.id),
   };
-  return { head, shop: { name }, year: inputs.year };
+  return { head, shop: { name }, year: inputs.year, sections: pageSections(inputs, route.id) };
 }

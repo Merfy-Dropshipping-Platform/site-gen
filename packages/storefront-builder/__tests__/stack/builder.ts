@@ -1,4 +1,4 @@
-import { checkManifest, type ShopPageLocals } from '@merfy/storefront-build';
+import { checkManifest, hashOf, sha256, type ShellBuild, type ShopPageLocals } from '@merfy/storefront-build';
 import {
   blobKey,
   createS3Store,
@@ -14,8 +14,10 @@ import novaTheme from '../../../theme-nova/theme.json';
 import { raiseAlert } from '../../src/alert';
 import { openBroker, type Broker } from '../../src/broker';
 import type { LoadedTheme } from '../../src/build-job';
+import type { CodeDeps } from '../../src/code';
+import type { Log } from '../../src/log';
 import type { RuntimeDeps } from '../../src/runtime';
-import { openRpc, type RpcClient } from '../../src/rpc';
+import { openRpc, type Call, type RpcClient } from '../../src/rpc';
 import type { StartedJob } from '../../src/shop-state';
 import { STACK, openPool, wait } from './stack';
 
@@ -35,8 +37,8 @@ async function fakeRender(path: string, locals: ShopPageLocals): Promise<string>
   return [
     `<!doctype html><html lang="${head.lang}"><head><title>${head.title}</title>`,
     `${metaTag('description', head.description)}${metaTag('keywords', head.keywords)}`,
-    `<link rel="canonical" href="${head.canonical}">`,
-    `</head><body><h1>${shop.name}</h1><p>${path}</p></body></html>`,
+    `<link rel="canonical" href="${head.canonical}">${head.codeHtml}`,
+    `</head><body><h1>${shop.name}</h1>${locals.sections.join('')}<p>${path}</p></body></html>`,
   ].join('');
 }
 
@@ -52,6 +54,37 @@ export const FAKE_THEME: LoadedTheme = {
 
 export const RENDER_HASH = `sha256:${'b'.repeat(64)}`;
 export const COMMIT = 'c'.repeat(40);
+
+// Ядро сборок стенда (блок 7): один файл; его версия — выпуск секций платформы.
+const SHELL_FILES = [{ path: 'shell.js', content: new TextEncoder().encode('export const defineSection = (d) => d;') }];
+export const TEST_SHELL: ShellBuild = {
+  version: '0.1.0',
+  hash: hashOf(Object.fromEntries(SHELL_FILES.map((file): [string, string] => [file.path, sha256(file.content)]))),
+  preload: ['shell.js'],
+  files: SHELL_FILES,
+};
+
+// Ответ подставного сервиса extensions на extensions.enabledForShop — задаёт тест; Error — сервис не ответил.
+export const extensions: { answer: unknown } = { answer: { success: true, data: [] } };
+const fakeExtensions: Call = () =>
+  extensions.answer instanceof Error ? Promise.reject(extensions.answer) : Promise.resolve(extensions.answer);
+
+// Код магазина для снимка на стенде: реестр секций — настоящий, ядро и сервис extensions — подставные.
+export const codeDeps = (db: Pool, log: Log): CodeDeps => ({
+  db,
+  shell: TEST_SHELL,
+  call: fakeExtensions,
+  timeoutMs: 1_000,
+  log,
+});
+
+// Пути файлов живой сборки магазина.
+export async function liveFiles(store: ObjectStore, label: string): Promise<string[]> {
+  const pointer = await readPointer(store, label);
+  if (pointer === null) return [];
+  const manifest = await readObject(store, manifestKey(pointer.shop, pointer.build), (value) => checkManifest(value));
+  return Object.keys(manifest?.value.files ?? {});
+}
 
 export interface Harness {
   db: Pool;
@@ -78,7 +111,14 @@ export function openHarness(overrides: Partial<RuntimeDeps> = {}): Harness {
   const deps: RuntimeDeps = {
     db,
     store,
-    snapshot: { db, products: { call: rpc.call, timeoutMs: 1_000, log }, platform, themes, clock },
+    snapshot: {
+      db,
+      products: { call: rpc.call, timeoutMs: 1_000, log },
+      code: codeDeps(db, log),
+      platform,
+      themes,
+      clock,
+    },
     themes,
     platformCommit: COMMIT,
     indexable: false,

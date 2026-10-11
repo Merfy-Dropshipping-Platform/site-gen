@@ -3,6 +3,8 @@ packages:
   - packages/storefront-build
   - packages/storefront-storage
   - packages/storefront-builder
+  - packages/storefront-shell
+  - packages/storefront-sections
   - packages/theme-contract
   - packages/theme-base
   - packages/storefront-config

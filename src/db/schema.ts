@@ -577,3 +577,66 @@ export const storefrontBuild = pgTable(
     finishedAtIdx: index("idx_storefront_build_finished_at").on(table.finishedAt),
   }),
 );
+
+/**
+ * storefront_section — реестр секций витрины (блок 7, С7-10 Б, С7-20 Б): строка на каждую принятую правку секции или
+ * глобального скрипта любого автора. Выпуски платформы, темы и расширения подписаны версией (release); у своей секции
+ * магазина — draft (текущая правка) и published (на витрине). Запросы — пакет @merfy/storefront-sections (drizzle/0024).
+ */
+export const storefrontSection = pgTable(
+  "storefront_section",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    kind: text("kind").notNull(),
+    author: text("author").notNull(),
+    owner: text("owner").notNull(),
+    release: text("release"),
+    sourceHash: text("source_hash").notNull(),
+    contentHash: text("content_hash").notNull(),
+    manifest: jsonb("manifest").notNull(),
+    source: jsonb("source").notNull(),
+    template: text("template").notNull(),
+    style: text("style").notNull(),
+    script: text("script"),
+    scriptHash: text("script_hash"),
+    warnings: jsonb("warnings").default(sql`'[]'::jsonb`).notNull(),
+    draft: boolean("draft").default(false).notNull(),
+    published: boolean("published").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    kindCheck: check("storefront_section_kind_check", sql`${table.kind} IN ('section', 'global')`),
+    authorCheck: check(
+      "storefront_section_author_check",
+      sql`${table.author} IN ('platform', 'theme', 'shop', 'extension')`,
+    ),
+    releaseCheck: check(
+      "storefront_section_release_check",
+      sql`(${table.author} = 'shop') = (${table.release} IS NULL)`,
+    ),
+    scriptCheck: check(
+      "storefront_section_script_check",
+      sql`(${table.script} IS NULL) = (${table.scriptHash} IS NULL)`,
+    ),
+    flagsCheck: check(
+      "storefront_section_flags_check",
+      sql`${table.author} = 'shop' OR NOT (${table.draft} OR ${table.published})`,
+    ),
+    releaseIdx: uniqueIndex("idx_storefront_section_release")
+      .on(table.author, table.owner, table.name, table.release)
+      .where(sql`${table.release} IS NOT NULL`),
+    draftIdx: uniqueIndex("idx_storefront_section_draft")
+      .on(table.owner, table.name)
+      .where(sql`${table.draft}`),
+    publishedIdx: uniqueIndex("idx_storefront_section_published")
+      .on(table.owner, table.name)
+      .where(sql`${table.published}`),
+    ownerNameIdx: index("idx_storefront_section_owner_name").on(
+      table.author,
+      table.owner,
+      table.name,
+      table.createdAt,
+    ),
+  }),
+);

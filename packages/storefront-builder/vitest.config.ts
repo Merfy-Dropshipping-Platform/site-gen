@@ -6,6 +6,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['__tests__/*.test.ts'],
+    // Тест тем грузит серверную сборку nova и под нагрузкой машины не укладывается в 5 с по умолчанию.
+    testTimeout: 20_000,
     coverage: {
       provider: 'v8',
       include: ['src/{errors,parse,log,events,settings,slots,themes,indexnow,preview,inline-assets}.ts'],

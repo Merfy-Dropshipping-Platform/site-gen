@@ -6,6 +6,7 @@
     "contentHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
   },
   "shell": null,
+  "code": { "sections": [], "pages": {}, "globals": [] },
   "revision": { "tokens": { "root": { "radius-button": 4 } } },
   "site": {
     "id": "00000000-0000-4000-8000-000000000001",

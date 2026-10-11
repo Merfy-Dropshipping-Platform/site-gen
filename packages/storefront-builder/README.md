@@ -58,6 +58,22 @@
 запуска. При одном месте (dev) K = 1: публикация ждёт не дольше одной сборки выпуска — той, что уже идёт.
 `INDEXNOW_KEY` — ключ IndexNow, тот же, что у раздачи (блок 5); нет ключа — уведомлений нет.
 
+## Код секций (блок 7)
+
+- При старте — дверь выпуска: секции платформы (`packages/storefront-shell/sections`, выпуск — версия ядра из
+  `packages/storefront-shell/dist/shell.json`) и каждой загруженной темы (`themes/<тема>/sections`, выпуск — версия
+  темы) идут в реестр `storefront_section` через приём `@merfy/storefront-sections`. Итог — строка
+  `section-releases`; отказ секции — `section-refused` с местом ошибки, сборщик стартует дальше. Нет сборки ядра —
+  сборщик не стартует (`shell-missing`; сборка — `pnpm --filter @merfy/shell build`).
+- Снимок: включённые расширения — RPC `extensions.enabledForShop` в `extensions_queue` (тайм-аут — `PRODUCT_TIMEOUT_MS`);
+  места секций — ключ `sections` текущей ревизии (`{ "<id страницы>": ["<имя секции>", …] }`); секции — видимые
+  магазину строки реестра. Расширения не ответили (`extensions-failed`) или места не той формы (`sections-invalid`) —
+  снимок не получен, сборки нет.
+- Публикация (`merchant-publish`) до сборки выносит на витрину текущие правки своих секций магазина
+  (`sections-published`).
+- В сборку идут файлы ядра (`_merfy/shell/<16 знаков>/`) и скриптов секций (`_merfy/m/<sha256>.js`); раздача отдаёт
+  `_merfy/` с кэшем навсегда.
+
 ## Журнал и p95
 
 Одна строка JSON на событие: `event-accepted`, `job-queued`, `build-start`, `step` (`buildId`, `shopId`, `step`, `ms`,

@@ -6,8 +6,10 @@
     "keywords": "шарфы, лён",
     "canonical": "https://nova-stand.example/",
     "configHtml": "<script type=\"application/json\" id=\"merfy-config\">{\"v\":1}</script>",
-    "tokensCss": ":root{--color-primary:#1f6feb}"
+    "tokensCss": ":root{--color-primary:#1f6feb}",
+    "codeHtml": ""
   },
   "shop": { "name": "Стенд Nova" },
-  "year": 2026
+  "year": 2026,
+  "sections": []
 }

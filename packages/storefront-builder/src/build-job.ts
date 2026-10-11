@@ -81,7 +81,7 @@ function themeFor(deps: BuilderDeps, snapshot: Snapshot): ThemeBuild {
 
 async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, theme: ThemeBuild) {
   const references = { platformCommit: deps.platformCommit };
-  const build = await buildStorefront(snapshot.inputs, references, theme);
+  const build = await buildStorefront(snapshot.inputs, references, theme, snapshot.assets);
   const request = { label: snapshot.address.label, build: job.build, manifest: build.manifest, files: build.files };
   const now = deps.clock().toISOString();
   const options = { ...request, publicUrl: snapshot.address.url, indexable: deps.indexable, now };

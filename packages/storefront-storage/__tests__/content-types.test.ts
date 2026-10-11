@@ -18,8 +18,11 @@ describe('тип содержимого и кэш по пути файла', () 
     expect(contentTypeOf(path)).toBe(DEFAULT_CONTENT_TYPE);
   });
 
-  it('файлы с отпечатком в имени (_astro/) — кэш навсегда, остальное — с проверкой', () => {
+  it('файлы с отпечатком в имени (_astro/, _merfy/ блока 7) — кэш навсегда, остальное — с проверкой', () => {
     expect(cacheClassOf('_astro/index.DlYk3bQ2.css')).toBe('immutable');
+    expect(cacheClassOf('_merfy/shell/0123456789abcdef/shell.js')).toBe('immutable');
+    expect(cacheClassOf(`_merfy/m/${'a'.repeat(64)}.js`)).toBe('immutable');
+    expect(cacheClassOf('images/_merfy/m/x.js')).toBe('revalidate');
     expect(cacheClassOf('index.html')).toBe('revalidate');
     expect(cacheClassOf('images/_astro/logo.svg')).toBe('revalidate');
   });

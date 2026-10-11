@@ -24,6 +24,8 @@ COPY packages/stand-check/package.json ./packages/stand-check/package.json
 COPY packages/storefront-build/package.json ./packages/storefront-build/package.json
 COPY packages/storefront-storage/package.json ./packages/storefront-storage/package.json
 COPY packages/storefront-builder/package.json ./packages/storefront-builder/package.json
+COPY packages/storefront-shell/package.json ./packages/storefront-shell/package.json
+COPY packages/storefront-sections/package.json ./packages/storefront-sections/package.json
 COPY packages/theme-contract/package.json ./packages/theme-contract/package.json
 COPY packages/theme-base/package.json ./packages/theme-base/package.json
 COPY packages/storefront-config/package.json ./packages/storefront-config/package.json
@@ -102,6 +104,11 @@ FROM builder AS storefront-renderer
 RUN pnpm --filter @merfy/storefront-builder renderer
 RUN test -f /app/themes/nova/dist-renderer/server/entry.mjs \
     || (echo "FATAL: storefront-builder renderer did not produce themes/nova/dist-renderer" && exit 1)
+# Ядро витрины @merfy/shell (блок 7, С-1 А): собирается один раз на версию платформы, копия идёт в каждую сборку
+# магазина. Состав ядра — packages/storefront-shell/core-parts.json.
+RUN pnpm --filter @merfy/shell build
+RUN test -f /app/packages/storefront-shell/dist/shell.json \
+    || (echo "FATAL: @merfy/shell build did not produce packages/storefront-shell/dist/shell.json" && exit 1)
 
 # ========================
 # Stage 2: Production
@@ -142,6 +149,7 @@ FROM runtime AS storefront-builder
 
 # Тема nova с её зависимостями и сборкой рисовальщика — только в образе сборщика.
 COPY --from=storefront-renderer /app/themes/nova /app/themes/nova
+COPY --from=storefront-renderer /app/packages/storefront-shell/dist /app/packages/storefront-shell/dist
 ENV PORT=8080
 EXPOSE 8080
 WORKDIR /app/packages/storefront-builder

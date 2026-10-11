@@ -2,13 +2,26 @@
 // «входы → файлы + манифест», страница по запросу, граф «страница ← данные», рисовальщик темы, отпечатки и сторожа.
 
 // Входы, ключ, сборка
-export { ENTITY_TYPES, parseBuildInputs, type BuildInputs, type Entity, type EntityType } from './inputs';
+export {
+  ENTITY_TYPES,
+  parseBuildInputs,
+  type BuildInputs,
+  type CodeInput,
+  type CodeSection,
+  type Entity,
+  type EntityType,
+  type ShellInput,
+} from './inputs';
 export { KEY_VERSION, buildKey } from './key';
 export { entityHashes, entityKey } from './entities';
 export { buildStorefront, type BuildReferences, type StorefrontBuild, type ThemeBuild } from './build';
 export { renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
 export { SHOP_ROUTES, routeOf, type ShopRoute } from './routes';
 export { REBUILD_EVENT_INPUTS } from './event-inputs';
+
+// Код секций (блок 7)
+export { NO_ASSETS, modulePath, shellDir, type CodeAssets, type ShellBuild } from './code';
+export { SHELL_DIST, readShellBuild } from './shell';
 
 // Манифест, граф, build.json
 export {

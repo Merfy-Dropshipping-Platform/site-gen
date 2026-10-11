@@ -5,7 +5,8 @@ import {
   type StandPageLocals,
   type StandTheme,
 } from '@merfy/storefront-build';
-import { TokenError, parseTokenEdits } from '@merfy/tokens';
+import { TokenError, migrateTokenEdits, parseTokenEdits, type TokenMigrations } from '@merfy/tokens';
+import type { ThemePins } from './theme-catalog';
 import { z } from 'zod';
 import type { DrawAnswer } from './draw';
 import { inlineAssets, type Assets } from './inline-assets';
@@ -25,16 +26,22 @@ export interface PreviewTheme extends StandTheme {
   themeTokens: unknown;
   renderStand: (locals: StandPageLocals) => Promise<string>;
   assets: Assets;
+  // Шаги перевода правок этой версии (блок 10): превью читает правки так же, как сборка.
+  migrations: TokenMigrations;
 }
 
 export interface PreviewDeps {
   db: Queryable;
+  // Темы образа: по ним — схема панели (/theme-panel).
   themes: ReadonlyMap<string, PreviewTheme>;
+  // Версия магазина — из закрепления (блок 10): превью рисует ту же версию, что живая сборка.
+  pins: ThemePins;
+  previewOf: (themeId: string, version: string) => Promise<PreviewTheme>;
   apiUrl: string;
   log: Log;
 }
 
-const STAND_SQL = `SELECT s.id, s.name, s.theme_id, s.public_url, ${revisionKeySql('tokens')} AS tokens,
+const STAND_SQL = `SELECT s.id, s.name, s.theme_id, s.theme_version, s.public_url, ${revisionKeySql('tokens')} AS tokens,
   ${revisionKeySql('settings')} AS settings FROM site s LEFT JOIN site_revision r ON r.id = s.current_revision_id
   WHERE s.id = $1 AND s.deleted_at IS NULL`;
 
@@ -42,6 +49,7 @@ const standRowSchema = z.object({
   id: z.string(),
   name: z.string(),
   theme_id: z.string().nullable(),
+  theme_version: z.string().nullable(),
   public_url: z.string().nullable(),
   tokens: z.record(z.string(), z.json()),
   settings: z.record(z.string(), z.json()),
@@ -76,8 +84,19 @@ async function standShop(deps: PreviewDeps, rawShop: string | null): Promise<Sta
   if (!shop.success) return answer(400, TEXT.shop);
   const rows = (await deps.db.query(STAND_SQL, [shop.data])).rows.map((row) => standRowSchema.parse(row));
   if (rows.length === 0) return answer(404, TEXT.missing);
-  const theme = deps.themes.get(rows[0].theme_id ?? '');
-  return theme === undefined ? answer(404, TEXT.theme) : { row: rows[0], theme };
+  const [row] = rows;
+  if (row.theme_id === null || !deps.themes.has(row.theme_id)) return answer(404, TEXT.theme);
+  const version = row.theme_version ?? (await deps.pins.released(row.theme_id));
+  const theme = await deps.previewOf(row.theme_id, version);
+  return { row: { ...row, tokens: migratedTokens(row.tokens, theme.migrations) }, theme };
+}
+
+const jsonObjectSchema = z.record(z.string(), z.json());
+
+// Правки ревизии — в форме версии магазина (блок 10). Не подошло схеме JSON — как было: проблему покажет стенд.
+function migratedTokens(tokens: StandRow['tokens'], migrations: TokenMigrations): StandRow['tokens'] {
+  const parsed = jsonObjectSchema.safeParse(migrateTokenEdits(tokens, migrations));
+  return parsed.success ? parsed.data : tokens;
 }
 
 const isAnswer = (value: StandShop | DrawAnswer): value is DrawAnswer => 'status' in value;
@@ -116,7 +135,8 @@ export async function standTokens(deps: PreviewDeps, rawShop: string | null, bod
   const parsed = bodySchema.safeParse(readBody(body));
   if (!parsed.success) return jsonAnswer(400, { problems: [TEXT.body] });
   try {
-    return jsonAnswer(200, previewTokens(found.theme.tokens, parseTokenEdits(found.theme.tokens, parsed.data.tokens)));
+    const edits = parseTokenEdits(found.theme.tokens, migrateTokenEdits(parsed.data.tokens, found.theme.migrations));
+    return jsonAnswer(200, previewTokens(found.theme.tokens, edits));
   } catch (error) {
     if (error instanceof TokenError) return jsonAnswer(400, { problems: error.problems });
     throw error;

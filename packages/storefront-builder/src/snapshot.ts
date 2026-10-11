@@ -5,6 +5,7 @@ import { StorefrontBuilderError, errorText } from './errors';
 import type { Log } from './log';
 import type { Call } from './rpc';
 import type { Queryable } from './shop-state';
+import type { ThemePins } from './theme-catalog';
 
 // Снимок входов сборки (design.md блока 6, раздел 4, «Нет данных — нет выкладки»; входы — блок 4, src/inputs.ts).
 // Сайт, политики, контакты и публикации — из базы sites; товары — у сервиса product (product.list, как у нынешней
@@ -26,7 +27,7 @@ const zoned = (column: string): string => `to_char(${column} AT TIME ZONE 'UTC',
 // SEO главной — из настроек магазина (branding.seo: title, description, keywords, как у нынешних тем —
 // home-seo-inject.ts). Не заполнено — пустая строка: сборка блока 4 такие теги не рисует. Логотип (branding.logoUrl) —
 // картинка для соцсетей (блок 9); не загружен — пустая строка.
-const SHOP_SQL = `SELECT id, tenant_id, name, theme_id, status, public_url,
+const SHOP_SQL = `SELECT id, tenant_id, name, theme_id, theme_version, status, public_url,
   COALESCE(branding->'seo'->>'description', '') AS description, COALESCE(branding->'seo'->>'title', '') AS seo_title,
   COALESCE(branding->'seo'->>'keywords', '') AS keywords, COALESCE(branding->>'logoUrl', '') AS logo_url,
   ${plain('updated_at')} AS updated_at
@@ -37,6 +38,7 @@ const shopRowSchema = z.object({
   tenant_id: z.string(),
   name: z.string(),
   theme_id: z.string().nullable(),
+  theme_version: z.string().nullable(),
   status: z.string(),
   public_url: z.string().nullable(),
   description: z.string(),
@@ -51,6 +53,8 @@ export interface Shop {
   tenantId: string;
   name: string;
   themeId: string | null;
+  // Закреплённая версия темы (блок 10, П10-1 Б). Пустое — сборка закрепит выпущенную (theme-catalog.ts, pinShop).
+  themeVersion: string | null;
   status: string;
   publicUrl: string | null;
   description: string;
@@ -69,6 +73,7 @@ export async function readShop(db: Queryable, siteId: string): Promise<Shop | nu
     tenantId: row.tenant_id,
     name: row.name,
     themeId: row.theme_id,
+    themeVersion: row.theme_version,
     status: row.status,
     publicUrl: row.public_url,
     description: row.description,
@@ -209,13 +214,19 @@ export interface InputsParts {
 }
 
 // Тема магазина — только новой архитектуры: те, что записаны в theme-versions.json блока 4 и загружены сборщиком.
-export function themeOf(themes: ReadonlyMap<string, ThemeState>, shop: Shop): ThemeState & { id: string } {
-  const state = themes.get(shop.themeId ?? '');
-  if (state === undefined || shop.themeId === null)
+// Версия — из закрепления (блок 10); пустое — выпущенная версия, сам снимок закрепление не пишет (это делает сборка).
+export async function themeOf(deps: SnapshotDeps, shop: Shop): Promise<ThemeState & { id: string }> {
+  if (shop.themeId === null || !deps.themes.has(shop.themeId))
     throw new StorefrontBuilderError('shop-invalid', `тема ${shop.themeId} — не новой архитектуры`, {
       path: `site/${shop.id}`,
     });
-  return { id: shop.themeId, version: state.version, contentHash: state.contentHash };
+  const version = shop.themeVersion ?? (await deps.pins.released(shop.themeId));
+  const state = await deps.pins.stateOf(shop.themeId, version);
+  if (state === null)
+    throw new StorefrontBuilderError('renderer-missing', `версии ${version} нет в записи рисовальщиков`, {
+      path: `site/${shop.id}`,
+    });
+  return { id: shop.themeId, ...state };
 }
 
 export interface SnapshotDeps {
@@ -224,6 +235,8 @@ export interface SnapshotDeps {
   code: CodeDeps;
   platform: Platform;
   themes: ReadonlyMap<string, ThemeState>;
+  // Версии тем и выпущенная версия (блок 10, theme-catalog.ts).
+  pins: ThemePins;
   clock: () => Date;
 }
 
@@ -239,7 +252,7 @@ export interface Snapshot {
 export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<Snapshot> {
   const shop = await readShop(deps.db, siteId);
   if (shop === null) throw new StorefrontBuilderError('shop-invalid', 'магазина нет', { path: `site/${siteId}` });
-  const theme = themeOf(deps.themes, shop);
+  const theme = await themeOf(deps, shop);
   const address = shopAddress(shop);
   const [siteEntities, products, tokens, shopCode] = await Promise.all([
     readSiteEntities(deps.db, siteId),

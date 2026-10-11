@@ -1,3 +1,6 @@
+import { mkdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { platformRenderHash, readShellBuild } from '@merfy/storefront-build';
 import { createS3Store } from '@merfy/storefront-storage';
@@ -14,6 +17,7 @@ import { enqueueVia, startRuntime, type RuntimeDeps } from './runtime';
 import { acceptSectionReleases, releaseFolders } from './section-releases';
 import { RETRY_DELAYS_MS, readSettings } from './settings';
 import { createSlots } from './slots';
+import { archiveLoader, createThemeCatalog, recordedVersions } from './theme-catalog';
 import { loadThemes } from './themes';
 
 // Точка входа сборщика (design.md блока 6, В6-1 А): вторая программа из образа site-gen, без миграций и API sites.
@@ -37,6 +41,18 @@ for (const [themeId, theme] of loaded.themes) {
     outcome: await ensureRendererArchive({ store, log, clock }, ROOT, themeId, state),
   });
 }
+// Версии тем магазинов (блок 10): прошлые версии — из архивов, распаковка — во временную папку процесса.
+const RENDERER_CACHE_DIR = join(tmpdir(), 'merfy-renderers');
+await mkdir(RENDERER_CACHE_DIR, { recursive: true });
+const currentVersion = (themeId: string): Promise<string> => Promise.resolve(loaded.themes.get(themeId)?.version ?? '');
+const catalog = createThemeCatalog({
+  current: loaded.themes,
+  previews: loaded.previews,
+  index: (themeId) => recordedVersions(store, themeId),
+  load: archiveLoader(ROOT, store, RENDERER_CACHE_DIR, log, { standPage: settings.standPage }),
+  released: currentVersion,
+  log,
+});
 // Ядро из образа (сборка — задача 3 блока 7): его нет — сборщик не стартует (shell-missing).
 const shell = await readShellBuild(ROOT);
 const broker = openBroker(settings.rabbitmqUrl, log);
@@ -47,11 +63,15 @@ const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 const code = { db, shell, call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 const snapshot = { db, products, code, platform, themes: loaded.themes, clock };
 
+// Снимку — версии тем и выпущенная версия (блок 10): магазин рисуется версией своего закрепления.
+const pinnedSnapshot = { ...snapshot, pins: catalog };
+
 const deps: RuntimeDeps = {
   db,
   store,
-  snapshot,
+  snapshot: pinnedSnapshot,
   themes: loaded.themes,
+  catalog,
   platformCommit: settings.commit,
   indexable: settings.indexable,
   shopState: { leaseMs: settings.leaseMs, retryDelaysMs: RETRY_DELAYS_MS },
@@ -71,8 +91,18 @@ const deps: RuntimeDeps = {
 // Секции платформы и тем — в реестр до первой сборки (дверь выпуска, п. 21); отказ — строка журнала, старт идёт дальше.
 await acceptSectionReleases({ db, store, log }, releaseFolders(ROOT, shell.version, loaded.themes));
 const runtime = await startRuntime(deps);
-const preview = { db, themes: loaded.previews, apiUrl: settings.apiUrl, log };
-const drawDeps = { store, snapshot, themes: loaded.themes, renderHash: platform.renderHash, log, preview };
+// Превью — версией закрепления магазина; схема панели — по темам образа (блок 10, задача 4).
+const previewOf = (themeId: string, version: string) => catalog.previewAt(themeId, version);
+const preview = { db, themes: loaded.previews, pins: catalog, previewOf, apiUrl: settings.apiUrl, log };
+const drawDeps = {
+  store,
+  snapshot: pinnedSnapshot,
+  catalog,
+  themes: loaded.themes,
+  renderHash: platform.renderHash,
+  log,
+  preview,
+};
 const slots = createSlots(settings.drawSlots);
 const server = await startDrawServer({ ...drawDeps, slots, timeoutMs: settings.drawTimeoutMs }, settings.port);
 const started = { port: settings.port, slots: settings.buildSlots, releaseSlots: settings.releaseSlots };
@@ -91,6 +121,7 @@ async function shutdown(): Promise<void> {
   server.close();
   await broker.close();
   await rpc.close();
+  await catalog.close();
   await loaded.close();
   await db.end();
   log('builder-stopped');

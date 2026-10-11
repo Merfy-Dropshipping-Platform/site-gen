@@ -38,6 +38,7 @@ async function serve(overrides: Partial<DrawDeps> = {}): Promise<void> {
     store: harness.store,
     snapshot: harness.deps.snapshot,
     themes: harness.deps.themes,
+    catalog: harness.catalog,
     renderHash: RENDER_HASH,
     slots: createSlots(1),
     // Как DRAW_TIMEOUT_MS по умолчанию: на только что поднятом стенде первая дорисовка дольше секунды.

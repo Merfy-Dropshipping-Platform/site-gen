@@ -16,6 +16,7 @@ import {
   type StartedJob,
 } from './shop-state';
 import { readSnapshot, type Snapshot, type SnapshotDeps } from './snapshot';
+import { pinShop, type ThemeCatalog } from './theme-catalog';
 import { recordBuild, type BuildOutcome, type Steps } from './build-record';
 import type { BuildJob } from './events';
 import type { StoppedShop } from './alert';
@@ -35,6 +36,8 @@ export interface BuilderDeps {
   store: ObjectStore;
   snapshot: SnapshotDeps;
   themes: ReadonlyMap<string, LoadedTheme>;
+  // Рисовальщик версии из закрепления магазина (блок 10): образ или архив прошлой версии.
+  catalog: Pick<ThemeCatalog, 'themeAt'>;
   platformCommit: string;
   indexable: boolean;
   shopState: ShopStateOptions;
@@ -73,11 +76,15 @@ function stepTimer(deps: BuilderDeps, job: ClaimedJob, steps: Steps) {
   };
 }
 
-function themeFor(deps: BuilderDeps, snapshot: Snapshot): ThemeBuild {
-  const theme = deps.themes.get(snapshot.inputs.theme.id);
-  if (theme !== undefined) return theme.build;
-  throw new StorefrontBuilderError('renderer-missing', 'у темы нет рисовальщика', { path: snapshot.inputs.theme.id });
+async function themeFor(deps: BuilderDeps, snapshot: Snapshot): Promise<ThemeBuild> {
+  if (!deps.themes.has(snapshot.inputs.theme.id))
+    throw new StorefrontBuilderError('renderer-missing', 'у темы нет рисовальщика', { path: snapshot.inputs.theme.id });
+  return (await deps.catalog.themeAt(snapshot.inputs.theme.id, snapshot.inputs.theme.version)).build;
 }
+
+// Пустое закрепление — выпущенной версией, до снимка (блок 10).
+const pin = (deps: BuilderDeps, siteId: string): Promise<void> =>
+  pinShop({ db: deps.db, pins: deps.snapshot.pins, themeIds: [...deps.themes.keys()], log: deps.log }, siteId);
 
 async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, theme: ThemeBuild) {
   const references = { platformCommit: deps.platformCommit };
@@ -90,11 +97,12 @@ async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, t
 
 async function attempt(deps: BuilderDeps, job: ClaimedJob, steps: Steps): Promise<Attempt> {
   const time = stepTimer(deps, job, steps);
+  await pin(deps, job.siteId);
   const snapshot = await time('snapshot', () => readSnapshot(deps.snapshot, job.siteId));
   const key = buildKey(parseBuildInputs(snapshot.inputs));
   const live = await time('compare', () => liveManifest(deps.store, snapshot.address.label));
   if (live?.key === key) return { outcome: 'skipped', error: null };
-  const theme = themeFor(deps, snapshot);
+  const theme = await themeFor(deps, snapshot);
   const result = await time('build', () => publish(deps, job, snapshot, theme));
   if (result.status === 'live' && deps.indexable)
     await deps.announce?.(snapshot.address.url, live?.pages ?? [], result.pages);

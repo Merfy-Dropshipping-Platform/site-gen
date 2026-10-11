@@ -12,7 +12,14 @@ const SITE = "11111111-1111-4111-8111-111111111111";
 const TENANT = "tenant-1";
 const BUILD = 1791590400123;
 
-function makeService(newTheme: boolean, build: number | null) {
+function makeService(
+  newTheme: boolean,
+  build: number | null,
+  hosting: { centralProxy: boolean; coolifyAppUuid: string | null } = {
+    centralProxy: false,
+    coolifyAppUuid: "app-1",
+  },
+) {
   const order: string[] = [];
   const where = jest.fn(async () => void order.push("db"));
   const db = { update: () => ({ set: () => ({ where }) }) };
@@ -23,7 +30,11 @@ function makeService(newTheme: boolean, build: number | null) {
       artifactUrl: "s3://old",
     })),
   };
-  const deployments = { deploy: jest.fn(async () => undefined) };
+  const deployments = {
+    deploy: jest.fn(async () => undefined),
+    centralProxyEnabled: hosting.centralProxy,
+    ensureCentralRouter: jest.fn(async () => "https://shop.merfy.ru"),
+  };
   const buildQueue = { queueBuild: jest.fn(async () => true) };
   const billing = {
     getEntitlements: jest.fn(async () => ({ planName: "pro" })),
@@ -58,7 +69,7 @@ function makeService(newTheme: boolean, build: number | null) {
         tenantId: TENANT,
         publicUrl: "https://shop.merfy.ru",
         storageSlug: "shop",
-        coolifyAppUuid: "app-1",
+        coolifyAppUuid: hosting.coolifyAppUuid,
       }) as never,
   );
   return {
@@ -150,5 +161,57 @@ describe("publish() магазина нынешней темы — как ран
       expect.objectContaining({ buildId: "old-build" }),
     );
     expect(handoff.requestBuild).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Временный домен магазина новой темы (владелец 11.10: «на новой архитектуре
+ * временные домены тоже должны работать»). Маршрут нынешних тем переписывает
+ * перевыкладка (DeploymentsService.deploy), а у магазина новой темы её нет —
+ * поэтому маршрут в раздачу новых тем пишет сама публикация, каждый раз.
+ */
+describe("publish() и маршрут временного домена", () => {
+  const saved = process.env.BUILD_QUEUE_CONSUMER_ENABLED;
+  beforeAll(() => {
+    process.env.BUILD_QUEUE_CONSUMER_ENABLED = "true";
+  });
+  afterAll(() => {
+    process.env.BUILD_QUEUE_CONSUMER_ENABLED = saved;
+  });
+  const published = { centralProxy: true, coolifyAppUuid: "app-1" };
+
+  it("новая тема — маршрут в раздачу новых тем на каждой публикации", async () => {
+    const { service, deployments } = makeService(true, BUILD, published);
+    await publish(service);
+    await publish(service);
+    expect(deployments.ensureCentralRouter.mock.calls).toEqual([
+      ["shop", { newTheme: true }],
+      ["shop", { newTheme: true }],
+    ]);
+  });
+
+  it("первая публикация магазина новой темы — маршрут один раз и сразу в раздачу новых тем", async () => {
+    const { service, deployments } = makeService(true, BUILD, {
+      centralProxy: true,
+      coolifyAppUuid: null,
+    });
+    await publish(service);
+    expect(deployments.ensureCentralRouter.mock.calls).toEqual([
+      ["shop", { newTheme: true }],
+    ]);
+  });
+
+  it("нынешняя тема — маршрут как раньше: первая публикация пишет, следующие не трогают", async () => {
+    const first = makeService(false, null, {
+      centralProxy: true,
+      coolifyAppUuid: null,
+    });
+    await publish(first.service);
+    expect(first.deployments.ensureCentralRouter.mock.calls).toEqual([
+      ["shop", { newTheme: false }],
+    ]);
+    const next = makeService(false, null, published);
+    await publish(next.service);
+    expect(next.deployments.ensureCentralRouter).not.toHaveBeenCalled();
   });
 });

@@ -65,6 +65,14 @@ describe('standLocals', () => {
     expect(standLocals(inputsOf(empty, { name: '', publicUrl: null }), theme).shop.name).toBe('Магазин');
     expect(standLocals(inputsOf(empty, { publicUrl: '' }), theme).head.configHtml).toContain('"url":null');
   });
+
+  it('вид live — стенд в сборке магазина: режим live, слушателя превью нет, правки токенов те же', () => {
+    const locals = standLocals(inputsOf({ tokens: GREEN, settings: undefined }), theme, 'live');
+    expect(locals.config.mode).toBe('live');
+    expect(locals.head.previewScript).toBe('');
+    expect(locals.head.tokensCss).toContain('#16a34a');
+    expect(locals.head.configHtml).toContain('"mode":"live"');
+  });
 });
 
 describe('previewTokens', () => {

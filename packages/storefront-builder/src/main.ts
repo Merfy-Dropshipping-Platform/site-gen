@@ -26,7 +26,7 @@ const log = jsonLog((line) => process.stdout.write(line), clock);
 const settings = readSettings(process.env);
 const db = new Pool({ connectionString: settings.databaseUrl });
 const store = createS3Store(settings.s3);
-const loaded = await loadThemes(ROOT);
+const loaded = await loadThemes(ROOT, { standPage: settings.standPage });
 // Ядро из образа (сборка — задача 3 блока 7): его нет — сборщик не стартует (shell-missing).
 const shell = await readShellBuild(ROOT);
 const broker = openBroker(settings.rabbitmqUrl, log);

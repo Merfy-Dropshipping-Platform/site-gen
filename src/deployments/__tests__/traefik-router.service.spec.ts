@@ -45,4 +45,31 @@ describe("TraefikRouterService: контур из env", () => {
     await expect(fs.access(path.join(dir, "dev-site-abc123.yml"))).rejects.toBeTruthy();
     delete process.env.SITES_WILDCARD_DOMAIN;
   });
+
+  // Владелец 11.10: «на новой архитектуре временные домены тоже должны работать» — адрес магазина новой темы
+  // ведёт в раздачу новых тем (блок 5). На контуре без неё (прод) — туда же, куда у нынешних тем.
+  it("магазин новой темы — в раздачу новых тем, если она задана; иначе и у нынешних тем — как было", async () => {
+    process.env.SITES_WILDCARD_DOMAIN = "dev.merfy.ru";
+    const env = {
+      SITES_USE_CENTRAL_PROXY: "true",
+      TRAEFIK_DYNAMIC_DIR: dir,
+      SITES_TRAEFIK_FILE_PREFIX: "dev-site-",
+      SITES_PROXY_SERVICE: "merfy-sites-shared-dev",
+    };
+    const withStorefront = {
+      ...env,
+      STOREFRONT_PROXY_SERVICE: "merfy-storefront-dev",
+    };
+    const service = async () =>
+      (await fs.readFile(path.join(dir, "dev-site-abc123.yml"), "utf8")).match(
+        /service: (\S+)/,
+      )?.[1];
+    await make(withStorefront).ensureSiteRouter("abc123", { newTheme: true });
+    expect(await service()).toBe("merfy-storefront-dev");
+    await make(withStorefront).ensureSiteRouter("abc123", { newTheme: false });
+    expect(await service()).toBe("merfy-sites-shared-dev");
+    await make(env).ensureSiteRouter("abc123", { newTheme: true });
+    expect(await service()).toBe("merfy-sites-shared-dev");
+    delete process.env.SITES_WILDCARD_DOMAIN;
+  });
 });

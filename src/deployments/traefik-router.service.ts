@@ -17,12 +17,22 @@ import { buildSiteHost } from "../common/site-domain";
  *
  * Покрывает только сабдомены `<slug>.merfy.ru` (label == storageSlug == папка
  * MinIO). Кастомные домены — отдельно (per-site app / будущий domain→slug map).
+ *
+ * Магазин новой темы ведётся в раздачу новых тем (блок 5), если она задана на
+ * контуре (STOREFRONT_PROXY_SERVICE). Владелец 11.10: «на новой архитектуре
+ * временные домены тоже должны работать». Нет переменной (прод, пока новой
+ * раздачи там нет) — туда же, куда у нынешних тем.
  */
+export interface SiteRouterOptions {
+  newTheme?: boolean;
+}
+
 @Injectable()
 export class TraefikRouterService {
   private readonly logger = new Logger(TraefikRouterService.name);
   private readonly dir: string;
   private readonly service: string;
+  private readonly storefrontService: string;
   private readonly certResolver: string;
   private readonly filePrefix: string;
   private readonly wildcard: string;
@@ -32,6 +42,8 @@ export class TraefikRouterService {
       this.config.get<string>("TRAEFIK_DYNAMIC_DIR") ?? "/srv/traefik-dynamic";
     this.service =
       this.config.get<string>("SITES_PROXY_SERVICE") ?? "merfy-sites-shared";
+    this.storefrontService =
+      this.config.get<string>("STOREFRONT_PROXY_SERVICE") ?? "";
     this.certResolver =
       this.config.get<string>("SITES_CERT_RESOLVER") ?? "letsencrypt";
     // Контур (spec 116). У прода дефолты дают прежние файлы байт в байт. У dev — свой префикс
@@ -55,6 +67,11 @@ export class TraefikRouterService {
     return this.filePrefix === "site-" ? `s-${slug}` : `${this.filePrefix}${slug}`;
   }
 
+  /** Куда ведёт роутер: магазин новой темы — в раздачу новых тем, если она задана на контуре. */
+  private serviceFor(newTheme: boolean): string {
+    return (newTheme && this.storefrontService) || this.service;
+  }
+
   /** Блок tls роутера: с wildcard — один сертификат на все витрины контура. */
   private tlsBlock(): string {
     const resolver = `      tls:\n        certResolver: ${this.certResolver}\n`;
@@ -65,7 +82,10 @@ export class TraefikRouterService {
    * Idempotent — пишет/обновляет роутер сайта. Возвращает публичный URL.
    * Slug идёт в имя файла, имя роутера и Host → допускаем только [a-z0-9-].
    */
-  async ensureSiteRouter(slug: string): Promise<string> {
+  async ensureSiteRouter(
+    slug: string,
+    options: SiteRouterOptions = {},
+  ): Promise<string> {
     if (!/^[a-z0-9-]+$/.test(slug)) {
       throw new Error(`ensureSiteRouter: invalid slug '${slug}'`);
     }
@@ -75,7 +95,7 @@ http:
   routers:
     ${this.routerName(slug)}:
       rule: Host(\`${host}\`)
-      service: ${this.service}
+      service: ${this.serviceFor(options.newTheme === true)}
       entryPoints:
         - https
       priority: 1000

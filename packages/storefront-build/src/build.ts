@@ -7,6 +7,7 @@ import { buildKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
 import { renderShopPage, type ShopTheme } from './page';
 import { SHOP_ROUTES } from './routes';
+import { renderStandPage, type StandBuild } from './stand';
 
 // Справки сборки: в ключ не входят, в манифест пишутся. Коммит платформы — SOURCE_COMMIT образа sites (В4-1 В).
 export interface BuildReferences {
@@ -16,6 +17,9 @@ export interface BuildReferences {
 // Тема для сборки магазина: токены, рисовальщик и файлы клиента её серверной сборки.
 export interface ThemeBuild extends ShopTheme {
   clientFiles: readonly BuildFile[];
+  // Страница стенда в сборке (шаг 7 блока 9: эталон стенда на dev по адресу магазина). Её даёт сборщик с
+  // STOREFRONT_STAND_PAGE=true — только на контуре не для поиска; нет — сборка прежняя байт в байт.
+  stand?: StandBuild;
 }
 
 export interface StorefrontBuild {
@@ -39,7 +43,9 @@ export async function buildStorefront(
   const inputs = parseBuildInputs(raw);
   // Файлы кода — до рендера: нет ядра или скрипта — ошибка, рисовать не начинали.
   const code = codeFiles(inputs, assets);
-  const pages = await Promise.all(SHOP_ROUTES.map((route) => renderShopPage(inputs, route.path, theme)));
+  const shopPages = await Promise.all(SHOP_ROUTES.map((route) => renderShopPage(inputs, route.path, theme)));
+  const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
+  const pages = [...shopPages, ...standPages];
   const files = [...theme.clientFiles, ...code, ...pages.map((page) => page.file)].sort(byPath);
   const manifest = checkManifest({
     v: MANIFEST_VERSION,

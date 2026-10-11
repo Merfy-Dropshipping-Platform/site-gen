@@ -133,7 +133,10 @@ describe("reaper (migrateOrphanedSites): маршрут хостинга — п�
     const result = await service.migrateOrphanedSites();
 
     expect(result).toMatchObject({ migrated: 1, failed: 0 });
-    expect(deployments.ensureCentralRouter).toHaveBeenCalledWith("abc");
+    // сборщика витрин в сервисе нет — магазин нынешней темы, маршрут туда же, куда раньше
+    expect(deployments.ensureCentralRouter).toHaveBeenCalledWith("abc", {
+      newTheme: false,
+    });
     expect(siteUpdates.at(-1)!.set).toMatchObject({
       coolifyAppUuid: CENTRAL_PROXY_APP_SENTINEL,
     });

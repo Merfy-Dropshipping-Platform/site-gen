@@ -48,6 +48,26 @@ const primaryButton =
 const secondaryButton =
 	"rounded-button border-width-button border-secondary-border bg-secondary px-4 py-2 text-secondary-foreground hover:bg-secondary-hover hover:text-secondary-hover-foreground";
 const heading = "font-heading weight-heading text-heading";
+// Образцы «каждый токен на стенде» (design.md блока 9, «решил сам» 5): заголовки шрифтом заголовков, наведение,
+// фокус и ошибка поля, поверхности, рамки и выборы. Классы — целиком строками: Tailwind находит их в исходнике.
+const headingSizes = ["text-5xl", "text-4xl", "text-3xl", "text-2xl"];
+const primaryHover =
+	"rounded-button border-width-button border-primary-border bg-primary-hover px-4 py-2 text-primary-hover-foreground shadow-button";
+const secondaryHover =
+	"rounded-button border-width-button border-secondary-border bg-secondary-hover px-4 py-2 text-secondary-hover-foreground";
+const field = "rounded-input border-width-input bg-background px-3 py-2 text-foreground shadow-input";
+// Выборы — атрибуты data-* у <html>: видна подпись того значения, что выбрано.
+const choiceLabels = [
+	["card-style-standard:block", "Вид карточки товара: стандарт"],
+	["card-style-card:block", "Вид карточки товара: карточка на подложке"],
+	["card-align-left:block", "Текст в карточке товара: слева"],
+	["card-align-center:block", "Текст в карточке товара: по центру"],
+	["card-align-right:block", "Текст в карточке товара: справа"],
+	["motion-reveal-off:block", "Появление секций при прокрутке: сразу"],
+	["motion-reveal-on:block", "Появление секций при прокрутке: плавно"],
+	["motion-hover-none:block", "Карточка товара под курсором: на месте"],
+	["motion-hover-lift:block", "Карточка товара под курсором: приподнимается"],
+];
 ---
 
 <main class="mx-auto flex max-w-page flex-col gap-section-gap px-4 py-section font-body weight-body text-foreground">
@@ -204,6 +224,58 @@ const heading = "font-heading weight-heading text-heading";
 				</div>
 			)
 		}
+	</section>
+
+	<section data-stand="headings" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Заголовки и текст</h2>
+		{headingSizes.map((size) => <p class={`${size} font-heading weight-heading tracking-heading text-heading`}>Шарф «Осень» изо льна</p>)}
+		<p class="max-w-page font-body weight-body tracking-body text-base text-foreground">
+			Основной текст: мягкий лён, двойной шов, края без бахромы. Так выглядят описание товара и тексты страниц.
+		</p>
+		<p class="text-sm text-muted-foreground">Подпись и второстепенный текст</p>
+	</section>
+
+	<section data-stand="states" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Наведение, фокус и ошибка</h2>
+		<div class="flex flex-wrap items-center gap-4">
+			<span class={primaryHover}>Купить — под курсором</span>
+			<span class={secondaryHover}>Подробнее — под курсором</span>
+			<button type="button" class="rounded-button border-width-button border-destructive bg-destructive px-4 py-2 text-destructive-foreground">
+				Удалить
+			</button>
+		</div>
+		<div class="flex flex-wrap items-start gap-6">
+			<label class="flex flex-col gap-1 text-sm">
+				Поле в фокусе с клавиатуры
+				<input type="text" value="Лён и шерсть" class={`${field} border-ring`} />
+			</label>
+			<label class="flex flex-col gap-1 text-sm">
+				Поле с ошибкой
+				<input type="email" value="anna@" aria-invalid="true" class={`${field} border-destructive`} />
+				<span class="text-destructive">Проверьте адрес почты</span>
+			</label>
+		</div>
+	</section>
+
+	<section data-stand="surfaces" class="flex flex-col gap-4">
+		<h2 class={`text-xl ${heading}`}>Поверхности и рамки</h2>
+		<div class="grid gap-grid-column md:grid-cols-2">
+			<div class="rounded-card bg-muted p-6 text-muted-foreground">Приглушённая подложка: полоса, место под фото</div>
+			<div class="rounded-card bg-accent p-6 text-accent-foreground">Подсветка пункта меню под курсором</div>
+			<div class="rounded-popover border-width-popover border-border bg-popover p-6 text-popover-foreground shadow-popover">
+				Всплывающее окно: подсказка, меню
+			</div>
+			<figure class="flex flex-col gap-2 text-sm">
+				<div class="aspect-square max-w-xs rounded-media border-width-media border-border bg-muted"></div>
+				<figcaption class="text-muted-foreground">Фото товара: скругление и рамка</figcaption>
+			</figure>
+		</div>
+		<div class="rounded-card bg-muted p-section text-sm text-muted-foreground">Отступ секции — поля этого блока</div>
+	</section>
+
+	<section data-stand="choices" class="flex flex-col gap-2 text-sm">
+		<h2 class={`text-xl ${heading}`}>Выборы</h2>
+		{choiceLabels.map(([visible, label]) => <p class={`hidden ${visible}`}>{label}</p>)}
 	</section>
 
 	<slot />

@@ -37,7 +37,7 @@ describe('standLocals', () => {
     });
     expect(locals.head.configHtml).toContain('"url":"https://scarf.dev.merfy.ru"');
     expect(locals.head.previewScript).toBe(PREVIEW_AGENT);
-    expect(locals.schemes).toEqual(['scheme-1', 'scheme-2']);
+    expect(locals.schemes).toEqual(['scheme-1', 'scheme-2', 'scheme-3', 'scheme-4']);
     expect(locals.problems).toEqual([]);
   });
 

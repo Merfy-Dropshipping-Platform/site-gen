@@ -34,7 +34,7 @@
     "secondary-hover-foreground": { "kind": "color", "about": "Текст второстепенной кнопки под курсором", "group": "colors-buttons", "derive": { "rule": "alias", "from": "secondary-foreground" }, "on": ["secondary-hover"] },
     "secondary-border": { "kind": "color", "about": "Обводка второстепенной кнопки", "group": "colors-buttons", "derive": { "rule": "alias", "from": "secondary" } },
     "muted": { "kind": "color", "about": "Приглушённая подложка: полоса, место под фото", "group": "colors-base", "derive": { "rule": "mix", "from": ["foreground", "background"], "weight": 0.04 } },
-    "muted-foreground": { "kind": "color", "about": "Второстепенный текст: подписи, описание", "group": "colors-base", "derive": { "rule": "mix", "from": ["foreground", "background"], "weight": 0.6 }, "on": ["background", "muted"] },
+    "muted-foreground": { "kind": "color", "about": "Второстепенный текст: подписи, описание", "group": "colors-base", "derive": { "rule": "mix", "from": ["foreground", "background"], "weight": 0.7 }, "on": ["background", "muted"] },
     "accent": { "kind": "color", "about": "Подсветка пункта меню и строки под курсором", "group": "colors-base", "derive": { "rule": "mix", "from": ["foreground", "background"], "weight": 0.06 } },
     "accent-foreground": { "kind": "color", "about": "Текст на подсветке", "group": "colors-base", "derive": { "rule": "alias", "from": "foreground" }, "on": ["accent"] },
     "destructive": { "kind": "color", "about": "Ошибка и удаление", "group": "colors-shop" },

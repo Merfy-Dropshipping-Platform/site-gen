@@ -21,7 +21,7 @@
 | `secondary-hover-foreground` | цвет | Текст второстепенной кнопки под курсором | как `secondary-foreground` | `bg-secondary-hover-foreground` `text-secondary-hover-foreground` `border-secondary-hover-foreground` | `secondary-hover` |
 | `secondary-border` | цвет | Обводка второстепенной кнопки | как `secondary` | `bg-secondary-border` `text-secondary-border` `border-secondary-border` | — |
 | `muted` | цвет | Приглушённая подложка: полоса, место под фото | смесь: 4 % `foreground` в `background` | `bg-muted` `text-muted` `border-muted` | — |
-| `muted-foreground` | цвет | Второстепенный текст: подписи, описание | смесь: 60 % `foreground` в `background` | `bg-muted-foreground` `text-muted-foreground` `border-muted-foreground` | `background`, `muted` |
+| `muted-foreground` | цвет | Второстепенный текст: подписи, описание | смесь: 70 % `foreground` в `background` | `bg-muted-foreground` `text-muted-foreground` `border-muted-foreground` | `background`, `muted` |
 | `accent` | цвет | Подсветка пункта меню и строки под курсором | смесь: 6 % `foreground` в `background` | `bg-accent` `text-accent` `border-accent` | — |
 | `accent-foreground` | цвет | Текст на подсветке | как `foreground` | `bg-accent-foreground` `text-accent-foreground` `border-accent-foreground` | `accent` |
 | `destructive` | цвет | Ошибка и удаление | задаёт тема | `bg-destructive` `text-destructive` `border-destructive` | — |

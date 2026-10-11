@@ -22,6 +22,7 @@ const EDITS: Record<string, (inputs: BuildInputs) => void> = {
   'site.description': (inputs) => (inputs.site.description = 'Другое описание'),
   'site.seoTitle': (inputs) => (inputs.site.seoTitle = 'Шарфы изо льна'),
   'site.keywords': (inputs) => (inputs.site.keywords = 'шарфы, лён'),
+  'site.logoUrl': (inputs) => (inputs.site.logoUrl = 'https://s3.merfy.ru/merfy/branding/logo-1.png'),
   'site.updatedAt': (inputs) => (inputs.site.updatedAt = '2026-10-06T10:00:00.000Z'),
   'env.apiUrl': (inputs) => (inputs.env.apiUrl = 'http://localhost:4322/api'),
   year: (inputs) => (inputs.year = 2027),

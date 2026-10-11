@@ -7,7 +7,14 @@
     "canonical": "https://nova-stand.example/",
     "configHtml": "<script type=\"application/json\" id=\"merfy-config\">{\"v\":1}</script>",
     "tokensCss": ":root{--color-primary:#1f6feb}",
-    "codeHtml": ""
+    "codeHtml": "",
+    "social": {
+      "type": "website",
+      "siteName": "Стенд Nova",
+      "locale": "ru_RU",
+      "image": "https://nova-stand.example/logo.png",
+      "card": "summary"
+    }
   },
   "shop": { "name": "Стенд Nova" },
   "year": 2026,

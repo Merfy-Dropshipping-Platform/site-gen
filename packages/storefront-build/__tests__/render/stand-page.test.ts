@@ -69,6 +69,10 @@ describe('стенд темы в превью на рисовальщике nova
       'socials',
       'cart',
       'cookie-banner',
+      'headings',
+      'states',
+      'surfaces',
+      'choices',
       'config',
     ]);
     expect(plain).toContain('data-card-style="standard"');

@@ -57,6 +57,38 @@ describe('pageLocals', () => {
     expect(configOf(head.configHtml)).toMatchObject({ shop: { name: 'nova-stand.example' } });
   });
 
+  // Теги для соцсетей (блок 9): заголовок, описание и адрес у них те же, что у страницы; здесь — остальное.
+  it('теги для соцсетей: website, имя магазина, ru_RU, карточка summary; логотипа нет — картинки нет', () => {
+    expect(locals.head.social).toEqual({
+      type: 'website',
+      siteName: 'Стенд Nova',
+      locale: 'ru_RU',
+      image: '',
+      card: 'summary',
+    });
+  });
+
+  // Картинка для соцсетей — логотип из брендинга, если соцсети его покажут: адрес https, PNG, JPEG, WebP или GIF.
+  it('логотип PNG по https — картинка для соцсетей; имени нет — в тегах адрес магазина', () => {
+    const logo = changedInputs((inputs) =>
+      Object.assign(inputs.site, { name: ' ', logoUrl: ' https://s3.merfy.ru/merfy/branding/logo-1.png ' }),
+    );
+    expect(pageLocals(logo, HOME, novaTokens).head.social).toMatchObject({
+      siteName: 'nova-stand.example',
+      image: 'https://s3.merfy.ru/merfy/branding/logo-1.png',
+    });
+  });
+
+  it.each([
+    ['SVG', 'https://s3.merfy.ru/merfy/branding/logo-1.svg'],
+    ['по http', 'http://s3.merfy.ru/merfy/branding/logo-1.png'],
+    ['путь без адреса', '/branding/logo-1.png'],
+    ['не адрес', 'логотип'],
+  ])('логотип %s — картинки для соцсетей нет, сборка идёт', (_title, logoUrl) => {
+    const logo = changedInputs((inputs) => (inputs.site.logoUrl = logoUrl));
+    expect(pageLocals(logo, HOME, novaTokens).head.social.image).toBe('');
+  });
+
   it('CSS токенов — с правками мерчанта из ревизии', () => {
     const edited = tokensCss(novaTokens.dictionary, novaTokens.tokens, { root: { 'radius-button': 4 } });
     expect(locals.head.tokensCss).toBe(edited);

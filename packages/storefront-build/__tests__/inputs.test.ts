@@ -7,6 +7,7 @@ import { errorOf, rawInputs } from './support';
 const INVALID: [string, unknown, string][] = [
   ['нет имени магазина', rawInputs((raw) => Reflect.deleteProperty(raw.site, 'name')), 'site.name'],
   ['нет SEO-заголовка', rawInputs((raw) => Reflect.deleteProperty(raw.site, 'seoTitle')), 'site.seoTitle'],
+  ['нет логотипа', rawInputs((raw) => Reflect.deleteProperty(raw.site, 'logoUrl')), 'site.logoUrl'],
   ['лишнее поле сайта', rawInputs((raw) => Object.assign(raw.site, { tenantId: 't-1' })), 'site.tenantId'],
   ['адрес магазина не https', rawInputs((raw) => (raw.site.publicUrl = 'http://nova-stand.example')), 'site.publicUrl'],
   ['дата правки без миллисекунд', rawInputs((raw) => (raw.site.updatedAt = '2026-10-06T09:00:00Z')), 'site.updatedAt'],
@@ -26,9 +27,9 @@ describe('parseBuildInputs', () => {
     expect(parseBuildInputs(standInputsJson)).toEqual(standInputsJson);
   });
 
-  // Имя и SEO магазина мерчант может оставить пустыми — сборка от этого не падает (владелец 08.10).
-  it('пустые имя, описание, SEO-заголовок и ключевые слова — вход годный', () => {
-    const fields = { name: '', description: '', seoTitle: '', keywords: '' };
+  // Имя, SEO и логотип магазина мерчант может оставить пустыми — сборка от этого не падает (владелец 08.10).
+  it('пустые имя, описание, SEO-заголовок, ключевые слова и логотип — вход годный', () => {
+    const fields = { name: '', description: '', seoTitle: '', keywords: '', logoUrl: '' };
     const empty = rawInputs((raw) => Object.assign(raw.site, fields));
     expect(parseBuildInputs(empty).site).toMatchObject(fields);
   });

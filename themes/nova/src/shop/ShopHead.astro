@@ -3,10 +3,10 @@
 // описание, канонический адрес. Конфиг магазина (блок 3) и CSS токенов с правками мерчанта (блок 1) приходят от
 // сборщика готовыми строками и встают одним проходом, без правки готового HTML.
 // Описание и ключевые слова мерчант может не заполнить — тогда тега нет совсем, как у Dawn (Shopify): пустой тег —
-// ошибка договора. Код секций (блок 7) приходит так же, готовой строкой: после токенов — стили секций, список
+// ошибка договора. Теги для соцсетей (блок 9) — по тем же правилам: описания или логотипа нет — нет og:description
+// или og:image. Код секций (блок 7) приходит так же, готовой строкой: после токенов — стили секций, список
 // модулей, import map, подсказки и ядро (head.codeHtml).
-import "@fontsource/manrope/400.css";
-import "@fontsource/manrope/600.css";
+import "./fonts";
 import type { ShopPageHead } from "../../../../packages/storefront-build/src/locals";
 
 interface Props {
@@ -23,5 +23,13 @@ const { head } = Astro.props;
 {head.description && <meta name="description" content={head.description} />}
 {head.keywords && <meta name="keywords" content={head.keywords} />}
 <link rel="canonical" href={head.canonical} />
+<meta property="og:type" content={head.social.type} />
+<meta property="og:title" content={head.title} />
+{head.description && <meta property="og:description" content={head.description} />}
+<meta property="og:url" content={head.canonical} />
+<meta property="og:site_name" content={head.social.siteName} />
+<meta property="og:locale" content={head.social.locale} />
+{head.social.image && <meta property="og:image" content={head.social.image} />}
+<meta name="twitter:card" content={head.social.card} />
 <style id="merfy-tokens" is:inline set:html={head.tokensCss}></style>
 <Fragment set:html={head.codeHtml} />

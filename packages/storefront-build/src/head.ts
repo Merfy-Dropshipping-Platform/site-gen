@@ -24,6 +24,15 @@ function editsOf(inputs: BuildInputs, theme: ParsedTheme): TokenEdits {
 // Имя магазина для страницы: мерчант его стёр — адрес магазина. Пустого заголовка и имени в конфиге (блок 3) не бывает.
 const shopName = (site: BuildInputs['site']): string => site.name.trim() || new URL(site.publicUrl).host;
 
+// Картинка для соцсетей (блок 9) — логотип магазина из брендинга. Соцсети показывают картинку по адресу https в PNG,
+// JPEG, WebP или GIF; SVG, http и путь без адреса — пустая строка: тега og:image нет, сборка идёт.
+const SHARE_IMAGE = /\.(?:png|jpe?g|webp|gif)$/i;
+
+function shareImage(logoUrl: string): string {
+  const url = URL.parse(logoUrl.trim());
+  return url !== null && url.protocol === 'https:' && SHARE_IMAGE.test(url.pathname) ? url.href : '';
+}
+
 export function pageLocals(inputs: BuildInputs, route: ShopRoute, theme: ParsedTheme): ShopPageLocals {
   const name = shopName(inputs.site);
   const config = buildStorefrontConfig({
@@ -45,6 +54,13 @@ export function pageLocals(inputs: BuildInputs, route: ShopRoute, theme: ParsedT
     tokensCss: tokensCss(theme.dictionary, theme.tokens, editsOf(inputs, theme)),
     // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены.
     codeHtml: codeHead(inputs, route.id),
+    social: {
+      type: 'website',
+      siteName: name,
+      locale: config.locale.replace('-', '_'),
+      image: shareImage(inputs.site.logoUrl),
+      card: 'summary',
+    },
   };
   return { head, shop: { name }, year: inputs.year, sections: pageSections(inputs, route.id) };
 }

@@ -63,7 +63,7 @@ describe('расчёт образца', () => {
     expect(resolved.root['radius-input']).toBe(8);
     expect(resolved.root['border-width-input']).toBe(1);
     expect(resolved.root['font-heading']).toBe('Manrope, system-ui, sans-serif');
-    expect(resolved.schemes['scheme-1']['muted-foreground']).toBe('#707070');
+    expect(resolved.schemes['scheme-1']['muted-foreground']).toBe('#585858');
   });
 
   it('правка радиуса кнопки тянет за собой поле и бейдж', () => {

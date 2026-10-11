@@ -1,18 +1,27 @@
 import { buildStorefrontConfig, configTag } from '@merfy/storefront-config';
-import { parseTokenEdits, tokensCss, type ParsedTheme, type TokenEdits } from '@merfy/tokens';
+import {
+  NO_MIGRATIONS,
+  migrateTokenEdits,
+  parseTokenEdits,
+  tokensCss,
+  type ParsedTheme,
+  type TokenEdits,
+  type TokenMigrations,
+} from '@merfy/tokens';
 import { codeHead, pageSections } from './code';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
-import type { ShopPageLocals } from './locals';
+import type { ShopPageLocals, ShopSocial } from './locals';
 import type { ShopRoute } from './routes';
 
 // Данные страницы для рисовальщика (design.md блока 4, В4-4 Б и SEO). Всё индексируемое — язык, заголовок, описание,
 // ключевые слова, канонический адрес — считает сборка. Конфиг магазина (блок 3) и CSS токенов с правками мерчанта (блок 1) приходят
 // готовыми строками: страница их печатает одним проходом, без правки готового HTML.
 
-function editsOf(inputs: BuildInputs, theme: ParsedTheme): TokenEdits {
+// Правки мерчанта — в форме этой версии темы: шаги перевода (блок 10) при каждом чтении, ревизию не переписываем.
+function editsOf(inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMigrations): TokenEdits {
   try {
-    return parseTokenEdits(theme, inputs.revision.tokens);
+    return parseTokenEdits(theme, migrateTokenEdits(inputs.revision.tokens, migrations));
   } catch (error) {
     throw new StorefrontBuildError('inputs-invalid', 'правки токенов не подходят теме', {
       path: 'revision.tokens',
@@ -33,7 +42,20 @@ function shareImage(logoUrl: string): string {
   return url !== null && url.protocol === 'https:' && SHARE_IMAGE.test(url.pathname) ? url.href : '';
 }
 
-export function pageLocals(inputs: BuildInputs, route: ShopRoute, theme: ParsedTheme): ShopPageLocals {
+const socialOf = (name: string, locale: string, logoUrl: string): ShopSocial => ({
+  type: 'website',
+  siteName: name,
+  locale: locale.replace('-', '_'),
+  image: shareImage(logoUrl),
+  card: 'summary',
+});
+
+export function pageLocals(
+  inputs: BuildInputs,
+  route: ShopRoute,
+  theme: ParsedTheme,
+  migrations: TokenMigrations = NO_MIGRATIONS,
+): ShopPageLocals {
   const name = shopName(inputs.site);
   const config = buildStorefrontConfig({
     site: { ...inputs.site, name },
@@ -51,16 +73,10 @@ export function pageLocals(inputs: BuildInputs, route: ShopRoute, theme: ParsedT
     keywords: inputs.site.keywords.trim(),
     canonical: new URL(route.path, inputs.site.publicUrl).href,
     configHtml: configTag(config),
-    tokensCss: tokensCss(theme.dictionary, theme.tokens, editsOf(inputs, theme)),
+    tokensCss: tokensCss(theme.dictionary, theme.tokens, editsOf(inputs, theme, migrations)),
     // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены.
     codeHtml: codeHead(inputs, route.id),
-    social: {
-      type: 'website',
-      siteName: name,
-      locale: config.locale.replace('-', '_'),
-      image: shareImage(inputs.site.logoUrl),
-      card: 'summary',
-    },
+    social: socialOf(name, config.locale, inputs.site.logoUrl),
   };
   return { head, shop: { name }, year: inputs.year, sections: pageSections(inputs, route.id) };
 }

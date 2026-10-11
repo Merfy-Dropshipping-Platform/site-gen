@@ -6,7 +6,8 @@ export type TokenErrorCode =
   | 'theme-invalid'
   | 'edits-invalid'
   | 'panel-invalid'
-  | 'settings-invalid';
+  | 'settings-invalid'
+  | 'migrations-invalid';
 
 // Одна ошибка пакета. В тексте — все проблемы сразу, по строке на каждую; каждая называет токен или поле.
 export class TokenError extends Error {

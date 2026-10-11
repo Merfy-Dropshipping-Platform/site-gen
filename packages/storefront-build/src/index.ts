@@ -37,6 +37,17 @@ export {
 export { changedEntities, dependentPages } from './graph';
 export { buildJsonOf } from './build-json';
 
+// Журнал версий темы (блок 10)
+export {
+  changelogProblems,
+  changelogSchema,
+  lookTokensBetween,
+  parseChangelog,
+  searchFlaggedBetween,
+  type Changelog,
+  type ChangelogEntry,
+} from './changelog';
+
 // Рисовальщик темы
 export { buildRendererBundle, type RendererBundle } from './theme-build';
 export { STAND_PAGE_PATH, startRenderer, type Renderer } from './renderer';

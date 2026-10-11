@@ -13,6 +13,17 @@ export { choiceAttributes, resolveTokens } from './resolve';
 export { emitCss, tokensCss } from './emit-css';
 export { contrastIssues } from './contrast';
 
+// Шаги перевода правок между версиями темы (блок 10)
+export {
+  NO_MIGRATIONS,
+  compareVersions,
+  migrateTokenEdits,
+  parseTokenMigrations,
+  tokenAfter,
+  tokenMigrationsSchema,
+} from './migrations';
+export type { TokenMigrationStep, TokenMigrations } from './migrations';
+
 // Генераторы
 export { tailwindCss } from './generate/tailwind';
 export { tokensMarkdown } from './generate/markdown';

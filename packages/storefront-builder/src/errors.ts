@@ -7,7 +7,9 @@ export type StorefrontBuilderErrorCode =
   | 'shop-invalid'
   | 'rpc-failed'
   | 'build-blocked'
-  | 'renderer-missing';
+  | 'renderer-missing'
+  // Архива рисовальщика версии нет, он не той версии, или та же версия записана с другим отпечатком (блок 10).
+  | 'renderer-archive';
 
 type ErrorDetails = { path?: string; cause?: unknown };
 

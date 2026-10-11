@@ -3,6 +3,7 @@ import { platformRenderHash, readShellBuild } from '@merfy/storefront-build';
 import { createS3Store } from '@merfy/storefront-storage';
 import { Pool } from 'pg';
 import { raiseAlert } from './alert';
+import { ensureRendererArchive } from './renderer-archive';
 import { openBroker } from './broker';
 import { startDrawServer } from './draw';
 import { createIndexNow } from './indexnow';
@@ -27,6 +28,15 @@ const settings = readSettings(process.env);
 const db = new Pool({ connectionString: settings.databaseUrl });
 const store = createS3Store(settings.s3);
 const loaded = await loadThemes(ROOT, { standPage: settings.standPage });
+// Архив рисовальщика своей версии каждой темы — в хранилище (блок 10): на нём стоят магазины, до которых дойдёт выпуск.
+for (const [themeId, theme] of loaded.themes) {
+  const state = { version: theme.version, contentHash: theme.contentHash };
+  log('renderer-archive-ready', {
+    themeId,
+    version: theme.version,
+    outcome: await ensureRendererArchive({ store, log, clock }, ROOT, themeId, state),
+  });
+}
 // Ядро из образа (сборка — задача 3 блока 7): его нет — сборщик не стартует (shell-missing).
 const shell = await readShellBuild(ROOT);
 const broker = openBroker(settings.rabbitmqUrl, log);

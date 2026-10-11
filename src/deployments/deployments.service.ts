@@ -11,7 +11,10 @@ import * as schema from "../db/schema";
 import { PG_CONNECTION, CENTRAL_PROXY_APP_SENTINEL } from "../constants";
 import { eq } from "drizzle-orm";
 import { CoolifyProvider } from "./coolify.provider";
-import { TraefikRouterService } from "./traefik-router.service";
+import {
+  TraefikRouterService,
+  type SiteRouterOptions,
+} from "./traefik-router.service";
 
 @Injectable()
 export class DeploymentsService {
@@ -32,9 +35,15 @@ export class DeploymentsService {
     return this.traefik.enabled;
   }
 
-  /** Idempotent: пишет Traefik-роутер сайта на общий прокси. Возвращает URL. */
-  async ensureCentralRouter(slug: string): Promise<string> {
-    return this.traefik.ensureSiteRouter(slug);
+  /**
+   * Idempotent: пишет Traefik-роутер сайта на общий прокси — у магазина новой
+   * темы в раздачу новых тем, если она задана. Возвращает URL.
+   */
+  async ensureCentralRouter(
+    slug: string,
+    options: SiteRouterOptions = {},
+  ): Promise<string> {
+    return this.traefik.ensureSiteRouter(slug, options);
   }
 
   /** Удаляет Traefik-роутер сайта (при удалении сайта). Не бросает если нет. */

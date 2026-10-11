@@ -1072,8 +1072,10 @@ export class SitesDomainService {
     "centralProxy" | "perSite",
     (target: HostingTarget & { slug: string }) => Promise<string>
   > = {
-    centralProxy: async ({ slug }) => {
-      await this.deployments.ensureCentralRouter(slug);
+    centralProxy: async ({ siteId, slug }) => {
+      await this.deployments.ensureCentralRouter(slug, {
+        newTheme: await this.isNewThemeShop(siteId),
+      });
       return CENTRAL_PROXY_APP_SENTINEL;
     },
     perSite: async ({ slug, projectUuid }) => {
@@ -1416,6 +1418,11 @@ export class SitesDomainService {
     return Boolean(row);
   }
 
+  /** Магазин новой темы? Сборщика витрин нет или сбой базы — «нет»: старый путь. */
+  private async isNewThemeShop(siteId: string): Promise<boolean> {
+    return (await this.storefrontHandoff?.isNewTheme(siteId)) === true;
+  }
+
   /**
    * Брендинг опубликованного сайта сменился. Магазин новой темы — сразу событие
    * сборщику витрин (блок 6): правки склеивает он, таймер не нужен. Нынешние
@@ -1668,6 +1675,9 @@ export class SitesDomainService {
 
     const effectiveStorageSlug =
       site.storageSlug ?? this.storage.extractSubdomainSlug(finalUrl!);
+    // Магазин новой темы собирает сборщик витрин (блок 6), а его временный
+    // домен ведёт в раздачу новых тем (владелец 11.10).
+    const newTheme = await this.isNewThemeShop(params.siteId);
 
     // 2. Fire Coolify app creation in background (parallel with build)
     let coolifyPromise: Promise<void> | null = null;
@@ -1677,7 +1687,9 @@ export class SitesDomainService {
       // провижн-шедулер не считал его «осиротевшим» и не плодил контейнер.
       coolifyPromise = (async () => {
         try {
-          await this.deployments.ensureCentralRouter(effectiveStorageSlug);
+          await this.deployments.ensureCentralRouter(effectiveStorageSlug, {
+            newTheme,
+          });
           coolifyAppUuid = CENTRAL_PROXY_APP_SENTINEL;
           await this.db
             .update(schema.site)
@@ -1753,6 +1765,19 @@ export class SitesDomainService {
           );
         }
       })();
+    } else if (newTheme && finalUrl && this.deployments.centralProxyEnabled) {
+      // Маршрут нынешних тем переписывает перевыкладка (DeploymentsService.deploy),
+      // а у магазина новой темы её нет — маршрут его временного домена пишет
+      // каждая публикация: так он переходит в раздачу новых тем и после смены темы.
+      coolifyPromise = this.deployments
+        .ensureCentralRouter(effectiveStorageSlug, { newTheme })
+        .then(
+          () => undefined,
+          (e: unknown) =>
+            this.logger.warn(
+              `New theme router ensure failed: ${e instanceof Error ? e.message : e}`,
+            ),
+        );
     }
 
     // 3. Build: queued (async) or synchronous depending on feature flags
@@ -1780,8 +1805,6 @@ export class SitesDomainService {
 
       // Магазин новой темы собирает сборщик витрин (блок 6): событие уходит
       // после записи статуса и адреса ниже, ответ — номер его сборки.
-      const newTheme =
-        (await this.storefrontHandoff?.isNewTheme(params.siteId)) === true;
       if (!newTheme)
         await this.buildQueue.queueBuild({
           tenantId: params.tenantId,
@@ -1854,8 +1877,6 @@ export class SitesDomainService {
     // === SYNCHRONOUS BUILD PATH (legacy) ===
     // Магазин новой темы собирает сборщик витрин (блок 6): старой сборки и
     // перевыкладки nginx нет, событие уходит после записи статуса ниже.
-    const newTheme =
-      (await this.storefrontHandoff?.isNewTheme(params.siteId)) === true;
     // Build runs in parallel with Coolify app creation
     const built = newTheme
       ? { buildId: "", artifactUrl: "" }

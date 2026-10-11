@@ -14,6 +14,22 @@ export interface ShopPageHead {
   // Код секций страницы (блок 7): стили секций, список модулей, import map, modulepreload и ядро — после токенов.
   // Пустая строка — на странице нет секций.
   codeHtml: string;
+  social: ShopSocial;
+}
+
+// Теги для соцсетей (блок 9): og: и twitter:card. Заголовок, описание и адрес у них те же, что у страницы (title,
+// description, canonical); здесь — остальное.
+export interface ShopSocial {
+  // og:type: у главной магазина — website.
+  type: string;
+  // og:site_name — имя магазина; мерчант его стёр — адрес магазина.
+  siteName: string;
+  // og:locale — язык страницы в форме соцсетей: ru-RU → ru_RU.
+  locale: string;
+  // og:image — логотип магазина по адресу https в PNG, JPEG, WebP или GIF. Пустая строка — тег не рисуется.
+  image: string;
+  // twitter:card: summary — карточка с маленькой картинкой, логотипу большая не подходит.
+  card: string;
 }
 
 export interface ShopPageLocals {

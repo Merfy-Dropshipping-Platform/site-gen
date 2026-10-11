@@ -34,6 +34,12 @@ describe('рисовальщик темы nova', () => {
     expect(html).toContain('<link rel="canonical" href="https://nova-stand.example/">');
   });
 
+  it('теги для соцсетей — из данных сборщика; картинка есть — og:image есть', () => {
+    expect(html).toContain('<meta property="og:site_name" content="Стенд Nova">');
+    expect(html).toContain('<meta property="og:image" content="https://nova-stand.example/logo.png">');
+    expect(html).toContain('<meta name="twitter:card" content="summary">');
+  });
+
   it('имя магазина и год — из данных сборщика', () => {
     expect(html).toContain('<h1>Стенд Nova</h1>');
     expect(html).toContain('© 2026 Стенд Nova');

@@ -1,4 +1,11 @@
-import { checkManifest, hashOf, sha256, type ShellBuild, type ShopPageLocals } from '@merfy/storefront-build';
+import {
+  checkManifest,
+  hashOf,
+  sha256,
+  type ShellBuild,
+  type ShopPageHead,
+  type ShopPageLocals,
+} from '@merfy/storefront-build';
 import {
   blobKey,
   createS3Store,
@@ -28,6 +35,21 @@ export const render = { delayMs: 0, hangOnce: false, hangMs: 60_000 };
 
 const metaTag = (name: string, content: string): string =>
   content === '' ? '' : `<meta name="${name}" content="${content}">`;
+const ogTag = (property: string, content: string): string =>
+  content === '' ? '' : `<meta property="${property}" content="${content}">`;
+
+// Теги для соцсетей — как у nova (блок 9): описания и картинки нет — тегов нет.
+const socialTags = ({ title, description, canonical, social }: ShopPageHead): string =>
+  [
+    ogTag('og:type', social.type),
+    ogTag('og:title', title),
+    ogTag('og:description', description),
+    ogTag('og:url', canonical),
+    ogTag('og:site_name', social.siteName),
+    ogTag('og:locale', social.locale),
+    ogTag('og:image', social.image),
+    metaTag('twitter:card', social.card),
+  ].join('');
 
 async function fakeRender(path: string, locals: ShopPageLocals): Promise<string> {
   const delay = render.hangOnce ? render.hangMs : render.delayMs;
@@ -37,7 +59,7 @@ async function fakeRender(path: string, locals: ShopPageLocals): Promise<string>
   return [
     `<!doctype html><html lang="${head.lang}"><head><title>${head.title}</title>`,
     `${metaTag('description', head.description)}${metaTag('keywords', head.keywords)}`,
-    `<link rel="canonical" href="${head.canonical}">${head.codeHtml}`,
+    `<link rel="canonical" href="${head.canonical}">${socialTags(head)}${head.codeHtml}`,
     `</head><body><h1>${shop.name}</h1>${locals.sections.join('')}<p>${path}</p></body></html>`,
   ].join('');
 }

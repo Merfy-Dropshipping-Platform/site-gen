@@ -6,7 +6,7 @@ export const REBUILD_EVENT_INPUTS: Readonly<Record<string, readonly string[]>> =
   'merchant-publish': ['revision', 'code'],
   'product-change': ['data.product'],
   'theme-change': ['theme', 'code'],
-  'branding-change': ['revision', 'site.description', 'site.seoTitle', 'site.keywords'],
+  'branding-change': ['revision', 'site.description', 'site.seoTitle', 'site.keywords', 'site.logoUrl'],
   'theme-release': ['theme', 'code'],
   'domain-change': ['site.publicUrl'],
   'shop-name-change': ['site.name'],

@@ -54,6 +54,28 @@ describe('страница магазина на рисовальщике nova',
     expect(html).toContain('<h1>Стенд Nova</h1>');
   });
 
+  // Теги для соцсетей (блок 9): ссылка на магазин в мессенджере — с заголовком, описанием, именем и картинкой.
+  it('теги для соцсетей на главной; логотипа нет — og:image нет', async () => {
+    const html = text((await renderShopPage(standInputs, '/', theme)).file.content);
+    expect(html).toContain('<meta property="og:type" content="website">');
+    expect(html).toContain('<meta property="og:title" content="Стенд Nova">');
+    expect(html).toContain('<meta property="og:description" content="Магазин-стенд новой темы">');
+    expect(html).toContain('<meta property="og:url" content="https://nova-stand.example/">');
+    expect(html).toContain('<meta property="og:site_name" content="Стенд Nova">');
+    expect(html).toContain('<meta property="og:locale" content="ru_RU">');
+    expect(html).toContain('<meta name="twitter:card" content="summary">');
+    expect(html).not.toContain('og:image');
+  });
+
+  it('мерчант загрузил логотип PNG — он картинка для соцсетей; описания нет — og:description нет', async () => {
+    const logo = changedInputs((inputs) =>
+      Object.assign(inputs.site, { description: '', logoUrl: 'https://s3.merfy.ru/merfy/branding/logo-1.png' }),
+    );
+    const html = text((await renderShopPage(logo, '/', theme)).file.content);
+    expect(html).toContain('<meta property="og:image" content="https://s3.merfy.ru/merfy/branding/logo-1.png">');
+    expect(html).not.toContain('og:description');
+  });
+
   it('конфиг магазина в живом режиме и CSS токенов с правкой мерчанта — в <head>', async () => {
     const html = text((await renderShopPage(standInputs, '/', theme)).file.content);
     const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));

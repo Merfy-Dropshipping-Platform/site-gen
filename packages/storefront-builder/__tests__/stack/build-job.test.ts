@@ -109,6 +109,18 @@ describe('сборка: правка доходит до витрины', () => 
     expect(home).toContain('<h1>Шарфы</h1>');
   });
 
+  // Блок 9: логотип из брендинга — картинка для соцсетей на главной у покупателя.
+  it('мерчант загрузил логотип — og:image и имя магазина в тегах для соцсетей у покупателя', async () => {
+    const site = await insertSite(harness.db);
+    const logoUrl = 'https://s3.merfy.ru/merfy/branding/logo-1.png';
+    await harness.db.query('UPDATE site SET branding = $2 WHERE id = $1', [site.id, JSON.stringify({ logoUrl })]);
+    await event(site.id);
+    await runNext(site.id);
+    const home = await liveHome(harness.store, labelOf(site));
+    expect(home).toContain(`<meta property="og:image" content="${logoUrl}">`);
+    expect(home).toContain('<meta property="og:site_name" content="Шарфы">');
+  });
+
   it('правка во время сборки — «ещё раз»: сразу после текущей ровно одно следующее задание', async () => {
     const site = await insertSite(harness.db);
     await event(site.id);

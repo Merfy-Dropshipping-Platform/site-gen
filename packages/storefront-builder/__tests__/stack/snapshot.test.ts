@@ -91,6 +91,17 @@ describe('снимок входов', () => {
     expect(await site(plain.id)).toMatchObject({ seoTitle: '', description: '', keywords: '' });
   });
 
+  // Блок 9: логотип магазина из брендинга (branding.logoUrl) — во входах, из него картинка для соцсетей.
+  it('логотип — из branding.logoUrl; не загружен — пустая строка', async () => {
+    const withLogo = await insertSite(db);
+    const logoUrl = 'https://s3.merfy.ru/merfy/branding/logo-1.png';
+    await db.query('UPDATE site SET branding = $2 WHERE id = $1', [withLogo.id, JSON.stringify({ logoUrl })]);
+    const plain = await insertSite(db);
+    const site = async (siteId: string) => parseBuildInputs((await readSnapshot(deps(), siteId)).inputs).site;
+    expect(await site(withLogo.id)).toMatchObject({ logoUrl });
+    expect(await site(plain.id)).toMatchObject({ logoUrl: '' });
+  });
+
   // Блок 8: правки токенов мерчанта — из текущей ревизии (ключ tokens). Нет ревизии или ключа — пустые правки.
   it('правки токенов — из текущей ревизии; нет ревизии, ключа или он не объект — {}', async () => {
     const edited = await insertSite(db);

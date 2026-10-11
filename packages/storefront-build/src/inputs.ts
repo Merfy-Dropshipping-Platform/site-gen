@@ -91,6 +91,9 @@ const buildInputsSchema = z.strictObject({
     description: z.string(),
     seoTitle: z.string(),
     keywords: z.string(),
+    // Логотип из брендинга (site.branding.logoUrl) — картинка для соцсетей (блок 9). Не загружен — пустая строка. Адрес
+    // здесь не проверяется: негодный логотип сборку не валит, тега og:image просто нет (head.ts).
+    logoUrl: z.string(),
     updatedAt: instantSchema,
   }),
   env: z.strictObject({

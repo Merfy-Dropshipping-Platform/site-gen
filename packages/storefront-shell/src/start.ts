@@ -3,9 +3,10 @@ import { readStorefrontConfig } from '@merfy/storefront-config/read';
 import { IDLE_HOOKS, useSectionElement, type ElementHooks } from './element';
 import { loadPage, type ImportModule, type LoaderDeps } from './loader';
 import { readModuleList, type ModuleEntry } from './modules';
+import { listenPreview, type PreviewDeps } from './preview';
 import { createRegistry, type SectionRegistry } from './registry';
 import { messageOf } from './report';
-import { sourceIndex, watchErrors } from './sources';
+import { sourceIndex, watchErrors, type SourceIndex } from './sources';
 
 // Запуск ядра (design.md блока 7, раздел 1, шаги 6–7; п. 6). Ядро стартует само после разбора страницы, а если в теме
 // роутер Astro — ещё и по его astro:page-load: перечитывает список модулей новой страницы. Секции оживают и снимаются
@@ -16,6 +17,8 @@ export const SHELL_ERROR_ATTRIBUTE = 'data-merfy-shell-error';
 export interface ShellEnv {
   window: Window;
   importModule: ImportModule;
+  // Перезагрузка превью (preview.ts); по умолчанию — location.reload(). Тест в jsdom даёт свою: навигации там нет.
+  reload?: () => void;
 }
 
 export interface Shell {
@@ -66,6 +69,13 @@ const hooksOf = (registry: SectionRegistry): ElementHooks => ({
   disconnect: (element) => void registry.disconnect(element),
 });
 
+// Превью (С7-22 В): замена кода секции по сообщению конструктора — тем же реестром и загрузчиком, что у страницы.
+function previewDeps(env: ShellEnv, registry: SectionRegistry, sources: SourceIndex): PreviewDeps {
+  const win = env.window;
+  const reload = env.reload ?? ((): void => win.location.reload());
+  return { registry, importModule: env.importModule, base: win.document.baseURI, remember: sources.add, reload };
+}
+
 function stopShell(win: Window, controller: AbortController): void {
   controller.abort();
   useSectionElement(win.customElements, IDLE_HOOKS);
@@ -86,6 +96,7 @@ export function startShell(env: ShellEnv): Shell {
   useSectionElement(win.customElements, hooksOf(registry));
   watchErrors(win, sources, registry, controller.signal);
   const config = readConfig(win);
+  if (config?.mode === 'preview') listenPreview(win, previewDeps(env, registry, sources), controller.signal);
   const load = (): Promise<void> => loadPage(deps, readModules(win.document));
   win.document.addEventListener(PAGE_LOAD_EVENT, () => void load(), { signal: controller.signal });
   return { config, registry, ready: load(), stop: () => stopShell(win, controller) };

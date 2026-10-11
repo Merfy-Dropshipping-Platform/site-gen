@@ -34,9 +34,18 @@ describe('настройки', () => {
       reconcileMs: 3_600_000,
       productTimeoutMs: 10_000,
       indexable: false,
+      standPage: false,
       indexNow: null,
     });
     expect(RETRY_DELAYS_MS).toEqual([5000, 30_000]);
+  });
+
+  it('страница стенда в сборке — из STOREFRONT_STAND_PAGE; вместе с поиском — settings-invalid', () => {
+    expect(readSettings({ ...ENV, STOREFRONT_STAND_PAGE: 'true' }).standPage).toBe(true);
+    expect(readSettings({ ...ENV, STOREFRONT_INDEXABLE: 'true' }).standPage).toBe(false);
+    expect(() => readSettings({ ...ENV, STOREFRONT_STAND_PAGE: 'true', STOREFRONT_INDEXABLE: 'true' })).toThrow(
+      'env#STOREFRONT_STAND_PAGE: стенд в сборке — только у магазинов не для поиска (STOREFRONT_INDEXABLE=false)',
+    );
   });
 
   it('числа и флаг поиска — из строк окружения', () => {

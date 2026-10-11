@@ -44,7 +44,15 @@ export { readClientFiles, type BuildFile } from './client-files';
 export type { ShopPageHead, ShopPageLocals, StandPageHead, StandPageLocals } from './locals';
 
 // Стенд темы в превью конструктора (блок 8)
-export { previewTokens, standLocals, type PreviewTokens, type StandInputs, type StandTheme } from './stand';
+export {
+  previewTokens,
+  standLocals,
+  type PreviewTokens,
+  type StandBuild,
+  type StandInputs,
+  type StandTheme,
+  type StandView,
+} from './stand';
 export { PREVIEW_AGENT } from './preview-agent';
 
 // Отпечатки, версии тем, сторожа

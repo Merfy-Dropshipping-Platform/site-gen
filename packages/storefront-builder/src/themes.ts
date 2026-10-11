@@ -36,6 +36,13 @@ export interface Themes {
   close: () => Promise<void>;
 }
 
+export interface ThemeOptions {
+  // Страница стенда в сборке магазина (STOREFRONT_STAND_PAGE, шаг 7 блока 9): сборка темы получает стенд.
+  standPage: boolean;
+}
+
+const NO_STAND_PAGE: ThemeOptions = { standPage: false };
+
 async function serverEntry(root: string, themeId: string): Promise<string> {
   const entry = join(rendererDir(root, themeId), 'server', 'entry.mjs');
   try {
@@ -52,7 +59,7 @@ const readJson = async (path: string): Promise<unknown> => JSON.parse(await read
 // Файлы клиента по адресу от корня сайта — для превью одним HTML (inline-assets.ts).
 const assetsOf = (files: readonly BuildFile[]): Assets => new Map(files.map((file) => [`/${file.path}`, file.content]));
 
-async function loadTheme(root: string, themeId: string, recorded: ThemeVersions) {
+async function loadTheme(root: string, themeId: string, recorded: ThemeVersions, options: ThemeOptions) {
   const state = await readThemeState(root, themeId);
   checkThemeVersion(themeId, recorded[themeId], state);
   const renderer = await startRenderer(await serverEntry(root, themeId));
@@ -60,7 +67,8 @@ async function loadTheme(root: string, themeId: string, recorded: ThemeVersions)
   const tokens = parseTheme(themeJson.tokens);
   const panel = panelForTheme(parsePanel(await readJson(join(root, PANEL_FILE)), tokens.dictionary), themeJson.panel);
   const clientFiles = await readClientFiles(join(rendererDir(root, themeId), 'client'));
-  const theme: LoadedTheme = { ...state, build: { tokens, render: renderer.render, clientFiles } };
+  const stand = options.standPage ? { stand: { tokens, panel, renderStand: renderer.renderStand } } : {};
+  const theme: LoadedTheme = { ...state, build: { tokens, render: renderer.render, clientFiles, ...stand } };
   const assets = assetsOf(clientFiles);
   const preview: PreviewTheme = {
     version: state.version,
@@ -77,13 +85,13 @@ export async function themeIdsOf(root: string): Promise<string[]> {
   return Object.keys(await readThemeVersions(join(root, THEME_VERSIONS_FILE))).sort();
 }
 
-export async function loadThemes(root: string): Promise<Themes> {
+export async function loadThemes(root: string, options: ThemeOptions = NO_STAND_PAGE): Promise<Themes> {
   const recorded = await readThemeVersions(join(root, THEME_VERSIONS_FILE));
   const themes = new Map<string, LoadedTheme>();
   const previews = new Map<string, PreviewTheme>();
   const renderers: Renderer[] = [];
   for (const themeId of Object.keys(recorded).sort()) {
-    const loaded = await loadTheme(root, themeId, recorded);
+    const loaded = await loadTheme(root, themeId, recorded, options);
     themes.set(themeId, loaded.theme);
     previews.set(themeId, loaded.preview);
     renderers.push(loaded.renderer);

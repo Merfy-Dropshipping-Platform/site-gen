@@ -1,10 +1,15 @@
+import { panelForTheme, parsePanel } from '@merfy/tokens';
 import { describe, expect, it } from 'vitest';
+import panelJson from '../../theme-contract/panel/theme-panel.json';
 import standInputsJson from '../fixtures/stand-inputs.json';
 import { buildStorefront, type ThemeBuild } from '../src/build';
 import { sha256 } from '../src/canonical';
-import { entityHashes } from '../src/entities';
+import type { BuildFile } from '../src/client-files';
+import { entityHashes, entityKey } from '../src/entities';
 import { changedEntities, dependentPages } from '../src/graph';
 import { buildKey } from '../src/key';
+import type { StandPageLocals } from '../src/locals';
+import type { StandBuild } from '../src/stand';
 import { rawInputs, standInputs } from './support';
 import { fakeRender, novaTokens } from './support-theme';
 
@@ -14,6 +19,55 @@ const CLIENT_FILES = [
   { path: '_astro/manrope.woff2', content: Buffer.from([0, 1, 2]) },
 ];
 const theme: ThemeBuild = { tokens: novaTokens, render: fakeRender, clientFiles: CLIENT_FILES };
+
+// Подставной рисовальщик стенда: печатает режим, CSS токенов и слушатель превью, если он есть.
+const fakeRenderStand = (locals: StandPageLocals): Promise<string> => {
+  const agent = locals.head.previewScript === '' ? '' : '<script>agent</script>';
+  const head = `<style id="merfy-tokens">${locals.head.tokensCss}</style>${agent}`;
+  return Promise.resolve(`<html><head>${head}</head><body data-mode="${locals.config.mode}"></body></html>`);
+};
+const stand: StandBuild = {
+  tokens: novaTokens,
+  panel: panelForTheme(parsePanel(panelJson, novaTokens.dictionary), undefined),
+  renderStand: fakeRenderStand,
+};
+const withStand: ThemeBuild = { ...theme, stand };
+const standHtml = (files: readonly BuildFile[]): string =>
+  new TextDecoder().decode(files.find((file) => file.path === 'theme-stand.html')?.content);
+
+// Страница стенда в сборке (шаг 7 блока 9 — эталон стенда на dev по адресу магазина): только у темы со стендом.
+describe('buildStorefront: страница стенда', () => {
+  it('тема со стендом — /theme-stand в файлах и манифесте, страница сайта, режим live без слушателя превью', async () => {
+    const { manifest, files } = await buildStorefront(standInputsJson, REFERENCES, withStand);
+    expect(manifest.pages.map((page) => [page.path, page.file])).toEqual([
+      ['/', 'index.html'],
+      ['/theme-stand', 'theme-stand.html'],
+    ]);
+    const site = { type: 'site', id: standInputs.site.id };
+    expect(manifest.pages[1]).toMatchObject({ entity: site, deps: [entityKey('site', standInputs.site.id)] });
+    expect(standHtml(files)).toContain('data-mode="live"');
+    expect(standHtml(files)).not.toContain('<script>');
+  });
+
+  it('правки токенов из ревизии — в CSS стенда', async () => {
+    const raw = rawInputs((inputs) =>
+      Object.assign(inputs.revision, { tokens: { schemes: { 'scheme-1': { primary: '#0f766e' } } } }),
+    );
+    const { files } = await buildStorefront(raw, REFERENCES, withStand);
+    expect(standHtml(files)).toContain('#0f766e');
+  });
+
+  it('ключ и главная — те же, что без стенда; без стенда сборка прежняя', async () => {
+    const [plain, standed, unset] = await Promise.all([
+      buildStorefront(standInputsJson, REFERENCES, theme),
+      buildStorefront(standInputsJson, REFERENCES, withStand),
+      buildStorefront(standInputsJson, REFERENCES, { ...theme, stand: undefined }),
+    ]);
+    expect(standed.manifest.key).toBe(plain.manifest.key);
+    expect(standed.manifest.files['index.html']).toBe(plain.manifest.files['index.html']);
+    expect(unset).toEqual(plain);
+  });
+});
 
 describe('buildStorefront', () => {
   it('стенд: файлы клиента и главная по пути, манифест сходится с ними', async () => {

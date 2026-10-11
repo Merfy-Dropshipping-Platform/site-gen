@@ -9,6 +9,15 @@ import { THEME_VERSIONS_FILE, loadThemes, rendererDir, themeIdsOf } from '../src
 // Темы новой архитектуры — с настоящего диска site-gen: theme-versions.json блока 4 и серверная сборка рисовальщика
 // nova (`pnpm renderer`, «Подготовка» задачи 8).
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
+const STAND_LOCALS = {
+  head: { title: 'Стенд темы', configHtml: '', tokensCss: '', previewScript: '' },
+  attributes: {},
+  settings: {},
+  shop: { name: 'Пледы' },
+  schemes: [],
+  config: {},
+  problems: [],
+};
 
 describe('темы новой архитектуры', () => {
   it('список — ключи theme-versions.json; сборка рисовальщика — themes/<тема>/dist-renderer', async () => {
@@ -34,17 +43,18 @@ describe('темы новой архитектуры', () => {
     expect(preview?.version).toBe(loaded.themes.get('nova')?.version);
     expect(preview?.panel.groups).toHaveLength(11);
     expect([...(preview?.assets.keys() ?? [])].some((path) => /^\/_astro\/.+\.css$/.test(path))).toBe(true);
-    const locals = {
-      head: { title: 'Стенд темы', configHtml: '', tokensCss: '', previewScript: '' },
-      attributes: {},
-      settings: {},
-      shop: { name: 'Пледы' },
-      schemes: [],
-      config: {},
-      problems: [],
-    };
-    expect(await preview?.renderStand(locals)).toContain('data-stand="logo"');
+    expect(await preview?.renderStand(STAND_LOCALS)).toContain('data-stand="logo"');
     await loaded.close();
+  });
+
+  // Страница стенда в сборке (шаг 7 блока 9): сборщик с STOREFRONT_STAND_PAGE даёт сборке nova стенд того же рисовальщика.
+  it('со страницей стенда — у сборки nova стенд и схема панели; без неё стенда в сборке нет', async () => {
+    const [plain, standed] = await Promise.all([loadThemes(ROOT), loadThemes(ROOT, { standPage: true })]);
+    expect(plain.themes.get('nova')?.build.stand).toBeUndefined();
+    const stand = standed.themes.get('nova')?.build.stand;
+    expect(stand?.panel.groups).toHaveLength(11);
+    expect(await stand?.renderStand(STAND_LOCALS)).toContain('data-stand="logo"');
+    await Promise.all([plain.close(), standed.close()]);
   });
 
   it('нет серверной сборки — renderer-missing с подсказкой команды', async () => {

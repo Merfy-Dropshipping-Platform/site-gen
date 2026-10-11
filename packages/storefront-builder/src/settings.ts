@@ -33,6 +33,9 @@ const envSchema = z.object({
   PRODUCT_TIMEOUT_MS: count(10_000),
   // Магазины для поиска: robots.txt открыт и есть карта сайта (блок 5). На dev — нет.
   STOREFRONT_INDEXABLE: z.enum(['true', 'false']).default('false'),
+  // Страница стенда /theme-stand в сборке магазина (шаг 7 блока 9: эталон стенда на dev по адресу магазина).
+  // Только на контуре не для поиска: иначе служебная страница попала бы в карту сайта.
+  STOREFRONT_STAND_PAGE: z.enum(['true', 'false']).default('false'),
   // IndexNow (design.md, раздел 4): ключ — тот же, что у раздачи (блок 5); нет ключа — уведомлений нет.
   INDEXNOW_KEY: z.string().min(8).optional(),
   INDEXNOW_URL: z.url().default(INDEXNOW_URL),
@@ -57,7 +60,15 @@ export interface Settings {
   reconcileMs: number;
   productTimeoutMs: number;
   indexable: boolean;
+  standPage: boolean;
   indexNow: { key: string; endpoint: string } | null;
+}
+
+// Стенд в сборке и поиск вместе — ошибка запуска: служебная страница не должна попасть в карту сайта.
+function standPageOf(standPage: boolean, indexable: boolean): boolean {
+  if (!standPage || !indexable) return standPage;
+  const text = 'стенд в сборке — только у магазинов не для поиска (STOREFRONT_INDEXABLE=false)';
+  throw new StorefrontBuilderError('settings-invalid', text, { path: 'env#STOREFRONT_STAND_PAGE' });
 }
 
 // K больше «мест − 1» — волна выпуска займёт все места, и публикация будет ждать её целиком.
@@ -91,6 +102,7 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
     reconcileMs: value.RECONCILE_MS,
     productTimeoutMs: value.PRODUCT_TIMEOUT_MS,
     indexable: value.STOREFRONT_INDEXABLE === 'true',
+    standPage: standPageOf(value.STOREFRONT_STAND_PAGE === 'true', value.STOREFRONT_INDEXABLE === 'true'),
     indexNow: value.INDEXNOW_KEY === undefined ? null : { key: value.INDEXNOW_KEY, endpoint: value.INDEXNOW_URL },
   };
 }

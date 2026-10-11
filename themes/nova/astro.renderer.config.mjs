@@ -12,5 +12,7 @@ export default defineConfig({
   outDir: "./dist-renderer",
   output: "server",
   adapter: node({ mode: "middleware" }),
-  vite: { plugins: [tailwindcss()] },
+  // Рисовальщик версии живёт архивом в MinIO и запускается вне папки темы (design.md блока 10, П10-1 Б): все пакеты —
+  // внутри бандла, снаружи только модули Node.
+  vite: { plugins: [tailwindcss()], ssr: { noExternal: true } },
 });

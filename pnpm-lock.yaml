@@ -293,6 +293,9 @@ importers:
       '@merfy/storefront-build':
         specifier: workspace:*
         version: link:../storefront-build
+      '@merfy/storefront-sections':
+        specifier: workspace:*
+        version: link:../storefront-sections
       '@merfy/storefront-storage':
         specifier: workspace:*
         version: link:../storefront-storage

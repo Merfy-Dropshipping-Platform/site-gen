@@ -4,6 +4,7 @@ import type { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { openRpc, type RpcClient } from '../../src/rpc';
 import { PRODUCT_QUEUE, readSnapshot, type SnapshotDeps } from '../../src/snapshot';
+import { codeDeps } from './builder';
 import { startFakeProducts, type FakeProducts } from './fake-product';
 import { STACK, insertRevision, insertSite, openPool } from './stack';
 
@@ -29,6 +30,7 @@ const THEME = { version: '0.0.1', contentHash: `sha256:${'a'.repeat(64)}` };
 const deps = (): SnapshotDeps => ({
   db,
   products: { call: rpc.call, timeoutMs: 1_000, log: (message, fields) => lines.push(`${message} ${fields?.error}`) },
+  code: codeDeps(db, () => undefined),
   platform: { renderHash: `sha256:${'b'.repeat(64)}`, apiUrl: 'https://gateway.dev.merfy.ru/api' },
   themes: new Map([['nova', THEME]]),
   clock: () => new Date('2027-01-01T00:00:00.000Z'),

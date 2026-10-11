@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { platformRenderHash } from '@merfy/storefront-build';
+import { platformRenderHash, readShellBuild } from '@merfy/storefront-build';
 import { createS3Store } from '@merfy/storefront-storage';
 import { Pool } from 'pg';
 import { raiseAlert } from './alert';
@@ -10,6 +10,7 @@ import { jsonLog } from './log';
 import { previewVia } from './preview';
 import { openRpc } from './rpc';
 import { enqueueVia, startRuntime, type RuntimeDeps } from './runtime';
+import { acceptSectionReleases, releaseFolders } from './section-releases';
 import { RETRY_DELAYS_MS, readSettings } from './settings';
 import { createSlots } from './slots';
 import { loadThemes } from './themes';
@@ -26,11 +27,15 @@ const settings = readSettings(process.env);
 const db = new Pool({ connectionString: settings.databaseUrl });
 const store = createS3Store(settings.s3);
 const loaded = await loadThemes(ROOT);
+// Ядро из образа (сборка — задача 3 блока 7): его нет — сборщик не стартует (shell-missing).
+const shell = await readShellBuild(ROOT);
 const broker = openBroker(settings.rabbitmqUrl, log);
 const rpc = openRpc(settings.rabbitmqUrl);
 const platform = { renderHash: await platformRenderHash(ROOT), apiUrl: settings.apiUrl };
 const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
-const snapshot = { db, products, platform, themes: loaded.themes, clock };
+// Код магазина (блок 7): реестр секций, места из ревизии, включённые расширения; тайм-аут — как у товаров.
+const code = { db, shell, call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
+const snapshot = { db, products, code, platform, themes: loaded.themes, clock };
 
 const deps: RuntimeDeps = {
   db,
@@ -53,6 +58,8 @@ const deps: RuntimeDeps = {
   reconcileMs: settings.reconcileMs,
 };
 
+// Секции платформы и тем — в реестр до первой сборки (дверь выпуска, п. 21); отказ — строка журнала, старт идёт дальше.
+await acceptSectionReleases({ db, store, log }, releaseFolders(ROOT, shell.version, loaded.themes));
 const runtime = await startRuntime(deps);
 const preview = { db, themes: loaded.previews, apiUrl: settings.apiUrl, log };
 const drawDeps = { store, snapshot, themes: loaded.themes, renderHash: platform.renderHash, log, preview };

@@ -1,5 +1,6 @@
-import type { Entity, ThemeState } from '@merfy/storefront-build';
+import type { BuildInputs, CodeAssets, Entity, ThemeState } from '@merfy/storefront-build';
 import { z } from 'zod';
+import { NO_CODE, readShopCode, type CodeDeps } from './code';
 import { StorefrontBuilderError, errorText } from './errors';
 import type { Log } from './log';
 import type { Call } from './rpc';
@@ -8,7 +9,8 @@ import type { Queryable } from './shop-state';
 // Снимок входов сборки (design.md блока 6, раздел 4, «Нет данных — нет выкладки»; входы — блок 4, src/inputs.ts).
 // Сайт, политики, контакты и публикации — из базы sites; товары — у сервиса product (product.list, как у нынешней
 // сборки, data-fetcher.ts). Сервис не ответил или ответил ошибкой — снимок «не получен» (data.status: failed), и сборка
-// блока 4 падает до рендера: живой сайт не трогаем. Коллекции и касса — с секциями (раздел 4, «Свежесть»).
+// блока 4 падает до рендера: живой сайт не трогаем. Коллекции и касса — с секциями (раздел 4, «Свежесть»). Код секций
+// (блок 7, code.ts) — из реестра storefront_section и сервиса extensions; не получен — снимок тоже «не получен».
 
 export const PRODUCT_QUEUE = 'product-service_queue';
 const PRODUCT_LIST = 'product.list';
@@ -197,6 +199,8 @@ export interface InputsParts {
   entities: readonly Entity[];
   received: boolean;
   tokens: JsonObject;
+  shell: BuildInputs['shell'];
+  code: BuildInputs['code'];
 }
 
 // Тема магазина — только новой архитектуры: те, что записаны в theme-versions.json блока 4 и загружены сборщиком.
@@ -212,6 +216,7 @@ export function themeOf(themes: ReadonlyMap<string, ThemeState>, shop: Shop): Th
 export interface SnapshotDeps {
   db: Queryable;
   products: ProductRequest;
+  code: CodeDeps;
   platform: Platform;
   themes: ReadonlyMap<string, ThemeState>;
   clock: () => Date;
@@ -221,23 +226,28 @@ export interface Snapshot {
   shop: Shop;
   address: ShopAddress;
   inputs: ReturnType<typeof buildInputsOf>;
+  // Байты кода для сборки (блок 7): ядро и скрипты секций по отпечатку.
+  assets: CodeAssets;
 }
 
-// Снимок целиком: строка сайта, его сущности и товары разом. Магазина нет — ошибка shop-invalid.
+// Снимок целиком: строка сайта, его сущности, товары и код секций разом. Магазина нет — ошибка shop-invalid.
 export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<Snapshot> {
   const shop = await readShop(deps.db, siteId);
   if (shop === null) throw new StorefrontBuilderError('shop-invalid', 'магазина нет', { path: `site/${siteId}` });
   const theme = themeOf(deps.themes, shop);
   const address = shopAddress(shop);
-  const [siteEntities, products, tokens] = await Promise.all([
+  const [siteEntities, products, tokens, shopCode] = await Promise.all([
     readSiteEntities(deps.db, siteId),
     fetchProducts(deps.products, shop),
     readRevisionTokens(deps.db, siteId),
+    readShopCode(deps.code, siteId, theme),
   ]);
   const entities = [...siteEntities, ...(products ?? [])];
   const year = deps.clock().getUTCFullYear();
-  const parts = { platform: deps.platform, theme, shop, address, year, entities, received: products !== null, tokens };
-  return { shop, address, inputs: buildInputsOf(parts) };
+  const received = products !== null && shopCode !== null;
+  const { shell, code, assets } = shopCode ?? NO_CODE;
+  const parts = { platform: deps.platform, theme, shop, address, year, entities, received, tokens, shell, code };
+  return { shop, address, inputs: buildInputsOf(parts), assets };
 }
 
 // Входы сборки блока 4 одним объектом. Правки токенов мерчанта — из текущей ревизии (их пишет панель темы, блок 8).
@@ -245,7 +255,8 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<
 export const buildInputsOf = (parts: InputsParts) => ({
   platform: { renderHash: parts.platform.renderHash },
   theme: parts.theme,
-  shell: null,
+  shell: parts.shell,
+  code: parts.code,
   revision: { tokens: parts.tokens },
   site: {
     id: parts.shop.id,

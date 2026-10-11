@@ -3,7 +3,8 @@
 // описание, канонический адрес. Конфиг магазина (блок 3) и CSS токенов с правками мерчанта (блок 1) приходят от
 // сборщика готовыми строками и встают одним проходом, без правки готового HTML.
 // Описание и ключевые слова мерчант может не заполнить — тогда тега нет совсем, как у Dawn (Shopify): пустой тег —
-// ошибка договора.
+// ошибка договора. Код секций (блок 7) приходит так же, готовой строкой: после токенов — стили секций, список
+// модулей, import map, подсказки и ядро (head.codeHtml).
 import "@fontsource/manrope/400.css";
 import "@fontsource/manrope/600.css";
 import type { ShopPageHead } from "../../../../packages/storefront-build/src/locals";
@@ -23,3 +24,4 @@ const { head } = Astro.props;
 {head.keywords && <meta name="keywords" content={head.keywords} />}
 <link rel="canonical" href={head.canonical} />
 <style id="merfy-tokens" is:inline set:html={head.tokensCss}></style>
+<Fragment set:html={head.codeHtml} />

@@ -1,6 +1,7 @@
 ---
 // Главная магазина (блок 4). Рисует её только рисовальщик: данные — только из Astro.locals.merfy, без сети, окружения,
-// часов и случайного (сторож блока 4). Секций пока нет: имя магазина и год в подвале.
+// часов и случайного (сторож блока 4). Секции (блок 7) — разметкой от сборщика в <main> после имени магазина, по
+// порядку мерчанта; их скрипты грузит ядро по списку модулей в <head>.
 import ShopHead from "../ShopHead.astro";
 
 const page = Astro.locals.merfy;
@@ -14,6 +15,7 @@ if (page === undefined) throw new Error("Страницу магазина ри�
 	<body>
 		<main>
 			<h1>{page.shop.name}</h1>
+			{page.sections.map((html) => <Fragment set:html={html} />)}
 		</main>
 		<footer>
 			<p>© {page.year} {page.shop.name}</p>

@@ -1,7 +1,8 @@
 // Коды ошибок пакета (design.md блока 4). Входы и данные: вход не прошёл схему, снимок данных без признака
 // «получен», одна сущность дважды. Рисовальщик: в серверной сборке нет handler, страница не нарисовалась, такой
 // страницы нет, astro build упал. Тема: файлы изменились, а номер версии нет. Манифест не прошёл схему. Страница
-// нарушила договор рисовальщика (SEO).
+// нарушила договор рисовальщика (SEO). Код секций (блок 7): код не сходится сам с собой; нет сборки ядра или она не
+// та, что во входах; нет файла скрипта секции или его байты не те.
 export type StorefrontBuildErrorCode =
   | 'inputs-invalid'
   | 'data-not-received'
@@ -12,7 +13,11 @@ export type StorefrontBuildErrorCode =
   | 'theme-build-failed'
   | 'theme-version-stale'
   | 'manifest-invalid'
-  | 'seo-contract';
+  | 'seo-contract'
+  | 'code-invalid'
+  | 'shell-missing'
+  | 'shell-mismatch'
+  | 'code-missing';
 
 type ErrorDetails = { path?: string; cause?: unknown };
 

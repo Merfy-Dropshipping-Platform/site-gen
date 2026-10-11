@@ -4,8 +4,10 @@ import { contentHash } from './content-hash';
 
 // Файлы папки темы. render — от них зависят страницы магазина, они входят в отпечаток темы. skip — не зависят: обычная
 // сборка темы и стенд, установка. Каждый файл папки темы — ровно в одном списке, это сторожит тест «файл не учтён».
+// sections/** — секции темы (блок 7): в магазин они идут через реестр секций, но меняют его страницы, поэтому их правка
+// требует новой версии темы.
 export const THEME_FILES = {
-  render: ['src/shop/**', 'public/**', 'astro.renderer.config.mjs', 'pnpm-lock.yaml', 'tsconfig.json'],
+  render: ['src/shop/**', 'public/**', 'sections/**', 'astro.renderer.config.mjs', 'pnpm-lock.yaml', 'tsconfig.json'],
   skip: ['src/pages/**', 'src/stand/**', 'astro.config.mjs', 'package.json', '.gitignore', '.npmrc'],
 } as const;
 

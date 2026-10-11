@@ -11,12 +11,17 @@ export interface ShopPageHead {
   canonical: string;
   configHtml: string;
   tokensCss: string;
+  // Код секций страницы (блок 7): стили секций, список модулей, import map, modulepreload и ядро — после токенов.
+  // Пустая строка — на странице нет секций.
+  codeHtml: string;
 }
 
 export interface ShopPageLocals {
   head: ShopPageHead;
   shop: { name: string };
   year: number;
+  // Разметка секций страницы (блок 7) в порядке мерчанта: <merfy-section data-section="…">; тема печатает её в <main>.
+  sections: string[];
 }
 
 // Стенд темы в превью конструктора (design.md блока 8, П8-1 А): та же серверная сборка темы рисует /theme-stand с

@@ -41,6 +41,10 @@ pnpm --filter @merfy/stand-check stand:baseline --target local
 
 3. Прогони `stand:run` ещё раз: должно быть «Чисто», код выхода 0. Закоммить `baselines/local.json`.
 
+На dev — то же с `--target dev` по временному домену тестового магазина новой темы:
+`STAND_DEV_URL=https://4e589f747e5c.dev.merfy.ru`. Страница стенда есть в сборке магазина, потому что у сборщика dev
+включён `STOREFRONT_STAND_PAGE=true`. Эталон — `baselines/dev.json`.
+
 ## Как читать отчёт
 
 Отчёт лежит в `reports/<дата-время>/index.html` (папка не в git), рядом — оба паспорта прогона.

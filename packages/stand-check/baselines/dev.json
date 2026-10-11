@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "page": "/theme-stand",
+  "target": "dev",
+  "scripts": [
+    {
+      "src": "#merfy-config",
+      "kind": "json",
+      "bytes": 317
+    },
+    {
+      "src": "inline:1",
+      "kind": "inline",
+      "bytes": 0
+    }
+  ],
+  "globals": {},
+  "storage": [],
+  "cookies": [],
+  "requests": [
+    {
+      "url": "/_astro/fonts.*.css",
+      "status": 200
+    },
+    {
+      "url": "/_astro/onest-cyrillic-400-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/onest-cyrillic-600-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/onest-latin-400-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/onest-latin-600-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/onest-latin-ext-400-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/onest-latin-ext-600-normal.*.woff2",
+      "status": 200
+    },
+    {
+      "url": "/_astro/theme-stand.*.css",
+      "status": 200
+    },
+    {
+      "url": "/theme-stand",
+      "status": 200
+    }
+  ],
+  "errors": [],
+  "tokens": {
+    "--accent": "#f1f1f1",
+    "--accent-foreground": "#16181d",
+    "--background": "#ffffff",
+    "--badge": "#0f766e",
+    "--badge-foreground": "#ffffff",
+    "--border": "#e3e3e4",
+    "--border-width-button": "0",
+    "--border-width-card": "0",
+    "--border-width-input": "1px",
+    "--border-width-media": "0",
+    "--border-width-popover": "1px",
+    "--card": "#ffffff",
+    "--card-foreground": "#16181d",
+    "--destructive": "#d92d20",
+    "--destructive-foreground": "#ffffff",
+    "--font-body": "Onest, system-ui, sans-serif",
+    "--font-heading": "Onest, system-ui, sans-serif",
+    "--foreground": "#16181d",
+    "--heading": "#16181d",
+    "--input": "#e3e3e4",
+    "--muted": "#f6f6f6",
+    "--muted-foreground": "#5c5d61",
+    "--popover": "#ffffff",
+    "--popover-foreground": "#16181d",
+    "--price": "#16181d",
+    "--price-old": "#5c5d61",
+    "--primary": "#0f766e",
+    "--primary-border": "#0f766e",
+    "--primary-foreground": "#ffffff",
+    "--primary-hover": "#0d6861",
+    "--primary-hover-foreground": "#ffffff",
+    "--radius-badge": "0.75rem",
+    "--radius-button": "0.75rem",
+    "--radius-card": "1rem",
+    "--radius-input": "0.75rem",
+    "--radius-media": "1rem",
+    "--radius-popover": "1rem",
+    "--ring": "#0f766e",
+    "--sale": "#d92d20",
+    "--sale-foreground": "#ffffff",
+    "--secondary": "#f1f1f1",
+    "--secondary-border": "#f1f1f1",
+    "--secondary-foreground": "#16181d",
+    "--secondary-hover": "#d4d4d4",
+    "--secondary-hover-foreground": "#16181d",
+    "--shadow-button": "none",
+    "--shadow-card": "none",
+    "--shadow-drawer": "0 0 2rem 0 #00000029",
+    "--shadow-input": "none",
+    "--shadow-media": "none",
+    "--shadow-popover": "0 0.5rem 1.5rem 0 #0000001f",
+    "--spacing-card": "0",
+    "--spacing-grid-column": "1rem",
+    "--spacing-grid-row": "1.5rem",
+    "--spacing-section": "clamp(3rem, 1.8261rem + 5.2174vw, 6rem)",
+    "--spacing-section-gap": "0",
+    "--text-2xl": "clamp(1.5rem, 1.3043rem + 0.8696vw, 2rem)",
+    "--text-3xl": "clamp(1.75rem, 1.4565rem + 1.3043vw, 2.5rem)",
+    "--text-4xl": "clamp(2rem, 1.5109rem + 2.1739vw, 3.25rem)",
+    "--text-5xl": "clamp(2.5rem, 1.8152rem + 3.0435vw, 4.25rem)",
+    "--text-base": "1rem",
+    "--text-lg": "clamp(1.125rem, 1.0761rem + 0.2174vw, 1.25rem)",
+    "--text-sm": "0.875rem",
+    "--text-xl": "clamp(1.25rem, 1.1522rem + 0.4348vw, 1.5rem)",
+    "--text-xs": "0.75rem",
+    "--tracking-body": "0",
+    "--tracking-heading": "-0.02em",
+    "--weight-body": "400",
+    "--weight-heading": "600",
+    "--width-logo": "6.25rem",
+    "--width-page": "80rem"
+  },
+  "fonts": [
+    "Onest 400 normal",
+    "Onest 600 normal"
+  ]
+}

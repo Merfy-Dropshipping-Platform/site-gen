@@ -9,6 +9,7 @@ import {
   type TokenMigrations,
 } from '@merfy/tokens';
 import { codeHead, pageSections } from './code';
+import { countersOf } from './counters';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals, ShopSocial } from './locals';
@@ -63,6 +64,7 @@ export function pageLocals(
     env: inputs.env,
     page: { id: route.id, path: route.path },
     mode: 'live',
+    analytics: { url: inputs.env.analyticsUrl, counters: countersOf(inputs.data.entities) },
   });
   const head = {
     lang: config.locale,

@@ -11,6 +11,7 @@ describe('entityHashes', () => {
       'billing:main',
       'collection:00000000-0000-4000-8000-000000000201',
       'contacts:main',
+      'counter:00000000-0000-4000-8000-000000000401',
       'policy:privacy',
       'product:00000000-0000-4000-8000-000000000101',
       'product:00000000-0000-4000-8000-000000000102',

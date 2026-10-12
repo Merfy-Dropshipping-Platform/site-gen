@@ -10,7 +10,16 @@ import { parseWith } from './parse';
 
 // Сущности снимка данных (В4-2 Б) — весь контент из событий пересборки блока 3: товар (с остатком), коллекция,
 // политика (id — тип политики), контакты, публикация блога, касса магазина (настройки оплаты из сервиса billing).
-export const ENTITY_TYPES = ['product', 'collection', 'policy', 'contacts', 'publication', 'billing'] as const;
+// Счётчик мерчанта (блок 11, С11-4 Б): id — счётчик у сборщика аналитики, данные — вид и номер.
+export const ENTITY_TYPES = [
+  'product',
+  'collection',
+  'policy',
+  'contacts',
+  'publication',
+  'billing',
+  'counter',
+] as const;
 
 // Правила id, версии, адресов — те же, что у конфига витрины (блок 3): входы проходят его писатель без сюрпризов.
 const KEBAB_ID = /^[a-z0-9-]+$/;
@@ -100,6 +109,11 @@ const buildInputsSchema = z.strictObject({
     apiUrl: z
       .url({ protocol: /^https?$/, error: 'нужен адрес http:// или https://' })
       .endsWith(API_SUFFIX, { error: 'адрес API должен кончаться на /api' }),
+    // Сборщик аналитики (блок 11, И4): ANALYTICS_COLLECTOR_URL сборщика витрин, запасного адреса нет. Правило — как у
+    // конфига (блок 3): http(s) без косой черты в конце.
+    analyticsUrl: z
+      .url({ protocol: /^https?$/, error: 'нужен адрес http:// или https://' })
+      .refine((url) => !url.endsWith('/'), { error: 'адрес сборщика — без косой черты в конце' }),
   }),
   // Год копирайта — явный вход (В4-5 Б): 1 января магазины пересобираются волной, часов в рендере нет.
   year: z.int().min(YEAR_MIN).max(YEAR_MAX),

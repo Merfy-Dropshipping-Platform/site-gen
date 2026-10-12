@@ -28,7 +28,8 @@ import { STAND_PAGE_PATH } from './renderer';
 export interface StandInputs {
   site: { id: string; name: string; publicUrl: string | null };
   theme: { id: string; version: string };
-  env: { apiUrl: string };
+  // Адрес сборщика аналитики нужен виду live: опубликованная страница без него не соберётся (блок 11).
+  env: { apiUrl: string; analyticsUrl?: string };
   // Ключи ревизии как есть: что не подошло теме, стенд печатает списком и рисует без этого (пустое не ломает).
   revision: { tokens: unknown; settings: unknown };
 }
@@ -85,6 +86,7 @@ function standConfig(inputs: StandInputs, mode: StandView) {
     env: inputs.env,
     page: { id: 'theme-stand', path: STAND_PAGE_PATH },
     mode,
+    analytics: inputs.env.analyticsUrl === undefined ? null : { url: inputs.env.analyticsUrl, counters: [] },
   });
 }
 

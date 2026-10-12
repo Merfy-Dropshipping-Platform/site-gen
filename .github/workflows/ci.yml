@@ -63,6 +63,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Chromium для тестов stand-check
+        run: pnpm --dir packages/stand-check exec playwright install --with-deps chromium
+
+      - name: Тесты пакетов этапа
+        run: |
+          for package in tokens storefront-config storefront-build storefront-storage storefront-builder stand-check storefront-shell storefront-sections; do
+            echo "### $package"
+            pnpm --dir "packages/$package" test
+          done
+
       - name: Prepare environment variables
         run: |
           cat <<'EOF' > .env.local

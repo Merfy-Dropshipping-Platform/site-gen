@@ -110,6 +110,20 @@
   человеку, строже; проверяющий процесс их не читает.
 - Строки журнала: `checker-started` (порт, число правил), `check-done`, `check-failed`, `checker-stopped`.
 
+## Команда выпуска (блок 10)
+
+Запускает человек на своей машине: `pnpm --filter @merfy/storefront-builder theme-release <подкоманда>`.
+
+- Подкоманды и флаги: `start <тема> [--test-shop <id>] [--version <x.y.z>] [--no-shots] [--expect-hash sha256:…]`,
+  `approve <№>`, `status [<№>]`, `skip <№> <магазин>`, `revert-all <№>`.
+- Переменные: `DATABASE_URL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_PUBLIC_URL`,
+  `STOREFRONT_CONTOUR`. Значения — из Coolify приложения сборщика своего контура; в README, журнал и чат их не писать.
+- dev: `start nova --test-shop <id>` → прочитать отчёт → `approve <№>` или `revert-all <№>`.
+- Прод: выкатка коммитов версии по правилу «на прод — только свои задачи», затем
+  `start nova --test-shop <id> --expect-hash <отпечаток из отчёта dev>`.
+- Отчёты — `packages/storefront-builder/releases/<контур>/`, их коммитит человек.
+- Коды выхода: 0 — сделано; 1 — выпуск не стартовал, остановлен или на контуре уже идёт другой; 2 — команда не смогла.
+
 ## Журнал и p95
 
 Одна строка JSON на событие: `event-accepted`, `job-queued`, `build-start`, `step` (`buildId`, `shopId`, `step`, `ms`,

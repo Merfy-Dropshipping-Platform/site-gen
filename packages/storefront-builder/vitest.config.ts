@@ -14,7 +14,7 @@ export default defineConfig({
       provider: 'v8',
       include: [
         'src/{errors,parse,log,events,settings,slots,themes,indexnow,preview,inline-assets}.ts',
-        'src/release/{waves,kinds,checks,page-check}.ts',
+        'src/release/{waves,kinds,checks,page-check,dry-run,report}.ts',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },

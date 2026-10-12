@@ -14,6 +14,7 @@
     "stack:up": "docker compose -f compose.stack.yml up -d --wait && docker compose -f compose.stack.yml exec -T minio mc mb --ignore-existing local/storefront-test",
     "stack:stop": "docker compose -f compose.stack.yml stop",
     "start": "tsx src/main.ts",
+    "theme-release": "tsx scripts/theme-release.ts",
     "checker": "tsx src/checker/main.ts",
     "renderer": "tsx scripts/build-renderer.ts",
     "shop": "tsx scripts/shop.ts",

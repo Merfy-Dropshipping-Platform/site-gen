@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
+import novaTheme from '../../../theme-nova/theme.json';
 import standConfigJson from '../../fixtures/stand-config.json';
 import { parseStorefrontConfig } from '../../src/read';
 
@@ -55,7 +56,9 @@ describe('стенд с флагом: тег конфига в <head>', () => {
   it('разбор тега даёт эталон стенда', () => {
     const start = html.indexOf(CONFIG_OPEN) + CONFIG_OPEN.length;
     const text = html.slice(start, html.indexOf('</script>', start));
-    expect(parseStorefrontConfig(text)).toEqual(standConfigJson);
+    // Версия темы — из theme.json nova: её поднимает каждый выпуск темы, эталон её не закрепляет.
+    const theme = { ...standConfigJson.theme, version: novaTheme.version };
+    expect(parseStorefrontConfig(text)).toEqual({ ...standConfigJson, theme });
   });
 
   it('в скриптах страницы нет zod: читатель взят отдельным входом', () => {

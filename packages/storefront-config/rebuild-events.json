@@ -135,6 +135,18 @@
       "scope": "dependent-pages",
       "delayMs": 0,
       "status": "with-sections"
+    },
+    {
+      "id": "analytics-counters-change",
+      "title": "Счётчики мерчанта: добавил, поменял номер, выключил или удалил счётчик",
+      "trigger": {
+        "service": "analytics-collector",
+        "description": "RPC analytics.pixels.create, update, delete: событие после успешной правки"
+      },
+      "themes": "new",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "works"
     }
   ]
 }

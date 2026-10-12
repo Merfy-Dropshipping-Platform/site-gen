@@ -59,7 +59,10 @@ describe('buildStorefrontConfig', () => {
 
   it('live с адресом — адрес в конфиге', () => {
     const site = { ...standInput.site, publicUrl: 'https://shop.merfy.ru' };
-    expect(buildStorefrontConfig({ ...standInput, site, mode: 'live' }).shop.url).toBe('https://shop.merfy.ru');
+    const analytics = { url: 'https://analytics.dev.merfy.ru', counters: [] };
+    expect(buildStorefrontConfig({ ...standInput, site, mode: 'live', analytics }).shop.url).toBe(
+      'https://shop.merfy.ru',
+    );
   });
 
   it('preview без адреса — url: null, и для null, и для пустой строки', () => {
@@ -76,5 +79,32 @@ describe('buildStorefrontConfig', () => {
 
   it('тот же вход — тот же конфиг', () => {
     expect(buildStorefrontConfig(standInput)).toEqual(buildStorefrontConfig(standInput));
+  });
+});
+
+describe('buildStorefrontConfig: analytics (design.md блока 11)', () => {
+  const site = { ...standInput.site, publicUrl: 'https://shop.merfy.ru' };
+  const ANALYTICS_URL = 'https://analytics.dev.merfy.ru';
+
+  it('нет поля — analytics: null: превью и стенд ничего не отправляют', () => {
+    expect(buildStorefrontConfig(standInput).analytics).toBeNull();
+    expect(buildStorefrontConfig({ ...standInput, analytics: null }).analytics).toBeNull();
+  });
+
+  it('адрес и счётчики — поле в поле, лишнее из входа не уходит', () => {
+    const counters = [{ kind: 'metrika' as const, number: '12345678', pixelRowId: 'row-1' }];
+    const config = buildStorefrontConfig({
+      ...standInput,
+      site,
+      mode: 'live',
+      analytics: { url: ANALYTICS_URL, counters },
+    });
+    expect(config.analytics).toEqual({ url: ANALYTICS_URL, counters: [{ kind: 'metrika', number: '12345678' }] });
+    expect(JSON.stringify(config)).not.toContain('row-1');
+  });
+
+  it('опубликованный магазин без адреса сборщика — ошибка analytics', () => {
+    const error = buildError({ ...standInput, site, mode: 'live' });
+    expect([error.code, error.path]).toEqual(['config-invalid', 'analytics']);
   });
 });

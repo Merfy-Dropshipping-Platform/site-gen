@@ -88,11 +88,13 @@ function resolvedOf(files: VersionFiles, raw: unknown): ResolvedTokens | string 
   }
 }
 
-// Имена старой версии — в именах новой; у убранного шагом токена пары нет.
-const renamed = (set: TokenSet, between: TokenMigrations): TokenSet =>
+// Имена старой версии — в именах новой; у убранного шагом токена пары нет. Имя, которое новая версия ещё знает, остаётся
+// как есть: переименование идёт в два выпуска, а токен платформы из словаря не уходит вовсе — шаг переносит только
+// правку мерчанта, и у старого имени видно умолчание темы.
+const renamed = (set: TokenSet, between: TokenMigrations, known: Dictionary): TokenSet =>
   Object.fromEntries(
     Object.entries(set).flatMap(([name, value]) => {
-      const next = tokenAfter(name, between);
+      const next = Object.hasOwn(known.tokens, name) ? name : tokenAfter(name, between);
       return next === null ? [] : [[next, value] as const];
     }),
   );
@@ -108,11 +110,12 @@ function changedIn(scope: string, before: TokenSet, after: TokenSet): Change[] {
 }
 
 // root и схемы, которые есть в обеих версиях: новую схему магазин ещё не выбрал.
-function changesOf(before: ResolvedTokens, after: ResolvedTokens, between: TokenMigrations): Change[] {
+function changesOf(before: ResolvedTokens, after: ResolvedTokens, pair: Pair): Change[] {
+  const old = (set: TokenSet): TokenSet => renamed(set, pair.between, pair.to.theme.dictionary);
   const shared = Object.keys(after.schemes).filter((id) => Object.hasOwn(before.schemes, id));
   return [
-    ...changedIn('root', renamed(before.root, between), after.root),
-    ...shared.flatMap((id) => changedIn(id, renamed(before.schemes[id], between), after.schemes[id])),
+    ...changedIn('root', old(before.root), after.root),
+    ...shared.flatMap((id) => changedIn(id, old(before.schemes[id]), after.schemes[id])),
   ];
 }
 
@@ -123,7 +126,7 @@ function shopDryRun(pair: Pair, shop: ShopEdits): ShopDryRun {
     const problems = [before, after].filter((value): value is string => typeof value === 'string');
     return { siteId: shop.siteId, problems, declared: [] };
   }
-  const changes = changesOf(before, after, pair.between);
+  const changes = changesOf(before, after, pair);
   const undeclared = changes.filter((change) => !pair.look.has(change.name));
   const problems = undeclared.map((change) => `${change.text} — строки «вид» нет`);
   const declared = changes.filter((change) => pair.look.has(change.name)).map((change) => change.text);

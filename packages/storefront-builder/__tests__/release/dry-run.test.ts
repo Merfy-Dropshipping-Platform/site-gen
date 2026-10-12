@@ -110,6 +110,24 @@ describe('сухой прогон выпуска (design.md блока 10)', () 
     expect(dryRun(FROM, files('0.2.0', changed, LOOK, rename(donor)), []).problems).toEqual([]);
   });
 
+  // Переименование в два выпуска: старое имя новая версия ещё знает, а токен платформы из словаря не уходит вовсе. Шаг
+  // переносит только правку мерчанта.
+  it('старое имя новая версия ещё знает: у магазина без правок ничего не меняется', () => {
+    const result = dryRun(FROM, files('0.2.0', nova, FIX, rename(donor)), [{ siteId: 'plain', tokens: {} }]);
+    expect(result.shops[0]).toEqual({ siteId: 'plain', problems: [], declared: [] });
+    expect(result.red).toBe(false);
+  });
+
+  it('правка ушла под новое имя, у старого — умолчание темы: без строки «вид» красный, с ней — нет', () => {
+    const shop = { siteId: 'edited', tokens: { root: { [token]: nova.root[donor] } } };
+    const silent = dryRun(FROM, files('0.2.0', nova, FIX, rename(donor)), [shop]);
+    expect(silent.red).toBe(true);
+    expect(namesOf(silent.shops[0].problems)).toEqual([`root.${token}`]);
+    const declared = dryRun(FROM, files('0.2.0', nova, LOOK, rename(donor)), [shop]);
+    expect(declared.red).toBe(false);
+    expect(namesOf(declared.shops[0].declared)).toEqual([`root.${token}`]);
+  });
+
   // Производные (решение владельца 11.10, П10-6): автор называет только фон, остальное словарь выводит сам.
   it('«вид» называет только фон: выводимые из него токены объявлены сами', () => {
     const result = dryRun(FROM, files('0.2.0', recolored, LOOK_SURFACE), [{ siteId: 'plain', tokens: {} }]);

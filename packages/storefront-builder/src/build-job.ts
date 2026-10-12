@@ -12,6 +12,7 @@ import { shouldAnnounce, type Announce } from './indexnow';
 import { liveManifest } from './live';
 import type { Log } from './log';
 import { queueHeldReleases } from './release';
+import { foreignPlatformRelease } from './release/store';
 import {
   claimJob,
   finishFailure,
@@ -160,7 +161,24 @@ export async function settle(deps: BuilderDeps, job: StartedJob, error: string |
   await queueHeldReleases(deps);
 }
 
+// Магазин ждёт сборки выпуска платформы с другим кодом (П10-7 А). Coolify выкатывает сборщик «rolling»: секунды
+// работают старый и новый образ, и старый своим кодом получил бы skipped вместо сборки на новом. Задание не берём —
+// строго до claimJob: взятое задание по тому же номеру уже никто не возьмёт. Ошибка release-foreign — не «негодное»
+// сообщение: брокер вернёт его в очередь через REQUEUE_DELAY_MS (broker.ts, deliver), его возьмёт сборщик того кода.
+// Край: новый сборщик завёл выпуск и умер, старый жив (Coolify откатил выкатку). Тогда задания магазинов выпуска в
+// building — не больше RELEASE_SLOTS — ходят по кругу раз в REQUEUE_DELAY_MS, по две строки журнала на круг, и эти
+// магазины не собираются, пока следующий старт сборщика не остановит выпуск («вышел новый образ сборщика»,
+// platform.ts) или не поведёт его сам (тот же код). Шум ограничен числом мест выпуска; бесконечного цикла без задержки нет.
+async function refuseForeign(deps: BuilderDeps, job: BuildJob): Promise<void> {
+  const release = await foreignPlatformRelease(deps.db, job.siteId, deps.snapshot.platform.renderHash);
+  if (release === null) return;
+  deps.log('release-foreign-build', { shopId: job.siteId, buildId: job.build, release });
+  const text = `сборку выпуска платформы ${release} делает сборщик с его кодом`;
+  throw new StorefrontBuilderError('release-foreign', text, { path: `site/${job.siteId}` });
+}
+
 export async function runBuildJob(deps: BuilderDeps, job: BuildJob): Promise<void> {
+  await refuseForeign(deps, job);
   const claimed = await claimJob(deps.db, { ...job, priority: 0 }, deps.shopState.leaseMs);
   if (claimed === null) return deps.log('job-skipped', { shopId: job.siteId, buildId: job.build });
   deps.log('build-start', { shopId: claimed.siteId, buildId: claimed.build, events: claimed.events });

@@ -14,7 +14,9 @@ export type StorefrontBuilderErrorCode =
   | 'release-conflict'
   // Блок 10: аргументы команды выпуска; выпуск не стартует или не двигается — причина в тексте.
   | 'release-args'
-  | 'release-refused';
+  | 'release-refused'
+  // Работа выпуска платформы с другим кодом (П10-7 А): её делает сборщик того кода, сообщение — обратно в очередь.
+  | 'release-foreign';
 
 type ErrorDetails = { path?: string; cause?: unknown };
 

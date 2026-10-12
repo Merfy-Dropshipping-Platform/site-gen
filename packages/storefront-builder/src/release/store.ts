@@ -254,6 +254,22 @@ export async function activeShopOf(
   return rows.map(shopOf).at(0) ?? null;
 }
 
+const FOREIGN_SQL = `SELECT r.id FROM storefront_release_shop s JOIN storefront_release r ON r.id = s.release_id
+  WHERE s.site_id = $1 AND s.status = 'building' AND r.kind = 'platform' AND r.status = ANY($2) AND r.to_hash <> $3
+  LIMIT 1`;
+const idRow = z.object({ id: z.number() });
+
+// Магазин ждёт сборки выпуска платформы с другим кодом (П10-7 А): собрать его вправе только сборщик с этим кодом.
+// Ответ — номер такого выпуска; нет — null. Только чтение.
+export async function foreignPlatformRelease(
+  db: Queryable,
+  siteId: string,
+  renderHash: string,
+): Promise<number | null> {
+  const { rows } = await db.query(FOREIGN_SQL, [siteId, ACTIVE_STATUSES, renderHash]);
+  return rows.map((row) => idRow.parse(row).id).at(0) ?? null;
+}
+
 const SHOP_COLUMNS = new Map<keyof ShopPatch, string>([
   ['status', 'status'],
   ['buildBefore', 'build_before'],

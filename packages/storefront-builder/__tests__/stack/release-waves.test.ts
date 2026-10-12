@@ -30,7 +30,7 @@ import { planWaves } from '../../src/release/waves';
 import { ensureRendererArchive } from '../../src/renderer-archive';
 import { enqueueVia, startRuntime, type Runtime } from '../../src/runtime';
 import { archiveLoader, createThemeCatalog, recordedVersions } from '../../src/theme-catalog';
-import { FAKE_THEME, logged, openHarness, type Harness } from './builder';
+import { FAKE_THEME, RENDER_HASH, logged, openHarness, type Harness } from './builder';
 import { startFakeProducts, type FakeProducts } from './fake-product';
 import { STACK, insertSite, openPool, resetBuilder, until, type SiteFields } from './stack';
 
@@ -50,6 +50,16 @@ const RELEASE: NewRelease = {
   status: 'testing',
 };
 const LONG = 120_000;
+// Код платформы нового образа (П10-7 А): у сборщиков стенда по умолчанию — RENDER_HASH.
+const NEW_HASH = `sha256:${'e'.repeat(64)}`;
+const platformRelease = (toHash: string): NewRelease => ({
+  ...RELEASE,
+  kind: 'platform',
+  subject: 'platform',
+  fromVersion: 'a'.repeat(40),
+  toVersion: 'b'.repeat(40),
+  toHash,
+});
 const IN_FLIGHT_SQL = `SELECT count(*)::int AS n FROM storefront_release_shop
   WHERE status IN ('before', 'building', 'checking')`;
 
@@ -120,11 +130,21 @@ const conductorDeps = (harness: Harness, pauseMs: number): ConductorDeps => ({
   themeIds: ['nova'],
   testShop: null,
   enabledExtensions: () => Promise.resolve([]),
+  // Код платформы ведущего — тот же, что у сборок этого сборщика (П10-7 А).
+  renderHash: harness.deps.snapshot.platform.renderHash,
 });
 
+interface StackOptions {
+  pauseMs?: number;
+  retryDelaysMs?: number[];
+  // Код платформы сборщика (П10-7 А): по умолчанию — RENDER_HASH стенда.
+  renderHash?: string;
+}
+
 // Сборщик целиком: каталог с архивом 0.0.9, очередь заданий через брокер, ведущий и подписка на NOTIFY.
-async function startStack(options: { pauseMs?: number; retryDelaysMs?: number[] } = {}): Promise<Stack> {
+async function startStack(options: StackOptions = {}): Promise<Stack> {
   const harness = openHarness();
+  const platform = { ...harness.deps.snapshot.platform, renderHash: options.renderHash ?? RENDER_HASH };
   const catalog = createThemeCatalog({
     current: harness.deps.themes,
     previews: new Map(),
@@ -134,7 +154,7 @@ async function startStack(options: { pauseMs?: number; retryDelaysMs?: number[] 
     log: harness.deps.log,
   });
   harness.deps.catalog = catalog;
-  harness.deps.snapshot = { ...harness.deps.snapshot, pins: catalog };
+  harness.deps.snapshot = { ...harness.deps.snapshot, pins: catalog, platform };
   harness.deps.shopState = { leaseMs: 60_000, retryDelaysMs: options.retryDelaysMs ?? [100, 200] };
   harness.deps.enqueue = enqueueVia(harness.broker, harness.deps.log);
   const conductor = createConductor(conductorDeps(harness, options.pauseMs ?? 0));
@@ -418,28 +438,46 @@ describe('выпуск волнами на стенде (design.md блока 10
     LONG,
   );
 
+  // П10-7 А: выпуск платформы ведёт только сборщик с его кодом. Живые сборки уже на этом коде — ключ совпал (skipped),
+  // магазин дошёл до версии: проверки и done без новой сборки.
   it(
-    'платформа: сборка не изменилась — магазины skipped, finished без «да», указатели прежние',
+    'платформа: живые сборки уже на коде выпуска — магазины done без пересборки, finished без «да»',
     async () => {
       const { harness } = await startStack();
       const sites = await publishedShops(harness, 3);
       const ids = sites.map((site) => site.id);
       const before = await Promise.all(sites.map((site) => liveBuild(harness, site)));
-      const platform: NewRelease = {
-        ...RELEASE,
-        kind: 'platform',
-        subject: 'platform',
-        fromVersion: 'a'.repeat(40),
-        toVersion: 'b'.repeat(40),
-        toHash: `sha256:${'e'.repeat(64)}`,
-      };
-      const release = await createRelease(harness.db, platform, (id) => planWaves(ids, ids[0], id));
+      const release = await createRelease(harness.db, platformRelease(RENDER_HASH), (id) => planWaves(ids, ids[0], id));
       await statusIs(harness, release.id, 'finished');
       const rows = await releaseShops(harness.db, release.id);
-      const unchanged = 'сборка не изменилась: новый код платформы этот магазин не меняет';
-      expect(rows.map((row) => [row.status, row.error])).toEqual(ids.map(() => ['skipped', unchanged]));
+      expect(rows.map((row) => [row.status, row.error])).toEqual(ids.map(() => ['done', null]));
       expect(await Promise.all(sites.map((site) => liveBuild(harness, site)))).toEqual(before);
       expect(logged(harness.lines, 'ALERT')).toEqual([]);
+    },
+    LONG,
+  );
+
+  // Выкатка «rolling» (П10-7 А): секунды работают старый и новый сборщик на одних базе и брокере. Старый не собирает
+  // магазины выпуска нового кода и не ведёт его волны — их задания и ответы проверки уходят обратно в очередь.
+  it(
+    'платформа, два сборщика с разным кодом: старый не трогает выпуск нового, новый доводит его до finished',
+    async () => {
+      const old = await startStack();
+      const sites = await publishedShops(old.harness, 4);
+      const ids = sites.map((site) => site.id);
+      const fresh = await startStack({ renderHash: NEW_HASH });
+      const mark = old.harness.lines.length;
+      const release = await createRelease(old.harness.db, platformRelease(NEW_HASH), (id) =>
+        planWaves(ids, ids[0], id),
+      );
+      await statusIs(fresh.harness, release.id, 'finished');
+      const rows = await releaseShops(fresh.harness.db, release.id);
+      expect(rows.map((row) => row.status)).toEqual(ids.map(() => 'done'));
+      const hashes = await Promise.all(sites.map((site) => liveManifest(fresh.harness.store, labelOf(site))));
+      expect(hashes.map((manifest) => manifest?.platform.renderHash)).toEqual(ids.map(() => NEW_HASH));
+      const oldLines = old.harness.lines.slice(mark);
+      const work = ['build-start', 'release-shop-before', 'release-shop-building', 'release-shop-done'];
+      expect(work.flatMap((message) => logged(oldLines, message))).toEqual([]);
     },
     LONG,
   );

@@ -155,5 +155,45 @@ EXPOSE 8080
 WORKDIR /app/packages/storefront-builder
 CMD ["node_modules/.bin/tsx", "src/main.ts"]
 
+# ========================
+# Stage 4: проверяющий процесс выпуска (блок 10, П10-3 В) — паспорт главной магазина в браузере, по одному магазину.
+# Chromium на Alpine не работает, поэтому база — образ Playwright той же версии, что пакет playwright (1.59.1), а
+# зависимости ставятся здесь заново: node_modules стадии builder собраны под musl.
+# В Coolify: отдельное приложение, Docker Build Stage Target = storefront-checker, предел памяти — в его настройках.
+# ========================
+FROM mcr.microsoft.com/playwright:v1.59.1-noble AS storefront-checker
+
+WORKDIR /app
+RUN npm install -g pnpm@10.14.0
+ARG NODE_AUTH_TOKEN
+ENV NODE_AUTH_TOKEN=${NODE_AUTH_TOKEN}
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY packages/stand-check/package.json ./packages/stand-check/package.json
+COPY packages/storefront-build/package.json ./packages/storefront-build/package.json
+COPY packages/storefront-storage/package.json ./packages/storefront-storage/package.json
+COPY packages/storefront-builder/package.json ./packages/storefront-builder/package.json
+COPY packages/storefront-shell/package.json ./packages/storefront-shell/package.json
+COPY packages/storefront-sections/package.json ./packages/storefront-sections/package.json
+COPY packages/theme-contract/package.json ./packages/theme-contract/package.json
+COPY packages/theme-base/package.json ./packages/theme-base/package.json
+COPY packages/storefront-config/package.json ./packages/storefront-config/package.json
+COPY packages/theme-bloom/package.json ./packages/theme-bloom/package.json
+COPY packages/theme-satin/package.json ./packages/theme-satin/package.json
+COPY packages/tokens/package.json ./packages/tokens/package.json
+RUN pnpm install --frozen-lockfile --filter "@merfy/storefront-builder..."
+COPY packages/stand-check ./packages/stand-check
+COPY packages/storefront-build ./packages/storefront-build
+COPY packages/storefront-storage ./packages/storefront-storage
+COPY packages/storefront-shell ./packages/storefront-shell
+COPY packages/storefront-sections ./packages/storefront-sections
+COPY packages/storefront-config ./packages/storefront-config
+COPY packages/tokens ./packages/tokens
+COPY packages/storefront-builder ./packages/storefront-builder
+ENV NODE_ENV=production
+ENV PORT=8080
+EXPOSE 8080
+WORKDIR /app/packages/storefront-builder
+CMD ["node_modules/.bin/tsx", "src/checker/main.ts"]
+
 # Последняя стадия — образ sites как прежде: без цели сборки Coolify собирает её.
 FROM runtime

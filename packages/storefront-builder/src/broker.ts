@@ -13,7 +13,7 @@ import {
 } from './events';
 import type { Log } from './log';
 import { PREVIEW_EXCHANGE, type PreviewSignal } from './preview';
-import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob } from './release/checks';
+import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } from './release/checks';
 
 // RabbitMQ сборщика (design.md блока 6, В6-2 В, Св-3 А). Имена — новые: нынешние sites_queue, sites_build_queue и
 // sites_product_events сборщик не объявляет и не читает. Классические очереди: у RabbitMQ 3.13 приоритеты есть только
@@ -52,6 +52,8 @@ export interface Broker {
   publishPreview: (signal: PreviewSignal) => Promise<void>;
   // Задание проверки в браузере (блок 10): ведущий волн → проверяющий процесс.
   publishCheck: (job: CheckJob) => Promise<void>;
+  // Ответ проверки (блок 10): проверяющий процесс → ведущий волн.
+  publishCheckResult: (result: CheckResult) => Promise<void>;
   consume: (queue: string, prefetch: number, handler: Handler) => Promise<void>;
   // Штатная остановка: новых сообщений не брать. Взятые обработчики доделывают, отправка работает до close.
   pause: () => Promise<void>;
@@ -136,6 +138,9 @@ const publishersOf = (publisher: ChannelWrapper): Publishers => ({
   },
   publishCheck: async (job) => {
     await publisher.sendToQueue(CHECKS_QUEUE, json(job), persistent());
+  },
+  publishCheckResult: async (result) => {
+    await publisher.sendToQueue(CHECK_RESULTS_QUEUE, json(result), persistent());
   },
 });
 

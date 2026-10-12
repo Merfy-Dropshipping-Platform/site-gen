@@ -97,6 +97,19 @@
 - Штатная остановка (SIGTERM): ведущий новых шагов не берёт, идущий доделывает не дольше `BUILD_DRAIN_MS` — вместе с
   идущими сборками.
 
+## Проверяющий процесс (блок 10)
+
+- Что делает: берёт задание из `storefront_checks` по одному, открывает главную магазина в Chromium, снимает паспорт
+  (`@merfy/stand-check`), сравнивает с паспортом «до» по `packages/stand-check/release-rules.json` и отвечает в
+  `storefront_check_results` ведущему волн. Страница не открылась — ошибка в ответе, а не падение процесса.
+- Запуск: `pnpm --filter @merfy/storefront-builder checker`; в образе — цель Dockerfile `storefront-checker` (база —
+  образ Playwright с Chromium), в Coolify — отдельное приложение с пределом памяти.
+- Переменные: `RABBITMQ_URL` (обязательна; тот же брокер, что у сборщика), `PORT` (по умолчанию 8080, только `/health`).
+- Правила: `release-rules.json` — для автостопа; красное там только поломка (новая ошибка в консоли, пропавший токен
+  или шрифт), новый скрипт, другой цвет и новый запрос — жёлтое. `compare-rules.json` — правила стенда и отчёта
+  человеку, строже; проверяющий процесс их не читает.
+- Строки журнала: `checker-started` (порт, число правил), `check-done`, `check-failed`, `checker-stopped`.
+
 ## Журнал и p95
 
 Одна строка JSON на событие: `event-accepted`, `job-queued`, `build-start`, `step` (`buildId`, `shopId`, `step`, `ms`,

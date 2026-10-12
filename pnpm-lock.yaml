@@ -290,6 +290,9 @@ importers:
 
   packages/storefront-builder:
     dependencies:
+      '@merfy/stand-check':
+        specifier: workspace:*
+        version: link:../stand-check
       '@merfy/storefront-build':
         specifier: workspace:*
         version: link:../storefront-build

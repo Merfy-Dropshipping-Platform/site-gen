@@ -9,7 +9,9 @@ export type StorefrontBuilderErrorCode =
   | 'build-blocked'
   | 'renderer-missing'
   // Архива рисовальщика версии нет, он не той версии, или та же версия записана с другим отпечатком (блок 10).
-  | 'renderer-archive';
+  | 'renderer-archive'
+  // На контуре уже идёт выпуск (блок 10).
+  | 'release-conflict';
 
 type ErrorDetails = { path?: string; cause?: unknown };
 

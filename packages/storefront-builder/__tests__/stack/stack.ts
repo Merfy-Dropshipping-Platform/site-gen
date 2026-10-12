@@ -22,7 +22,7 @@ export const openPool = (): Pool => new Pool({ connectionString: STACK.databaseU
 // Строки сборщика с прошлых тестов — долой, магазины прошлых тестов — удалены (deleted_at): иначе таймеры и сверка
 // сборщика подхватят чужие повторы, задания и магазины. База — только стенда.
 export async function resetBuilder(db: Pool): Promise<void> {
-  await db.query('TRUNCATE storefront_shop, storefront_build');
+  await db.query('TRUNCATE storefront_shop, storefront_build, storefront_release_shop, storefront_release');
   await db.query('UPDATE site SET deleted_at = now() WHERE deleted_at IS NULL');
 }
 

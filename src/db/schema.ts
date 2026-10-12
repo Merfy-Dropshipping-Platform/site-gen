@@ -25,6 +25,7 @@ import {
   bigint,
   check,
   primaryKey,
+  serial,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 // Состояния саги рождения магазина объявлены в одном месте — в модуле саги.
@@ -575,6 +576,100 @@ export const storefrontBuild = pgTable(
   (table) => ({
     pk: primaryKey({ columns: [table.siteId, table.build] }),
     finishedAtIdx: index("idx_storefront_build_finished_at").on(table.finishedAt),
+  }),
+);
+
+/**
+ * Выпуск волнами (drizzle/*_storefront_release.sql, блок 10;
+ * merfy-mcp/docs/plans/storefront-shell/10-theme-release/design.md, раздел 4).
+ * Пишут команда выпуска (packages/storefront-builder/scripts/theme-release.ts)
+ * и ведущий волн сборщика — условными UPDATE … RETURNING; здесь схема, чтобы
+ * drizzle-kit видел таблицы.
+ *
+ * storefront_release — выпуск: вид и предмет, версии «с» и «на», отпечаток
+ * версии, контур, кто запустил, состояние, текущая волна и время следующей,
+ * причина остановки, отчёт. Один активный выпуск на контуре — частичный
+ * уникальный индекс.
+ */
+export const storefrontRelease = pgTable(
+  "storefront_release",
+  {
+    id: serial("id").primaryKey(),
+    kind: text("kind").notNull(),
+    subject: text("subject").notNull(),
+    fromVersion: text("from_version").notNull(),
+    toVersion: text("to_version").notNull(),
+    toHash: text("to_hash").notNull(),
+    contour: text("contour").notNull(),
+    startedBy: text("started_by").notNull(),
+    status: text("status").notNull(),
+    wave: integer("wave").default(0).notNull(),
+    nextWaveAt: timestamp("next_wave_at", { withTimezone: true }),
+    stopReason: text("stop_reason"),
+    report: jsonb("report").default(sql`'{}'::jsonb`).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    kindCheck: check(
+      "storefront_release_kind_check",
+      sql`${table.kind} IN ('theme', 'platform', 'extension')`,
+    ),
+    statusCheck: check(
+      "storefront_release_status_check",
+      sql`${table.status} IN ('planning', 'queued', 'testing', 'awaiting', 'waves', 'finished', 'stopped', 'reverted')`,
+    ),
+    activeIdx: uniqueIndex("idx_storefront_release_active")
+      .on(table.contour)
+      .where(sql`${table.status} IN ('planning', 'testing', 'awaiting', 'waves')`),
+    subjectIdx: index("idx_storefront_release_subject").on(
+      table.kind,
+      table.subject,
+      table.contour,
+      table.status,
+    ),
+  }),
+);
+
+/**
+ * storefront_release_shop — магазин выпуска: волна и место в ней, состояние,
+ * сборки до и после, версия до, паспорта до и после, вердикт проверки и
+ * ошибка. Пишут те же: команда выпуска (planning) и ведущий волн.
+ */
+export const storefrontReleaseShop = pgTable(
+  "storefront_release_shop",
+  {
+    releaseId: integer("release_id")
+      .notNull()
+      .references(() => storefrontRelease.id, { onDelete: "cascade" }),
+    siteId: text("site_id").notNull(),
+    wave: integer("wave").notNull(),
+    position: integer("position").notNull(),
+    status: text("status").default("waiting").notNull(),
+    buildBefore: bigint("build_before", { mode: "number" }),
+    buildAfter: bigint("build_after", { mode: "number" }),
+    versionBefore: text("version_before"),
+    passportBefore: jsonb("passport_before"),
+    passportAfter: jsonb("passport_after"),
+    verdict: text("verdict"),
+    error: text("error"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({
+      name: "storefront_release_shop_pk",
+      columns: [table.releaseId, table.siteId],
+    }),
+    statusCheck: check(
+      "storefront_release_shop_status_check",
+      sql`${table.status} IN ('waiting', 'before', 'building', 'checking', 'done', 'skipped', 'broken', 'reverted')`,
+    ),
+    waveIdx: index("idx_storefront_release_shop_wave").on(
+      table.releaseId,
+      table.wave,
+      table.status,
+    ),
+    siteIdx: index("idx_storefront_release_shop_site_id").on(table.siteId),
   }),
 );
 

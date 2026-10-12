@@ -78,6 +78,25 @@
 - В сборку идут файлы ядра (`_merfy/shell/<16 знаков>/`) и скриптов секций (`_merfy/m/<sha256>.js`); раздача отдаёт
   `_merfy/` с кэшем навсегда.
 
+## Выпуск волнами (блок 10)
+
+- Ведущий волн живёт в сборщике (`src/release/conductor.ts`), состояние — в таблицах `storefront_release` и
+  `storefront_release_shop` базы sites. Просыпается от `NOTIFY storefront_release` (команда выпуска), конца сборки,
+  ответа проверки и таймера выдержки; при старте сверяет активные выпуски (`resume`).
+- Очереди: `storefront_checks` — задания проверки в браузере (их берёт проверяющий процесс), `storefront_check_results`
+  — ответы ведущему.
+- Переменные: `STOREFRONT_CONTOUR` (`dev` | `prod`, по умолчанию `dev`), `RELEASE_PAUSE_MS` (выдержка между волнами,
+  по умолчанию 0; на проде — 3600000), `RELEASE_TEST_SHOP` (тестовый магазин выпусков платформы и расширений).
+- Строки журнала: `release-shop-before`, `release-shop-building`, `release-shop-waits`, `release-shop-done`,
+  `release-shop-skipped`, `release-shop-not-reached`, `release-wave`, `release-awaiting`, `release-finished`,
+  `release-step-failed`, `release-listen-failed`. Автостоп — строка `ALERT` и запись `site.release_stopped` с
+  `critical` в журнале платформы.
+- Увидел `ALERT`: `pnpm theme-release status <№>` — что сломалось; дальше `pnpm theme-release revert-all <№>` (вернуть
+  все обновлённые магазины) или исправление новым выпуском; магазин, который ждёт сбой данных, снимает
+  `pnpm theme-release skip <№> <магазин>`.
+- Штатная остановка (SIGTERM): ведущий новых шагов не берёт, идущий доделывает не дольше `BUILD_DRAIN_MS` — вместе с
+  идущими сборками.
+
 ## Журнал и p95
 
 Одна строка JSON на событие: `event-accepted`, `job-queued`, `build-start`, `step` (`buildId`, `shopId`, `step`, `ms`,

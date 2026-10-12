@@ -1,11 +1,15 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { platformRenderHash, readShellBuild } from '@merfy/storefront-build';
+import { parseChangelog, platformRenderHash, readShellBuild } from '@merfy/storefront-build';
 import { createS3Store } from '@merfy/storefront-storage';
 import { Pool } from 'pg';
 import { raiseAlert } from './alert';
+import { createConductor } from './release/conductor';
+import { listenReleases } from './release/listen';
+import { checkShopPages } from './release/page-check';
+import { bootstrapRelease, releasedVersion } from './release/store';
 import { ensureRendererArchive } from './renderer-archive';
 import { openBroker } from './broker';
 import { startDrawServer } from './draw';
@@ -41,6 +45,16 @@ for (const [themeId, theme] of loaded.themes) {
     outcome: await ensureRendererArchive({ store, log, clock }, ROOT, themeId, state),
   });
 }
+// Выпуски (блок 10): версия образа — выпущенной, если выпусков темы на контуре ещё не было.
+for (const [themeId, theme] of loaded.themes) await bootstrapRelease(db, themeId, theme, settings.contour);
+const changelogs = new Map(
+  await Promise.all(
+    [...loaded.themes.keys()].map(async (themeId) => {
+      const file = join(ROOT, 'packages', `theme-${themeId}`, 'changelog.json');
+      return [themeId, parseChangelog(JSON.parse(await readFile(file, 'utf8')))] as const;
+    }),
+  ),
+);
 // Версии тем магазинов (блок 10): прошлые версии — из архивов, распаковка — во временную папку процесса.
 const RENDERER_CACHE_DIR = join(tmpdir(), 'merfy-renderers');
 await mkdir(RENDERER_CACHE_DIR, { recursive: true });
@@ -50,7 +64,7 @@ const catalog = createThemeCatalog({
   previews: loaded.previews,
   index: (themeId) => recordedVersions(store, themeId),
   load: archiveLoader(ROOT, store, RENDERER_CACHE_DIR, log, { standPage: settings.standPage }),
-  released: currentVersion,
+  released: async (themeId) => (await releasedVersion(db, themeId, settings.contour)) ?? currentVersion(themeId),
   log,
 });
 // Ядро из образа (сборка — задача 3 блока 7): его нет — сборщик не стартует (shell-missing).
@@ -63,6 +77,21 @@ const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 const code = { db, shell, call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 const snapshot = { db, products, code, platform, themes: loaded.themes, clock };
 
+// Ведущий волн (блок 10). Окно — K: в работе не больше магазинов волны, чем мест выпуска.
+const pageDeps = { fetch: (address: string) => fetch(address), attempts: 5, delayMs: 1_000 };
+const conductor = createConductor({
+  db,
+  store,
+  contour: settings.contour,
+  window: settings.releaseSlots,
+  pauseMs: settings.releasePauseMs,
+  clock,
+  log,
+  publishEvent: broker.publishEvent,
+  publishCheck: broker.publishCheck,
+  publishActivity: broker.publishActivity,
+  pageCheck: (url, expected) => checkShopPages(pageDeps, url, expected),
+});
 // Снимку — версии тем и выпущенная версия (блок 10): магазин рисуется версией своего закрепления.
 const pinnedSnapshot = { ...snapshot, pins: catalog };
 
@@ -72,6 +101,9 @@ const deps: RuntimeDeps = {
   snapshot: pinnedSnapshot,
   themes: loaded.themes,
   catalog,
+  conductor,
+  afterBuild: (build) => conductor.afterBuild(build),
+  changelogs,
   platformCommit: settings.commit,
   indexable: settings.indexable,
   shopState: { leaseMs: settings.leaseMs, retryDelaysMs: RETRY_DELAYS_MS },
@@ -91,6 +123,9 @@ const deps: RuntimeDeps = {
 // Секции платформы и тем — в реестр до первой сборки (дверь выпуска, п. 21); отказ — строка журнала, старт идёт дальше.
 await acceptSectionReleases({ db, store, log }, releaseFolders(ROOT, shell.version, loaded.themes));
 const runtime = await startRuntime(deps);
+// Ведущий просыпается от NOTIFY storefront_release; при старте сверяет выпуски — перезапуск посреди выпуска (блок 10).
+const stopListening = await listenReleases(db, () => void conductor.advance(), log);
+await conductor.resume();
 // Превью — версией закрепления магазина; схема панели — по темам образа (блок 10, задача 4).
 const previewOf = (themeId: string, version: string) => catalog.previewAt(themeId, version);
 const preview = { db, themes: loaded.previews, pins: catalog, previewOf, apiUrl: settings.apiUrl, log };
@@ -113,7 +148,10 @@ log('builder-started', { ...started, themes: deps.themeIds.join(','), renderHash
 // сборка не должна идти рядом с той, что возьмёт задание в другом сборщике. Брокер вернёт её сообщение в очередь, а
 // взять его по старому номеру уже нельзя (claimJob).
 async function shutdown(): Promise<void> {
-  const interrupted = await runtime.shutdown(settings.drainMs);
+  // Ведущий волн (блок 10) не обрывается посреди шага: новых шагов не берёт, идущий доделывает — параллельно со
+  // сборками и не дольше BUILD_DRAIN_MS. Не успел — шаг повторит resume следующего запуска: записи условные.
+  await stopListening();
+  const [interrupted] = await Promise.all([runtime.shutdown(settings.drainMs), conductor.shutdown(settings.drainMs)]);
   if (interrupted > 0) {
     log('builder-stopped', { interrupted });
     process.exit(0);

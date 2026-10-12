@@ -13,12 +13,15 @@ import {
 } from './events';
 import type { Log } from './log';
 import { PREVIEW_EXCHANGE, type PreviewSignal } from './preview';
+import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob } from './release/checks';
 
 // RabbitMQ сборщика (design.md блока 6, В6-2 В, Св-3 А). Имена — новые: нынешние sites_queue, sites_build_queue и
 // sites_product_events сборщик не объявляет и не читает. Классические очереди: у RabbitMQ 3.13 приоритеты есть только
 // у них (факты 21, 24).
 //   storefront_builder_events — события: привязана к content.events (topic, «#») и к готовой product.events (fanout);
-//   storefront_builds         — задания сборки, приоритет 1–3 (x-max-priority).
+//   storefront_builds         — задания сборки, приоритет 1–3 (x-max-priority);
+//   storefront_checks         — задания проверки в браузере (блок 10), их берёт проверяющий процесс;
+//   storefront_check_results  — ответы проверки, их берёт ведущий волн сборщика.
 // Объявление — на каждом канале при каждом подключении (факт 6): брокер перезапустился — очереди на месте.
 
 export const EVENTS_QUEUE = 'storefront_builder_events';
@@ -47,6 +50,8 @@ export interface Broker {
   reply: (replyTo: string, correlationId: string | undefined, body: unknown) => Promise<void>;
   publishActivity: (routingKey: string, envelope: Record<string, unknown>) => Promise<void>;
   publishPreview: (signal: PreviewSignal) => Promise<void>;
+  // Задание проверки в браузере (блок 10): ведущий волн → проверяющий процесс.
+  publishCheck: (job: CheckJob) => Promise<void>;
   consume: (queue: string, prefetch: number, handler: Handler) => Promise<void>;
   // Штатная остановка: новых сообщений не брать. Взятые обработчики доделывают, отправка работает до close.
   pause: () => Promise<void>;
@@ -62,6 +67,8 @@ export async function declareTopology(channel: ConfirmChannel): Promise<void> {
   await channel.bindQueue(EVENTS_QUEUE, CONTENT_EXCHANGE, '#');
   await channel.bindQueue(EVENTS_QUEUE, PRODUCT_EXCHANGE, '');
   await channel.assertQueue(JOBS_QUEUE, { durable: true, arguments: { 'x-max-priority': MAX_PRIORITY } });
+  await channel.assertQueue(CHECKS_QUEUE, { durable: true });
+  await channel.assertQueue(CHECK_RESULTS_QUEUE, { durable: true });
 }
 
 const json = (value: unknown): Buffer => Buffer.from(JSON.stringify(value));
@@ -126,6 +133,9 @@ const publishersOf = (publisher: ChannelWrapper): Publishers => ({
   },
   publishPreview: async (signal) => {
     await publisher.publish(PREVIEW_EXCHANGE, '', json(signal), { contentType: 'application/json' });
+  },
+  publishCheck: async (job) => {
+    await publisher.sendToQueue(CHECKS_QUEUE, json(job), persistent());
   },
 });
 

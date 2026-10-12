@@ -1,7 +1,14 @@
-import { buildKey, buildStorefront, parseBuildInputs, type ThemeBuild } from '@merfy/storefront-build';
+import {
+  StorefrontBuildError,
+  buildKey,
+  buildStorefront,
+  parseBuildInputs,
+  type Changelog,
+  type ThemeBuild,
+} from '@merfy/storefront-build';
 import { publishBuild, type ObjectStore } from '@merfy/storefront-storage';
 import { StorefrontBuilderError, errorText } from './errors';
-import type { Announce } from './indexnow';
+import { shouldAnnounce, type Announce } from './indexnow';
 import { liveManifest } from './live';
 import type { Log } from './log';
 import { queueHeldReleases } from './release';
@@ -20,6 +27,7 @@ import { pinShop, type ThemeCatalog } from './theme-catalog';
 import { recordBuild, type BuildOutcome, type Steps } from './build-record';
 import type { BuildJob } from './events';
 import type { StoppedShop } from './alert';
+import type { FinishedBuild } from './release/conductor';
 
 // Одно задание сборки (design.md блока 6): взять замок → снимок данных → ключ совпал с живой — не собираем → сборка
 // блока 4 → выкладка блока 5 → конец: строка сборки, «ещё раз» или повтор, тревога. Время каждого шага — в журнал и в
@@ -51,6 +59,10 @@ export interface BuilderDeps {
   announce?: Announce;
   // Идущие сборки: их отмечает «прервана» штатная остановка, если не дождалась (runtime.ts, shutdown).
   running?: Set<RunningBuild>;
+  // Конец сборки — ведущему волн (блок 10): дошёл ли магазин выпуска до версии.
+  afterBuild?: (build: FinishedBuild) => Promise<void>;
+  // Журналы версий тем образа: IndexNow при смене версии — только с пометкой «поисковикам» (блок 10).
+  changelogs?: ReadonlyMap<string, Changelog>;
 }
 
 export interface RunningBuild {
@@ -61,6 +73,8 @@ export interface RunningBuild {
 interface Attempt {
   outcome: BuildOutcome;
   error: string | null;
+  // Код ошибки для ведущего волн (блок 10): поломка версии или сбой данных; null — сборка не упала.
+  code: string | null;
 }
 
 // Секундомер шагов: каждый шаг — строка журнала { buildId, shopId, step, ms, queueWaitMs } и поле в строке сборки.
@@ -101,21 +115,25 @@ async function attempt(deps: BuilderDeps, job: ClaimedJob, steps: Steps): Promis
   const snapshot = await time('snapshot', () => readSnapshot(deps.snapshot, job.siteId));
   const key = buildKey(parseBuildInputs(snapshot.inputs));
   const live = await time('compare', () => liveManifest(deps.store, snapshot.address.label));
-  if (live?.key === key) return { outcome: 'skipped', error: null };
+  if (live?.key === key) return { outcome: 'skipped', error: null, code: null };
   const theme = await themeFor(deps, snapshot);
   const result = await time('build', () => publish(deps, job, snapshot, theme));
-  if (result.status === 'live' && deps.indexable)
+  if (result.status === 'live' && deps.indexable && shouldAnnounce(deps.changelogs, live, snapshot.inputs))
     await deps.announce?.(snapshot.address.url, live?.pages ?? [], result.pages);
-  if (result.status !== 'blocked') return { outcome: result.status, error: null };
+  if (result.status !== 'blocked') return { outcome: result.status, error: null, code: null };
   const problems = result.problems.map((problem) => `${problem.rule}: ${problem.text}`).join('; ');
   throw new StorefrontBuilderError('build-blocked', problems, { path: `site/${job.siteId}` });
 }
+
+// Код ошибки для ведущего волн (блок 10): поломка версии или сбой данных. Ошибка без кода — 'unknown'.
+const codeOf = (error: unknown): string =>
+  error instanceof StorefrontBuilderError || error instanceof StorefrontBuildError ? error.code : 'unknown';
 
 async function attemptSafely(deps: BuilderDeps, job: ClaimedJob, steps: Steps): Promise<Attempt> {
   try {
     return await attempt(deps, job, steps);
   } catch (error) {
-    return { outcome: 'failed', error: errorText(error) };
+    return { outcome: 'failed', error: errorText(error), code: codeOf(error) };
   }
 }
 
@@ -155,6 +173,7 @@ export async function runBuildJob(deps: BuilderDeps, job: BuildJob): Promise<voi
     const total = finishedAt.getTime() - claimed.startedAt.getTime();
     deps.log('build-finish', { shopId: claimed.siteId, buildId: claimed.build, ...result, ms: total });
     await settle(deps, claimed, result.error);
+    await deps.afterBuild?.({ siteId: claimed.siteId, build: claimed.build, ...result });
   } finally {
     deps.running?.delete(running);
   }

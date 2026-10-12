@@ -112,8 +112,12 @@ async function deliver(channel: ChannelWrapper, message: ConsumeMessage, handler
   }
 }
 
-function openChannel(connection: AmqpConnectionManager): ChannelWrapper {
-  return connection.createChannel({ setup: declareTopology, publishTimeout: PUBLISH_TIMEOUT_MS });
+// Ошибка подготовки канала (закрыли, пока объявлялись очереди; брокер отверг объявление) приходит событием 'error'. Без
+// обработчика это необработанное отклонение промиса — процесс падает. Канал переподнимет обёртка при новом подключении.
+function openChannel(connection: AmqpConnectionManager, log: Log): ChannelWrapper {
+  const channel = connection.createChannel({ setup: declareTopology, publishTimeout: PUBLISH_TIMEOUT_MS });
+  channel.on('error', (error: unknown) => log('broker-channel-error', { error: errorText(error) }));
+  return channel;
 }
 
 type Publishers = Omit<Broker, 'consume' | 'pause' | 'close'>;
@@ -147,10 +151,10 @@ const publishersOf = (publisher: ChannelWrapper): Publishers => ({
 export function openBroker(url: string, log: Log): Broker {
   const connection = amqp.connect([url], { reconnectTimeInSeconds: RECONNECT_SECONDS });
   connection.on('disconnect', ({ err }: { err?: Error }) => log('broker-disconnected', { error: errorText(err) }));
-  const publisher = openChannel(connection);
+  const publisher = openChannel(connection, log);
   const consumers: ChannelWrapper[] = [];
   const consume = async (queue: string, prefetch: number, handler: Handler): Promise<void> => {
-    const channel = openChannel(connection);
+    const channel = openChannel(connection, log);
     consumers.push(channel);
     await channel.consume(queue, (message) => void deliver(channel, message, handler, log), { prefetch });
   };

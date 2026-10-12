@@ -7,7 +7,11 @@ export type ReportInput = {
   before: Passport;
   after: Passport;
   checklist: string;
+  shots?: ShotEntry[];
 };
+
+// Снимок в отчёте (Э3): картинки «до», «после», «отличия» — пути от папки отчёта или адреса в хранилище.
+export type ShotEntry = { title: string; images: { label: string; src: string }[]; note: string; over: boolean };
 
 const FIELD_TITLE: Record<PassportField, string> = {
   scripts: 'Скрипты',
@@ -55,6 +59,7 @@ const REPORT_CSS = [
   'pre{background:#f6f6f6;padding:12px;overflow:auto;font-size:12px}',
   'table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:6px 10px;vertical-align:top}',
   'td.pass{color:#1a7f37}td.fail{color:#b42318}',
+  '.shots{display:flex;gap:12px;flex-wrap:wrap}figure{margin:0}li.amber>b{color:#9a6700}',
 ].join('');
 
 export const differenceCount = (count: number): string => `${count} ${DIFFERENCE_WORD[PLURAL.select(count)]}`;
@@ -99,6 +104,22 @@ function passportsBlock(before: Passport, after: Passport): string {
   return `<section><h2>Паспорта</h2><div class="passports">${column('Было', before)}${column('Стало', after)}</div></section>`;
 }
 
+function shotItem(shot: ShotEntry): string {
+  const figures = shot.images.map(
+    (image) =>
+      `<figure><img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.label)}" width="320">` +
+      `<figcaption>${escapeHtml(image.label)}</figcaption></figure>`,
+  );
+  const tone = shot.over ? 'amber' : 'clean';
+  return `<li class="${tone}"><b>${escapeHtml(shot.title)}</b> — ${escapeHtml(shot.note)}<div class="shots">${figures.join('')}</div></li>`;
+}
+
+// Снимки (Э3): раздел есть, только когда модуль включён. Отличие выше порога — жёлтое (Э10-1 А).
+function shotsBlock(shots: readonly ShotEntry[] | undefined): string {
+  if (shots === undefined) return '';
+  return `<section><h2>Снимки</h2><ol>${shots.map(shotItem).join('')}</ol></section>`;
+}
+
 // Отчёт прогона — чистая функция: вердикт, отличия с причинами, два паспорта рядом, чек-лист (design.md 5.6).
 export function renderReport(input: ReportInput): string {
   const view = VERDICT_VIEW[input.verdict];
@@ -110,6 +131,7 @@ export function renderReport(input: ReportInput): string {
     `<style>${REPORT_CSS}</style></head><body>`,
     `<section class="verdict ${view.tone}"><h1>${escapeHtml(title)}</h1><p>${view.text}</p></section>`,
     differencesBlock(input.differences),
+    shotsBlock(input.shots),
     passportsBlock(input.before, input.after),
     `<section><h2>Чек-лист тестировщика</h2>${input.checklist}</section>`,
     '</body></html>',

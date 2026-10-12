@@ -1,4 +1,4 @@
-import { readdir } from 'node:fs/promises';
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { collectPassport, type Collected } from '../browser/collect';
 import { openPage } from '../browser/session';
@@ -11,6 +11,7 @@ import { EXIT_CODE, reportDirName } from '../run/outcome';
 import type { SabotageName } from '../run/sabotage';
 import { TARGETS, standUrl } from '../run/targets';
 import { parseScenario } from '../scenario/schema';
+import { shotFileName, takeShots, type Shot } from '../shots/shots';
 import type { FieldRule, Passport, Scenario, Target } from '../types';
 import { complain } from './output';
 
@@ -62,4 +63,18 @@ export function runMain(main: () => Promise<number>): void {
       process.exitCode = EXIT_CODE.error;
     },
   );
+}
+
+// Снимки стенда и главной (Э3, --shots on): локально — с подменой ответов API, как паспорт.
+export async function shootStand(target: Target): Promise<Shot[]> {
+  const routes = TARGETS[target].mocks ? await readJsonFile(packagePath(ROUTES_FILE)) : undefined;
+  return takeShots(TARGETS[target].baseUrl(process.env), { routes });
+}
+
+// Снимки — рядом с отчётом: reports/<время>/shots/<страница>-<ширина>.png. Снимков нет (флаг выключен) — папки нет.
+export async function writeShots(reportFile: string, shots: readonly Shot[]): Promise<void> {
+  if (shots.length === 0) return;
+  const dir = path.join(path.dirname(reportFile), 'shots');
+  await mkdir(dir, { recursive: true });
+  await Promise.all(shots.map((shot) => writeFile(path.join(dir, shotFileName(shot)), shot.png)));
 }

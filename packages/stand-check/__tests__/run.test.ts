@@ -12,12 +12,12 @@ const noGlobals: Scenario = { ...parseScenario(samplesJson), id: 'no-globals', e
 
 describe('parseRunArgs', () => {
   it('по умолчанию — local и без поломок', () => {
-    expect(parseRunArgs([])).toEqual({ target: 'local', sabotage: [] });
+    expect(parseRunArgs([])).toEqual({ target: 'local', sabotage: [], shots: false });
   });
 
   it('--target dev и несколько --sabotage', () => {
     const args = parseRunArgs(['--target', 'dev', '--sabotage', 'global', '--sabotage', 'cart']);
-    expect(args).toEqual({ target: 'dev', sabotage: ['global', 'cart'] });
+    expect(args).toEqual({ target: 'dev', sabotage: ['global', 'cart'], shots: false });
   });
 
   it('незнакомое место прогона или поломка — ошибка args-invalid', () => {

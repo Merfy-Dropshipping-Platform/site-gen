@@ -19,3 +19,19 @@ export const RELEASE_RULES_FILE = 'release-rules.json';
 export async function loadReleaseRules(): Promise<FieldRule[]> {
   return parseRules(await readJsonFile(packagePath(RELEASE_RULES_FILE)));
 }
+
+// Снимки с выключателем (блок 10, Э3): пары «до» и «после» сравнивает команда выпуска.
+export { diffPng, type PngDiff } from './shots/diff';
+export {
+  SHOT_WIDTHS,
+  compareShots,
+  shotFileName,
+  standShotEntry,
+  takeShots,
+  type Shot,
+  type ShotDifference,
+  type ShotOptions,
+  type ShotPage,
+} from './shots/shots';
+export { parseThresholds, shotKey, thresholdOf, type Thresholds } from './shots/thresholds';
+export { renderReport, type ReportInput, type ShotEntry } from './report/report';

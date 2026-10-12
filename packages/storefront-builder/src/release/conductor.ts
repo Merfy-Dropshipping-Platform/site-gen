@@ -9,6 +9,7 @@ import {
   ACTIVE_STATUSES,
   activeReleases,
   activeShopOf,
+  notifyRelease,
   queuedReleases,
   readRelease,
   recordThemeSwitch,
@@ -22,7 +23,7 @@ import {
 } from './store';
 import type { PublishActivity } from '../alert';
 import type { BuildOutcome } from '../build-record';
-import { errorText } from '../errors';
+import { StorefrontBuilderError, errorText } from '../errors';
 import type { ContentEvent } from '../events';
 import { liveManifest } from '../live';
 import type { Log } from '../log';
@@ -51,6 +52,8 @@ export interface ConductorDeps {
   themeIds: readonly string[];
   testShop: string | null;
   enabledExtensions: ExtensionDeps['enabledExtensions'];
+  // Отпечаток кода платформы этого сборщика (П10-7 А): выпуск платформы с другим to_hash ведёт сборщик того кода.
+  renderHash: string;
 }
 
 // Чем откатывает команда выпуска (задача 10): ей нужны только база и хранилище.
@@ -102,6 +105,26 @@ const SKIP = {
 } as const;
 const keyOf = (shop: ReleaseShopRow) => ({ releaseId: shop.releaseId, siteId: shop.siteId });
 const skipped = (reason: string): Target => ({ url: '', label: '', pointer: null, skip: reason });
+
+// Чужой выпуск (П10-7 А) — выпуск платформы с другим кодом: при выкатке «rolling» секунды работают старый и новый
+// сборщик, и старый своим кодом записал бы магазинам «сборка не изменилась». Его шаги делает только сборщик с этим
+// кодом. Выпуски темы и расширения рисуют архивы из MinIO — код платформы им не важен, их ведёт любой.
+const isForeign = (deps: ConductorDeps, release: ReleaseRow): boolean =>
+  release.kind === 'platform' && release.toHash !== deps.renderHash;
+
+async function ownReleases(deps: ConductorDeps): Promise<ReleaseRow[]> {
+  return (await activeReleases(deps.db, deps.contour)).filter((release) => !isForeign(deps, release));
+}
+
+// Ответ проверки по идущему чужому выпуску — ошибка release-foreign: брокер вернёт ответ в очередь (broker.ts,
+// deliver), его возьмёт сборщик того кода. Проверка — до очереди шагов: упавший шаг завёл бы сверку через 30 с. Тот
+// сборщик умер (край — в build-job.ts, refuseForeign) — ответ ходит по кругу раз в секунду до следующего старта.
+async function refuseForeign(deps: ConductorDeps, result: CheckResult): Promise<void> {
+  const release = await readRelease(deps.db, result.release);
+  if (release === null || !ACTIVE_STATUSES.includes(release.status) || !isForeign(deps, release)) return;
+  const text = `ответ проверки выпуска платформы ${release.id} — сборщику с его кодом`;
+  throw new StorefrontBuilderError('release-foreign', text, { path: `site/${result.siteId}` });
+}
 
 // Магазин волны: адрес, указатель и причина пропустить. Пропуск — не поломка: волна идёт дальше.
 async function targetOf(deps: ShopDeps, release: ReleaseRow, siteId: string): Promise<Target> {
@@ -221,9 +244,12 @@ async function bumpWave(db: Queryable, release: ReleaseRow, next: number): Promi
   return ((await db.query(BUMP_SQL, [release.id, release.wave, next])).rowCount ?? 0) > 0;
 }
 
+// Конец выпуска будит всех ведущих (NOTIFY): ждущий выпуск может быть чужим (П10-7 А) — его запустит сборщик того
+// кода. Переход условный, NOTIFY — один на выпуск.
 async function finishRelease(step: Step, release: ReleaseRow): Promise<void> {
   if (!(await setRelease(step.deps.db, release.id, ['testing', 'waves'], { status: 'finished' }))) return;
   step.deps.log('release-finished', { release: release.id, kind: release.kind, to: release.toVersion });
+  await notifyRelease(step.deps.db, release.id);
   await startQueued(step);
 }
 
@@ -264,19 +290,19 @@ async function finishWave(step: Step, release: ReleaseRow): Promise<void> {
   await moveToWave(step, release, next);
 }
 
-// Выпуск, ждавший другого (queued), встаёт, когда на контуре нет активного.
+// Выпуск, ждавший другого (queued), встаёт, когда на контуре нет активного. Чужой (П10-7 А) не трогаем.
 async function startQueued(step: Step): Promise<void> {
   const { db, contour } = step.deps;
   if ((await activeReleases(db, contour)).length > 0) return;
   const [queued] = await queuedReleases(db, contour);
-  if (queued === undefined) return;
+  if (queued === undefined || isForeign(step.deps, queued)) return;
   if (await setRelease(db, queued.id, ['queued'], { status: 'testing' }))
     await advanceRelease(step, { ...queued, status: 'testing' });
 }
 
 async function advanceAll(step: Step): Promise<void> {
   await startQueued(step);
-  for (const release of await activeReleases(step.deps.db, step.deps.contour)) await advanceRelease(step, release);
+  for (const release of await ownReleases(step.deps)) await advanceRelease(step, release);
 }
 
 // Вернуть магазин (П10-4 А): тема — закрепление на прежнее и указатель на сборку до выпуска без паузы; платформа и
@@ -381,7 +407,7 @@ const ON_BUILD: Record<BuildOutcome, OnBuild> = {
 async function afterBuild(step: Step, build: FinishedBuild): Promise<void> {
   const shop = await activeShopOf(step.deps.db, build.siteId, ['building']);
   const release = shop === null ? null : await readRelease(step.deps.db, shop.releaseId);
-  if (shop === null || release === null) return;
+  if (shop === null || release === null || isForeign(step.deps, release)) return;
   await ON_BUILD[build.outcome](step, release, shop, build);
 }
 
@@ -444,10 +470,10 @@ async function resumeShop(step: Step, release: ReleaseRow, shop: ReleaseShopRow)
 }
 
 // Перезапуск сборщика или сбой шага: задания, которые могли потеряться, — ещё раз (лишний ответ отбросит условный
-// переход), остановку по строке broken — доделать, таймер выдержки — заново.
+// переход), остановку по строке broken — доделать, таймер выдержки — заново. Чужие выпуски (П10-7 А) — не наши.
 async function resume(step: Step): Promise<void> {
   const { deps } = step;
-  for (const release of await activeReleases(deps.db, deps.contour)) {
+  for (const release of await ownReleases(deps)) {
     if (release.nextWaveAt !== null) step.schedule(release.nextWaveAt);
     for (const shop of await waveShops(deps.db, release.id, release.wave)) await resumeShop(step, release, shop);
   }
@@ -522,8 +548,12 @@ export function createConductor(deps: ConductorDeps): Conductor {
     advance: () => steps.quiet(() => advanceAll(step)),
     resume: () => steps.quiet(() => resume(step)),
     afterBuild: (build) => steps.quiet(() => afterBuild(step, build)),
-    // Ответ проверки: шаг упал — ошибка уходит брокеру, он вернёт ответ в очередь через секунду (broker.ts, deliver).
-    onCheckResult: (result) => steps.run(() => onCheckResult(step, result)),
+    // Ответ проверки: шаг упал или выпуск чужой — ошибка уходит брокеру, он вернёт ответ в очередь через секунду
+    // (broker.ts, deliver).
+    onCheckResult: async (result) => {
+      await refuseForeign(deps, result);
+      await steps.run(() => onCheckResult(step, result));
+    },
     stop: timers.stop,
     shutdown: async (limitMs) => {
       timers.stop();

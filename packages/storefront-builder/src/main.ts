@@ -105,6 +105,8 @@ const conductor = createConductor({
   themeIds: [...loaded.themes.keys()],
   testShop: settings.releaseTestShop,
   enabledExtensions: extensionsOf,
+  // Выпуск платформы с другим кодом ведёт сборщик того кода (П10-7 А): выкатка «rolling» — секунды двух образов.
+  renderHash: platform.renderHash,
 });
 // Снимку — версии тем и выпущенная версия (блок 10): магазин рисуется версией своего закрепления.
 const pinnedSnapshot = { ...snapshot, pins: catalog };

@@ -117,6 +117,9 @@ const conductorDeps = (harness: Harness, pauseMs: number): ConductorDeps => ({
   publishCheck: harness.broker.publishCheck,
   publishActivity: harness.broker.publishActivity,
   pageCheck: (url) => Promise.resolve(pageOf(url)),
+  themeIds: ['nova'],
+  testShop: null,
+  enabledExtensions: () => Promise.resolve([]),
 });
 
 // Сборщик целиком: каталог с архивом 0.0.9, очередь заданий через брокер, ведущий и подписка на NOTIFY.
@@ -411,6 +414,32 @@ describe('выпуск волнами на стенде (design.md блока 10
       await approve(harness, release.id);
       await statusIs(harness, release.id, 'finished');
       expect((await liveManifest(harness.store, labelOf(site)))?.theme.version).toBe(OLD.version);
+    },
+    LONG,
+  );
+
+  it(
+    'платформа: сборка не изменилась — магазины skipped, finished без «да», указатели прежние',
+    async () => {
+      const { harness } = await startStack();
+      const sites = await publishedShops(harness, 3);
+      const ids = sites.map((site) => site.id);
+      const before = await Promise.all(sites.map((site) => liveBuild(harness, site)));
+      const platform: NewRelease = {
+        ...RELEASE,
+        kind: 'platform',
+        subject: 'platform',
+        fromVersion: 'a'.repeat(40),
+        toVersion: 'b'.repeat(40),
+        toHash: `sha256:${'e'.repeat(64)}`,
+      };
+      const release = await createRelease(harness.db, platform, (id) => planWaves(ids, ids[0], id));
+      await statusIs(harness, release.id, 'finished');
+      const rows = await releaseShops(harness.db, release.id);
+      const unchanged = 'сборка не изменилась: новый код платформы этот магазин не меняет';
+      expect(rows.map((row) => [row.status, row.error])).toEqual(ids.map(() => ['skipped', unchanged]));
+      expect(await Promise.all(sites.map((site) => liveBuild(harness, site)))).toEqual(before);
+      expect(logged(harness.lines, 'ALERT')).toEqual([]);
     },
     LONG,
   );

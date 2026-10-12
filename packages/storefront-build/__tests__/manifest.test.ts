@@ -16,6 +16,11 @@ describe('checkManifest', () => {
     expect(checkManifest(standManifest)).toEqual(standManifest);
   });
 
+  it('ключ данных и расширения (блок 10) — необязательные поля: есть — остаются как есть', () => {
+    const withRelease = { ...standManifest, dataKey: OTHER_HASH, extensions: [{ id: 'reviews', version: '1.2.0' }] };
+    expect(checkManifest(withRelease)).toEqual(withRelease);
+  });
+
   it.each<[string, unknown, string]>([
     ['коммит не полный', changedManifest((m) => (m.platform.commit = '0123456')), 'platform.commit'],
     ['лишнее поле', changedManifest((m) => Object.assign(m, { builtAt: '2026-10-06T09:00:00.000Z' })), 'builtAt'],

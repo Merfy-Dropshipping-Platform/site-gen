@@ -12,7 +12,7 @@ export {
   type EntityType,
   type ShellInput,
 } from './inputs';
-export { KEY_VERSION, buildKey } from './key';
+export { DATA_KEY_VERSION, KEY_VERSION, buildKey, dataKey } from './key';
 export { entityHashes, entityKey } from './entities';
 export { buildStorefront, type BuildReferences, type StorefrontBuild, type ThemeBuild } from './build';
 export { renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';

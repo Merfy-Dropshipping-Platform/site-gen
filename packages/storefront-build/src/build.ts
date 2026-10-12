@@ -3,7 +3,7 @@ import type { BuildFile } from './client-files';
 import { NO_ASSETS, codeFiles, type CodeAssets } from './code';
 import { entityHashes } from './entities';
 import { parseBuildInputs } from './inputs';
-import { buildKey } from './key';
+import { buildKey, dataKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
 import { renderShopPage, type ShopTheme } from './page';
 import { SHOP_ROUTES } from './routes';
@@ -12,6 +12,8 @@ import { renderStandPage, type StandBuild } from './stand';
 // Справки сборки: в ключ не входят, в манифест пишутся. Коммит платформы — SOURCE_COMMIT образа sites (В4-1 В).
 export interface BuildReferences {
   platformCommit: string;
+  // Включённые расширения магазина и их версии (блок 10, задача 11) — в манифест, не в ключ.
+  extensions?: readonly { id: string; version: string }[];
 }
 
 // Тема для сборки магазина: токены, рисовальщик и файлы клиента её серверной сборки.
@@ -50,7 +52,9 @@ export async function buildStorefront(
   const manifest = checkManifest({
     v: MANIFEST_VERSION,
     key: buildKey(inputs),
+    dataKey: dataKey(inputs),
     platform: { commit: references.platformCommit, renderHash: inputs.platform.renderHash },
+    ...(references.extensions === undefined ? {} : { extensions: references.extensions }),
     theme: inputs.theme,
     shell: inputs.shell === null ? null : { version: inputs.shell.version },
     shop: { id: inputs.site.id },

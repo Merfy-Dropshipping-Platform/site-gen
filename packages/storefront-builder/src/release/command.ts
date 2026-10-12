@@ -159,6 +159,12 @@ const commandSchema = z.union([
   z
     .object({ name: z.literal('revert-all'), rest: z.tuple([releaseId]) })
     .transform((value) => ({ name: value.name, release: value.rest[0] })),
+  z
+    .object({
+      name: z.literal('extension'),
+      rest: z.tuple([z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/), z.string().regex(/^\d+\.\d+\.\d+$/)]),
+    })
+    .transform((value) => ({ name: value.name, extension: value.rest[0], version: value.rest[1] })),
 ]);
 
 export type Command = z.output<typeof commandSchema>;
@@ -505,10 +511,41 @@ async function revertAll(deps: CommandDeps, id: number): Promise<number> {
   return problems.length === 0 ? EXIT.done : EXIT.refused;
 }
 
+const LAST_EXTENSION_SQL = `SELECT to_version FROM storefront_release WHERE kind = 'extension' AND subject = $1
+  AND contour = $2 AND status = 'finished' ORDER BY id DESC LIMIT 1`;
+const versionRow = z.object({ to_version: z.string() });
+
+// Выпуск версии расширения (П10-5 А и С7-14 Б): без «да»; магазины и волны соберёт ведущий (planning →
+// extensions.enabledForShop). Версия уже зарегистрирована в сервисе extensions: новые сборки берут её и без выпуска.
+async function extensionRelease(deps: CommandDeps, extension: string, version: string): Promise<number> {
+  const { rows } = await deps.db.query(LAST_EXTENSION_SQL, [extension, deps.contour]);
+  const from = rows.map((row) => versionRow.parse(row).to_version).at(0) ?? '0.0.0';
+  if (from === version) throw refuse(`версия ${version} расширения ${extension} уже выпущена на ${deps.contour}`);
+  const release = await createRelease(
+    deps.db,
+    {
+      kind: 'extension',
+      subject: extension,
+      fromVersion: from,
+      toVersion: version,
+      toHash: version,
+      contour: deps.contour,
+      startedBy: deps.startedBy,
+      status: 'planning',
+    },
+    () => [],
+  );
+  deps.say(
+    `Выпуск №${release.id}: расширение ${extension} ${from} → ${version}; магазины и волны — у сборщика, смотри status ${release.id}`,
+  );
+  return EXIT.done;
+}
+
 export function runCommand(deps: CommandDeps, command: Command): Promise<number> {
   if (command.name === 'start') return start(deps, command);
   if (command.name === 'approve') return approve(deps, command.release);
   if (command.name === 'status') return status(deps, command.release);
   if (command.name === 'skip') return skip(deps, command.release, command.shop);
+  if (command.name === 'extension') return extensionRelease(deps, command.extension, command.version);
   return revertAll(deps, command.release);
 }

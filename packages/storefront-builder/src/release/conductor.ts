@@ -2,6 +2,7 @@ import { changePointer, readPointer, type ObjectStore, type Pointer } from '@mer
 import { z } from 'zod';
 import { raiseReleaseStopped } from './alert';
 import type { CheckJob, CheckResult } from './checks';
+import { planExtensionRelease, type ExtensionDeps } from './extension';
 import { KINDS, isBreakage } from './kinds';
 import type { PageCheck, PageExpectation } from './page-check';
 import {
@@ -46,6 +47,10 @@ export interface ConductorDeps {
   publishCheck: (job: CheckJob) => Promise<void>;
   publishActivity: PublishActivity;
   pageCheck: (url: string, expected: PageExpectation) => Promise<PageCheck>;
+  // Выпуски платформы и расширения (задача 11): магазины новых тем, тестовый магазин, расширения магазина.
+  themeIds: readonly string[];
+  testShop: string | null;
+  enabledExtensions: ExtensionDeps['enabledExtensions'];
 }
 
 // Чем откатывает команда выпуска (задача 10): ей нужны только база и хранилище.
@@ -93,6 +98,7 @@ const SKIP = {
   address: 'у магазина нет адреса',
   build: 'у магазина нет живой сборки',
   paused: 'магазин на паузе',
+  unchanged: 'сборка не изменилась: новый код платформы этот магазин не меняет',
 } as const;
 const keyOf = (shop: ReleaseShopRow) => ({ releaseId: shop.releaseId, siteId: shop.siteId });
 const skipped = (reason: string): Target => ({ url: '', label: '', pointer: null, skip: reason });
@@ -180,7 +186,15 @@ async function requestBefore(step: Step, release: ReleaseRow, shop: ReleaseShopR
 }
 
 // Волна: свободные места окна — ждущим магазинам; все магазины волны done или skipped — волна закончена.
+// Выпуск расширения: planning → магазины и волны → testing, дальше — как у темы, без «да» (задача 11).
+async function planExtension(step: Step, release: ReleaseRow): Promise<void> {
+  if (!(await planExtensionRelease(step.deps, release))) return;
+  const planned = await readRelease(step.deps.db, release.id);
+  if (planned !== null) await advanceRelease(step, planned);
+}
+
 async function advanceRelease(step: Step, release: ReleaseRow): Promise<void> {
+  if (release.status === 'planning') return planExtension(step, release);
   if (release.status !== 'testing' && release.status !== 'waves') return;
   const shops = await waveShops(step.deps.db, release.id, release.wave);
   let free = step.deps.window - shops.filter((shop) => IN_FLIGHT.includes(shop.status)).length;
@@ -341,10 +355,22 @@ function onFailed(step: Step, release: ReleaseRow, shop: ReleaseShopRow, build: 
 
 type OnBuild = (step: Step, release: ReleaseRow, shop: ReleaseShopRow, build: FinishedBuild) => Promise<void>;
 
+// Ключ совпал с живой сборкой (skipped) или файлы те же (unchanged). Тема и расширение меняют входы — значит, живая
+// сборка уже на новой версии, её проверит checkReached. Платформа входов может не менять: живая сборка не на новом
+// коде — магазин уходит из волны пропуском (задача 11).
+async function sameBuild(step: Step, release: ReleaseRow, shop: ReleaseShopRow): Promise<void> {
+  const rules = KINDS[release.kind];
+  if (!rules.leaveUnchanged) return checkReached(step, release, shop);
+  const target = await targetOf(step.deps, release, shop.siteId);
+  const manifest = target.skip === null ? await liveManifest(step.deps.store, target.label) : null;
+  if (manifest !== null && rules.reached(manifest, release)) return checkReached(step, release, shop);
+  return leaveWave(step, release, shop, SKIP.unchanged);
+}
+
 const ON_BUILD: Record<BuildOutcome, OnBuild> = {
   live: checkReached,
-  skipped: checkReached,
-  unchanged: checkReached,
+  skipped: sameBuild,
+  unchanged: sameBuild,
   stale: checkReached,
   paused: (step, release, shop) => leaveWave(step, release, shop, SKIP.paused),
   failed: onFailed,

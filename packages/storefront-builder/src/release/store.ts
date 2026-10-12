@@ -319,6 +319,25 @@ export async function notifyRelease(db: Queryable, id: number): Promise<void> {
   await db.query('SELECT pg_notify($1, $2)', [RELEASE_CHANNEL, String(id)]);
 }
 
+const PLANNED_SQL = `UPDATE storefront_release SET status = 'testing', updated_at = now()
+  WHERE id = $1 AND status = 'planning'`;
+
+// Выпуск расширения (задача 11): список магазинов известен после вызовов extensions — строки магазинов и переход
+// planning → testing одной транзакцией. Вернёт false, если выпуск уже не в planning.
+export async function planReleaseShops(
+  db: Database,
+  releaseId: number,
+  plan: readonly PlannedShop[],
+): Promise<boolean> {
+  const shops = plan.map((shop) => ({ site_id: shop.siteId, wave: shop.wave, position: shop.position }));
+  return transaction(db, async (client) => {
+    const moved = await client.query(PLANNED_SQL, [releaseId]);
+    if ((moved.rowCount ?? 0) === 0) return false;
+    await client.query(INSERT_SHOPS, [releaseId, JSON.stringify(shops)]);
+    return true;
+  });
+}
+
 const SWITCH_SQL = `INSERT INTO site_theme_migrations (id, site_id, from_theme, from_version, to_theme, to_version,
   report, "timestamp") VALUES (gen_random_uuid()::text, $1, $2, $3, $2, $4, $5, now() AT TIME ZONE 'UTC')`;
 

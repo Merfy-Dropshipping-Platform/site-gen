@@ -6,7 +6,9 @@ import { parseChangelog, platformRenderHash, readShellBuild } from '@merfy/store
 import { createS3Store } from '@merfy/storefront-storage';
 import { Pool } from 'pg';
 import { raiseAlert } from './alert';
+import { enabledExtensions } from './code';
 import { createConductor } from './release/conductor';
+import { startPlatformRelease } from './release/platform';
 import { listenReleases } from './release/listen';
 import { checkShopPages } from './release/page-check';
 import { bootstrapRelease, releasedVersion } from './release/store';
@@ -77,6 +79,14 @@ const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 const code = { db, shell, call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 const snapshot = { db, products, code, platform, themes: loaded.themes, clock };
 
+// Включённые расширения магазина для выпуска расширения (задача 11) — тот же вызов extensions.enabledForShop и тот же
+// тайм-аут, что у снимка. Сервис не ответил — шаг ведущего падает, сверка повторит его через 30 с.
+async function extensionsOf(siteId: string): Promise<readonly { id: string; version: string }[]> {
+  const found = await enabledExtensions(code, siteId);
+  if (found === null) throw new Error(`extensions.enabledForShop не ответил: магазин ${siteId}`);
+  return found;
+}
+
 // Ведущий волн (блок 10). Окно — K: в работе не больше магазинов волны, чем мест выпуска.
 const pageDeps = { fetch: (address: string) => fetch(address), attempts: 5, delayMs: 1_000 };
 const conductor = createConductor({
@@ -91,6 +101,10 @@ const conductor = createConductor({
   publishCheck: broker.publishCheck,
   publishActivity: broker.publishActivity,
   pageCheck: (url, expected) => checkShopPages(pageDeps, url, expected),
+  // Выпуски платформы и расширения (задача 11): магазины новых тем, тестовый магазин, расширения магазина.
+  themeIds: [...loaded.themes.keys()],
+  testShop: settings.releaseTestShop,
+  enabledExtensions: extensionsOf,
 });
 // Снимку — версии тем и выпущенная версия (блок 10): магазин рисуется версией своего закрепления.
 const pinnedSnapshot = { ...snapshot, pins: catalog };
@@ -123,6 +137,16 @@ const deps: RuntimeDeps = {
 // Секции платформы и тем — в реестр до первой сборки (дверь выпуска, п. 21); отказ — строка журнала, старт идёт дальше.
 await acceptSectionReleases({ db, store, log }, releaseFolders(ROOT, shell.version, loaded.themes));
 const runtime = await startRuntime(deps);
+// Выпуск платформы (задача 11): новый образ — новый код платформы (renderHash, в нём ядро и секции платформы); тот же
+// отпечаток — ничего. Заводится до подписки: resume ниже сразу поведёт его волну 0.
+const platformRelease = {
+  db,
+  contour: settings.contour,
+  themeIds: deps.themeIds,
+  testShop: settings.releaseTestShop,
+  log,
+};
+await startPlatformRelease(platformRelease, { commit: settings.commit, renderHash: platform.renderHash });
 // Ведущий просыпается от NOTIFY storefront_release; при старте сверяет выпуски — перезапуск посреди выпуска (блок 10).
 const stopListening = await listenReleases(db, () => void conductor.advance(), log);
 await conductor.resume();

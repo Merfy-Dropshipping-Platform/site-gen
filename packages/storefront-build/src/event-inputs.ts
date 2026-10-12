@@ -8,6 +8,9 @@ export const REBUILD_EVENT_INPUTS: Readonly<Record<string, readonly string[]>> =
   'theme-change': ['theme', 'code'],
   'branding-change': ['revision', 'site.description', 'site.seoTitle', 'site.keywords', 'site.logoUrl'],
   'theme-release': ['theme', 'code'],
+  // Выпуски блока 10: платформа меняет код рендера, ядро и секции платформы, расширение — код своих секций.
+  'platform-release': ['platform', 'shell', 'code'],
+  'extension-release': ['code'],
   'domain-change': ['site.publicUrl'],
   'shop-name-change': ['site.name'],
   'policy-change': ['data.policy'],

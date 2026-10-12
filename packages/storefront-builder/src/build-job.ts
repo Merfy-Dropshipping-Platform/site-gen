@@ -101,7 +101,8 @@ const pin = (deps: BuilderDeps, siteId: string): Promise<void> =>
   pinShop({ db: deps.db, pins: deps.snapshot.pins, themeIds: [...deps.themes.keys()], log: deps.log }, siteId);
 
 async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, theme: ThemeBuild) {
-  const references = { platformCommit: deps.platformCommit };
+  // Справки сборки: коммит образа и включённые расширения магазина (блок 10, задача 11) — в манифест, не в ключ.
+  const references = { platformCommit: deps.platformCommit, extensions: snapshot.extensions };
   const build = await buildStorefront(snapshot.inputs, references, theme, snapshot.assets);
   const request = { label: snapshot.address.label, build: job.build, manifest: build.manifest, files: build.files };
   const now = deps.clock().toISOString();

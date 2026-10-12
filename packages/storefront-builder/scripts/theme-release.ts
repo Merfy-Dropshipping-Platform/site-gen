@@ -20,7 +20,7 @@ import { versionFiles } from '../src/release/versions';
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 const USAGE =
   'theme-release start <тема> [--test-shop <id>] [--version <x.y.z>] [--no-shots] [--expect-hash sha256:…] | ' +
-  'approve <№> | status [<№>] | skip <№> <магазин> | revert-all <№>';
+  'approve <№> | status [<№>] | skip <№> <магазин> | revert-all <№> | extension <расширение> <x.y.z>';
 const REFUSED: ReadonlySet<string> = new Set(['release-refused', 'release-conflict']);
 
 const say = (line: string): void => {

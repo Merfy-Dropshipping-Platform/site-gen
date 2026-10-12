@@ -39,12 +39,30 @@
     },
     {
       "id": "theme-release",
-      "title": "Выпуск версии темы: кода ещё нет, его пишет блок 10",
-      "trigger": null,
+      "title": "Выпуск версии темы волнами: магазин волны получает новую версию (блок 10)",
+      "trigger": { "file": "packages/storefront-builder/src/release/kinds.ts", "name": "theme-release" },
       "themes": "new",
       "scope": "theme-stores",
       "delayMs": 0,
-      "status": "block-10"
+      "status": "works"
+    },
+    {
+      "id": "platform-release",
+      "title": "Выпуск кода платформы волнами: новый образ сборщика (блок 10)",
+      "trigger": { "file": "packages/storefront-builder/src/release/kinds.ts", "name": "platform-release" },
+      "themes": "new",
+      "scope": "theme-stores",
+      "delayMs": 0,
+      "status": "works"
+    },
+    {
+      "id": "extension-release",
+      "title": "Выпуск версии расширения волнами: команда theme-release extension (блок 10)",
+      "trigger": { "file": "packages/storefront-builder/src/release/kinds.ts", "name": "extension-release" },
+      "themes": "new",
+      "scope": "theme-stores",
+      "delayMs": 0,
+      "status": "works"
     },
     {
       "id": "domain-change",

@@ -10,6 +10,8 @@ import type { ReleaseKind, ReleaseRow } from './store';
 export interface ReachedManifest {
   theme: { id: string; version: string; contentHash: string };
   platform: { renderHash: string };
+  // Включённые расширения и их версии (задача 11); в манифестах сборок до неё поля нет.
+  extensions?: readonly { id: string; version: string }[];
 }
 
 export interface KindRules {
@@ -19,6 +21,8 @@ export interface KindRules {
   pauseOnRevert: boolean;
   reached: (manifest: ReachedManifest, release: ReleaseRow) => boolean;
   expectedVersion: (release: ReleaseRow) => string | null;
+  // Сборка не изменилась, а живая — не на новом коде: магазин уходит из волны пропуском (только платформа).
+  leaveUnchanged: boolean;
 }
 
 export const KINDS: Record<ReleaseKind, KindRules> = {
@@ -32,6 +36,7 @@ export const KINDS: Record<ReleaseKind, KindRules> = {
       manifest.theme.version === release.toVersion &&
       manifest.theme.contentHash === release.toHash,
     expectedVersion: (release) => release.toVersion,
+    leaveUnchanged: false,
   },
   platform: {
     event: 'platform-release',
@@ -40,15 +45,18 @@ export const KINDS: Record<ReleaseKind, KindRules> = {
     pauseOnRevert: true,
     reached: (manifest, release) => manifest.platform.renderHash === release.toHash,
     expectedVersion: () => null,
+    leaveUnchanged: true,
   },
-  // Версию расширения манифест получит в задаче 11; до неё выпуск расширения завести нечем.
+  // Дошёл: в манифесте живой сборки расширение той же версии (поле extensions — задача 11).
   extension: {
     event: 'extension-release',
     approval: false,
     pin: false,
     pauseOnRevert: true,
-    reached: () => false,
+    reached: (manifest, release) =>
+      (manifest.extensions ?? []).some((item) => item.id === release.subject && item.version === release.toVersion),
     expectedVersion: () => null,
+    leaveUnchanged: false,
   },
 };
 

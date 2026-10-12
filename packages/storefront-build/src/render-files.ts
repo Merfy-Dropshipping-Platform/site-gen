@@ -32,6 +32,14 @@ export const PLATFORM_RENDER_FILES = [
   'packages/tokens/dictionary.json',
   'packages/tokens/not-tokens.json',
   'packages/tokens/search-words.json',
+  // Ядро @merfy/shell и секции платформы (блок 7): входы shell и code.sections «platform:» меняет только выкатка кода
+  // платформы. Они в отпечатке, чтобы новое ядро и новые секции платформы разносил выпуск платформы волнами (блок 10,
+  // задача 11): его отпечаток — renderHash.
+  'packages/storefront-shell/package.json',
+  'packages/storefront-shell/core-parts.json',
+  'packages/storefront-shell/scripts/**',
+  'packages/storefront-shell/src/**',
+  'packages/storefront-shell/sections/**',
 ];
 
 export const platformRenderHash = (root: string): Promise<string> => contentHash(root, PLATFORM_RENDER_FILES);

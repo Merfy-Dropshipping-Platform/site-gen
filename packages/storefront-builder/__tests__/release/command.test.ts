@@ -52,6 +52,11 @@ describe('разбор команды выпуска', () => {
     expect(parseCommand(['status', '7'])).toEqual({ name: 'status', release: 7 });
     expect(parseCommand(['skip', '12', 's2'])).toEqual({ name: 'skip', release: 12, shop: 's2' });
     expect(parseCommand(['revert-all', '12'])).toEqual({ name: 'revert-all', release: 12 });
+    expect(parseCommand(['extension', 'reviews', '1.2.0'])).toEqual({
+      name: 'extension',
+      extension: 'reviews',
+      version: '1.2.0',
+    });
   });
 
   it.each([

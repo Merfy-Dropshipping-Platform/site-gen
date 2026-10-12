@@ -3,6 +3,7 @@ import * as api from '../src/index';
 
 // Публичный API пакета (README, раздел «API»): значения, которые видит потребитель. Типы TypeScript сюда не попадают.
 const API = [
+  'DATA_KEY_VERSION',
   'ENTITY_TYPES',
   'KEY_VERSION',
   'MANIFEST_VERSION',
@@ -31,6 +32,7 @@ const API = [
   'checkPageRow',
   'checkSeo',
   'checkThemeVersion',
+  'dataKey',
   'dependentPages',
   'entityHashes',
   'entityKey',

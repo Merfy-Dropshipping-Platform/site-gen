@@ -246,6 +246,8 @@ export interface Snapshot {
   inputs: ReturnType<typeof buildInputsOf>;
   // Байты кода для сборки (блок 7): ядро и скрипты секций по отпечатку.
   assets: CodeAssets;
+  // Включённые расширения и их версии (блок 10, задача 11): справка в манифест сборки.
+  extensions: readonly { id: string; version: string }[];
 }
 
 // Снимок целиком: строка сайта, его сущности, товары и код секций разом. Магазина нет — ошибка shop-invalid.
@@ -263,9 +265,9 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<
   const entities = [...siteEntities, ...(products ?? [])];
   const year = deps.clock().getUTCFullYear();
   const received = products !== null && shopCode !== null;
-  const { shell, code, assets } = shopCode ?? NO_CODE;
+  const { shell, code, assets, extensions } = shopCode ?? NO_CODE;
   const parts = { platform: deps.platform, theme, shop, address, year, entities, received, tokens, shell, code };
-  return { shop, address, inputs: buildInputsOf(parts), assets };
+  return { shop, address, inputs: buildInputsOf(parts), assets, extensions };
 }
 
 // Входы сборки блока 4 одним объектом. Правки токенов мерчанта — из текущей ревизии (их пишет панель темы, блок 8).

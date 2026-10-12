@@ -1,4 +1,4 @@
-import type { ParsedTheme } from '@merfy/tokens';
+import type { ParsedTheme, TokenMigrations } from '@merfy/tokens';
 import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
 import { entityKey } from './entities';
@@ -20,6 +20,8 @@ export interface ShopTheme {
   // Словарь и значения токенов темы — parseTheme(tokens из theme.json пакета темы).
   tokens: ParsedTheme;
   render: RenderPage;
+  // Шаги перевода правок этой версии темы (migrations.json пакета темы, блок 10). Нет — правки читаются как есть.
+  migrations?: TokenMigrations;
 }
 
 export interface RenderedPage {
@@ -48,7 +50,7 @@ function dataUpdatedAt(inputs: BuildInputs, deps: readonly string[]): string {
 
 export async function renderShopPage(inputs: BuildInputs, path: string, theme: ShopTheme): Promise<RenderedPage> {
   const route = routeOf(path);
-  const html = await theme.render(route.path, pageLocals(inputs, route, theme.tokens));
+  const html = await theme.render(route.path, pageLocals(inputs, route, theme.tokens, theme.migrations));
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');
   const entity = pageEntity(inputs, route);

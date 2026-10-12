@@ -1,0 +1,61 @@
+{
+  "$schema": "./compare-rules.schema.json",
+  "rules": [
+    {
+      "field": "scripts",
+      "shape": "list",
+      "key": "src",
+      "severity": { "added": "amber", "removed": "amber", "changed": "amber" },
+      "reason": { "all": "Скрипты страницы поменялись вместе с версией. Упавший скрипт ловит поле errors." }
+    },
+    {
+      "field": "globals",
+      "shape": "map",
+      "severity": { "added": "amber", "removed": "amber", "changed": "amber" },
+      "reason": { "all": "Глобальные переменные страницы поменялись — посмотри отчёт тестового магазина." }
+    },
+    {
+      "field": "storage",
+      "shape": "set",
+      "severity": { "added": "amber", "removed": "amber" },
+      "reason": { "all": "Ключи хранилища браузера поменялись — корзину и вход держит каркас, сверь с отчётом." }
+    },
+    {
+      "field": "cookies",
+      "shape": "set",
+      "severity": { "added": "amber", "removed": "amber" },
+      "reason": { "all": "Cookie поменялись — вопрос согласия покупателя, сверь с отчётом." }
+    },
+    {
+      "field": "requests",
+      "shape": "list",
+      "key": "url",
+      "severity": { "added": "amber", "removed": "amber", "changed": "amber" },
+      "reason": { "all": "Запросы страницы поменялись. Файлы магазина проверяет проверка страниц без браузера." }
+    },
+    {
+      "field": "errors",
+      "shape": "set",
+      "severity": { "added": "red", "removed": "amber" },
+      "reason": {
+        "all": "Новая ошибка в консоли — после обновления что-то на странице не работает.",
+        "removed": "Ошибка ушла — так и задумано?"
+      }
+    },
+    {
+      "field": "tokens",
+      "shape": "map",
+      "severity": { "added": "amber", "removed": "red", "changed": "amber" },
+      "reason": {
+        "all": "Вид поменялся — так говорит строка «вид» журнала версий.",
+        "removed": "Токен пропал — секции возьмут запасное значение."
+      }
+    },
+    {
+      "field": "fonts",
+      "shape": "set",
+      "severity": { "added": "amber", "removed": "red" },
+      "reason": { "all": "Шрифт поменялся.", "removed": "Шрифт не загрузился — страница рисуется запасным." }
+    }
+  ]
+}

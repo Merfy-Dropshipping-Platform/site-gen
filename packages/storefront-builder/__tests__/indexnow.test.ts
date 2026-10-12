@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { INDEXNOW_LIMIT, changedPaths, createIndexNow, type Pages, type PostJson } from '../src/indexnow';
+import { parseChangelog } from '@merfy/storefront-build';
+import {
+  INDEXNOW_LIMIT,
+  changedPaths,
+  createIndexNow,
+  shouldAnnounce,
+  type AnnouncedInputs,
+  type Pages,
+  type PostJson,
+} from '../src/indexnow';
 import { previewSignal, previewVia } from '../src/preview';
 
 // IndexNow и сигнал превью — без сети: разница манифестов, пачки по 10 000, сбой отправки не роняет сборку.
@@ -73,5 +82,49 @@ describe('сигнал превью', () => {
     const preview = previewVia(() => Promise.reject(new Error('брокер лежит')), log);
     await expect(preview({ shopId: 's1', entities: [] })).resolves.toBeUndefined();
     expect(lines).toEqual([{ msg: 'preview-failed', shopId: 's1', error: 'брокер лежит' }]);
+  });
+});
+
+describe('shouldAnnounce (блок 10)', () => {
+  const changelog = parseChangelog({
+    v: 1,
+    versions: [
+      { version: '0.3.0', date: '2026-10-20', lines: [{ kind: 'fix', text: 'Заголовок товара — h1', search: true }] },
+      {
+        version: '0.2.0',
+        date: '2026-10-15',
+        lines: [{ kind: 'look', text: 'Кнопки круглее', tokens: ['radius-button'] }],
+      },
+      { version: '0.1.0', date: '2026-10-10', lines: [{ kind: 'look', text: 'Вид «Чистый»', tokens: [] }] },
+    ],
+  });
+  const changelogs = new Map([['nova', changelog]]);
+  const build = (version: string, renderHash = HASH_A): AnnouncedInputs => ({
+    theme: { id: 'nova', version, contentHash: `sha256:${version.replaceAll('.', '').padStart(64, '0')}` },
+    platform: { renderHash },
+  });
+
+  it('первая сборка — да', () => {
+    expect(shouldAnnounce(changelogs, null, build('0.1.0'))).toBe(true);
+  });
+
+  it('правка мерчанта: тема и платформа те же — да', () => {
+    expect(shouldAnnounce(changelogs, build('0.1.0'), build('0.1.0'))).toBe(true);
+  });
+
+  it('сменилась только платформа — нет', () => {
+    expect(shouldAnnounce(changelogs, build('0.1.0'), build('0.1.0', HASH_B))).toBe(false);
+  });
+
+  it('тема поднялась, пометок «поисковикам» нет — нет', () => {
+    expect(shouldAnnounce(changelogs, build('0.1.0'), build('0.2.0'))).toBe(false);
+  });
+
+  it('у версии между живой и новой пометка «поисковикам» — да', () => {
+    expect(shouldAnnounce(changelogs, build('0.1.0'), build('0.3.0'))).toBe(true);
+  });
+
+  it('тема опустилась (откат) — нет', () => {
+    expect(shouldAnnounce(changelogs, build('0.3.0'), build('0.2.0'))).toBe(false);
   });
 });

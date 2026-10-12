@@ -1,4 +1,5 @@
-import type { StorefrontManifest } from '@merfy/storefront-build';
+import { searchFlaggedBetween, type Changelog, type StorefrontManifest } from '@merfy/storefront-build';
+import { compareVersions } from '@merfy/tokens';
 import { errorText } from './errors';
 import type { Log } from './log';
 
@@ -11,6 +12,28 @@ export const INDEXNOW_URL = 'https://yandex.com/indexnow';
 
 export type Pages = StorefrontManifest['pages'];
 export type Announce = (publicUrl: string, previous: Pages, next: Pages) => Promise<void>;
+
+// Что нужно знать о сборке, чтобы решить про IndexNow: тема и код платформы. Подходят и манифест, и входы сборки.
+export interface AnnouncedInputs {
+  theme: { id: string; version: string; contentHash: string };
+  platform: { renderHash: string };
+}
+
+// Сборка сменила версию темы или платформы (выпуск, откат) — адреса шлём, только если версии между живой и новой
+// помечены «поисковикам» (журнал версий темы, design.md блока 10, «Поисковики и покупатель»). Первая сборка, смена
+// темы и правка мерчанта — как раньше.
+export function shouldAnnounce(
+  changelogs: ReadonlyMap<string, Changelog> | undefined,
+  live: AnnouncedInputs | null,
+  next: AnnouncedInputs,
+): boolean {
+  const { theme } = next;
+  if (live === null || live.theme.id !== theme.id) return true;
+  if (live.theme.contentHash === theme.contentHash) return live.platform.renderHash === next.platform.renderHash;
+  const changelog = changelogs?.get(theme.id);
+  if (changelog === undefined || compareVersions(theme.version, live.theme.version) <= 0) return false;
+  return searchFlaggedBetween(changelog, live.theme.version, theme.version);
+}
 
 // Отправка JSON-тела POST-запросом; в тестах — подставная.
 export type PostJson = (url: string, body: string) => Promise<{ status: number }>;

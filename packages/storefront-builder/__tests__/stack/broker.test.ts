@@ -95,3 +95,22 @@ describe('события', () => {
     await expect(probe.checkQueue('sites_build_queue')).rejects.toThrow(/NOT_FOUND/);
   });
 });
+
+describe('закрытие', () => {
+  it('закрыли, пока каналы объявляют очереди, — ошибка канала в журнале, необработанных ошибок нет', async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown): void => void unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    const early: string[] = [];
+    // Окно между подключением и концом объявления очередей — миллисекунды: закрываем с шагом 2 мс, попытки в него попадают.
+    for (let delay = 0; delay <= 40; delay += 2) {
+      const quick = openBroker(STACK.rabbitmqUrl, (message) => early.push(message));
+      await wait(delay);
+      await quick.close();
+    }
+    await wait(300);
+    process.off('unhandledRejection', onUnhandled);
+    expect(unhandled).toEqual([]);
+    expect(early).toContain('broker-channel-error');
+  });
+});

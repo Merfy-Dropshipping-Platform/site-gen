@@ -7,7 +7,14 @@ export type StorefrontBuilderErrorCode =
   | 'shop-invalid'
   | 'rpc-failed'
   | 'build-blocked'
-  | 'renderer-missing';
+  | 'renderer-missing'
+  // Архива рисовальщика версии нет, он не той версии, или та же версия записана с другим отпечатком (блок 10).
+  | 'renderer-archive'
+  // На контуре уже идёт выпуск (блок 10).
+  | 'release-conflict'
+  // Блок 10: аргументы команды выпуска; выпуск не стартует или не двигается — причина в тексте.
+  | 'release-args'
+  | 'release-refused';
 
 type ErrorDetails = { path?: string; cause?: unknown };
 

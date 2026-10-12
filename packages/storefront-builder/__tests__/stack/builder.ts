@@ -26,6 +26,7 @@ import type { Log } from '../../src/log';
 import type { RuntimeDeps } from '../../src/runtime';
 import { openRpc, type Call, type RpcClient } from '../../src/rpc';
 import type { StartedJob } from '../../src/shop-state';
+import { createThemeCatalog, type ThemeCatalog } from '../../src/theme-catalog';
 import { STACK, openPool, wait } from './stack';
 
 // Сборщик на стенде: настоящие база, брокер и MinIO, тема — подставная: рисует по данным страницы HTML, который проходит
@@ -116,6 +117,8 @@ export interface Harness {
   lines: string[];
   queued: StartedJob[];
   deps: RuntimeDeps;
+  // Каталог версий тем стенда (блок 10): прошлых версий нет, выпущенная — FAKE_THEME. Его берут тесты дорисовки и превью.
+  catalog: ThemeCatalog;
   close: () => Promise<void>;
 }
 
@@ -129,6 +132,14 @@ export function openHarness(overrides: Partial<RuntimeDeps> = {}): Harness {
   const broker = openBroker(STACK.rabbitmqUrl, log);
   const rpc = openRpc(STACK.rabbitmqUrl);
   const themes = new Map([['nova', FAKE_THEME]]);
+  const catalog = createThemeCatalog({
+    current: themes,
+    previews: new Map(),
+    index: () => Promise.resolve({}),
+    load: () => Promise.reject(new Error('прошлых версий на этом стенде нет')),
+    released: () => Promise.resolve(FAKE_THEME.version),
+    log,
+  });
   const platform = { renderHash: RENDER_HASH, apiUrl: 'https://gateway.dev.merfy.ru/api' };
   const deps: RuntimeDeps = {
     db,
@@ -139,9 +150,11 @@ export function openHarness(overrides: Partial<RuntimeDeps> = {}): Harness {
       code: codeDeps(db, log),
       platform,
       themes,
+      pins: catalog,
       clock,
     },
     themes,
+    catalog,
     platformCommit: COMMIT,
     indexable: false,
     shopState: { leaseMs: 60_000, retryDelaysMs: [100, 200] },
@@ -161,7 +174,7 @@ export function openHarness(overrides: Partial<RuntimeDeps> = {}): Harness {
     await rpc.close();
     await db.end();
   };
-  return { db, store, broker, rpc, lines, queued, deps, close };
+  return { db, store, broker, rpc, lines, queued, deps, catalog, close };
 }
 
 // HTML главной живой сборки магазина: указатель → манифест → файл по отпечатку.

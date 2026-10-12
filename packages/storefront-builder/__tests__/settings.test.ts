@@ -36,6 +36,9 @@ describe('настройки', () => {
       indexable: false,
       standPage: false,
       indexNow: null,
+      contour: 'dev',
+      releasePauseMs: 0,
+      releaseTestShop: null,
     });
     expect(RETRY_DELAYS_MS).toEqual([5000, 30_000]);
   });
@@ -59,6 +62,13 @@ describe('настройки', () => {
   it('BUILD_DRAIN_MS — до 25 с, больше — settings-invalid', () => {
     expect(readSettings({ ...ENV, BUILD_DRAIN_MS: '25000' }).drainMs).toBe(25_000);
     expect(() => readSettings({ ...ENV, BUILD_DRAIN_MS: '30000' })).toThrow(StorefrontBuilderError);
+  });
+
+  // Выпуски (блок 10): контур — только dev или prod; ошибка называет переменную, а не значение.
+  it('STOREFRONT_CONTOUR, RELEASE_PAUSE_MS, RELEASE_TEST_SHOP — из окружения; контур не dev и не prod — ошибка', () => {
+    const env = { ...ENV, STOREFRONT_CONTOUR: 'prod', RELEASE_PAUSE_MS: '3600000', RELEASE_TEST_SHOP: 'shop-1' };
+    expect(readSettings(env)).toMatchObject({ contour: 'prod', releasePauseMs: 3_600_000, releaseTestShop: 'shop-1' });
+    expect(() => readSettings({ ...ENV, STOREFRONT_CONTOUR: 'stage' })).toThrow('env#STOREFRONT_CONTOUR');
   });
 
   // Предел выпуска K (В6-2 В): меньше числа мест, при одном месте — 1.

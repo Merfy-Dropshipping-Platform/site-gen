@@ -7,6 +7,8 @@ import type { Log } from './log';
 import type { Preview } from './preview';
 import { reconcileShops } from './reconcile';
 import { queueHeldReleases } from './release';
+import { CHECK_RESULTS_QUEUE, parseCheckResult } from './release/checks';
+import type { Conductor } from './release/conductor';
 import {
   buildOf,
   expiredJobs,
@@ -29,6 +31,8 @@ export interface RuntimeDeps extends BuilderDeps {
   reconcileMs: number;
   // Сигнал превью на каждое принятое событие (design.md, раздел 4, Св-2).
   preview?: Preview;
+  // Ведущий волн (блок 10): ему — ответы проверки в браузере.
+  conductor?: Conductor;
 }
 
 export interface Runtime {
@@ -127,6 +131,27 @@ async function interruptRunning(deps: RuntimeDeps, running: Set<RunningBuild>): 
   return interrupted;
 }
 
+// Задания сборки — по слотам. Ответы проверки в браузере (блок 10) — ведущему волн, по одному: штатная остановка их не
+// берёт (broker.pause) и ждёт взятый, как сборки (track).
+async function consumeWork(
+  deps: RuntimeDeps,
+  builder: BuilderDeps,
+  track: (handler: Handler) => Handler,
+): Promise<void> {
+  await deps.broker.consume(
+    JOBS_QUEUE,
+    deps.slots,
+    track(({ body }) => runBuildJob(builder, parseJob(body))),
+  );
+  const { conductor } = deps;
+  if (conductor === undefined) return;
+  await deps.broker.consume(
+    CHECK_RESULTS_QUEUE,
+    1,
+    track(({ body }) => conductor.onCheckResult(parseCheckResult(body))),
+  );
+}
+
 export async function startRuntime(deps: RuntimeDeps): Promise<Runtime> {
   const running = new Set<RunningBuild>();
   const builder = { ...deps, running };
@@ -139,11 +164,7 @@ export async function startRuntime(deps: RuntimeDeps): Promise<Runtime> {
       await replyBuild(deps, delivery, await acceptIncoming(deps, event));
     }),
   );
-  await deps.broker.consume(
-    JOBS_QUEUE,
-    deps.slots,
-    track(({ body }) => runBuildJob(builder, parseJob(body))),
-  );
+  await consumeWork(deps, builder, track);
   const timers = [
     every(SWEEP_MS, () => sweep(deps), deps.log),
     every(deps.reconcileMs, () => reconcileShops(deps), deps.log),

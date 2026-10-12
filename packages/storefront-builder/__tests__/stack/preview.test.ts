@@ -1,6 +1,6 @@
 import type { Server } from 'node:http';
 import type { StandPageLocals } from '@merfy/storefront-build';
-import { panelForTheme, parsePanel, parseTheme } from '@merfy/tokens';
+import { NO_MIGRATIONS, panelForTheme, parsePanel, parseTheme } from '@merfy/tokens';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import panelJson from '../../../theme-contract/panel/theme-panel.json';
 import novaTheme from '../../../theme-nova/theme.json';
@@ -34,6 +34,7 @@ const NOVA: PreviewTheme = {
   panel: panelForTheme(parsePanel(panelJson, tokens.dictionary), undefined),
   renderStand: fakeStand,
   assets: new Map([['/_astro/stand.css', new TextEncoder().encode('h1{color:red}')]]),
+  migrations: NO_MIGRATIONS,
 };
 const GREEN = { schemes: { 'scheme-1': { primary: '#16a34a' } }, root: { 'choice-card-style': 'card' } };
 
@@ -49,6 +50,7 @@ async function serve(preview: boolean): Promise<void> {
     store: harness.store,
     snapshot: harness.deps.snapshot,
     themes: harness.deps.themes,
+    catalog: harness.catalog,
     renderHash: RENDER_HASH,
     slots: createSlots(1),
     timeoutMs: 3_000,
@@ -57,6 +59,9 @@ async function serve(preview: boolean): Promise<void> {
       ? {
           db: harness.db,
           themes: new Map([['nova', NOVA]]),
+          // Магазин не закреплён — версия выпущенная (FAKE_THEME); превью этой версии на стенде — NOVA.
+          pins: harness.catalog,
+          previewOf: () => Promise.resolve(NOVA),
           apiUrl: 'https://gateway.dev.merfy.ru/api',
           log: harness.deps.log,
         }

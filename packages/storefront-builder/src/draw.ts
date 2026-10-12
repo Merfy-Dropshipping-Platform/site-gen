@@ -8,6 +8,7 @@ import { errorText } from './errors';
 import type { Log } from './log';
 import type { Slots } from './slots';
 import { readSnapshot, type SnapshotDeps } from './snapshot';
+import type { ThemeCatalog } from './theme-catalog';
 import { standPreview, standTokens, themePanel, type PreviewDeps } from './stand-preview';
 
 // Дорисовка мимо очереди (design.md блока 6, В6-2, вариант 2; Св-1 В): раздача (блок 5, nginx-minio-proxy,
@@ -20,6 +21,8 @@ export interface DrawDeps {
   store: ObjectStore;
   snapshot: SnapshotDeps;
   themes: ReadonlyMap<string, LoadedTheme>;
+  // Версия живой сборки — из запроса раздачи (блок 10): образ или архив прошлой версии.
+  catalog: Pick<ThemeCatalog, 'stateOf' | 'themeAt'>;
   renderHash: string;
   slots: Slots;
   timeoutMs: number;
@@ -56,19 +59,25 @@ const TEXT = {
 // Ошибка рисования → ответ раздаче. Неизвестная ошибка — 503: страница придёт со сборкой.
 const STATUS_BY_CODE: Readonly<Record<string, number>> = { 'page-unknown': 404 };
 
-const themeLabel = (id: string, theme: LoadedTheme): string => `${id}@${theme.version}`;
+// theme=<тема>@<версия> — версия живой сборки (блок 5). Платформа — только своя: код платформы не закрепить.
+const labelOf = (label: string): { id: string; version: string } => {
+  const [id, version] = label.split('@');
+  return { id, version: version ?? '' };
+};
 
-function sameVersion(deps: DrawDeps, query: DrawQuery): boolean {
-  const themeId = query.theme.split('@')[0];
-  const theme = deps.themes.get(themeId);
-  return theme !== undefined && query.render === deps.renderHash && query.theme === themeLabel(themeId, theme);
+async function sameVersion(deps: DrawDeps, query: DrawQuery): Promise<boolean> {
+  const label = labelOf(query.theme);
+  if (query.render !== deps.renderHash || !deps.themes.has(label.id)) return false;
+  return (await deps.catalog.stateOf(label.id, label.version)) !== null;
 }
 
 async function draw(deps: DrawDeps, query: DrawQuery): Promise<DrawAnswer> {
-  if (!sameVersion(deps, query)) return { status: 409, body: TEXT.version };
+  if (!(await sameVersion(deps, query))) return { status: 409, body: TEXT.version };
+  const label = labelOf(query.theme);
   const snapshot = await readSnapshot(deps.snapshot, query.shop);
-  const theme = deps.themes.get(snapshot.inputs.theme.id);
-  if (theme === undefined) return { status: 409, body: TEXT.version };
+  // Магазин уже закреплён на другой версии — его живая сборка вот-вот сменится: чужой версией не рисуем.
+  if (snapshot.inputs.theme.version !== label.version) return { status: 409, body: TEXT.version };
+  const theme = await deps.catalog.themeAt(label.id, label.version);
   const page = await renderShopPage(parseBuildInputs(snapshot.inputs), query.path, theme.build);
   const drawn = { shop: query.shop, build: query.build, row: page.row, content: page.file.content };
   await recordDrawnPage(deps.store, drawn);

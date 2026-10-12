@@ -27,10 +27,18 @@ export interface ShopCode {
   shell: BuildInputs['shell'];
   code: BuildInputs['code'];
   assets: CodeAssets;
+  // Включённые у магазина расширения и их версии (блок 10, задача 11): в манифест сборки — по ним выпуск расширения
+  // видит, дошёл ли магазин до версии.
+  extensions: readonly Extension[];
 }
 
 // Кода нет — снимок не получен: во входах пустой код, сборки всё равно не будет (data-not-received блока 4).
-export const NO_CODE: ShopCode = { shell: null, code: { sections: [], pages: {}, globals: [] }, assets: NO_ASSETS };
+export const NO_CODE: ShopCode = {
+  shell: null,
+  code: { sections: [], pages: {}, globals: [] },
+  assets: NO_ASSETS,
+  extensions: [],
+};
 
 export interface CodeDeps {
   db: Queryable;
@@ -95,7 +103,11 @@ const moduleOf = (row: SectionRow): [string, Uint8Array][] =>
 
 // Код из видимых строк: секции, которые стоят на страницах (место без видимой секции пропускается: расширение
 // выключили, своя секция ещё не опубликована), и все глобальные скрипты. Ядро — только если есть хоть один скрипт.
-export function codeOf(rows: readonly SectionRow[], placement: Placement, shell: ShellBuild): ShopCode {
+export function codeOf(
+  rows: readonly SectionRow[],
+  placement: Placement,
+  shell: ShellBuild,
+): Omit<ShopCode, 'extensions'> {
   const placeable = new Set(rows.filter((row) => row.kind === 'section').map((row) => row.name));
   const pages = Object.fromEntries(
     Object.entries(placement).map(([page, names]): [string, string[]] => [
@@ -126,5 +138,6 @@ export async function readShopCode(
     shopId,
     extensions,
   };
-  return codeOf(await visibleSections(deps.db, visibility), placement, deps.shell);
+  const shopCode = codeOf(await visibleSections(deps.db, visibility), placement, deps.shell);
+  return { ...shopCode, extensions };
 }

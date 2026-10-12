@@ -33,6 +33,10 @@ const deps = (): SnapshotDeps => ({
   code: codeDeps(db, () => undefined),
   platform: { renderHash: `sha256:${'b'.repeat(64)}`, apiUrl: 'https://gateway.dev.merfy.ru/api' },
   themes: new Map([['nova', THEME]]),
+  pins: {
+    stateOf: (_themeId, version) => Promise.resolve(version === THEME.version ? THEME : null),
+    released: () => Promise.resolve(THEME.version),
+  },
   clock: () => new Date('2027-01-01T00:00:00.000Z'),
 });
 

@@ -39,6 +39,11 @@ const envSchema = z.object({
   // IndexNow (design.md, раздел 4): ключ — тот же, что у раздачи (блок 5); нет ключа — уведомлений нет.
   INDEXNOW_KEY: z.string().min(8).optional(),
   INDEXNOW_URL: z.url().default(INDEXNOW_URL),
+  // Выпуски (блок 10): контур журнала выпусков; выдержка между волнами (dev — 0, прод — час); тестовый магазин
+  // владельца — волна 0 выпусков платформы и расширений (тему ведёт команда выпуска с --test-shop).
+  STOREFRONT_CONTOUR: z.enum(['dev', 'prod']).default('dev'),
+  RELEASE_PAUSE_MS: z.coerce.number().int().nonnegative().default(0),
+  RELEASE_TEST_SHOP: z.string().min(1).optional(),
 });
 
 // Паузы перед повторами упавшей сборки: три запуска — первый и два повтора (раздел 4, В6-4).
@@ -62,6 +67,9 @@ export interface Settings {
   indexable: boolean;
   standPage: boolean;
   indexNow: { key: string; endpoint: string } | null;
+  contour: 'dev' | 'prod';
+  releasePauseMs: number;
+  releaseTestShop: string | null;
 }
 
 // Стенд в сборке и поиск вместе — ошибка запуска: служебная страница не должна попасть в карту сайта.
@@ -104,5 +112,8 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
     indexable: value.STOREFRONT_INDEXABLE === 'true',
     standPage: standPageOf(value.STOREFRONT_STAND_PAGE === 'true', value.STOREFRONT_INDEXABLE === 'true'),
     indexNow: value.INDEXNOW_KEY === undefined ? null : { key: value.INDEXNOW_KEY, endpoint: value.INDEXNOW_URL },
+    contour: value.STOREFRONT_CONTOUR,
+    releasePauseMs: value.RELEASE_PAUSE_MS,
+    releaseTestShop: value.RELEASE_TEST_SHOP ?? null,
   };
 }

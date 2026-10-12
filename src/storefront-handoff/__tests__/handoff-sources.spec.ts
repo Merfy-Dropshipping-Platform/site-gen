@@ -26,8 +26,17 @@ const { events } = JSON.parse(
   ),
 ) as { events: RebuildEvent[] };
 
-const codeTriggered = events.filter(
+// Сборщик запускает сборку сам (выпуски блока 10): триггер — в его пакете,
+// отправки из site-gen у таких событий нет.
+const BUILDER = "packages/storefront-builder/";
+const withFile = events.filter(
   (event) => typeof event.trigger?.file === "string",
+);
+const codeTriggered = withFile.filter(
+  (event) => !event.trigger?.file?.startsWith(BUILDER),
+);
+const builderTriggered = withFile.filter((event) =>
+  event.trigger?.file?.startsWith(BUILDER),
 );
 const viaQueue = new Set(Object.values(TRIGGER_EVENTS));
 // Смена темы опубликованного магазина — перепубликация (sites.service.ts,
@@ -68,4 +77,20 @@ describe("источники событий сборщика", () => {
       expect(notified || delivered).toBe(true);
     },
   );
+
+  it("события, которые сборщик запускает сам, — выпуски блока 10", () => {
+    expect(builderTriggered.map((event) => event.id).sort()).toEqual([
+      "extension-release",
+      "platform-release",
+      "theme-release",
+    ]);
+  });
+
+  it.each(
+    builderTriggered.map((event) => [event.id, event.trigger?.file ?? ""]),
+  )("%s названо в своём файле сборщика", (id, file) => {
+    expect(readFileSync(path.join(ROOT, file), "utf8")).toMatch(
+      new RegExp(`["']${id}["']`),
+    );
+  });
 });

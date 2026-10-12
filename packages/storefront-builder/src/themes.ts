@@ -8,9 +8,11 @@ import {
   startRenderer,
   type BuildFile,
   type Renderer,
+  type ThemeState,
   type ThemeVersions,
 } from '@merfy/storefront-build';
-import { panelForTheme, parsePanel, parseTheme } from '@merfy/tokens';
+import { panelForTheme, parsePanel, parseTheme, parseTokenMigrations } from '@merfy/tokens';
+import type { RendererFiles } from './renderer-archive';
 import { z } from 'zod';
 import type { LoadedTheme } from './build-job';
 import { StorefrontBuilderError } from './errors';
@@ -59,26 +61,47 @@ const readJson = async (path: string): Promise<unknown> => JSON.parse(await read
 // Файлы клиента по адресу от корня сайта — для превью одним HTML (inline-assets.ts).
 const assetsOf = (files: readonly BuildFile[]): Assets => new Map(files.map((file) => [`/${file.path}`, file.content]));
 
-async function loadTheme(root: string, themeId: string, recorded: ThemeVersions, options: ThemeOptions) {
-  const state = await readThemeState(root, themeId);
-  checkThemeVersion(themeId, recorded[themeId], state);
-  const renderer = await startRenderer(await serverEntry(root, themeId));
-  const themeJson = themeFileSchema.parse(await readJson(join(root, 'packages', `theme-${themeId}`, 'theme.json')));
+// Тема из папки (блок 10): серверная сборка, файлы клиента, theme.json и шаги перевода правок. Папка — тема в образе
+// сборщика или распакованный архив прошлой версии (theme-catalog.ts). Схема панели — платформы, из образа. Страница
+// стенда в сборке (STOREFRONT_STAND_PAGE) идёт от рисовальщика этой же версии: `renderStand` берётся у него.
+export async function loadThemeFrom(root: string, files: RendererFiles, state: ThemeState, options: ThemeOptions) {
+  const renderer = await startRenderer(files.serverEntry);
+  const themeJson = themeFileSchema.parse(await readJson(files.themeJson));
   const tokens = parseTheme(themeJson.tokens);
+  const migrations = parseTokenMigrations(await readJson(files.migrationsJson));
   const panel = panelForTheme(parsePanel(await readJson(join(root, PANEL_FILE)), tokens.dictionary), themeJson.panel);
-  const clientFiles = await readClientFiles(join(rendererDir(root, themeId), 'client'));
+  const clientFiles = await readClientFiles(files.clientDir);
   const stand = options.standPage ? { stand: { tokens, panel, renderStand: renderer.renderStand } } : {};
-  const theme: LoadedTheme = { ...state, build: { tokens, render: renderer.render, clientFiles, ...stand } };
-  const assets = assetsOf(clientFiles);
+  const build = { tokens, render: renderer.render, clientFiles, migrations, ...stand };
+  const theme: LoadedTheme = { ...state, build };
   const preview: PreviewTheme = {
     version: state.version,
     themeTokens: themeJson.tokens,
     tokens,
     panel,
     renderStand: renderer.renderStand,
-    assets,
+    assets: assetsOf(clientFiles),
+    migrations,
   };
   return { theme, preview, renderer };
+}
+
+// Файлы темы в образе: серверная сборка из themes/<тема>/dist-renderer, данные — из пакета packages/theme-<тема>.
+async function repoFiles(root: string, themeId: string): Promise<RendererFiles> {
+  const packageDir = join(root, 'packages', `theme-${themeId}`);
+  return {
+    serverEntry: await serverEntry(root, themeId),
+    clientDir: join(rendererDir(root, themeId), 'client'),
+    themeJson: join(packageDir, 'theme.json'),
+    migrationsJson: join(packageDir, 'migrations.json'),
+    changelogJson: join(packageDir, 'changelog.json'),
+  };
+}
+
+async function loadTheme(root: string, themeId: string, recorded: ThemeVersions, options: ThemeOptions) {
+  const state = await readThemeState(root, themeId);
+  checkThemeVersion(themeId, recorded[themeId], state);
+  return loadThemeFrom(root, await repoFiles(root, themeId), state, options);
 }
 
 export async function themeIdsOf(root: string): Promise<string[]> {

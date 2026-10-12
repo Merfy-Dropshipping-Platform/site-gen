@@ -17,7 +17,9 @@ export type StorefrontBuildErrorCode =
   | 'code-invalid'
   | 'shell-missing'
   | 'shell-mismatch'
-  | 'code-missing';
+  | 'code-missing'
+  // Журнал версий темы (блок 10) не прошёл схему.
+  | 'changelog-invalid';
 
 type ErrorDetails = { path?: string; cause?: unknown };
 

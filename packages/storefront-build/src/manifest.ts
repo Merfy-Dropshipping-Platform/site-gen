@@ -35,6 +35,9 @@ const pageRowSchema = z.strictObject({
 const manifestShape = z.strictObject({
   v: z.literal(MANIFEST_VERSION),
   key: hashSchema,
+  // Ключ данных (блок 10): ключ без кода платформы — по нему сверка сборщика ищет потерянные события. У сборок до
+  // блока 10 поля нет.
+  dataKey: hashSchema.optional(),
   // Коммит — справка для людей и поезда выпуска; в ключ входит только renderHash (В4-1 В).
   platform: z.strictObject({
     commit: z.string().regex(COMMIT, { error: 'нужен полный коммит: 40 знаков hex' }),
@@ -42,6 +45,8 @@ const manifestShape = z.strictObject({
   }),
   theme: z.strictObject({ id: kebabIdSchema, version: versionSchema, contentHash: hashSchema }),
   shell: z.strictObject({ version: versionSchema }).nullable(),
+  // Включённые расширения магазина и их версии (блок 10): по ним выпуск расширения видит, дошёл ли магазин.
+  extensions: z.array(z.strictObject({ id: z.string().min(1), version: z.string().min(1) })).optional(),
   shop: z.strictObject({ id: z.uuid() }),
   entities: z.record(entityKeySchema, hashSchema),
   files: z.record(filePathSchema, hashSchema),

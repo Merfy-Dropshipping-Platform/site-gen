@@ -34,6 +34,17 @@ export const routesKey = (shop: string, build: number): string => `${STOREFRONT_
 export const drawnKey = (shop: string, build: number): string => `${STOREFRONT_PREFIX}drawn/${shop}/${build}.json`;
 export const entitiesKey = (shop: string): string => `${STOREFRONT_PREFIX}entities/${shop}.json`;
 
+// Рисовальщики версий тем (design.md блока 10, П10-1 Б) — вне storefront/: раздача читает storefront/ без подписи, а
+// серверный код темы наружу не отдаём. Уборка этой папки не касается.
+export const RENDERERS_PREFIX = 'storefront-renderers/';
+export const rendererArchiveKey = (themeId: string, contentHash: string): string =>
+  `${RENDERERS_PREFIX}${themeId}/${hexOf(contentHash)}.tar.gz`;
+export const rendererIndexKey = (themeId: string): string => `${RENDERERS_PREFIX}${themeId}/versions.json`;
+
+// Снимки тестового магазина в отчёте выпуска (блок 10, Э3): открываются по ссылке, как файлы витрин.
+export const releaseShotKey = (release: number, name: string): string =>
+  `${STOREFRONT_PREFIX}release-shots/${release}/${name}`;
+
 export function pointerKey(label: string): string {
   if (!LABEL.test(label))
     throw new StorefrontStorageError('object-invalid', 'метка хоста — a-z, 0-9 и дефис', { path: label });

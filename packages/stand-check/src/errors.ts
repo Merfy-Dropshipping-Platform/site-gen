@@ -10,7 +10,8 @@ export type StandErrorCode =
   | 'env-missing' // нет переменной окружения
   | 'args-invalid' // аргументы команды
   | 'file-unreadable' // файл не прочитан или не JSON
-  | 'page-unavailable'; // страница стенда ответила не 200
+  | 'page-unavailable' // страница стенда ответила не 200
+  | 'thresholds-invalid'; // пороги снимков (visual-diff-thresholds.json)
 
 export class StandError extends Error {
   readonly code: StandErrorCode;

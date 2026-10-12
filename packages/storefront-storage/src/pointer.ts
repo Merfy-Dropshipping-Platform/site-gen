@@ -16,6 +16,9 @@ interface IntentFields {
   pause: object;
   // Снять паузу: ждущая сборка становится живой.
   resume: object;
+  // Откат выпуска (design.md блока 10, П10-4 А): живая сборка from → сборка to из истории. Выпуск темы возвращает без
+  // паузы — закрепление версии он вернул сам; выпуск платформы и расширения — с паузой: их код не закрепить.
+  revert: { from: number; to: number; pause: boolean };
 }
 type IntentKind = keyof IntentFields;
 type IntentOf<K extends IntentKind> = { kind: K } & IntentFields[K];
@@ -71,6 +74,16 @@ function decideRollback(current: Pointer | null, intent: IntentOf<'rollback'>, k
   });
 }
 
+function decideRevert(current: Pointer | null, intent: IntentOf<'revert'>, key: string): PointerDecision {
+  const pointer = existing(current, key);
+  if (pointer.build !== intent.from) return keep('unchanged');
+  if (!pointer.history.includes(intent.to))
+    throw new StorefrontStorageError('rollback-impossible', `сборки ${intent.to} нет в истории`, { path: key });
+  const paused = pointer.paused || intent.pause;
+  const history = pointer.history.filter((build) => build !== intent.to);
+  return changed(paused ? 'paused' : 'live', { ...pointer, build: intent.to, history, paused, rev: pointer.rev + 1 });
+}
+
 function decidePause(current: Pointer | null, intent: IntentOf<'pause'>, key: string): PointerDecision {
   const pointer = existing(current, key);
   if (pointer.paused) return keep('paused');
@@ -91,6 +104,7 @@ const DECISIONS: { [K in IntentKind]: (current: Pointer | null, intent: IntentOf
     rollback: decideRollback,
     pause: decidePause,
     resume: decideResume,
+    revert: decideRevert,
   };
 
 export function nextPointer<K extends IntentKind>(

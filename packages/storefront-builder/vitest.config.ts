@@ -5,12 +5,17 @@ import { defineConfig } from 'vitest/config';
 // тесты на стенде, __tests__/stack/*.test.ts, команда `pnpm test:stack` (vitest.stack.config.ts).
 export default defineConfig({
   test: {
-    include: ['__tests__/*.test.ts'],
+    // __tests__/release/ — чистые части выпуска (блок 10): модули без ввода-вывода. Остальное в src/release/ покрывают
+    // тесты на стенде (vitest.stack.config.ts берёт src/**/*.ts).
+    include: ['__tests__/*.test.ts', '__tests__/release/*.test.ts'],
     // Тест тем грузит серверную сборку nova и под нагрузкой машины не укладывается в 5 с по умолчанию.
     testTimeout: 20_000,
     coverage: {
       provider: 'v8',
-      include: ['src/{errors,parse,log,events,settings,slots,themes,indexnow,preview,inline-assets}.ts'],
+      include: [
+        'src/{errors,parse,log,events,settings,slots,themes,indexnow,preview,inline-assets}.ts',
+        'src/release/{waves,kinds,checks,page-check,dry-run,report}.ts',
+      ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },

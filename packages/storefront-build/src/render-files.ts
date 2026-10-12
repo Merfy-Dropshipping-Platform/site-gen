@@ -11,10 +11,12 @@ export const THEME_FILES = {
   skip: ['src/pages/**', 'src/stand/**', 'astro.config.mjs', 'package.json', '.gitignore', '.npmrc'],
 } as const;
 
-// Отпечаток темы — её файлы render и theme.json пакета темы: токены темы (блок 1).
+// Отпечаток темы — её файлы render, theme.json пакета темы (токены, блок 1) и шаги перевода правок (блок 10). Журнал
+// версий changelog.json на страницы не влияет и в отпечаток не входит.
 export const themeRenderFiles = (themeId: string): string[] => [
   ...THEME_FILES.render.map((pattern) => `themes/${themeId}/${pattern}`),
   `packages/theme-${themeId}/theme.json`,
+  `packages/theme-${themeId}/migrations.json`,
 ];
 
 // Код платформы, который рисует страницы новой темы: этот пакет, конфиг витрины (блок 3) и токены (блок 1). Тест
@@ -30,6 +32,14 @@ export const PLATFORM_RENDER_FILES = [
   'packages/tokens/dictionary.json',
   'packages/tokens/not-tokens.json',
   'packages/tokens/search-words.json',
+  // Ядро @merfy/shell и секции платформы (блок 7): входы shell и code.sections «platform:» меняет только выкатка кода
+  // платформы. Они в отпечатке, чтобы новое ядро и новые секции платформы разносил выпуск платформы волнами (блок 10,
+  // задача 11): его отпечаток — renderHash.
+  'packages/storefront-shell/package.json',
+  'packages/storefront-shell/core-parts.json',
+  'packages/storefront-shell/scripts/**',
+  'packages/storefront-shell/src/**',
+  'packages/storefront-shell/sections/**',
 ];
 
 export const platformRenderHash = (root: string): Promise<string> => contentHash(root, PLATFORM_RENDER_FILES);

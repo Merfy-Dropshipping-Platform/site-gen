@@ -4,19 +4,24 @@ import { parseWith } from '../errors';
 import type { Target } from '../types';
 import { SABOTAGE_NAMES, type SabotageName } from './sabotage';
 
-export type RunArgs = { target: Target; sabotage: SabotageName[] };
+export type RunArgs = { target: Target; sabotage: SabotageName[]; shots: boolean };
 export type CompareArgs = { first: string; second: string };
 
-const runArgsSchema = z.object({ target: z.enum(['local', 'dev']), sabotage: z.array(z.enum(SABOTAGE_NAMES)) });
+const runArgsSchema = z.object({
+  target: z.enum(['local', 'dev']),
+  sabotage: z.array(z.enum(SABOTAGE_NAMES)),
+  shots: z.enum(['on', 'off']).transform((value) => value === 'on'),
+});
 const compareArgsSchema = z.tuple([z.string().endsWith('.json'), z.string().endsWith('.json')]);
 
-// stand:run и stand:baseline: --target local|dev; --sabotage script|global|cart, можно несколько раз.
+// stand:run и stand:baseline: --target local|dev; --sabotage script|global|cart, можно несколько раз; --shots on|off.
 export function parseRunArgs(argv: readonly string[]): RunArgs {
   const { values } = parseArgs({
     args: [...argv],
     options: {
       target: { type: 'string', default: 'local' },
       sabotage: { type: 'string', multiple: true, default: [] },
+      shots: { type: 'string', default: 'off' },
     },
     strict: true,
   });

@@ -10,7 +10,20 @@ export { StorefrontStorageError, type StorefrontStorageErrorCode } from './error
 export { UPDATE_ATTEMPTS, readObject, updateObject, writeObject, type Decision, type Updated } from './objects';
 
 // Раскладка и форматы v1
-export { STOREFRONT_PREFIX, blobKey, drawnKey, entitiesKey, hexOf, manifestKey, pointerKey, routesKey } from './layout';
+export {
+  RENDERERS_PREFIX,
+  STOREFRONT_PREFIX,
+  blobKey,
+  drawnKey,
+  entitiesKey,
+  hexOf,
+  manifestKey,
+  pointerKey,
+  releaseShotKey,
+  rendererArchiveKey,
+  rendererIndexKey,
+  routesKey,
+} from './layout';
 export {
   CACHE_CLASSES,
   FORMAT_VERSION,

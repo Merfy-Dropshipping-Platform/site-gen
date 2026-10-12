@@ -63,6 +63,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Chromium для тестов stand-check
+        run: pnpm --dir packages/stand-check exec playwright install --with-deps chromium
+
+      # Тесты storefront-builder рисуют nova её серверной сборкой (themes/nova/dist-renderer). У темы свои зависимости
+      # вне workspace — их ставит build:themes, а здесь он ещё не шёл.
+      - name: Рисовальщик nova для тестов сборщика
+        run: |
+          pnpm --dir themes/nova install --ignore-workspace --frozen-lockfile
+          pnpm --filter @merfy/storefront-builder renderer
+
+      - name: Тесты пакетов этапа
+        run: |
+          for package in tokens storefront-config storefront-build storefront-storage storefront-builder stand-check storefront-shell storefront-sections; do
+            echo "### $package"
+            pnpm --dir "packages/$package" test
+          done
+
       - name: Prepare environment variables
         run: |
           cat <<'EOF' > .env.local

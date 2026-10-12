@@ -13,12 +13,15 @@ import {
 } from './events';
 import type { Log } from './log';
 import { PREVIEW_EXCHANGE, type PreviewSignal } from './preview';
+import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } from './release/checks';
 
 // RabbitMQ сборщика (design.md блока 6, В6-2 В, Св-3 А). Имена — новые: нынешние sites_queue, sites_build_queue и
 // sites_product_events сборщик не объявляет и не читает. Классические очереди: у RabbitMQ 3.13 приоритеты есть только
 // у них (факты 21, 24).
 //   storefront_builder_events — события: привязана к content.events (topic, «#») и к готовой product.events (fanout);
-//   storefront_builds         — задания сборки, приоритет 1–3 (x-max-priority).
+//   storefront_builds         — задания сборки, приоритет 1–3 (x-max-priority);
+//   storefront_checks         — задания проверки в браузере (блок 10), их берёт проверяющий процесс;
+//   storefront_check_results  — ответы проверки, их берёт ведущий волн сборщика.
 // Объявление — на каждом канале при каждом подключении (факт 6): брокер перезапустился — очереди на месте.
 
 export const EVENTS_QUEUE = 'storefront_builder_events';
@@ -47,6 +50,10 @@ export interface Broker {
   reply: (replyTo: string, correlationId: string | undefined, body: unknown) => Promise<void>;
   publishActivity: (routingKey: string, envelope: Record<string, unknown>) => Promise<void>;
   publishPreview: (signal: PreviewSignal) => Promise<void>;
+  // Задание проверки в браузере (блок 10): ведущий волн → проверяющий процесс.
+  publishCheck: (job: CheckJob) => Promise<void>;
+  // Ответ проверки (блок 10): проверяющий процесс → ведущий волн.
+  publishCheckResult: (result: CheckResult) => Promise<void>;
   consume: (queue: string, prefetch: number, handler: Handler) => Promise<void>;
   // Штатная остановка: новых сообщений не брать. Взятые обработчики доделывают, отправка работает до close.
   pause: () => Promise<void>;
@@ -62,6 +69,8 @@ export async function declareTopology(channel: ConfirmChannel): Promise<void> {
   await channel.bindQueue(EVENTS_QUEUE, CONTENT_EXCHANGE, '#');
   await channel.bindQueue(EVENTS_QUEUE, PRODUCT_EXCHANGE, '');
   await channel.assertQueue(JOBS_QUEUE, { durable: true, arguments: { 'x-max-priority': MAX_PRIORITY } });
+  await channel.assertQueue(CHECKS_QUEUE, { durable: true });
+  await channel.assertQueue(CHECK_RESULTS_QUEUE, { durable: true });
 }
 
 const json = (value: unknown): Buffer => Buffer.from(JSON.stringify(value));
@@ -103,8 +112,12 @@ async function deliver(channel: ChannelWrapper, message: ConsumeMessage, handler
   }
 }
 
-function openChannel(connection: AmqpConnectionManager): ChannelWrapper {
-  return connection.createChannel({ setup: declareTopology, publishTimeout: PUBLISH_TIMEOUT_MS });
+// Ошибка подготовки канала (закрыли, пока объявлялись очереди; брокер отверг объявление) приходит событием 'error'. Без
+// обработчика это необработанное отклонение промиса — процесс падает. Канал переподнимет обёртка при новом подключении.
+function openChannel(connection: AmqpConnectionManager, log: Log): ChannelWrapper {
+  const channel = connection.createChannel({ setup: declareTopology, publishTimeout: PUBLISH_TIMEOUT_MS });
+  channel.on('error', (error: unknown) => log('broker-channel-error', { error: errorText(error) }));
+  return channel;
 }
 
 type Publishers = Omit<Broker, 'consume' | 'pause' | 'close'>;
@@ -127,15 +140,21 @@ const publishersOf = (publisher: ChannelWrapper): Publishers => ({
   publishPreview: async (signal) => {
     await publisher.publish(PREVIEW_EXCHANGE, '', json(signal), { contentType: 'application/json' });
   },
+  publishCheck: async (job) => {
+    await publisher.sendToQueue(CHECKS_QUEUE, json(job), persistent());
+  },
+  publishCheckResult: async (result) => {
+    await publisher.sendToQueue(CHECK_RESULTS_QUEUE, json(result), persistent());
+  },
 });
 
 export function openBroker(url: string, log: Log): Broker {
   const connection = amqp.connect([url], { reconnectTimeInSeconds: RECONNECT_SECONDS });
   connection.on('disconnect', ({ err }: { err?: Error }) => log('broker-disconnected', { error: errorText(err) }));
-  const publisher = openChannel(connection);
+  const publisher = openChannel(connection, log);
   const consumers: ChannelWrapper[] = [];
   const consume = async (queue: string, prefetch: number, handler: Handler): Promise<void> => {
-    const channel = openChannel(connection);
+    const channel = openChannel(connection, log);
     consumers.push(channel);
     await channel.consume(queue, (message) => void deliver(channel, message, handler, log), { prefetch });
   };

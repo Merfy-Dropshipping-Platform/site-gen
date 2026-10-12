@@ -78,6 +78,64 @@
 - В сборку идут файлы ядра (`_merfy/shell/<16 знаков>/`) и скриптов секций (`_merfy/m/<sha256>.js`); раздача отдаёт
   `_merfy/` с кэшем навсегда.
 
+## Выпуск волнами (блок 10)
+
+- Ведущий волн живёт в сборщике (`src/release/conductor.ts`), состояние — в таблицах `storefront_release` и
+  `storefront_release_shop` базы sites. Просыпается от `NOTIFY storefront_release` (команда выпуска), конца сборки,
+  ответа проверки и таймера выдержки; при старте сверяет активные выпуски (`resume`).
+- Очереди: `storefront_checks` — задания проверки в браузере (их берёт проверяющий процесс), `storefront_check_results`
+  — ответы ведущему.
+- Переменные: `STOREFRONT_CONTOUR` (`dev` | `prod`, по умолчанию `dev`), `RELEASE_PAUSE_MS` (выдержка между волнами,
+  по умолчанию 0; на проде — 3600000), `RELEASE_TEST_SHOP` (тестовый магазин выпусков платформы и расширений).
+- Строки журнала: `release-shop-before`, `release-shop-building`, `release-shop-waits`, `release-shop-done`,
+  `release-shop-skipped`, `release-shop-not-reached`, `release-wave`, `release-awaiting`, `release-finished`,
+  `release-step-failed`, `release-listen-failed`. Автостоп — строка `ALERT` и запись `site.release_stopped` с
+  `critical` в журнале платформы.
+- Увидел `ALERT`: `pnpm theme-release status <№>` — что сломалось; дальше `pnpm theme-release revert-all <№>` (вернуть
+  все обновлённые магазины) или исправление новым выпуском; магазин, который ждёт сбой данных, снимает
+  `pnpm theme-release skip <№> <магазин>`.
+- Штатная остановка (SIGTERM): ведущий новых шагов не берёт, идущий доделывает не дольше `BUILD_DRAIN_MS` — вместе с
+  идущими сборками.
+
+## Проверяющий процесс (блок 10)
+
+- Что делает: берёт задание из `storefront_checks` по одному, открывает главную магазина в Chromium, снимает паспорт
+  (`@merfy/stand-check`), сравнивает с паспортом «до» по `packages/stand-check/release-rules.json` и отвечает в
+  `storefront_check_results` ведущему волн. Страница не открылась — ошибка в ответе, а не падение процесса.
+- Запуск: `pnpm --filter @merfy/storefront-builder checker`; в образе — цель Dockerfile `storefront-checker` (база —
+  образ Playwright с Chromium), в Coolify — отдельное приложение с пределом памяти.
+- Переменные: `RABBITMQ_URL` (обязательна; тот же брокер, что у сборщика), `PORT` (по умолчанию 8080, только `/health`).
+- Правила: `release-rules.json` — для автостопа; красное там только поломка (новая ошибка в консоли, пропавший токен
+  или шрифт), новый скрипт, другой цвет и новый запрос — жёлтое. `compare-rules.json` — правила стенда и отчёта
+  человеку, строже; проверяющий процесс их не читает.
+- Строки журнала: `checker-started` (порт, число правил), `check-done`, `check-failed`, `checker-stopped`.
+
+## Команда выпуска (блок 10)
+
+Запускает человек на своей машине: `pnpm --filter @merfy/storefront-builder theme-release <подкоманда>`.
+
+- Подкоманды и флаги: `start <тема> [--test-shop <id>] [--version <x.y.z>] [--no-shots] [--expect-hash sha256:…]`,
+  `approve <№>`, `status [<№>]`, `skip <№> <магазин>`, `revert-all <№>`.
+- Переменные: `DATABASE_URL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_PUBLIC_URL`,
+  `STOREFRONT_CONTOUR`. Значения — из Coolify приложения сборщика своего контура; в README, журнал и чат их не писать.
+- dev: `start nova --test-shop <id>` → прочитать отчёт → `approve <№>` или `revert-all <№>`.
+- Прод: выкатка коммитов версии по правилу «на прод — только свои задачи», затем
+  `start nova --test-shop <id> --expect-hash <отпечаток из отчёта dev>`.
+- Отчёты — `packages/storefront-builder/releases/<контур>/`, их коммитит человек.
+- Коды выхода: 0 — сделано; 1 — выпуск не стартовал, остановлен или на контуре уже идёт другой; 2 — команда не смогла.
+
+## Выпуски платформы и расширений (блок 10)
+
+- Выпуск платформы заводит сам сборщик при старте, если `renderHash` образа (в нём ядро и секции платформы) не тот, что
+  у последнего выпуска платформы на контуре. «Да» не нужно: после тестового магазина волны идут сами. Магазин, которому
+  новый код ничего не меняет, уходит из волны пропуском «сборка не изменилась».
+- Выпуск расширения: `pnpm --filter @merfy/storefront-builder theme-release extension <расширение> <x.y.z>` — после
+  регистрации версии в сервисе extensions.
+- Откат платформы и расширения — указатель с паузой: закрепить их у магазина нельзя. Снять паузу —
+  `pnpm --filter @merfy/storefront-storage pointer resume --label <метка>`.
+- Сверка раз в час сравнивает ключ данных (`dataKey`): новый код платформы и новая версия расширения для неё не
+  расхождение, включение и выключение расширения — расхождение.
+
 ## Журнал и p95
 
 Одна строка JSON на событие: `event-accepted`, `job-queued`, `build-start`, `step` (`buildId`, `shopId`, `step`, `ms`,

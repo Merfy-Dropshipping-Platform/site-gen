@@ -245,6 +245,13 @@ jobs:
       - name: Форма расширения на странице товара (флаг темы)
         run: pnpm exec jest --runInBand src/themes/__tests__/extension-purchase-product-flag.spec.ts
 
+      # Записи расширений в «Моих заказах» и страница записи (спека 120, задача 5.4):
+      # чистые функции, поведение в jsdom, сторож строки рантайма для секции «Заказы»
+      # (строку делает scripts/build-orders-runtime.mjs) и переход `next` после входа.
+      - name: Записи расширений в «Моих заказах» (theme-base)
+        working-directory: packages/theme-base
+        run: pnpm exec jest --config jest.config.ts --runInBand __tests__/extension-orders __tests__/next-path
+
       # Этап 3 «Магазин одной командой» (src/store/): сага рождения и её
       # доводчик, команды CreateStore/SetTheme, каталог тем, регистрация через
       # команду под флагом `newLogic` (без флага и cron «без магазина» — старый
@@ -406,6 +413,11 @@ jobs:
       # сторожит, что послабление превью не сняло защиту витрины.
       - if: false
         run: pnpm test:account-preview-body
+      # Спека 120, задача 5.4 (flux): секция «Заказы» несёт рантайм записей
+      # расширений, страница записи /account/entry, вход по `next`, страниц
+      # первой версии нет. Рендерит собранную секцию — нужен build:theme-sections.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/extension-orders-flux.spec.ts
       # Секция «Вход» (владелец 14.09): у страницы /login появилось собственное
       # тело — magic-link форма темы, — и в панели РОВНО ЧЕТЫРЕ параметра:
       # «Заголовок», «Текст», «Цветовая схема», «Отступы». panel-canon сторожит

@@ -20,7 +20,9 @@
     "test:visual:update": "playwright test --config playwright.config.ts --update-snapshots",
     "tsc": "tsc --noEmit",
     "build:purchase-runtime": "node scripts/build-purchase-runtime.mjs",
-    "build:purchase-stand": "node scripts/build-purchase-runtime.mjs --stand"
+    "build:purchase-stand": "node scripts/build-purchase-runtime.mjs --stand",
+    "build:orders-runtime": "node scripts/build-orders-runtime.mjs",
+    "build:orders-stand": "node scripts/build-orders-runtime.mjs --stand"
   },
   "dependencies": {
     "@merfy/theme-contract": "workspace:*",

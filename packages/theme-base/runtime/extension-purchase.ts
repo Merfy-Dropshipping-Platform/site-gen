@@ -43,6 +43,17 @@ import {
   type ContactValuesV2,
   type ValidationErrorsV2,
 } from "./forms-vendor/validate-v2";
+import {
+  attribute,
+  callFunction,
+  escapeHtml,
+  fetchStorefrontMap,
+  isRecord,
+  isSuccessStatus,
+  safeLink,
+} from "./extension-call";
+
+export { safeLink };
 
 /* ── Типы: копии SDK 2.9 (ProductFormView, ProductSubmitInput, ProductSubmitResult) ── */
 
@@ -151,38 +162,19 @@ const CONTACT_INPUTS: Record<
   social: { type: "text", placeholder: "@ник или ссылка на профиль" },
 };
 
-const CUSTOMER_TOKEN_KEY = "merfy_customer_token";
 const CONTAINER_SELECTOR = "[data-extension-purchase]";
 const ACTIONS_SELECTOR = "[data-product-actions]";
 const NOTE_SELECTOR = "[data-extension-purchase-note]";
 const MOUNTED_ATTRIBUTE = "data-extension-purchase-mounted";
 const MAX_RESULT_BUTTONS = 3;
-/** Пробелы, управляющие символы и обратная косая: браузер при разборе ссылки убирает табуляцию и склеивает `/` + `\t/` в `//`. */
-const UNSAFE_LINK_CHARS = /[\s\\\p{Cc}]/u;
-const HTML_ESCAPES: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-};
 
-/* ── Мелкие общие помощники ── */
+/* ── Мелкие общие помощники (канал к шлюзу и экранирование — extension-call.ts) ── */
 
 const hasOwn = (object: object, key: string): boolean =>
   Object.prototype.hasOwnProperty.call(object, key);
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
 const isOptionalString = (value: unknown): boolean =>
   value === undefined || typeof value === "string";
-
-const escapeHtml = (raw: unknown): string =>
-  String(raw ?? "").replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
-
-const attribute = (name: string, value: string): string =>
-  ` ${name}="${escapeHtml(value)}"`;
 
 /** Программное имя поля: подпись над ним — не `<label>`, а у поля нет другого имени. */
 const ariaLabel = (title: string): string => attribute("aria-label", title);
@@ -366,13 +358,6 @@ export function collectSubmitInput(
   };
 }
 
-/** Ссылка кнопки ответа: свой путь (`/…`, но не `//…`) или `https://`. Остальное — `null`. */
-export function safeLink(url: unknown): string | null {
-  if (typeof url !== "string" || UNSAFE_LINK_CHARS.test(url)) return null;
-  const ownPath = url.startsWith("/") && !url.startsWith("//");
-  return ownPath || url.startsWith("https://") ? url : null;
-}
-
 /* ── Разбор ответа отправки ── */
 
 const FAILED: SubmitOutcome = { kind: "failed" };
@@ -407,10 +392,6 @@ const OUTCOME_BY_STATUS = new Map<number, (body: unknown) => SubmitOutcome>([
   [400, invalidOutcome],
   [422, refusedOutcome],
 ]);
-
-/** Успех — любой 2xx: шлюз отвечает на POST статусом 201, а не 200. */
-const isSuccessStatus = (status: number): boolean =>
-  status >= 200 && status < 300;
 
 /** Что значит ответ функции отправки; незнакомый статус — общий сбой. */
 export function classifyResponse(status: number, body: unknown): SubmitOutcome {
@@ -596,67 +577,6 @@ export function renderResultHtml(result: ProductSubmitResult): string {
   });
   const text = result.text ? `<span>${escapeHtml(result.text)}</span>` : "";
   return `<div class="okbox"><b>${escapeHtml(result.title)}</b>${text}</div>${anchors.join("")}`;
-}
-
-/* ── Сеть ── */
-
-interface FunctionReply {
-  status: number;
-  body: unknown;
-}
-
-function readCustomerToken(): string {
-  try {
-    return window.localStorage.getItem(CUSTOMER_TOKEN_KEY) ?? "";
-  } catch {
-    // Хранилище закрыто (приватный режим): покупаем как гость.
-    return "";
-  }
-}
-
-const readJson = (response: Response): Promise<unknown> =>
-  response.json().catch(() => null);
-
-function functionHeaders(): Record<string, string> {
-  const token = readCustomerToken();
-  const json = { "Content-Type": "application/json" };
-  return token === "" ? json : { ...json, Authorization: `Bearer ${token}` };
-}
-
-/** Карта расширений: публичная, без кук. Сбой сети — `null`: форма не показывается. */
-async function fetchStorefrontMap(
-  options: MountExtensionPurchaseOptions,
-): Promise<unknown> {
-  const url = `${options.apiBase}/store/extensions/storefront?store_id=${encodeURIComponent(options.storeId)}`;
-  try {
-    const response = await fetch(url, { credentials: "omit" });
-    return response.ok ? await readJson(response) : null;
-  } catch {
-    // Сеть недоступна: страница работает как без формы.
-    return null;
-  }
-}
-
-/** Вызов функции расширения; `null` — до сервера не дошли (сеть). */
-async function callFunction(
-  options: MountExtensionPurchaseOptions,
-  point: { extensionId: string; name: string },
-  input: object,
-): Promise<FunctionReply | null> {
-  const path = `${encodeURIComponent(point.extensionId)}/fn/${encodeURIComponent(point.name)}`;
-  const url = `${options.apiBase}/store/extensions/${path}?store_id=${encodeURIComponent(options.storeId)}`;
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: functionHeaders(),
-      credentials: "include",
-      body: JSON.stringify(input),
-    });
-    return { status: response.status, body: await readJson(response) };
-  } catch {
-    // Сеть недоступна: вызывающий решает — молчать (показ) или сказать покупателю (отправка).
-    return null;
-  }
 }
 
 /* ── DOM: показ формы и события ── */

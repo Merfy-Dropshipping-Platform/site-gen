@@ -1,6 +1,7 @@
 import type { BuildInputs, CodeAssets, Entity, ThemeState } from '@merfy/storefront-build';
 import { z } from 'zod';
 import { NO_CODE, readShopCode, type CodeDeps } from './code';
+import { fetchCounters, type CounterRequest } from './counters';
 import { StorefrontBuilderError, errorText } from './errors';
 import type { Log } from './log';
 import type { Call } from './rpc';
@@ -12,6 +13,7 @@ import type { ThemePins } from './theme-catalog';
 // сборки, data-fetcher.ts). Сервис не ответил или ответил ошибкой — снимок «не получен» (data.status: failed), и сборка
 // блока 4 падает до рендера: живой сайт не трогаем. Коллекции и касса — с секциями (раздел 4, «Свежесть»). Код секций
 // (блок 7, code.ts) — из реестра storefront_section и сервиса extensions; не получен — снимок тоже «не получен».
+// Счётчики мерчанта (блок 11, counters.ts) — у сборщика аналитики; не ответил — снимок тоже «не получен».
 
 export const PRODUCT_QUEUE = 'product-service_queue';
 const PRODUCT_LIST = 'product.list';
@@ -198,6 +200,8 @@ export async function fetchProducts(request: ProductRequest, shop: Shop): Promis
 export interface Platform {
   renderHash: string;
   apiUrl: string;
+  // Сборщик аналитики для конфига витрины (блок 11): ANALYTICS_COLLECTOR_URL без косой черты в конце.
+  analyticsUrl: string;
 }
 
 export interface InputsParts {
@@ -233,6 +237,7 @@ export interface SnapshotDeps {
   db: Queryable;
   products: ProductRequest;
   code: CodeDeps;
+  counters: CounterRequest;
   platform: Platform;
   themes: ReadonlyMap<string, ThemeState>;
   // Версии тем и выпущенная версия (блок 10, theme-catalog.ts).
@@ -256,15 +261,16 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<
   if (shop === null) throw new StorefrontBuilderError('shop-invalid', 'магазина нет', { path: `site/${siteId}` });
   const theme = await themeOf(deps, shop);
   const address = shopAddress(shop);
-  const [siteEntities, products, tokens, shopCode] = await Promise.all([
+  const [siteEntities, products, tokens, shopCode, counters] = await Promise.all([
     readSiteEntities(deps.db, siteId),
     fetchProducts(deps.products, shop),
     readRevisionTokens(deps.db, siteId),
     readShopCode(deps.code, siteId, theme),
+    fetchCounters(deps.counters, shop),
   ]);
-  const entities = [...siteEntities, ...(products ?? [])];
+  const entities = [...siteEntities, ...(products ?? []), ...(counters ?? [])];
   const year = deps.clock().getUTCFullYear();
-  const received = products !== null && shopCode !== null;
+  const received = products !== null && shopCode !== null && counters !== null;
   const { shell, code, assets, extensions } = shopCode ?? NO_CODE;
   const parts = { platform: deps.platform, theme, shop, address, year, entities, received, tokens, shell, code };
   return { shop, address, inputs: buildInputsOf(parts), assets, extensions };
@@ -288,7 +294,7 @@ export const buildInputsOf = (parts: InputsParts) => ({
     logoUrl: parts.shop.logoUrl,
     updatedAt: parts.shop.updatedAt,
   },
-  env: { apiUrl: parts.platform.apiUrl },
+  env: { apiUrl: parts.platform.apiUrl, analyticsUrl: parts.platform.analyticsUrl },
   year: parts.year,
   data: { status: parts.received ? 'received' : 'failed', entities: parts.entities },
 });

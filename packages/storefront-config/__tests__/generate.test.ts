@@ -20,7 +20,7 @@ describe('JSON Schema конфига', () => {
     expect(schema).toMatchObject({
       $comment: GENERATED_NOTE,
       additionalProperties: false,
-      required: ['v', 'mode', 'shop', 'currency', 'locale', 'api', 'theme', 'page'],
+      required: ['v', 'mode', 'shop', 'currency', 'locale', 'api', 'theme', 'page', 'analytics'],
       properties: {
         v: { const: 1 },
         mode: { enum: ['live', 'preview'] },

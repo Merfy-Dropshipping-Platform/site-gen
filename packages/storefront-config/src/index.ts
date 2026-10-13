@@ -2,7 +2,16 @@
 // читатель и события пересборки. В браузере читатель берут отдельным входом — src/read.ts
 // (@merfy/storefront-config/read): так в скрипт страницы не попадает zod.
 
-export { storefrontConfigSchema, type StorefrontConfig } from './schema';
+export {
+  COUNTER_KINDS,
+  COUNTER_NUMBERS,
+  isCounterNumber,
+  storefrontConfigSchema,
+  type AnalyticsConfig,
+  type Counter,
+  type CounterKind,
+  type StorefrontConfig,
+} from './schema';
 export { buildStorefrontConfig, type StorefrontConfigInput } from './build';
 export { CONFIG_TAG_ID, configTag, escapeScriptJson } from './tag';
 export { parseStorefrontConfig, readStorefrontConfig, type ConfigSource } from './read';

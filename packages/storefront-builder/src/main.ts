@@ -20,6 +20,7 @@ import { jsonLog } from './log';
 import { previewVia } from './preview';
 import { openRpc } from './rpc';
 import { enqueueVia, startRuntime, type RuntimeDeps } from './runtime';
+import { consumeSectionErrors } from './section-error-store';
 import { acceptSectionReleases, releaseFolders } from './section-releases';
 import { RETRY_DELAYS_MS, readSettings } from './settings';
 import { createSlots } from './slots';
@@ -73,11 +74,16 @@ const catalog = createThemeCatalog({
 const shell = await readShellBuild(ROOT);
 const broker = openBroker(settings.rabbitmqUrl, log);
 const rpc = openRpc(settings.rabbitmqUrl);
-const platform = { renderHash: await platformRenderHash(ROOT), apiUrl: settings.apiUrl };
+const platform = {
+  renderHash: await platformRenderHash(ROOT),
+  apiUrl: settings.apiUrl,
+  analyticsUrl: settings.analyticsUrl,
+};
 const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 // Код магазина (блок 7): реестр секций, места из ревизии, включённые расширения; тайм-аут — как у товаров.
 const code = { db, shell, call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
-const snapshot = { db, products, code, platform, themes: loaded.themes, clock };
+const counters = { call: rpc.call, timeoutMs: settings.analyticsTimeoutMs, log };
+const snapshot = { db, products, code, counters, platform, themes: loaded.themes, clock };
 
 // Включённые расширения магазина для выпуска расширения (задача 11) — тот же вызов extensions.enabledForShop и тот же
 // тайм-аут, что у снимка. Сервис не ответил — шаг ведущего падает, сверка повторит его через 30 с.
@@ -139,6 +145,8 @@ const deps: RuntimeDeps = {
 // Секции платформы и тем — в реестр до первой сборки (дверь выпуска, п. 21); отказ — строка журнала, старт идёт дальше.
 await acceptSectionReleases({ db, store, log }, releaseFolders(ROOT, shell.version, loaded.themes));
 const runtime = await startRuntime(deps);
+// Ошибки секций из браузеров (блок 11, часть 4): очередь шлюза → таблица storefront_section_error.
+await consumeSectionErrors({ broker, db, log });
 // Выпуск платформы (задача 11): новый образ — новый код платформы (renderHash, в нём ядро и секции платформы); тот же
 // отпечаток — ничего. Заводится до подписки: resume ниже сразу поведёт его волну 0.
 const platformRelease = {

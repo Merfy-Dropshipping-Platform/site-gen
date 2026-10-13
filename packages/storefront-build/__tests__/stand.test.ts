@@ -16,6 +16,7 @@ const inputsOf = (revision: StandInputs['revision'], site: Partial<StandInputs['
   revision,
 });
 
+const LIVE_ENV = { apiUrl: 'https://gateway.dev.merfy.ru/api', analyticsUrl: 'https://analytics.dev.merfy.ru' };
 const GREEN: TokenEdits = { schemes: { 'scheme-1': { primary: '#16a34a' } }, root: { 'choice-card-style': 'card' } };
 
 describe('standLocals', () => {
@@ -67,11 +68,12 @@ describe('standLocals', () => {
   });
 
   it('вид live — стенд в сборке магазина: режим live, слушателя превью нет, правки токенов те же', () => {
-    const locals = standLocals(inputsOf({ tokens: GREEN, settings: undefined }), theme, 'live');
+    const locals = standLocals({ ...inputsOf({ tokens: GREEN, settings: undefined }), env: LIVE_ENV }, theme, 'live');
     expect(locals.config.mode).toBe('live');
     expect(locals.head.previewScript).toBe('');
     expect(locals.head.tokensCss).toContain('#16a34a');
     expect(locals.head.configHtml).toContain('"mode":"live"');
+    expect(locals.head.configHtml).toContain('"analytics":{"url":"https://analytics.dev.merfy.ru","counters":[]}');
   });
 });
 

@@ -17,6 +17,9 @@ const envSchema = z.object({
   S3_SECRET_KEY: z.string().min(1),
   // Адрес API платформы для конфига витрины (блок 3): https://gateway.dev.merfy.ru/api на dev.
   STOREFRONT_API_URL: z.url(),
+  // Сборщик аналитики для конфига витрины (блок 11, И4): https://analytics.dev.merfy.ru на dev. Запасного адреса нет:
+  // переменной нет — сборщик не стартует и называет её.
+  ANALYTICS_COLLECTOR_URL: z.url(),
   // Коммит образа: справка в манифесте сборки (блок 4, В4-1 В). Coolify отдаёт его приложению сам.
   SOURCE_COMMIT: z.string().regex(/^[0-9a-f]{40}$/),
   PORT: count(8080),
@@ -31,6 +34,7 @@ const envSchema = z.object({
   BUILD_DRAIN_MS: z.coerce.number().int().positive().max(25_000).default(20_000),
   RECONCILE_MS: count(3_600_000),
   PRODUCT_TIMEOUT_MS: count(10_000),
+  ANALYTICS_TIMEOUT_MS: count(5_000),
   // Магазины для поиска: robots.txt открыт и есть карта сайта (блок 5). На dev — нет.
   STOREFRONT_INDEXABLE: z.enum(['true', 'false']).default('false'),
   // Страница стенда /theme-stand в сборке магазина (шаг 7 блока 9: эталон стенда на dev по адресу магазина).
@@ -54,6 +58,7 @@ export interface Settings {
   rabbitmqUrl: string;
   s3: { endpoint: string; bucket: string; accessKeyId: string; secretAccessKey: string };
   apiUrl: string;
+  analyticsUrl: string;
   commit: string;
   port: number;
   buildSlots: number;
@@ -64,6 +69,7 @@ export interface Settings {
   drainMs: number;
   reconcileMs: number;
   productTimeoutMs: number;
+  analyticsTimeoutMs: number;
   indexable: boolean;
   standPage: boolean;
   indexNow: { key: string; endpoint: string } | null;
@@ -87,6 +93,18 @@ function releaseSlotsOf(buildSlots: number, configured: number | undefined): num
   throw new StorefrontBuilderError('settings-invalid', text, { path: 'env#RELEASE_SLOTS' });
 }
 
+// Адреса сервисов и сборщик аналитики (блок 11). Косую черту в конце адреса сборщика срезаем: модуль шлёт на
+// <адрес>/collect, «//collect» конфиг не пропустит.
+function servicesOf(
+  value: z.infer<typeof envSchema>,
+): Pick<Settings, 'apiUrl' | 'analyticsUrl' | 'analyticsTimeoutMs'> {
+  return {
+    apiUrl: value.STOREFRONT_API_URL,
+    analyticsUrl: value.ANALYTICS_COLLECTOR_URL.replace(/\/+$/, ''),
+    analyticsTimeoutMs: value.ANALYTICS_TIMEOUT_MS,
+  };
+}
+
 export function readSettings(env: NodeJS.ProcessEnv): Settings {
   const value = parseWith(envSchema, env, 'settings-invalid', 'env');
   return {
@@ -98,7 +116,7 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
       accessKeyId: value.S3_ACCESS_KEY,
       secretAccessKey: value.S3_SECRET_KEY,
     },
-    apiUrl: value.STOREFRONT_API_URL,
+    ...servicesOf(value),
     commit: value.SOURCE_COMMIT,
     port: value.PORT,
     buildSlots: value.BUILD_SLOTS,

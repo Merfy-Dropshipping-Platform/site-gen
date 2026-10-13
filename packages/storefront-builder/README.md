@@ -50,7 +50,10 @@
 ## Переменные окружения
 
 Обязательные: `DATABASE_URL` (база sites), `RABBITMQ_URL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`,
-`S3_SECRET_KEY`, `STOREFRONT_API_URL`, `SOURCE_COMMIT` (40 знаков; Coolify задаёт сам).
+`S3_SECRET_KEY`, `STOREFRONT_API_URL`, `ANALYTICS_COLLECTOR_URL` (адрес сборщика аналитики для конфига витрины, блок 11:
+`https://analytics.dev.merfy.ru` на dev; запасного адреса нет — без переменной сборщик не стартует), `SOURCE_COMMIT`
+(40 знаков; Coolify задаёт сам). Счётчики мерчанта сборщик берёт у сборщика аналитики RPC `analytics.pixels.list`
+(`ANALYTICS_TIMEOUT_MS=5000`); не ответил — снимок «не получен», как с товарами.
 По умолчанию: `PORT=8080`, `BUILD_SLOTS=1`, `DRAW_SLOTS=1`, `DRAW_TIMEOUT_MS=3000`, `BUILD_LEASE_MS=300000`,
 `RECONCILE_MS=3600000`, `PRODUCT_TIMEOUT_MS=10000`, `STOREFRONT_INDEXABLE=false`,
 `INDEXNOW_URL=https://yandex.com/indexnow`, `BUILD_DRAIN_MS=20000` (не больше 25000: через 30 с Coolify шлёт SIGKILL).
@@ -135,6 +138,18 @@
   `pnpm --filter @merfy/storefront-storage pointer resume --label <метка>`.
 - Сверка раз в час сравнивает ключ данных (`dataKey`): новый код платформы и новая версия расширения для неё не
   расхождение, включение и выключение расширения — расхождение.
+
+## Ошибки секций (блок 11, часть 4)
+
+Шлюз кладёт ошибки секций из браузеров в очередь `storefront_section_errors` (сообщение Nest:
+`{ pattern: 'storefront.section-errors', data: { v: 1, shopId, receivedAt, errors } }`). Сборщик пишет их в
+`storefront_section_error`: строка на магазин, секцию, отпечаток скрипта, стадию, текст и минуту приёма, повтор —
+`count`. Автор, владелец и выпуск — из `storefront_section` по имени и отпечатку; незнакомый отпечаток и магазин без
+строки `storefront_shop` не пишутся (`src/section-error-store.ts`). Строка журнала на пачку — `section-errors`
+(`shopId`, `minute`, `written`, `skipped`).
+
+Счёт для автостопа выпуска (блок 10) — `sectionErrorSummary(db, since)`: строка на выпуск секции — `shops` (магазинов) и
+`errors` (ошибок) с минуты `since`.
 
 ## Журнал и p95
 

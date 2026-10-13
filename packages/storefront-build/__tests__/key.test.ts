@@ -25,6 +25,7 @@ const EDITS: Record<string, (inputs: BuildInputs) => void> = {
   'site.logoUrl': (inputs) => (inputs.site.logoUrl = 'https://s3.merfy.ru/merfy/branding/logo-1.png'),
   'site.updatedAt': (inputs) => (inputs.site.updatedAt = '2026-10-06T10:00:00.000Z'),
   'env.apiUrl': (inputs) => (inputs.env.apiUrl = 'http://localhost:4322/api'),
+  'env.analyticsUrl': (inputs) => (inputs.env.analyticsUrl = 'https://analytics.dev.merfy.ru'),
   year: (inputs) => (inputs.year = 2027),
   'data.entities': (inputs) => (inputs.data.entities[0].data.price = 2300),
 };

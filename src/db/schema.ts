@@ -735,3 +735,40 @@ export const storefrontSection = pgTable(
     ),
   }),
 );
+
+/**
+ * storefront_section_error — ошибки секций витрины из браузеров (блок 11 «Каркаса витрины», часть 4): строка на
+ * магазин, секцию, отпечаток скрипта, стадию, текст и минуту приёма; повтор — count. Автор, владелец и выпуск — из
+ * storefront_section. Пишет и читает сборщик витрин (packages/storefront-builder/src/section-error-store.ts).
+ */
+export const storefrontSectionError = pgTable(
+  "storefront_section_error",
+  {
+    siteId: text("site_id").notNull(),
+    section: text("section").notNull(),
+    scriptHash: text("script_hash").notNull(),
+    author: text("author").notNull(),
+    owner: text("owner").notNull(),
+    release: text("release"),
+    stage: text("stage").notNull(),
+    message: text("message").notNull(),
+    minute: timestamp("minute", { withTimezone: true }).notNull(),
+    count: integer("count").default(1).notNull(),
+  },
+  (table) => ({
+    stageCheck: check(
+      "storefront_section_error_stage_check",
+      sql`${table.stage} IN ('load', 'define', 'mount', 'unmount', 'runtime')`,
+    ),
+    countCheck: check("storefront_section_error_count_check", sql`${table.count} > 0`),
+    keyIdx: uniqueIndex("idx_storefront_section_error_key").on(
+      table.siteId,
+      table.section,
+      table.scriptHash,
+      table.stage,
+      table.minute,
+      table.message,
+    ),
+    minuteIdx: index("idx_storefront_section_error_minute").on(table.minute),
+  }),
+);

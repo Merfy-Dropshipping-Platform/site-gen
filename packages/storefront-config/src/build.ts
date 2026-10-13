@@ -1,4 +1,4 @@
-import { CONFIG_VERSION, CURRENCY, LOCALE, checkStorefrontConfig, type StorefrontConfig } from './schema';
+import { CONFIG_VERSION, CURRENCY, LOCALE, checkStorefrontConfig, type Counter, type StorefrontConfig } from './schema';
 
 // Писатель конфига (design.md блока 3, 5.3): чистая функция — тот же вход, тот же конфиг; ни сети, ни файлов, ни часов.
 
@@ -12,6 +12,16 @@ export interface StorefrontConfigInput {
   // id из реестра страниц платформы или своей страницы темы (theme-stand) и адрес страницы.
   page: { id: string; path: string };
   mode: StorefrontConfig['mode'];
+  // Сборщик аналитики и счётчики мерчанта (блок 11): адрес — из ANALYTICS_COLLECTOR_URL сборщика витрин, счётчики — у
+  // сборщика аналитики. Нет поля или null — магазин ничего не отправляет (превью, стенд); live без него не соберётся.
+  analytics?: { url: string; counters: readonly Counter[] } | null;
+}
+
+// Поле за полем: лишнее из входа (строка счётчика у сборщика аналитики) в конфиг не уходит.
+function analyticsOf(analytics: StorefrontConfigInput['analytics']): StorefrontConfig['analytics'] {
+  if (analytics === undefined || analytics === null) return null;
+  const counters = analytics.counters.map((counter) => ({ kind: counter.kind, number: counter.number }));
+  return { url: analytics.url, counters };
 }
 
 // Пустой адрес — магазин ещё не публиковали: в preview это null, в live схема потребует адрес.
@@ -30,5 +40,6 @@ export function buildStorefrontConfig(input: StorefrontConfigInput): StorefrontC
     api: { url: env.apiUrl },
     theme: { id: theme.id, version: theme.version },
     page: { id: page.id, path: page.path },
+    analytics: analyticsOf(input.analytics),
   });
 }

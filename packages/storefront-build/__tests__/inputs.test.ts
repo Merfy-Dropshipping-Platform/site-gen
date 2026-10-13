@@ -50,6 +50,6 @@ describe('parseBuildInputs', () => {
     const duplicate = rawInputs((raw) => raw.data.entities.push(structuredClone(raw.data.entities[3])));
     const error = errorOf(() => parseBuildInputs(duplicate));
     expect(error.code).toBe('entity-duplicate');
-    expect(error.message).toBe('data.entities.7: сущность policy:privacy уже есть в снимке');
+    expect(error.message).toBe('data.entities.8: сущность policy:privacy уже есть в снимке');
   });
 });

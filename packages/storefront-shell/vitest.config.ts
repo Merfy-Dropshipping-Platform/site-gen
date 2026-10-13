@@ -8,8 +8,8 @@ export default defineConfig({
   test: {
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.ts', 'build/**/*.ts'],
-      exclude: ['src/browser.ts', 'src/index.ts'],
+      include: ['src/**/*.ts', 'build/**/*.ts', 'sections/analytics/**/*.ts'],
+      exclude: ['src/browser.ts', 'src/index.ts', 'sections/analytics/script.ts'],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },

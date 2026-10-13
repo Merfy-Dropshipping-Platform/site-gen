@@ -204,7 +204,12 @@ function builderOf(fake: FakeState) {
       db,
       products: { call, timeoutMs: 1_000, log },
       code: { db, shell, call, timeoutMs: 1_000, log },
-      platform: { renderHash: OWN, apiUrl: 'https://gateway.dev.merfy.ru/api' },
+      counters: { call, timeoutMs: 1_000, log },
+      platform: {
+        renderHash: OWN,
+        apiUrl: 'https://gateway.dev.merfy.ru/api',
+        analyticsUrl: 'https://analytics.dev.merfy.ru',
+      },
       themes: new Map(),
       pins: { stateOf: () => Promise.resolve(null), released: () => Promise.resolve('0.0.1') },
       clock: () => new Date(),

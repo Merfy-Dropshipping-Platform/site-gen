@@ -183,6 +183,13 @@
       "when": 1791763200000,
       "tag": "0025_storefront_release",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791849600000,
+      "tag": "0026_storefront_section_error",
+      "breakpoints": true
     }
   ]
 }

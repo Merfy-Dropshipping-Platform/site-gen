@@ -53,7 +53,7 @@ const inOtherServices = rebuildEvents.flatMap((event): [string, string][] => {
 });
 
 describe('события пересборки (design.md блока 3, 5.7)', () => {
-  it('тринадцать событий: темы, что пересобрать и статус', () => {
+  it('четырнадцать событий: темы, что пересобрать и статус', () => {
     expect(rebuildEvents.map((event) => [event.id, event.themes, event.scope, event.status])).toEqual([
       ['merchant-publish', 'all', 'store', 'works'],
       ['product-change', 'all', 'dependent-pages', 'works'],
@@ -70,6 +70,7 @@ describe('события пересборки (design.md блока 3, 5.7)', ()
       ['collection-change', 'new', 'dependent-pages', 'with-sections'],
       ['payment-settings-change', 'new', 'store', 'with-sections'],
       ['stock-change', 'new', 'dependent-pages', 'with-sections'],
+      ['analytics-counters-change', 'new', 'store', 'works'],
     ]);
   });
 
@@ -82,6 +83,7 @@ describe('события пересборки (design.md блока 3, 5.7)', ()
       ['collection-change', 'product'],
       ['payment-settings-change', 'billing'],
       ['stock-change', 'inventory'],
+      ['analytics-counters-change', 'analytics-collector'],
     ]);
   });
 

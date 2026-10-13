@@ -18,6 +18,34 @@ const API_SUFFIX = '/api';
 
 const kebabId = z.string().regex(KEBAB_ID, { error: 'нужны строчные латинские буквы, цифры и дефис' });
 
+// Счётчики мерчанта (design.md блока 11, С11-4 Б): известные виды по номеру. Номер вписывается в код счётчика — шаблон
+// модуля аналитики, — поэтому правило номера строгое: только цифры, латиница и дефис, без кавычек и скобок. Тем же
+// правилом сборщик витрин отбирает счётчики, которые берёт у сборщика аналитики.
+export const COUNTER_KINDS = ['metrika', 'vk', 'google'] as const;
+export type CounterKind = (typeof COUNTER_KINDS)[number];
+export const COUNTER_NUMBERS: Readonly<Record<CounterKind, RegExp>> = {
+  metrika: /^[1-9][0-9]{0,11}$/,
+  vk: /^VK-RTRG-[0-9]{1,12}-[A-Za-z0-9]{1,32}$/,
+  google: /^G-[A-Z0-9]{4,20}$/,
+};
+
+export const isCounterNumber = (kind: CounterKind, number: string): boolean => COUNTER_NUMBERS[kind].test(number);
+
+const counterSchema = z
+  .strictObject({ kind: z.enum(COUNTER_KINDS), number: z.string() })
+  .refine((counter) => isCounterNumber(counter.kind, counter.number), {
+    path: ['number'],
+    error: 'номер не по правилу своего вида счётчика',
+  });
+
+// Сборщик аналитики (блок 11, «решил сам» 4): события уходят на <url>/collect, поэтому адрес — без косой черты в конце.
+const analyticsSchema = z.strictObject({
+  url: z
+    .url({ protocol: /^https?$/, error: 'нужен адрес http:// или https://' })
+    .refine((url) => !url.endsWith('/'), { error: 'адрес сборщика — без косой черты в конце' }),
+  counters: z.array(counterSchema),
+});
+
 const configShape = z.strictObject({
   v: z.literal(CONFIG_VERSION),
   mode: z.enum(MODES),
@@ -38,17 +66,27 @@ const configShape = z.strictObject({
     version: z.string().regex(SEMVER, { error: 'нужна версия semver: 1.2.3' }),
   }),
   page: z.strictObject({ id: kebabId, path: z.string().startsWith('/') }),
+  // null — магазин ничего не отправляет: превью и стенд (design.md блока 11, «решил сам» 8).
+  analytics: analyticsSchema.nullable(),
 });
 
 // У опубликованного магазина адрес обязателен: по нему строятся канонические адреса и ссылки.
 const liveHasUrl = (config: z.infer<typeof configShape>): boolean => config.mode !== 'live' || config.shop.url !== null;
 
-export const storefrontConfigSchema = configShape.refine(liveHasUrl, {
-  path: ['shop', 'url'],
-  error: 'у опубликованного магазина нужен адрес',
-});
+// Без адреса сборщика опубликованный магазин не собирается (design.md блока 11, И4): запасного адреса нет.
+const liveHasAnalytics = (config: z.infer<typeof configShape>): boolean =>
+  config.mode !== 'live' || config.analytics !== null;
+
+export const storefrontConfigSchema = configShape
+  .refine(liveHasUrl, { path: ['shop', 'url'], error: 'у опубликованного магазина нужен адрес' })
+  .refine(liveHasAnalytics, {
+    path: ['analytics'],
+    error: 'у опубликованного магазина нужен адрес сборщика аналитики',
+  });
 
 export type StorefrontConfig = z.infer<typeof storefrontConfigSchema>;
+export type Counter = z.infer<typeof counterSchema>;
+export type AnalyticsConfig = z.infer<typeof analyticsSchema>;
 
 // Тексты zod — по-русски, без глобальной настройки: пакет не меняет zod для соседей.
 const RUSSIAN_ERRORS = { error: z.locales.ru().localeError };

@@ -56,7 +56,11 @@ describe('схема конфига v1', () => {
   });
 
   it('live с адресом https — годится', () => {
-    const live = { ...withField('mode', 'live'), shop: { ...standConfig.shop, url: 'https://shop.merfy.ru' } };
+    const live = {
+      ...withField('mode', 'live'),
+      shop: { ...standConfig.shop, url: 'https://shop.merfy.ru' },
+      analytics: { url: 'https://analytics.dev.merfy.ru', counters: [] },
+    };
     expect(checkStorefrontConfig(live).shop.url).toBe('https://shop.merfy.ru');
   });
 
@@ -68,4 +72,48 @@ describe('схема конфига v1', () => {
       expect(error.message).toBe(`${path}: Нераспознанный ключ: "tenantId"`);
     },
   );
+});
+
+const LIVE_ANALYTICS = { url: 'https://analytics.dev.merfy.ru', counters: [{ kind: 'metrika', number: '12345678' }] };
+
+// Конфиг опубликованного магазина с этим полем analytics: адрес магазина есть, остальное — эталон стенда.
+const liveWith = (analytics: unknown): Record<string, unknown> => ({
+  ...standConfig,
+  mode: 'live',
+  shop: { ...standConfig.shop, url: 'https://shop.merfy.ru' },
+  analytics,
+});
+
+describe('analytics в конфиге (design.md блока 11)', () => {
+  it('у превью стенда — null; у опубликованного магазина — адрес сборщика и счётчики', () => {
+    expect(standConfig.analytics).toBeNull();
+    expect(checkStorefrontConfig(liveWith(LIVE_ANALYTICS)).analytics).toEqual(LIVE_ANALYTICS);
+  });
+
+  it.each<[string, unknown, string]>([
+    ['live без analytics', null, 'analytics'],
+    ['адрес с косой чертой в конце', { ...LIVE_ANALYTICS, url: 'https://analytics.dev.merfy.ru/' }, 'analytics.url'],
+    ['адрес не http', { ...LIVE_ANALYTICS, url: 'ftp://analytics.dev.merfy.ru' }, 'analytics.url'],
+    ['вид не из трёх', { ...LIVE_ANALYTICS, counters: [{ kind: 'meta', number: '1' }] }, 'analytics.counters.0.kind'],
+    [
+      'номер с кавычкой',
+      { ...LIVE_ANALYTICS, counters: [{ kind: 'metrika', number: '1"' }] },
+      'analytics.counters.0.number',
+    ],
+    [
+      'лишнее поле счётчика',
+      { ...LIVE_ANALYTICS, counters: [{ kind: 'vk', number: 'VK-RTRG-1-a', code: '<script>' }] },
+      'analytics.counters.0.code',
+    ],
+  ])('%s — ошибка с путём поля', (_title, analytics, path) => {
+    const error = problemOf(liveWith(analytics));
+    expect(error.code).toBe('config-invalid');
+    expect(error.path).toBe(path);
+  });
+
+  it('live без analytics — понятный текст', () => {
+    expect(problemOf(liveWith(null)).message).toBe(
+      'analytics: у опубликованного магазина нужен адрес сборщика аналитики',
+    );
+  });
 });

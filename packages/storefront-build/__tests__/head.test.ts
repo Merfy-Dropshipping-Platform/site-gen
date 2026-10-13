@@ -23,6 +23,12 @@ describe('pageLocals', () => {
     });
   });
 
+  it('конфиг магазина: адрес сборщика аналитики и счётчики мерчанта (блок 11)', () => {
+    expect(configOf(locals.head.configHtml)).toMatchObject({
+      analytics: { url: 'http://localhost:4321/api/analytics', counters: [{ kind: 'metrika', number: '12345678' }] },
+    });
+  });
+
   it('язык, заголовок, описание и канонический адрес — из входов', () => {
     expect(locals.head).toMatchObject({
       lang: 'ru-RU',

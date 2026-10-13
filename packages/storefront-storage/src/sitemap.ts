@@ -24,6 +24,7 @@ const SITEMAP_GROUPS: Record<PageEntityType, SitemapGroup | null> = {
   collection: 'collections',
   publication: 'blog',
   billing: null,
+  counter: null,
 };
 const XML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
 

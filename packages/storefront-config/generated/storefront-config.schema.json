@@ -103,6 +103,51 @@
         "path"
       ],
       "additionalProperties": false
+    },
+    "analytics": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "counters": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "metrika",
+                      "vk",
+                      "google"
+                    ]
+                  },
+                  "number": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "number"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "url",
+            "counters"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [
@@ -113,7 +158,8 @@
     "locale",
     "api",
     "theme",
-    "page"
+    "page",
+    "analytics"
   ],
   "additionalProperties": false
 }

@@ -31,7 +31,12 @@ const deps = (): SnapshotDeps => ({
   db,
   products: { call: rpc.call, timeoutMs: 1_000, log: (message, fields) => lines.push(`${message} ${fields?.error}`) },
   code: codeDeps(db, () => undefined),
-  platform: { renderHash: `sha256:${'b'.repeat(64)}`, apiUrl: 'https://gateway.dev.merfy.ru/api' },
+  counters: { call: rpc.call, timeoutMs: 1_000, log: (message, fields) => lines.push(`${message} ${fields?.error}`) },
+  platform: {
+    renderHash: `sha256:${'b'.repeat(64)}`,
+    apiUrl: 'https://gateway.dev.merfy.ru/api',
+    analyticsUrl: 'https://analytics.dev.merfy.ru',
+  },
   themes: new Map([['nova', THEME]]),
   pins: {
     stateOf: (_themeId, version) => Promise.resolve(version === THEME.version ? THEME : null),

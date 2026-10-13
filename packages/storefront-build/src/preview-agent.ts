@@ -12,6 +12,8 @@ export const PREVIEW_AGENT = `(function () {
   function apply(answer) {
     var style = document.getElementById('merfy-tokens');
     if (style) style.textContent = answer.css;
+    var fonts = document.getElementById('merfy-fonts');
+    if (fonts && typeof answer.fontsCss === 'string') fonts.textContent = answer.fontsCss;
     Object.keys(answer.attributes).forEach(function (name) {
       document.documentElement.setAttribute(name, answer.attributes[name]);
     });

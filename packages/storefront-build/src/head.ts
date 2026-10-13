@@ -3,12 +3,12 @@ import {
   NO_MIGRATIONS,
   migrateTokenEdits,
   parseTokenEdits,
-  tokensCss,
   type ParsedTheme,
   type TokenEdits,
   type TokenMigrations,
 } from '@merfy/tokens';
 import { codeHead, pageSections } from './code';
+import { themeFonts, themeTokensCss } from './fonts';
 import { countersOf } from './counters';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
@@ -51,6 +51,18 @@ const socialOf = (name: string, locale: string, logoUrl: string): ShopSocial => 
   card: 'summary',
 });
 
+// Шрифты магазина (блок 12): одни на все страницы сборки — их файлы идут в манифест (build.ts).
+export const shopFonts = (inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMigrations = NO_MIGRATIONS) =>
+  themeFonts(theme, editsOf(inputs, theme, migrations));
+
+// CSS страницы по одним правкам мерчанта: шрифты (блок 12) и токены (блок 1).
+function pageStyles(inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMigrations) {
+  const edits = editsOf(inputs, theme, migrations);
+  const fonts = themeFonts(theme, edits);
+  const tokens = themeTokensCss(theme, edits);
+  return { fontsCss: fonts.css, fontPreload: fonts.preload ?? '', tokensCss: tokens };
+}
+
 export function pageLocals(
   inputs: BuildInputs,
   route: ShopRoute,
@@ -75,7 +87,7 @@ export function pageLocals(
     keywords: inputs.site.keywords.trim(),
     canonical: new URL(route.path, inputs.site.publicUrl).href,
     configHtml: configTag(config),
-    tokensCss: tokensCss(theme.dictionary, theme.tokens, editsOf(inputs, theme, migrations)),
+    ...pageStyles(inputs, theme, migrations),
     // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены.
     codeHtml: codeHead(inputs, route.id),
     social: socialOf(name, config.locale, inputs.site.logoUrl),

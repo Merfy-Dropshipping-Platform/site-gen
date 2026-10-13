@@ -10,6 +10,10 @@ export interface ShopPageHead {
   keywords: string;
   canonical: string;
   configHtml: string;
+  // CSS шрифтов (блок 12): @font-face частями и подогнанный запасной — в <style id="merfy-fonts"> перед токенами.
+  fontsCss: string;
+  // Путь главного файла шрифта текста для <link rel="preload">; пустая строка — шрифт системный, ссылки нет.
+  fontPreload: string;
   tokensCss: string;
   // Код секций страницы (блок 7): стили секций, список модулей, import map, modulepreload и ядро — после токенов.
   // Пустая строка — на странице нет секций.
@@ -45,6 +49,8 @@ export interface ShopPageLocals {
 export interface StandPageHead {
   title: string;
   configHtml: string;
+  // CSS шрифтов (блок 12) — тот же, что у страницы магазина; файлы /_fonts/ сборщик превью вставляет data:-адресами.
+  fontsCss: string;
   // CSS токенов темы с правками мерчанта — в <style id="merfy-tokens">.
   tokensCss: string;
   // Слушатель превью: правка токенов из конструктора без перезагрузки. Строкой — в коде темы сети нет (сторож).

@@ -32,6 +32,9 @@ export const PLATFORM_RENDER_FILES = [
   'packages/tokens/dictionary.json',
   'packages/tokens/not-tokens.json',
   'packages/tokens/search-words.json',
+  // Реестр шрифтов (блок 12): из него сборка печатает CSS шрифтов. Новая библиотека — новый код платформы: её разносит
+  // выпуск платформы волнами, как и новый renderHash.
+  'packages/theme-contract/fonts/fonts.json',
   // Ядро @merfy/shell и секции платформы (блок 7): входы shell и code.sections «platform:» меняет только выкатка кода
   // платформы. Они в отпечатке, чтобы новое ядро и новые секции платформы разносил выпуск платформы волнами (блок 10,
   // задача 11): его отпечаток — renderHash.

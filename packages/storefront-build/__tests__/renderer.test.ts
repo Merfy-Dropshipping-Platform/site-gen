@@ -33,7 +33,7 @@ describe('рисовальщик на подставной сборке', () => 
 
   it('стенд темы (блок 8): /theme-stand, данные — в locals.merfyStand', async () => {
     const stand: StandPageLocals = {
-      head: { title: 'Стенд темы', configHtml: '', tokensCss: '', previewScript: '' },
+      head: { title: 'Стенд темы', configHtml: '', fontsCss: '', tokensCss: '', previewScript: '' },
       attributes: {},
       settings: {},
       shop: { name: 'Шарфы' },

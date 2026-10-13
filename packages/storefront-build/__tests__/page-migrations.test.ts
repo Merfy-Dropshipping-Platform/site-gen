@@ -1,5 +1,6 @@
-import { tokensCss, type TokenMigrations } from '@merfy/tokens';
+import type { TokenMigrations } from '@merfy/tokens';
 import { describe, expect, it } from 'vitest';
+import { themeTokensCss } from '../src/fonts';
 import type { ShopPageLocals } from '../src/locals';
 import { renderShopPage, type RenderPage } from '../src/page';
 import { changedInputs } from './support';
@@ -25,7 +26,7 @@ describe('правки мерчанта переводятся при рисов
   it('правка к старому имени рисуется под новым', async () => {
     const seen: ShopPageLocals[] = [];
     await renderShopPage(oldName, '/', { tokens: novaTokens, render: capturing(seen), migrations: RENAME });
-    const expected = tokensCss(novaTokens.dictionary, novaTokens.tokens, { root: { 'radius-button': 12 } });
+    const expected = themeTokensCss(novaTokens, { root: { 'radius-button': 12 } });
     expect(seen[0].head.tokensCss).toBe(expected);
   });
 

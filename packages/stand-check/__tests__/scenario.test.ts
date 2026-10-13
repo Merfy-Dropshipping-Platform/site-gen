@@ -86,10 +86,36 @@ describe('checkScenario: sections-present', () => {
 describe('checkScenario: fonts-loaded', () => {
   const scenario = scenarioWith({ kind: 'fonts-loaded' });
 
-  it('шрифт из --font-body загружен — проходит', () => {
-    const passport = { ...cleanPassport(), tokens: { '--font-body': '"Manrope", system-ui, sans-serif' } };
-    const [result] = checkScenario(scenario, facts(passport));
-    expect(result).toEqual({ kind: 'fonts-loaded', ok: true, detail: 'шрифт текста Manrope загружен' });
+  const CYRILLIC = { url: '/_fonts/manrope-cyrillic-wght.0123456789abcdef.woff2', status: 200 };
+  const withFiles = (requests: Passport['requests']): Passport => ({
+    ...cleanPassport(),
+    tokens: { '--font-body': '"Manrope", system-ui, sans-serif' },
+    requests,
+  });
+
+  it('шрифт из --font-body загружен с /_fonts/, кириллическая часть пришла — проходит', () => {
+    const [result] = checkScenario(scenario, facts(withFiles([CYRILLIC])));
+    expect(result).toEqual({
+      kind: 'fonts-loaded',
+      ok: true,
+      detail: 'шрифт текста Manrope загружен с /_fonts/, кириллица есть',
+    });
+  });
+
+  it('файл шрифта не с /_fonts/ магазина — не проходит и называет адрес', () => {
+    const foreign = { url: 'https://cdn.example.com/manrope.woff2', status: 200 };
+    const [result] = checkScenario(scenario, facts(withFiles([CYRILLIC, foreign])));
+    expect(result).toEqual({
+      kind: 'fonts-loaded',
+      ok: false,
+      detail: 'шрифт не с /_fonts/: https://cdn.example.com/manrope.woff2',
+    });
+  });
+
+  it('кириллической части нет — не проходит', () => {
+    const latin = { url: '/_fonts/manrope-latin-wght.0123456789abcdef.woff2', status: 200 };
+    const [result] = checkScenario(scenario, facts(withFiles([latin])));
+    expect(result).toEqual({ kind: 'fonts-loaded', ok: false, detail: 'кириллической части шрифта с /_fonts/ нет' });
   });
 
   it('шрифт текста не загружен — не проходит и показывает, что загружено', () => {

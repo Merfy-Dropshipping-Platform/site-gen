@@ -50,8 +50,10 @@ describe('стенд темы nova', () => {
     expect(stand.passport.tokens['--radius-button']).toBe('0.75rem');
   });
 
-  it('шрифт Onest загружен в двух начертаниях — текст и заголовки', () => {
-    expect(stand.passport.fonts).toEqual(['Onest 400 normal', 'Onest 600 normal']);
+  it('шрифт Onest загружен из библиотеки платформы: переменный файл — одно начертание 100–900', () => {
+    // «Onest Fallback normal normal» — подогнанный запасной шрифт (local Arial), не файл библиотеки.
+    const onest = stand.passport.fonts.filter((font) => /^Onest \d/.test(font));
+    expect(onest).toEqual(['Onest 100 900 normal']);
   });
 
   it('каждый из 78 токенов словаря — класс хотя бы одного образца', () => {

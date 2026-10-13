@@ -34,7 +34,8 @@ pnpm typecheck
 pnpm lint
 pnpm format:check
 pnpm build                         # dist/: пакет для GitHub Packages (esbuild через pnpm dlx, типы — tsc)
-pnpm generate                      # generated/: tailwind.css, TOKENS.md, theme.schema.json, dictionary.schema.json, panel.schema.json
+pnpm generate                      # generated/: tailwind.css, TOKENS.md, theme.schema.json, dictionary.schema.json, panel.schema.json, fonts.schema.json
+pnpm fonts:library                 # реестр шрифтов ../theme-contract/fonts/fonts.json из library.json (сеть: jsDelivr)
 pnpm generate --theme <папка темы> # <папка темы>/generated/tokens/: tailwind.css, TOKENS.md, theme.schema.json
 ```
 
@@ -90,6 +91,19 @@ pnpm generate --theme <папка темы> # <папка темы>/generated/to
 - `compactEdits` — правки токенов без пустых наборов: в ревизию пишется только изменённое.
 
 JSON-схему файла панели пишет `pnpm generate` в `generated/panel.schema.json`.
+
+## Шрифты новых тем
+
+Реестр — `packages/theme-contract/fonts/fonts.json`: 50 шрифтов конструктора из пакетов Fontsource закреплённой версии
+(список и версии — `library.json` рядом). Пишет его только `pnpm fonts:library`: файлы с jsDelivr, отпечаток каждого
+сверяется со списком пакета, кириллица — по таблице символов самого файла, подгонка запасного шрифта (`size-adjust` и
+соседние) — по его размерам, как у Capsize и Astro. Руками реестр не правят; JSON-схему пишет `pnpm generate` в
+`generated/fonts.schema.json`.
+
+- `parseFontRegistry(raw)` — реестр из JSON, ошибка `fonts-invalid` называет поле;
+- `fontsCss(registry, { body, heading })` — `@font-face` частями с `unicode-range` и `font-display: swap`, подогнанный
+  запасной шрифт, файлы для манифеста и путь одного файла для предзагрузки. Семейство — первое имя стека; нет в
+  реестре — системный шрифт, файлов нет.
 
 ## Как подключить ИИ
 

@@ -5,6 +5,8 @@ import * as api from '../src/index';
 const API = [
   'DATA_KEY_VERSION',
   'ENTITY_TYPES',
+  'FONT_LIBRARY_HASH',
+  'FONT_REGISTRY',
   'KEY_VERSION',
   'MANIFEST_VERSION',
   'NO_ASSETS',
@@ -55,6 +57,7 @@ const API = [
   'routeOf',
   'searchFlaggedBetween',
   'seoProblems',
+  'shopFonts',
   'sha256',
   'shellDir',
   'standLocals',

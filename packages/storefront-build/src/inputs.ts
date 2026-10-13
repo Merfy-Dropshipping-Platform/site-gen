@@ -87,6 +87,8 @@ const buildInputsSchema = z.strictObject({
   theme: z.strictObject({ id: kebabIdSchema, version: versionSchema, contentHash: hashSchema }),
   // Ядро @merfy/shell (блок 7). null — у магазина нет скриптов секций: ядро на страницы не идёт.
   shell: shellSchema.nullable(),
+  // Версия библиотеки шрифтов (блок 12, «решил сам» 13) — отпечаток реестра FONT_LIBRARY_HASH (src/fonts.ts).
+  fonts: hashSchema,
   // Код секций магазина (блок 7).
   code: codeSchema,
   // Ревизия мерчанта — по содержимому, не по id (факт 6). Пока в ней только правки токенов (блок 1).

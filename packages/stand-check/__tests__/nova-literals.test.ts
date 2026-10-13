@@ -1,23 +1,13 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { parseTheme, resolveTokens } from '@merfy/tokens';
 import { describe, expect, it } from 'vitest';
-import themeJson from '../../theme-nova/theme.json';
 import { packagePath } from '../src/paths';
 
 // Сторож литералов темы nova (design.md блока 9: Т9-6 А, «решил сам» 7). Вид темы — только значения словаря: в коде
 // темы нет цвета, шрифта или размера, записанного прямо. Исключений нет: правила одни для всех файлов темы. Отступы
 // каркаса стенда шкалой Tailwind (p-6, gap-4) — не литералы: у словаря нет токенов этих отступов (блок 2). Пакет
-// шрифта — литерал, если его семейства нет в theme.json: так и модуль шрифтов проверяется, как все.
+// шрифта Fontsource — литерал всегда: шрифт темы приходит из библиотеки платформы, fontsCss (блок 12).
 const NOVA_SRC = packagePath('../../themes/nova/src');
-
-// Семейства шрифтов темы — первые имена стеков font-body и font-heading; имя пакета Fontsource — семейство строчными
-// буквами, пробелы — дефисы: «Onest, system-ui, sans-serif» → «onest».
-const themeTokens = parseTheme(themeJson.tokens);
-const { root } = resolveTokens(themeTokens.dictionary, themeTokens.tokens, {});
-const packageOf = (stack: unknown): string =>
-  typeof stack === 'string' ? stack.split(',')[0].trim().toLowerCase().replaceAll(' ', '-') : '';
-const THEME_FONTS = [...new Set([packageOf(root['font-body']), packageOf(root['font-heading'])])];
 
 // Правило: что ищем; only — только в файлах с таким концом имени.
 type LiteralRule = { id: string; pattern: RegExp; only?: string };
@@ -27,7 +17,7 @@ const RULES: readonly LiteralRule[] = [
   { id: 'color-function', pattern: /\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color-mix)\(/gi },
   { id: 'font-family', pattern: /font-family\s*:/gi },
   { id: 'font-class', pattern: /\bfont-(?:sans|serif|mono|\[)/g },
-  { id: 'font-package', pattern: new RegExp(`@fontsource(?:-variable)?/(?!(?:${THEME_FONTS.join('|')})/)`, 'g') },
+  { id: 'font-package', pattern: /@fontsource(?:-variable)?\//g },
   { id: 'arbitrary-length', pattern: /\b[a-z][a-z0-9-]*-\[[^\]\s]*?\d(?:px|rem|em|vh|vw|%)[^\]\s]*\]/g },
   { id: 'css-length', pattern: /\b\d+(?:\.\d+)?(?:px|rem|em)\b/g, only: '.css' },
   {
@@ -69,7 +59,7 @@ const SAMPLES: { file: string; text: string; found: string[] }[] = [
   { file: 'shop/Card.astro', text: '<p class="font-heading weight-heading">', found: [] },
   { file: 'shop/ShopHead.astro', text: 'import "@fontsource/inter/400.css";', found: ['font-package'] },
   { file: 'shop/fonts.ts', text: 'import "@fontsource/inter/400.css";', found: ['font-package'] },
-  { file: 'shop/fonts.ts', text: 'import "@fontsource/onest/400.css";', found: [] },
+  { file: 'shop/fonts.ts', text: 'import "@fontsource/onest/400.css";', found: ['font-package'] },
   {
     file: 'shop/Card.astro',
     text: '<p class="text-[14px] mt-[2rem]">',

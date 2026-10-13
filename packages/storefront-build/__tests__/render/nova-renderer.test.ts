@@ -51,12 +51,13 @@ describe('рисовальщик темы nova', () => {
     expect(head).toContain(`<style id="merfy-tokens">${probeLocals.head.tokensCss}</style>`);
   });
 
-  // CSS два: главной (шрифты) и стенда в превью (Tailwind, блок 8). Главная ссылается ровно на один из них.
-  it('файлы клиента: CSS и шрифты, в HTML главной — ссылка на один CSS из них', () => {
+  // CSS один — стенда в превью (Tailwind, блок 8). Шрифт темы — из библиотеки платформы (блок 12): своих файлов шрифтов
+  // и CSS с ними у темы нет, главная на CSS не ссылается.
+  it('файлы клиента: один CSS стенда, файлов шрифтов нет, в HTML главной ссылки на CSS нет', () => {
     const css = clientFiles.filter((file) => file.path.endsWith('.css')).map((file) => file.path);
-    expect(css).toHaveLength(2);
-    expect(clientFiles.some((file) => file.path.endsWith('.woff2'))).toBe(true);
-    expect(css.filter((path) => html.includes(`href="/${path}"`))).toHaveLength(1);
+    expect(css).toHaveLength(1);
+    expect(clientFiles.some((file) => file.path.endsWith('.woff2'))).toBe(false);
+    expect(css.filter((path) => html.includes(`href="/${path}"`))).toEqual([]);
   });
 
   it('такой страницы у темы нет — page-unknown', async () => {

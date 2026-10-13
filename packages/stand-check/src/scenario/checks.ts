@@ -38,14 +38,34 @@ function sectionsPresent(ids: readonly string[], sections: readonly string[]): E
 
 const firstFamily = (stack: string): string => stack.split(',')[0].trim().replaceAll(/["']/g, '');
 
+// Файлы шрифтов новой темы — только с домена магазина, из /_fonts/ (design.md блока 12, «решил сам» 7 и 14); русские
+// буквы приходят своей частью файла — её имя содержит «-cyrillic-».
+const FONT_FILE = /\.(?:woff2?|ttf|otf)(?:[?#]|$)/;
+const SHOP_FONTS = '/_fonts/';
+const CYRILLIC_PART = '-cyrillic-';
+type PageRequest = Passport['requests'][number];
+const isFontFile = (request: PageRequest): boolean => FONT_FILE.test(request.url);
+const isShopCyrillic = (request: PageRequest): boolean =>
+  request.url.startsWith(SHOP_FONTS) && request.url.includes(CYRILLIC_PART) && request.status === 200;
+
+function fontFileProblems(passport: Passport): string[] {
+  const foreign = passport.requests.filter((request) => isFontFile(request) && !request.url.startsWith(SHOP_FONTS));
+  const cyrillic = passport.requests.some(isShopCyrillic) ? [] : [`кириллической части шрифта с ${SHOP_FONTS} нет`];
+  return [...foreign.map((request) => `шрифт не с ${SHOP_FONTS}: ${request.url}`), ...cyrillic];
+}
+
 function fontsLoaded(passport: Passport): ExpectationResult {
   const kind = 'fonts-loaded';
   const stack = new Map(Object.entries(passport.tokens)).get(BODY_FONT_TOKEN);
   if (stack === undefined) return { kind, ok: false, detail: `на :root нет ${BODY_FONT_TOKEN}: какой шрифт ждать?` };
   const family = firstFamily(stack);
-  const ok = passport.fonts.some((font) => font.startsWith(`${family} `));
   const loaded = listed(passport.fonts) || 'ни одного';
-  return { kind, ok, detail: ok ? `шрифт текста ${family} загружен` : `${family} не загружен; загружены: ${loaded}` };
+  if (!passport.fonts.some((font) => font.startsWith(`${family} `)))
+    return { kind, ok: false, detail: `${family} не загружен; загружены: ${loaded}` };
+  const problems = fontFileProblems(passport);
+  const detail =
+    problems.length === 0 ? `шрифт текста ${family} загружен с ${SHOP_FONTS}, кириллица есть` : listed(problems);
+  return { kind, ok: problems.length === 0, detail };
 }
 
 function noErrors(errors: readonly string[]): ExpectationResult {

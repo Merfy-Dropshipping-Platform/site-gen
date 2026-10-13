@@ -17,7 +17,9 @@ describe('buildStorefront с кодом секций', () => {
     const modules = [...MODULES.keys()].map(modulePath);
     const expected = ['_astro/index.css', ...modules, `${dir}/part-AB12CD34.js`, `${dir}/shell.js`, 'index.html'];
     expect(files.map((file) => file.path)).toEqual(expected.sort());
-    expect(Object.keys(manifest.files)).toEqual(files.map((file) => file.path));
+    // Файлы шрифтов (блок 12) — только в манифесте, без байтов.
+    const fontPaths = Object.keys(manifest.files).filter((path) => path.startsWith('_fonts/'));
+    expect(Object.keys(manifest.files)).toEqual([...files.map((file) => file.path), ...fontPaths]);
     expect(manifest.shell).toEqual({ version: '0.1.0' });
     const home = new TextDecoder().decode(files.find((file) => file.path === 'index.html')?.content);
     expect(home).toContain('id="merfy-modules"');

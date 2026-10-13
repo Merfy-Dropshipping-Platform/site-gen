@@ -14,6 +14,7 @@ const EDITS: Record<string, (inputs: BuildInputs) => void> = {
   'theme.version': (inputs) => (inputs.theme.version = '0.0.2'),
   'theme.contentHash': (inputs) => (inputs.theme.contentHash = OTHER_HASH),
   shell: (inputs) => (inputs.shell = structuredClone(SHELL)),
+  fonts: (inputs) => (inputs.fonts = OTHER_HASH),
   code: (inputs) => (inputs.code = structuredClone(STYLE_ONLY)),
   'revision.tokens': (inputs) => (inputs.revision.tokens = { root: { 'radius-button': 6 } }),
   'site.id': (inputs) => (inputs.site.id = '00000000-0000-4000-8000-000000000002'),

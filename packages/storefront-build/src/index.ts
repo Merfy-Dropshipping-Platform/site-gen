@@ -64,6 +64,9 @@ export {
   type StandTheme,
   type StandView,
 } from './stand';
+export { FONT_LIBRARY_HASH, FONT_REGISTRY } from './fonts';
+export type { FontFileEntry, FontRegistry } from '@merfy/tokens';
+export { shopFonts } from './head';
 export { PREVIEW_AGENT } from './preview-agent';
 
 // Отпечатки, версии тем, сторожа

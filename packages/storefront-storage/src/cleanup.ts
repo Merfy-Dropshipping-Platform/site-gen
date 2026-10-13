@@ -94,9 +94,14 @@ async function keptOfShop(store: ObjectStore, builds: StoredBuild[], pointer: Po
   return builds.filter((build) => kept.has(build.build));
 }
 
-// Пометить: отпечатки из таблиц раздачи и списков дорисовок хранимых сборок.
-async function markedHashes(store: ObjectStore, kept: readonly StoredBuild[]): Promise<Set<string>> {
-  const marked = new Set<string>();
+// Пометить: отпечатки из таблиц раздачи и списков дорисовок хранимых сборок и закреплённые — файлы библиотеки шрифтов
+// (блок 12): их кладёт pnpm fonts:upload один раз, до того как на них сошлётся первая сборка.
+async function markedHashes(
+  store: ObjectStore,
+  kept: readonly StoredBuild[],
+  pinned: ReadonlySet<string>,
+): Promise<Set<string>> {
+  const marked = new Set<string>(pinned);
   for (const { shop, build } of kept) {
     const table = await readObject(store, routesKey(shop, build), parseRoutesTable);
     const drawn = await readObject(store, drawnKey(shop, build), parseDrawnList);
@@ -106,7 +111,11 @@ async function markedHashes(store: ObjectStore, kept: readonly StoredBuild[]): P
   return marked;
 }
 
-export async function planCleanup(store: ObjectStore, now: string): Promise<CleanupPlan> {
+// Закреплённых файлов нет — уборка как в блоке 5.
+export const NO_PINNED: ReadonlySet<string> = new Set();
+
+// pinned — отпечатки (64 знака hex) файлов, которые храним всегда.
+export async function planCleanup(store: ObjectStore, now: string, pinned = NO_PINNED): Promise<CleanupPlan> {
   const builds = await storedBuilds(store);
   const pointers = await pointersByShop(store);
   const keptBuilds: StoredBuild[] = [];
@@ -115,14 +124,19 @@ export async function planCleanup(store: ObjectStore, now: string): Promise<Clea
     keptBuilds.push(...(await keptOfShop(store, ofShop, pointers.get(shop), now)));
   }
   const removedBuilds = builds.filter((build) => !keptBuilds.includes(build));
-  const marked = await markedHashes(store, keptBuilds);
+  const marked = await markedHashes(store, keptBuilds, pinned);
   const removedBlobs = blobsToRemove(await store.list(`${STOREFRONT_PREFIX}blobs/`), marked, now);
   return { keptBuilds, removedBuilds, removedBlobs };
 }
 
 // apply = false — пробный прогон: только план. Сначала уходят сборки, потом файлы.
-export async function runCleanup(store: ObjectStore, now: string, apply: boolean): Promise<CleanupPlan> {
-  const plan = await planCleanup(store, now);
+export async function runCleanup(
+  store: ObjectStore,
+  now: string,
+  apply: boolean,
+  pinned = NO_PINNED,
+): Promise<CleanupPlan> {
+  const plan = await planCleanup(store, now, pinned);
   if (!apply) return plan;
   const keys = plan.removedBuilds.flatMap(({ shop, build }) => [
     manifestKey(shop, build),

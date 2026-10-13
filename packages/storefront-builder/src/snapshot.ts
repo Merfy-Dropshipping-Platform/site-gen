@@ -1,4 +1,10 @@
-import type { BuildInputs, CodeAssets, Entity, ThemeState } from '@merfy/storefront-build';
+import {
+  FONT_LIBRARY_HASH,
+  type BuildInputs,
+  type CodeAssets,
+  type Entity,
+  type ThemeState,
+} from '@merfy/storefront-build';
 import { z } from 'zod';
 import { NO_CODE, readShopCode, type CodeDeps } from './code';
 import { fetchCounters, type CounterRequest } from './counters';
@@ -282,6 +288,8 @@ export const buildInputsOf = (parts: InputsParts) => ({
   platform: { renderHash: parts.platform.renderHash },
   theme: parts.theme,
   shell: parts.shell,
+  // Версия библиотеки шрифтов (блок 12) — реестр этого образа.
+  fonts: FONT_LIBRARY_HASH,
   code: parts.code,
   revision: { tokens: parts.tokens },
   site: {

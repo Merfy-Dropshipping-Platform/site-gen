@@ -21,6 +21,7 @@
     "probe:pointer": "tsx scripts/probe-pointer.ts",
     "pointer": "tsx scripts/pointer.ts",
     "cleanup": "tsx scripts/cleanup.ts",
+    "fonts:upload": "tsx scripts/fonts-upload.ts",
     "publish:stand": "tsx scripts/publish-stand.ts"
   },
   "dependencies": {

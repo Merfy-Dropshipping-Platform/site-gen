@@ -27,9 +27,9 @@ const CONTENT_TYPES = new Map<string, string>([
 ]);
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream';
 
-// Файлы с отпечатком в пути: Astro кладёт их в _astro/, блок 7 — ядро и скрипты секций в _merfy/. Им кэш навсегда,
-// остальным — no-cache с ETag. Нынешний путь отдаёт _astro/ с no-cache (design.md, факт 3).
-const IMMUTABLE_PREFIXES = ['_astro/', '_merfy/'];
+// Файлы с отпечатком в пути: Astro кладёт их в _astro/, блок 7 — ядро и скрипты секций в _merfy/, блок 12 — шрифты в
+// _fonts/. Им кэш навсегда, остальным — no-cache с ETag. Нынешний путь отдаёт _astro/ с no-cache (design.md, факт 3).
+const IMMUTABLE_PREFIXES = ['_astro/', '_merfy/', '_fonts/'];
 
 function extensionOf(filePath: string): string {
   const name = filePath.slice(filePath.lastIndexOf('/') + 1);

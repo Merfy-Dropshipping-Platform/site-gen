@@ -14,6 +14,7 @@
     "dist",
     "generated/tailwind.css",
     "generated/panel.schema.json",
+    "generated/fonts.schema.json",
     "dictionary.json",
     "README.md"
   ],
@@ -37,7 +38,8 @@
     "lint": "eslint .",
     "format": "prettier --write --no-error-on-unmatched-pattern src __tests__ scripts",
     "format:check": "prettier --check --no-error-on-unmatched-pattern src __tests__ scripts",
-    "generate": "tsx scripts/generate.ts"
+    "generate": "tsx scripts/generate.ts",
+    "fonts:library": "tsx scripts/fonts-library.ts"
   },
   "dependencies": {
     "zod": "4.3.6"

@@ -7,6 +7,7 @@ import { sha256 } from '../src/canonical';
 import type { BuildFile } from '../src/client-files';
 import { entityHashes, entityKey } from '../src/entities';
 import { changedEntities, dependentPages } from '../src/graph';
+import { shopFonts } from '../src/head';
 import { buildKey } from '../src/key';
 import type { StandPageLocals } from '../src/locals';
 import type { StandBuild } from '../src/stand';
@@ -23,7 +24,8 @@ const theme: ThemeBuild = { tokens: novaTokens, render: fakeRender, clientFiles:
 // Подставной рисовальщик стенда: печатает режим, CSS токенов и слушатель превью, если он есть.
 const fakeRenderStand = (locals: StandPageLocals): Promise<string> => {
   const agent = locals.head.previewScript === '' ? '' : '<script>agent</script>';
-  const head = `<style id="merfy-tokens">${locals.head.tokensCss}</style>${agent}`;
+  const fonts = `<style id="merfy-fonts">${locals.head.fontsCss}</style>`;
+  const head = `${fonts}<style id="merfy-tokens">${locals.head.tokensCss}</style>${agent}`;
   return Promise.resolve(`<html><head>${head}</head><body data-mode="${locals.config.mode}"></body></html>`);
 };
 const stand: StandBuild = {
@@ -47,6 +49,8 @@ describe('buildStorefront: страница стенда', () => {
     expect(manifest.pages[1]).toMatchObject({ entity: site, deps: [entityKey('site', standInputs.site.id)] });
     expect(standHtml(files)).toContain('data-mode="live"');
     expect(standHtml(files)).not.toContain('<script>');
+    expect(standHtml(files)).toContain('<style id="merfy-fonts">@font-face{font-family:"Onest"');
+    expect(standHtml(files)).toContain('url(/_fonts/onest-');
   });
 
   it('правки токенов из ревизии — в CSS стенда', async () => {
@@ -73,7 +77,10 @@ describe('buildStorefront', () => {
   it('стенд: файлы клиента и главная по пути, манифест сходится с ними', async () => {
     const { manifest, files } = await buildStorefront(standInputsJson, REFERENCES, theme);
     expect(files.map((file) => file.path)).toEqual(['_astro/index.css', '_astro/manrope.woff2', 'index.html']);
-    expect(manifest.files).toEqual(Object.fromEntries(files.map((file) => [file.path, sha256(file.content)])));
+    const fonts = shopFonts(standInputs, novaTokens).files.map((file) => [file.path, file.hash]);
+    expect(manifest.files).toEqual(
+      Object.fromEntries([...files.map((file) => [file.path, sha256(file.content)]), ...fonts]),
+    );
     expect(manifest.pages.map((page) => page.path)).toEqual(['/']);
   });
 

@@ -6,6 +6,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['__tests__/stack/*.test.ts'],
+    globalSetup: ['__tests__/stack/fonts-setup.ts'],
     fileParallelism: false,
     testTimeout: 30_000,
     hookTimeout: 30_000,

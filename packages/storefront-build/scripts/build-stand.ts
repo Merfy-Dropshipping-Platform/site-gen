@@ -8,6 +8,7 @@ import novaThemeJson from '../../theme-nova/theme.json';
 import standInputs from '../fixtures/stand-inputs.json';
 import { buildStorefront, type StorefrontBuild } from '../src/build';
 import { buildJsonOf } from '../src/build-json';
+import { FONT_LIBRARY_HASH } from '../src/fonts';
 import { readClientFiles } from '../src/client-files';
 import { platformRenderHash } from '../src/render-files';
 import { startRenderer } from '../src/renderer';
@@ -32,6 +33,7 @@ async function standInputsNow(): Promise<unknown> {
   return {
     ...standInputs,
     platform: { renderHash: await platformRenderHash(ROOT) },
+    fonts: FONT_LIBRARY_HASH,
     theme: { id: THEME_ID, ...theme },
     year: values.year === undefined ? standInputs.year : Number(values.year),
   };

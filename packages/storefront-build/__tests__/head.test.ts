@@ -1,5 +1,5 @@
-import { tokensCss } from '@merfy/tokens';
 import { describe, expect, it } from 'vitest';
+import { themeTokensCss } from '../src/fonts';
 import { pageLocals } from '../src/head';
 import { routeOf } from '../src/routes';
 import { changedInputs, errorOf, standInputs } from './support';
@@ -96,9 +96,10 @@ describe('pageLocals', () => {
   });
 
   it('CSS токенов — с правками мерчанта из ревизии', () => {
-    const edited = tokensCss(novaTokens.dictionary, novaTokens.tokens, { root: { 'radius-button': 4 } });
+    // Стеки шрифтов — по реестру (блок 12): CSS токенов страницы печатает themeTokensCss.
+    const edited = themeTokensCss(novaTokens, { root: { 'radius-button': 4 } });
     expect(locals.head.tokensCss).toBe(edited);
-    expect(locals.head.tokensCss).not.toBe(tokensCss(novaTokens.dictionary, novaTokens.tokens, {}));
+    expect(locals.head.tokensCss).not.toBe(themeTokensCss(novaTokens, {}));
   });
 
   it('имя магазина и год — для страницы', () => {

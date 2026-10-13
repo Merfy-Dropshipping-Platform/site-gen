@@ -3,6 +3,7 @@ import type { BuildFile } from './client-files';
 import { NO_ASSETS, codeFiles, type CodeAssets } from './code';
 import { entityHashes } from './entities';
 import { parseBuildInputs } from './inputs';
+import { shopFonts } from './head';
 import { buildKey, dataKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
 import { renderShopPage, type ShopTheme } from './page';
@@ -49,6 +50,10 @@ export async function buildStorefront(
   const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
   const pages = [...shopPages, ...standPages];
   const files = [...theme.clientFiles, ...code, ...pages.map((page) => page.file)].sort(byPath);
+  // Файлы шрифтов (блок 12) — только в манифесте: байты уже в хранилище по отпечатку, их не льём.
+  const fontFiles = shopFonts(inputs, theme.tokens, theme.migrations).files.map(
+    (file) => [file.path, file.hash] as const,
+  );
   const manifest = checkManifest({
     v: MANIFEST_VERSION,
     key: buildKey(inputs),
@@ -59,7 +64,7 @@ export async function buildStorefront(
     shell: inputs.shell === null ? null : { version: inputs.shell.version },
     shop: { id: inputs.site.id },
     entities: entityHashes(inputs),
-    files: Object.fromEntries(files.map((file) => [file.path, sha256(file.content)])),
+    files: Object.fromEntries([...files.map((file) => [file.path, sha256(file.content)] as const), ...fontFiles]),
     pages: pages.map((page) => page.row),
   });
   return { manifest, files };

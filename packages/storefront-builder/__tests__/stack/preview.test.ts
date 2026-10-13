@@ -63,6 +63,7 @@ async function serve(preview: boolean): Promise<void> {
           pins: harness.catalog,
           previewOf: () => Promise.resolve(NOVA),
           apiUrl: 'https://gateway.dev.merfy.ru/api',
+          fonts: () => Promise.resolve(null),
           log: harness.deps.log,
         }
       : undefined,

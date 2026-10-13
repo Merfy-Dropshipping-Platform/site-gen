@@ -6,7 +6,6 @@
 // ошибка договора. Теги для соцсетей (блок 9) — по тем же правилам: описания или логотипа нет — нет og:description
 // или og:image. Код секций (блок 7) приходит так же, готовой строкой: после токенов — стили секций, список
 // модулей, import map, подсказки и ядро (head.codeHtml).
-import "./fonts";
 import type { ShopPageHead } from "../../../../packages/storefront-build/src/locals";
 
 interface Props {
@@ -31,5 +30,7 @@ const { head } = Astro.props;
 <meta property="og:locale" content={head.social.locale} />
 {head.social.image && <meta property="og:image" content={head.social.image} />}
 <meta name="twitter:card" content={head.social.card} />
+{head.fontPreload && <link rel="preload" href={head.fontPreload} as="font" type="font/woff2" crossorigin />}
+<style id="merfy-fonts" is:inline set:html={head.fontsCss}></style>
 <style id="merfy-tokens" is:inline set:html={head.tokensCss}></style>
 <Fragment set:html={head.codeHtml} />

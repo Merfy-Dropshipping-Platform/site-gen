@@ -20,6 +20,7 @@ import { jsonLog } from './log';
 import { previewVia } from './preview';
 import { openRpc } from './rpc';
 import { enqueueVia, startRuntime, type RuntimeDeps } from './runtime';
+import { storeFontBytes } from './preview-fonts';
 import { consumeSectionErrors } from './section-error-store';
 import { acceptSectionReleases, releaseFolders } from './section-releases';
 import { RETRY_DELAYS_MS, readSettings } from './settings';
@@ -162,7 +163,8 @@ const stopListening = await listenReleases(db, () => void conductor.advance(), l
 await conductor.resume();
 // Превью — версией закрепления магазина; схема панели — по темам образа (блок 10, задача 4).
 const previewOf = (themeId: string, version: string) => catalog.previewAt(themeId, version);
-const preview = { db, themes: loaded.previews, pins: catalog, previewOf, apiUrl: settings.apiUrl, log };
+const fonts = storeFontBytes(store);
+const preview = { db, themes: loaded.previews, pins: catalog, previewOf, apiUrl: settings.apiUrl, fonts, log };
 const drawDeps = {
   store,
   snapshot: pinnedSnapshot,

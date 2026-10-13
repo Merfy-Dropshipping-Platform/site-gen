@@ -23,27 +23,15 @@
       "status": 200
     },
     {
-      "url": "/_astro/onest-cyrillic-400-normal.*.woff2",
+      "url": "/_fonts/onest-cyrillic-wght.*.woff2",
       "status": 200
     },
     {
-      "url": "/_astro/onest-cyrillic-600-normal.*.woff2",
+      "url": "/_fonts/onest-latin-ext-wght.*.woff2",
       "status": 200
     },
     {
-      "url": "/_astro/onest-latin-400-normal.*.woff2",
-      "status": 200
-    },
-    {
-      "url": "/_astro/onest-latin-600-normal.*.woff2",
-      "status": 200
-    },
-    {
-      "url": "/_astro/onest-latin-ext-400-normal.*.woff2",
-      "status": 200
-    },
-    {
-      "url": "/_astro/onest-latin-ext-600-normal.*.woff2",
+      "url": "/_fonts/onest-latin-wght.*.woff2",
       "status": 200
     },
     {
@@ -68,8 +56,8 @@
     "--card-foreground": "#16181d",
     "--destructive": "#d92d20",
     "--destructive-foreground": "#ffffff",
-    "--font-body": "Onest, system-ui, sans-serif",
-    "--font-heading": "Onest, system-ui, sans-serif",
+    "--font-body": "\"Onest\", \"Onest Fallback\", system-ui, sans-serif",
+    "--font-heading": "\"Onest\", \"Onest Fallback\", system-ui, sans-serif",
     "--foreground": "#16181d",
     "--heading": "#16181d",
     "--input": "#e3e3e4",
@@ -126,7 +114,7 @@
     "--width-page": "80rem"
   },
   "fonts": [
-    "Onest 400 normal",
-    "Onest 600 normal"
+    "Onest 100 900 normal",
+    "Onest Fallback normal normal"
   ]
 }

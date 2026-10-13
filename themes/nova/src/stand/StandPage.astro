@@ -4,18 +4,20 @@
 // Образцы — общий компонент src/shop/stand/StandBody.astro: его же рисует стенд в превью конструктора (блок 8). Здесь —
 // токены темы без правок мерчанта (tokensCss из @merfy/tokens по theme.json темы) и умолчания настроек из схемы панели
 // платформы. Атрибуты выборов (стиль и выравнивание карточек) — у <html>, как у страниц магазина.
-import "../shop/fonts";
 import {
 	choiceAttributes,
+	fontsCss,
 	panelForTheme,
+	parseFontRegistry,
 	parsePanel,
 	parseTheme,
 	resolveSettings,
 	resolveTokens,
-	tokensCss,
+	tokensCssWithFonts,
 } from "../../../../packages/tokens/src/index";
 import themeJson from "../../../../packages/theme-nova/theme.json";
 import panelJson from "../../../../packages/theme-contract/panel/theme-panel.json";
+import fontsJson from "../../../../packages/theme-contract/fonts/fonts.json";
 import StandBody from "../shop/stand/StandBody.astro";
 import "../shop/stand/stand.css";
 import { buildStorefrontConfig, configTag } from "../../../../packages/storefront-config/src/index";
@@ -23,8 +25,16 @@ import standInput from "../../../../packages/storefront-config/fixtures/stand-in
 import { STAND_PATH } from "../../../../packages/stand-check/src/stand-path.mjs";
 
 const theme = parseTheme(themeJson.tokens);
-const tokens = tokensCss(theme.dictionary, theme.tokens, {});
-const attributes = choiceAttributes(theme.dictionary, resolveTokens(theme.dictionary, theme.tokens, {}));
+const registry = parseFontRegistry(fontsJson);
+// Стеки шрифтов — по реестру (блок 12): «"Onest", "Onest Fallback", …», как у страниц магазина.
+const tokens = tokensCssWithFonts(registry, theme.dictionary, theme.tokens, {});
+const resolved = resolveTokens(theme.dictionary, theme.tokens, {});
+const attributes = choiceAttributes(theme.dictionary, resolved);
+// Шрифт темы — как у магазина (блок 12): CSS из реестра, файлы — с /_fonts/ стенда (stand-fonts.mjs пакета stand-check).
+const fonts = fontsCss(registry, {
+	body: { stack: String(resolved.root["font-body"]), weight: Number(resolved.root["weight-body"]) },
+	heading: { stack: String(resolved.root["font-heading"]), weight: Number(resolved.root["weight-heading"]) },
+});
 const panel = panelForTheme(parsePanel(panelJson, theme.dictionary), undefined);
 const settings = resolveSettings(panel, {});
 
@@ -49,6 +59,8 @@ const configHtml = configTag(storefrontConfig);
 		<meta name="robots" content="noindex" />
 		<Fragment set:html={configHtml} />
 		<title>Стенд темы</title>
+		{fonts.preload && <link rel="preload" href={fonts.preload} as="font" type="font/woff2" crossorigin />}
+		<style id="merfy-fonts" is:inline set:html={fonts.css}></style>
 		<style id="merfy-tokens" is:inline set:html={tokens}></style>
 	</head>
 	<body class="bg-background">

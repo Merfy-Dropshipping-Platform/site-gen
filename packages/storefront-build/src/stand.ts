@@ -5,7 +5,6 @@ import {
   readTokenEdits,
   resolveSettings,
   resolveTokens,
-  tokensCss,
   type ParsedTheme,
   type PanelSchema,
   type TokenEdits,
@@ -13,6 +12,7 @@ import {
 import { sha256 } from './canonical';
 import { entityKey } from './entities';
 import type { BuildInputs } from './inputs';
+import { themeFonts, themeTokensCss } from './fonts';
 import type { StandPageLocals } from './locals';
 import { checkPageRow } from './manifest';
 import type { RenderedPage } from './page';
@@ -52,6 +52,8 @@ const STAND_FILE = 'theme-stand.html';
 
 export interface PreviewTokens {
   css: string;
+  // CSS шрифтов (блок 12): правка шрифта в панели меняет и его — слушатель превью подменяет <style id="merfy-fonts">.
+  fontsCss: string;
   attributes: Record<string, string>;
 }
 
@@ -62,7 +64,8 @@ const SHOP_NAME_FALLBACK = 'Магазин';
 export function previewTokens(theme: ParsedTheme, edits: TokenEdits): PreviewTokens {
   const resolved = resolveTokens(theme.dictionary, theme.tokens, edits);
   return {
-    css: tokensCss(theme.dictionary, theme.tokens, edits),
+    css: themeTokensCss(theme, edits),
+    fontsCss: themeFonts(theme, edits).css,
     attributes: choiceAttributes(theme.dictionary, resolved),
   };
 }
@@ -95,10 +98,10 @@ export function standLocals(inputs: StandInputs, theme: StandTheme, view: StandV
   const name = config.shop.name;
   const tokens = readTokenEdits(theme.tokens.dictionary, theme.tokens.tokens, inputs.revision.tokens ?? {});
   const settings = readSettingsEdits(theme.panel, inputs.revision.settings ?? {});
-  const { css, attributes } = previewTokens(theme.tokens, tokens.edits);
+  const { css, fontsCss, attributes } = previewTokens(theme.tokens, tokens.edits);
   const previewScript = view === 'preview' ? PREVIEW_AGENT : '';
   return {
-    head: { title: STAND_TITLE, configHtml: configTag(config), tokensCss: css, previewScript },
+    head: { title: STAND_TITLE, configHtml: configTag(config), fontsCss, tokensCss: css, previewScript },
     attributes,
     settings: resolveSettings(theme.panel, settings.edits),
     shop: { name },

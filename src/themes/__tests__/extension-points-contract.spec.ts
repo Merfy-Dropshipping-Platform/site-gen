@@ -130,14 +130,16 @@ describe("extension-points — legacy кабинет (themes/<t>/src/pages/accou
   // Файлы пяти тем совпадают целиком, КРОМЕ одной pre-existing строки
   // (`<Layout … promo={false}>` — rose/flux против vanilla/satin/bloom, не
   // связано с PR-19) — поэтому сравниваем построчно, игнорируя её, а не файл
-  // целиком.
+  // целиком. Вторая такая строка — ссылка первой версии на `/account/requests`:
+  // спека 120, 5.4 убрала её только у flux, остальные четыре темы — позже.
   const contents = THEMES.map((t) =>
     read(`themes/${t}/src/pages/account/index.astro`),
   );
+  const IGNORED_LINES = ["<Layout title=", 'href="/account/requests"'];
   const normalize = (src: string) =>
     src
       .split("\n")
-      .filter((line) => !line.includes("<Layout title="))
+      .filter((line) => !IGNORED_LINES.some((part) => line.includes(part)))
       .join("\n");
 
   it("все пять страниц несут ОДИНАКОВУЮ точку монтирования (одна и та же строка/скрипт)", () => {

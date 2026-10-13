@@ -27,6 +27,9 @@
  * с тем же фолбэком, что у эталона rose (ProductCard/Footer/Newsletter).
  * Гард: src/themes/__tests__/account-muted-token.spec.ts.
  */
+import { EXTENSION_ORDERS_RUNTIME_SOURCE } from "../../../../../packages/theme-base/runtime/extension-orders.runtime";
+import { EXTENSION_ORDERS_STYLES } from "../../../../../packages/theme-base/runtime/extension-orders.styles";
+
 interface Props {
 	id?: string;
 	colorScheme?: number | string;
@@ -70,6 +73,11 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		apiUrl: apiUrl || "https://gateway.merfy.ru/api",
 	};
 </script>
+
+{/* Спека 120, задача 5.4: записи расширений среди заказов (точка `orders`,
+    theme-base/runtime/extension-orders.ts) — строка рантайма и её стили. */}
+<style is:inline set:html={EXTENSION_ORDERS_STYLES}></style>
+<script is:inline set:html={EXTENSION_ORDERS_RUNTIME_SOURCE}></script>
 
 <script is:inline>
 	/**
@@ -117,6 +125,15 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		 * зовёт её ответом `fetchOrders`, превью конструктора — демо-заказами.
 		 * Строка заказа поэтому не может разойтись между превью и витриной.
 		 */
+		/** Показать список: есть заказы или записи расширений. */
+		function showList(root) {
+			document.getElementById("orders-empty").classList.add("hidden");
+			root.classList.remove("hidden");
+			root.style.display = "flex";
+			root.style.flexDirection = "column";
+			root.style.gap = "1.5rem";
+		}
+
 		function paintOrders(root, orders) {
 			var loadingEl = document.getElementById("orders-loading");
 			var emptyEl = document.getElementById("orders-empty");
@@ -126,10 +143,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				return;
 			}
 
-			root.classList.remove("hidden");
-			root.style.display = "flex";
-			root.style.flexDirection = "column";
-			root.style.gap = "1.5rem";
+			showList(root);
 
 			orders.forEach(function (order) {
 				var date = new Date(order.createdAt).toLocaleDateString("ru-RU", {
@@ -137,6 +151,8 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				});
 				var row = document.createElement("div");
 				row.className = "account-order-row";
+				// По дате записи расширений встают среди заказов (mountRows).
+				row.dataset.date = order.createdAt || "";
 				row.innerHTML =
 					'<div class="order-info">' +
 						'<span class="order-number">Заказ №' + order.orderNumber + "</span>" +
@@ -144,6 +160,25 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 					"</div>" +
 					'<a href="/account/order?n=' + encodeURIComponent(order.orderNumber) + '" class="account-button">Перейти</a>';
 				root.appendChild(row);
+			});
+		}
+
+		/**
+		 * Спека 120, задача 5.4: записи расширений магазина — в том же
+		 * списке, по дате. Строки рисует общий рантайм
+		 * theme-base (window.__merfyExtensionOrders), страница записи —
+		 * /account/entry. Нет точки или сбой — строк нет, заказы как были.
+		 */
+		function mountExtensionRows(root) {
+			var ext = window.__merfyExtensionOrders;
+			if (!ext) return;
+			var cfg = window.__MERFY_CONFIG__ || {};
+			ext.mountRows(root, {
+				storeId: cfg.shopId || cfg.storeId || "",
+				apiBase: cfg.apiUrl || "",
+				entryPath: "/account/entry",
+			}).then(function (count) {
+				if (count > 0) showList(root);
 			});
 		}
 
@@ -186,6 +221,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 					var result = await A.fetchOrders({ skip: 0, take: 50 });
 					var orders = Array.isArray(result.data) ? result.data : result.data && result.data.items;
 					paintOrders(root, result.success ? orders : null);
+					mountExtensionRows(root);
 				} catch (e) {
 					document.getElementById("orders-loading").textContent = "Не удалось загрузить заказы";
 				}

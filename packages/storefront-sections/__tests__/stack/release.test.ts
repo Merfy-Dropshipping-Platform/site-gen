@@ -31,7 +31,7 @@ const deps = () => ({ db, store: createS3Store(STACK.s3), log });
 
 describe('дверь выпуска', () => {
   it('платформа и тема: принятые — строки с версией, отказ — строка журнала, остальные приняты; второй старт — без изменений', async () => {
-    expect(await acceptReleases(deps(), [PLATFORM, THEME])).toEqual({ accepted: 5, unchanged: 0, refused: 3 });
+    expect(await acceptReleases(deps(), [PLATFORM, THEME])).toEqual({ accepted: 6, unchanged: 0, refused: 3 });
     const refused = lines.filter((line) => line.message === 'section-refused');
     expect(refused.map((line) => String(line.fields.folder).split('/').at(-1))).toEqual([
       'bad-import',
@@ -41,13 +41,14 @@ describe('дверь выпуска', () => {
     expect(String(refused[1]?.fields.problems)).toMatch(/^styles\.css:1:1 — /);
     const released = lines.filter((line) => line.message === 'section-release').map((line) => line.fields.name);
     expect(released).toEqual([
+      'platform:analytics',
       'platform:cart-badge',
       'nova:locate',
       'nova:list',
       'nova:color-match',
       'nova:scarf-colors',
     ]);
-    expect(await acceptReleases(deps(), [PLATFORM, THEME])).toEqual({ accepted: 0, unchanged: 5, refused: 3 });
+    expect(await acceptReleases(deps(), [PLATFORM, THEME])).toEqual({ accepted: 0, unchanged: 6, refused: 3 });
   });
 
   it('папки секций нет — секций нет, не ошибка', async () => {

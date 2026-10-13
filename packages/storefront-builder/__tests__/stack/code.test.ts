@@ -73,17 +73,18 @@ beforeEach(() => {
 describe('код магазина', () => {
   it('видимые секции на своих местах: черновик своей не виден; выключили расширение — его секций нет и ключ другой', async () => {
     const releases = logged(harness.lines, 'section-releases');
-    expect(releases.map((line) => [Number(line.accepted) + Number(line.unchanged), line.refused])).toEqual([[1, 0]]);
+    expect(releases.map((line) => [Number(line.accepted) + Number(line.unchanged), line.refused])).toEqual([[2, 0]]);
     const site = await insertSite(harness.db);
     await insertRevision(harness.db, site.id, { sections: PLACEMENT });
     await saveShopSection(site.id);
     extensions.answer = enabled('reviews', 'geo');
     const all = parseBuildInputs((await readSnapshot(harness.deps.snapshot, site.id)).inputs);
     expect(all.code.pages).toEqual({ home: ['platform:cart-badge', 'nova:scarf-colors', 'reviews:list'] });
-    expect(all.code.globals).toEqual(['geo:locate']);
+    expect(all.code.globals).toEqual(['geo:locate', 'platform:analytics']);
     expect(all.code.sections.map((section) => section.name)).toEqual([
       'geo:locate',
       'nova:scarf-colors',
+      'platform:analytics',
       'platform:cart-badge',
       'reviews:list',
     ]);
@@ -105,7 +106,7 @@ describe('код магазина', () => {
       sections: 'shop:color-match',
     });
     const files = await liveFiles(harness.store, labelOf(site));
-    expect(files.filter((path) => path.startsWith('_merfy/m/'))).toHaveLength(4);
+    expect(files.filter((path) => path.startsWith('_merfy/m/'))).toHaveLength(5);
     expect(files.filter((path) => path.startsWith('_merfy/shell/'))).toEqual([`${shellDir(TEST_SHELL.hash)}/shell.js`]);
     const home = await liveHome(harness.store, labelOf(site));
     expect(home).toContain('id="merfy-modules"');

@@ -119,4 +119,11 @@ describe('уборка в хранилище', () => {
     expect(left).toContain(blobOf('f'));
     expect(left).not.toContain(blobOf('e'));
   });
+
+  it('закреплённый файл (библиотека шрифтов, блок 12) остаётся, даже если на него никто не ссылается', async () => {
+    const store = await seeded();
+    const plan = await runCleanup(store, NOW, true, new Set([hexFrom('e')]));
+    expect(plan.removedBlobs.sort()).toEqual(['1', '2', '3'].map(blobOf).sort());
+    expect([...store.objects.keys()]).toContain(blobOf('e'));
+  });
 });

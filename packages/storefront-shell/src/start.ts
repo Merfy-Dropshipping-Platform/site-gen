@@ -1,6 +1,7 @@
 import type { StorefrontConfig } from '@merfy/storefront-config';
 import { readStorefrontConfig } from '@merfy/storefront-config/read';
 import { IDLE_HOOKS, useSectionElement, type ElementHooks } from './element';
+import { watchSectionErrors } from './error-log';
 import { loadPage, type ImportModule, type LoaderDeps } from './loader';
 import { readModuleList, type ModuleEntry } from './modules';
 import { listenPreview, type PreviewDeps } from './preview';
@@ -97,6 +98,7 @@ export function startShell(env: ShellEnv): Shell {
   watchErrors(win, sources, registry, controller.signal);
   const config = readConfig(win);
   if (config?.mode === 'preview') listenPreview(win, previewDeps(env, registry, sources), controller.signal);
+  if (config?.mode === 'live') watchSectionErrors(win, config, controller.signal);
   const load = (): Promise<void> => loadPage(deps, readModules(win.document));
   win.document.addEventListener(PAGE_LOAD_EVENT, () => void load(), { signal: controller.signal });
   return { config, registry, ready: load(), stop: () => stopShell(win, controller) };

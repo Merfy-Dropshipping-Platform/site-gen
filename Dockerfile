@@ -188,6 +188,9 @@ COPY packages/storefront-shell ./packages/storefront-shell
 COPY packages/storefront-sections ./packages/storefront-sections
 COPY packages/storefront-config ./packages/storefront-config
 COPY packages/tokens ./packages/tokens
+# Реестр библиотеки шрифтов (блок 12): storefront-build читает его при старте (src/fonts.ts) и берёт в отпечаток
+# платформы (src/render-files.ts). Остальной theme-contract проверяющему не нужен.
+COPY packages/theme-contract/fonts ./packages/theme-contract/fonts
 COPY packages/storefront-builder ./packages/storefront-builder
 ENV NODE_ENV=production
 ENV PORT=8080

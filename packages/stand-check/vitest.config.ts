@@ -27,6 +27,7 @@ export default defineConfig({
         test: {
           name: 'nova',
           include: NOVA_FILES,
+          globalSetup: ['__tests__/fonts-setup.ts'],
           pool: 'forks',
           poolOptions: { forks: { singleFork: true } },
         },

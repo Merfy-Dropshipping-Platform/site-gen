@@ -139,6 +139,18 @@
 - Сверка раз в час сравнивает ключ данных (`dataKey`): новый код платформы и новая версия расширения для неё не
   расхождение, включение и выключение расширения — расхождение.
 
+## Ошибки секций (блок 11, часть 4)
+
+Шлюз кладёт ошибки секций из браузеров в очередь `storefront_section_errors` (сообщение Nest:
+`{ pattern: 'storefront.section-errors', data: { v: 1, shopId, receivedAt, errors } }`). Сборщик пишет их в
+`storefront_section_error`: строка на магазин, секцию, отпечаток скрипта, стадию, текст и минуту приёма, повтор —
+`count`. Автор, владелец и выпуск — из `storefront_section` по имени и отпечатку; незнакомый отпечаток и магазин без
+строки `storefront_shop` не пишутся (`src/section-error-store.ts`). Строка журнала на пачку — `section-errors`
+(`shopId`, `minute`, `written`, `skipped`).
+
+Счёт для автостопа выпуска (блок 10) — `sectionErrorSummary(db, since)`: строка на выпуск секции — `shops` (магазинов) и
+`errors` (ошибок) с минуты `since`.
+
 ## Журнал и p95
 
 Одна строка JSON на событие: `event-accepted`, `job-queued`, `build-start`, `step` (`buildId`, `shopId`, `step`, `ms`,

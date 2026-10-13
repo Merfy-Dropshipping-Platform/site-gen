@@ -20,12 +20,14 @@ import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } fr
 // у них (факты 21, 24).
 //   storefront_builder_events — события: привязана к content.events (topic, «#») и к готовой product.events (fanout);
 //   storefront_builds         — задания сборки, приоритет 1–3 (x-max-priority);
+//   storefront_section_errors — ошибки секций из браузеров; кладёт шлюз (блок 11, часть 4), Nest emit;
 //   storefront_checks         — задания проверки в браузере (блок 10), их берёт проверяющий процесс;
 //   storefront_check_results  — ответы проверки, их берёт ведущий волн сборщика.
 // Объявление — на каждом канале при каждом подключении (факт 6): брокер перезапустился — очереди на месте.
 
 export const EVENTS_QUEUE = 'storefront_builder_events';
 export const JOBS_QUEUE = 'storefront_builds';
+export const SECTION_ERRORS_QUEUE = 'storefront_section_errors';
 // Журнал платформы (activity-log.publisher.ts site-gen): topic, ключ «<категория>.<действие>».
 export const ACTIVITY_EXCHANGE = 'activity.events';
 // Ждать подтверждения брокера не дольше, чем extensions (факт 7): лежит брокер — ошибка, а не вечное ожидание.
@@ -69,6 +71,8 @@ export async function declareTopology(channel: ConfirmChannel): Promise<void> {
   await channel.bindQueue(EVENTS_QUEUE, CONTENT_EXCHANGE, '#');
   await channel.bindQueue(EVENTS_QUEUE, PRODUCT_EXCHANGE, '');
   await channel.assertQueue(JOBS_QUEUE, { durable: true, arguments: { 'x-max-priority': MAX_PRIORITY } });
+  // Те же параметры, что у клиента шлюза (queueOptions: { durable: true }): иначе брокер откажет второму.
+  await channel.assertQueue(SECTION_ERRORS_QUEUE, { durable: true });
   await channel.assertQueue(CHECKS_QUEUE, { durable: true });
   await channel.assertQueue(CHECK_RESULTS_QUEUE, { durable: true });
 }

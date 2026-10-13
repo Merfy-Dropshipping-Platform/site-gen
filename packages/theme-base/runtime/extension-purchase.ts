@@ -57,6 +57,8 @@ export interface ProductFormView {
 export type ProductSubmitValue = string | number | boolean | null;
 
 export interface ProductSubmitInput {
+  /** Ключ повтора: один на показ формы, уходит в каждой отправке (SDK 0.16.0). */
+  submitId: string;
   productId: string;
   values: Record<string, ProductSubmitValue>;
   contacts: ContactValuesV2;
@@ -94,6 +96,14 @@ export interface FormState {
   /** Текст у кнопки: отказ расширения или общий сбой. */
   notice: string;
   busy: boolean;
+  /** uuid v4, создаётся один раз при показе формы: повтор после сбоя несёт тот же ключ. */
+  submitId: string;
+}
+
+/** Всё, что нужно от `crypto` для ключа повтора; в тестах подменяется. */
+export interface RandomSource {
+  randomUUID?: () => string;
+  getRandomValues?: (bytes: Uint8Array) => Uint8Array;
 }
 
 export type SubmitOutcome =
@@ -173,6 +183,9 @@ const escapeHtml = (raw: unknown): string =>
 
 const attribute = (name: string, value: string): string =>
   ` ${name}="${escapeHtml(value)}"`;
+
+/** Программное имя поля: подпись над ним — не `<label>`, а у поля нет другого имени. */
+const ariaLabel = (title: string): string => attribute("aria-label", title);
 
 const textOf = (value: unknown): string => {
   if (typeof value === "string") return value;
@@ -292,11 +305,45 @@ const SUBMIT_VALUE_BY_TYPE: Record<
   file: null,
 };
 
+const UUID_BYTES = 16;
+const BYTE_VALUES = 256;
+
+/** Случайные байты: `getRandomValues`, а без него — `Math.random` (последняя опора для старых браузеров). */
+function fillRandom(bytes: Uint8Array, source: RandomSource | undefined): void {
+  if (source?.getRandomValues) {
+    source.getRandomValues(bytes);
+    return;
+  }
+  bytes.forEach((_, index) => {
+    bytes[index] = Math.floor(Math.random() * BYTE_VALUES);
+  });
+}
+
+const toHex = (bytes: Uint8Array): string =>
+  Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+
+/** uuid v4: `crypto.randomUUID`, а если его нет — из случайных байт с битами версии и варианта. */
+export function createSubmitId(source: RandomSource | undefined): string {
+  if (typeof source?.randomUUID === "function") return source.randomUUID();
+  const bytes = new Uint8Array(UUID_BYTES);
+  fillRandom(bytes, source);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = toHex(bytes);
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join("-");
+}
+
 /** Тело отправки: только видимые пункты; согласие всегда `true` (без него форма не уходит). */
 export function collectSubmitInput(
   productId: string,
   form: FormV2,
-  state: Pick<FormState, "values" | "contacts">,
+  state: Pick<FormState, "values" | "contacts" | "submitId">,
 ): ProductSubmitInput {
   const shown = visibleItems(form, state.values);
   const values: Record<string, ProductSubmitValue> = {};
@@ -311,6 +358,7 @@ export function collectSubmitInput(
     if (read !== null) values[item.id] = read(state.values[item.id]);
   }
   return {
+    submitId: state.submitId,
     productId,
     values,
     contacts: { ...contacts, consent: true },
@@ -356,14 +404,19 @@ const invalidOutcome = (body: unknown): SubmitOutcome => ({
 });
 
 const OUTCOME_BY_STATUS = new Map<number, (body: unknown) => SubmitOutcome>([
-  [200, successOutcome],
   [400, invalidOutcome],
   [422, refusedOutcome],
 ]);
 
+/** Успех — любой 2xx: шлюз отвечает на POST статусом 201, а не 200. */
+const isSuccessStatus = (status: number): boolean =>
+  status >= 200 && status < 300;
+
 /** Что значит ответ функции отправки; незнакомый статус — общий сбой. */
 export function classifyResponse(status: number, body: unknown): SubmitOutcome {
-  const read = OUTCOME_BY_STATUS.get(status);
+  const read = isSuccessStatus(status)
+    ? successOutcome
+    : OUTCOME_BY_STATUS.get(status);
   return read === undefined ? FAILED : read(body);
 }
 
@@ -399,7 +452,7 @@ const fieldHtml = (view: FieldView, control: string): string =>
 
 function inputHtml(view: FieldView, type: string, extra = ""): string {
   const id = attribute("data-xp-field", view.field.id);
-  return `<input class="${inputClass(view)}" type="${type}"${extra}${id}${attribute("value", textOf(view.value))}>`;
+  return `<input class="${inputClass(view)}" type="${type}"${extra}${id}${ariaLabel(view.field.title)}${attribute("value", textOf(view.value))}>`;
 }
 
 function selectHtml(view: FieldView): string {
@@ -408,7 +461,7 @@ function selectHtml(view: FieldView): string {
       `<option value="${escapeHtml(option)}"${option === view.value ? " selected" : ""}>${escapeHtml(option)}</option>`,
   );
   const head = `<option value="">${TEXTS.choose}</option>`;
-  return `<select class="${inputClass(view)}"${attribute("data-xp-field", view.field.id)}>${head}${choices.join("")}</select>`;
+  return `<select class="${inputClass(view)}"${attribute("data-xp-field", view.field.id)}${ariaLabel(view.field.title)}>${head}${choices.join("")}</select>`;
 }
 
 function segmentsHtml(view: FieldView): string {
@@ -452,7 +505,7 @@ const FIELD_RENDERERS: Record<FieldType, FieldRenderer> = {
   textarea: (view) =>
     fieldHtml(
       view,
-      `<textarea class="${inputClass(view)}"${attribute("data-xp-field", view.field.id)}>${escapeHtml(textOf(view.value))}</textarea>`,
+      `<textarea class="${inputClass(view)}"${attribute("data-xp-field", view.field.id)}${ariaLabel(view.field.title)}>${escapeHtml(textOf(view.value))}</textarea>`,
     ),
   number: (view) =>
     fieldHtml(view, inputHtml(view, "number", ' inputmode="decimal"')),
@@ -465,6 +518,14 @@ const FIELD_RENDERERS: Record<FieldType, FieldRenderer> = {
   file: uploadHtml("file"),
 };
 
+/**
+ * Имя поля контакта: название и пример из подсказки («Почта: name@mail.ru»).
+ * `aria-label` заслоняет `placeholder` в доступном имени, а сверка с эталоном
+ * и читалка экрана находят поле по подсказке — поэтому она остаётся в имени.
+ */
+const contactName = (title: string, placeholder: string): string =>
+  placeholder === "" ? title : `${title}: ${placeholder}`;
+
 function contactHtml(item: ContactItem, state: FormState): string {
   const input = CONTACT_INPUTS[item.key];
   const error = state.errors.items[item.id];
@@ -473,7 +534,7 @@ function contactHtml(item: ContactItem, state: FormState): string {
     input.placeholder === "" ? "" : attribute("placeholder", input.placeholder);
   const control =
     `<input class="${bad ? "sf-in bad" : "sf-in"}" type="${input.type}"` +
-    `${attribute("data-xp-contact", item.key)}${attribute("value", textOf(state.contacts[item.key]))}${placeholder} autocomplete="off">`;
+    `${attribute("data-xp-contact", item.key)}${ariaLabel(contactName(item.title, input.placeholder))}${attribute("value", textOf(state.contacts[item.key]))}${placeholder} autocomplete="off">`;
   return `<div class="sf-f">${labelHtml(item.title, item.required)}${control}${errorHtml(error)}</div>`;
 }
 
@@ -753,7 +814,7 @@ async function loadForm(
       productId: options.productId,
     },
   );
-  if (reply === null || reply.status !== 200) return null;
+  if (reply === null || !isSuccessStatus(reply.status)) return null;
   const data =
     isRecord(reply.body) && reply.body.success === true
       ? reply.body.data
@@ -781,6 +842,9 @@ export async function mountExtensionPurchase(
     errors: { items: {} },
     notice: "",
     busy: false,
+    submitId: createSubmitId(
+      typeof crypto === "undefined" ? undefined : crypto,
+    ),
   };
   const session: Session = {
     container,

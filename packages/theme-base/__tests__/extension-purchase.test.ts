@@ -7,6 +7,7 @@
 import {
   classifyResponse,
   collectSubmitInput,
+  createSubmitId,
   findProductPoint,
   layoutRows,
   renderFormHtml,
@@ -39,12 +40,17 @@ const text = (id: string): FormItem => ({
   required: false,
 });
 
+const SUBMIT_ID = "5b0e2f0c-4f5e-4c53-8a43-6d1b7a1a9f10";
+const UUID_V4 =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 const emptyState = (): FormState => ({
   values: {},
   contacts: {},
   errors: { items: {} },
   notice: "",
   busy: false,
+  submitId: SUBMIT_ID,
 });
 
 describe("findProductPoint: точка «товар» из карты витрины", () => {
@@ -120,10 +126,12 @@ describe("collectSubmitInput: тело отправки", () => {
       phone: "",
       social: "@igor",
     },
+    submitId: SUBMIT_ID,
   };
 
-  it("значения по типам, контакты без пустых, согласие true, файлов нет", () => {
+  it("значения по типам, контакты без пустых, согласие true, файлов нет, ключ повтора", () => {
     expect(collectSubmitInput("p1", VERSTAK_FORM, state)).toEqual({
+      submitId: SUBMIT_ID,
       productId: "p1",
       values: { f40: 180, f41: 90, f42: "Дуб", f43: "Масло", f45: true },
       contacts: {
@@ -177,6 +185,7 @@ describe("collectSubmitInput: тело отправки", () => {
     const input = collectSubmitInput("p1", form, {
       values: { kind: "a", extra: "x" },
       contacts: {},
+      submitId: SUBMIT_ID,
     });
     expect(input.values).toEqual({ kind: "a" });
   });
@@ -185,6 +194,7 @@ describe("collectSubmitInput: тело отправки", () => {
     const input = collectSubmitInput("p1", VERSTAK_FORM, {
       values: {},
       contacts: {},
+      submitId: SUBMIT_ID,
     });
     expect(input.values).toEqual({
       f40: null,
@@ -193,6 +203,30 @@ describe("collectSubmitInput: тело отправки", () => {
       f43: null,
       f45: false,
     });
+  });
+});
+
+describe("createSubmitId: ключ повтора", () => {
+  it("берёт crypto.randomUUID, если он есть", () => {
+    expect(createSubmitId({ randomUUID: () => SUBMIT_ID })).toBe(SUBMIT_ID);
+  });
+
+  it("без randomUUID собирает uuid v4 из getRandomValues", () => {
+    const fixed = (bytes: Uint8Array): Uint8Array => {
+      bytes.fill(0xff);
+      return bytes;
+    };
+    const id = createSubmitId({ getRandomValues: fixed });
+    expect(id).toMatch(UUID_V4);
+    expect(id).toBe("ffffffff-ffff-4fff-bfff-ffffffffffff");
+  });
+
+  it("без crypto вовсе — всё равно uuid v4", () => {
+    expect(createSubmitId(undefined)).toMatch(UUID_V4);
+  });
+
+  it("два вызова дают разные ключи", () => {
+    expect(createSubmitId({})).not.toBe(createSubmitId({}));
   });
 });
 
@@ -229,10 +263,16 @@ describe("safeLink: куда может вести кнопка экрана о�
 describe("classifyResponse: что значит ответ отправки", () => {
   const ok = { success: true, data: { title: "Готово", text: "Спасибо" } };
 
-  it("200 и success → успех с данными", () => {
-    expect(classifyResponse(200, ok)).toEqual({
+  it.each([200, 201, 204])("%i и success → успех с данными", (status) => {
+    expect(classifyResponse(status, ok)).toEqual({
       kind: "success",
       result: ok.data,
+    });
+  });
+
+  it("201 без title → сбой", () => {
+    expect(classifyResponse(201, { success: true, data: {} })).toEqual({
+      kind: "failed",
     });
   });
 
@@ -302,6 +342,42 @@ describe("uploadHint: подсказка у плитки файла", () => {
 
 describe("renderFormHtml: разметка формы", () => {
   const html = renderFormHtml(VERSTAK_FORM_VIEW, emptyState());
+
+  it("у полей и контактов aria-label = название пункта, placeholder остаётся", () => {
+    expect(html).toContain('aria-label="Длина, см"');
+    expect(html).toContain('aria-label="Покрытие"');
+    expect(html).toContain('aria-label="Имя"');
+    expect(html).toContain('aria-label="Почта: name@mail.ru"');
+    expect(html).toContain(
+      'aria-label="Соцсеть или Telegram: @ник или ссылка на профиль"',
+    );
+    expect(html).toContain('placeholder="name@mail.ru"');
+  });
+
+  it("aria-label у textarea и экранируется", () => {
+    const out = renderFormHtml(
+      {
+        ...VERSTAK_FORM_VIEW,
+        form: {
+          version: 2,
+          items: [
+            {
+              id: "t",
+              kind: "field",
+              type: "textarea",
+              title: 'Опиши "так"',
+              visible: true,
+              required: false,
+            },
+          ],
+        },
+      },
+      emptyState(),
+    );
+    expect(out).toContain(
+      '<textarea class="sf-in" data-xp-field="t" aria-label="Опиши &quot;так&quot;">',
+    );
+  });
 
   it("пары чисел — в одной строке .sf-num", () => {
     expect(html).toContain('<div class="sf-num">');

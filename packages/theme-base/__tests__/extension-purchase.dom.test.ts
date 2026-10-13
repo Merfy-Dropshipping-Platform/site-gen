@@ -35,6 +35,8 @@ interface FetchInitSeen {
 
 const API = "https://gateway.test/api";
 const TOKEN_KEY = "merfy_customer_token";
+const UUID_V4 =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const GENERIC_FAILURE = "Не удалось отправить. Попробуйте ещё раз.";
 
 type Reply = { status?: number; body: unknown } | "network-error";
@@ -66,7 +68,8 @@ function mockFetch(routes: Routes) {
       typeof route === "function" ? route() : Promise.resolve(route);
     return reply.then((value) => {
       if (value === "network-error") throw new TypeError("Failed to fetch");
-      const status = value.status ?? 200;
+      // Настоящий шлюз отвечает на POST функции 201, на GET карты — 200.
+      const status = value.status ?? (routeOf(url) === "map" ? 200 : 201);
       return {
         ok: status < 400,
         status,
@@ -503,6 +506,7 @@ describe("отправка: запрос и ответы", () => {
     expect(init.credentials).toBe("include");
     expect(init.headers.Authorization).toBe("Bearer tok-9");
     expect(JSON.parse(init.body ?? "")).toEqual({
+      submitId: expect.stringMatching(UUID_V4),
       productId: STAND_PRODUCT_ID,
       values: { f40: 180, f41: 90, f42: "Дуб", f43: "Масло", f45: true },
       contacts: {
@@ -634,6 +638,92 @@ describe("отправка: запрос и ответы", () => {
     submitButton(root).click();
     await flush();
     expect(submitCalls(fn)).toHaveLength(2);
+  });
+});
+
+describe("успех — любой 2xx", () => {
+  it.each([200, 201])("форма с ответом %i показывается", async (status) => {
+    const { root } = await mounted({
+      form: { status, body: { success: true, data: VERSTAK_FORM_VIEW } },
+    });
+    expect(box(root).hidden).toBe(false);
+    expect(actions(root).hidden).toBe(true);
+  });
+
+  it.each([200, 201])(
+    "отправка с ответом %i — экран ответа, не сбой",
+    async (status) => {
+      const { root } = await submitFilled({
+        submit: { status, body: { success: true, data: VERSTAK_SENT } },
+      });
+      expect(box(root).querySelector("b")?.textContent).toBe(
+        VERSTAK_SENT.title,
+      );
+      expect(box(root).textContent).not.toContain(GENERIC_FAILURE);
+    },
+  );
+});
+
+describe("ключ повтора submitId", () => {
+  const sentIds = (fn: FetchMock): unknown[] =>
+    submitCalls(fn).map(([, init]) => JSON.parse(init?.body ?? "{}").submitId);
+
+  it("два нажатия после сбоя несут один и тот же ключ", async () => {
+    const { fn, root } = await submitFilled({ submit: "network-error" });
+    submitButton(root).click();
+    await flush();
+    const [first, second] = sentIds(fn);
+    expect(first).toMatch(UUID_V4);
+    expect(second).toBe(first);
+  });
+
+  it("после отказа 422 повтор уходит с тем же ключом", async () => {
+    const refusal = {
+      status: 422,
+      body: { success: false, code: "refused", message: "Нет" },
+    };
+    const { fn, root } = await submitFilled({ submit: refusal });
+    submitButton(root).click();
+    await flush();
+    const [first, second] = sentIds(fn);
+    expect(second).toBe(first);
+  });
+
+  it("новый показ формы — новый ключ", async () => {
+    const first = await submitFilled({ submit: "network-error" });
+    document.body.innerHTML = "";
+    const second = await submitFilled({ submit: "network-error" });
+    expect(sentIds(second.fn)[0]).not.toBe(sentIds(first.fn)[0]);
+  });
+
+  it("без crypto.randomUUID ключ собирается запасным путём и остаётся uuid v4", async () => {
+    Object.defineProperty(window.crypto, "randomUUID", {
+      value: undefined,
+      configurable: true,
+    });
+    const { fn } = await submitFilled({ submit: "network-error" });
+    Reflect.deleteProperty(window.crypto, "randomUUID");
+    expect(sentIds(fn)[0]).toMatch(UUID_V4);
+  });
+});
+
+describe("доступность полей", () => {
+  it("у input, select и textarea aria-label = название пункта или контакта", async () => {
+    const { root } = await mounted({});
+    const named = (selector: string) =>
+      root.querySelector(selector)?.getAttribute("aria-label");
+    expect(named('[data-xp-field="f40"]')).toBe("Длина, см");
+    expect(named('[data-xp-field="f43"]')).toBe("Покрытие");
+    expect(named('[data-xp-contact="name"]')).toBe("Имя");
+    expect(named('[data-xp-contact="email"]')).toBe("Почта: name@mail.ru");
+    expect(named('[data-xp-contact="social"]')).toBe(
+      "Соцсеть или Telegram: @ник или ссылка на профиль",
+    );
+    expect(
+      root
+        .querySelector('[data-xp-contact="email"]')
+        ?.getAttribute("placeholder"),
+    ).toBe("name@mail.ru");
   });
 });
 

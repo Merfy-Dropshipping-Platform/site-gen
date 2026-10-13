@@ -49,6 +49,12 @@ export { parseSettingsEdits, readSettingsEdits, resolveSettings } from './panel/
 export { panelJsonSchema } from './panel/shape';
 export type * from './panel/types';
 
+// Шрифты новых тем (блок 12): реестр и CSS шрифтов магазина
+export { fontStack, fontsCss, tokensCssWithFonts } from './fonts/fonts-css';
+export type { FontChoice, FontRole, FontsCss } from './fonts/fonts-css';
+export { fontRegistryJsonSchema, parseFontRegistry } from './fonts/registry';
+export type { FontEntry, FontFileEntry, FontRegistry } from './fonts/registry';
+
 // Поиск и инструмент для ИИ
 export { searchTokens } from './search/tokens';
 export { createTokensTool, runTokensTool, tokensTool } from './tool/tool';

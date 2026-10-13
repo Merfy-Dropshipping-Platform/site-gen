@@ -1,0 +1,195 @@
+{
+  "$comment": "Сгенерировано из словаря командой generate — руками не править.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "v": {
+      "type": "number",
+      "const": 1
+    },
+    "fonts": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "family": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]+(?: [A-Za-z0-9]+)*$"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "sans-serif",
+              "serif",
+              "display",
+              "handwriting",
+              "monospace"
+            ]
+          },
+          "package": {
+            "type": "string",
+            "pattern": "^@fontsource(?:-variable)?\\/[a-z0-9-]+$"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "axes": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z]{4}$"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weights": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 900
+            }
+          },
+          "cyrillic": {
+            "type": "boolean"
+          },
+          "stack": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metrics": {
+            "type": "object",
+            "properties": {
+              "base": {
+                "type": "string",
+                "enum": [
+                  "Arial",
+                  "Times New Roman"
+                ]
+              },
+              "size-adjust": {
+                "type": "string",
+                "pattern": "^\\d+(?:\\.\\d+)?%$"
+              },
+              "ascent-override": {
+                "type": "string",
+                "pattern": "^\\d+(?:\\.\\d+)?%$"
+              },
+              "descent-override": {
+                "type": "string",
+                "pattern": "^\\d+(?:\\.\\d+)?%$"
+              },
+              "line-gap-override": {
+                "type": "string",
+                "pattern": "^\\d+(?:\\.\\d+)?%$"
+              }
+            },
+            "required": [
+              "base",
+              "size-adjust",
+              "ascent-override",
+              "descent-override",
+              "line-gap-override"
+            ],
+            "additionalProperties": false
+          },
+          "license": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reserved-name": {
+            "type": "boolean"
+          },
+          "subsets": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "unicode-range": {
+                  "type": "string",
+                  "pattern": "^U\\+[0-9A-F]{1,6}(?:-[0-9A-F]{1,6})?(?:,U\\+[0-9A-F]{1,6}(?:-[0-9A-F]{1,6})?)*$"
+                },
+                "files": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string",
+                    "pattern": "^(?:wght|[1-9]00)$"
+                  },
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "pattern": "^_fonts\\/[a-z0-9-]+\\.[0-9a-f]{16}\\.woff2$"
+                      },
+                      "hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      },
+                      "bytes": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "source": {
+                        "type": "string",
+                        "pattern": "^files\\/.*"
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "hash",
+                      "bytes",
+                      "source"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "unicode-range",
+                "files"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "family",
+          "category",
+          "package",
+          "version",
+          "axes",
+          "weights",
+          "cyrillic",
+          "stack",
+          "metrics",
+          "license",
+          "reserved-name",
+          "subsets"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "v",
+    "fonts"
+  ],
+  "additionalProperties": false
+}

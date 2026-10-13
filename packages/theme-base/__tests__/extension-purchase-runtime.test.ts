@@ -17,8 +17,11 @@ const read = (relative: string): string =>
 
 const BUILD_SCRIPT = "scripts/build-purchase-runtime.mjs";
 const GENERATED_FILE = "runtime/extension-purchase.runtime.ts";
-/** Предел размера строки, КБ: оркестратор замерил бандл без zod в 8,4 КБ; с запасом на разметку. */
-const MAX_SOURCE_KB = 40;
+/**
+ * Предел размера строки, КБ: сторож ловит, что в строку попал zod или что-то
+ * такого же веса. Без zod: 5.1 — 30 КБ, с загрузкой файлов (5.2) — 46 КБ.
+ */
+const MAX_SOURCE_KB = 60;
 
 describe("строка рантайма для темы", () => {
   it("совпадает с тем, что даёт пересборка модуля", () => {
@@ -83,6 +86,12 @@ describe("Product.astro подключает форму покупки", () => {
       /data-product-actions=\{[^}]*extensionPurchaseEnabled/,
     );
   });
+
+  it("переключатель количества получает метку только при новом флаге — форма прячет его вместе с кнопками", () => {
+    expect(product).toMatch(
+      /data-puck-subsection-field="quantity"\s+data-product-quantity=\{extensionPurchaseEnabled \? 'true' : undefined\}/,
+    );
+  });
 });
 
 describe("слова предметной области в общем рантайме (решение Р8)", () => {
@@ -96,8 +105,20 @@ describe("слова предметной области в общем рант�
     BUILD_SCRIPT,
     "__tests__/extension-purchase.test.ts",
     "__tests__/extension-purchase.dom.test.ts",
+    "runtime/extension-upload.ts",
+    "runtime/extension-purchase-files.ts",
+    "__tests__/extension-purchase-files.test.ts",
+    "__tests__/extension-purchase-files.dom.test.ts",
   ];
-  const FORBIDDEN = new RegExp(["за", "явк|request"].join(""), "i");
+  /**
+   * Те же слова, что в чек-листе RULES §8: «заявк», `request-`/`requests_`/`request:`,
+   * `requestId`, `requestForm`. Имя лимита пакета форм `perRequestGb` — не слово
+   * предметной области: файлы считаются на одну отправку формы.
+   */
+  const FORBIDDEN = new RegExp(
+    ["за", "явк|\\brequests?[-_:]|requestid|requestform"].join(""),
+    "i",
+  );
 
   it.each(FILES)("%s без слов предметной области", (file) => {
     expect(read(file)).not.toMatch(FORBIDDEN);

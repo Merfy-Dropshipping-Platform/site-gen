@@ -127,6 +127,16 @@ export const VERSTAK_SAMPLE = {
   contacts: { name: "Игорь", email: "igor@example.ru", social: "@igor.belov" },
 } as const;
 
+/** Три фото комнаты для `?state=files` (эталон ph-product-form-files): цвета плиток прототипа. */
+export const STAND_PHOTOS = {
+  field: "f44",
+  files: [
+    { name: "room-1.png", color: "#E8A27A" },
+    { name: "room-2.png", color: "#7FBFB5" },
+    { name: "room-3.png", color: "#D4A0B4" },
+  ],
+} as const;
+
 export const VERSTAK_SENT: ProductSubmitResult = {
   title: "Заявка №2096 отправлена",
   text: "Ответ придёт на почту, заявка видна в «Моих заказах».",

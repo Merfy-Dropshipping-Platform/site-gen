@@ -10,7 +10,7 @@ import { THEME_VERSIONS_FILE, loadThemes, rendererDir, themeIdsOf } from '../src
 // nova (`pnpm renderer`, «Подготовка» задачи 8).
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 const STAND_LOCALS = {
-  head: { title: 'Стенд темы', configHtml: '', tokensCss: '', previewScript: '' },
+  head: { title: 'Стенд темы', configHtml: '', fontsCss: '', tokensCss: '', previewScript: '' },
   attributes: {},
   settings: {},
   shop: { name: 'Пледы' },

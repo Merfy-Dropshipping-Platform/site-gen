@@ -10,6 +10,7 @@ import type { ThemePins } from './theme-catalog';
 import { z } from 'zod';
 import type { DrawAnswer } from './draw';
 import { inlineAssets, type Assets } from './inline-assets';
+import { inlineFonts, type FontBytes } from './preview-fonts';
 import type { Log } from './log';
 import type { Queryable } from './shop-state';
 import { revisionKeySql } from './snapshot';
@@ -38,6 +39,8 @@ export interface PreviewDeps {
   pins: ThemePins;
   previewOf: (themeId: string, version: string) => Promise<PreviewTheme>;
   apiUrl: string;
+  // Байты файлов шрифтов для превью (блок 12): из хранилища по отпечатку.
+  fonts: FontBytes;
   log: Log;
 }
 
@@ -112,7 +115,11 @@ const inputsOf = (deps: PreviewDeps, { row, theme }: StandShop): StandInputs => 
 export async function standPreview(deps: PreviewDeps, rawShop: string | null): Promise<DrawAnswer> {
   const found = await standShop(deps, rawShop);
   if (isAnswer(found)) return found;
-  const locals = standLocals(inputsOf(deps, found), found.theme);
+  const standed = standLocals(inputsOf(deps, found), found.theme);
+  const locals = {
+    ...standed,
+    head: { ...standed.head, fontsCss: await inlineFonts(standed.head.fontsCss, deps.fonts) },
+  };
   if (locals.problems.length > 0)
     deps.log('preview-problems', { shopId: found.row.id, problems: locals.problems.join('; ') });
   return answer(200, inlineAssets(await found.theme.renderStand(locals), found.theme.assets));
@@ -136,7 +143,8 @@ export async function standTokens(deps: PreviewDeps, rawShop: string | null, bod
   if (!parsed.success) return jsonAnswer(400, { problems: [TEXT.body] });
   try {
     const edits = parseTokenEdits(found.theme.tokens, migrateTokenEdits(parsed.data.tokens, found.theme.migrations));
-    return jsonAnswer(200, previewTokens(found.theme.tokens, edits));
+    const answer = previewTokens(found.theme.tokens, edits);
+    return jsonAnswer(200, { ...answer, fontsCss: await inlineFonts(answer.fontsCss, deps.fonts) });
   } catch (error) {
     if (error instanceof TokenError) return jsonAnswer(400, { problems: error.problems });
     throw error;

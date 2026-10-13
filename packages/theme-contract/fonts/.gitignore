@@ -1,0 +1,2 @@
+# Файлы библиотеки для стенда темы (pnpm fonts:upload --to-dir .cache, блок 12) — не в git.
+.cache/

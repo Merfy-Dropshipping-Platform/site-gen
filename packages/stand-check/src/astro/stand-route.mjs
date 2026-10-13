@@ -1,7 +1,11 @@
-import { STAND_PATH } from '../stand-path.mjs';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+import { STAND_FONTS_PATTERN, STAND_PATH } from '../stand-path.mjs';
 
 // Страница стенда в каждой новой теме лежит по одному пути — вне src/pages, поэтому сама Astro её не собирает (Э2-3 А).
 const STAND_PAGE = 'src/stand/StandPage.astro';
+// Папка файлов шрифтов библиотеки (блок 12) — её читает stand-fonts.mjs.
+const FONTS_CACHE = '../../../theme-contract/fonts/.cache/_fonts/';
 const STAND_PATHNAMES = new Set([STAND_PATH, `${STAND_PATH}/`]);
 
 /**
@@ -23,6 +27,10 @@ export function standRoute({ enabled }) {
       'astro:config:setup': ({ config, injectRoute }) => {
         if (!enabled) return;
         injectRoute({ pattern: STAND_PATH, entrypoint: new URL(STAND_PAGE, config.root) });
+        // Файлы шрифтов стенда (блок 12): /_fonts/… — из папки библиотеки на диске, как у магазина с его домена.
+        // Путь к папке — отсюда: этот файл Astro грузит с диска, а stand-fonts.mjs уходит в чанк сборки.
+        process.env.MERFY_STAND_FONTS_DIR = fileURLToPath(new URL(FONTS_CACHE, import.meta.url));
+        injectRoute({ pattern: STAND_FONTS_PATTERN, entrypoint: new URL('./stand-fonts.mjs', import.meta.url) });
       },
     },
   };

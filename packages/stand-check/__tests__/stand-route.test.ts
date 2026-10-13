@@ -10,9 +10,13 @@ function injectedRoutes(enabled: boolean) {
 }
 
 describe('standRoute', () => {
-  it('с флагом добавляет /theme-stand — страницу src/stand/StandPage.astro самой темы', () => {
+  it('с флагом добавляет /theme-stand — страницу src/stand/StandPage.astro самой темы — и /_fonts/ стенда', () => {
     const page = new URL('file:///repo/themes/nova/src/stand/StandPage.astro');
-    expect(injectedRoutes(true)).toEqual([[{ pattern: '/theme-stand', entrypoint: page }]]);
+    const fonts = new URL('../src/astro/stand-fonts.mjs', import.meta.url);
+    expect(injectedRoutes(true)).toEqual([
+      [{ pattern: '/theme-stand', entrypoint: page }],
+      [{ pattern: '/_fonts/[file]', entrypoint: fonts }],
+    ]);
   });
 
   it('без флага адреса нет', () => {

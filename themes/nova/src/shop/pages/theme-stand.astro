@@ -4,7 +4,6 @@
 // магазина страница не входит: её нет в SHOP_ROUTES блока 4. Слушатель правок токенов приходит строкой
 // head.previewScript — в коде темы сети нет (сторож рендера). Конфиг магазина здесь печатается при отрисовке, без
 // скрипта на странице: превью отдаётся одним HTML.
-import "../fonts";
 import StandBody from "../stand/StandBody.astro";
 import "../stand/stand.css";
 
@@ -25,6 +24,7 @@ const configRows = [
 		<meta name="robots" content="noindex" />
 		<Fragment set:html={page.head.configHtml} />
 		<title>{page.head.title}</title>
+		<style id="merfy-fonts" is:inline set:html={page.head.fontsCss}></style>
 		<style id="merfy-tokens" is:inline set:html={page.head.tokensCss}></style>
 		<script is:inline set:html={page.head.previewScript}></script>
 	</head>

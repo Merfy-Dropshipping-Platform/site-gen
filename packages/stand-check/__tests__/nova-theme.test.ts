@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
 import {
   contrastIssues,
+  fontStack,
+  parseFontRegistry,
   parseTheme,
   resolveTokens,
   TokenError,
@@ -8,12 +9,12 @@ import {
   type ResolvedTokens,
 } from '@merfy/tokens';
 import { describe, expect, it } from 'vitest';
+import fontsJson from '../../theme-contract/fonts/fonts.json';
 import themeJson from '../../theme-nova/theme.json';
-import { packagePath } from '../src/paths';
 
 // Тема nova, вид «Чистый» (design.md блока 9): четыре схемы (Т9-3 Б), ноль проблем читаемости («решил сам» 3),
 // в theme.json — обязательные значения и явные только там, где правило словаря даёт не то («решил сам» 2), панель
-// целиком («решил сам» 6), подключённые шрифты совпадают с theme.json («решил сам» 4).
+// целиком («решил сам» 6), шрифт — из библиотеки платформы (блок 12: стек реестра при печати CSS, файлы — fontsCss).
 type RawTokens = { root: Record<string, unknown>; schemes: Record<string, Record<string, unknown>> };
 // Место значения в theme.json: корень или схема.
 type Place = { scheme?: string; key: string };
@@ -21,12 +22,6 @@ type Place = { scheme?: string; key: string };
 const raw: RawTokens = themeJson.tokens;
 const theme = parseTheme(raw);
 const resolved = resolveTokens(theme.dictionary, theme.tokens, {});
-
-const NOVA_DIR = packagePath('../../themes/nova');
-const FONTS_MODULE = `${NOVA_DIR}/src/shop/fonts.ts`;
-// Импорт начертания Fontsource: «@fontsource/onest/400.css» → пакет onest, насыщенность 400.
-const FONT_IMPORT = /@fontsource\/([a-z0-9-]+)\/(\d{3})\.css/g;
-const FONT_FAMILY = /font-family:\s*'([^']+)'/;
 
 const placeName = (place: Place): string => `${place.scheme ?? 'root'}.${place.key}`;
 
@@ -63,23 +58,6 @@ const valueAt = (tokens: ResolvedTokens, place: Place): unknown =>
 function sameWithout(place: Place, parsed: ParsedTheme): boolean {
   const without = resolveTokens(parsed.dictionary, parsed.tokens, {});
   return JSON.stringify(valueAt(without, place)) === JSON.stringify(valueAt(resolved, place));
-}
-
-// Семейство начертания — из CSS пакета Fontsource в node_modules темы: «@fontsource/onest/400.css» → «Onest».
-function familyOf(fontPackage: string, weight: string): string {
-  const css = readFileSync(`${NOVA_DIR}/node_modules/@fontsource/${fontPackage}/${weight}.css`, 'utf8');
-  const family = FONT_FAMILY.exec(css)?.[1];
-  if (family === undefined) throw new Error(`в @fontsource/${fontPackage}/${weight}.css нет font-family`);
-  return family;
-}
-
-// Начертания, которые подключает модуль шрифтов темы: «Семейство насыщенность».
-function connectedFaces(): string[] {
-  const text = readFileSync(FONTS_MODULE, 'utf8');
-  const faces = [...text.matchAll(FONT_IMPORT)].map(([, fontPackage, weight]) => {
-    return `${familyOf(fontPackage, weight)} ${weight}`;
-  });
-  return faces.sort();
 }
 
 // Первое имя стека шрифта: «Onest, system-ui, sans-serif» → «Onest».
@@ -123,8 +101,12 @@ describe('тема nova: вид «Чистый»', () => {
     expect(Object.keys(themeJson)).toEqual(['name', 'version', 'tokens']);
   });
 
-  it('модуль шрифтов подключает ровно те начертания, что нужны theme.json', () => {
+  it('шрифт темы — из библиотеки платформы (блок 12): в theme.json — формат панели, в CSS — стек реестра', () => {
+    const registry = parseFontRegistry(fontsJson);
     expect(neededFaces()).toEqual(['Onest 400', 'Onest 600']);
-    expect(connectedFaces()).toEqual(neededFaces());
+    const panelStack = 'Onest, system-ui, sans-serif';
+    expect(resolved.root['font-body']).toBe(panelStack);
+    expect(fontStack(registry, panelStack)).toBe(registry.fonts.onest.stack);
+    expect(registry.fonts.onest.cyrillic).toBe(true);
   });
 });

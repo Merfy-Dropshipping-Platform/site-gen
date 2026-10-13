@@ -13,6 +13,7 @@ const NEW_CODE = [
   'themes/nova/src',
   'packages/theme-nova',
   'packages/theme-contract/panel',
+  'packages/theme-contract/fonts',
   'packages/tokens/src',
   'packages/tokens/scripts',
   'packages/storefront-config/src',

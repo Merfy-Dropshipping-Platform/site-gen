@@ -1,0 +1,204 @@
+{
+  "fonts": {
+    "advent-pro": {
+      "package": "@fontsource-variable/advent-pro",
+      "version": "5.3.0"
+    },
+    "alumni-sans": {
+      "package": "@fontsource-variable/alumni-sans",
+      "version": "5.3.0"
+    },
+    "andika": {
+      "package": "@fontsource/andika",
+      "version": "5.3.0"
+    },
+    "arsenal": {
+      "package": "@fontsource/arsenal",
+      "version": "5.3.0"
+    },
+    "assistant": {
+      "package": "@fontsource-variable/assistant",
+      "version": "5.3.0"
+    },
+    "barlow": {
+      "package": "@fontsource/barlow",
+      "version": "5.3.0"
+    },
+    "bellota": {
+      "package": "@fontsource/bellota",
+      "version": "5.3.0"
+    },
+    "bitter": {
+      "package": "@fontsource-variable/bitter",
+      "version": "5.3.0"
+    },
+    "caveat": {
+      "package": "@fontsource-variable/caveat",
+      "version": "5.3.0"
+    },
+    "comfortaa": {
+      "package": "@fontsource-variable/comfortaa",
+      "version": "5.3.0"
+    },
+    "cormorant-infant": {
+      "package": "@fontsource-variable/cormorant-infant",
+      "version": "5.3.0"
+    },
+    "cuprum": {
+      "package": "@fontsource-variable/cuprum",
+      "version": "5.3.0"
+    },
+    "exo": {
+      "package": "@fontsource-variable/exo",
+      "version": "5.3.0"
+    },
+    "exo-2": {
+      "package": "@fontsource-variable/exo-2",
+      "version": "5.3.0"
+    },
+    "great-vibes": {
+      "package": "@fontsource/great-vibes",
+      "version": "5.3.0"
+    },
+    "ibm-plex-sans": {
+      "package": "@fontsource-variable/ibm-plex-sans",
+      "version": "5.3.0"
+    },
+    "inter": {
+      "package": "@fontsource-variable/inter",
+      "version": "5.3.0"
+    },
+    "kelly-slab": {
+      "package": "@fontsource/kelly-slab",
+      "version": "5.3.0"
+    },
+    "lora": {
+      "package": "@fontsource-variable/lora",
+      "version": "5.3.0"
+    },
+    "manrope": {
+      "package": "@fontsource-variable/manrope",
+      "version": "5.3.0"
+    },
+    "merriweather": {
+      "package": "@fontsource-variable/merriweather",
+      "version": "5.3.0"
+    },
+    "montserrat": {
+      "package": "@fontsource-variable/montserrat",
+      "version": "5.3.0"
+    },
+    "mulish": {
+      "package": "@fontsource-variable/mulish",
+      "version": "5.3.0"
+    },
+    "news-cycle": {
+      "package": "@fontsource/news-cycle",
+      "version": "5.3.0"
+    },
+    "onest": {
+      "package": "@fontsource-variable/onest",
+      "version": "5.3.1"
+    },
+    "open-sans": {
+      "package": "@fontsource-variable/open-sans",
+      "version": "5.3.0"
+    },
+    "oranienbaum": {
+      "package": "@fontsource/oranienbaum",
+      "version": "5.3.0"
+    },
+    "oswald": {
+      "package": "@fontsource-variable/oswald",
+      "version": "5.3.0"
+    },
+    "philosopher": {
+      "package": "@fontsource/philosopher",
+      "version": "5.3.0"
+    },
+    "playfair-display": {
+      "package": "@fontsource-variable/playfair-display",
+      "version": "5.3.0"
+    },
+    "pt-sans-narrow": {
+      "package": "@fontsource/pt-sans-narrow",
+      "version": "5.3.0"
+    },
+    "pt-serif": {
+      "package": "@fontsource/pt-serif",
+      "version": "5.3.0"
+    },
+    "raleway": {
+      "package": "@fontsource-variable/raleway",
+      "version": "5.3.0"
+    },
+    "roboto": {
+      "package": "@fontsource-variable/roboto",
+      "version": "5.3.0"
+    },
+    "roboto-condensed": {
+      "package": "@fontsource-variable/roboto-condensed",
+      "version": "5.3.0"
+    },
+    "roboto-flex": {
+      "package": "@fontsource-variable/roboto-flex",
+      "version": "5.3.0"
+    },
+    "sofia-sans": {
+      "package": "@fontsource-variable/sofia-sans",
+      "version": "5.3.0"
+    },
+    "sofia-sans-condensed": {
+      "package": "@fontsource-variable/sofia-sans-condensed",
+      "version": "5.3.0"
+    },
+    "sofia-sans-extra-condensed": {
+      "package": "@fontsource-variable/sofia-sans-extra-condensed",
+      "version": "5.3.0"
+    },
+    "source-serif-4": {
+      "package": "@fontsource-variable/source-serif-4",
+      "version": "5.3.0"
+    },
+    "tektur": {
+      "package": "@fontsource-variable/tektur",
+      "version": "5.3.0"
+    },
+    "tenor-sans": {
+      "package": "@fontsource/tenor-sans",
+      "version": "5.3.0"
+    },
+    "tinos": {
+      "package": "@fontsource/tinos",
+      "version": "5.3.0"
+    },
+    "ubuntu": {
+      "package": "@fontsource/ubuntu",
+      "version": "5.3.0"
+    },
+    "ubuntu-condensed": {
+      "package": "@fontsource/ubuntu-condensed",
+      "version": "5.3.0"
+    },
+    "unbounded": {
+      "package": "@fontsource-variable/unbounded",
+      "version": "5.3.0"
+    },
+    "urbanist": {
+      "package": "@fontsource-variable/urbanist",
+      "version": "5.3.0"
+    },
+    "viaoda-libre": {
+      "package": "@fontsource/viaoda-libre",
+      "version": "5.3.0"
+    },
+    "yanone-kaffeesatz": {
+      "package": "@fontsource-variable/yanone-kaffeesatz",
+      "version": "5.3.0"
+    },
+    "ysabeau-infant": {
+      "package": "@fontsource-variable/ysabeau-infant",
+      "version": "5.3.0"
+    }
+  }
+}

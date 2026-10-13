@@ -27,6 +27,9 @@ export const EXTENSION_PURCHASE_STYLES = `
   --xp-upload-line: #CFCFCF;
   --xp-icon-bg: #F2F2F2;
   --xp-ok-bg: #F2F8F3;
+  --xp-file-bg: #F6F6F6;
+  --xp-thumb-close: rgba(0, 0, 0, .6);
+  --xp-thumb-note: rgba(255, 255, 255, .85);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -39,6 +42,8 @@ export const EXTENSION_PURCHASE_STYLES = `
   font-weight: 300;
   line-height: 1.45;
   color: var(--xp-ink);
+  /* Экран ответа прокручивается к началу формы: отступ — под липкую шапку темы (у flux 80 px). */
+  scroll-margin-top: 96px;
 }
 .xp[hidden] { display: none; }
 .xp *, .xp *::before, .xp *::after { box-sizing: border-box; }
@@ -62,6 +67,17 @@ export const EXTENSION_PURCHASE_STYLES = `
 .xp .sf-up .ic { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--xp-icon-bg); font-size: 15px; }
 .xp .sf-up b { display: block; font-size: 13px; font-weight: 400; }
 .xp .sf-up small { font-size: 11px; color: var(--xp-muted); }
+.xp .sf-th { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.xp .sf-thumb { position: relative; display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: var(--xp-icon-bg); font-size: 10px; color: var(--xp-muted); }
+.xp .sf-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.xp .sf-thumb.loading img { opacity: .5; }
+.xp .sf-thumb.failed { box-shadow: inset 0 0 0 1px var(--xp-bad); }
+.xp .sf-thumb small { position: absolute; left: 3px; right: 3px; bottom: 3px; border-radius: 4px; background: var(--xp-thumb-note); font-size: 9px; line-height: 1.3; text-align: center; color: var(--xp-ink); }
+.xp .sf-thumb button { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--xp-thumb-close); color: var(--xp-surface); font-size: 11px; line-height: 18px; }
+.xp .sf-fl { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 9px; background: var(--xp-file-bg); font-size: 12.5px; }
+.xp .sf-fl span { min-width: 0; overflow-wrap: anywhere; }
+.xp .sf-fl.failed { color: var(--xp-err); }
+.xp .sf-fl button { flex: none; color: var(--xp-muted); }
 .xp .sf-cb { display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; cursor: pointer; }
 .xp .sf-cb input { flex: none; width: 17px; height: 17px; margin: 1px 0 0; accent-color: var(--xp-ink); }
 .xp .sf-btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 46px; border-radius: 9px; background: var(--xp-ink); color: var(--xp-surface); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; cursor: pointer; }

@@ -51,6 +51,7 @@ const emptyState = (): FormState => ({
   notice: "",
   busy: false,
   submitId: SUBMIT_ID,
+  files: {},
 });
 
 describe("findProductPoint: точка «товар» из карты витрины", () => {

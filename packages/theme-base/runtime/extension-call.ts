@@ -2,9 +2,10 @@
  * extension-call — общий канал витрины к расширениям магазина: карта точек
  * (`GET /store/extensions/storefront`), вызов функции расширения
  * (`POST /store/extensions/:id/fn/:name`), токен покупателя, экранирование и
- * проверка ссылок. Им пользуются форма покупки (`extension-purchase.ts`) и
- * записи в «Моих заказах» (`extension-orders.ts`), чтобы два места не
- * разошлись в том, как ходят к шлюзу и чему верят.
+ * проверка ссылок. Им пользуются форма покупки (`extension-purchase.ts`),
+ * загрузка файлов (`extension-upload.ts`) и записи в «Моих заказах»
+ * (`extension-orders.ts`), чтобы они не разошлись в том, как ходят к шлюзу и
+ * чему верят.
  *
  * Шлюз отдаёт карту как есть, без обёртки `{success, data}`; функции — с
  * обёрткой. Успех функции — любой 2xx: на POST шлюз отвечает 201.
@@ -100,12 +101,27 @@ export async function fetchStorefrontMap(
 }
 
 /** Вызов функции расширения; `null` — до сервера не дошли (сеть). */
-export async function callFunction(
+export function callFunction(
   channel: ExtensionChannel,
   point: { extensionId: string; name: string },
   input: object,
 ): Promise<FunctionReply | null> {
-  const path = `${encodeURIComponent(point.extensionId)}/fn/${encodeURIComponent(point.name)}`;
+  const tail = `fn/${encodeURIComponent(point.name)}`;
+  return postToExtension(channel, point.extensionId, tail, input);
+}
+
+/**
+ * POST на адрес расширения в шлюзе: `/store/extensions/:id/<tail>` — функция
+ * (`fn/:name`) или загрузка файла (`files`, `files/:fileId/complete`). Токен
+ * покупателя — заголовком, куки — с собой. `null` — до сервера не дошли (сеть).
+ */
+export async function postToExtension(
+  channel: ExtensionChannel,
+  extensionId: string,
+  tail: string,
+  input: object,
+): Promise<FunctionReply | null> {
+  const path = `${encodeURIComponent(extensionId)}/${tail}`;
   const url = `${channel.apiBase}/store/extensions/${path}?store_id=${encodeURIComponent(channel.storeId)}`;
   try {
     const response = await fetch(url, {

@@ -25,8 +25,13 @@
  *
  * ТИШИНА. Нет точки, форма `null`, сеть или ошибка на этапе показа — не
  * рисуем ничего: кнопка покупки остаётся, как будто фичи нет.
+ *
+ * ФАЙЛЫ (задача 5.2). Файл грузится сразу после выбора, в три шага
+ * (`extension-upload.ts`); в отправку уходят id готовых файлов. Перед
+ * отправкой форма ждёт идущие загрузки и один раз повторяет неудачные;
+ * готовые файлы при повторе отправки заново не грузятся. Состояние и
+ * разметка файлов — `extension-purchase-files.ts`.
  */
-import { FILE_LIMITS } from "./forms-vendor/file-limits";
 import type {
   ContactItem,
   ContactKey,
@@ -52,8 +57,29 @@ import {
   isSuccessStatus,
   safeLink,
 } from "./extension-call";
+import {
+  canPreview,
+  uploadFile,
+  type UploadOutcome,
+  type UploadType,
+} from "./extension-upload";
+import {
+  applyOutcome,
+  entriesOf,
+  FILE_TEXTS,
+  fileCounts,
+  findEntry,
+  pendingUploads,
+  pickFiles,
+  readyFileIds,
+  uploadControlHtml,
+  uploadFieldOf,
+  type FileEntries,
+  type UploadEntry,
+} from "./extension-purchase-files";
 
 export { safeLink };
+export { uploadHint } from "./extension-purchase-files";
 
 /* ── Типы: копии SDK 2.9 (ProductFormView, ProductSubmitInput, ProductSubmitResult) ── */
 
@@ -109,6 +135,8 @@ export interface FormState {
   busy: boolean;
   /** uuid v4, создаётся один раз при показе формы: повтор после сбоя несёт тот же ключ. */
   submitId: string;
+  /** Выбранные файлы по id пункта: загружаются сразу, в отправку — id готовых. */
+  files: FileEntries;
 }
 
 /** Всё, что нужно от `crypto` для ключа повтора; в тестах подменяется. */
@@ -131,26 +159,8 @@ const TEXTS = {
   choose: "Выберите",
   consent: "Даю согласие на обработку персональных данных и файлов",
   failure: "Не удалось отправить. Попробуйте ещё раз.",
+  filesFailure: "Не все файлы загрузились — проверьте отмеченные поля.",
 } as const;
-
-type UploadType = "photo" | "video" | "file";
-
-const UPLOAD_TITLES: Record<UploadType, string> = {
-  photo: "Выбрать фото",
-  video: "Выбрать видео",
-  file: "Выбрать файл",
-};
-const UPLOAD_ICONS: Record<UploadType, string> = {
-  photo: "▣",
-  video: "▶",
-  file: "⎘",
-};
-/** Форматы по решению Р11 (Б): совпадают с `FILE_LIMITS[..].accept`. */
-const UPLOAD_FORMATS: Record<UploadType, string> = {
-  photo: "JPEG, PNG, HEIC, WebP или GIF",
-  video: "MP4 или MOV",
-  file: "PDF, ZIP, DOCX, XLSX или PPTX",
-};
 
 const CONTACT_INPUTS: Record<
   ContactKey,
@@ -164,6 +174,8 @@ const CONTACT_INPUTS: Record<
 
 const CONTAINER_SELECTOR = "[data-extension-purchase]";
 const ACTIONS_SELECTOR = "[data-product-actions]";
+/** Переключатель количества «− 1 +»: у формы своего количества нет — прячется вместе с кнопками. */
+const QUANTITY_SELECTOR = "[data-product-quantity]";
 const NOTE_SELECTOR = "[data-extension-purchase-note]";
 const MOUNTED_ATTRIBUTE = "data-extension-purchase-mounted";
 const MAX_RESULT_BUTTONS = 3;
@@ -331,15 +343,21 @@ export function createSubmitId(source: RandomSource | undefined): string {
   ].join("-");
 }
 
-/** Тело отправки: только видимые пункты; согласие всегда `true` (без него форма не уходит). */
+/**
+ * Тело отправки: только видимые пункты; согласие всегда `true` (без него форма
+ * не уходит). `fileIds` — id готовых файлов по пунктам: в `files` попадают
+ * только видимые файловые пункты, у которых есть файлы.
+ */
 export function collectSubmitInput(
   productId: string,
   form: FormV2,
   state: Pick<FormState, "values" | "contacts" | "submitId">,
+  fileIds: Record<string, string[]> = {},
 ): ProductSubmitInput {
   const shown = visibleItems(form, state.values);
   const values: Record<string, ProductSubmitValue> = {};
   const contacts: ContactValuesV2 = {};
+  const files: Record<string, string[]> = {};
   for (const item of shown) {
     if (item.kind === "contact") {
       const text = textOf(state.contacts[item.key]).trim();
@@ -348,13 +366,15 @@ export function collectSubmitInput(
     }
     const read = SUBMIT_VALUE_BY_TYPE[item.type];
     if (read !== null) values[item.id] = read(state.values[item.id]);
+    const ids = hasOwn(fileIds, item.id) ? fileIds[item.id] : [];
+    if (read === null && ids.length > 0) files[item.id] = [...ids];
   }
   return {
     submitId: state.submitId,
     productId,
     values,
     contacts: { ...contacts, consent: true },
-    files: {},
+    files,
   };
 }
 
@@ -403,19 +423,13 @@ export function classifyResponse(status: number, body: unknown): SubmitOutcome {
 
 /* ── Разметка (строки; всё от расширения экранируется) ── */
 
-/** Подсказка у плитки файла: форматы, лимит из FILE_LIMITS, сколько файлов. */
-export function uploadHint(
-  type: UploadType,
-  maxFiles: number | undefined,
-): string {
-  return `${UPLOAD_FORMATS[type]} до ${FILE_LIMITS[type].maxMb} МБ · до ${maxFiles ?? 1}`;
-}
-
 interface FieldView {
   field: FieldItem;
   value: unknown;
   error: string | undefined;
   bad: boolean;
+  /** Выбранные файлы пункта; у нефайловых — пусто. */
+  entries: UploadEntry[];
 }
 
 const inputClass = (view: FieldView): string =>
@@ -462,20 +476,17 @@ function checkboxHtml(view: FieldView): string {
   return `<label class="sf-cb">${box}<span>${escapeHtml(view.field.title)}</span></label>${errorHtml(view.error)}`;
 }
 
-/** Плитка выбора файла. Загрузка — задача 5.2: пока выбор файла ничего не делает. */
+/**
+ * Файловый пункт: плитка выбора и выбранные файлы. Метка `data-xp-upload`
+ * нужна, чтобы перерисовать один пункт, когда файл загрузился: перерисовка
+ * всей формы сбила бы фокус с поля, где покупатель пишет.
+ */
 function uploadHtml(type: UploadType) {
   return (view: FieldView): string => {
-    const tile = view.bad ? "sf-up bad" : "sf-up";
-    const accept = attribute("accept", FILE_LIMITS[type].accept.join(","));
-    const multiple = (view.field.maxFiles ?? 1) > 1 ? " multiple" : "";
-    const input = `<input type="file"${attribute("data-xp-file", view.field.id)}${accept}${multiple}>`;
-    const hint = escapeHtml(uploadHint(type, view.field.maxFiles));
-    const caption = `<span><b>${UPLOAD_TITLES[type]}</b><small>${hint}</small></span>`;
-    const icon = `<span class="ic" aria-hidden="true">${UPLOAD_ICONS[type]}</span>`;
-    return fieldHtml(
-      view,
-      `<label class="${tile}">${input}${icon}${caption}</label>`,
-    );
+    const field = { ...view.field, type };
+    const label = labelHtml(field.title, field.required);
+    const control = uploadControlHtml(field, view.entries, view.bad);
+    return `<div class="sf-f"${attribute("data-xp-upload", field.id)}>${label}${control}${errorHtml(view.error)}</div>`;
   };
 }
 
@@ -526,6 +537,7 @@ function itemHtml(item: FormItem, state: FormState): string {
     value: state.values[item.id],
     error: state.errors.items[item.id],
     bad: hasOwn(state.errors.items, item.id),
+    entries: entriesOf(state.files, item.id),
   };
   return FIELD_RENDERERS[item.type](view);
 }
@@ -588,17 +600,21 @@ function scrollToFirstProblem(container: HTMLElement): void {
   }
 }
 
+/** hidden и display:none: у кнопок тем есть flex-классы, они перебивают [hidden]. */
+function hideElement(element: HTMLElement): void {
+  element.hidden = true;
+  element.style.display = "none";
+}
+
 function revealForm(
   root: ParentNode,
   container: HTMLElement,
   view: ProductFormView,
 ): void {
-  const actions = root.querySelector<HTMLElement>(ACTIONS_SELECTOR);
-  if (actions !== null) {
-    // hidden и display:none: у кнопок тем есть flex-классы, они перебивают [hidden].
-    actions.hidden = true;
-    actions.style.display = "none";
-  }
+  const replaced = root.querySelectorAll<HTMLElement>(
+    `${ACTIONS_SELECTOR}, ${QUANTITY_SELECTOR}`,
+  );
+  replaced.forEach(hideElement);
   const note = root.querySelector<HTMLElement>(NOTE_SELECTOR);
   if (note !== null && view.priceNote) {
     note.textContent = view.priceNote;
@@ -630,11 +646,30 @@ interface Session {
   point: PurchasePoint;
   options: MountExtensionPurchaseOptions;
   state: FormState;
+  /** Сколько файлов выбрано за показ формы: из него — номер записи файла. */
+  uploads: number;
 }
 
 const paint = (session: Session): void => {
   session.container.innerHTML = renderFormHtml(session.view, session.state);
 };
+
+/** Перерисовать один файловый пункт, не трогая остальную форму. */
+function repaintUpload(session: Session, itemId: string): void {
+  const nodes =
+    session.container.querySelectorAll<HTMLElement>("[data-xp-upload]");
+  const node = Array.from(nodes).find((one) => one.dataset.xpUpload === itemId);
+  const item = session.view.form.items.find((one) => one.id === itemId);
+  if (node === undefined || item === undefined) return;
+  node.outerHTML = itemHtml(item, session.state);
+}
+
+/** Текст у пункта: пустой убирает прежний. */
+function setProblem(state: FormState, itemId: string, text: string): void {
+  const items = { ...state.errors.items };
+  delete items[itemId];
+  state.errors.items = text === "" ? items : { ...items, [itemId]: text };
+}
 
 /** Пишет введённое в состояние; возвращает id пункта, если от него зависят условия показа. */
 function writeControl(session: Session, control: FormControl): string | null {
@@ -654,8 +689,15 @@ function onInput(session: Session, event: Event): void {
 }
 
 function onChange(session: Session, event: Event): void {
-  if (!isFormControl(event.target)) return;
-  if (writeControl(session, event.target) !== null) paint(session);
+  const { target } = event;
+  const fileInput =
+    target instanceof HTMLInputElement && target.dataset.xpFile !== undefined;
+  if (fileInput) {
+    chooseFiles(session, target);
+    return;
+  }
+  if (!isFormControl(target)) return;
+  if (writeControl(session, target) !== null) paint(session);
 }
 
 function chooseSegment(session: Session, button: HTMLElement): void {
@@ -663,6 +705,115 @@ function chooseSegment(session: Session, button: HTMLElement): void {
   if (xpField === undefined || xpValue === undefined) return;
   session.state.values[xpField] = xpValue;
   paint(session);
+}
+
+/* ── Файлы: выбор, загрузка, «убрать» ── */
+
+const FAILED_UPLOAD: UploadOutcome = { kind: "failed" };
+
+/** Превью — только для форматов, которые браузер покажет (HEIC — без превью). */
+const previewOf = (file: File): string =>
+  canPreview(file) && typeof URL.createObjectURL === "function"
+    ? URL.createObjectURL(file)
+    : "";
+
+function releasePreview(entry: UploadEntry): void {
+  if (entry.preview === "" || typeof URL.revokeObjectURL !== "function") return;
+  URL.revokeObjectURL(entry.preview);
+}
+
+function newEntry(session: Session, type: UploadType, file: File): UploadEntry {
+  session.uploads += 1;
+  return {
+    key: String(session.uploads),
+    type,
+    file,
+    status: "loading",
+    fileId: "",
+    preview: previewOf(file),
+    job: Promise.resolve(),
+  };
+}
+
+function dropEntry(
+  session: Session,
+  itemId: string,
+  entry: UploadEntry,
+  problem: string,
+): void {
+  const entries = entriesOf(session.state.files, itemId);
+  session.state.files[itemId] = entries.filter((one) => one !== entry);
+  releasePreview(entry);
+  setProblem(session.state, itemId, problem);
+}
+
+/** Итог загрузки; файл убрали, пока он грузился, — итог не нужен. */
+function settleUpload(
+  session: Session,
+  itemId: string,
+  entry: UploadEntry,
+  outcome: UploadOutcome,
+): void {
+  if (!entriesOf(session.state.files, itemId).includes(entry)) return;
+  const problem = applyOutcome(entry, outcome);
+  if (problem !== "") dropEntry(session, itemId, entry, problem);
+  repaintUpload(session, itemId);
+}
+
+function startUpload(
+  session: Session,
+  itemId: string,
+  entry: UploadEntry,
+): void {
+  const { options, point } = session;
+  entry.status = "loading";
+  entry.job = uploadFile(options, point.extensionId, entry.type, entry.file)
+    .catch(() => FAILED_UPLOAD)
+    .then((outcome) => settleUpload(session, itemId, entry, outcome));
+}
+
+/** Выбор файлов: годные встают в пункт и сразу грузятся, причина отказа — у пункта. */
+function chooseFiles(session: Session, input: HTMLInputElement): void {
+  const field = uploadFieldOf(session.view.form.items, input.dataset.xpFile);
+  if (field === null) return;
+  const { files } = session.state;
+  const picked = pickFiles(field, Array.from(input.files ?? []), files);
+  const added = picked.accepted.map((file) =>
+    newEntry(session, field.type, file),
+  );
+  files[field.id] = [...entriesOf(files, field.id), ...added];
+  setProblem(session.state, field.id, picked.problem);
+  repaintUpload(session, field.id);
+  added.forEach((entry) => startUpload(session, field.id, entry));
+}
+
+function removeFile(session: Session, key: string): void {
+  const placed = findEntry(session.state.files, key);
+  if (session.state.busy || placed === null) return;
+  dropEntry(session, placed.itemId, placed.entry, "");
+  repaintUpload(session, placed.itemId);
+}
+
+/** Перед отправкой: ждём идущие загрузки, неудачные повторяем один раз; готовые не трогаем. */
+async function finishUploads(session: Session): Promise<boolean> {
+  const pending = pendingUploads(session.state.files);
+  pending
+    .filter(({ entry }) => entry.status === "failed")
+    .forEach(({ itemId, entry }) => startUpload(session, itemId, entry));
+  await Promise.all(pending.map(({ entry }) => entry.job));
+  const left = pendingUploads(session.state.files);
+  return left.length === 0 && !hasErrors(session.state.errors);
+}
+
+function showUploadProblem(session: Session): void {
+  const { state } = session;
+  state.busy = false;
+  pendingUploads(state.files).forEach(({ itemId }) =>
+    setProblem(state, itemId, FILE_TEXTS.notUploaded),
+  );
+  state.notice = TEXTS.filesFailure;
+  paint(session);
+  scrollToFirstProblem(session.container);
 }
 
 function showResult(session: Session, result: ProductSubmitResult): void {
@@ -686,20 +837,38 @@ function showFailure(session: Session, outcome: SubmitOutcome): void {
   paint(session);
 }
 
-async function submit(session: Session): Promise<void> {
-  const { state, view, point, options, container } = session;
-  if (state.busy) return;
-  const errors = validateV2(view.form, state.values, state.contacts);
-  state.errors = errors;
+/** Проверка формы пакетом форм; файлы считаются все выбранные, даже не догрузившиеся. */
+function checkAnswers(session: Session): boolean {
+  const { state, view, container } = session;
+  const counts = fileCounts(state.files);
+  state.errors = validateV2(view.form, state.values, state.contacts, counts);
   state.notice = "";
-  if (hasErrors(errors)) {
-    paint(session);
-    scrollToFirstProblem(container);
+  if (!hasErrors(state.errors)) return true;
+  paint(session);
+  scrollToFirstProblem(container);
+  return false;
+}
+
+async function submit(session: Session): Promise<void> {
+  if (session.state.busy || !checkAnswers(session)) return;
+  session.state.busy = true;
+  paint(session);
+  if (!(await finishUploads(session))) {
+    showUploadProblem(session);
     return;
   }
-  state.busy = true;
-  paint(session);
-  const input = collectSubmitInput(options.productId, view.form, state);
+  await send(session);
+}
+
+async function send(session: Session): Promise<void> {
+  const { state, view, point, options } = session;
+  const fileIds = readyFileIds(state.files);
+  const input = collectSubmitInput(
+    options.productId,
+    view.form,
+    state,
+    fileIds,
+  );
   const reply = await callFunction(
     options,
     { extensionId: point.extensionId, name: point.submit },
@@ -719,6 +888,8 @@ function onClick(session: Session, event: Event): void {
   const target = event.target instanceof Element ? event.target : null;
   const segment = target?.closest<HTMLElement>("[data-xp-value]") ?? null;
   if (segment !== null) chooseSegment(session, segment);
+  const remove = target?.closest<HTMLElement>("[data-xp-remove]") ?? null;
+  if (remove !== null) removeFile(session, remove.dataset.xpRemove ?? "");
   if (target?.closest("[data-xp-submit]")) void submit(session);
 }
 
@@ -765,6 +936,7 @@ export async function mountExtensionPurchase(
     submitId: createSubmitId(
       typeof crypto === "undefined" ? undefined : crypto,
     ),
+    files: {},
   };
   const session: Session = {
     container,
@@ -772,6 +944,7 @@ export async function mountExtensionPurchase(
     point: loaded.point,
     options,
     state,
+    uploads: 0,
   };
   revealForm(root, container, loaded.view);
   paint(session);

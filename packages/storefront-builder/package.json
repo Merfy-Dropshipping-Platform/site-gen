@@ -23,6 +23,7 @@
   "dependencies": {
     "@merfy/stand-check": "workspace:*",
     "@merfy/storefront-build": "workspace:*",
+    "@merfy/storefront-config": "workspace:*",
     "@merfy/storefront-sections": "workspace:*",
     "@merfy/storefront-storage": "workspace:*",
     "@merfy/tokens": "workspace:*",

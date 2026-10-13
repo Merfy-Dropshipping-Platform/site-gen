@@ -140,7 +140,11 @@ export function openHarness(overrides: Partial<RuntimeDeps> = {}): Harness {
     released: () => Promise.resolve(FAKE_THEME.version),
     log,
   });
-  const platform = { renderHash: RENDER_HASH, apiUrl: 'https://gateway.dev.merfy.ru/api' };
+  const platform = {
+    renderHash: RENDER_HASH,
+    apiUrl: 'https://gateway.dev.merfy.ru/api',
+    analyticsUrl: 'https://analytics.dev.merfy.ru',
+  };
   const deps: RuntimeDeps = {
     db,
     store,
@@ -148,6 +152,7 @@ export function openHarness(overrides: Partial<RuntimeDeps> = {}): Harness {
       db,
       products: { call: rpc.call, timeoutMs: 1_000, log },
       code: codeDeps(db, log),
+      counters: { call: rpc.call, timeoutMs: 1_000, log },
       platform,
       themes,
       pins: catalog,

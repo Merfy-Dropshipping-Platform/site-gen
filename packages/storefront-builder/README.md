@@ -50,7 +50,10 @@
 ## Переменные окружения
 
 Обязательные: `DATABASE_URL` (база sites), `RABBITMQ_URL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`,
-`S3_SECRET_KEY`, `STOREFRONT_API_URL`, `SOURCE_COMMIT` (40 знаков; Coolify задаёт сам).
+`S3_SECRET_KEY`, `STOREFRONT_API_URL`, `ANALYTICS_COLLECTOR_URL` (адрес сборщика аналитики для конфига витрины, блок 11:
+`https://analytics.dev.merfy.ru` на dev; запасного адреса нет — без переменной сборщик не стартует), `SOURCE_COMMIT`
+(40 знаков; Coolify задаёт сам). Счётчики мерчанта сборщик берёт у сборщика аналитики RPC `analytics.pixels.list`
+(`ANALYTICS_TIMEOUT_MS=5000`); не ответил — снимок «не получен», как с товарами.
 По умолчанию: `PORT=8080`, `BUILD_SLOTS=1`, `DRAW_SLOTS=1`, `DRAW_TIMEOUT_MS=3000`, `BUILD_LEASE_MS=300000`,
 `RECONCILE_MS=3600000`, `PRODUCT_TIMEOUT_MS=10000`, `STOREFRONT_INDEXABLE=false`,
 `INDEXNOW_URL=https://yandex.com/indexnow`, `BUILD_DRAIN_MS=20000` (не больше 25000: через 30 с Coolify шлёт SIGKILL).

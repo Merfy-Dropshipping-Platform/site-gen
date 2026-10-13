@@ -73,11 +73,16 @@ const catalog = createThemeCatalog({
 const shell = await readShellBuild(ROOT);
 const broker = openBroker(settings.rabbitmqUrl, log);
 const rpc = openRpc(settings.rabbitmqUrl);
-const platform = { renderHash: await platformRenderHash(ROOT), apiUrl: settings.apiUrl };
+const platform = {
+  renderHash: await platformRenderHash(ROOT),
+  apiUrl: settings.apiUrl,
+  analyticsUrl: settings.analyticsUrl,
+};
 const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 // Код магазина (блок 7): реестр секций, места из ревизии, включённые расширения; тайм-аут — как у товаров.
 const code = { db, shell, call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
-const snapshot = { db, products, code, platform, themes: loaded.themes, clock };
+const counters = { call: rpc.call, timeoutMs: settings.analyticsTimeoutMs, log };
+const snapshot = { db, products, code, counters, platform, themes: loaded.themes, clock };
 
 // Включённые расширения магазина для выпуска расширения (задача 11) — тот же вызов extensions.enabledForShop и тот же
 // тайм-аут, что у снимка. Сервис не ответил — шаг ведущего падает, сверка повторит его через 30 с.

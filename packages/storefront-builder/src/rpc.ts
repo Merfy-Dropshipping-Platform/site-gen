@@ -24,19 +24,30 @@ interface Waiter {
   reject: (error: Error) => void;
 }
 
-function parseReply(message: ConsumeMessage): z.infer<typeof replySchema> {
+function parseBody(message: ConsumeMessage): unknown {
   try {
-    return replySchema.parse(JSON.parse(message.content.toString('utf8')));
+    return JSON.parse(message.content.toString('utf8'));
   } catch (error) {
     throw new StorefrontBuilderError('rpc-failed', 'ответ сервиса не JSON', { cause: error });
   }
 }
 
-function answer(message: ConsumeMessage): unknown {
-  const reply = parseReply(message);
+// Ответ Nest — { err, response, isDisposed }. Ответ сервиса не на Nest (analytics-collector на Go, internal/rpc/rpc.go)
+// — тело целиком: { success, data } или { success: false, error }. Так их различает и ClientProxy шлюза
+// (IncomingResponseDeserializer Nest: ответ без этих полей — «внешний», он целиком и есть ответ).
+const NEST_REPLY_KEYS = ['err', 'response', 'isDisposed'];
+
+const isNestReply = (body: unknown): boolean =>
+  typeof body === 'object' && body !== null && NEST_REPLY_KEYS.some((key) => Object.hasOwn(body, key));
+
+export function replyValue(body: unknown): unknown {
+  if (!isNestReply(body)) return body;
+  const reply = replySchema.parse(body);
   if ((reply.err ?? null) === null) return reply.response;
   throw new StorefrontBuilderError('rpc-failed', 'сервис ответил ошибкой', { cause: reply.err });
 }
+
+const answer = (message: ConsumeMessage): unknown => replyValue(parseBody(message));
 
 // Ответ пришёл — отдать его тому, кто ждёт этот correlationId. Ответов без ждущего (поздних, после тайм-аута) не ждём.
 function settle(waiters: Map<string, Waiter>, message: ConsumeMessage): void {

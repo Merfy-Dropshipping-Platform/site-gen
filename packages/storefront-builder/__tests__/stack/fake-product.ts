@@ -1,6 +1,7 @@
 import amqplib from 'amqplib';
 import { z } from 'zod';
 import { PRODUCT_QUEUE } from '../../src/snapshot';
+import { startFakeAnalytics, type FakeAnalytics } from './fake-analytics';
 import { STACK } from './stack';
 
 // Подставной сервис product: отвечает на product.list так, как отвечает Nest (server-rmq.js): { err, response,
@@ -12,6 +13,8 @@ export interface FakeProducts {
   answers: Map<string, ProductAnswer>;
   products: Map<string, Record<string, unknown>[]>;
   calls: () => number;
+  // Подставной сборщик аналитики (блок 11) стартует вместе с product: сборки всех тестов стенда получают ответ.
+  analytics: FakeAnalytics;
   close: () => Promise<void>;
 }
 
@@ -30,6 +33,7 @@ function replyFor(fake: Pick<FakeProducts, 'answers' | 'products'>, siteId: stri
 }
 
 export async function startFakeProducts(): Promise<FakeProducts> {
+  const analytics = await startFakeAnalytics();
   const connection = await amqplib.connect(STACK.rabbitmqUrl);
   const channel = await connection.createChannel();
   await channel.assertQueue(PRODUCT_QUEUE, { durable: true });
@@ -47,5 +51,9 @@ export async function startFakeProducts(): Promise<FakeProducts> {
     const correlationId = String(message.properties.correlationId);
     channel.sendToQueue(String(message.properties.replyTo), body, { correlationId });
   });
-  return { ...fake, calls: () => calls, close: () => connection.close() };
+  const close = async (): Promise<void> => {
+    await analytics.close();
+    await connection.close();
+  };
+  return { ...fake, analytics, calls: () => calls, close };
 }

@@ -13,6 +13,7 @@ const ENV = {
   S3_ACCESS_KEY: 'key',
   S3_SECRET_KEY: 'secret-value',
   STOREFRONT_API_URL: 'https://gateway.dev.merfy.ru/api',
+  ANALYTICS_COLLECTOR_URL: 'https://analytics.dev.merfy.ru/',
   SOURCE_COMMIT: 'a'.repeat(40),
 };
 
@@ -23,6 +24,7 @@ describe('настройки', () => {
       rabbitmqUrl: ENV.RABBITMQ_URL,
       s3: { endpoint: ENV.S3_ENDPOINT, bucket: 'storefront', accessKeyId: 'key', secretAccessKey: 'secret-value' },
       apiUrl: ENV.STOREFRONT_API_URL,
+      analyticsUrl: 'https://analytics.dev.merfy.ru',
       commit: ENV.SOURCE_COMMIT,
       port: 8080,
       buildSlots: 1,
@@ -33,6 +35,7 @@ describe('настройки', () => {
       drainMs: 20_000,
       reconcileMs: 3_600_000,
       productTimeoutMs: 10_000,
+      analyticsTimeoutMs: 5_000,
       indexable: false,
       standPage: false,
       indexNow: null,
@@ -49,6 +52,10 @@ describe('настройки', () => {
     expect(() => readSettings({ ...ENV, STOREFRONT_STAND_PAGE: 'true', STOREFRONT_INDEXABLE: 'true' })).toThrow(
       'env#STOREFRONT_STAND_PAGE: стенд в сборке — только у магазинов не для поиска (STOREFRONT_INDEXABLE=false)',
     );
+  });
+
+  it('нет ANALYTICS_COLLECTOR_URL — settings-invalid с именем переменной (И4: запасного адреса нет)', () => {
+    expect(() => readSettings({ ...ENV, ANALYTICS_COLLECTOR_URL: undefined })).toThrow(/ANALYTICS_COLLECTOR_URL/);
   });
 
   it('числа и флаг поиска — из строк окружения', () => {

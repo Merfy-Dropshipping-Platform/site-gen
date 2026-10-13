@@ -305,6 +305,9 @@ importers:
       '@merfy/storefront-build':
         specifier: workspace:*
         version: link:../storefront-build
+      '@merfy/storefront-config':
+        specifier: workspace:*
+        version: link:../storefront-config
       '@merfy/storefront-sections':
         specifier: workspace:*
         version: link:../storefront-sections

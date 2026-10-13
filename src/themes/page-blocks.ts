@@ -208,6 +208,17 @@ export async function extractPageBlocks(
         if (featureOn || finalProps.requestsEnabled === true) {
           finalProps.requestsEnabled = true;
         }
+        // Спека 120, задача 5.1: тумблер features.extensionPurchase → проп
+        // extensionPurchaseEnabled (форма расширения вместо «В корзину»). Тот же
+        // приём, но без включения пропом ревизии: пока только flux, значение
+        // решает один манифест темы. Какая из двух форм монтируется, решает
+        // секция «Товар» (новая вытесняет requestsEnabled).
+        if (
+          themeId != null &&
+          getThemeManifest(themeId)?.features?.extensionPurchase === true
+        ) {
+          finalProps.extensionPurchaseEnabled = true;
+        }
       }
       return { type: b.type, props: finalProps };
     });

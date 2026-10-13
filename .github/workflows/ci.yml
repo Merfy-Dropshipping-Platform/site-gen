@@ -234,6 +234,17 @@ jobs:
         working-directory: packages/theme-base
         run: pnpm exec jest --config jest.config.ts --runInBand __tests__/forms-vendor.test.ts
 
+      # Форма расширения вместо кнопки покупки на странице товара (спека 120, задача 5.1):
+      # чистые функции, поведение в jsdom и сторож строки рантайма для темы (строку делает
+      # scripts/build-purchase-runtime.mjs — отстала от модуля, тест краснеет).
+      - name: Форма расширения на странице товара (theme-base)
+        working-directory: packages/theme-base
+        run: pnpm exec jest --config jest.config.ts --runInBand __tests__/extension-purchase
+
+      # Флаг features.extensionPurchase → проп секции «Товар»: включён только у flux.
+      - name: Форма расширения на странице товара (флаг темы)
+        run: pnpm exec jest --runInBand src/themes/__tests__/extension-purchase-product-flag.spec.ts
+
       # Этап 3 «Магазин одной командой» (src/store/): сага рождения и её
       # доводчик, команды CreateStore/SetTheme, каталог тем, регистрация через
       # команду под флагом `newLogic` (без флага и cron «без магазина» — старый

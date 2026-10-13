@@ -349,6 +349,7 @@
     "otp-auth": true,
     "wishlist": false,
     "requests": true,
+    "extensionPurchase": true,
     "color-swatches": true,
     "filter-sidebar": true,
     "puckDrivenPages": true

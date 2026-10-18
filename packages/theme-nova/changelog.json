@@ -3,6 +3,11 @@
   "v": 1,
   "versions": [
     {
+      "version": "0.3.1",
+      "date": "2026-10-18",
+      "lines": [{ "kind": "fix", "text": "Astro 7.4.0 и @astrojs/node 11.1.8, вид не меняется" }]
+    },
+    {
       "version": "0.3.0",
       "date": "2026-10-13",
       "lines": [

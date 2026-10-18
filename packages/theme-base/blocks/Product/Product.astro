@@ -524,24 +524,42 @@ const cartImage = view.gallery.hero?.src ?? '';
   // Спека 120, задача 5.1 — форма расширения вместо «В корзину». Корень — через
   // общий примитив Spec 102 (секций «Товар» на странице может быть несколько).
   // Магазин: siteId секции, на живом сайте — window.__MERFY_CONFIG__ (как у
-  // остальных точек расширений). productId — SSR-значение с фолбэком на
-  // data-product-id корня (live-PDP гидрирует товар после SSG — один повтор
-  // через 1.2 с).
+  // остальных точек расширений).
+  // Товар формы — тот, что показывает секция (задача 5.6). Общая страница
+  // товара (product/index.html) отдаётся на любой /product/<id>, которого не
+  // было при сборке, и SSR-товар в ней чужой — первый товар магазина. Если
+  // адрес не указывает на SSR-товар, ждём товар гидрации: она находит его по
+  // адресу и сообщает событием merfy:product.
   (function () {
     var root = window.__merfyRoot(blockId);
     if (!root || !window.__merfyPurchase) return;
     var cfg = window.__MERFY_CONFIG__ || {};
-    function start() {
-      var p = productId || root.getAttribute('data-product-id') || '';
-      if (!p) return false;
+    function mount(p) {
       window.__merfyPurchase.mount(root, {
         productId: String(p),
         storeId: siteId || cfg.shopId || cfg.storeId || '',
         apiBase: apiBase || cfg.apiUrl || ''
       });
-      return true;
     }
-    if (!start()) setTimeout(start, 1200);
+    // Тот же разбор адреса, что у гидрации (pdpRefFromUrl): /product/<ref> или ?id=.
+    function pageRef() {
+      try {
+        var m = location.pathname.match(/\/product\/([^/]+)\/?$/);
+        if (m) return decodeURIComponent(m[1]);
+        return new URLSearchParams(location.search).get('id') || '';
+      } catch (e) { return ''; }
+    }
+    function ssrIsPageProduct(ref) {
+      if (!productId) return false;
+      if (!ref) return true;
+      var own = [productId, root.getAttribute('data-product-slug'), root.getAttribute('data-product-handle')];
+      return own.indexOf(ref) !== -1;
+    }
+    if (ssrIsPageProduct(pageRef())) { mount(productId); return; }
+    root.addEventListener('merfy:product', function (event) {
+      var p = event.detail && event.detail.id;
+      if (p) mount(p);
+    });
   })();
 </script>
 )}
@@ -1276,9 +1294,19 @@ const cartImage = view.gallery.hero?.src ?? '';
     function pickFromList(list) {
       return matchRef(list, resolveRef) || (isPdp ? null : (Array.isArray(list) ? list[0] : null)) || null;
     }
+    // Товар, который показывает секция, — островам расширений (задача 5.6):
+    // корень получает его id, остров формы ждёт событие, если адрес страницы не
+    // указывает на SSR-товар (общая страница товара для id не из сборки).
+    function announceProduct(p) {
+      const pid = p.id ? String(p.id) : '';
+      if (!pid) return;
+      root.setAttribute('data-product-id', pid);
+      root.dispatchEvent(new CustomEvent('merfy:product', { detail: { id: pid } }));
+    }
     function onResolved(p) {
       if (!p) return;
       applyProduct(p);
+      announceProduct(p);
       if (isPdp) {
         const nm = p.title || p.name;
         if (nm) { try { document.title = nm; } catch (e) {} }

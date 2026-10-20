@@ -416,6 +416,10 @@ describe('Satin known-current classification — REAL pipeline reproduces the ta
   it('cites a real repo-relative source file for every finding', () => {
     const notYetGenerated = new Set([
       'themes/satin/src/pages/checkout-result.astro', // the missing page (GAP)
+      // Открытое решение canonical-route ссылается на удалённый 20.10 (PUB-2)
+      // стартовый блог: ссылка входит в отпечаток находки базовой линии и
+      // остаётся, пока решение не закрыто.
+      'themes/satin/src/pages/blog/index.astro',
     ]);
     for (const i of CURRENT) {
       for (const src of i.sources) {

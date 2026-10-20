@@ -125,6 +125,10 @@ describe('rose theme manifest validation', () => {
       // (LoginSection), пункт «Профиль → Вход» в конструкторе. Добавлена
       // последней во ВСЕХ пяти манифестах.
       'page-login',
+      // «Блог» и «Запись блога» (PUB-1/PUB-2, 20.10) — системные страницы
+      // /blogs/{handle} и /blogs/{handle}/{slug}, во всех пяти манифестах.
+      'page-blog',
+      'page-blog-post',
     ]);
     expect(m.pages.every((p: any) => p.role === 'system')).toBe(true);
   });

@@ -135,8 +135,7 @@ describe("баннер cookie — разметка (рендер компоне�
 describe("баннер cookie — подключён в пяти темах", () => {
   /**
    * Витринные документы темы: каждый макет `src/layouts/*.astro` и каждая
-   * страница со СВОИМ `<html>` и витринной шапкой или подвалом (стартовый
-   * `blog/index.astro` — отдельный документ, не общий Layout). Служебные
+   * страница со СВОИМ `<html>` и витринной шапкой или подвалом. Служебные
    * страницы без шапки и подвала (`puck-editor`, `design-system` rose,
    * auth-редиректы satin/bloom) под правило не попадают.
    */
@@ -163,7 +162,9 @@ describe("баннер cookie — подключён в пяти темах", ()
     "3. %s: баннер во ВСЕХ витринных макетах и страницах, после подвала, вне условия «не чекаут»",
     (theme) => {
       const docs = storefrontDocuments(theme);
-      expect(docs.length).toBeGreaterThanOrEqual(3);
+      // Стартовый блог Astro (layouts/BlogPost.astro, pages/blog/*) удалён
+      // 20.10 (PUB-2): в каждой теме остался общий Layout.astro.
+      expect(docs).toContain(`themes/${theme}/src/layouts/Layout.astro`);
       const missing = docs.filter((doc) => {
         const code = stripComments(read(doc));
         const mount = MOUNT_TAG.exec(code);
@@ -193,7 +194,7 @@ describe("баннер cookie — подключён в пяти темах", ()
 
   it("3c. саботаж: документ без баннера сторож ловит", () => {
     const code = stripComments(
-      read("themes/flux/src/layouts/BlogPost.astro").replace(
+      read("themes/flux/src/layouts/Layout.astro").replace(
         /\s*<CookieConsent \/>/,
         "",
       ),

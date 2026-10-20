@@ -16,6 +16,7 @@
     "lint": "eslint .",
     "format": "prettier --write --no-error-on-unmatched-pattern src __tests__ scripts",
     "format:check": "prettier --check --no-error-on-unmatched-pattern src __tests__ scripts",
+    "merfy": "tsx scripts/merfy.ts",
     "sections": "tsx scripts/sections.ts"
   },
   "dependencies": {

@@ -838,10 +838,6 @@
       "id": "satin.flow.publications.canonical-route.status-open"
     },
     {
-      "fingerprint": "sha256:baa378bbf4a4d0336948bc4491396e703d6f62cc7ac00001c4927cc49c47f710",
-      "id": "satin.flow.publications.detail-route"
-    },
-    {
       "fingerprint": "sha256:513887675b211f4ccff024a68bd3f35c21f11b01eadcae4f73dd5cb07b167d71",
       "id": "satin.flow.publications.detail-route.requirement-missing"
     },
@@ -876,10 +872,6 @@
     {
       "fingerprint": "sha256:5556e3b9c7510ec5517c27e12947ff558c6ca0eed2013a84a732392d099830db",
       "id": "satin.flow.publications.live-demo-exclusion.status-open"
-    },
-    {
-      "fingerprint": "sha256:2790837df6485f1d5838593f9e0e37d4c5405cc149f42f03ec0bed1867a8e803",
-      "id": "satin.flow.publications.merchant-data"
     },
     {
       "fingerprint": "sha256:8238c2a6666e8ab6bd25800977f9d4032dace9d8c90157d284a2d5c85fd6febe",
@@ -1366,7 +1358,7 @@
     }
   ],
   "schemaVersion": 1,
-  "sourceDigest": "fd9441306d467175272135f1d565001d803eb13a107392bc6715a08401398c89",
+  "sourceDigest": "ada361f8a3e55dd1a3e14335972d9a44ef0ab46751ecdf5f5dbecef0e52c2ece",
   "structuralIssues": [
     {
       "canonicalFacts": {
@@ -4042,24 +4034,6 @@
     },
     {
       "canonicalFacts": {
-        "cardLinkResolves": false
-      },
-      "detail": "the emitted publication card link has no working merchant detail route",
-      "expectedCode": "working-merchant-detail-route",
-      "id": "satin.flow.publications.detail-route",
-      "observedCode": "detail-route-missing",
-      "sources": [
-        {
-          "kind": "code",
-          "ref": "themes/satin/src/pages/blog/[...slug].astro"
-        }
-      ],
-      "status": "GAP",
-      "theme": "satin",
-      "tier": "structural"
-    },
-    {
-      "canonicalFacts": {
         "requirementLabel": "the emitted publication card link has no working merchant detail route"
       },
       "detail": "required capability \"satin.flow.publications.detail-route\" is not exposed by code/runtime",
@@ -4168,24 +4142,6 @@
       ],
       "status": "GAP",
       "theme": "satin"
-    },
-    {
-      "canonicalFacts": {
-        "fallsBackToDemo": true
-      },
-      "detail": "the publications list/detail source falls back to a static/demo collection",
-      "expectedCode": "merchant-data-source",
-      "id": "satin.flow.publications.merchant-data",
-      "observedCode": "demo-fallback",
-      "sources": [
-        {
-          "kind": "code",
-          "ref": "themes/satin/src/pages/blog/index.astro#/data-source"
-        }
-      ],
-      "status": "GAP",
-      "theme": "satin",
-      "tier": "structural"
     },
     {
       "canonicalFacts": {

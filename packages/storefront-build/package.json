@@ -23,6 +23,7 @@
   "dependencies": {
     "@merfy/storefront-config": "workspace:*",
     "@merfy/tokens": "workspace:*",
+    "tailwindcss": "4.3.2",
     "zod": "4.3.6"
   },
   "devDependencies": {

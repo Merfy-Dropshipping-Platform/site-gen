@@ -21,6 +21,25 @@ export { REBUILD_EVENT_INPUTS } from './event-inputs';
 
 // Код секций (блок 7)
 export { NO_ASSETS, modulePath, shellDir, type CodeAssets, type ShellBuild } from './code';
+
+// Секции SDK 1: рендер экземпляров и CSS секций (блок 1 «Секций и SDK»)
+export {
+  EMPTY_PAGE_CONTENT,
+  LIVE_PAGE,
+  NO_SECTIONS,
+  WRAPPER_CLASS,
+  renderPlacedSections,
+  renderSection,
+  type PageContent,
+  type PageMode,
+  type PageRender,
+  type PlacedSection,
+  type RenderSection,
+  type SectionRenderRequest,
+  type SectionsRender,
+  type SettingValues,
+} from './sections-render';
+export { htmlClasses, sectionCss } from './section-css';
 export { SHELL_DIST, readShellBuild } from './shell';
 
 // Манифест, граф, build.json

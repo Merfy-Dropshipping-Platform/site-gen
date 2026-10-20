@@ -24,6 +24,7 @@ import { apply, diff, isVolatile, merge3, paths } from "./operations";
 import type { Doc, MergePolicy, Op } from "./operations";
 import { deepEqual } from "./operations/json";
 import type { WriteModel } from "./write-model";
+import { assertSectionIds } from "./section-ids";
 import {
   CLIENT_SNAPSHOT_KIND,
   RevisionConflictError,
@@ -188,10 +189,17 @@ class WriteOnBase {
     return data;
   }
 
-  /** Документ пишущего: присланный целиком или операции поверх базы. */
+  /**
+   * Документ пишущего: присланный целиком или операции поверх базы. Повтор id
+   * секции после операций — отказ section-id-duplicate, ничего не записано
+   * (блок 1 «Секций и SDK», п. 10); документ целиком проверяет
+   * StoreContentService.save до записи.
+   */
   private async incoming(normalizedBase: () => Promise<Doc>): Promise<Doc> {
-    if (this.params.ops) return apply(await normalizedBase(), this.params.ops);
-    return this.params.document;
+    if (!this.params.ops) return this.params.document;
+    const document = apply(await normalizedBase(), this.params.ops);
+    assertSectionIds(document);
+    return document;
   }
 
   private meta(extra: Record<string, unknown>): Record<string, unknown> {

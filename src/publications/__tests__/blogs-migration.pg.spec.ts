@@ -38,6 +38,9 @@ function migrationsBefore0027(): string {
   return dir;
 }
 
+/** Строка ответа Postgres в проверках: колонки — текст или null. */
+type Row = Record<string, string | null>;
+
 const LONG_CONTENT = `<p>${"Слово ".repeat(60)}</p>`;
 const AUTO_EXCERPT = LONG_CONTENT.replace(/<[^>]*>/g, "").substring(0, 200);
 
@@ -90,7 +93,7 @@ suite("миграция 0027: категории → блоги", () => {
       `SELECT p.id, b.site_id, b.handle, b.title, b.organization_id
          FROM publications p JOIN blogs b ON b.id = p.blog_id ORDER BY p.id`,
     );
-    expect(rows.map((r) => [r.id, r.site_id, r.handle, r.title])).toEqual([
+    expect(rows.map((r: Row) => [r.id, r.site_id, r.handle, r.title])).toEqual([
       ["p1", "s1", "novosti", "Новости"],
       ["p2", "s1", "blog", "Блог"],
       ["p3", "s1", "stati", "Статьи"],
@@ -98,14 +101,14 @@ suite("миграция 0027: категории → блоги", () => {
       ["p4", "s2", "novosti", "Новости"],
       ["p5", "s3-orphan", "stati", "Статьи"],
     ]);
-    expect(rows.find((r) => r.id === "p5")?.organization_id).toBe("t3");
+    expect(rows.find((r: Row) => r.id === "p5")?.organization_id).toBe("t3");
   });
 
   it("«Новости» есть у каждого магазина; «Блог» и «Статьи» — только где были такие записи", async () => {
     const { rows } = await pool.query(
       `SELECT site_id, organization_id, handle FROM blogs ORDER BY site_id, handle`,
     );
-    expect(rows.map((r) => `${r.site_id}:${r.handle}`)).toEqual([
+    expect(rows.map((r: Row) => `${r.site_id}:${r.handle}`)).toEqual([
       "s1:blog",
       "s1:novosti",
       "s1:stati",
@@ -113,7 +116,7 @@ suite("миграция 0027: категории → блоги", () => {
       "s3-orphan:stati",
       "s4:novosti",
     ]);
-    expect(rows.find((r) => r.site_id === "s4")?.organization_id).toBe("t4");
+    expect(rows.find((r: Row) => r.site_id === "s4")?.organization_id).toBe("t4");
   });
 
   it("category и enum publication_category удалены, blog_id NOT NULL с внешним ключом", async () => {
@@ -121,7 +124,7 @@ suite("миграция 0027: категории → блоги", () => {
       `SELECT column_name, is_nullable FROM information_schema.columns WHERE table_name = 'publications'`,
     );
     const byName = Object.fromEntries(
-      cols.rows.map((r) => [r.column_name, r.is_nullable]),
+      cols.rows.map((r: Row) => [r.column_name, r.is_nullable]),
     );
     expect(byName.category).toBeUndefined();
     expect(byName.blog_id).toBe("NO");
@@ -142,7 +145,7 @@ suite("миграция 0027: категории → блоги", () => {
     const { rows } = await pool.query(
       `SELECT id, excerpt FROM publications ORDER BY id`,
     );
-    expect(Object.fromEntries(rows.map((r) => [r.id, r.excerpt]))).toEqual({
+    expect(Object.fromEntries(rows.map((r: Row) => [r.id, r.excerpt]))).toEqual({
       p1: null,
       p2: "Анонс продавца",
       p3: null,

@@ -618,7 +618,7 @@ function checkPublications(
         'detail-route-missing',
         'the emitted publication card link has no working merchant detail route',
         { cardLinkResolves: false },
-        ['themes/satin/src/pages/blog/[...slug].astro'],
+        ['packages/theme-base/blocks/BlogPostSection/BlogPostSection.astro'],
       ),
     );
   }
@@ -632,7 +632,7 @@ function checkPublications(
         'demo-fallback',
         'the publications list/detail source falls back to a static/demo collection',
         { fallsBackToDemo: true },
-        ['themes/satin/src/pages/blog/index.astro#/data-source'],
+        ['packages/theme-base/blocks/BlogSection/BlogSection.astro#/data-source'],
       ),
     );
   }
@@ -805,6 +805,10 @@ const DECISION_META: Readonly<
   'satin.flow.publications.canonical-route': {
     expectedCode: 'canonical-publications-route',
     observedCode: 'route-conflict',
+    // Исторический адрес конфликта (файл удалён 20.10, PUB-2). Строка входит в
+    // отпечаток находки базовой линии, поэтому не меняется, пока решение не
+    // закрыто. Адрес записи теперь — /blogs/{handle}/{slug} (publicationUrl в
+    // packages/theme-base/runtime/publications.ts), старые кандидаты переадресуются.
     ref: 'themes/satin/src/pages/blog/index.astro',
     facts: { candidates: ['/publication', '/publications', '/blog'] },
   },

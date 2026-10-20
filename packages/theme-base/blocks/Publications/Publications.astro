@@ -9,6 +9,7 @@ import {
 import { PublicationsClasses as C } from './Publications.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 import { sanitizeInline } from '../../runtime/rich-text';
+import { publicationUrl } from '../../runtime/publications';
 
 interface Props extends PublicationsProps {
   id?: string;
@@ -44,7 +45,8 @@ type RawPublication = {
   coverImageUrl?: string | null;
   publishedAt?: string | null;
 };
-type Article = { id?: string; date: string; title: string; excerpt: string; image?: string; slug?: string };
+// href — адрес записи из publicationUrl (theme-base), свой адрес блок не склеивает.
+type Article = { id?: string; date: string; title: string; excerpt: string; image?: string; href?: string };
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '';
@@ -136,7 +138,7 @@ const headingSizeClass =
 const items: Article[] = realPublications.length > 0
   ? realPublications.map((p) => ({
       id: p.id,
-      slug: p.slug,
+      href: p.slug && p.blogHandle ? publicationUrl(p.blogHandle, p.slug) : undefined,
       date: formatDate(p.publishedAt),
       title: p.title ?? '',
       excerpt: p.excerpt ?? '',
@@ -204,10 +206,9 @@ const pubGridResponsiveCss =
     <style set:html={pubGridResponsiveCss}></style>
     <div class={C.grid} data-pub-grid style={gridGuardStyle}>
       {items.slice(0, cardsResolved).map((item, i) => {
-        const href = item.slug ? `/publication/${item.slug}` : '#';
-        const Wrapper = item.slug ? 'a' : 'article';
+        const Wrapper = item.href ? 'a' : 'article';
         return (
-          <Wrapper class={C.card} href={item.slug ? href : undefined} data-article-index={i}>
+          <Wrapper class={C.card} href={item.href} data-article-index={i}>
             <div class={C.cardMedia} style={mediaBoxGuardStyle}>
               {item.image ? (
                 <img src={item.image} alt={item.title} class={C.cardMediaImg} style={mediaImgGuardStyle} loading="lazy" onerror="this.style.display='none'" />

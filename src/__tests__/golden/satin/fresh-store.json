@@ -201,6 +201,34 @@
           "source": "theme",
           "targeting": null,
           "variant": null
+        },
+        {
+          "id": "page-blog",
+          "isCustom": false,
+          "locale": null,
+          "name": "Блог",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/blogs/preview",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-blog-post",
+          "isCustom": false,
+          "locale": null,
+          "name": "Запись блога",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/blogs/preview/post",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
         }
       ],
       "pagesData": {
@@ -510,6 +538,228 @@
           "root": {
             "props": {
               "title": "О нас"
+            }
+          },
+          "zones": {}
+        },
+        "page-blog": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-blog",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "BlogSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "BlogSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-blog",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Блог"
+            }
+          },
+          "zones": {}
+        },
+        "page-blog-post": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-blog-post",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "BlogPostSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "BlogPostSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-blog-post",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Запись блога"
             }
           },
           "zones": {}

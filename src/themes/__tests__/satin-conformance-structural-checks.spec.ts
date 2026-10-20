@@ -184,22 +184,13 @@ const TABLE: readonly Row[] = [
     status: 'NEEDS_DECISION',
     expectedCode: 'canonical-publications-route',
     observedCode: 'route-conflict',
-    ref: 'themes/satin/src/pages/blog/index.astro',
+    ref: 'packages/theme-base/runtime/publications.ts',
   },
-  {
-    id: 'satin.flow.publications.detail-route',
-    status: 'GAP',
-    expectedCode: 'working-merchant-detail-route',
-    observedCode: 'detail-route-missing',
-    ref: 'themes/satin/src/pages/blog/[...slug].astro',
-  },
-  {
-    id: 'satin.flow.publications.merchant-data',
-    status: 'GAP',
-    expectedCode: 'merchant-data-source',
-    observedCode: 'demo-fallback',
-    ref: 'themes/satin/src/pages/blog/index.astro#/data-source',
-  },
+  // satin.flow.publications.detail-route и .merchant-data ЗАКРЫТЫ 20.10
+  // (PUB-1, PUB-2): страница записи /blogs/{handle}/{slug} есть, список и
+  // запись берут записи магазина (секции BlogSection/BlogPostSection), демо-
+  // коллекция стартового шаблона Astro удалена. Строки убраны из таблицы
+  // вместе со снятием записей из базовой линии.
   // satin.flow.cart.drawer-cart-section-source ЗАКРЫТ: страница корзины снова
   // разворачивается в CartBody+CartSummary (баг-репорт 12), то есть цель
   // миграции совпала с тем, что читает резолвер схемы дровера. Строка убрана из
@@ -412,11 +403,12 @@ describe('Satin known-current classification — REAL pipeline reproduces the ta
     expect(missing).toEqual([]);
   });
 
-  it('reproduces at least the 36 enumerated semantic + decision findings', () => {
+  it('reproduces at least the 34 enumerated semantic + decision findings', () => {
     // 32 semantic rows (36 − 3 remediated − 1 header-search suggestions,
     // 22.09) + the explicit lifecycle/authoring decisions ≥ 36 (the real
-    // pipeline emitted 36 structural findings on 22.09).
-    expect(CURRENT.length).toBeGreaterThanOrEqual(36);
+    // pipeline emitted 36 structural findings on 22.09). 20.10 закрыты две
+    // находки публикаций (detail-route, merchant-data — PUB-1/PUB-2) → 34.
+    expect(CURRENT.length).toBeGreaterThanOrEqual(34);
     // No emitted id may be a PASS-status leak.
     for (const i of CURRENT) expect(i.status).not.toBe('PASS');
   });
@@ -424,6 +416,10 @@ describe('Satin known-current classification — REAL pipeline reproduces the ta
   it('cites a real repo-relative source file for every finding', () => {
     const notYetGenerated = new Set([
       'themes/satin/src/pages/checkout-result.astro', // the missing page (GAP)
+      // Открытое решение canonical-route ссылается на удалённый 20.10 (PUB-2)
+      // стартовый блог: ссылка входит в отпечаток находки базовой линии и
+      // остаётся, пока решение не закрыто.
+      'themes/satin/src/pages/blog/index.astro',
     ]);
     for (const i of CURRENT) {
       for (const src of i.sources) {

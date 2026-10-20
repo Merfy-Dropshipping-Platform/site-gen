@@ -26,8 +26,69 @@ export function applySectionPolicy(
   const collectionTiles =
     blockName === "Collections" ? resolveCollections(props, catalog, fields) : null;
   const publications =
-    blockName === "Publications" ? resolvePublications(props, catalog) : null;
+    blockName === "Publications"
+      ? resolvePublications(props, catalog)
+      : blockName === "BlogSection"
+        ? resolveBlogPosts(props, catalog)
+        : blockName === "BlogPostSection"
+          ? resolveBlogPost(props, catalog)
+          : null;
   return { popularProducts: popular, collectionTiles, publications };
+}
+
+/** Блог по умолчанию у каждого магазина (контракт «Публикации»). */
+const DEFAULT_BLOG_HANDLE = "novosti";
+
+const trimmed = (value: unknown): string =>
+  typeof value === "string" ? value.trim() : "";
+
+/** Новые сверху; запись без даты — в конце. */
+function newestFirst(list: readonly CatalogPublication[]): CatalogPublication[] {
+  const time = (p: CatalogPublication): number => {
+    const t = p.publishedAt ? Date.parse(p.publishedAt) : NaN;
+    return Number.isFinite(t) ? t : -Infinity;
+  };
+  return [...list].sort((a, b) => time(b) - time(a));
+}
+
+/**
+ * Записи секции «Блог» (тело страницы `/blogs/{handle}`) — ВСЕ опубликованные
+ * записи одного блога, новые сверху; по страницам их раскладывает сам блок.
+ *
+ * Блог задаёт сборка страницы (`blogHandle`/`blogId` в пропсах секции). В
+ * конструкторе блога нет — показываем блог по умолчанию «Новости», а если в
+ * нём пусто — блог самой свежей записи, чтобы превью не было пустым при живых
+ * записях.
+ */
+function resolveBlogPosts(
+  props: Record<string, unknown>,
+  catalog: Catalog,
+): CatalogPublication[] {
+  const all = Array.isArray(catalog.publications) ? catalog.publications : [];
+  const handle = trimmed(props.blogHandle);
+  const blogId = trimmed(props.blogId);
+  if (handle) return newestFirst(all.filter((p) => p.blogHandle === handle));
+  if (blogId) return newestFirst(all.filter((p) => p.blogId === blogId));
+  const byDefault = all.filter((p) => p.blogHandle === DEFAULT_BLOG_HANDLE);
+  if (byDefault.length > 0) return newestFirst(byDefault);
+  const latest = newestFirst(all)[0];
+  return latest ? newestFirst(all.filter((p) => p.blogId === latest.blogId)) : [];
+}
+
+/**
+ * Запись секции «Запись блога» (тело страницы `/blogs/{handle}/{slug}`).
+ * Запись задаёт сборка (`publicationId`); в конструкторе — самая свежая
+ * запись магазина. Записи больше нет — пусто, блок рисует заглушку.
+ */
+function resolveBlogPost(
+  props: Record<string, unknown>,
+  catalog: Catalog,
+): CatalogPublication[] {
+  const all = Array.isArray(catalog.publications) ? catalog.publications : [];
+  const ref = trimmed(props.publicationId);
+  if (!ref) return newestFirst(all).slice(0, 1);
+  const exact = all.find((p) => p.id === ref || p.slug === ref);
+  return exact ? [exact] : [];
 }
 
 /**
@@ -81,6 +142,20 @@ function resolvePublications(
         ? props.cards
         : 3;
   const cards = Math.max(1, Math.min(24, Math.round(cardsRaw) || 3));
+
+  // Выбор в панели конструктора (PUB-3): «Все записи блога» (blogId) или
+  // «Одна запись» (publicationId). Старый publicationType ниже — для ревизий,
+  // сохранённых до этого выбора.
+  const source = trimmed(props.publicationSource);
+  if (source === "publication") {
+    const id = trimmed(props.publicationId);
+    const exactOne = id ? all.find((p) => p.id === id || p.slug === id) : undefined;
+    return exactOne ? [exactOne] : [];
+  }
+  if (source === "blog") {
+    const blogId = trimmed(props.blogId);
+    return (blogId ? all.filter((p) => p.blogId === blogId) : all).slice(0, cards);
+  }
 
   if (!ref || ref.toLowerCase() === "all") return all.slice(0, cards);
 

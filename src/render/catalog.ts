@@ -25,7 +25,14 @@ export type CatalogPublication = {
   /** Блог записи (blogs.id и blogs.handle) — вместо прежней категории. */
   blogId: string;
   blogHandle: string;
+  /** Название блога — заголовок страницы блога и подпись карточки. */
+  blogTitle: string;
   excerpt: string;
+  /** Текст записи (HTML) — тело страницы записи. */
+  content: string;
+  /** SEO-поля записи; null — продавец не задавал (берутся title / анонс). */
+  seoTitle: string | null;
+  seoDescription: string | null;
   coverImageUrl: string | null;
   publishedAt: string | null;
 };
@@ -44,6 +51,11 @@ export const EMPTY_CATALOG: Catalog = {
 
 function str(v: unknown): string {
   return typeof v === "string" ? v : v == null ? "" : String(v);
+}
+
+/** Непустая строка или null (необязательные поля: пусто = «не задано»). */
+function optionalStr(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v : null;
 }
 
 function num(v: unknown): number | null {
@@ -139,7 +151,11 @@ export function normalizeCatalog(raw: {
       slug: str(x.slug),
       blogId: str(x.blogId),
       blogHandle: str(x.blogHandle),
+      blogTitle: str(x.blogTitle),
       excerpt: str(x.excerpt),
+      content: str(x.content),
+      seoTitle: optionalStr(x.seoTitle),
+      seoDescription: optionalStr(x.seoDescription),
       coverImageUrl: cover,
       publishedAt:
         typeof x.publishedAt === "string"

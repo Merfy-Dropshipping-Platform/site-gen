@@ -8,7 +8,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom, timeout, catchError, of, retry, timer } from "rxjs";
 import { Logger } from "@nestjs/common";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, desc } from "drizzle-orm";
+import { and, asc, eq, desc } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
 import { autoExcerpt } from "../publications/publication-rules";
 
@@ -302,6 +302,65 @@ export async function fetchStoreData(
   );
 
   return { products, collections };
+}
+
+/** Блоги, архивные записи и прежние адреса записей — для страниц блога и переадресаций. */
+export interface FetchedBlogRoutes {
+  blogs: Array<{ id: string; handle: string; title: string }>;
+  archived: Array<{ id: string; slug: string; blogHandle: string }>;
+  redirects: Array<{ oldPath: string; publicationId: string }>;
+}
+
+/**
+ * Данные адресов блога магазина (PUB-1, PUB-2): все блоги (по дате создания —
+ * у пустого блога тоже есть страница), архивные записи (их адреса отвечают
+ * «запись недоступна») и прежние адреса записей из publication_redirects.
+ * Сбой базы — пустые списки: страницы записей всё равно соберутся.
+ */
+export async function fetchBlogRoutes(
+  db: NodePgDatabase<typeof schemaTypes>,
+  schema: typeof schemaTypes,
+  siteId: string,
+  organizationId: string,
+): Promise<FetchedBlogRoutes> {
+  try {
+    const [blogs, archived, redirects] = await Promise.all([
+      db
+        .select({ id: schema.blogs.id, handle: schema.blogs.handle, title: schema.blogs.title })
+        .from(schema.blogs)
+        .where(
+          and(eq(schema.blogs.siteId, siteId), eq(schema.blogs.organizationId, organizationId)),
+        )
+        .orderBy(asc(schema.blogs.createdAt)),
+      db
+        .select({
+          id: schema.publications.id,
+          slug: schema.publications.slug,
+          blogHandle: schema.blogs.handle,
+        })
+        .from(schema.publications)
+        .innerJoin(schema.blogs, eq(schema.blogs.id, schema.publications.blogId))
+        .where(
+          and(
+            eq(schema.publications.siteId, siteId),
+            eq(schema.publications.organizationId, organizationId),
+            eq(schema.publications.status, "archived"),
+          ),
+        ),
+      db
+        .select({
+          oldPath: schema.publicationRedirects.oldPath,
+          publicationId: schema.publicationRedirects.publicationId,
+        })
+        .from(schema.publicationRedirects)
+        .where(eq(schema.publicationRedirects.siteId, siteId)),
+    ]);
+    return { blogs, archived, redirects };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`fetchBlogRoutes error: ${msg}`);
+    return { blogs: [], archived: [], redirects: [] };
+  }
 }
 
 /**

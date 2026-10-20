@@ -215,24 +215,26 @@ const SATIN_FLOWS: readonly ReleaseFlowRequirement[] = [
     'themes/satin/src/pages/legal/[slug].astro',
   ]),
 
-  // publications
+  // publications — с 20.10 (PUB-1, PUB-2) страницы «Блог» / «Запись блога»:
+  // секции theme-base, копии на каждый блог и запись собирает blog-pages.ts.
+  // Стартовый шаблон Astro (src/pages/blog/*, rss.xml.js) удалён из тем.
   flow(c('flow', 'publications', 'list-route'), [
-    'themes/satin/src/pages/blog/index.astro',
+    'packages/theme-base/blocks/BlogSection/BlogSection.astro',
   ]),
   flow(c('flow', 'publications', 'detail-route'), [
-    'themes/satin/src/pages/blog/[...slug].astro',
+    'packages/theme-base/blocks/BlogPostSection/BlogPostSection.astro',
   ]),
   flow(c('flow', 'publications', 'merchant-data'), [
-    'themes/satin/src/pages/blog/index.astro#/data-source',
+    'src/render/section-policy.ts#/blog-sections',
   ]),
   flow(c('flow', 'publications', 'rss-data-source'), [
-    'themes/satin/src/pages/blog/index.astro#/rss',
+    'src/themes/blog-pages.ts#/rss',
   ]),
   flow(c('flow', 'publications', 'live-demo-exclusion'), [
-    'themes/satin/src/pages/blog/index.astro',
+    'packages/theme-base/blocks/BlogSection/BlogSection.astro',
   ]),
   flow(c('flow', 'publications', 'rich-text-sanitizer'), [
-    'themes/satin/src/pages/blog/[...slug].astro#/sanitizer',
+    'packages/theme-base/blocks/BlogPostSection/BlogPostSection.sanitize.ts',
   ]),
 
   // cart / cart-drawer

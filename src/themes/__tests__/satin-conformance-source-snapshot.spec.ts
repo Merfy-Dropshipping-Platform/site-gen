@@ -77,9 +77,12 @@ describe('loadThemeSourceSnapshot(satin) — pages & routing', () => {
   // Четырнадцатая — «Вход» (`/login`, владелец 14.09): ровно та же история в
   // третий раз — страница входа собиралась Astro, записи в манифесте не было,
   // и секцию «Вход» негде было настроить.
-  it('sees exactly fourteen manifest pages including checkout-result, profile, wishlist, orders and login', async () => {
+  // Пятнадцатая и шестнадцатая — «Блог» (`/blogs/preview`) и «Запись блога»
+  // (`/blogs/preview/post`), PUB-1/PUB-2 20.10: страницы блога строятся от
+  // сущности «Блог», их секции правятся в конструкторе.
+  it('sees exactly sixteen manifest pages including checkout-result, profile, wishlist, orders, login and blog', async () => {
     const snap = await loadSatin();
-    expect(snap.pageSlugs).toHaveLength(14);
+    expect(snap.pageSlugs).toHaveLength(16);
     expect(snap.pageSlugs).toEqual(
       expect.arrayContaining([
         '/',
@@ -96,6 +99,8 @@ describe('loadThemeSourceSnapshot(satin) — pages & routing', () => {
         '/wishlist',
         '/account/orders',
         '/login',
+        '/blogs/preview',
+        '/blogs/preview/post',
       ]),
     );
     expect(snap.hasCheckoutResultPage).toBe(true);
@@ -116,9 +121,9 @@ describe('loadThemeSourceSnapshot(satin) — pages & routing', () => {
     }
     // Dynamic routes are retained, not filtered.
     const dynamic = snap.standaloneRoutes.filter((r) => r.dynamic).map((r) => r.file);
+    // blog/[...slug] (стартовый шаблон Astro) удалён 20.10 — PUB-2.
     expect(dynamic).toEqual(
       expect.arrayContaining([
-        'themes/satin/src/pages/blog/[...slug].astro',
         'themes/satin/src/pages/legal/[slug].astro',
         'themes/satin/src/pages/products/[id].astro',
       ]),

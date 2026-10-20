@@ -59,9 +59,12 @@ describe('Satin manifest ↔ registry — checkout-result seed', () => {
   // появилось тело (секция «Заказы»), значит нужна и запись страницы.
   // Четырнадцатая — «Вход» (`/login`, владелец 14.09): ровно та же причина —
   // тело страницы стало секцией «Вход», её негде настраивать без записи.
-  it('sees fourteen manifest pages including checkout-result, profile, wishlist, orders and login', async () => {
+  // Пятнадцатая и шестнадцатая — «Блог» и «Запись блога» (PUB-1/PUB-2, 20.10).
+  it('sees sixteen manifest pages including checkout-result, profile, wishlist, orders, login and blog', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
-    expect(snap.pageSlugs).toHaveLength(14);
+    expect(snap.pageSlugs).toHaveLength(16);
+    expect(snap.pageSlugs).toContain('/blogs/preview');
+    expect(snap.pageSlugs).toContain('/blogs/preview/post');
     expect(snap.hasCheckoutResultPage).toBe(true);
     expect(snap.pageSlugs).toContain('/checkout-result');
     expect(snap.pageSlugs).toContain('/account/profile');
@@ -101,9 +104,9 @@ describe('Satin standalone routes — home-shell fallback vs dedicated route', (
   it('retains dynamic routes with their bracket segments', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
     const dynamic = snap.standaloneRoutes.filter((r) => r.dynamic).map((r) => r.file);
+    // blog/[...slug] (стартовый шаблон Astro) удалён 20.10 — PUB-2.
     expect(dynamic).toEqual(
       expect.arrayContaining([
-        'themes/satin/src/pages/blog/[...slug].astro',
         'themes/satin/src/pages/legal/[slug].astro',
         'themes/satin/src/pages/products/[id].astro',
       ]),
@@ -115,7 +118,9 @@ describe('Satin standalone routes — home-shell fallback vs dedicated route', (
     expect(cart!.dynamic).toBe(false);
   });
 
-  it('discovers account/auth/blog/legal route sources for the storefront flows', async () => {
+  // Блог — уже не файл темы: страницы /blogs/* собирает сборка из системных
+  // страниц «Блог»/«Запись блога» (PUB-1/PUB-2), стартовый шаблон удалён.
+  it('discovers account/auth/legal route sources for the storefront flows; the Astro starter blog is gone', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
     const files = new Set(snap.standaloneRoutes.map((r) => r.file));
     for (const f of [
@@ -126,9 +131,9 @@ describe('Satin standalone routes — home-shell fallback vs dedicated route', (
       'themes/satin/src/pages/login.astro',
       'themes/satin/src/pages/register.astro',
       'themes/satin/src/pages/wishlist.astro',
-      'themes/satin/src/pages/blog/index.astro',
     ]) {
       expect(files.has(f)).toBe(true);
     }
+    expect([...files].some((f) => f.startsWith('themes/satin/src/pages/blog/'))).toBe(false);
   });
 });

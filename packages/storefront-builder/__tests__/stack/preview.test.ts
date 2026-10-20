@@ -88,7 +88,7 @@ describe('стенд в превью: GET /preview', () => {
     await serve(true);
     const site = await insertSite(harness.db, { name: 'Пледы' });
     await insertRevision(harness.db, site.id, { tokens: GREEN, settings: { 'cart-type': 'page' } });
-    const response = await fetch(`${base}/preview?shop=${site.id}`);
+    const response = await fetch(`${base}/preview?page=stand&shop=${site.id}`);
     const html = await response.text();
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('text/html; charset=utf-8');
@@ -103,16 +103,16 @@ describe('стенд в превью: GET /preview', () => {
     await serve(true);
     const site = await insertSite(harness.db);
     await insertRevision(harness.db, site.id, { settings: { 'cart-type': 'page' } });
-    expect(await (await fetch(`${base}/preview?shop=${site.id}`)).text()).toContain('data-cart="page"');
+    expect(await (await fetch(`${base}/preview?page=stand&shop=${site.id}`)).text()).toContain('data-cart="page"');
     await insertRevision(harness.db, site.id, { settings: {} });
-    expect(await (await fetch(`${base}/preview?shop=${site.id}`)).text()).toContain('data-cart="drawer"');
+    expect(await (await fetch(`${base}/preview?page=stand&shop=${site.id}`)).text()).toContain('data-cart="drawer"');
   });
 
   it('правки, что не подошли теме, — на стенде и в журнале; стенд нарисован', async () => {
     await serve(true);
     const site = await insertSite(harness.db);
     await insertRevision(harness.db, site.id, { settings: { 'cart-type': 'modal' } });
-    const html = await (await fetch(`${base}/preview?shop=${site.id}`)).text();
+    const html = await (await fetch(`${base}/preview?page=stand&shop=${site.id}`)).text();
     expect(html).toContain('<li>settings.cart-type: нужно drawer или page</li>');
     expect(logged(harness.lines, 'preview-problems').at(-1)).toMatchObject({ shopId: site.id });
   });
@@ -120,13 +120,13 @@ describe('стенд в превью: GET /preview', () => {
   it('не тот id — 400; магазина нет — 404; тема нынешняя — 404; POST — 405; без превью — 404', async () => {
     await serve(true);
     const old = await insertSite(harness.db, { themeId: 'rose' });
-    expect((await fetch(`${base}/preview?shop=nope`)).status).toBe(400);
-    expect((await fetch(`${base}/preview?shop=00000000-0000-4000-8000-00000000000f`)).status).toBe(404);
-    expect(await (await fetch(`${base}/preview?shop=${old.id}`)).text()).toBe('тема магазина — не новой архитектуры');
-    expect((await fetch(`${base}/preview?shop=${old.id}`, { method: 'POST' })).status).toBe(405);
+    expect((await fetch(`${base}/preview?page=stand&shop=nope`)).status).toBe(400);
+    expect((await fetch(`${base}/preview?page=stand&shop=00000000-0000-4000-8000-00000000000f`)).status).toBe(404);
+    expect(await (await fetch(`${base}/preview?page=stand&shop=${old.id}`)).text()).toBe('тема магазина — не новой архитектуры');
+    expect((await fetch(`${base}/preview?page=stand&shop=${old.id}`, { method: 'POST' })).status).toBe(405);
     server.close();
     await serve(false);
-    expect((await fetch(`${base}/preview?shop=${old.id}`)).status).toBe(404);
+    expect((await fetch(`${base}/preview?page=stand&shop=${old.id}`)).status).toBe(404);
   });
 });
 

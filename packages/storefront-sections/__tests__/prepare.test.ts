@@ -11,7 +11,7 @@ const COLOR_MATCH = {
 };
 
 describe('одна функция приёма', () => {
-  it('секция: имя с приставкой двери, шаблон как есть, скрипт собран, предупреждения — с ней', async () => {
+  it('секция: имя с префиксом способа сохранения, шаблон как есть, скрипт собран, предупреждения — с ней', async () => {
     const result = await prepareSection({ prefix: 'shop', files: COLOR_MATCH });
     const section = result.ok ? result.section : null;
     expect(section?.name).toBe('shop:color-match');

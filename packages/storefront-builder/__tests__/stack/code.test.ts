@@ -16,7 +16,14 @@ import { insertRevision, insertSite, type SiteFields } from './stack';
 const SECTIONS = fileURLToPath(new URL('../../../storefront-sections/fixtures/sections', import.meta.url));
 // Исходники наших секций — «Значок корзины» и «Аналитика»: магазин сохраняет их как свои (пп. 1, 27).
 const OUR_SECTIONS = fileURLToPath(new URL('../../../storefront-shell/sections', import.meta.url));
-const PLACEMENT = { home: ['shop:cart-badge', 'shop:color-match', 'reviews:list'] };
+const instance = (id: string, section: string, settings: Record<string, string> = {}) => ({ id, section, settings });
+const PLACEMENT = {
+  home: [
+    instance('cart-badge-1', 'shop:cart-badge'),
+    instance('color-match-1', 'shop:color-match'),
+    instance('list-1', 'reviews:list'),
+  ],
+};
 const RELEASES: [Door, string][] = [
   [{ author: 'extension', extension: 'reviews', release: '1.4.0' }, 'reviews-list'],
   [{ author: 'extension', extension: 'geo', release: '1.0.0' }, 'geo-locate'],
@@ -83,7 +90,12 @@ describe('код магазина', () => {
     await saveShopSection(site.id);
     extensions.answer = enabled('reviews', 'geo');
     const all = parseBuildInputs((await readSnapshot(harness.deps.snapshot, site.id)).inputs);
-    expect(all.code.pages).toEqual({ home: ['shop:cart-badge', 'reviews:list'] });
+    expect(all.code.pages).toEqual({
+      home: [
+        { id: 'cart-badge-1', section: 'shop:cart-badge', settings: {} },
+        { id: 'list-1', section: 'reviews:list', settings: {} },
+      ],
+    });
     expect(all.code.globals).toEqual(['geo:locate', 'shop:analytics']);
     expect(all.code.sections.map((section) => section.name)).toEqual([
       'geo:locate',
@@ -94,7 +106,7 @@ describe('код магазина', () => {
     expect(all.shell).toEqual({ version: TEST_SHELL.version, hash: TEST_SHELL.hash, preload: TEST_SHELL.preload });
     extensions.answer = enabled('geo');
     const without = parseBuildInputs((await readSnapshot(harness.deps.snapshot, site.id)).inputs);
-    expect(without.code.pages).toEqual({ home: ['shop:cart-badge'] });
+    expect(without.code.pages).toEqual({ home: [expect.objectContaining({ id: 'cart-badge-1' })] });
     expect(buildKey(without)).not.toBe(buildKey(all));
   });
 
@@ -114,7 +126,7 @@ describe('код магазина', () => {
     expect(files.filter((path) => path.startsWith('_merfy/shell/'))).toEqual([`${shellDir(TEST_SHELL.hash)}/shell.js`]);
     const home = await liveHome(harness.store, labelOf(site));
     expect(home).toContain('id="merfy-modules"');
-    expect(home).toContain('<merfy-section data-section="shop:color-match">');
+    expect(home).toContain('<merfy-section data-section="shop:cart-badge" data-section-id="cart-badge-1"');
   });
 
   it('extensions не ответил — снимок не получен: сборка failed, строка extensions-failed, живой сайт не тронут', async () => {
@@ -131,7 +143,7 @@ describe('код магазина', () => {
 
   it('места не той формы — строка sections-invalid, сборки нет', async () => {
     const site = await insertSite(harness.db);
-    await insertRevision(harness.db, site.id, { sections: { home: 'shop:cart-badge' } });
+    await insertRevision(harness.db, site.id, { sections: { home: ['shop:cart-badge'] } });
     await publishAndBuild(site.id);
     expect(logged(harness.lines, 'sections-invalid').at(-1)).toMatchObject({ shopId: site.id });
     expect(logged(harness.lines, 'build-finish').at(-1)).toMatchObject({ shopId: site.id, outcome: 'failed' });

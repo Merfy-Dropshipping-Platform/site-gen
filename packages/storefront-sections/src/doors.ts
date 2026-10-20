@@ -3,7 +3,7 @@ import { sectionIdSchema } from './format';
 
 // Способы сохранения секций (блок 1 «Секций и SDK», пп. 1, 2; design.md блока 7, п. 21, 22, 24): своя секция магазина
 // — из конструктора, MCP или нами тем же способом (как мерчант), расширение — при регистрации версии. Секций
-// платформы и тем нет. Дверь ставит приставку имени — расширение не назовётся shop:… — и задаёт «кому видна»: автор
+// платформы и тем нет. Способ сохранения даёт префикс имени — расширение не назовётся shop:… — и задаёт «кому видна»: автор
 // и владелец — поля записи реестра; выпуск — подпись версии у расширения (С7-20 Б: «номер — подпись выпуска
 // автора»). Правило semver — как у версий тем (storefront-build, inputs.ts).
 const SEMVER = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$/;
@@ -12,7 +12,7 @@ const RESERVED = ['merfy', 'platform', 'shop'];
 export const SHOP_PREFIX = 'shop';
 const releaseSchema = z.string().regex(SEMVER, { error: 'нужна версия semver: 1.2.3' });
 const extensionId = sectionIdSchema.refine((id) => !RESERVED.includes(id), {
-  error: 'merfy, platform и shop — занятые приставки',
+  error: 'merfy, platform и shop — занятые префиксы',
 });
 
 export const doorSchema = z.discriminatedUnion('author', [
@@ -24,7 +24,7 @@ export type SectionAuthor = 'platform' | 'theme' | 'shop' | 'extension';
 
 export interface DoorFields {
   author: 'shop' | 'extension';
-  // Приставка полного имени: shop:, <id расширения>: (п. 22).
+  // Префикс полного имени: shop:, <id расширения>: (п. 22).
   prefix: string;
   // Чья секция: id магазина или id расширения — по нему сборка выбирает видимые магазину (п. 24).
   owner: string;

@@ -64,6 +64,7 @@ import { FragmentPatcher } from "./listeners/fragment-patcher.service";
 import { BrandingController } from "./branding/branding.controller";
 import { MediaUploadController } from "./controllers/media-upload.controller";
 import { PublicationsService } from "./publications/publications.service";
+import { BlogsService } from "./publications/blogs.service";
 import { PublicationsMicroserviceController } from "./publications/publications.controller";
 import { PublicationsScheduler } from "./scheduler/publications.scheduler";
 import { PolicyModule } from "./policy/policy.module";
@@ -142,6 +143,7 @@ import { STORE_CONTROLLERS, STORE_PROVIDERS } from "./store/store.providers";
     ProductUpdateListener,
     FragmentPatcher,
     PublicationsService,
+    BlogsService,
     HealthMonitorService,
     // Этап 3: сага рождения магазина, доводчик, команды (src/store/).
     ...STORE_PROVIDERS,

@@ -58,11 +58,18 @@ async function seedContent(siteId: string): Promise<void> {
     JSON.stringify([{ id: 'phone', label: 'Телефон', value: '+7 900', order: 0 }]),
     at,
   ]);
+  const blogId = randomUUID();
   await db.query(
-    `INSERT INTO publications (id, organization_id, site_id, title, slug, status, updated_at)
-    VALUES ($1, 'org', $2, 'Как ухаживать за льном', 'linen', 'published', $3),
-           ($4, 'org', $2, 'Черновик', 'draft', 'draft', $3)`,
-    [randomUUID(), siteId, at, randomUUID()],
+    `INSERT INTO blogs (id, site_id, organization_id, title, handle) VALUES ($1, $2, 'org', 'Новости', 'novosti')
+    ON CONFLICT (site_id, handle) DO NOTHING`,
+    [blogId, siteId],
+  );
+  const blog = await db.query(`SELECT id FROM blogs WHERE site_id = $1 AND handle = 'novosti'`, [siteId]);
+  await db.query(
+    `INSERT INTO publications (id, organization_id, site_id, blog_id, title, slug, status, updated_at)
+    VALUES ($1, 'org', $2, $5, 'Как ухаживать за льном', 'linen', 'published', $3),
+           ($4, 'org', $2, $5, 'Черновик', 'draft', 'draft', $3)`,
+    [randomUUID(), siteId, at, randomUUID(), blog.rows[0].id],
   );
 }
 

@@ -30,14 +30,18 @@ export function applySectionPolicy(
   return { popularProducts: popular, collectionTiles, publications };
 }
 
-/** Синонимы категорий публикаций (совпадают с Publications.puckConfig). */
-const PUBLICATION_CATEGORY_ALIASES: Record<string, string> = {
-  news: "news",
-  "новости": "news",
+/**
+ * Прежние категории из сохранённых ревизий → адрес блога (таблица миграции
+ * 0027; совпадает с Publications.puckConfig). Перевод ревизий в id блогов —
+ * отдельная задача; до неё секция фильтрует по адресу блога.
+ */
+const PUBLICATION_CATEGORY_BLOG_HANDLES: Record<string, string> = {
+  news: "novosti",
+  "новости": "novosti",
   blog: "blog",
   "блог": "blog",
-  articles: "articles",
-  "статьи": "articles",
+  articles: "stati",
+  "статьи": "stati",
 };
 
 /**
@@ -60,7 +64,8 @@ function publicationRef(value: unknown): string {
  * Выбор в панели (`publicationType`):
  *   ''/'all'            → все публикации магазина;
  *   id или slug         → РОВНО эта публикация («оживить при выборе»);
- *   news|blog|articles  → фильтр по категории (легаси-значения пикера);
+ *   id блога            → записи этого блога;
+ *   news|blog|articles  → записи блога novosti|blog|stati (легаси-значения пикера);
  *   выбранной больше нет → пусто (а не «первая попавшаяся»).
  */
 function resolvePublications(
@@ -82,9 +87,13 @@ function resolvePublications(
   const exact = all.find((p) => p.id === ref || p.slug === ref);
   if (exact) return [exact];
 
-  const category = PUBLICATION_CATEGORY_ALIASES[ref.toLowerCase()];
-  if (category) {
-    return all.filter((p) => p.category === category).slice(0, cards);
+  if (all.some((p) => p.blogId === ref)) {
+    return all.filter((p) => p.blogId === ref).slice(0, cards);
+  }
+
+  const blogHandle = PUBLICATION_CATEGORY_BLOG_HANDLES[ref.toLowerCase()];
+  if (blogHandle) {
+    return all.filter((p) => p.blogHandle === blogHandle).slice(0, cards);
   }
 
   // Непонятная ссылка (удалённая публикация, мусор из старой ревизии) —

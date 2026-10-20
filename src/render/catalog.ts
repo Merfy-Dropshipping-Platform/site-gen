@@ -22,8 +22,9 @@ export type CatalogPublication = {
   id: string;
   title: string;
   slug: string;
-  /** news | blog | articles — категория из админки (publications.category). */
-  category: string;
+  /** Блог записи (blogs.id и blogs.handle) — вместо прежней категории. */
+  blogId: string;
+  blogHandle: string;
   excerpt: string;
   coverImageUrl: string | null;
   publishedAt: string | null;
@@ -136,7 +137,8 @@ export function normalizeCatalog(raw: {
       id: str(x.id),
       title: str(x.title),
       slug: str(x.slug),
-      category: str(x.category),
+      blogId: str(x.blogId),
+      blogHandle: str(x.blogHandle),
       excerpt: str(x.excerpt),
       coverImageUrl: cover,
       publishedAt:

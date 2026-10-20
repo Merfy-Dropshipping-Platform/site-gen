@@ -41,7 +41,11 @@ function migrationsBefore0028(): string {
   cpSync(MIGRATIONS, dir, { recursive: true });
   const journalPath = join(dir, "meta", "_journal.json");
   const journal = JSON.parse(readFileSync(journalPath, "utf8"));
-  journal.entries = journal.entries.filter((e: { idx: number }) => e.idx < 28);
+  // По имени, не по idx: на прод миграции приходят не по порядку (0027 и 0028
+  // там стоят сразу за 0017), номер в журнале у них другой.
+  journal.entries = journal.entries.filter(
+    (e: { tag: string }) => e.tag < "0028_",
+  );
   writeFileSync(journalPath, JSON.stringify(journal));
   return dir;
 }
@@ -186,10 +190,17 @@ suite(
     });
 
     it("0028 применена и ревизий не трогает", async () => {
-      const { rows } = await pool.query(
-        `SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations`,
+      const journal = JSON.parse(
+        readFileSync(join(MIGRATIONS, "meta", "_journal.json"), "utf8"),
       );
-      expect(rows[0].n).toBeGreaterThanOrEqual(29);
+      const when0028 = journal.entries.find((e: { tag: string }) =>
+        e.tag.startsWith("0028_"),
+      ).when;
+      const { rows } = await pool.query(
+        `SELECT 1 FROM drizzle.__drizzle_migrations WHERE created_at = $1`,
+        [when0028],
+      );
+      expect(rows).toHaveLength(1);
       expect(await allRows()).toEqual(before0028);
     });
 

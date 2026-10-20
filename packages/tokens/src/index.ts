@@ -25,7 +25,7 @@ export {
 export type { TokenMigrationStep, TokenMigrations } from './migrations';
 
 // Генераторы
-export { tailwindCss } from './generate/tailwind';
+export { tailwindCss, type TailwindOptions } from './generate/tailwind';
 export { tokensMarkdown } from './generate/markdown';
 export { dictionaryJsonSchema, themeTokensJsonSchema } from './generate/json-schema';
 
@@ -45,8 +45,8 @@ export {
 export { parsePanel, panelForTheme } from './panel/panel';
 export { classesOf } from './kinds';
 export { fieldVisible, isSettingField, isTokenField, panelFields, settingFields, tokenFields } from './panel/fields';
-export { parseSettingsEdits, readSettingsEdits, resolveSettings } from './panel/settings';
-export { panelJsonSchema } from './panel/shape';
+export { parseSettingsEdits, readSettingsEdits, resolveSettings, settingProblem } from './panel/settings';
+export { panelJsonSchema, settingFieldShape } from './panel/shape';
 export type * from './panel/types';
 
 // Шрифты новых тем (блок 12): реестр и CSS шрифтов магазина

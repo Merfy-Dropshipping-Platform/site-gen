@@ -8,6 +8,7 @@ import * as schema from "./schema";
 import * as path from "path";
 import { existsSync } from "fs";
 import * as dotenv from "dotenv";
+import { applySkippedMigrations } from "./skipped-migrations";
 
 // Load environment variables
 dotenv.config({ path: ".env.local" });
@@ -91,6 +92,10 @@ async function manualMigrate() {
     console.log(`Using migrations folder: ${migrationsFolder}`);
 
     await migrate(db, { migrationsFolder });
+    // Миграции, пропущенные из-за порядка (cherry-pick на прод) — см. skipped-migrations.ts.
+    const outOfOrder = await applySkippedMigrations(pool, migrationsFolder);
+    if (outOfOrder)
+      console.log(`Applied ${outOfOrder} out-of-order migration(s)`);
 
     console.log("Manual migration completed successfully");
 

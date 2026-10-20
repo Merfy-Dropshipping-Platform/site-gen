@@ -18,7 +18,8 @@
     "format:check": "prettier --check --no-error-on-unmatched-pattern src __tests__ scripts",
     "probe": "tsx scripts/probe.ts",
     "theme-version": "tsx scripts/theme-version.ts",
-    "build:stand": "tsx scripts/build-stand.ts"
+    "build:stand": "tsx scripts/build-stand.ts",
+    "test:browser": "vitest run --config vitest.browser.config.ts"
   },
   "dependencies": {
     "@merfy/storefront-config": "workspace:*",
@@ -31,6 +32,7 @@
     "@types/node": "22.20.1",
     "@vitest/coverage-v8": "3.2.7",
     "eslint": "9.39.2",
+    "playwright": "1.59.1",
     "prettier": "3.8.0",
     "tsx": "4.21.0",
     "typescript": "5.9.3",

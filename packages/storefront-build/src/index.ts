@@ -88,6 +88,7 @@ export { FONT_LIBRARY_HASH, FONT_REGISTRY } from './fonts';
 export type { FontFileEntry, FontRegistry } from '@merfy/tokens';
 export { shopFonts } from './head';
 export { PREVIEW_AGENT } from './preview-agent';
+export { PREVIEW_SECTIONS_AGENT } from './preview-sections-agent';
 
 // Отпечатки, версии тем, сторожа
 export { PLATFORM_RENDER_FILES, THEME_FILES, platformRenderHash, themeRenderFiles } from './render-files';

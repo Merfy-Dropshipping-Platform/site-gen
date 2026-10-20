@@ -42,8 +42,8 @@ const LONG_CONTENT = `<p>${"Слово ".repeat(60)}</p>`;
 const AUTO_EXCERPT = LONG_CONTENT.replace(/<[^>]*>/g, "").substring(0, 200);
 
 suite("миграция 0027: категории → блоги", () => {
-  let admin: Pool;
-  let pool: Pool;
+  let admin: InstanceType<typeof Pool>;
+  let pool: InstanceType<typeof Pool>;
   let dbUrl: string;
 
   beforeAll(async () => {

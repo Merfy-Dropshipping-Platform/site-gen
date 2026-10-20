@@ -93,8 +93,9 @@ function resolveBlogPost(
 
 /**
  * Прежние категории из сохранённых ревизий → адрес блога (таблица миграции
- * 0027; совпадает с Publications.puckConfig). Перевод ревизий в id блогов —
- * отдельная задача; до неё секция фильтрует по адресу блога.
+ * 0027; совпадает с Publications.puckConfig). Ревизии переводит в id блогов
+ * фоновая задача (publications/revision-blog-refs.job.ts); пока она не дошла
+ * до ревизии, секция фильтрует по адресу блога.
  */
 const PUBLICATION_CATEGORY_BLOG_HANDLES: Record<string, string> = {
   news: "novosti",
@@ -134,7 +135,12 @@ function resolvePublications(
   catalog: Catalog,
 ): CatalogPublication[] {
   const all = Array.isArray(catalog.publications) ? catalog.publications : [];
-  const ref = publicationRef(props.publicationType ?? props.categoryFilter);
+  // Как resolvePublicationsType секции и фоновый перевод ревизий: непустой
+  // publicationType главнее categoryFilter (`publicationType: ''` рядом с
+  // `categoryFilter: 'Статьи'` — это «Статьи», а не «все»).
+  const ref = publicationRef(
+    trimmed(props.publicationType) ? props.publicationType : props.categoryFilter,
+  );
   const cardsRaw =
     typeof props.cardsCount === "number"
       ? props.cardsCount

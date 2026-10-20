@@ -1,0 +1,156 @@
+---
+import type { BlogSectionProps } from './BlogSection.puckConfig';
+import { BlogSectionClasses as C } from './BlogSection.classes';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+import {
+  BLOG_PAGE_SIZE,
+  blogPageNumbers,
+  blogPageUrl,
+  formatPublicationDate,
+  publicationUrl,
+} from '../../runtime/publications';
+
+interface Props extends BlogSectionProps {
+  id?: string;
+}
+
+const raw = Astro.props as Record<string, unknown>;
+const { id, padding } = Astro.props as Props;
+
+// Записи блога — только данные магазина: платформа отбирает их тем же путём,
+// что товары и коллекции (catalog → applySectionPolicy → __merfy.resolved),
+// уже отсортированные «новые сверху». Пустой массив — в блоге записей нет.
+type Post = {
+  id: string;
+  title?: string;
+  slug?: string;
+  blogHandle?: string;
+  blogTitle?: string;
+  excerpt?: string;
+  coverImageUrl?: string | null;
+  publishedAt?: string | null;
+};
+const merfy = raw.__merfy as { resolved?: { publications?: Post[] | null } } | undefined;
+const posts: Post[] = Array.isArray(merfy?.resolved?.publications)
+  ? (merfy!.resolved!.publications as Post[])
+  : [];
+
+const text = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+// Блог страницы задаёт сборка (blogHandle/blogTitle); в конструкторе — блог записей.
+const handle = text(raw.blogHandle) || posts[0]?.blogHandle || '';
+const title = text(raw.blogTitle) || text(posts[0]?.blogTitle) || 'Блог';
+
+const totalPages = Math.max(1, Math.ceil(posts.length / BLOG_PAGE_SIZE));
+const pageOf = (index: number): number => Math.floor(index / BLOG_PAGE_SIZE) + 1;
+const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+// Раскладка, без которой страница не читается, — scoped-стилем (как у
+// «Публикаций»): колонки сетки и скрытие карточек/навигации чужих страниц.
+const scope = id ? `[data-puck-component-id="${id}"]` : '[data-block="blog-section"]';
+const scopedCss =
+  `${scope} [data-blog-grid]{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));column-gap:var(--spacing-grid-col-gap,24px);row-gap:var(--spacing-grid-row-gap,40px)}` +
+  `@media(min-width:640px){${scope} [data-blog-grid]{grid-template-columns:repeat(2,minmax(0,1fr))}}` +
+  `@media(min-width:1024px){${scope} [data-blog-grid]{grid-template-columns:repeat(3,minmax(0,1fr))}}` +
+  `${scope} [data-blog-page][hidden],${scope} [data-blog-nav-page][hidden]{display:none!important}` +
+  `${scope} [data-blog-media]{aspect-ratio:4/3;overflow:hidden;background-color:rgb(var(--color-surface))}` +
+  `${scope} [data-blog-media] img{display:block;width:100%;height:100%;object-fit:cover}`;
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-block="blog-section"
+  data-blog-handle={handle}
+  data-blog-pages={totalPages}
+  style={`background-color:rgb(var(--color-bg));color:rgb(var(--color-text));${paddingStyle}`}
+>
+  <style set:html={scopedCss}></style>
+  <div class={C.container}>
+    <h1 class={C.heading} style="color:rgb(var(--color-heading));">{title}</h1>
+    {posts.length === 0 ? (
+      <p class={C.empty}>В этом блоге пока нет записей</p>
+    ) : (
+      <div class={C.grid} data-blog-grid>
+        {posts.map((post, i) => {
+          const postHandle = post.blogHandle || handle;
+          const href = post.slug && postHandle ? publicationUrl(postHandle, post.slug) : undefined;
+          const date = formatPublicationDate(post.publishedAt);
+          return (
+            <a
+              class={C.card}
+              href={href}
+              data-blog-page={pageOf(i)}
+              hidden={pageOf(i) !== 1}
+              style="color:inherit;text-decoration:none;"
+            >
+              <div class={C.cardMedia} data-blog-media>
+                <img
+                  src={post.coverImageUrl || PLACEHOLDER_ASSETS.publicationCard}
+                  alt={post.coverImageUrl ? post.title ?? '' : ''}
+                  class={C.cardMediaImg}
+                  loading="lazy"
+                  onerror="this.style.display='none'"
+                />
+              </div>
+              <div class={C.cardBody}>
+                {date && <time class={C.cardDate} datetime={post.publishedAt ?? undefined}>{date}</time>}
+                <div class={C.cardTitle} style="color:rgb(var(--color-heading));">{post.title}</div>
+                {post.excerpt && <p class={C.cardExcerpt}>{post.excerpt}</p>}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )}
+    {totalPages > 1 && handle && pages.map((current) => (
+      <nav
+        class={C.pagination}
+        aria-label="Страницы блога"
+        data-blog-nav-page={current}
+        hidden={current !== 1}
+      >
+        {current > 1 ? (
+          <a class={C.pageArrow} href={blogPageUrl(handle, current - 1)} aria-label="Предыдущая страница">←</a>
+        ) : (
+          <span class={C.pageArrowDisabled} aria-hidden="true">←</span>
+        )}
+        {blogPageNumbers(current, totalPages).map((n) =>
+          n === 'ellipsis' ? (
+            <span class={C.pageEllipsis}>…</span>
+          ) : n === current ? (
+            <span class={C.pageLinkActive} aria-current="page">{n}</span>
+          ) : (
+            <a class={C.pageLink} href={blogPageUrl(handle, n)}>{n}</a>
+          ),
+        )}
+        {current < totalPages ? (
+          <a class={C.pageArrow} href={blogPageUrl(handle, current + 1)} aria-label="Следующая страница">→</a>
+        ) : (
+          <span class={C.pageArrowDisabled} aria-hidden="true">→</span>
+        )}
+      </nav>
+    ))}
+  </div>
+</section>
+<script is:inline define:vars={{ blockId: id }}>
+  (function () {
+    // Страница блога одна на все номера: ?page=N показывает N-ю дюжину записей
+    // и её навигацию (как переход по страницам каталога).
+    var root = window.__merfyRoot ? window.__merfyRoot(blockId) : null;
+    if (!root) return;
+    var total = Number(root.getAttribute('data-blog-pages')) || 1;
+    var n = parseInt(new URLSearchParams(window.location.search).get('page') || '1', 10);
+    if (!(n >= 1)) n = 1;
+    if (n > total) n = total;
+    if (n === 1) return;
+    root.querySelectorAll('[data-blog-page]').forEach(function (el) {
+      el.hidden = Number(el.getAttribute('data-blog-page')) !== n;
+    });
+    root.querySelectorAll('[data-blog-nav-page]').forEach(function (el) {
+      el.hidden = Number(el.getAttribute('data-blog-nav-page')) !== n;
+    });
+  })();
+</script>

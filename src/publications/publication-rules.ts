@@ -3,6 +3,7 @@
  * проверка полей. Контракт «Публикации» (20.10.2026), PUB-3/4/7/10/11/12.
  */
 import { PublicationError } from "./publications.errors";
+import { publicationUrl } from "../../packages/theme-base/runtime/publications";
 
 export type PublicationStatus =
   | "draft"
@@ -102,9 +103,12 @@ export function slugify(input: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Адрес записи на витрине. Одна формула для API, редиректов и витрины. */
+/**
+ * Адрес записи на витрине. Одна формула для API, редиректов и витрины — сама
+ * формула живёт в theme-base (`publicationUrl`), ею же пользуются темы.
+ */
 export function publicationPath(blogHandle: string, slug: string): string {
-  return `/blogs/${blogHandle}/${slug}`;
+  return publicationUrl(blogHandle, slug);
 }
 
 // --- Анонс ---

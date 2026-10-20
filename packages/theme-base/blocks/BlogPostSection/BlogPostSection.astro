@@ -1,0 +1,63 @@
+---
+import type { BlogPostSectionProps } from './BlogPostSection.puckConfig';
+import { BlogPostSectionClasses as C } from './BlogPostSection.classes';
+import { sanitizePublicationContent } from './BlogPostSection.sanitize';
+import { blogUrl, formatPublicationDate } from '../../runtime/publications';
+
+interface Props extends BlogPostSectionProps {
+  id?: string;
+}
+
+const raw = Astro.props as Record<string, unknown>;
+const { id, padding } = Astro.props as Props;
+
+// Запись — только данные магазина (catalog → applySectionPolicy →
+// __merfy.resolved.publications, ровно одна). Нет записи — нейтральная
+// заглушка без выдуманного текста, как у «Публикаций».
+type Post = {
+  id: string;
+  title?: string;
+  blogHandle?: string;
+  blogTitle?: string;
+  content?: string;
+  coverImageUrl?: string | null;
+  publishedAt?: string | null;
+};
+const merfy = raw.__merfy as { resolved?: { publications?: Post[] | null } } | undefined;
+const post: Post | undefined = Array.isArray(merfy?.resolved?.publications)
+  ? (merfy!.resolved!.publications as Post[])[0]
+  : undefined;
+
+const date = formatPublicationDate(post?.publishedAt);
+const body = post?.content ? sanitizePublicationContent(post.content) : '';
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-block="blog-post-section"
+  style={`background-color:rgb(var(--color-bg));color:rgb(var(--color-text));${paddingStyle}`}
+>
+  <div class={C.container}>
+    {post ? (
+      <article class={C.column} style="max-width:768px;margin-left:auto;margin-right:auto;">
+        {post.blogHandle && (
+          <a class={C.back} href={blogUrl(post.blogHandle)}>← {post.blogTitle || 'Блог'}</a>
+        )}
+        <h1 class={C.heading} style="color:rgb(var(--color-heading));">{post.title}</h1>
+        {date && <time class={C.date} datetime={post.publishedAt ?? undefined}>{date}</time>}
+        {post.coverImageUrl && (
+          <img class={C.cover} src={post.coverImageUrl} alt={post.title ?? ''} />
+        )}
+        <div class={C.content} set:html={body}></div>
+      </article>
+    ) : (
+      <div class={C.column} style="max-width:768px;margin-left:auto;margin-right:auto;">
+        <h1 class={C.heading} style="color:rgb(var(--color-heading));">Запись блога</h1>
+        <p class={C.placeholderText}>Здесь появится текст записи, когда вы опубликуете её в разделе «Публикации».</p>
+      </div>
+    )}
+  </div>
+</section>

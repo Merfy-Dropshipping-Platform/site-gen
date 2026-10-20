@@ -56,6 +56,7 @@ import {
   seedProfilePage,
   seedWishlistPage,
 } from "./account-pages";
+import { seedBlogPages } from "./blog-pages";
 import {
   storeChromeOnCheckoutResult,
   unifyFooterWithHome,
@@ -253,6 +254,12 @@ export const DOCUMENT_SEEDER_STEPS: readonly DocumentStep[] = [
     name: "seedLoginPageSection",
     scope: "document",
     run: (doc) => seedLoginPageSection(doc),
+  },
+  {
+    // «Блог» и «Запись блога» (PUB-1, PUB-2) — для всех тем.
+    name: "seedBlogPages",
+    scope: "document",
+    run: (doc) => seedBlogPages(doc),
   },
 ];
 

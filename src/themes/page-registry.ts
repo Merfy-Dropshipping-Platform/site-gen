@@ -89,6 +89,28 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
   // приходит из packages/theme-rose/pages/cart.json через lazy-seed (без
   // миграции ревизий существующих сайтов). Шелл — cart.astro (Layout).
   { id: 'page-cart', route: 'cart', kind: 'content', chrome: 'full' },
+  // «Блог» и «Запись блога» (PUB-1, PUB-2) — composable, как page-wishlist:
+  // тело = секция BlogSection / BlogPostSection, мерчант добавляет вокруг
+  // другие секции. Маршрут — служебный адрес превью конструктора (как
+  // collections/preview у коллекции): на витрине страница копируется на каждый
+  // блог `/blogs/{handle}` и каждую запись `/blogs/{handle}/{slug}`
+  // (src/themes/blog-pages.ts). requireOwnShell:true — общий цикл
+  // composeContentPagesIntoDist её НЕ пересаживает (своего шелла у служебного
+  // адреса нет), страницы собирает сборка блога.
+  {
+    id: 'page-blog',
+    route: 'blogs/preview',
+    kind: 'content',
+    chrome: 'full',
+    requireOwnShell: true,
+  },
+  {
+    id: 'page-blog-post',
+    route: 'blogs/preview/post',
+    kind: 'content',
+    chrome: 'full',
+    requireOwnShell: true,
+  },
   // page-wishlist — composable (kind:content), зеркало page-cart: тело страницы
   // «Избранное» = секция WishlistSection, мерчант добавляет вокруг другие секции.
   // Дефолт [WishlistSection] приходит из packages/theme-<t>/pages/wishlist.json
@@ -256,7 +278,11 @@ export const LOGIN_SECTION_THEMES: ReadonlySet<string> = new Set<string>([
 export const VERBATIM_PREFIXES: ReadonlySet<string> = new Set([
   'products',
   'auth',
-  'blog',
+  // 'blog' убран 20.10 (PUB-2): под ним жил стартовый шаблон Astro
+  // (src/pages/blog/*, «Черновик», 'en-us'), его удалили из всех тем. Блог
+  // магазина — `/blogs/{handle}`, а `/blog` — переадресация на блог по
+  // умолчанию (src/themes/blog-pages.ts). От страниц мерчанта оба адреса
+  // бережёт isReservedRoute.
   'legal',
   // 'account' переехал в PAGE_REGISTRY (page-profile 'account/profile' и
   // page-orders 'account/orders'):
@@ -284,6 +310,22 @@ const VERBATIM_FIRST_SEGMENTS: ReadonlySet<string> = new Set<string>([
  */
 export function isVerbatimRoute(route: string): boolean {
   return VERBATIM_FIRST_SEGMENTS.has(route.split('/')[0]);
+}
+
+/**
+ * Первые сегменты адресов блога: `/blogs/{handle}[/{slug}]` — страницы блога и
+ * записей, `/blog` — переадресация на блог по умолчанию. Не verbatim (секции
+ * этих страниц правятся в конструкторе), но заняты витриной.
+ */
+const BLOG_FIRST_SEGMENTS: ReadonlySet<string> = new Set(['blog', 'blogs']);
+
+/**
+ * Занят ли адрес витриной: verbatim-страница темы или адрес блога. Страница
+ * мерчанта с таким адресом не должна перезаписать страницу витрины
+ * (collision-guard кастомных страниц в v2-live-pages и custom-pages-seo-inject).
+ */
+export function isReservedRoute(route: string): boolean {
+  return isVerbatimRoute(route) || BLOG_FIRST_SEGMENTS.has(route.split('/')[0]);
 }
 
 /**

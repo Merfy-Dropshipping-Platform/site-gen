@@ -32,9 +32,12 @@ import { randomUUID } from "crypto";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
-import { fetchStoreData, fetchAllCollectionProducts, fetchPublications, type FetchedStoreData } from "./data-fetcher";
+import { fetchStoreData, fetchAllCollectionProducts, fetchBlogRoutes, fetchPublications, type FetchedStoreData } from "./data-fetcher";
+import { planBlogRedirects, writeBlogRedirectsIntoDist, type BlogRouteData } from "../themes/blog-pages";
+import { normalizeCatalog } from "../render/catalog";
 import { escapeHtml, patchPdpMetaTags, patchCollectionMetaTags } from "./seo-meta";
 import { writeCatalogRedirects } from "./catalog-redirects";
+import { publicationUrl } from "../../packages/theme-base/runtime/publications";
 import { DocumentAdapter } from "../content/document.adapter";
 import { StoreContentService } from "../content/store-content.service";
 import { applyFooterData } from "../utils/footer-data";
@@ -1061,7 +1064,7 @@ export async function trySnapshotDeploy(
         seoTitle: p.seoTitle, seoDescription: p.seoDescription,
         coverImageUrl: p.coverImageUrl || "/images/placeholder.png",
         publishedAt: p.publishedAt, dateFormatted: fmtDate(p.publishedAt),
-        href: `/publications/${p.slug}`,
+        href: publicationUrl(p.blogHandle, p.slug),
       }));
       const pubJsonPath = path.join(distDir, "data", "publications.json");
       await fs.mkdir(path.dirname(pubJsonPath), { recursive: true });
@@ -1218,7 +1221,12 @@ export async function runBuildPipeline(
       // Lazy import: build.service ← v2-live-pages ← v2-page-composer ←
       // theme-build.service ← build.service — циклический граф; динамический
       // import не материализует цикл на module-init.
-      const { composeContentPagesIntoDist, composeLegalPagesIntoDist, applyChromeToDist, unifyChromeInDist, renderProductSectionForId } = await import("../themes/v2-live-pages");
+      const { composeContentPagesIntoDist, composeLegalPagesIntoDist, composeBlogPagesIntoDist, applyChromeToDist, unifyChromeInDist, renderProductSectionForId } = await import("../themes/v2-live-pages");
+      // Публикации магазина — до пересадки страниц: их рисуют секции
+      // «Публикации», «Блог» и «Запись блога» (merfyFromBuild → catalog).
+      // stageFetchData ветка themes-v2 не проходит, поэтому грузим здесь.
+      const v2Publications = await fetchPublications(deps.db, deps.schema, ctx.siteId, ctx.tenantId);
+      ctx.publications = v2Publications as unknown as Array<Record<string, unknown>>;
       const composedPages = await composeContentPagesIntoDist(ctx, bareTheme);
       logger.log(
         `[themes-v2] Composed ${composedPages} content pages from revision for site ${params.siteId}`,
@@ -1241,6 +1249,25 @@ export async function runBuildPipeline(
       } catch (legalErr) {
         logger.warn(
           `[themes-v2] legal compose failed (non-fatal): ${(legalErr as Error)?.message ?? legalErr}`,
+        );
+      }
+      // PUB-1, PUB-2: страницы блогов /blogs/{handle} и записей
+      // /blogs/{handle}/{slug} — копии системных страниц «Блог» и «Запись
+      // блога». ДО унификации шапки (копии её пройдут). Сбой не валит сборку.
+      let blogRoutes: BlogRouteData | null = null;
+      try {
+        const routes = await fetchBlogRoutes(deps.db, deps.schema, ctx.siteId, ctx.tenantId);
+        blogRoutes = {
+          ...routes,
+          publications: normalizeCatalog({ publications: v2Publications }).publications,
+        };
+        const blogPages = await composeBlogPagesIntoDist(ctx, bareTheme, blogRoutes);
+        logger.log(
+          `[themes-v2] Composed ${blogPages} blog page(s) (${routes.blogs.length} blogs, ${v2Publications.length} publications) for site ${params.siteId}`,
+        );
+      } catch (blogErr) {
+        logger.warn(
+          `[themes-v2] blog pages compose failed (non-fatal): ${(blogErr as Error)?.message ?? blogErr}`,
         );
       }
       // Унификация хрома (Spec 108 US2): NON-checkout страницы — единый
@@ -1680,6 +1707,23 @@ export async function runBuildPipeline(
           } catch (colSeoErr) {
             logger.warn(`[themes-v2][seo] sitemap-collections write failed: ${(colSeoErr as Error)?.message ?? colSeoErr}`);
           }
+        }
+      }
+      // PUB-1, PUB-2: старые адреса записей и /blog — страницы-переадресации
+      // (как catalog-redirects выше), архивные записи — «запись недоступна».
+      // Живые страницы не перезаписываются.
+      if (blogRoutes) {
+        try {
+          const blogRedirects = await writeBlogRedirectsIntoDist(
+            ctx.distDir,
+            planBlogRedirects(blogRoutes),
+            ctx.publicUrl ?? "",
+          );
+          logger.log(
+            `[themes-v2][seo] Wrote ${blogRedirects.moved} blog redirect(s), ${blogRedirects.gone} gone page(s) (${blogRedirects.skipped} kept) for site ${params.siteId}`,
+          );
+        } catch (blogRedirErr) {
+          logger.warn(`[themes-v2] blog redirect gen failed: ${(blogRedirErr as Error)?.message ?? blogRedirErr}`);
         }
       }
       // Фаза 3: tokens.css настроек темы — статикой во все страницы диста
@@ -2853,7 +2897,7 @@ async function stageFetchData(
     coverImageUrl: p.coverImageUrl || "/images/placeholder.png",
     publishedAt: p.publishedAt,
     dateFormatted: formatDate(p.publishedAt),
-    href: `/publications/${p.slug}`,
+    href: publicationUrl(p.blogHandle, p.slug),
   }));
 
   const publicationsPath = path.join(ctx.workingDir, "src", "data", "publications.json");

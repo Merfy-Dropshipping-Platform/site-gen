@@ -17,6 +17,16 @@ export * as Newsletter from './blocks/Newsletter';
 export * as ContactForm from './blocks/ContactForm';
 export * as Video from './blocks/Video';
 export * as Publications from './blocks/Publications';
+// Тела системных страниц «Блог» и «Запись блога» (PUB-1, PUB-2).
+export * as BlogSection from './blocks/BlogSection';
+export * as BlogPostSection from './blocks/BlogPostSection';
+export {
+  BLOG_PAGE_SIZE,
+  blogUrl,
+  blogPageUrl,
+  publicationUrl,
+  formatPublicationDate,
+} from './runtime/publications';
 export * as CartSection from './blocks/CartSection';
 export * as Catalog from './blocks/Catalog';
 

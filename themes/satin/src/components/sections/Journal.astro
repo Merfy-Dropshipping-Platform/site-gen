@@ -1,6 +1,7 @@
 ---
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import SatinPicture from "../img/SatinPicture.astro";
+import { publicationUrl } from "../../../../../packages/theme-base/runtime/publications";
 
 // Legacy-секция верстальщика «Журнал» (index.astro:32 использует <Journal/>).
 // ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
@@ -34,6 +35,7 @@ type RawPublication = {
 	id: string;
 	title?: string;
 	slug?: string;
+	blogHandle?: string;
 	excerpt?: string;
 	coverImageUrl?: string | null;
 	publishedAt?: string | null;
@@ -118,7 +120,8 @@ const items: PubItem[] = legacyPosts
 				date: formatPubDate(pub.publishedAt),
 				excerpt: pub.excerpt ?? "",
 				image: pub.coverImageUrl ?? "",
-				href: pub.slug ? `/publication/${pub.slug}` : undefined,
+				// Адрес записи — только publicationUrl из theme-base (/blogs/{блог}/{адрес}).
+				href: pub.slug && pub.blogHandle ? publicationUrl(pub.blogHandle, pub.slug) : undefined,
 				linkText: "Перейти",
 				isPlaceholder: false,
 			}))

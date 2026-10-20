@@ -48,8 +48,10 @@ const SATIN_REQUIRED_RUNTIME_SOURCES: readonly string[] = [
   'themes/satin/src/pages/account/profile.astro',
   'themes/satin/src/pages/account/orders.astro',
   'themes/satin/src/pages/account/order.astro',
-  'themes/satin/src/pages/blog/index.astro',
-  'themes/satin/src/pages/blog/[...slug].astro',
+  // Блог и запись блога (PUB-1, PUB-2): секции theme-base вместо удалённого
+  // стартового шаблона Astro themes/satin/src/pages/blog/*.
+  'packages/theme-base/blocks/BlogSection/BlogSection.astro',
+  'packages/theme-base/blocks/BlogPostSection/BlogPostSection.astro',
   'themes/satin/src/pages/legal/[slug].astro',
   'themes/satin/src/scripts/gsap/cart-drawer.ts',
   'themes/satin/src/scripts/gsap/search.ts',

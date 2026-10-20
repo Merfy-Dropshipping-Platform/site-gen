@@ -1,7 +1,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { applyHomeSeoToHtml, type HomeSeo } from "./home-seo-inject";
-import { isV2ComplexRoute } from "../themes/v2-routes";
+import { isReservedRoute } from "../themes/page-registry";
 
 /**
  * custom-pages-seo-inject — доставка per-page SEO КАСТОМНЫХ страниц в <head>.
@@ -17,8 +17,9 @@ import { isV2ComplexRoute } from "../themes/v2-routes";
  * файл. ВАЖНО: createPage блокирует коллизии слага только с manifest.pages, но
  * verbatim-роуты темы (blog/legal/products/… — VERBATIM_PREFIXES) шире → кастомная
  * страница со слагом verbatim-роута перезаписала бы SEO системной страницы. Поэтому
- * зеркалим collision-guard compose: пропускаем isV2ComplexRoute(slug) (как
- * composeContentPagesIntoDist в v2-live-pages.ts).
+ * зеркалим collision-guard compose: пропускаем isReservedRoute(slug) — verbatim-
+ * роуты и адреса блога `/blog`, `/blogs/*` (как composeContentPagesIntoDist в
+ * v2-live-pages.ts).
  */
 
 interface SeoMetaLike {
@@ -60,7 +61,7 @@ export async function injectCustomPagesSeo(
     const rawSlug = typeof p?.slug === "string" ? p.slug : "";
     const slug = rawSlug.replace(/^\/+|\/+$/g, "");
     // home = branding.seo; verbatim-роуты темы = системные файлы (не перезаписываем).
-    if (!slug || slug === "home" || isV2ComplexRoute(slug)) continue;
+    if (!slug || slug === "home" || isReservedRoute(slug)) continue;
 
     const pagePath = path.join(distDir, slug, "index.html");
     let html: string;

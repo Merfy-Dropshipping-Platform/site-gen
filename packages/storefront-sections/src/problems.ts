@@ -7,14 +7,15 @@ import type { Position } from './position';
 export const PROBLEM_CODES = [
   'manifest-missing',
   'manifest-invalid',
+  'sdk-unsupported',
+  'setting-invalid',
   'file-unknown',
   'file-too-large',
   'source-too-large',
   'kind-mismatch',
   'template-forbidden',
-  'style-invalid',
-  'style-forbidden',
-  'style-raw-color',
+  'template-compile',
+  'render-failed',
   'script-invalid',
   'import-forbidden',
   'script-heavy',
@@ -25,7 +26,7 @@ export const PROBLEM_CODES = [
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];
 
-const WARNING_CODES: ReadonlySet<ProblemCode> = new Set(['style-raw-color', 'script-heavy']);
+const WARNING_CODES: ReadonlySet<ProblemCode> = new Set(['script-heavy']);
 
 export const sectionProblemSchema = z.strictObject({
   code: z.enum(PROBLEM_CODES),
@@ -48,7 +49,7 @@ export const when = (condition: boolean, make: () => SectionProblem): SectionPro
 
 export const isWarning = (item: SectionProblem): boolean => WARNING_CODES.has(item.code);
 
-// «styles.css:3:5 — правило для body меняет всю страницу».
+// «template.astro:3:5 — обработчик onclick: события — только в script.ts».
 export function problemText(item: SectionProblem): string {
   const place = [item.file, item.line, item.column].filter((part) => part !== null && part !== '').join(':');
   return place === '' ? item.message : `${place} — ${item.message}`;

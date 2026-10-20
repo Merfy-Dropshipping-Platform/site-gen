@@ -1,1 +1,6 @@
-{ "v": 1, "name": "color-match", "kind": "section", "title": "Подбор шарфа по цвету пальто" }
+{
+  "sdk": 1,
+  "name": "color-match",
+  "kind": "section",
+  "title": "Подбор шарфа по цвету пальто"
+}

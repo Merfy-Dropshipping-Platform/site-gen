@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 import type { DoorFields, SectionAuthor } from './doors';
-import { SECTION_KINDS, sectionManifestSchema, type SectionFiles } from './format';
+import { SECTION_KINDS, type SectionFiles } from './format';
 import type { PreparedSection } from './prepare';
 import { sectionProblemSchema } from './problems';
 
@@ -31,7 +31,8 @@ const sectionRowSchema = z.object({
   release: z.string().nullable(),
   sourceHash: z.string(),
   contentHash: z.string(),
-  manifest: sectionManifestSchema,
+  // Манифест — как записан при приёме: у строк до SDK 1 он старого формата, поэтому здесь без схемы.
+  manifest: z.unknown(),
   template: z.string(),
   style: z.string(),
   script: z.string().nullable(),
@@ -117,7 +118,8 @@ function insertParams(row: NewSection, draft: boolean): unknown[] {
     JSON.stringify(section.manifest),
     JSON.stringify(row.source),
     section.template,
-    section.style,
+    // Своего CSS у секции SDK 1 нет: колонка style остаётся для строк до SDK 1.
+    '',
     section.script,
     row.scriptHash,
     JSON.stringify(section.warnings),

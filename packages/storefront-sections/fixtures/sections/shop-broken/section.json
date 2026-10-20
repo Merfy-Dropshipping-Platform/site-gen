@@ -1,1 +1,6 @@
-{ "v": 1, "name": "broken", "kind": "section", "title": "Сломанная" }
+{
+  "sdk": 1,
+  "name": "broken",
+  "kind": "section",
+  "title": "Сломанная"
+}

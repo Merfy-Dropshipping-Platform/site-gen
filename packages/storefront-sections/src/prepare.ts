@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import {
-  STYLE_FILE,
   TEMPLATE_FILE,
   fileProblems,
   kindProblems,
@@ -11,7 +10,6 @@ import {
 } from './format';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
 import { buildScript } from './script';
-import { scopeStyle } from './style';
 import { templateProblems } from './template';
 
 // Одна функция приёма (design.md блока 7, С7-11 А, п. 21): разбор section.json, проверка, сборка — одинаково для
@@ -28,7 +26,6 @@ export const preparedSectionSchema = z.strictObject({
   name: z.string(),
   manifest: sectionManifestSchema,
   template: z.string(),
-  style: z.string(),
   script: z.string().nullable(),
   warnings: z.array(sectionProblemSchema),
 });
@@ -57,14 +54,10 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
   if (kind.length > 0) return refuse(kind);
   const name = `${input.prefix}:${manifest.value.name}`;
   const template = files[TEMPLATE_FILE] ?? '';
-  const style = scopeStyle(files[STYLE_FILE] ?? '', name);
   const entry = scriptEntryOf(files);
   const script = entry === null ? null : await buildScript(files, entry);
-  const problems = [...templateProblems(template), ...problemsOf(style), ...problemsOf(script)];
-  if (!style.ok || problems.some((item) => !isWarning(item))) return refuse(problems);
+  const problems = [...templateProblems(template), ...problemsOf(script)];
+  if (problems.some((item) => !isWarning(item))) return refuse(problems);
   const code = script !== null && script.ok ? script.value.code : null;
-  return {
-    ok: true,
-    section: { name, manifest: manifest.value, template, style: style.value.css, script: code, warnings: problems },
-  };
+  return { ok: true, section: { name, manifest: manifest.value, template, script: code, warnings: problems } };
 }

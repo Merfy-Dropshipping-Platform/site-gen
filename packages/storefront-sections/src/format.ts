@@ -1,12 +1,15 @@
+import { settingFieldShape } from '@merfy/tokens';
 import { z } from 'zod';
 import { problem, when, type Checked, type SectionProblem } from './problems';
+import { settingsTexts } from './settings';
 
-// Формат секции (design.md блока 7, п. 20) — один у всех авторов (С7-11 А): папка с section.json, template.html,
-// styles.css и скриптом, если он есть (п. 16), — script.ts или script.js и его файлы .ts/.js. Поля настроек — по схеме
-// блока 8 (п. 23); пока схема не утверждена, приём хранит их как есть — шов.
+// Формат секции SDK 1 (блок 1 «Секций и SDK»; design.md блока 7, п. 20) — один у всех авторов (С7-11 А): папка с
+// section.json, template.astro и скриптом, если он есть (п. 16), — script.ts или script.js и его файлы .ts/.js. Своего
+// CSS у секции нет: классы Tailwind из словаря темы (7 Г). Поля настроек — settings, схема поля настройки блока 8
+// (settingFieldShape из @merfy/tokens).
 export const MANIFEST_FILE = 'section.json';
-export const TEMPLATE_FILE = 'template.html';
-export const STYLE_FILE = 'styles.css';
+export const TEMPLATE_FILE = 'template.astro';
+export const SECTION_SDK = 1;
 export const SCRIPT_ENTRIES = ['script.ts', 'script.js'] as const;
 // Пределы исходника — допущение плана: число файлов, байты UTF-8 одного файла и всех вместе.
 export const SOURCE_LIMITS = { files: 50, fileBytes: 64 * 1024, totalBytes: 256 * 1024 } as const;
@@ -14,7 +17,13 @@ export const SOURCE_LIMITS = { files: 50, fileBytes: 64 * 1024, totalBytes: 256 
 // имя «приставка:имя» проходит список модулей ядра (@merfy/shell, src/modules.ts).
 export const SECTION_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SCRIPT_PATH = /^(?:[a-z0-9_-]+\/)*[a-z0-9_-]+(?:\.[a-z0-9_-]+)*\.(?:ts|js)$/;
-const FIXED_FILES: ReadonlySet<string> = new Set([MANIFEST_FILE, TEMPLATE_FILE, STYLE_FILE]);
+const FIXED_FILES: ReadonlySet<string> = new Set([MANIFEST_FILE, TEMPLATE_FILE]);
+// Файлы формата блока 7 — отказ с подсказкой, что теперь вместо них.
+const OLD_FILES: ReadonlyMap<string, string> = new Map([
+  ['template.html', 'шаблон теперь template.astro'],
+  ['styles.css', 'своего CSS у секции нет: классы Tailwind из словаря (7 Г)'],
+]);
+const UNKNOWN_FILE = 'в формате секции: section.json, template.astro, .ts/.js';
 const JSON_PLACE = /line (\d+) column (\d+)/;
 
 export const sectionIdSchema = z
@@ -24,11 +33,11 @@ export const SECTION_KINDS = ['section', 'global'] as const;
 export type SectionKind = (typeof SECTION_KINDS)[number];
 
 export const sectionManifestSchema = z.strictObject({
-  v: z.literal(1),
+  sdk: z.literal(SECTION_SDK),
   name: sectionIdSchema,
   kind: z.enum(SECTION_KINDS),
   title: z.string().min(1).max(80),
-  fields: z.array(z.json()).default([]),
+  settings: z.array(settingFieldShape).default([]),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;
@@ -56,9 +65,7 @@ const FILE_CHECKS: readonly FilesCheck[] = [
   (files) =>
     Object.keys(files)
       .filter((path) => !isKnownFile(path))
-      .map((path) =>
-        problem('file-unknown', path, 'в формате секции: section.json, template.html, styles.css, .ts/.js'),
-      ),
+      .map((path) => problem('file-unknown', path, OLD_FILES.get(path) ?? UNKNOWN_FILE)),
   (files) =>
     Object.entries(files)
       .filter(([, text]) => bytesOf(text) > SOURCE_LIMITS.fileBytes)
@@ -91,18 +98,45 @@ function parseJson(text: string): Checked<unknown> {
 const issueProblem = (issue: z.core.$ZodIssue): SectionProblem =>
   problem('manifest-invalid', MANIFEST_FILE, `${issue.path.map(String).join('.') || '(весь файл)'}: ${issue.message}`);
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+// Ключи формата блока 7 — с подсказкой нового имени, а не «лишний ключ».
+const RENAMED_KEYS: ReadonlyMap<string, string> = new Map([
+  ['v', 'теперь "sdk": 1'],
+  ['fields', 'теперь settings'],
+]);
+
+function oldKeyProblems(value: unknown): SectionProblem[] {
+  if (!isRecord(value)) return [];
+  return [...RENAMED_KEYS]
+    .filter(([key]) => Object.hasOwn(value, key))
+    .map(([key, hint]) => problem('manifest-invalid', MANIFEST_FILE, `ключ ${key}: ${hint}`));
+}
+
+function sdkProblems(value: unknown): SectionProblem[] {
+  if (!isRecord(value) || !Object.hasOwn(value, 'sdk') || value.sdk === SECTION_SDK) return [];
+  const text = `версия SDK ${JSON.stringify(value.sdk)} не поддерживается, поддерживается только ${SECTION_SDK}`;
+  return [problem('sdk-unsupported', MANIFEST_FILE, text)];
+}
+
 export function readManifest(files: SectionFiles): Checked<SectionManifest> {
   const text = files[MANIFEST_FILE];
   if (text === undefined)
     return { ok: false, problems: [problem('manifest-missing', MANIFEST_FILE, 'нет section.json')] };
   const json = parseJson(text);
   if (!json.ok) return json;
+  const early = [...oldKeyProblems(json.value), ...sdkProblems(json.value)];
+  if (early.length > 0) return { ok: false, problems: early };
   const parsed = sectionManifestSchema.safeParse(json.value, RUSSIAN_ERRORS);
-  if (parsed.success) return { ok: true, value: parsed.data };
-  return { ok: false, problems: parsed.error.issues.map(issueProblem) };
+  if (!parsed.success) return { ok: false, problems: parsed.error.issues.map(issueProblem) };
+  const settings = settingsTexts(parsed.data.settings).map((message) =>
+    problem('setting-invalid', MANIFEST_FILE, message),
+  );
+  return settings.length > 0 ? { ok: false, problems: settings } : { ok: true, value: parsed.data };
 }
 
-// Секция — с шаблоном; глобальный скрипт (С7-21 А) — секция без места: без шаблона и стилей, со скриптом.
+// Секция — с шаблоном; глобальный скрипт (С7-21 А) — секция без места: без шаблона, со скриптом.
 interface KindRule {
   broken: (files: SectionFiles) => boolean;
   file: string;
@@ -111,18 +145,13 @@ interface KindRule {
 
 const KIND_RULES: Record<SectionKind, readonly KindRule[]> = {
   section: [
-    { broken: (files) => !has(files, TEMPLATE_FILE), file: TEMPLATE_FILE, message: 'у секции нужен template.html' },
+    { broken: (files) => !has(files, TEMPLATE_FILE), file: TEMPLATE_FILE, message: 'у секции нужен template.astro' },
   ],
   global: [
     {
       broken: (files) => has(files, TEMPLATE_FILE),
       file: TEMPLATE_FILE,
-      message: 'у глобального скрипта нет места на странице: template.html не нужен',
-    },
-    {
-      broken: (files) => has(files, STYLE_FILE),
-      file: STYLE_FILE,
-      message: 'у глобального скрипта нет разметки: styles.css не нужен',
+      message: 'у глобального скрипта нет места на странице: template.astro не нужен',
     },
     {
       broken: (files) => scriptEntryOf(files) === null,

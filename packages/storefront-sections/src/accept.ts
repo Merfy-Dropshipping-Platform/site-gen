@@ -92,8 +92,8 @@ function newRow(
   files: SectionFiles,
   scriptHash: string | null,
 ): NewSection {
-  const { name, manifest, template, style } = section;
-  const contentHash = hashOf({ name, manifest, template, style, script: scriptHash });
+  const { name, manifest, template } = section;
+  const contentHash = hashOf({ name, manifest, template, script: scriptHash });
   return { door, section, sourceHash: hashOf(files), contentHash, scriptHash, source: files };
 }
 

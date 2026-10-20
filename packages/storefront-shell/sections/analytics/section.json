@@ -1,1 +1,6 @@
-{ "v": 1, "name": "analytics", "kind": "global", "title": "Аналитика магазина" }
+{
+  "sdk": 1,
+  "name": "analytics",
+  "kind": "global",
+  "title": "Аналитика магазина"
+}

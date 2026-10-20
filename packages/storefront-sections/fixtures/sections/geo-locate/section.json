@@ -1,1 +1,6 @@
-{ "v": 1, "name": "locate", "kind": "global", "title": "Город покупателя" }
+{
+  "sdk": 1,
+  "name": "locate",
+  "kind": "global",
+  "title": "Город покупателя"
+}

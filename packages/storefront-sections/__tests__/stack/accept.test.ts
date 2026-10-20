@@ -106,7 +106,7 @@ describe('приём секции целиком', () => {
   it('выпуск неизменен: та же версия с другим исходником — release-changed; новая версия — новая строка', async () => {
     const original = await files('theme-scarf-colors');
     await acceptSection(deps(), DOORS.theme, original);
-    const edited = { ...original, 'template.html': '<p>Другая разметка</p>' };
+    const edited = { ...original, 'template.astro': '<p>Другая разметка</p>' };
     const same = await acceptSection(deps(), DOORS.theme, edited);
     expect(same.status === 'refused' && same.problems.map((item) => item.code)).toEqual(['release-changed']);
     const next = await acceptSection(deps(), { ...DOORS.theme, release: '0.0.5' }, edited);
@@ -116,7 +116,7 @@ describe('приём секции целиком', () => {
   it('своя секция: тот же исходник — «без изменений» без сборки, другой — новая текущая правка; глобальный скрипт — та же дверь', async () => {
     const first = await acceptSection(deps(), DOORS.shop, await files('shop-color-match'));
     const again = await acceptSection(crashing(), DOORS.shop, await files('shop-color-match'));
-    const edited = { ...(await files('shop-color-match')), 'template.html': '<p data-advice>Вторая правка</p>' };
+    const edited = { ...(await files('shop-color-match')), 'template.astro': '<p data-advice>Вторая правка</p>' };
     const second = await acceptSection(deps(), DOORS.shop, edited);
     expect([first.status, again.status, second.status]).toEqual(['accepted', 'unchanged', 'accepted']);
     expect(second.status === 'accepted' && second.row.draft).toBe(true);

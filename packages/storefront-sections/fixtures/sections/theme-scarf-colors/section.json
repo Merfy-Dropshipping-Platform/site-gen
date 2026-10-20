@@ -1,7 +1,6 @@
 {
-  "v": 1,
+  "sdk": 1,
   "name": "scarf-colors",
   "kind": "section",
-  "title": "Цвета шарфа",
-  "fields": [{ "id": "heading", "type": "text", "label": "Заголовок" }]
+  "title": "Цвета шарфа"
 }

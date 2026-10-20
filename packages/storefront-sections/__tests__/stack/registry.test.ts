@@ -42,16 +42,15 @@ function newSection(door: Door, name: string, source: string, kind: 'section' | 
     door: fields,
     section: {
       name: `${fields.prefix}:${name}`,
-      manifest: { v: 1, name, kind, title: name, fields: [] },
+      manifest: { sdk: 1, name, kind, title: name, settings: [] },
       template,
-      style: '',
       script: null,
       warnings: [],
     },
     sourceHash: sha256(`source:${source}`),
     contentHash: sha256(`content:${source}`),
     scriptHash: null,
-    source: { 'template.html': template },
+    source: { 'template.astro': template },
   };
 }
 

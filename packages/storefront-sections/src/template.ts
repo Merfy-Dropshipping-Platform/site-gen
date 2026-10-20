@@ -1,11 +1,12 @@
+import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
 import { TEMPLATE_FILE } from './format';
 import { positionAt } from './position';
 import { problem, type SectionProblem } from './problems';
 
-// Шаблон секции (design.md блока 7, п. 20; язык шаблона — С7-12, отложена): разметка как есть. Скрипт — только файлом
-// скрипта (собирается с SDK внешним, п. 12), стили — только styles.css (в рамке секции, п. 17), документ — у сборки.
-// Проверка — по тексту открывающих тегов, не разбор HTML: код секции и так работает в странице (п. 13), запрет держит
-// форму. Место — строка и колонка тега.
+// Шаблон секции SDK 1 — template.astro (блок 1 «Секций и SDK», Р3, Р4; design.md блока 7, п. 17). Проверка — по дереву
+// разбора @astrojs/compiler-rs, а не по тексту: тег, атрибут и выражение видны там, где их видит Astro. Скрипт — только
+// файлом скрипта, своего CSS нет (классы Tailwind из словаря), документ — у сборки. Ошибки разбора здесь не
+// сообщаются — их сообщает компиляция (compile.ts) с местом в шаблоне.
 export const FORBIDDEN_TAGS: ReadonlySet<string> = new Set([
   'script',
   'style',
@@ -22,46 +23,93 @@ export const FORBIDDEN_TAGS: ReadonlySet<string> = new Set([
   'embed',
   'merfy-section',
 ]);
-const OPEN_TAG = /<([a-zA-Z][a-zA-Z0-9-]*)([^>]*)>/g;
-const HANDLER = /\son[a-z]+\s*=/i;
-const SCRIPT_URL = /=\s*["']?\s*javascript:/i;
+// Тег HTML, SVG или своего элемента — со строчной буквы и без точки; остальное — компонент.
+const HTML_TAG = /^[a-z][A-Za-z0-9-]*$/;
+const DIRECTIVE = /^(?:set|is|define|client|server|transition):/;
+const HANDLER = /^on/i;
+const SCRIPT_URL = /^\s*javascript:/i;
+const SERVICE_PREFIX = '__merfy';
+// Операторы frontmatter — без пробелов и «;». В части 1 в Astro.props только settings (Р3); blocks — часть 3.
+const FRONTMATTER: ReadonlySet<string> = new Set(['const{settings}=Astro.props', 'const{settings,blocks}=Astro.props']);
 
-interface OpenTag {
-  name: string;
-  attributes: string;
-  index: number;
+const TEXT = {
+  tag: (name: string) => `тег <${name}> в шаблоне секции запрещён: скрипт — script.ts, документ — у сборки`,
+  component: (name: string) => `компонент <${name}>: в шаблоне секции компонентов нет, кроме <Fragment>`,
+  handler: (name: string) => `обработчик ${name}: события — только в script.ts`,
+  setHtml: 'set:html можно только с настройкой вида richtext',
+  directive: (name: string) => `директива ${name} в шаблоне секции запрещена`,
+  spread: '{...} в атрибутах запрещён: перечисли атрибуты по одному',
+  scriptUrl: 'адрес javascript: в шаблоне секции запрещён: действия — в script.ts',
+  service: (name: string) => `имя ${name}: префикс __merfy — служебный`,
+  frontmatter: 'во frontmatter только const { settings } = Astro.props;',
+} as const;
+
+interface Found {
+  at: number;
+  message: string;
 }
 
-interface TagRule {
-  broken: (tag: OpenTag) => boolean;
-  message: (tag: OpenTag) => string;
+type NodeRule = (node: AstNode, text: string) => Found[];
+
+const at = (node: AstNode, messages: readonly string[]): Found[] =>
+  messages.map((message) => ({ at: node.start, message }));
+
+const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
+
+// Имя тега или атрибута: div, set:html, Foo.Bar.
+function nameText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (!isNode(value)) return '';
+  if (value.type === 'JSXMemberExpression')
+    return `${nameText(fieldOf(value, 'object'))}.${nameText(fieldOf(value, 'property'))}`;
+  if (value.type === 'JSXNamespacedName')
+    return `${nameText(fieldOf(value, 'namespace'))}:${nameText(fieldOf(value, 'name'))}`;
+  return nameText(fieldOf(value, 'name'));
 }
 
-const TAG_RULES: readonly TagRule[] = [
-  {
-    broken: (tag) => FORBIDDEN_TAGS.has(tag.name),
-    message: (tag) => `тег <${tag.name}> в шаблоне нельзя: скрипт — script.ts, стили — styles.css, документ — у сборки`,
-  },
-  {
-    broken: (tag) => HANDLER.test(tag.attributes),
-    message: (tag) => `обработчик в атрибуте <${tag.name}> нельзя: события вешает скрипт секции`,
-  },
-  {
-    broken: (tag) => SCRIPT_URL.test(tag.attributes),
-    message: (tag) => `адрес javascript: в <${tag.name}> нельзя: действия — в скрипте секции`,
-  },
-];
+function tagTexts(name: string): string[] {
+  if (FORBIDDEN_TAGS.has(name.toLowerCase())) return [TEXT.tag(name)];
+  return name === 'Fragment' || HTML_TAG.test(name) ? [] : [TEXT.component(name)];
+}
 
-const tagsOf = (text: string): OpenTag[] =>
-  [...text.matchAll(OPEN_TAG)].map((match) => ({
-    name: match[1].toLowerCase(),
-    attributes: match[2],
-    index: match.index,
-  }));
+function attributeTexts(name: string): string[] {
+  if (name === 'set:html') return [TEXT.setHtml];
+  if (DIRECTIVE.test(name)) return [TEXT.directive(name)];
+  return HANDLER.test(name) ? [TEXT.handler(name)] : [];
+}
 
-export const templateProblems = (text: string): SectionProblem[] =>
-  tagsOf(text).flatMap((tag) =>
-    TAG_RULES.filter((rule) => rule.broken(tag)).map((rule) =>
-      problem('template-forbidden', TEMPLATE_FILE, rule.message(tag), positionAt(text, tag.index)),
-    ),
+const serviceTexts = (name: string): string[] => (name.startsWith(SERVICE_PREFIX) ? [TEXT.service(name)] : []);
+const scriptUrlTexts = (value: string): string[] => (SCRIPT_URL.test(value) ? [TEXT.scriptUrl] : []);
+
+function frontmatterFound(node: AstNode, text: string): Found[] {
+  // У AstroFrontmatter операторы — в program.body.
+  const program = fieldOf(node, 'program');
+  const body = isNode(program) ? fieldOf(program, 'body') : fieldOf(node, 'body');
+  const statements = Array.isArray(body) ? body.filter(isNode) : [];
+  return statements.flatMap((statement) =>
+    FRONTMATTER.has(text.slice(statement.start, statement.end).replace(/[\s;]/g, ''))
+      ? []
+      : [{ at: statement.start, message: TEXT.frontmatter }],
   );
+}
+
+const NODE_RULES: Partial<Record<string, NodeRule>> = {
+  JSXOpeningElement: (node) => at(node, tagTexts(nameText(node))),
+  JSXAttribute: (node) => at(node, attributeTexts(nameText(node))),
+  JSXSpreadAttribute: (node) => at(node, [TEXT.spread]),
+  JSXIdentifier: (node) => at(node, serviceTexts(nameText(node))),
+  Identifier: (node) => at(node, serviceTexts(stringOf(fieldOf(node, 'name')))),
+  Literal: (node) => at(node, scriptUrlTexts(stringOf(fieldOf(node, 'value')))),
+};
+
+const rulesOf = (node: AstNode, text: string): Found[] =>
+  node.type.includes('Frontmatter') ? frontmatterFound(node, text) : (NODE_RULES[node.type]?.(node, text) ?? []);
+
+export async function templateProblems(text: string): Promise<SectionProblem[]> {
+  const { parse } = await import('@astrojs/compiler-rs');
+  const { ast } = await Promise.resolve(parse(text));
+  return nodesOf(ast)
+    .flatMap((node) => rulesOf(node, text))
+    .sort((left, right) => left.at - right.at)
+    .map((found) => problem('template-forbidden', TEMPLATE_FILE, found.message, positionAt(text, found.at)));
+}

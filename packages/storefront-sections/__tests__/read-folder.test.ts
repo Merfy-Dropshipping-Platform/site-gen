@@ -16,6 +16,7 @@ describe('папки секций', () => {
     expect(folders.map((folder) => folder.slice(SECTIONS.length + 1))).toEqual([
       'bad-import',
       'geo-locate',
+      'hero',
       'reviews-list',
       'shop-broken',
       'shop-color-match',

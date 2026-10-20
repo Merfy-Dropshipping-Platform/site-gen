@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SOURCE_LIMITS, fileProblems, kindProblems, readManifest, scriptEntryOf } from '../src/format';
+import { SOURCE_LIMITS, fileProblems, kindProblems, limitProblems, readManifest, scriptEntryOf } from '../src/format';
 import { problem, problemText, type SectionProblem } from '../src/problems';
 
 const MANIFEST = { sdk: 1, name: 'color-match', kind: 'section', title: 'Подбор шарфа по цвету пальто' } as const;
@@ -48,10 +48,11 @@ describe('файлы секции', () => {
       'script.js': 'export default {}',
       'lib/big.ts': 'x'.repeat(SOURCE_LIMITS.fileBytes + 1),
     });
+    // Пределы — первыми (prepare.ts на них останавливается), потом файлы.
     expect(fileProblems(files).map((item) => [item.code, item.file])).toEqual([
+      ['file-too-large', 'lib/big.ts'],
       ['file-unknown', 'README.md'],
       ['file-unknown', 'lib/../../evil.ts'],
-      ['file-too-large', 'lib/big.ts'],
       ['script-invalid', 'script.js'],
     ]);
   });
@@ -60,11 +61,11 @@ describe('файлы секции', () => {
     const many = Object.fromEntries(
       Array.from({ length: SOURCE_LIMITS.files }, (_, index) => [`lib/f${index}.ts`, '']),
     );
-    expect(codesOf(fileProblems(section(many)))).toEqual(['source-too-large']);
+    expect(codesOf(limitProblems(section(many)))).toEqual(['source-too-large']);
     const heavy = Object.fromEntries(
       Array.from({ length: 5 }, (_, index) => [`lib/h${index}.ts`, 'x'.repeat(60 * 1024)]),
     );
-    expect(codesOf(fileProblems(section(heavy)))).toEqual(['source-too-large']);
+    expect(codesOf(limitProblems(section(heavy)))).toEqual(['source-too-large']);
   });
 
   it('секция — с шаблоном; глобальный скрипт — без шаблона и стилей, со скриптом', () => {

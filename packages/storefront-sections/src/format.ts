@@ -53,7 +53,8 @@ export const scriptEntryOf = (files: SectionFiles): string | null =>
 
 type FilesCheck = (files: SectionFiles) => SectionProblem[];
 
-const FILE_CHECKS: readonly FilesCheck[] = [
+// Пределы исходника — первыми и отдельно: больше пределов файлы не разбираем (prepare.ts).
+const LIMIT_CHECKS: readonly FilesCheck[] = [
   (files) =>
     when(Object.keys(files).length > SOURCE_LIMITS.files, () =>
       problem('source-too-large', '', `файлов ${Object.keys(files).length}, предел ${SOURCE_LIMITS.files}`),
@@ -63,13 +64,16 @@ const FILE_CHECKS: readonly FilesCheck[] = [
       problem('source-too-large', '', `исходник ${totalBytes(files)} Б, предел ${SOURCE_LIMITS.totalBytes} Б`),
     ),
   (files) =>
-    Object.keys(files)
-      .filter((path) => !isKnownFile(path))
-      .map((path) => problem('file-unknown', path, OLD_FILES.get(path) ?? UNKNOWN_FILE)),
-  (files) =>
     Object.entries(files)
       .filter(([, text]) => bytesOf(text) > SOURCE_LIMITS.fileBytes)
       .map(([path]) => problem('file-too-large', path, `файл больше ${SOURCE_LIMITS.fileBytes} Б`)),
+];
+
+const FILE_CHECKS: readonly FilesCheck[] = [
+  (files) =>
+    Object.keys(files)
+      .filter((path) => !isKnownFile(path))
+      .map((path) => problem('file-unknown', path, OLD_FILES.get(path) ?? UNKNOWN_FILE)),
   (files) =>
     when(
       SCRIPT_ENTRIES.every((entry) => has(files, entry)),
@@ -77,7 +81,13 @@ const FILE_CHECKS: readonly FilesCheck[] = [
     ),
 ];
 
-export const fileProblems = (files: SectionFiles): SectionProblem[] => FILE_CHECKS.flatMap((check) => check(files));
+export const limitProblems = (files: SectionFiles): SectionProblem[] =>
+  LIMIT_CHECKS.flatMap((check) => check(files));
+
+export const fileProblems = (files: SectionFiles): SectionProblem[] => [
+  ...limitProblems(files),
+  ...FILE_CHECKS.flatMap((check) => check(files)),
+];
 
 function jsonProblem(error: unknown): SectionProblem {
   const message = error instanceof Error ? error.message : String(error);

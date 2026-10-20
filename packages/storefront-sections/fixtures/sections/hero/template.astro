@@ -1,0 +1,8 @@
+---
+const { settings } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col items-center gap-4 px-4 text-center font-body">
+  <h2 class:list={['m-0 font-heading weight-heading text-heading', { 'text-3xl': settings['heading-size'] === 'medium', 'text-5xl': settings['heading-size'] === 'large' }]}>{settings.heading}</h2>
+  <p class="m-0 text-lg text-foreground">{settings.text}</p>
+  <a class="rounded-button bg-primary px-4 py-2 text-primary-foreground no-underline" href={settings['button-link']}>{settings['button-label']}</a>
+</div>

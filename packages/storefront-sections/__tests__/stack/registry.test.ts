@@ -44,6 +44,7 @@ function newSection(door: Door, name: string, source: string, kind: 'section' | 
       name: `${fields.prefix}:${name}`,
       manifest: { sdk: 1, name, kind, title: name, settings: [] },
       template,
+      render: null,
       script: null,
       warnings: [],
     },

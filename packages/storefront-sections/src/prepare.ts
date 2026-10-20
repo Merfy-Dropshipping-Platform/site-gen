@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   TEMPLATE_FILE,
   fileProblems,
+  limitProblems,
   kindProblems,
   readManifest,
   scriptEntryOf,
@@ -10,7 +11,7 @@ import {
 } from './format';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
 import { buildScript } from './script';
-import { templateProblems } from './template';
+import { checkTemplate } from './compile';
 
 // Одна функция приёма (design.md блока 7, С7-11 А, п. 21): разбор section.json, проверка, сборка — одинаково для
 // платформы, темы, своей секции и расширения. Автора функция не знает: приставку имени даёт дверь (п. 22), запись в
@@ -26,6 +27,7 @@ export const preparedSectionSchema = z.strictObject({
   name: z.string(),
   manifest: sectionManifestSchema,
   template: z.string(),
+  render: z.string().nullable(),
   script: z.string().nullable(),
   warnings: z.array(sectionProblemSchema),
 });
@@ -46,18 +48,28 @@ function problemsOf(checked: Checked<{ warnings: SectionProblem[] }> | null): Se
 
 export async function prepareSection(input: PrepareInput): Promise<PrepareResult> {
   const { files } = input;
-  const early = fileProblems(files);
-  if (early.length > 0) return refuse(early);
+  // Больше пределов — сразу отказ: такие файлы не разбираем. Дальше проблемы собираются все разом.
+  const limits = limitProblems(files);
+  if (limits.length > 0) return refuse(limits);
   const manifest = readManifest(files);
-  if (!manifest.ok) return refuse(manifest.problems);
-  const kind = kindProblems(manifest.value, files);
-  if (kind.length > 0) return refuse(kind);
-  const name = `${input.prefix}:${manifest.value.name}`;
-  const template = files[TEMPLATE_FILE] ?? '';
+  const template = files[TEMPLATE_FILE];
   const entry = scriptEntryOf(files);
-  const script = entry === null ? null : await buildScript(files, entry);
-  const problems = [...templateProblems(template), ...problemsOf(script)];
-  if (problems.some((item) => !isWarning(item))) return refuse(problems);
+  const [checked, script] = await Promise.all([
+    template === undefined ? null : checkTemplate(template),
+    entry === null ? null : buildScript(files, entry),
+  ]);
+  const problems = [
+    ...fileProblems(files),
+    ...(manifest.ok ? kindProblems(manifest.value, files) : manifest.problems),
+    ...(checked?.problems ?? []),
+    ...problemsOf(script),
+  ];
+  if (!manifest.ok || problems.some((item) => !isWarning(item))) return refuse(problems);
+  const name = `${input.prefix}:${manifest.value.name}`;
   const code = script !== null && script.ok ? script.value.code : null;
-  return { ok: true, section: { name, manifest: manifest.value, template, script: code, warnings: problems } };
+  const render = checked?.render ?? null;
+  return {
+    ok: true,
+    section: { name, manifest: manifest.value, template: template ?? '', render, script: code, warnings: problems },
+  };
 }

@@ -90,6 +90,12 @@ describe('resolve публикаций для секции «Публикаци�
     expect(resolve({ publicationType: 'blog' })?.map((p) => p.id)).toEqual(['p3']);
   });
 
+  it('легаси-категория в categoryFilter при пустом publicationType — как читает секция', () => {
+    expect(resolve({ publicationType: '', categoryFilter: 'Статьи' })?.map((p) => p.id)).toEqual(['p2']);
+    expect(resolve({ categoryFilter: 'blog' })?.map((p) => p.id)).toEqual(['p3']);
+    expect(resolve({ publicationType: 'news', categoryFilter: 'all' })?.map((p) => p.id)).toEqual(['p1']);
+  });
+
   it('легаси-конверт pagePicker {href,text} не роняет рендер', () => {
     expect(
       resolve({ publicationType: { href: '/about', text: 'О нас' } })?.map((p) => p.id),

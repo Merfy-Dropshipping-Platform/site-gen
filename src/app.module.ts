@@ -63,6 +63,7 @@ import { BrandingController } from "./branding/branding.controller";
 import { MediaUploadController } from "./controllers/media-upload.controller";
 import { PublicationsService } from "./publications/publications.service";
 import { BlogsService } from "./publications/blogs.service";
+import { PublicationsRevisionBlogRefsJob } from "./publications/revision-blog-refs.job";
 import { PublicationsMicroserviceController } from "./publications/publications.controller";
 import { PublicationsScheduler } from "./scheduler/publications.scheduler";
 import { PolicyModule } from "./policy/policy.module";
@@ -137,6 +138,8 @@ import { StoreContentService } from "./content/store-content.service";
     FragmentPatcher,
     PublicationsService,
     BlogsService,
+    // Перевод секций «Публикации» в ревизиях на id блогов — фоном после старта (вместо миграции 0028).
+    PublicationsRevisionBlogRefsJob,
     HealthMonitorService,
   ],
 })

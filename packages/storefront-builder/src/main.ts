@@ -18,6 +18,7 @@ import { startDrawServer } from './draw';
 import { createIndexNow } from './indexnow';
 import { jsonLog } from './log';
 import { previewVia } from './preview';
+import { createPreviewRenderers } from './preview-renderers';
 import { openRpc } from './rpc';
 import { enqueueVia, startRuntime, type RuntimeDeps } from './runtime';
 import { storeFontBytes } from './preview-fonts';
@@ -161,7 +162,19 @@ await conductor.resume();
 // Превью — версией закрепления магазина; схема панели — по темам образа (блок 10, задача 4).
 const previewOf = (themeId: string, version: string) => catalog.previewAt(themeId, version);
 const fonts = storeFontBytes(store);
-const preview = { db, themes: loaded.previews, pins: catalog, previewOf, apiUrl: settings.apiUrl, fonts, log };
+const previewRenderers = createPreviewRenderers({ limit: settings.previewRenderers });
+const preview = {
+  db,
+  themes: loaded.previews,
+  pins: catalog,
+  previewOf,
+  apiUrl: settings.apiUrl,
+  fonts,
+  log,
+  snapshot: pinnedSnapshot,
+  catalog,
+  renderers: previewRenderers,
+};
 const drawDeps = {
   store,
   snapshot: pinnedSnapshot,
@@ -193,6 +206,7 @@ async function shutdown(): Promise<void> {
   await broker.close();
   await rpc.close();
   await catalog.close();
+  await previewRenderers.close();
   await loaded.close();
   await db.end();
   log('builder-stopped');

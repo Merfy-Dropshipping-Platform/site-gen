@@ -189,3 +189,17 @@ export async function readShopCode(deps: CodeDeps, shopId: string): Promise<Shop
   const rows = await visibleSections(deps.db, visibility);
   return { ...codeOf(rows, placement, { shell: deps.shell, log: deps.log, shopId }), extensions };
 }
+
+// Секции SDK 1, видимые магазину, по имени — для превью одного блока и списка секций конструктора (блок 1 «Секций и
+// SDK»). Порядок — по имени, как отдаёт реестр. null — расширения не ответили.
+export async function readVisibleSections(deps: CodeDeps, shopId: string): Promise<Map<string, CurrentSection> | null> {
+  const extensions = await enabledExtensions(deps, shopId);
+  if (extensions === null) return null;
+  const rows = await visibleSections(deps.db, { shopId, extensions });
+  return new Map(
+    rows.flatMap((row): [string, CurrentSection][] => {
+      const current = currentSection(row);
+      return current === null ? [] : [[row.name, current]];
+    }),
+  );
+}

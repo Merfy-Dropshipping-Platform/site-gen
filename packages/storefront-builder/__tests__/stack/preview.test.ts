@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import panelJson from '../../../theme-contract/panel/theme-panel.json';
 import novaTheme from '../../../theme-nova/theme.json';
 import { portOf, startDrawServer, type DrawDeps } from '../../src/draw';
+import { createPreviewRenderers } from '../../src/preview-renderers';
 import { createSlots } from '../../src/slots';
 import type { PreviewTheme } from '../../src/stand-preview';
 import { RENDER_HASH, logged, openHarness, type Harness } from './builder';
@@ -65,6 +66,9 @@ async function serve(preview: boolean): Promise<void> {
           apiUrl: 'https://gateway.dev.merfy.ru/api',
           fonts: () => Promise.resolve(null),
           log: harness.deps.log,
+          snapshot: harness.deps.snapshot,
+          catalog: harness.catalog,
+          renderers: createPreviewRenderers({ limit: 1 }),
         }
       : undefined,
   };

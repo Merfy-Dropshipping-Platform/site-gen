@@ -7,7 +7,9 @@ import { describe, expect, it } from 'vitest';
 // секций. Точнее, параметров секций»): имена и поля приходят из section.json через реестр.
 const PACKAGES = fileURLToPath(new URL('../../', import.meta.url));
 const SOURCES = ['storefront-sections/src', 'storefront-sections/scripts', 'storefront-build/src', 'storefront-builder/src'];
-const NAMES = /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|analytics|heading-size|button-label|button-link)$/;
+// analytics — ещё и поле аналитики страницы (storefront-build/src/head.ts: ConfigAnalytics), не только имя секции:
+// сторож на него не смотрит.
+const NAMES = /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|heading-size|button-label|button-link)$/;
 const LITERAL = /'([^'\\\n]*)'|"([^"\\\n]*)"|`([^`\\]*)`/g;
 
 const filesOf = (dir: string): string[] =>

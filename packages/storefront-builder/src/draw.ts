@@ -10,7 +10,8 @@ import type { Log } from './log';
 import type { Slots } from './slots';
 import { readSnapshot, type SnapshotDeps } from './snapshot';
 import type { ThemeCatalog } from './theme-catalog';
-import { standPreview, standTokens, themePanel, type PreviewDeps } from './stand-preview';
+import { sectionPreview, shopPreview, shopPreviewDeps, shopSections } from './shop-preview';
+import { standTokens, themePanel, type PreviewDeps } from './stand-preview';
 
 // Дорисовка мимо очереди (design.md блока 6, В6-2, вариант 2; Св-1 В): раздача (блок 5, nginx-minio-proxy,
 // storefront/) на промахе зовёт GET /draw?shop&build&path&render&theme и ждёт страницу. Свои места — не места сборок;
@@ -138,9 +139,19 @@ interface PreviewRoute {
   handle: (preview: PreviewDeps, url: URL, request: IncomingMessage) => Promise<DrawAnswer>;
 }
 
-// Входы sites для конструктора (блок 8): стенд, правки токенов, схема панели.
+// Входы sites для конструктора (блок 8; блок 1 «Секций и SDK»): превью главной и стенд, один блок, список секций,
+// правки токенов, схема панели.
 const PREVIEW_ROUTES: Readonly<Record<string, PreviewRoute>> = {
-  '/preview': { method: 'GET', handle: (preview, url) => standPreview(preview, url.searchParams.get('shop')) },
+  '/preview': { method: 'GET', handle: (preview, url) => shopPreview(shopPreviewDeps(preview), url) },
+  '/preview/section': {
+    method: 'POST',
+    handle: async (preview, url, request) =>
+      sectionPreview(shopPreviewDeps(preview), url.searchParams.get('shop'), await bodyOf(request)),
+  },
+  '/sections': {
+    method: 'GET',
+    handle: (preview, url) => shopSections(shopPreviewDeps(preview), url.searchParams.get('shop')),
+  },
   '/preview/tokens': {
     method: 'POST',
     handle: async (preview, url, request) => standTokens(preview, url.searchParams.get('shop'), await bodyOf(request)),

@@ -28,6 +28,8 @@ const envSchema = z.object({
   RELEASE_SLOTS: z.coerce.number().int().positive().optional(),
   DRAW_SLOTS: count(1),
   DRAW_TIMEOUT_MS: count(3_000),
+  // Процессов рендера превью — не больше стольких магазинов разом (блок 1 «Секций и SDK», п. 8: без таймера простоя).
+  PREVIEW_RENDERERS: count(5),
   BUILD_LEASE_MS: count(300_000),
   // Сколько штатная остановка ждёт идущие сборки. Coolify останавливает контейнер `docker stop -t 30`: через 30 с —
   // SIGKILL, поэтому предел — 25 с, по умолчанию 20 с: остаток — на «прервана», снятие замка и выход.
@@ -65,6 +67,7 @@ export interface Settings {
   releaseSlots: number;
   drawSlots: number;
   drawTimeoutMs: number;
+  previewRenderers: number;
   leaseMs: number;
   drainMs: number;
   reconcileMs: number;
@@ -93,11 +96,11 @@ function releaseSlotsOf(buildSlots: number, configured: number | undefined): num
   throw new StorefrontBuilderError('settings-invalid', text, { path: 'env#RELEASE_SLOTS' });
 }
 
+type Env = z.infer<typeof envSchema>;
+
 // Адреса сервисов и сборщик аналитики (блок 11). Косую черту в конце адреса сборщика срезаем: модуль шлёт на
 // <адрес>/collect, «//collect» конфиг не пропустит.
-function servicesOf(
-  value: z.infer<typeof envSchema>,
-): Pick<Settings, 'apiUrl' | 'analyticsUrl' | 'analyticsTimeoutMs'> {
+function servicesOf(value: Env): Pick<Settings, 'apiUrl' | 'analyticsUrl' | 'analyticsTimeoutMs'> {
   return {
     apiUrl: value.STOREFRONT_API_URL,
     analyticsUrl: value.ANALYTICS_COLLECTOR_URL.replace(/\/+$/, ''),
@@ -105,8 +108,8 @@ function servicesOf(
   };
 }
 
-export function readSettings(env: NodeJS.ProcessEnv): Settings {
-  const value = parseWith(envSchema, env, 'settings-invalid', 'env');
+// Хранилище и брокер из переменных окружения.
+function connectionsOf(value: Env): Pick<Settings, 'databaseUrl' | 'rabbitmqUrl' | 's3'> {
   return {
     databaseUrl: value.DATABASE_URL,
     rabbitmqUrl: value.RABBITMQ_URL,
@@ -116,6 +119,13 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
       accessKeyId: value.S3_ACCESS_KEY,
       secretAccessKey: value.S3_SECRET_KEY,
     },
+  };
+}
+
+export function readSettings(env: NodeJS.ProcessEnv): Settings {
+  const value = parseWith(envSchema, env, 'settings-invalid', 'env');
+  return {
+    ...connectionsOf(value),
     ...servicesOf(value),
     commit: value.SOURCE_COMMIT,
     port: value.PORT,
@@ -123,6 +133,7 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
     releaseSlots: releaseSlotsOf(value.BUILD_SLOTS, value.RELEASE_SLOTS),
     drawSlots: value.DRAW_SLOTS,
     drawTimeoutMs: value.DRAW_TIMEOUT_MS,
+    previewRenderers: value.PREVIEW_RENDERERS,
     leaseMs: value.BUILD_LEASE_MS,
     drainMs: value.BUILD_DRAIN_MS,
     reconcileMs: value.RECONCILE_MS,

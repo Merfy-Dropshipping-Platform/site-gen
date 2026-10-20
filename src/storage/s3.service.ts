@@ -64,6 +64,13 @@ export function assertLocalS3Endpoint(
   );
 }
 
+/**
+ * Подпрефиксы живого префикса сайта, где после выкладки удаляются объекты,
+ * которых нет в сборке. Сейчас — `blog/`: остатки стартового шаблона Astro
+ * (`blog/placeholder/…`), блог живёт на `/blogs/{handle}`.
+ */
+export const STALE_PRUNE_SUBPREFIXES: readonly string[] = ["blog/"];
+
 @Injectable()
 export class S3StorageService {
   private readonly logger = new Logger(S3StorageService.name);
@@ -388,6 +395,81 @@ export class S3StorageService {
   }
 
   /**
+   * Удалить из живого префикса сайта объекты под `subPrefixes`, которых нет
+   * в только что загруженной сборке (`localDir`).
+   *
+   * Зачем: выкладка (`uploadDirectory`) пишет файлы поверх старых и не удаляет
+   * пропавшие. Страницы стартового шаблона Astro (`blog/placeholder/…`),
+   * убранные из тем, так и остаются в хранилище у уже собранных магазинов.
+   * Чистка намеренно точечная — только под перечисленными подпрефиксами:
+   * в живом префиксе лежат и не-сборочные файлы (`_islands/`, `{buildId}.json`,
+   * `{buildId}/artifact.zip`), их трогать нельзя.
+   *
+   * Вызывать только после успешной загрузки новой сборки.
+   *
+   * @param livePrefix - живой префикс сайта (`sites/{slug}/`, с «/» на конце)
+   * @param subPrefixes - подпрефиксы относительно живого (`blog/`, с «/» на конце)
+   * @returns удалённые ключи
+   */
+  async pruneStaleUnder(
+    bucket: string,
+    livePrefix: string,
+    localDir: string,
+    subPrefixes: readonly string[],
+  ): Promise<{ removed: string[] }> {
+    if (!this.client) throw new Error("S3 client not initialized");
+    if (!livePrefix.startsWith("sites/") || !livePrefix.endsWith("/")) {
+      throw new Error(`pruneStaleUnder: unexpected live prefix "${livePrefix}"`);
+    }
+
+    const fs = await import("fs/promises");
+    const path = await import("path");
+
+    // Относительные ключи (posix) всех файлов новой сборки.
+    const built = new Set<string>();
+    const collect = async (dir: string, rel: string) => {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const next = `${rel}${entry.name}`;
+        if (entry.isDirectory()) {
+          await collect(path.join(dir, entry.name), `${next}/`);
+        } else if (entry.isFile()) {
+          built.add(next);
+        }
+      }
+    };
+    await collect(localDir, "");
+    // Пустая сборка — признак сбоя, а не «удалите всё».
+    if (built.size === 0) return { removed: [] };
+
+    const stale: string[] = [];
+    for (const sub of subPrefixes) {
+      if (!sub.endsWith("/")) continue;
+      const stream = this.client.listObjectsV2(bucket, `${livePrefix}${sub}`, true);
+      const keys: string[] = await new Promise((resolve, reject) => {
+        const arr: string[] = [];
+        stream.on("data", (obj: any) => {
+          if (obj?.name) arr.push(obj.name);
+        });
+        stream.on("end", () => resolve(arr));
+        stream.on("error", reject);
+      });
+      for (const key of keys) {
+        const rel = key.slice(livePrefix.length);
+        if (rel.startsWith(sub) && !built.has(rel)) stale.push(key);
+      }
+    }
+
+    if (stale.length > 0) {
+      await this.client.removeObjects(bucket, stale);
+      this.logger.log(
+        `Pruned ${stale.length} stale objects under ${subPrefixes.join(", ")} in s3://${bucket}/${livePrefix}`,
+      );
+    }
+    return { removed: stale };
+  }
+
+  /**
    * Cache-Control для загружаемого файла.
    *
    * Только **hashed assets** Astro/Vite (в `_assets/` или `assets/`) можно
@@ -629,6 +711,16 @@ export class S3StorageService {
       livePrefix,
       distDir,
     );
+
+    // Только после успешной загрузки: убрать остатки стартового шаблона Astro
+    // под blog/. Сбой чистки выкладку не валит.
+    try {
+      await this.pruneStaleUnder(bucket, livePrefix, distDir, STALE_PRUNE_SUBPREFIXES);
+    } catch (e) {
+      this.logger.warn(
+        `Prune of stale objects failed for site ${siteId}, build ${buildId}: ${e instanceof Error ? e.message : e}`,
+      );
+    }
 
     this.logger.log(
       `Uploaded ${uploaded} static files for site ${siteId}, build ${buildId}`,

@@ -1,38 +1,39 @@
 import { describe, expect, it } from 'vitest';
-import { doorFields, doorSchema } from '../src/doors';
+import { SHOP_PREFIX, doorFields, doorSchema } from '../src/doors';
 
-const SHOP = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
+const SHOP = '00000000-0000-4000-8000-0000000000aa';
 
-describe('двери приёма', () => {
-  it.each([
-    [
-      { author: 'platform', release: '0.1.0' },
-      { author: 'platform', prefix: 'platform', owner: 'platform', release: '0.1.0' },
-    ],
-    [
-      { author: 'theme', theme: 'nova', release: '0.0.4' },
-      { author: 'theme', prefix: 'nova', owner: 'nova', release: '0.0.4' },
-    ],
-    [
-      { author: 'shop', shopId: SHOP },
-      { author: 'shop', prefix: 'shop', owner: SHOP, release: null },
-    ],
-    [
-      { author: 'extension', extension: 'reviews', release: '1.4.0' },
-      { author: 'extension', prefix: 'reviews', owner: 'reviews', release: '1.4.0' },
-    ],
-  ])('дверь %o — приставка, владелец, выпуск', (door, fields) => {
-    expect(doorFields(doorSchema.parse(door))).toEqual(fields);
+describe('способы сохранения секций', () => {
+  it('своя секция магазина — префикс shop, владелец — магазин, без выпуска', () => {
+    expect(doorFields(doorSchema.parse({ author: 'shop', shopId: SHOP }))).toEqual({
+      author: 'shop',
+      prefix: SHOP_PREFIX,
+      owner: SHOP,
+      release: null,
+    });
+    expect(SHOP_PREFIX).toBe('shop');
   });
 
-  it.each([
-    ['тема назвалась platform', { author: 'theme', theme: 'platform', release: '1.0.0' }],
-    ['расширение назвалось shop', { author: 'extension', extension: 'shop', release: '1.0.0' }],
-    ['id с двойным дефисом', { author: 'extension', extension: 're--views', release: '1.0.0' }],
-    ['магазин не uuid', { author: 'shop', shopId: 'shop-1' }],
-    ['выпуск не semver', { author: 'theme', theme: 'nova', release: 'latest' }],
-    ['у своей секции выпуска нет', { author: 'shop', shopId: SHOP, release: '1.0.0' }],
-  ])('дверь не пускает: %s', (_, door) => {
-    expect(doorSchema.safeParse(door).success).toBe(false);
+  it('расширение — префикс и владелец — id расширения, выпуск — его версия', () => {
+    expect(doorFields(doorSchema.parse({ author: 'extension', extension: 'loyalty', release: '1.0.0' }))).toEqual({
+      author: 'extension',
+      prefix: 'loyalty',
+      owner: 'loyalty',
+      release: '1.0.0',
+    });
+  });
+
+  it('способа сохранения для платформы и темы нет', () => {
+    expect(doorSchema.safeParse({ author: 'platform', release: '0.2.0' }).success).toBe(false);
+    expect(doorSchema.safeParse({ author: 'theme', theme: 'nova', release: '0.3.1' }).success).toBe(false);
+  });
+
+  it('расширение не назовётся merfy, shop или platform', () => {
+    for (const extension of ['merfy', 'shop', 'platform'])
+      expect(doorSchema.safeParse({ author: 'extension', extension, release: '1.0.0' }).success).toBe(false);
+  });
+
+  it('выпуск расширения — только semver', () => {
+    expect(doorSchema.safeParse({ author: 'extension', extension: 'loyalty', release: '1.0' }).success).toBe(false);
   });
 });

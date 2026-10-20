@@ -17,5 +17,5 @@ export {
   type SectionRow,
   type Visibility,
 } from './registry';
-export { acceptReleases, type ReleaseDeps, type ReleaseFolder, type ReleaseLog, type ReleaseSummary } from './release';
+export { currentSection, type CurrentSection } from './current';
 export { DEFAULT_SANDBOX, prepareInWorker, type SandboxOptions } from './sandbox';

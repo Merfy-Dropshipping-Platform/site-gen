@@ -11,7 +11,7 @@ export default defineConfig({
     hookTimeout: 30_000,
     coverage: {
       provider: 'v8',
-      include: ['src/registry.ts', 'src/accept.ts', 'src/release.ts'],
+      include: ['src/registry.ts', 'src/accept.ts'],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },

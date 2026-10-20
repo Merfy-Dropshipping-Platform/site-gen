@@ -86,7 +86,7 @@ async function uploadScript(store: ObjectStore, script: string | null): Promise<
   return hash;
 }
 
-function newRow(
+export function newRow(
   door: DoorFields,
   section: PreparedSection,
   files: SectionFiles,
@@ -94,7 +94,9 @@ function newRow(
 ): NewSection {
   const { name, manifest, template } = section;
   const contentHash = hashOf({ name, manifest, template, script: scriptHash });
-  return { door, section, sourceHash: hashOf(files), contentHash, scriptHash, source: files };
+  // Отпечаток модуля рендера — sha256 его байтов; у глобального скрипта модуля нет — null.
+  const renderHash = section.render === null ? null : sha256(Buffer.from(section.render, 'utf8'));
+  return { door, section, sourceHash: hashOf(files), contentHash, renderHash, scriptHash, source: files };
 }
 
 export async function acceptSection(deps: AcceptDeps, door: Door, files: SectionFiles): Promise<AcceptResult> {

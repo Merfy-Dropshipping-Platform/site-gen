@@ -279,7 +279,7 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<
     readSiteEntities(deps.db, siteId),
     fetchProducts(deps.products, shop),
     readRevisionTokens(deps.db, siteId),
-    readShopCode(deps.code, siteId, theme),
+    readShopCode(deps.code, siteId),
     fetchCounters(deps.counters, shop),
   ]);
   const entities = [...siteEntities, ...(products ?? []), ...(counters ?? [])];

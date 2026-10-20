@@ -11,8 +11,8 @@ import { StorefrontBuilderError, errorText } from './errors';
 import type { Log } from './log';
 import type { Call } from './rpc';
 
-// Код магазина для сборки (design.md блока 7, п. 19 и 24). Секции, видимые магазину, — платформы в версии ядра, его
-// темы в её версии, включённых у него расширений в их версиях и свои опубликованные (реестр storefront_section). Места —
+// Код магазина для сборки (design.md блока 7, п. 19 и 24). Секции, видимые магазину, — включённых у него расширений в
+// их версиях и свои опубликованные (реестр storefront_section); секций платформы и тем нет. Места —
 // ключ sections текущей ревизии; глобальные скрипты видимых авторов — на всех страницах. Включённые расширения — у
 // сервиса extensions по RPC. Он не ответил или места не той формы — кода нет, снимок «не получен», сборки нет: живой
 // сайт не трогаем (блок 6, «Нет данных — нет выкладки»).
@@ -42,7 +42,7 @@ export const NO_CODE: ShopCode = {
 
 export interface CodeDeps {
   db: Queryable;
-  // Сборка ядра из образа (readShellBuild блока 4); её версия — выпуск секций платформы.
+  // Сборка ядра из образа (readShellBuild блока 4).
   shell: ShellBuild;
   call: Call;
   timeoutMs: number;
@@ -125,19 +125,10 @@ export function codeOf(
 }
 
 // Код магазина целиком. null — не получен: расширения не ответили или места не той формы.
-export async function readShopCode(
-  deps: CodeDeps,
-  shopId: string,
-  theme: { id: string; version: string },
-): Promise<ShopCode | null> {
+export async function readShopCode(deps: CodeDeps, shopId: string): Promise<ShopCode | null> {
   const [extensions, placement] = await Promise.all([enabledExtensions(deps, shopId), readPlacement(deps, shopId)]);
   if (extensions === null || placement === null) return null;
-  const visibility = {
-    platformRelease: deps.shell.version,
-    theme: { id: theme.id, version: theme.version },
-    shopId,
-    extensions,
-  };
+  const visibility = { shopId, extensions };
   const shopCode = codeOf(await visibleSections(deps.db, visibility), placement, deps.shell);
   return { ...shopCode, extensions };
 }

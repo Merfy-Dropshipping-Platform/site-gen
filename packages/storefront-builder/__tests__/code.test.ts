@@ -23,6 +23,8 @@ function row(name: string, kind: SectionRow['kind'], script: string | null): Sec
     manifest: { v: 1, name: id, kind, title: name, fields: [] },
     template: `<p>${name}</p>`,
     style: '',
+    render: kind === 'section' ? `export default {}; // модуль ${name}` : null,
+    renderHash: kind === 'section' ? sha256(`модуль ${name}`) : null,
     script,
     scriptHash: script === null ? null : sha256(script),
     warnings: [],

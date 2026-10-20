@@ -67,11 +67,10 @@
 
 ## Код секций (блок 7)
 
-- При старте — дверь выпуска: секции платформы (`packages/storefront-shell/sections`, выпуск — версия ядра из
-  `packages/storefront-shell/dist/shell.json`) и каждой загруженной темы (`themes/<тема>/sections`, выпуск — версия
-  темы) идут в реестр `storefront_section` через приём `@merfy/storefront-sections`. Итог — строка
-  `section-releases`; отказ секции — `section-refused` с местом ошибки, сборщик стартует дальше. Нет сборки ядра —
-  сборщик не стартует (`shell-missing`; сборка — `pnpm --filter @merfy/shell build`).
+- Секций платформы и тем нет (блок 1 «Секций и SDK», пп. 1, 2): при старте сборщик в реестр `storefront_section`
+  ничего не сохраняет. Наши секции магазин сохраняет как свои — `pnpm sections accept <папка> --shop <id>` в
+  `@merfy/storefront-sections`. Нет сборки ядра — сборщик не стартует (`shell-missing`; сборка —
+  `pnpm --filter @merfy/shell build`).
 - Снимок: включённые расширения — RPC `extensions.enabledForShop` в `extensions_queue` (тайм-аут — `PRODUCT_TIMEOUT_MS`);
   места секций — ключ `sections` текущей ревизии (`{ "<id страницы>": ["<имя секции>", …] }`); секции — видимые
   магазину строки реестра. Расширения не ответили (`extensions-failed`) или места не той формы (`sections-invalid`) —

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import { z } from 'zod';
-import type { DoorFields, SectionAuthor } from './doors';
+import type { DoorFields } from './doors';
 import { SECTION_KINDS, type SectionFiles } from './format';
 import type { PreparedSection } from './prepare';
 import { sectionProblemSchema } from './problems';
@@ -15,11 +15,14 @@ import { sectionProblemSchema } from './problems';
 // удаляются.
 export type Queryable = Pick<Pool, 'query'>;
 export type Database = Pick<Pool, 'query' | 'connect'>;
-export const SECTION_AUTHORS = ['platform', 'theme', 'shop', 'extension'] as const satisfies readonly SectionAuthor[];
+// Авторы строк реестра. platform и theme — только у строк, сохранённых до блока 1 «Секций и SDK»: способов сохранения
+// для них больше нет, строки остаются в таблице (п. 27), магазину они не видны.
+export const SECTION_AUTHORS = ['platform', 'theme', 'shop', 'extension'] as const;
 
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 const COLUMNS = `id, name, kind, author, owner, release, source_hash AS "sourceHash", content_hash AS "contentHash",
-  manifest, template, style, script, script_hash AS "scriptHash", warnings, draft, published,
+  manifest, template, style, render, render_hash AS "renderHash", script, script_hash AS "scriptHash", warnings,
+  draft, published,
   to_char(created_at AT TIME ZONE 'UTC', ${ISO}) AS "createdAt"`;
 
 const sectionRowSchema = z.object({
@@ -35,6 +38,8 @@ const sectionRowSchema = z.object({
   manifest: z.unknown(),
   template: z.string(),
   style: z.string(),
+  render: z.string().nullable(),
+  renderHash: z.string().nullable(),
   script: z.string().nullable(),
   scriptHash: z.string().nullable(),
   warnings: z.array(sectionProblemSchema),
@@ -51,14 +56,15 @@ export interface NewSection {
   section: PreparedSection;
   sourceHash: string;
   contentHash: string;
+  // Отпечаток модуля рендера — sha256 его байтов: по нему сборка и превью находят и сверяют модуль. Глобальный скрипт — null.
+  renderHash: string | null;
   scriptHash: string | null;
   source: SectionFiles;
 }
 
-// Версии, с которыми собирается магазин: ядра (@merfy/shell), его темы и включённых у него расширений.
+// Что видно магазину: его опубликованные секции и секции включённых у него расширений — в версиях, с которыми он
+// собирается. Секций платформы и тем нет (блок 1 «Секций и SDK», пп. 1, 2).
 export interface Visibility {
-  platformRelease: string;
-  theme: { id: string; version: string };
   shopId: string;
   extensions: readonly { id: string; version: string }[];
 }
@@ -69,8 +75,8 @@ export interface SavedDraft {
 }
 
 const INSERT_SQL = `INSERT INTO storefront_section (id, name, kind, author, owner, release, source_hash, content_hash,
-  manifest, source, template, style, script, script_hash, warnings, draft)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`;
+  manifest, source, template, style, script, script_hash, warnings, draft, render, render_hash)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`;
 const RELEASE_INSERT_SQL = `${INSERT_SQL}
   ON CONFLICT (author, owner, name, release) WHERE release IS NOT NULL DO NOTHING RETURNING ${COLUMNS}`;
 const DRAFT_INSERT_SQL = `${INSERT_SQL} RETURNING ${COLUMNS}`;
@@ -124,6 +130,8 @@ function insertParams(row: NewSection, draft: boolean): unknown[] {
     row.scriptHash,
     JSON.stringify(section.warnings),
     draft,
+    section.render,
+    row.renderHash,
   ];
 }
 
@@ -201,19 +209,16 @@ export async function sectionHistory(db: Queryable, shopId: string, name: string
 }
 
 function releaseColumns(visibility: Visibility): [string[], string[], string[]] {
-  const rows: [string, string, string][] = [
-    ['platform', 'platform', visibility.platformRelease],
-    ['theme', visibility.theme.id, visibility.theme.version],
-    ...visibility.extensions.map((extension): [string, string, string] => [
-      'extension',
-      extension.id,
-      extension.version,
-    ]),
-  ];
+  // Строки с выпуском, видимые магазину, — только расширений.
+  const rows = visibility.extensions.map((extension): [string, string, string] => [
+    'extension',
+    extension.id,
+    extension.version,
+  ]);
   return [rows.map((row) => row[0]), rows.map((row) => row[1]), rows.map((row) => row[2])];
 }
 
-// Секции, видимые магазину (п. 24): платформы, его темы и включённых у него расширений — в версиях, с которыми он
+// Секции, видимые магазину (п. 24): включённых у него расширений — в версиях, с которыми он
 // собирается; свои — опубликованные. Выключенного расширения в списке нет — его секций нет.
 export async function visibleSections(db: Queryable, visibility: Visibility): Promise<SectionRow[]> {
   return select(db, VISIBLE_SQL, [...releaseColumns(visibility), visibility.shopId]);

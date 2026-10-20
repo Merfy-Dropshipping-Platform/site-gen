@@ -1048,11 +1048,6 @@
       "tier": "structural"
     },
     {
-      "fingerprint": "sha256:baa378bbf4a4d0336948bc4491396e703d6f62cc7ac00001c4927cc49c47f710",
-      "id": "satin.flow.publications.detail-route",
-      "tier": "structural"
-    },
-    {
       "fingerprint": "sha256:513887675b211f4ccff024a68bd3f35c21f11b01eadcae4f73dd5cb07b167d71",
       "id": "satin.flow.publications.detail-route.requirement-missing",
       "tier": "structural"
@@ -1095,11 +1090,6 @@
     {
       "fingerprint": "sha256:5556e3b9c7510ec5517c27e12947ff558c6ca0eed2013a84a732392d099830db",
       "id": "satin.flow.publications.live-demo-exclusion.status-open",
-      "tier": "structural"
-    },
-    {
-      "fingerprint": "sha256:2790837df6485f1d5838593f9e0e37d4c5405cc149f42f03ec0bed1867a8e803",
-      "id": "satin.flow.publications.merchant-data",
       "tier": "structural"
     },
     {
@@ -1323,7 +1313,7 @@
       "tier": "structural"
     }
   ],
-  "parentBaselineDigest": "sha256:c7f3b85ca626250b34b64574fbe8f9bb54a376bd3a3e251172abc5fbdec09036",
+  "parentBaselineDigest": "sha256:a7833509ed2d78741e53b3dfa3db73f7b12a6be482df516e5eded6dc44eb6bf5",
   "requirements": [
     {
       "fingerprint": "sha256:4f7dcef2bcd12c77f6a43da3cfa64e25e5fbe768bb947abf8427e0a722a9156f",

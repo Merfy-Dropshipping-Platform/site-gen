@@ -62,6 +62,7 @@ import { FragmentPatcher } from "./listeners/fragment-patcher.service";
 import { BrandingController } from "./branding/branding.controller";
 import { MediaUploadController } from "./controllers/media-upload.controller";
 import { PublicationsService } from "./publications/publications.service";
+import { BlogsService } from "./publications/blogs.service";
 import { PublicationsMicroserviceController } from "./publications/publications.controller";
 import { PublicationsScheduler } from "./scheduler/publications.scheduler";
 import { PolicyModule } from "./policy/policy.module";
@@ -135,6 +136,7 @@ import { StoreContentService } from "./content/store-content.service";
     ProductUpdateListener,
     FragmentPatcher,
     PublicationsService,
+    BlogsService,
     HealthMonitorService,
   ],
 })

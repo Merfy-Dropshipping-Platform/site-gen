@@ -39,6 +39,7 @@ import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 import { getPageResolver } from "./themes/page-resolver-instance";
 import { getThemeManifest } from "./themes/theme-manifest-loader";
+import { insertDefaultBlog } from "./publications/blogs.service";
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
 import type { StoreContent, StoreContentSite } from "./content/store-content.port";
 
@@ -647,6 +648,19 @@ export class SitesDomainService {
       coolifyProjectUuid: undefined,
       themeId: effectiveThemeId,
     });
+
+    // Блог «Новости» — вместе с магазином. Сбой не роняет создание: список
+    // блогов и первая запись досоздадут его сами.
+    try {
+      await insertDefaultBlog(this.db, {
+        siteId: id,
+        organizationId: params.tenantId,
+      });
+    } catch (e) {
+      this.logger.warn(
+        `Failed to create default blog for site ${id}: ${e instanceof Error ? e.message : e}`,
+      );
+    }
 
     // Default revision is theme content from bundled JSON — local, fast, no network.
     // Must happen synchronously so the theme editor has content from t=0.

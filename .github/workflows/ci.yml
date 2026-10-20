@@ -191,6 +191,18 @@ jobs:
           pnpm exec jest --config jest.config.ts --runInBand
           '__tests__/(astro-inline-script-helper\.test|account-order-delivery\.coverage\.dom\.test|order-confirmation-delivery\.coverage\.dom\.test|checkout-(contact|delivery|submit)-[^/]*\.dom\.test)\.ts$'
 
+      # Публикации и блоги (контракт «Публикации», 20.10.2026): правила адресов,
+      # анонса и статусов, коды ошибок RPC, сервисы на Postgres и миграция 0027
+      # «категории → блоги» на копии схемы (своя база …_blogs_mig, пересоздаётся).
+      # Плюс резолв секции «Публикации» по блогу.
+      - name: Публикации и блоги
+        env:
+          SITES_TEST_DATABASE_URL: postgresql://postgres:postgres123@localhost:5432/sites_stage3_test
+        run: >-
+          pnpm exec jest --runInBand
+          src/publications
+          src/render/__tests__/publications-resolve.spec.ts
+
       # Инструменты самих проверок (spec 115): очередь на машину (flock через
       # perl — ubuntu-раннер его имеет), поток тёплого рендера секций, разбор
       # ci.yml поездом, запись входов и память результатов `pnpm checks`. Без артефактов тем, секунды. Раньше эти node:test

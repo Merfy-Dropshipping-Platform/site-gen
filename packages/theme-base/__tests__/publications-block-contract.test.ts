@@ -169,17 +169,18 @@ describe('Publications block', () => {
     expect(resolvePublicationsDateTime({})).toBe(true);
   });
 
-  it('publicationType filters actual runtime items by category', () => {
-    const items = [
-      { id: 'n1', category: 'news' },
-      { id: 'b1', category: 'blog' },
-      { id: 'a1', category: 'articles' },
-    ];
-    expect(filterPublicationsByType(items, 'blog')).toEqual([{ id: 'b1', category: 'blog' }]);
-    expect(filterPublicationsByType(items, 'Блог')).toEqual([{ id: 'b1', category: 'blog' }]);
+  it('publicationType filters actual runtime items by blog (legacy categories → blog handles)', () => {
+    const n1 = { id: 'n1', blogId: 'blog-news', blogHandle: 'novosti' };
+    const b1 = { id: 'b1', blogId: 'blog-blog', blogHandle: 'blog' };
+    const a1 = { id: 'a1', blogId: 'blog-stati', blogHandle: 'stati' };
+    const items = [n1, b1, a1];
+    expect(filterPublicationsByType(items, 'blog')).toEqual([b1]);
+    expect(filterPublicationsByType(items, 'Блог')).toEqual([b1]);
     expect(filterPublicationsByType(items, undefined)).toEqual(items);
-    expect(filterPublicationsByType(items, 'Новости')).toEqual([{ id: 'n1', category: 'news' }]);
-    expect(filterPublicationsByType(items, 'Статьи')).toEqual([{ id: 'a1', category: 'articles' }]);
+    expect(filterPublicationsByType(items, 'news')).toEqual([n1]);
+    expect(filterPublicationsByType(items, 'Новости')).toEqual([n1]);
+    expect(filterPublicationsByType(items, 'Статьи')).toEqual([a1]);
+    expect(filterPublicationsByType(items, 'blog-stati')).toEqual([a1]);
   });
 
   it('uses canonical publicationType first and falls back to the saved legacy categoryFilter', () => {

@@ -31,12 +31,6 @@ export const publicationStatusEnum = pgEnum("publication_status", [
   "archived",
 ]);
 
-export const publicationCategoryEnum = pgEnum("publication_category", [
-  "news",
-  "blog",
-  "articles",
-]);
-
 export const siteStatusEnum = pgEnum("site_status", [
   "draft",
   "published",
@@ -323,9 +317,39 @@ export const tenantProject = pgTable("tenant_project", {
 });
 
 /**
- * Публикации сайта (новости, блог, статьи).
+ * Блоги магазина (разделы публикаций). Блог «Новости» (`novosti`) есть у
+ * каждого магазина: создаётся вместе с магазином и миграцией 0027 — всем
+ * существующим. Адрес блога на витрине — `/blogs/{handle}`.
+ * Tenant isolation через organizationId; handle уникален в магазине.
+ */
+export const blogs = pgTable(
+  "blogs",
+  {
+    id: text("id").primaryKey(),
+    siteId: text("site_id").notNull(),
+    organizationId: varchar("organization_id", { length: 255 }).notNull(),
+    title: text("title").notNull(),
+    handle: text("handle").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    siteHandleUniq: uniqueIndex("idx_blogs_site_handle").on(
+      table.siteId,
+      table.handle,
+    ),
+  }),
+);
+
+/**
+ * Публикации сайта — записи блогов.
  * Tenant isolation через organizationId.
  * Slug уникален в рамках одного siteId.
+ * excerpt = null — продавец анонс не задавал (на витрину идёт автоанонс).
  */
 export const publications = pgTable(
   "publications",
@@ -333,11 +357,15 @@ export const publications = pgTable(
     id: text("id").primaryKey(),
     organizationId: varchar("organization_id", { length: 255 }).notNull(),
     siteId: text("site_id").notNull(),
+    blogId: text("blog_id")
+      .notNull()
+      .references(() => blogs.id),
     title: varchar("title", { length: 255 }).notNull(),
     slug: varchar("slug", { length: 255 }).notNull(),
-    category: publicationCategoryEnum("category").default("news").notNull(),
     content: text("content").default("").notNull(),
-    excerpt: varchar("excerpt", { length: 500 }).default(""),
+    excerpt: varchar("excerpt", { length: 500 }),
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
     coverImageUrl: text("cover_image_url"),
     status: publicationStatusEnum("status").default("draft").notNull(),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
@@ -356,6 +384,33 @@ export const publications = pgTable(
     slugSiteUniq: uniqueIndex("idx_publications_slug_site").on(
       table.slug,
       table.siteId,
+    ),
+    blogIdx: index("idx_publications_blog").on(table.blogId),
+  }),
+);
+
+/**
+ * Прежние адреса записей: при смене slug, блога записи или адреса блога
+ * старый путь `/blogs/{handle}/{slug}` остаётся здесь и ведёт на запись
+ * (витрина отвечает 301 на её нынешний адрес). Живая запись по тому же пути
+ * главнее: путь, занятый снова, отсюда удаляется.
+ */
+export const publicationRedirects = pgTable(
+  "publication_redirects",
+  {
+    siteId: text("site_id").notNull(),
+    oldPath: text("old_path").notNull(),
+    publicationId: text("publication_id")
+      .notNull()
+      .references(() => publications.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.siteId, table.oldPath] }),
+    publicationIdx: index("idx_publication_redirects_publication").on(
+      table.publicationId,
     ),
   }),
 );

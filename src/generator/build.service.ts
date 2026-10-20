@@ -1046,8 +1046,10 @@ export async function trySnapshotDeploy(
         return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
       };
       const astroPubs = pubData.map((p) => ({
-        id: p.id, title: p.title, slug: p.slug, category: p.category,
+        id: p.id, title: p.title, slug: p.slug,
+        blogId: p.blogId, blogHandle: p.blogHandle, blogTitle: p.blogTitle,
         content: p.content, excerpt: p.excerpt,
+        seoTitle: p.seoTitle, seoDescription: p.seoDescription,
         coverImageUrl: p.coverImageUrl || "/images/placeholder.png",
         publishedAt: p.publishedAt, dateFormatted: fmtDate(p.publishedAt),
         href: `/publications/${p.slug}`,
@@ -2832,9 +2834,13 @@ async function stageFetchData(
     id: p.id,
     title: p.title,
     slug: p.slug,
-    category: p.category,
+    blogId: p.blogId,
+    blogHandle: p.blogHandle,
+    blogTitle: p.blogTitle,
     content: p.content,
     excerpt: p.excerpt,
+    seoTitle: p.seoTitle,
+    seoDescription: p.seoDescription,
     coverImageUrl: p.coverImageUrl || "/images/placeholder.png",
     publishedAt: p.publishedAt,
     dateFormatted: formatDate(p.publishedAt),

@@ -10,6 +10,7 @@ import { Logger } from "@nestjs/common";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, desc } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
+import { autoExcerpt } from "../publications/publication-rules";
 
 const logger = new Logger("DataFetcher");
 
@@ -76,9 +77,15 @@ export interface FetchedPublication {
   id: string;
   title: string;
   slug: string;
-  category: string;
+  /** Блог записи (вместо прежней категории news|blog|articles). */
+  blogId: string;
+  blogHandle: string;
+  blogTitle: string;
   content: string;
+  /** Анонс для витрины: заданный продавцом или автоанонс из текста. */
   excerpt: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
   coverImageUrl: string | null;
   publishedAt: string | null;
 }
@@ -308,8 +315,16 @@ export async function fetchPublications(
 ): Promise<FetchedPublication[]> {
   try {
     const rows = await db
-      .select()
+      .select({
+        pub: schema.publications,
+        blog: {
+          id: schema.blogs.id,
+          handle: schema.blogs.handle,
+          title: schema.blogs.title,
+        },
+      })
       .from(schema.publications)
+      .innerJoin(schema.blogs, eq(schema.blogs.id, schema.publications.blogId))
       .where(
         and(
           eq(schema.publications.siteId, siteId),
@@ -319,13 +334,17 @@ export async function fetchPublications(
       )
       .orderBy(desc(schema.publications.publishedAt));
 
-    return rows.map((r) => ({
+    return rows.map(({ pub: r, blog }) => ({
       id: r.id,
       title: r.title,
       slug: r.slug,
-      category: r.category,
+      blogId: blog.id,
+      blogHandle: blog.handle,
+      blogTitle: blog.title,
       content: r.content,
-      excerpt: r.excerpt ?? "",
+      excerpt: autoExcerpt(r.content, r.excerpt),
+      seoTitle: r.seoTitle,
+      seoDescription: r.seoDescription,
       coverImageUrl: r.coverImageUrl,
       publishedAt: r.publishedAt?.toISOString() ?? null,
     }));

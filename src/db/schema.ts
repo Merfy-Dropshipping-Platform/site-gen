@@ -22,6 +22,7 @@ import {
   varchar,
   uniqueIndex,
   index,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const publicationStatusEnum = pgEnum("publication_status", [

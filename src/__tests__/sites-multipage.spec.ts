@@ -29,6 +29,9 @@ const ROSE_SYSTEM_PAGE_IDS = [
   // 14». Чтобы такое не повторялось молча, ниже стоит отдельная сверка списка
   // с самим манифестом: она называет расхождение, а не просто роняет счётчик.
   'page-login',
+  // «Блог» и «Запись блога» (PUB-1, PUB-2).
+  'page-blog',
+  'page-blog-post',
 ];
 
 describe('sites multipage integration', () => {

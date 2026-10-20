@@ -241,6 +241,9 @@ describe('ThemePuckConfigController base-block catalog parity (extraction)', () 
     // Тело страницы «Вход» — заведено в `cce74446` вместе с самой страницей;
     // список здесь за ним не поехал.
     'LoginSection',
+    // Тела страниц «Блог» и «Запись блога» (PUB-1, PUB-2).
+    'BlogSection',
+    'BlogPostSection',
     'CheckoutSection',
     'CartBody',
     'CartSummary',

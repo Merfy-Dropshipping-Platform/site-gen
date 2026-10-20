@@ -32,7 +32,7 @@ const SNAP_V2_COMPLEX_ROUTE_PREFIXES = new Set([
   'cart',
   'checkout',
   'auth',
-  'blog',
+  // 'blog' снят 20.10 (PUB-2): стартовый шаблон Astro удалён из тем.
   'legal',
   'account',
   'design-system',
@@ -144,9 +144,17 @@ describe('page-registry parity-snapshot', () => {
     // page-wishlist («Избранное», 14.09) тоже пересаживается ТОЛЬКО поверх своего
     // шелла: без wishlist/index.html страница обязана пропускаться, а не
     // подменяться главной.
-    it('requireOwnShell=true только у catalog, collection и wishlist', () => {
+    // «Блог» и «Запись блога» (PUB-1, PUB-2) — тоже без фоллбэка на главную:
+    // у служебного адреса превью шелла нет, страницы собирает сборка блога.
+    it('requireOwnShell=true только у catalog, collection, wishlist и страниц блога', () => {
       const own = getContentPages().filter((p) => p.requireOwnShell === true).map((p) => p.key);
-      expect(own.sort()).toEqual(['page-catalog', 'page-collection', 'page-wishlist']);
+      expect(own.sort()).toEqual([
+        'page-blog',
+        'page-blog-post',
+        'page-catalog',
+        'page-collection',
+        'page-wishlist',
+      ]);
     });
 
     it('collectionContext={} только у page-collection', () => {

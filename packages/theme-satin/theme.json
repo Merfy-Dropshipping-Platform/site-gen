@@ -413,6 +413,20 @@
       "slug": "/login",
       "role": "system",
       "contentFile": "pages/login.json"
+    },
+    {
+      "id": "page-blog",
+      "name": "Блог",
+      "slug": "/blogs/preview",
+      "role": "system",
+      "contentFile": "pages/blog.json"
+    },
+    {
+      "id": "page-blog-post",
+      "name": "Запись блога",
+      "slug": "/blogs/preview/post",
+      "role": "system",
+      "contentFile": "pages/blog-post.json"
     }
   ],
   "blockPlaceholders": {

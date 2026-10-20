@@ -201,6 +201,34 @@
           "source": "theme",
           "targeting": null,
           "variant": null
+        },
+        {
+          "id": "page-blog",
+          "isCustom": false,
+          "locale": null,
+          "name": "Блог",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/blogs/preview",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-blog-post",
+          "isCustom": false,
+          "locale": null,
+          "name": "Запись блога",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/blogs/preview/post",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
         }
       ],
       "pagesData": {
@@ -683,6 +711,176 @@
           "root": {
             "props": {
               "title": "О нас"
+            }
+          },
+          "zones": {}
+        },
+        "page-blog": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-blog",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-blog",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "BlogSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "BlogSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-blog",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Блог"
+            }
+          },
+          "zones": {}
+        },
+        "page-blog-post": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-blog-post",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-blog-post",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "BlogPostSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "BlogPostSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-blog-post",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Запись блога"
             }
           },
           "zones": {}

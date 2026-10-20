@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { publicationUrl } from "../../../../../packages/theme-base/runtime/publications";
 import FluxPicture from "../img/FluxPicture.astro";
 
 // Фаза B (flux, группа misc): новая канон-секция Publications в манере flux
@@ -79,6 +80,7 @@ type RawPublication = {
 	id: string;
 	title?: string;
 	slug?: string;
+	blogHandle?: string;
 	excerpt?: string;
 	coverImageUrl?: string | null;
 	publishedAt?: string | null;
@@ -133,7 +135,8 @@ function formatPubDate(iso: string | null | undefined): string {
 // товаров», «Коллекция» у «Списка коллекций» → здесь «Публикация», без даты
 // и без анонса. Фото колонки — дизайн-ассет /placeholders/publication-card.png
 // (контракт картиночных секций Figma 1:19335: картинка показывается ВСЕГДА).
-type PubItem = { title: string; date: string; image: string; slug?: string; isPlaceholder: boolean };
+// Адрес записи — только publicationUrl из theme-base (/blogs/{блог}/{адрес}).
+type PubItem = { title: string; date: string; image: string; href?: string; isPlaceholder: boolean };
 const PLACEHOLDER_TITLE = "Публикация";
 const PLACEHOLDER_PUB_IMAGE = "/placeholders/publication-card.png";
 const items: PubItem[] = realPublications.length > 0
@@ -141,7 +144,7 @@ const items: PubItem[] = realPublications.length > 0
 			title: pub.title ?? "",
 			date: formatPubDate(pub.publishedAt),
 			image: pub.coverImageUrl ?? "",
-			slug: pub.slug,
+			href: pub.slug && pub.blogHandle ? publicationUrl(pub.blogHandle, pub.slug) : undefined,
 			isPlaceholder: false,
 		}))
 	: Array.from({ length: cards }, () => ({
@@ -193,7 +196,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div class={gridCls} style={gridStyle} data-publication-type={publicationType}>
 			{
 				items.map((item, i) => {
-					const href = item.slug ? `/publication/${item.slug}` : undefined;
+					const href = item.href;
 					const Wrapper = href ? "a" : "article";
 					return (
 						<Wrapper class="group flex flex-col gap-3 md:gap-4" href={href} data-publication-index={i}>

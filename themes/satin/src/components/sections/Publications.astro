@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { publicationUrl } from "../../../../../packages/theme-base/runtime/publications";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import SatinPicture from "../img/SatinPicture.astro";
 import { pickText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
@@ -23,6 +24,7 @@ const merfy = p.__merfy as {
 			id?: string;
 			title?: string;
 			slug?: string;
+			blogHandle?: string;
 			excerpt?: string;
 			coverImageUrl?: string | null;
 			publishedAt?: string | null;
@@ -98,6 +100,7 @@ type RawPublication = {
 	id: string;
 	title?: string;
 	slug?: string;
+	blogHandle?: string;
 	excerpt?: string;
 	coverImageUrl?: string | null;
 	publishedAt?: string | null;
@@ -178,7 +181,8 @@ const items: PubItem[] = legacyPosts
 				date: formatPubDate(pub.publishedAt),
 				excerpt: pub.excerpt ?? "",
 				image: pub.coverImageUrl ?? "",
-				href: pub.slug ? `/publication/${pub.slug}` : undefined,
+				// Адрес записи — только publicationUrl из theme-base (/blogs/{блог}/{адрес}).
+				href: pub.slug && pub.blogHandle ? publicationUrl(pub.blogHandle, pub.slug) : undefined,
 				isPlaceholder: false,
 			}))
 		: Array.from({ length: cards }, () => ({

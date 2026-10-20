@@ -201,6 +201,34 @@
           "source": "theme",
           "targeting": null,
           "variant": null
+        },
+        {
+          "id": "page-blog",
+          "isCustom": false,
+          "locale": null,
+          "name": "Блог",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/blogs/preview",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-blog-post",
+          "isCustom": false,
+          "locale": null,
+          "name": "Запись блога",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/blogs/preview/post",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
         }
       ],
       "pagesData": {
@@ -570,6 +598,250 @@
           "root": {
             "props": {
               "title": "О нас"
+            }
+          },
+          "zones": {}
+        },
+        "page-blog": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-blog",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-blog",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "BlogSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "BlogSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-blog",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Блог"
+            }
+          },
+          "zones": {}
+        },
+        "page-blog-post": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-blog-post",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-blog-post",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "BlogPostSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "BlogPostSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-blog-post",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Запись блога"
             }
           },
           "zones": {}

@@ -187,6 +187,34 @@
           "source": "theme",
           "targeting": null,
           "variant": null
+        },
+        {
+          "id": "page-blog",
+          "isCustom": false,
+          "locale": null,
+          "name": "Блог",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/blogs/preview",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-blog-post",
+          "isCustom": false,
+          "locale": null,
+          "name": "Запись блога",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/blogs/preview/post",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
         }
       ],
       "pagesData": {
@@ -700,6 +728,146 @@
           "root": {
             "props": {
               "title": "О нас"
+            }
+          },
+          "zones": {}
+        },
+        "page-blog": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-blog",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-blog",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "BlogSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "BlogSection"
+            },
+            {
+              "props": {
+                "id": "Footer-blog",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Блог"
+            }
+          },
+          "zones": {}
+        },
+        "page-blog-post": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-blog-post",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-blog-post",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "BlogPostSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "BlogPostSection"
+            },
+            {
+              "props": {
+                "id": "Footer-blog-post",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Запись блога"
             }
           },
           "zones": {}

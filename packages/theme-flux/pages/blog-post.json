@@ -1,0 +1,149 @@
+{
+  "content": [
+    {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-blog-post",
+        "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+        "link": {
+          "text": "Смотреть больше",
+          "href": "/catalog"
+        },
+        "size": "large",
+        "textTransform": "uppercase"
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-blog-post",
+        "siteTitle": "Flux",
+        "logo": "",
+        "logoPosition": "top-left",
+        "stickiness": "always",
+        "colorScheme": "scheme-2",
+        "menuType": "dropdown",
+        "padding": {
+          "top": 12,
+          "bottom": 12
+        },
+        "navigationLinks": [
+          {
+            "label": "Главная",
+            "href": "/"
+          },
+          {
+            "label": "Полноразмерные наушники",
+            "href": "/catalog"
+          },
+          {
+            "label": "TWS-наушники с кейсом",
+            "href": "/catalog"
+          },
+          {
+            "label": "Портативные колонки",
+            "href": "/catalog"
+          },
+          {
+            "label": "Саундбары",
+            "href": "/catalog"
+          }
+        ],
+        "actionButtons": {
+          "showSearch": "true",
+          "showCart": "true",
+          "showProfile": "true"
+        }
+      }
+    },
+    {
+      "type": "BlogPostSection",
+      "props": {
+        "id": "BlogPostSection-1",
+        "colorScheme": 2,
+        "padding": {
+          "top": 80,
+          "bottom": 80
+        }
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-blog-post",
+        "colorScheme": "scheme-2",
+        "copyrightColorScheme": "scheme-1",
+        "padding": {
+          "top": 80,
+          "bottom": 40
+        },
+        "newsletter": {
+          "enabled": "false"
+        },
+        "navigationColumn": {
+          "title": "Навигация",
+          "links": [
+            {
+              "label": "Каталог",
+              "href": "/catalog"
+            },
+            {
+              "label": "О нас",
+              "href": "/about"
+            },
+            {
+              "label": "Контакты",
+              "href": "/contacts"
+            }
+          ]
+        },
+        "informationColumn": {
+          "title": "Информация",
+          "links": [
+            {
+              "label": "Политика доставки",
+              "href": "/legal/delivery"
+            },
+            {
+              "label": "Политика возврата",
+              "href": "/legal/return"
+            },
+            {
+              "label": "Условия обслуживания",
+              "href": "/legal/terms"
+            },
+            {
+              "label": "Политика конфиденциальности",
+              "href": "/legal/privacy"
+            }
+          ]
+        },
+        "socialColumn": {
+          "title": "Социальные сети",
+          "email": "flux@example.ru",
+          "socialLinks": [
+            {
+              "platform": "telegram",
+              "href": "#"
+            },
+            {
+              "platform": "vk",
+              "href": "#"
+            }
+          ]
+        },
+        "copyright": {
+          "companyName": "Flux",
+          "showYear": "true",
+          "poweredBy": "Powered by Merfy"
+        }
+      }
+    }
+  ],
+  "root": {
+    "props": {
+      "title": "Запись блога"
+    }
+  },
+  "zones": {}
+}

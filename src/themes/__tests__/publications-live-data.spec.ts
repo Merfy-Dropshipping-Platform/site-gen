@@ -135,6 +135,16 @@ describe.each(THEMES)('«Публикации» берут данные мага
     expect(t).toContain('Гид по размерам');
   });
 
+  // PUB-1: адрес записи строит publicationUrl из theme-base —
+  // /blogs/{блог}/{адрес}; старые /publication/… и /publications/… вели на 404.
+  it('карточка ведёт на страницу записи /blogs/{блог}/{адрес}', () => {
+    if (!built) return;
+    const html = withData.html ?? '';
+    expect(html).toContain('href="/blogs/novosti/kazan-pvz"');
+    expect(html).toContain('href="/blogs/stati/size-guide"');
+    expect(html).not.toMatch(/href="\/publications?\//);
+  });
+
   it('на реальных данных не подмешивает выдуманные записи', () => {
     if (!built) return;
     const t = text(withData.html ?? '');

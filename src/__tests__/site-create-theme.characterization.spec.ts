@@ -308,17 +308,21 @@ describe("reserve(): создание магазина (sites.service.ts:~463-57
 
 describe("buildInitialRevision(): источник стартового контента (sites.service.ts:~1616)", () => {
   it.each(["rose", "flux", "bloom", "satin", "vanilla"])(
-    "РАСХОЖДЕНИЕ С БРИФОМ: тема %s строит ревизию через PageResolver (14 страниц манифеста, не legacy defaults/<t>.json)",
+    "РАСХОЖДЕНИЕ С БРИФОМ: тема %s строит ревизию через PageResolver (16 страниц манифеста, не legacy defaults/<t>.json)",
     async (theme) => {
       const service = makeBareService();
       const revision = await service.buildInitialRevision(theme);
 
       expect(revision.themeId).toBe(theme);
       expect(revision.manifestVersion).toBe("2.0");
-      expect(revision.pages).toHaveLength(14);
+      // 14 прежних + «Блог» и «Запись блога» (PUB-1/PUB-2, 20.10).
+      expect(revision.pages).toHaveLength(16);
       expect(revision.pages.map((p: any) => p.id)).toContain("home");
+      expect(revision.pages.map((p: any) => p.id)).toEqual(
+        expect.arrayContaining(["page-blog", "page-blog-post"]),
+      );
       expect(revision.currentPageId).toBe("home");
-      expect(Object.keys(revision.pagesData)).toHaveLength(14);
+      expect(Object.keys(revision.pagesData)).toHaveLength(16);
     },
   );
 
@@ -654,8 +658,8 @@ describe("update(): смена темы у существующего магаз
     expect(revisionInsert!.value.meta).toEqual({ title: "Theme reseed" });
     const pageIds = revisionInsert!.value.data.pages.map((p: any) => p.id);
     expect(pageIds).toContain("p-1"); // страница мерчанта переехала
-    expect(pageIds).toContain("home"); // канон новой темы (flux, 14 страниц)
-    expect(pageIds.length).toBe(15); // 14 канона flux + 1 перенесённая
+    expect(pageIds).toContain("home"); // канон новой темы (flux, 16 страниц)
+    expect(pageIds.length).toBe(17); // 16 канона flux + 1 перенесённая
     expect(revisionInsert!.value.data.pagesData["p-1"]).toEqual({
       text: "О нас мерчанта",
     });
@@ -706,7 +710,7 @@ describe("update(): смена темы у существующего магаз
     expect(
       revisionInsert!.value.data.pagesData["p-custom-about"],
     ).toBeUndefined();
-    expect(pageIds).toHaveLength(14); // ровно канон flux, без добавленной страницы
+    expect(pageIds).toHaveLength(16); // ровно канон flux, без добавленной страницы
   });
 
   it("текущее поведение: тот же themeId — ревизия НЕ пересеивается", async () => {

@@ -2357,6 +2357,51 @@
           }
         }
       },
+      "BlogSection": {
+        "label": "Блог",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "blogHandle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "blogTitle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          }
+        }
+      },
+      "BlogPostSection": {
+        "label": "Запись блога",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "publicationId": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -5567,6 +5612,51 @@
           }
         }
       },
+      "BlogSection": {
+        "label": "Блог",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "blogHandle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "blogTitle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          }
+        }
+      },
+      "BlogPostSection": {
+        "label": "Запись блога",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "publicationId": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -8768,6 +8858,51 @@
           }
         }
       },
+      "BlogSection": {
+        "label": "Блог",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "blogHandle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "blogTitle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          }
+        }
+      },
+      "BlogPostSection": {
+        "label": "Запись блога",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "publicationId": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -11959,6 +12094,51 @@
           }
         }
       },
+      "BlogSection": {
+        "label": "Блог",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "blogHandle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "blogTitle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          }
+        }
+      },
+      "BlogPostSection": {
+        "label": "Запись блога",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "publicationId": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -15147,6 +15327,51 @@
                 "visibility": "panel"
               }
             }
+          }
+        }
+      },
+      "BlogSection": {
+        "label": "Блог",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "blogHandle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "blogTitle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          }
+        }
+      },
+      "BlogPostSection": {
+        "label": "Запись блога",
+        "fields": {
+          "padding": {
+            "type": "padding",
+            "label": "Отступы",
+            "visibility": "panel"
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          },
+          "publicationId": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },

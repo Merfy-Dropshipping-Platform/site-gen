@@ -5,8 +5,7 @@ import { PreviewService } from '../services/preview.service';
 import { composeV2Page, schemeIdFromProp } from './v2-page-composer';
 import { extractPageBlocks, pagePropsPreparer } from './page-blocks';
 import { parityOn } from './parity-switch';
-import { isV2ComplexRoute } from './v2-routes';
-import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES, LOGIN_SECTION_THEMES } from './page-registry';
+import { getContentPages, getChromeKind, isReservedRoute, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES, LOGIN_SECTION_THEMES } from './page-registry';
 import {
   assembleChrome,
   injectChromeIntoHtml,
@@ -17,6 +16,12 @@ import {
 // import type → стирается при компиляции, цикла на module-init не создаёт.
 import type { BuildContext } from '../generator/build.service';
 import { catalogFromStoreData, type RenderContext } from '../render/create-render-context';
+import {
+  patchBlogPageMeta,
+  planBlogPages,
+  type BlogPagePlan,
+  type BlogRouteData,
+} from './blog-pages';
 
 const logger = new Logger('V2LivePages');
 
@@ -137,7 +142,7 @@ export async function composeContentPagesIntoDist(
     const slug = String(p.slug ?? '').replace(/^\/+|\/+$/g, '');
     // Ремень: кастомная страница с маршрутом сложной страницы (или дублем
     // контентной) не должна перезаписать страницу диста.
-    if (!slug || isV2ComplexRoute(slug) || knownRoutes.has(slug)) continue;
+    if (!slug || isReservedRoute(slug) || knownRoutes.has(slug)) continue;
     knownRoutes.add(slug);
     pages.push({
       key: p.id as string,
@@ -315,6 +320,115 @@ export async function renderProductSectionForId(
     );
     return null;
   }
+}
+
+/** Секция тела страницы блога: в неё сборка кладёт блог или запись. */
+const BLOG_BODY_BLOCK: Record<BlogPagePlan['pageKey'], string> = {
+  'page-blog': 'BlogSection',
+  'page-blog-post': 'BlogPostSection',
+};
+
+/**
+ * Страницы блога (PUB-1, PUB-2): по копии системной страницы «Блог» на
+ * каждый блог (`/blogs/{handle}`) и «Запись блога» на каждую опубликованную
+ * запись (`/blogs/{handle}/{slug}`). Секции страницы — из ревизии (их правит
+ * мерчант в конструкторе), в секцию тела сборка кладёт блог/запись — тот же
+ * приём, что per-slug страницы товара (renderProductSectionForId). Шелл —
+ * главная (как у кастомных и legal-страниц), SEO-мета — patchBlogPageMeta.
+ *
+ * Вызывать ПОСЛЕ composeContentPagesIntoDist и ДО applyChromeToDist — копии
+ * пройдут общую унификацию шапки. ctx.publications должен быть загружен.
+ * Возвращает число записанных страниц.
+ */
+export async function composeBlogPagesIntoDist(
+  ctx: BuildContext,
+  theme: string,
+  data: BlogRouteData,
+): Promise<number> {
+  if (!(await getRenderer().hasV2Sections(theme))) return 0;
+  const plan = planBlogPages(data);
+  if (plan.length === 0) return 0;
+  const merfy = merfyFromBuild(ctx, theme);
+  const homeShell = await fs
+    .readFile(path.join(ctx.distDir, 'index.html'), 'utf8')
+    .catch(() => null);
+  if (!homeShell) return 0;
+
+  // Секции страниц — один раз на шаблон, копии отличаются только пропсами тела.
+  const templates = new Map<string, Array<{ type: string; props: Record<string, unknown> }>>();
+  for (const pageKey of Object.keys(BLOG_BODY_BLOCK) as Array<BlogPagePlan['pageKey']>) {
+    const blocks = await extractPageBlocks(
+      ctx.revisionData,
+      pageKey,
+      ctx.publicUrl,
+      theme,
+      ctx.siteId,
+      undefined,
+      logger,
+    ).catch(() => null);
+    const body = BLOG_BODY_BLOCK[pageKey];
+    if (blocks && blocks.some((b) => b.type === body)) {
+      templates.set(pageKey, blocks);
+      continue;
+    }
+    // Ревизия без страницы блога (сидер не прошёл) — шапка и подвал главной
+    // вокруг секции с её значениями по умолчанию: страница записи есть всегда.
+    const home = await extractPageBlocks(ctx.revisionData, 'home', ctx.publicUrl, theme, ctx.siteId, undefined, logger)
+      .catch(() => null);
+    templates.set(pageKey, [
+      ...(home ?? []).filter((b) => b.type === 'PromoBanner' || b.type === 'Header'),
+      { type: body, props: { id: `${body}-1`, colorScheme: 2 } },
+      ...(home ?? []).filter((b) => b.type === 'Footer'),
+    ]);
+  }
+
+  const pub = ctx.publicUrl ?? '';
+  let count = 0;
+  for (const page of plan) {
+    const template = templates.get(page.pageKey) ?? [];
+    const body = BLOG_BODY_BLOCK[page.pageKey];
+    const blocks = template.map((b) =>
+      b.type === body ? { ...b, props: { ...b.props, ...page.props } } : b,
+    );
+    try {
+      const blocksHtml = await Promise.all(
+        blocks.map((b) =>
+          getRenderer().renderBlock({
+            blockName: b.type,
+            props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
+            themeId: theme,
+            isPreview: false,
+            merfy,
+          }),
+        ),
+      );
+      const bodyIdx = blocks.findIndex((b) => b.type === body);
+      if (bodyIdx === -1 || !blocksHtml[bodyIdx]?.trim()) {
+        logger.warn(`[v2-live] blog page ${page.route}: body section rendered empty — skipped`);
+        continue;
+      }
+      const html = composeV2Page({
+        shellHtml: homeShell,
+        blocksHtml,
+        blockTypes: blocks.map((b) => b.type),
+        blockSchemes: await Promise.all(
+          blocks.map((b) => getRenderer().resolveBlockScheme(b.type, b.props, theme)),
+        ),
+        assetPrefix: null,
+        titleOverride: page.meta.title,
+      });
+      if (html === null) continue;
+      const file = path.join(ctx.distDir, page.route, 'index.html');
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      await fs.writeFile(file, patchBlogPageMeta(html, page.meta, pub), 'utf8');
+      count++;
+    } catch (err) {
+      logger.warn(
+        `[v2-live] blog page ${page.route} failed: ${(err as Error)?.message ?? String(err)}`,
+      );
+    }
+  }
+  return count;
 }
 
 // Политика (site_policy.type) → live-маршрут /legal/<slug> и заголовок.

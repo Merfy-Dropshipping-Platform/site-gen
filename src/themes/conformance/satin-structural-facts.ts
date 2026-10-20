@@ -405,22 +405,28 @@ function loadSourceFacts(): SatinSourceFacts {
   );
 
   // --- publications -------------------------------------------------------
-  // merchant-data / detail-route: the blog list reads a static Astro content
-  // collection (getCollection('blog')) → demo/static, not merchant data.
-  const blogIndexCode =
-    readSource('themes/satin/src/pages/blog/index.astro') ?? '';
-  const publicationsFallsBackToDemo = /getCollection\(\s*['"]blog['"]\s*\)/.test(
-    blogIndexCode,
-  );
+  // PUB-1, PUB-2 (20.10): стартовый шаблон Astro (`src/pages/blog/*`,
+  // getCollection('blog')) удалён из всех тем. Список и запись блога —
+  // системные страницы «Блог» / «Запись блога» с секциями theme-base
+  // BlogSection / BlogPostSection, данные — записи магазина из
+  // `__merfy.resolved` (src/render/section-policy.ts); на сборке страницы
+  // копируются на каждый блог и запись (src/themes/blog-pages.ts).
+  const blogListCode =
+    readSource('packages/theme-base/blocks/BlogSection/BlogSection.astro') ?? '';
   const blogDetailCode =
-    readSource('themes/satin/src/pages/blog/[...slug].astro') ?? '';
-  // A working merchant detail route resolves only when the detail page reads a
-  // merchant data source; the static getStaticPaths + getCollection detail is a
-  // demo route → does not resolve merchant cards.
+    readSource('packages/theme-base/blocks/BlogPostSection/BlogPostSection.astro') ?? '';
+  // merchant-data: источник списка/записи — статичная коллекция Astro (демо).
+  const publicationsFallsBackToDemo = /getCollection\(\s*['"]blog['"]\s*\)/.test(
+    blogListCode + blogDetailCode,
+  );
+  // detail-route: страница записи читает данные магазина и заведена в
+  // манифесте satin как системная страница «Запись блога».
+  const satinManifest = readSource('packages/theme-satin/theme.json') ?? '';
   const publicationsDetailRouteResolves =
     blogDetailCode.length > 0 &&
-    !/getCollection\(\s*['"]blog['"]\s*\)/.test(blogDetailCode) &&
-    /getEntry|merchant|fetch\(/.test(blogDetailCode);
+    !publicationsFallsBackToDemo &&
+    /__merfy/.test(blogDetailCode) &&
+    /"id":\s*"page-blog-post"/.test(satinManifest);
 
   // --- cart ---------------------------------------------------------------
   // drawer-cart-section-source: сверяем, ЧТО читает резолвер схемы дровера

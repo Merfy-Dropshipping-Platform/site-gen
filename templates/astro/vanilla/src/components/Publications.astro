@@ -32,7 +32,9 @@ let mergedPosts: Post[];
 if (publicationsData && publicationsData.length > 0) {
   let filtered = publicationsData as any[];
   if (categoryFilter && categoryFilter !== 'all') {
-    filtered = filtered.filter((p: any) => p.category === categoryFilter);
+    // Категории стали блогами (site-gen, миграция 0027): id блога или прежняя категория → адрес блога.
+    const legacyHandle = ({ news: 'novosti', blog: 'blog', articles: 'stati' } as Record<string, string>)[categoryFilter];
+    filtered = filtered.filter((p: any) => p.blogId === categoryFilter || (legacyHandle && p.blogHandle === legacyHandle));
   }
   const limit = cardsCount ?? 6;
   mergedPosts = filtered.slice(0, limit).map((p: any) => ({

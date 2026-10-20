@@ -17,6 +17,7 @@ import { and, eq, ilike, sql } from "drizzle-orm";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { leaseEndSql } from "./lifecycle/lifecycle.repository";
+import { insertDefaultBlog } from "../publications/blogs.service";
 
 export interface NewStoreRow {
   id: string;
@@ -103,6 +104,11 @@ class DrizzleStoreRegistryTx implements StoreRegistryTx {
       lifecycle: "reserved",
       lifecycleAttempts: 0,
       lifecycleNextAt: leaseEndSql,
+    });
+    // Блог «Новости» рождается вместе с магазином, в той же транзакции.
+    await insertDefaultBlog(this.tx, {
+      siteId: row.id,
+      organizationId: row.tenantId,
     });
   }
 }

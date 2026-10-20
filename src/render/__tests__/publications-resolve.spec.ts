@@ -16,7 +16,8 @@ const RAW = [
     id: 'p1',
     title: 'Как мы открыли склад',
     slug: 'sklad',
-    category: 'news',
+    blogId: 'blog-novosti',
+    blogHandle: 'novosti',
     excerpt: 'Короткий анонс',
     coverImageUrl: 'https://cdn/1.jpg',
     publishedAt: '2026-09-01T10:00:00.000Z',
@@ -25,7 +26,8 @@ const RAW = [
     id: 'p2',
     title: 'Гид по размерам',
     slug: 'gid',
-    category: 'articles',
+    blogId: 'blog-stati',
+    blogHandle: 'stati',
     excerpt: '',
     coverImageUrl: null,
     publishedAt: '2026-08-01T10:00:00.000Z',
@@ -34,7 +36,8 @@ const RAW = [
     id: 'p3',
     title: 'Дневник основателя',
     slug: 'dnevnik',
-    category: 'blog',
+    blogId: 'blog-blog',
+    blogHandle: 'blog',
     excerpt: 'Про путь',
     coverImageUrl: null,
     publishedAt: null,
@@ -48,12 +51,16 @@ function resolve(props: Record<string, unknown>, c: Catalog = catalog) {
 }
 
 describe('resolve публикаций для секции «Публикации»', () => {
-  it('нормализатор каталога сохраняет категорию публикации', () => {
-    expect(catalog.publications.map((p) => p.category)).toEqual([
-      'news',
-      'articles',
-      'blog',
+  it('нормализатор каталога сохраняет блог публикации', () => {
+    expect(catalog.publications.map((p) => [p.blogId, p.blogHandle])).toEqual([
+      ['blog-novosti', 'novosti'],
+      ['blog-stati', 'stati'],
+      ['blog-blog', 'blog'],
     ]);
+  });
+
+  it('выбор блога по id показывает записи этого блога', () => {
+    expect(resolve({ publicationType: 'blog-stati' })?.map((p) => p.id)).toEqual(['p2']);
   });
 
   it('без выбора отдаёт все публикации магазина по порядку', () => {
@@ -76,9 +83,11 @@ describe('resolve публикаций для секции «Публикаци�
     expect(resolve({ publicationType: 'dnevnik' })?.map((p) => p.id)).toEqual(['p3']);
   });
 
-  it('легаси-значение категории продолжает фильтровать по категории', () => {
+  it('легаси-значение категории фильтрует по блогу из таблицы миграции', () => {
     expect(resolve({ publicationType: 'news' })?.map((p) => p.id)).toEqual(['p1']);
     expect(resolve({ publicationType: 'Новости' })?.map((p) => p.id)).toEqual(['p1']);
+    expect(resolve({ publicationType: 'articles' })?.map((p) => p.id)).toEqual(['p2']);
+    expect(resolve({ publicationType: 'blog' })?.map((p) => p.id)).toEqual(['p3']);
   });
 
   it('легаси-конверт pagePicker {href,text} не роняет рендер', () => {

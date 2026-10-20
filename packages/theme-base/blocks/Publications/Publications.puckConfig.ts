@@ -183,13 +183,28 @@ export function resolvePublicationsType(raw: {
   return PUBLICATION_TYPE_ALIASES[normalized] ?? normalized;
 }
 
-export function filterPublicationsByType<T extends { category?: string }>(
+/**
+ * Прежняя категория → адрес блога (таблица миграции 0027 site-gen: категории
+ * стали блогами). Записи больше не несут category — только blogId/blogHandle.
+ */
+const LEGACY_TYPE_BLOG_HANDLES: Record<string, string> = {
+  news: 'novosti',
+  blog: 'blog',
+  articles: 'stati',
+};
+
+export function filterPublicationsByType<T extends { blogId?: string; blogHandle?: string }>(
   items: readonly T[],
   publicationType: unknown,
 ): T[] {
   if (typeof publicationType !== 'string' || !publicationType.trim() || publicationType === 'all') {
     return [...items];
   }
-  const category = PUBLICATION_TYPE_ALIASES[publicationType.trim().toLowerCase()];
-  return category ? items.filter((item) => item.category === category) : [...items];
+  const ref = publicationType.trim();
+  if (items.some((item) => item.blogId === ref)) {
+    return items.filter((item) => item.blogId === ref);
+  }
+  const category = PUBLICATION_TYPE_ALIASES[ref.toLowerCase()];
+  const handle = category ? LEGACY_TYPE_BLOG_HANDLES[category] : undefined;
+  return handle ? items.filter((item) => item.blogHandle === handle) : [...items];
 }

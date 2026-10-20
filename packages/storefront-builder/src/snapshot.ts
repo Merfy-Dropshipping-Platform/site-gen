@@ -110,8 +110,10 @@ export function shopAddress(shop: Pick<Shop, 'id' | 'publicUrl'>): ShopAddress {
 const POLICIES_SQL = `SELECT DISTINCT ON (type) type::text AS id, content, ${plain('updated_at')} AS updated_at
   FROM site_policy WHERE site_id = $1 ORDER BY type, updated_at DESC`;
 const CONTACTS_SQL = `SELECT fields, ${plain('updated_at')} AS updated_at FROM site_contacts WHERE site_id = $1`;
-const PUBLICATIONS_SQL = `SELECT id, title, slug, category::text AS category, excerpt, content,
-  ${zoned('updated_at')} AS updated_at FROM publications WHERE site_id = $1 AND status = 'published'`;
+// Блог записи вместо прежней категории (site-gen, миграция 0027): id и адрес блога.
+const PUBLICATIONS_SQL = `SELECT p.id, p.title, p.slug, p.blog_id, b.handle AS blog_handle, p.excerpt, p.content,
+  ${zoned('p.updated_at')} AS updated_at FROM publications p JOIN blogs b ON b.id = p.blog_id
+  WHERE p.site_id = $1 AND p.status = 'published'`;
 
 const policyRow = z.object({ id: z.string(), content: z.string().nullable(), updated_at: z.string() });
 const contactsRow = z.object({ fields: z.json(), updated_at: z.string() });
@@ -119,7 +121,8 @@ const publicationRow = z.object({
   id: z.string(),
   title: z.string(),
   slug: z.string(),
-  category: z.string(),
+  blog_id: z.string(),
+  blog_handle: z.string(),
   excerpt: z.string().nullable(),
   content: z.string(),
   updated_at: z.string(),
@@ -140,8 +143,13 @@ const contactsEntity = (row: z.infer<typeof contactsRow>): Entity => ({
 });
 
 function publicationEntity(row: z.infer<typeof publicationRow>): Entity {
-  const { id, title, slug, category, excerpt, content } = row;
-  return { type: 'publication', id, updatedAt: row.updated_at, data: { title, slug, category, excerpt, content } };
+  const { id, title, slug, excerpt, content } = row;
+  return {
+    type: 'publication',
+    id,
+    updatedAt: row.updated_at,
+    data: { title, slug, blogId: row.blog_id, blogHandle: row.blog_handle, excerpt, content },
+  };
 }
 
 async function rowsOf<T>(db: Queryable, sql: string, siteId: string, schema: z.ZodType<T>): Promise<T[]> {

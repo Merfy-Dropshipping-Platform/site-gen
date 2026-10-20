@@ -3,6 +3,7 @@ import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs, CodeSection, ShellInput } from './inputs';
+import type { PageMode, PlacedSection } from './sections-render';
 
 // Код секций в странице и в сборке магазина (design.md блока 7, п. 12, 16, 19; С7-7 Г, С7-10 Б). Разметка секции — в
 // HTML страницы, в <merfy-section data-section="<имя>">. В <head> после токенов темы: стили секций страницы одним
@@ -27,14 +28,16 @@ export interface ShellBuild {
   files: BuildFile[];
 }
 
-// Байты кода, которых нет во входах: сборка ядра и скрипты секций по отпечатку. Входы называют их отпечатками, сборка
-// сверяет байты с ними.
+// Байты кода, которых нет во входах: сборка ядра, скрипты секций и модули рендера по отпечатку. Входы называют их
+// отпечатками, сборка сверяет байты с ними.
 export interface CodeAssets {
   shell: ShellBuild | null;
   modules: ReadonlyMap<string, Uint8Array>;
+  // Модули рендера (блок 1 «Секций и SDK»): текст скомпилированного шаблона по sha256 его байтов.
+  renders: ReadonlyMap<string, string>;
 }
 
-export const NO_ASSETS: CodeAssets = { shell: null, modules: new Map() };
+export const NO_ASSETS: CodeAssets = { shell: null, modules: new Map(), renders: new Map() };
 
 interface ModuleLine {
   kind: CodeSection['kind'];
@@ -51,7 +54,8 @@ const shellSrc = (shell: ShellInput, file: string): string => `/${shellDir(shell
 // Секции страницы: места мерчанта по порядку, потом глобальные скрипты; имя — один раз, хоть секция и стоит дважды.
 function pageCode(inputs: BuildInputs, pageId: string): CodeSection[] {
   const byName = new Map(inputs.code.sections.map((section): [string, CodeSection] => [section.name, section]));
-  const names = new Set([...(inputs.code.pages[pageId] ?? []), ...inputs.code.globals]);
+  const placed = (inputs.code.pages[pageId] ?? []).map((instance) => instance.section);
+  const names = new Set([...placed, ...inputs.code.globals]);
   return [...names].flatMap((name) => byName.get(name) ?? []);
 }
 
@@ -60,10 +64,10 @@ const moduleLines = (sections: readonly CodeSection[]): ModuleLine[] =>
     script === null ? [] : [{ kind, name, src: `/${modulePath(script)}` }],
   );
 
-// </style внутри CSS закрыл бы тег раньше времени: приём стилей такого не пропускает, сборка страхует.
-function styleTag(sections: readonly CodeSection[]): string {
-  const css = [BASE_CSS, ...sections.map((section) => section.css)].join('');
-  return `<style id="merfy-sections">${css.replaceAll('</style', '<\\/style')}</style>`;
+// CSS секций страницы — классы Tailwind из их разметки (section-css.ts). </style внутри CSS закрыл бы тег раньше
+// времени: сборка страхует.
+function styleTag(css: string): string {
+  return `<style id="merfy-sections">${(BASE_CSS + css).replaceAll('</style', '<\\/style')}</style>`;
 }
 
 const jsonTag = (attributes: string, value: unknown): string =>
@@ -81,21 +85,26 @@ function scriptTags(shell: ShellInput, modules: readonly ModuleLine[]): string[]
   ];
 }
 
-// Код страницы для <head>, после токенов темы. Секций нет — пусто; скриптов нет — только стили.
-export function codeHead(inputs: BuildInputs, pageId: string): string {
+// Код страницы для <head>, после токенов темы. Секций нет — пусто; скриптов нет или превью — только стили (Р1: в превью
+// списка модулей, карты импортов и ядра нет, скрипты секций в превью — блок 5).
+export function codeHead(inputs: BuildInputs, pageId: string, css: string, mode: PageMode): string {
   const sections = pageCode(inputs, pageId);
   const modules = moduleLines(sections);
   if (sections.length === 0) return '';
-  if (inputs.shell === null || modules.length === 0) return styleTag(sections);
-  return [styleTag(sections), ...scriptTags(inputs.shell, modules)].join('');
+  if (mode === 'preview' || inputs.shell === null || modules.length === 0) return styleTag(css);
+  return [styleTag(css), ...scriptTags(inputs.shell, modules)].join('');
 }
 
-// Разметка секций страницы в порядке мерчанта. Глобальным скриптам место не нужно: скрытый элемент им ставит ядро.
-export function pageSections(inputs: BuildInputs, pageId: string): string[] {
-  const html = new Map(inputs.code.sections.map((section): [string, string] => [section.name, section.html]));
-  return (inputs.code.pages[pageId] ?? []).map(
-    (name) => `<merfy-section data-section="${name}">${html.get(name) ?? ''}</merfy-section>`,
-  );
+// Экземпляры секций страницы в порядке мерчанта — для рендера (sections-render.ts). Глобальным скриптам место не
+// нужно: скрытый элемент им ставит ядро.
+export function placedSections(inputs: BuildInputs, pageId: string): PlacedSection[] {
+  const renders = new Map(inputs.code.sections.map((section): [string, string] => [section.name, section.render ?? '']));
+  return (inputs.code.pages[pageId] ?? []).map((instance) => ({
+    id: instance.id,
+    name: instance.section,
+    hash: renders.get(instance.section) ?? '',
+    settings: instance.settings,
+  }));
 }
 
 function shellFiles(shell: ShellInput | null, build: ShellBuild | null): BuildFile[] {

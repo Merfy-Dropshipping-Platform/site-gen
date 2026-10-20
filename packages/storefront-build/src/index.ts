@@ -7,6 +7,7 @@ export {
   parseBuildInputs,
   type BuildInputs,
   type CodeInput,
+  type CodeInstance,
   type CodeSection,
   type Entity,
   type EntityType,

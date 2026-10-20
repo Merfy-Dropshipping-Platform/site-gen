@@ -1,12 +1,14 @@
 import type { ParsedTheme, TokenMigrations } from '@merfy/tokens';
 import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
+import { placedSections } from './code';
 import { entityKey } from './entities';
 import { pageLocals } from './head';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
 import { routeOf, type ShopRoute } from './routes';
+import { LIVE_PAGE, renderPlacedSections, type PageRender } from './sections-render';
 import { checkSeo } from './seo';
 
 // Одна страница магазина (design.md блока 4, Св-1 В): рисуется по запросу без полной сборки и отдаётся строкой в формате
@@ -48,9 +50,17 @@ function dataUpdatedAt(inputs: BuildInputs, deps: readonly string[]): string {
   return dates.at(-1) ?? '';
 }
 
-export async function renderShopPage(inputs: BuildInputs, path: string, theme: ShopTheme): Promise<RenderedPage> {
+// page — как рисовать секции: модули, функция рендера и режим. По умолчанию — опубликованный сайт без процесса рендера:
+// страница без секций рисуется, страница с секцией — ошибка.
+export async function renderShopPage(
+  inputs: BuildInputs,
+  path: string,
+  theme: ShopTheme,
+  page: PageRender = LIVE_PAGE,
+): Promise<RenderedPage> {
   const route = routeOf(path);
-  const html = await theme.render(route.path, pageLocals(inputs, route, theme.tokens, theme.migrations));
+  const pageContent = await renderPlacedSections(placedSections(inputs, route.id), theme.tokens.dictionary, page);
+  const html = await theme.render(route.path, pageLocals(inputs, route, theme.tokens, theme.migrations, pageContent));
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');
   const entity = pageEntity(inputs, route);

@@ -54,22 +54,29 @@ const shellSchema = z.strictObject({
   preload: z.array(z.string().regex(SHELL_FILE)).min(1),
 });
 
-// Принятая правка секции из реестра блока 7 (storefront_section): отпечаток правки, разметка, стили в рамке секции и
-// отпечаток файла скрипта; null — секция без скрипта (п. 16).
+// Принятая правка секции из реестра (storefront_section): отпечаток правки, отпечаток модуля рендера (у секции; у
+// глобального скрипта — null) и отпечаток файла скрипта; null — секция без скрипта (п. 16).
 const codeSectionSchema = z.strictObject({
   name: sectionNameSchema,
   kind: z.enum(CODE_KINDS),
   hash: hashSchema,
-  html: z.string(),
-  css: z.string(),
+  render: hashSchema.nullable(),
   script: hashSchema.nullable(),
 });
 
-// Код магазина: видимые ему секции, которые где-то стоят, и глобальные скрипты. Места — по id страницы в порядке
-// мерчанта, секция может стоять дважды; у глобальных скриптов места нет (С7-21 А).
+// Экземпляр секции на странице (блок 1 «Секций и SDK», В1-1 А): id на странице, имя секции и значения всех настроек —
+// правки мерчанта поверх умолчаний, их сводит сборщик.
+const instanceSchema = z.strictObject({
+  id: kebabIdSchema,
+  section: sectionNameSchema,
+  settings: z.record(z.string(), z.union([z.string(), z.boolean()])),
+});
+
+// Код магазина: видимые ему секции, которые где-то стоят, и глобальные скрипты. Места — экземпляры секций по id страницы
+// в порядке мерчанта, секция может стоять дважды; у глобальных скриптов места нет (С7-21 А).
 const codeSchema = z.strictObject({
   sections: z.array(codeSectionSchema),
-  pages: z.record(kebabIdSchema, z.array(sectionNameSchema)),
+  pages: z.record(kebabIdSchema, z.array(instanceSchema)),
   globals: z.array(sectionNameSchema),
 });
 
@@ -132,6 +139,7 @@ export type EntityType = Entity['type'];
 export type ShellInput = z.infer<typeof shellSchema>;
 export type CodeInput = z.infer<typeof codeSchema>;
 export type CodeSection = z.infer<typeof codeSectionSchema>;
+export type CodeInstance = z.infer<typeof instanceSchema>;
 type CodeKind = CodeSection['kind'];
 
 function checkReceived(inputs: BuildInputs): void {
@@ -170,8 +178,8 @@ const place = (path: string, name: string, kind: CodeKind): Place => ({ path, na
 
 // Где код ставит имя: место на странице ждёт секцию, строка globals — глобальный скрипт.
 const placesOf = (code: CodeInput): Place[] => [
-  ...Object.entries(code.pages).flatMap(([page, names]) =>
-    names.map((name, index) => place(`code.pages.${page}.${index}`, name, 'section')),
+  ...Object.entries(code.pages).flatMap(([page, instances]) =>
+    instances.map((instance, index) => place(`code.pages.${page}.${index}`, instance.section, 'section')),
   ),
   ...code.globals.map((name, index) => place(`code.globals.${index}`, name, 'global')),
 ];
@@ -198,10 +206,37 @@ function scriptsWithoutShell(inputs: BuildInputs): CodeIssue[] {
   );
 }
 
-// Код приходит из реестра блока 7 через сборщик: имя — один раз, место на странице — секция из кода, строка globals —
-// глобальный скрипт из кода, скрипты — только при ядре. Первая ошибка — с путём.
+// Модуль рендера есть у секции и нет у глобального скрипта: сборщик такого не пишет.
+const HAS_RENDER: Record<CodeKind, boolean> = { section: true, global: false };
+const RENDER_TEXT: Record<CodeKind, string> = {
+  section: 'у секции нет модуля рендера',
+  global: 'у глобального скрипта модуля рендера не бывает',
+};
+
+const renderIssues = (code: CodeInput): CodeIssue[] =>
+  code.sections.flatMap((section, index) =>
+    (section.render !== null) === HAS_RENDER[section.kind]
+      ? []
+      : [{ path: `code.sections.${index}.render`, text: `${section.name}: ${RENDER_TEXT[section.kind]}` }],
+  );
+
+// id экземпляра — один раз на странице: по нему конструктор выбирает и правит секцию.
+const repeatedIds = (code: CodeInput): CodeIssue[] =>
+  Object.entries(code.pages).flatMap(([page, instances]) =>
+    instances.flatMap((instance, index) =>
+      instances.findIndex((other) => other.id === instance.id) === index
+        ? []
+        : [{ path: `code.pages.${page}.${index}.id`, text: `id ${instance.id} на странице ${page} дважды` }],
+    ),
+  );
+
+// Код приходит из реестра через сборщик: имя — один раз, место на странице — секция из кода, строка globals —
+// глобальный скрипт из кода, модуль рендера — у каждой секции, id экземпляра — один раз на странице, скрипты — только
+// при ядре. Первая ошибка — с путём.
 function checkCode(inputs: BuildInputs): void {
-  const issue = [...twice(inputs.code), ...misplaced(inputs.code), ...scriptsWithoutShell(inputs)].at(0);
+  const code = inputs.code;
+  const issues = [...twice(code), ...misplaced(code), ...renderIssues(code), ...repeatedIds(code)];
+  const issue = [...issues, ...scriptsWithoutShell(inputs)].at(0);
   if (issue === undefined) return;
   throw new StorefrontBuildError('code-invalid', issue.text, { path: issue.path });
 }

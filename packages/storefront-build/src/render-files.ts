@@ -4,10 +4,9 @@ import { contentHash } from './content-hash';
 
 // Файлы папки темы. render — от них зависят страницы магазина, они входят в отпечаток темы. skip — не зависят: обычная
 // сборка темы и стенд, установка. Каждый файл папки темы — ровно в одном списке, это сторожит тест «файл не учтён».
-// sections/** — секции темы (блок 7): в магазин они идут через реестр секций, но меняют его страницы, поэтому их правка
-// требует новой версии темы.
+// Секций у темы нет (блок 1 «Секций и SDK»: секции не привязаны к темам), папки sections/ в теме не бывает.
 export const THEME_FILES = {
-  render: ['src/shop/**', 'public/**', 'sections/**', 'astro.renderer.config.mjs', 'pnpm-lock.yaml', 'tsconfig.json'],
+  render: ['src/shop/**', 'public/**', 'astro.renderer.config.mjs', 'pnpm-lock.yaml', 'tsconfig.json'],
   skip: ['src/pages/**', 'src/stand/**', 'astro.config.mjs', 'package.json', '.gitignore', '.npmrc'],
 } as const;
 
@@ -35,14 +34,18 @@ export const PLATFORM_RENDER_FILES = [
   // Реестр шрифтов (блок 12): из него сборка печатает CSS шрифтов. Новая библиотека — новый код платформы: её разносит
   // выпуск платформы волнами, как и новый renderHash.
   'packages/theme-contract/fonts/fonts.json',
-  // Ядро @merfy/shell и секции платформы (блок 7): входы shell и code.sections «platform:» меняет только выкатка кода
-  // платформы. Они в отпечатке, чтобы новое ядро и новые секции платформы разносил выпуск платформы волнами (блок 10,
-  // задача 11): его отпечаток — renderHash.
+  // Ядро @merfy/shell (блок 7): вход shell меняет только выкатка кода платформы. Оно в отпечатке, чтобы новое ядро
+  // разносил выпуск платформы волнами (блок 10, задача 11): его отпечаток — renderHash. Папка
+  // packages/storefront-shell/sections — исходники наших секций: в магазин они идут как свои секции магазина (блок 1
+  // «Секций и SDK», пп. 1, 27), это не код платформы.
   'packages/storefront-shell/package.json',
   'packages/storefront-shell/core-parts.json',
   'packages/storefront-shell/scripts/**',
   'packages/storefront-shell/src/**',
-  'packages/storefront-shell/sections/**',
+  // Рендер секций (блок 1 «Секций и SDK»): приём, компиляция шаблона и процесс рендера — код платформы, от него
+  // зависят страницы.
+  'packages/storefront-sections/package.json',
+  'packages/storefront-sections/src/**',
 ];
 
 export const platformRenderHash = (root: string): Promise<string> => contentHash(root, PLATFORM_RENDER_FILES);

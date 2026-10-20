@@ -2,12 +2,13 @@ import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
 import { NO_ASSETS, codeFiles, type CodeAssets } from './code';
 import { entityHashes } from './entities';
-import { parseBuildInputs } from './inputs';
+import { parseBuildInputs, type BuildInputs } from './inputs';
 import { shopFonts } from './head';
 import { buildKey, dataKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
-import { renderShopPage, type ShopTheme } from './page';
+import { renderShopPage, type RenderedPage, type ShopTheme } from './page';
 import { SHOP_ROUTES } from './routes';
+import { NO_SECTIONS, type PageRender, type RenderSection } from './sections-render';
 import { renderStandPage, type StandBuild } from './stand';
 
 // Справки сборки: в ключ не входят, в манифест пишутся. Коммит платформы — SOURCE_COMMIT образа sites (В4-1 В).
@@ -37,16 +38,25 @@ const byPath = (left: BuildFile, right: BuildFile): number => (left.path < right
 // рисуется так же, как по запросу (renderShopPage); файлы клиента темы идут как есть. Ядро и скрипты секций (блок 7) —
 // из assets: входы называют их отпечатками. Ни часов, ни случайного: одинаковые входы — одинаковые файлы, ключ и
 // манифест.
+// Страница сборки: модули рендера из активов и функция рендера процесса, режим live.
+const livePageOf = (assets: CodeAssets, render: RenderSection): PageRender => ({
+  sections: { modules: assets.renders, render },
+  mode: 'live',
+});
+
 export async function buildStorefront(
   raw: unknown,
   references: BuildReferences,
   theme: ThemeBuild,
   assets: CodeAssets = NO_ASSETS,
+  render: RenderSection = NO_SECTIONS.render,
 ): Promise<StorefrontBuild> {
   const inputs = parseBuildInputs(raw);
   // Файлы кода — до рендера: нет ядра или скрипта — ошибка, рисовать не начинали.
   const code = codeFiles(inputs, assets);
-  const shopPages = await Promise.all(SHOP_ROUTES.map((route) => renderShopPage(inputs, route.path, theme)));
+  // Секции рисует процесс рендера сборщика; ошибка секции — ошибка сборки (Р2): сборку не выкладываем.
+  const page = livePageOf(assets, render);
+  const shopPages = await Promise.all(SHOP_ROUTES.map((route) => renderShopPage(inputs, route.path, theme, page)));
   const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
   const pages = [...shopPages, ...standPages];
   const files = [...theme.clientFiles, ...code, ...pages.map((page) => page.file)].sort(byPath);
@@ -54,7 +64,19 @@ export async function buildStorefront(
   const fontFiles = shopFonts(inputs, theme.tokens, theme.migrations).files.map(
     (file) => [file.path, file.hash] as const,
   );
-  const manifest = checkManifest({
+  const manifest = manifestOf(inputs, references, files, fontFiles, pages);
+  return { manifest, files };
+}
+
+// Манифест сборки: ключи, версии, сущности и файлы — по списку файлов сборки и шрифтов.
+function manifestOf(
+  inputs: BuildInputs,
+  references: BuildReferences,
+  files: readonly BuildFile[],
+  fontFiles: readonly (readonly [string, string])[],
+  pages: readonly RenderedPage[],
+): ReturnType<typeof checkManifest> {
+  return checkManifest({
     v: MANIFEST_VERSION,
     key: buildKey(inputs),
     dataKey: dataKey(inputs),
@@ -67,5 +89,4 @@ export async function buildStorefront(
     files: Object.fromEntries([...files.map((file) => [file.path, sha256(file.content)] as const), ...fontFiles]),
     pages: pages.map((page) => page.row),
   });
-  return { manifest, files };
 }

@@ -1,0 +1,45 @@
+import { describe, expect, it } from 'vitest';
+import { renderShopPage, type ShopTheme } from '../src/page';
+import { NO_SECTIONS, type PageRender, type SectionRenderRequest } from '../src/sections-render';
+import { NO_SCRIPT, RENDERS, codeInputs } from './support-code';
+import { fakeRender, novaTokens } from './support-theme';
+
+// Страница с секциями SDK 1 (блок 1 «Секций и SDK»): секции рисует функция рендера, CSS — классы Tailwind их разметки.
+const theme: ShopTheme = { tokens: novaTokens, render: fakeRender };
+const text = (content: Uint8Array): string => Buffer.from(content).toString('utf8');
+
+// Подставной рендер: имя секции, заголовок из настроек и класс из словаря.
+const render = (request: SectionRenderRequest): Promise<string> =>
+  Promise.resolve(`<h2 class="flex">${request.section} ${String(request.settings.heading ?? '')}</h2>`);
+const pageOf = (mode: PageRender['mode']): PageRender => ({ sections: { modules: RENDERS, render }, mode });
+
+describe('страница с секциями', () => {
+  it('секции — по порядку мерчанта в обёртках; CSS их классов — в <style id="merfy-sections">', async () => {
+    const html = text((await renderShopPage(codeInputs(), '/', theme, pageOf('live'))).file.content);
+    const order = [...html.matchAll(/data-section-id="([^"]+)"/g)].map((match) => match[1]);
+    expect(order).toEqual(['cart-badge-1', 'hero-1', 'list-1', 'list-2']);
+    expect(html).toContain('shop:hero Шарфы к первым холодам');
+    expect(html).toMatch(/<style id="merfy-sections">merfy-section\{display:block\}[^<]*\.flex/);
+    expect(html).toContain('id="merfy-modules"');
+  });
+
+  it('превью: только стили секций — без списка модулей, карты импортов и ядра; без аналитики', async () => {
+    const html = text((await renderShopPage(codeInputs(), '/', theme, pageOf('preview'))).file.content);
+    expect(html).toContain('<style id="merfy-sections">');
+    expect(html).not.toContain('id="merfy-modules"');
+    expect(html).not.toContain('type="importmap"');
+    expect(html).not.toContain('"analytics":{');
+  });
+
+  it('модуль есть, процесса рендера нет — render-failed; модуля нет — code-missing', async () => {
+    const inputs = codeInputs((changed) => (changed.code = structuredClone(NO_SCRIPT)));
+    const noRenderer: PageRender = { sections: { ...NO_SECTIONS, modules: RENDERS }, mode: 'live' };
+    await expect(renderShopPage(inputs, '/', theme, noRenderer)).rejects.toMatchObject({ code: 'render-failed' });
+    await expect(renderShopPage(inputs, '/', theme)).rejects.toMatchObject({ code: 'code-missing' });
+  });
+
+  it('страница без секций — как раньше, без процесса рендера', async () => {
+    const inputs = codeInputs((changed) => (changed.code = { sections: [], pages: {}, globals: [] }));
+    expect(text((await renderShopPage(inputs, '/', theme)).file.content)).not.toContain('<merfy-section');
+  });
+});

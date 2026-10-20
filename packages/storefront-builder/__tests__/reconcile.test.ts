@@ -19,7 +19,7 @@ const withReviews = (hash: string): BuildInputs => ({
     ...INPUTS.code,
     sections: [
       ...INPUTS.code.sections,
-      { name: 'reviews:stars', kind: 'section', hash, html: `<p>${hash}</p>`, css: '', script: null },
+      { name: 'reviews:stars', kind: 'section', hash, render: null, script: null },
     ],
   },
 });

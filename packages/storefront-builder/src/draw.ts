@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { StorefrontBuildError, parseBuildInputs, renderShopPage } from '@merfy/storefront-build';
+import { StorefrontBuildError, parseBuildInputs, renderShopPage, type RenderSection } from '@merfy/storefront-build';
+import { withSectionRenderer } from '@merfy/storefront-sections';
 import { hexOf, recordDrawnPage, type ObjectStore } from '@merfy/storefront-storage';
 import { z } from 'zod';
 import type { LoadedTheme } from './build-job';
@@ -78,7 +79,9 @@ async function draw(deps: DrawDeps, query: DrawQuery): Promise<DrawAnswer> {
   // Магазин уже закреплён на другой версии — его живая сборка вот-вот сменится: чужой версией не рисуем.
   if (snapshot.inputs.theme.version !== label.version) return { status: 409, body: TEXT.version };
   const theme = await deps.catalog.themeAt(label.id, label.version);
-  const page = await renderShopPage(parseBuildInputs(snapshot.inputs), query.path, theme.build);
+  const inputs = parseBuildInputs(snapshot.inputs);
+  const live = (render: RenderSection) => ({ sections: { modules: snapshot.assets.renders, render }, mode: 'live' as const });
+  const page = await withSectionRenderer((render) => renderShopPage(inputs, query.path, theme.build, live(render)));
   const drawn = { shop: query.shop, build: query.build, row: page.row, content: page.file.content };
   await recordDrawnPage(deps.store, drawn);
   return { status: 200, body: new TextDecoder().decode(page.file.content), hash: hexOf(page.row.hash) };

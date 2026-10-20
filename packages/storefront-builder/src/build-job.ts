@@ -6,6 +6,7 @@ import {
   type Changelog,
   type ThemeBuild,
 } from '@merfy/storefront-build';
+import { withSectionRenderer } from '@merfy/storefront-sections';
 import { publishBuild, type ObjectStore } from '@merfy/storefront-storage';
 import { StorefrontBuilderError, errorText } from './errors';
 import { shouldAnnounce, type Announce } from './indexnow';
@@ -104,7 +105,10 @@ const pin = (deps: BuilderDeps, siteId: string): Promise<void> =>
 async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, theme: ThemeBuild) {
   // Справки сборки: коммит образа и включённые расширения магазина (блок 10, задача 11) — в манифест, не в ключ.
   const references = { platformCommit: deps.platformCommit, extensions: snapshot.extensions };
-  const build = await buildStorefront(snapshot.inputs, references, theme, snapshot.assets);
+  // Секции рисует процесс рендера (storefront-sections): он запускается при первой секции и закрывается после сборки.
+  const build = await withSectionRenderer((render) =>
+    buildStorefront(snapshot.inputs, references, theme, snapshot.assets, render),
+  );
   const request = { label: snapshot.address.label, build: job.build, manifest: build.manifest, files: build.files };
   const now = deps.clock().toISOString();
   const options = { ...request, publicUrl: snapshot.address.url, indexable: deps.indexable, now };

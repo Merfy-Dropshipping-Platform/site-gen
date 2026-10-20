@@ -33,7 +33,11 @@ function migrationsBefore0027(): string {
   cpSync(MIGRATIONS, dir, { recursive: true });
   const journalPath = join(dir, "meta", "_journal.json");
   const journal = JSON.parse(readFileSync(journalPath, "utf8"));
-  journal.entries = journal.entries.filter((e: { idx: number }) => e.idx < 27);
+  // По имени, не по idx: на прод миграции приходят не по порядку (0027 там
+  // стоит сразу за 0017), номер в журнале у неё другой.
+  journal.entries = journal.entries.filter(
+    (e: { tag: string }) => e.tag < "0027_",
+  );
   writeFileSync(journalPath, JSON.stringify(journal));
   return dir;
 }
@@ -116,7 +120,9 @@ suite("миграция 0027: категории → блоги", () => {
       "s3-orphan:stati",
       "s4:novosti",
     ]);
-    expect(rows.find((r: Row) => r.site_id === "s4")?.organization_id).toBe("t4");
+    expect(rows.find((r: Row) => r.site_id === "s4")?.organization_id).toBe(
+      "t4",
+    );
   });
 
   it("category и enum publication_category удалены, blog_id NOT NULL с внешним ключом", async () => {
@@ -145,14 +151,16 @@ suite("миграция 0027: категории → блоги", () => {
     const { rows } = await pool.query(
       `SELECT id, excerpt FROM publications ORDER BY id`,
     );
-    expect(Object.fromEntries(rows.map((r: Row) => [r.id, r.excerpt]))).toEqual({
-      p1: null,
-      p2: "Анонс продавца",
-      p3: null,
-      p3b: null,
-      p4: null,
-      p5: null,
-    });
+    expect(Object.fromEntries(rows.map((r: Row) => [r.id, r.excerpt]))).toEqual(
+      {
+        p1: null,
+        p2: "Анонс продавца",
+        p3: null,
+        p3b: null,
+        p4: null,
+        p5: null,
+      },
+    );
     const def = await pool.query(
       `SELECT column_default FROM information_schema.columns WHERE table_name = 'publications' AND column_name = 'excerpt'`,
     );

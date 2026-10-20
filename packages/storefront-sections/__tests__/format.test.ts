@@ -1,29 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { SOURCE_LIMITS, fileProblems, kindProblems, readManifest, scriptEntryOf } from '../src/format';
+import { SOURCE_LIMITS, fileProblems, kindProblems, limitProblems, readManifest, scriptEntryOf } from '../src/format';
 import { problem, problemText, type SectionProblem } from '../src/problems';
 
-const MANIFEST = { v: 1, name: 'color-match', kind: 'section', title: 'Подбор шарфа по цвету пальто' } as const;
+const MANIFEST = { sdk: 1, name: 'color-match', kind: 'section', title: 'Подбор шарфа по цвету пальто' } as const;
 const section = (extra: Record<string, string> = {}): Record<string, string> => ({
   'section.json': JSON.stringify(MANIFEST),
-  'template.html': '<p>Подбор</p>',
+  'template.astro': '<p>Подбор</p>',
   ...extra,
 });
 const codesOf = (problems: readonly SectionProblem[]): string[] => problems.map((item) => item.code);
 
 describe('section.json', () => {
   it('разбор; поля настроек по умолчанию пусты', () => {
-    expect(readManifest(section())).toEqual({ ok: true, value: { ...MANIFEST, fields: [] } });
+    expect(readManifest(section())).toEqual({ ok: true, value: { ...MANIFEST, settings: [] } });
   });
 
   it('нет section.json — manifest-missing', () => {
-    expect(readManifest({ 'template.html': '' })).toEqual({
+    expect(readManifest({ 'template.astro': '' })).toEqual({
       ok: false,
       problems: [problem('manifest-missing', 'section.json', 'нет section.json')],
     });
   });
 
   it('не JSON — manifest-invalid со строкой и колонкой из сообщения разбора', () => {
-    const result = readManifest({ 'section.json': '{\n  "v": 1,\n  "name" "x"\n}' });
+    const result = readManifest({ 'section.json': '{\n  "sdk": 1,\n  "name" "x"\n}' });
     expect(result.ok ? [] : result.problems).toMatchObject([
       { code: 'manifest-invalid', file: 'section.json', line: 3, column: 10 },
     ]);
@@ -48,10 +48,11 @@ describe('файлы секции', () => {
       'script.js': 'export default {}',
       'lib/big.ts': 'x'.repeat(SOURCE_LIMITS.fileBytes + 1),
     });
+    // Пределы — первыми (prepare.ts на них останавливается), потом файлы.
     expect(fileProblems(files).map((item) => [item.code, item.file])).toEqual([
+      ['file-too-large', 'lib/big.ts'],
       ['file-unknown', 'README.md'],
       ['file-unknown', 'lib/../../evil.ts'],
-      ['file-too-large', 'lib/big.ts'],
       ['script-invalid', 'script.js'],
     ]);
   });
@@ -60,20 +61,19 @@ describe('файлы секции', () => {
     const many = Object.fromEntries(
       Array.from({ length: SOURCE_LIMITS.files }, (_, index) => [`lib/f${index}.ts`, '']),
     );
-    expect(codesOf(fileProblems(section(many)))).toEqual(['source-too-large']);
+    expect(codesOf(limitProblems(section(many)))).toEqual(['source-too-large']);
     const heavy = Object.fromEntries(
       Array.from({ length: 5 }, (_, index) => [`lib/h${index}.ts`, 'x'.repeat(60 * 1024)]),
     );
-    expect(codesOf(fileProblems(section(heavy)))).toEqual(['source-too-large']);
+    expect(codesOf(limitProblems(section(heavy)))).toEqual(['source-too-large']);
   });
 
   it('секция — с шаблоном; глобальный скрипт — без шаблона и стилей, со скриптом', () => {
-    const sectionManifest = { ...MANIFEST, fields: [] };
-    expect(kindProblems(sectionManifest, { 'section.json': '' }).map((item) => item.file)).toEqual(['template.html']);
+    const sectionManifest = { ...MANIFEST, settings: [] };
+    expect(kindProblems(sectionManifest, { 'section.json': '' }).map((item) => item.file)).toEqual(['template.astro']);
     const globalManifest = { ...sectionManifest, kind: 'global' as const };
-    expect(kindProblems(globalManifest, { 'template.html': '', 'styles.css': '' }).map((item) => item.file)).toEqual([
-      'template.html',
-      'styles.css',
+    expect(kindProblems(globalManifest, { 'template.astro': '' }).map((item) => item.file)).toEqual([
+      'template.astro',
       'script.ts',
     ]);
     expect(kindProblems(globalManifest, { 'script.js': '' })).toEqual([]);
@@ -82,12 +82,12 @@ describe('файлы секции', () => {
   it('вход скрипта — script.ts, иначе script.js, иначе скрипта нет', () => {
     expect(scriptEntryOf({ 'script.js': '', 'script.ts': '' })).toBe('script.ts');
     expect(scriptEntryOf({ 'script.js': '' })).toBe('script.js');
-    expect(scriptEntryOf({ 'template.html': '' })).toBeNull();
+    expect(scriptEntryOf({ 'template.astro': '' })).toBeNull();
   });
 
   it('текст проблемы — «файл:строка:колонка — текст»', () => {
-    const forbidden = problem('style-forbidden', 'styles.css', 'правило для body', { line: 3, column: 5 });
-    expect(problemText(forbidden)).toBe('styles.css:3:5 — правило для body');
+    const forbidden = problem('template-forbidden', 'template.astro', 'обработчик onclick', { line: 3, column: 5 });
+    expect(problemText(forbidden)).toBe('template.astro:3:5 — обработчик onclick');
     expect(problemText(problem('manifest-missing', 'section.json', 'нет section.json'))).toBe(
       'section.json — нет section.json',
     );

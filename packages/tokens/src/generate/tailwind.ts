@@ -53,7 +53,12 @@ function choiceVariants(name: string, values: readonly string[]): string[] {
   });
 }
 
-export function tailwindCss(dictionary: Dictionary): string {
+// Слой base — сброс стилей браузера — нужен странице темы. CSS секций (блок 1 «Секций и SDK») собирается без него.
+export interface TailwindOptions {
+  base: boolean;
+}
+
+export function tailwindCss(dictionary: Dictionary, options: TailwindOptions = { base: true }): string {
   const names = dictionaryNames(dictionary);
   const kindOf = (name: string): TokenKind => dictionary.tokens[name].kind;
   const themeLines = names.flatMap((name) => TAILWIND_THEME[kindOf(name)]?.(name) ?? []);
@@ -65,5 +70,6 @@ export function tailwindCss(dictionary: Dictionary): string {
     .filter((name) => kindOf(name) === 'choice')
     .flatMap((name) => choiceVariants(name, dictionary.tokens[name].values ?? []));
   const theme = block('@theme inline reference', [...TAILWIND_RESETS, ...themeLines]);
-  return `${[`/* ${GENERATED_NOTE} */`, theme, ...utilities, ...variants, BASE_LAYER].join('\n')}\n`;
+  const base = options.base ? [BASE_LAYER] : [];
+  return `${[`/* ${GENERATED_NOTE} */`, theme, ...utilities, ...variants, ...base].join('\n')}\n`;
 }

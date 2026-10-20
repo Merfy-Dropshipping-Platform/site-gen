@@ -21,6 +21,15 @@ const SETTINGS = {
   "logo-image": "https://minio.merfy.ru/merfy-sites/logo.png",
   "cart-type": "page",
 };
+const SECTIONS = {
+  home: [
+    {
+      id: "hero-1",
+      section: "shop:hero",
+      settings: { heading: "Шарфы к первым холодам" },
+    },
+  ],
+};
 
 function makeBareService(): any {
   const dep = {} as any;
@@ -34,7 +43,12 @@ async function store() {
     themeId: "bloom",
   });
   const initial = await makeBareService().buildInitialRevision("bloom");
-  fake.seedRevision("r0", { ...initial, tokens: TOKENS, settings: SETTINGS });
+  fake.seedRevision("r0", {
+    ...initial,
+    tokens: TOKENS,
+    settings: SETTINGS,
+    sections: SECTIONS,
+  });
   const adapter = new DocumentAdapter(fake.db, async () => ({}));
   const site = () => ({
     themeId: "bloom",
@@ -59,12 +73,13 @@ async function store() {
   return { fake, load, save };
 }
 
-describe("ключи tokens и settings новой темы проходят порт StoreContent", () => {
+describe("ключи tokens, settings и sections новой темы проходят порт StoreContent", () => {
   it("чтение отдаёт их как есть", async () => {
     const { load } = await store();
     const { document } = await load();
     expect(document.tokens).toEqual(TOKENS);
     expect(document.settings).toEqual(SETTINGS);
+    expect(document.sections).toEqual(SECTIONS);
   });
 
   it("запись с базой хранит их как есть, вместе с правкой", async () => {
@@ -95,5 +110,41 @@ describe("ключи tokens и settings новой темы проходят п�
       settings: { "cart-type": "drawer" },
     });
     expect(first.version).not.toBe(stale.version);
+  });
+
+  it("устаревшая вкладка: правка секций другой вкладкой не теряется при слиянии с правкой токенов", async () => {
+    const { fake, load, save } = await store();
+    const doc = (await load()).document as Doc;
+    const sections = {
+      home: [
+        { id: "hero-1", section: "shop:hero", settings: {} },
+        {
+          id: "hero-2",
+          section: "shop:hero",
+          settings: { heading: "Новинки" },
+        },
+      ],
+    };
+    await save({ ...doc, sections }, "r0");
+    const stale = await save(
+      { ...doc, tokens: { root: { "radius-button": 0 } } },
+      "r0",
+    );
+    expect(stale.effect?.merged).toBe(true);
+    expect(fake.storedData(stale.version)).toMatchObject({
+      tokens: { root: { "radius-button": 0 } },
+      sections,
+    });
+  });
+
+  it("устаревшая вкладка с правкой секций: её секции записаны, токены другой вкладки на месте", async () => {
+    const { fake, load, save } = await store();
+    const doc = (await load()).document as Doc;
+    const tokens = { root: { "radius-button": 0 } };
+    await save({ ...doc, tokens }, "r0");
+    const sections = { home: [] };
+    const stale = await save({ ...doc, sections }, "r0");
+    expect(stale.effect?.merged).toBe(true);
+    expect(fake.storedData(stale.version)).toMatchObject({ tokens, sections });
   });
 });

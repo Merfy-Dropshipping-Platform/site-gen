@@ -3,8 +3,9 @@ import { modulePath, type CodeAssets, type ShellBuild } from '../src/code';
 import type { BuildInputs, CodeInput, CodeSection } from '../src/inputs';
 import { changedInputs } from './support';
 
-// Код секций для тестов (блок 7): сборка ядра из двух файлов, три скрипта и четыре секции разных авторов — платформы,
-// темы, расширения и глобальный скрипт расширения.
+// Код секций для тестов (блок 7; SDK 1 — блок 1 «Секций и SDK»): сборка ядра из двух файлов, три скрипта, модули
+// рендера и четыре секции разных авторов — две своих секции магазина (наши, п. 1), расширения и глобальный скрипт
+// расширения.
 const bytes = (text: string): Uint8Array => Buffer.from(text, 'utf8');
 
 const SHELL_FILES = [
@@ -42,50 +43,50 @@ export const SRC = {
   geo: `/${modulePath(sha256(SCRIPTS.geo))}`,
 };
 
-function section(
-  name: string,
-  kind: CodeSection['kind'],
-  html: string,
-  css: string,
-  script: Uint8Array | null,
-): CodeSection {
-  return { name, kind, hash: hashOf({ name, html, css }), html, css, script: script === null ? null : sha256(script) };
+// Модули рендера — текст по отпечатку; в тестах страницы их рисует подставная функция рендера.
+const RENDER_MODULES = {
+  hero: 'export default "hero"; // первый экран',
+  badge: 'export default "badge"; // значок корзины',
+  reviews: 'export default "reviews"; // отзывы',
+};
+
+export const RENDERS: ReadonlyMap<string, string> = new Map(
+  Object.values(RENDER_MODULES).map((module): [string, string] => [sha256(bytes(module)), module]),
+);
+
+function section(name: string, kind: CodeSection['kind'], render: string | null, script: Uint8Array | null): CodeSection {
+  const renderHash = render === null ? null : sha256(bytes(render));
+  const scriptHash = script === null ? null : sha256(script);
+  return { name, kind, hash: hashOf({ name, render: renderHash, script: scriptHash }), render: renderHash, script: scriptHash };
 }
 
-export const GEO = section('geo:locate', 'global', '', '', SCRIPTS.geo);
-export const SCARF = section(
-  'nova:scarf-colors',
-  'section',
-  '<button data-color="чёрный">Чёрный</button>',
-  '.colors{gap:8px}',
-  null,
-);
-export const BADGE = section(
-  'platform:cart-badge',
-  'section',
-  '<a class="badge" href="/cart">Корзина <span data-count>0</span></a>',
-  '.badge{color:#1f6feb}',
-  SCRIPTS.badge,
-);
-export const REVIEWS = section(
-  'reviews:list',
-  'section',
-  '<button data-buy="scarf-1">Купить такой же</button>',
-  '',
-  SCRIPTS.reviews,
-);
+export const GEO = section('geo:locate', 'global', null, SCRIPTS.geo);
+export const HERO = section('shop:hero', 'section', RENDER_MODULES.hero, null);
+export const BADGE = section('shop:cart-badge', 'section', RENDER_MODULES.badge, SCRIPTS.badge);
+export const REVIEWS = section('reviews:list', 'section', RENDER_MODULES.reviews, SCRIPTS.reviews);
 
 // Код магазина: секции — по имени, как их отдаёт реестр; на главной отзывы стоят дважды.
 export const CODE: CodeInput = {
-  sections: [GEO, SCARF, BADGE, REVIEWS],
-  pages: { home: ['platform:cart-badge', 'nova:scarf-colors', 'reviews:list', 'reviews:list'] },
+  sections: [GEO, HERO, BADGE, REVIEWS],
+  pages: {
+    home: [
+      { id: 'cart-badge-1', section: 'shop:cart-badge', settings: {} },
+      { id: 'hero-1', section: 'shop:hero', settings: { heading: 'Шарфы к первым холодам' } },
+      { id: 'list-1', section: 'reviews:list', settings: {} },
+      { id: 'list-2', section: 'reviews:list', settings: {} },
+    ],
+  },
   globals: ['geo:locate'],
 };
 
 // Секция без скрипта: ядро не нужно, shell остаётся null.
-export const STYLE_ONLY: CodeInput = { sections: [SCARF], pages: { home: ['nova:scarf-colors'] }, globals: [] };
+export const NO_SCRIPT: CodeInput = {
+  sections: [HERO],
+  pages: { home: [{ id: 'hero-1', section: 'shop:hero', settings: {} }] },
+  globals: [],
+};
 
-export const ASSETS: CodeAssets = { shell: SHELL_BUILD, modules: MODULES };
+export const ASSETS: CodeAssets = { shell: SHELL_BUILD, modules: MODULES, renders: RENDERS };
 
 // Входы стенда с ядром и кодом; change — правка поверх.
 export function codeInputs(change: (inputs: BuildInputs) => void = () => undefined): BuildInputs {

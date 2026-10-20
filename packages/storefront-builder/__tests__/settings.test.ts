@@ -31,6 +31,7 @@ describe('настройки', () => {
       releaseSlots: 1,
       drawSlots: 1,
       drawTimeoutMs: 3000,
+      previewRenderers: 5,
       leaseMs: 300_000,
       drainMs: 20_000,
       reconcileMs: 3_600_000,
@@ -59,8 +60,14 @@ describe('настройки', () => {
   });
 
   it('числа и флаг поиска — из строк окружения', () => {
-    const settings = readSettings({ ...ENV, BUILD_SLOTS: '2', DRAW_SLOTS: '4', STOREFRONT_INDEXABLE: 'true' });
-    expect(settings).toMatchObject({ buildSlots: 2, drawSlots: 4, indexable: true });
+    const settings = readSettings({
+      ...ENV,
+      BUILD_SLOTS: '2',
+      DRAW_SLOTS: '4',
+      PREVIEW_RENDERERS: '2',
+      STOREFRONT_INDEXABLE: 'true',
+    });
+    expect(settings).toMatchObject({ buildSlots: 2, drawSlots: 4, previewRenderers: 2, indexable: true });
     const indexNow = readSettings({ ...ENV, INDEXNOW_KEY: 'key-12345678' }).indexNow;
     expect(indexNow).toEqual({ key: 'key-12345678', endpoint: 'https://yandex.com/indexnow' });
   });

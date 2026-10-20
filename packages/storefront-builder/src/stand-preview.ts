@@ -6,14 +6,15 @@ import {
   type StandTheme,
 } from '@merfy/storefront-build';
 import { TokenError, migrateTokenEdits, parseTokenEdits, type TokenMigrations } from '@merfy/tokens';
-import type { ThemePins } from './theme-catalog';
+import type { ThemeCatalog, ThemePins } from './theme-catalog';
 import { z } from 'zod';
 import type { DrawAnswer } from './draw';
 import { inlineAssets, type Assets } from './inline-assets';
 import { inlineFonts, type FontBytes } from './preview-fonts';
 import type { Log } from './log';
+import type { PreviewRenderers } from './preview-renderers';
 import type { Queryable } from './shop-state';
-import { revisionKeySql } from './snapshot';
+import { revisionKeySql, type SnapshotDeps } from './snapshot';
 
 // Превью магазина новой темы (design.md блока 8, П8-1 А, «Превью»): сборщик рисует стенд темы тем же рисовальщиком, что
 // и магазин, в mode: preview с правками мерчанта из текущей ревизии. Данные — заново на каждый запрос, без кэша.
@@ -42,6 +43,11 @@ export interface PreviewDeps {
   // Байты файлов шрифтов для превью (блок 12): из хранилища по отпечатку.
   fonts: FontBytes;
   log: Log;
+  // Снимок магазина и каталог тем — для превью главной (блок 1 «Секций и SDK»): те же, что у сборки и дорисовки.
+  snapshot: SnapshotDeps;
+  catalog: ThemeCatalog;
+  // Процессы рендера секций превью — по магазину (preview-renderers.ts).
+  renderers: PreviewRenderers;
 }
 
 const STAND_SQL = `SELECT s.id, s.name, s.theme_id, s.theme_version, s.public_url, ${revisionKeySql('tokens')} AS tokens,
@@ -69,20 +75,21 @@ const TEXT = {
 } as const;
 
 // Превью всегда свежее: ни шлюз, ни браузер его не хранят.
-const answer = (status: number, body: string, type = HTML): DrawAnswer => ({
+export const answer = (status: number, body: string, type = HTML): DrawAnswer => ({
   status,
   body,
   headers: { 'Content-Type': type, 'Cache-Control': 'no-store' },
 });
-const jsonAnswer = (status: number, value: unknown): DrawAnswer => answer(status, JSON.stringify(value), JSON_TYPE);
+export const jsonAnswer = (status: number, value: unknown): DrawAnswer =>
+  answer(status, JSON.stringify(value), JSON_TYPE);
 
-interface StandShop {
+export interface StandShop {
   row: StandRow;
   theme: PreviewTheme;
 }
 
 // Магазин и его тема новой архитектуры. Не нашли — готовый ответ: 400, 404.
-async function standShop(deps: PreviewDeps, rawShop: string | null): Promise<StandShop | DrawAnswer> {
+export async function standShop(deps: PreviewDeps, rawShop: string | null): Promise<StandShop | DrawAnswer> {
   const shop = z.uuid().safeParse(rawShop);
   if (!shop.success) return answer(400, TEXT.shop);
   const rows = (await deps.db.query(STAND_SQL, [shop.data])).rows.map((row) => standRowSchema.parse(row));
@@ -102,7 +109,7 @@ function migratedTokens(tokens: StandRow['tokens'], migrations: TokenMigrations)
   return parsed.success ? parsed.data : tokens;
 }
 
-const isAnswer = (value: StandShop | DrawAnswer): value is DrawAnswer => 'status' in value;
+export const isAnswer = (value: StandShop | DrawAnswer): value is DrawAnswer => 'status' in value;
 
 const inputsOf = (deps: PreviewDeps, { row, theme }: StandShop): StandInputs => ({
   site: { id: row.id, name: row.name, publicUrl: row.public_url },

@@ -17,5 +17,18 @@ export {
   type SectionRow,
   type Visibility,
 } from './registry';
-export { acceptReleases, type ReleaseDeps, type ReleaseFolder, type ReleaseLog, type ReleaseSummary } from './release';
+export { currentSection, type CurrentSection } from './current';
+export {
+  defaultSettings,
+  resolveSectionSettings,
+  settingsTexts,
+  type ResolvedSettings,
+} from './settings';
 export { DEFAULT_SANDBOX, prepareInWorker, type SandboxOptions } from './sandbox';
+export {
+  startSectionRenderer,
+  withSectionRenderer,
+  type RendererOptions,
+  type SectionRenderRequest,
+  type SectionRenderer,
+} from './render';

@@ -8,9 +8,11 @@ import {
   Controller,
   Get,
   Global,
+  HttpCode,
   INestApplication,
   Module,
   Param,
+  Post,
 } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
@@ -29,6 +31,12 @@ class OldPreviewController {
   @Get()
   page(@Param("id") id: string): string {
     return `старое превью ${id}`;
+  }
+
+  @Post("block")
+  @HttpCode(200)
+  block(@Param("id") id: string): string {
+    return `старый блок ${id}`;
   }
 }
 
@@ -63,6 +71,8 @@ async function startBuilder(seen: Seen[]): Promise<Server> {
       seen.push({ method: req.method ?? "", url: req.url ?? "", body });
       const json =
         req.url?.startsWith("/preview/tokens") ||
+        req.url?.startsWith("/preview/section") ||
+        req.url?.startsWith("/sections") ||
         req.url?.startsWith("/theme-panel");
       res.writeHead(200, {
         "content-type": json
@@ -118,7 +128,7 @@ describe("превью новой темы — от сборщика, нынеш
     expect(fresh.text).toBe("<h1>стенд</h1>");
     expect(fresh.headers["cache-control"]).toBe("no-store");
     expect(seen).toEqual([
-      { method: "GET", url: `/preview?shop=${NEW_SITE}`, body: "" },
+      { method: "GET", url: `/preview?shop=${NEW_SITE}&page=%2F`, body: "" },
     ]);
     const old = await request(app.getHttpServer()).get(
       `/api/sites/${OLD_SITE}/preview`,
@@ -159,6 +169,64 @@ describe("превью новой темы — от сборщика, нынеш
       .post(`/api/sites/${OLD_SITE}/preview/tokens`)
       .send(tokens);
     expect(old.status).toBe(404);
+  });
+
+  it("превью без page и стенд — page уходит к сборщику как есть", async () => {
+    await request(app.getHttpServer()).get(`/api/sites/${NEW_SITE}/preview`);
+    await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/preview?page=stand`,
+    );
+    expect(seen.map((call) => call.url)).toEqual([
+      `/preview?shop=${NEW_SITE}&page=`,
+      `/preview?shop=${NEW_SITE}&page=stand`,
+    ]);
+  });
+
+  it("один блок превью новой темы — POST к сборщику с телом; нынешний магазин — старый блок", async () => {
+    const block = {
+      instance: {
+        id: "hero-1",
+        section: "shop:hero",
+        settings: { heading: "Шарфы к первым холодам" },
+      },
+    };
+    const fresh = await request(app.getHttpServer())
+      .post(`/api/sites/${NEW_SITE}/preview/block`)
+      .send(block);
+    expect(fresh.status).toBe(200);
+    expect(fresh.body).toEqual({ ok: true });
+    expect(fresh.headers["cache-control"]).toBe("no-store");
+    expect(seen).toEqual([
+      {
+        method: "POST",
+        url: `/preview/section?shop=${NEW_SITE}`,
+        body: JSON.stringify(block),
+      },
+    ]);
+    const old = await request(app.getHttpServer())
+      .post(`/api/sites/${OLD_SITE}/preview/block`)
+      .send({ blockType: "Hero", props: {}, themeId: "rose" });
+    expect(old.text).toBe(`старый блок ${OLD_SITE}`);
+    expect(seen).toHaveLength(1);
+  });
+
+  it("список секций новой темы — ответ сборщика как есть; нынешний магазин — 404", async () => {
+    const fresh = await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/sections`,
+    );
+    expect(fresh.status).toBe(200);
+    expect(fresh.body).toEqual({ ok: true });
+    expect(seen).toEqual([
+      { method: "GET", url: `/sections?shop=${NEW_SITE}`, body: "" },
+    ]);
+    const old = await request(app.getHttpServer()).get(
+      `/api/sites/${OLD_SITE}/sections`,
+    );
+    expect(old.status).toBe(404);
+    expect(old.body).toEqual({
+      problems: ["магазин не на теме новой архитектуры"],
+    });
+    expect(seen).toHaveLength(1);
   });
 
   it("STOREFRONT_BUILDER_URL не задан — 503 с именем переменной; сборщик лежит — 502", async () => {

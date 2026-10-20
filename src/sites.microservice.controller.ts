@@ -21,6 +21,7 @@ import {
   RevisionConflictError,
   RevisionMergeConflictError,
 } from "./content/store-content.port";
+import { SectionIdDuplicateError } from "./content/section-ids";
 
 /** Ошибка записи ревизии → устойчивый конверт RPC (шлюз отображает код в HTTP). */
 function revisionWriteFailure(e: any) {
@@ -37,6 +38,14 @@ function revisionWriteFailure(e: any) {
       success: false,
       code: "REVISION_CONFLICT",
       message: "revision_conflict",
+    };
+  }
+  if (e instanceof SectionIdDuplicateError) {
+    return {
+      success: false,
+      code: "section-id-duplicate",
+      message: e.message,
+      duplicates: e.duplicates,
     };
   }
   return { success: false, message: e?.message ?? "internal_error" };
@@ -70,7 +79,8 @@ export class SitesMicroserviceController {
   async createSite(@Payload() data: any, @Ctx() _ctx: RmqContext) {
     try {
       this.logger.log(`create_site request: ${JSON.stringify(data)}`);
-      const { tenantId, actorUserId, name, slug, companyName, themeId } = data ?? {};
+      const { tenantId, actorUserId, name, slug, companyName, themeId } =
+        data ?? {};
       if (!tenantId || !actorUserId || !name) {
         return {
           success: false,
@@ -298,7 +308,9 @@ export class SitesMicroserviceController {
         tenantId,
         siteId,
         limit ?? 50,
-        before ? { createdAt: new Date(before.createdAt), id: before.id } : undefined,
+        before
+          ? { createdAt: new Date(before.createdAt), id: before.id }
+          : undefined,
       );
       return { success: true, ...res };
     } catch (e: any) {
@@ -659,9 +671,7 @@ export class SitesMicroserviceController {
    */
   @EventPattern("site-gen.domain_ready")
   async handleDomainReady(@Payload() data: any) {
-    this.logger.log(
-      `domain_ready raw payload: ${JSON.stringify(data)}`,
-    );
+    this.logger.log(`domain_ready raw payload: ${JSON.stringify(data)}`);
     const { domainId, domainName, siteId, isExternal } = data ?? {};
     this.logger.log(
       `domain_ready parsed: domainId=${domainId}, domainName=${domainName}, siteId=${siteId}, isExternal=${isExternal}`,
@@ -673,7 +683,12 @@ export class SitesMicroserviceController {
       return;
     }
     try {
-      await this.service.switchDomain({ siteId, domainId, domainName, type: isExternal ? "external" : "purchased" });
+      await this.service.switchDomain({
+        siteId,
+        domainId,
+        domainName,
+        type: isExternal ? "external" : "purchased",
+      });
       this.logger.log(
         `domain_ready completed: site ${siteId} -> ${domainName}`,
       );
@@ -700,9 +715,7 @@ export class SitesMicroserviceController {
       wasActive: boolean;
     },
   ) {
-    this.logger.log(
-      `domain_detached raw payload: ${JSON.stringify(data)}`,
-    );
+    this.logger.log(`domain_detached raw payload: ${JSON.stringify(data)}`);
     const { domainId, name, siteId, wasActive } = data ?? {};
     if (!siteId || !domainId) {
       this.logger.warn(

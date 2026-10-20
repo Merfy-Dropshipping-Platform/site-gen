@@ -12,8 +12,7 @@ const section = (name: string, hash = OTHER): CodeSection => ({
   name,
   kind: 'section',
   hash,
-  html: `<p>${hash}</p>`,
-  css: '',
+  render: null,
   script: null,
 });
 const withCode = (sections: CodeSection[], globals: string[] = []): BuildInputs => ({
@@ -31,13 +30,13 @@ const reviews = (hash: string): BuildInputs =>
   );
 
 const newPlatform: BuildInputs = {
-  ...withCode([section('platform:cart-badge')], ['platform:analytics']),
+  ...INPUTS,
   platform: { renderHash: OTHER },
   shell: { version: '9.9.9', hash: OTHER, preload: ['shell.js'] },
 };
 
 describe('dataKey', () => {
-  it('другой только код платформы: renderHash, ядро, секции платформы — ключ данных тот же, ключ сборки другой', () => {
+  it('другой только код платформы: renderHash и ядро — ключ данных тот же, ключ сборки другой', () => {
     expect(dataKey(newPlatform)).toBe(dataKey(INPUTS));
     expect(buildKey(newPlatform)).not.toBe(buildKey(INPUTS));
   });
@@ -53,9 +52,9 @@ describe('dataKey', () => {
     expect(buildKey(reviews(HASH_B))).not.toBe(buildKey(reviews(HASH_A)));
   });
 
-  it('включили или выключили расширение, сменили закрепление темы, другая секция темы — ключ данных другой', () => {
+  it('включили или выключили расширение, сменили закрепление темы, другая правка своей секции — ключ данных другой', () => {
     const pinned: BuildInputs = { ...INPUTS, theme: { ...INPUTS.theme, version: '9.9.9', contentHash: OTHER } };
-    const themeSection = (hash: string) => withCode([section(`${INPUTS.theme.id}:scarf`, hash)]);
+    const themeSection = (hash: string) => withCode([section('shop:scarf', hash)]);
     expect(dataKey(reviews(HASH_A))).not.toBe(dataKey(INPUTS));
     expect(dataKey(pinned)).not.toBe(dataKey(INPUTS));
     expect(dataKey(themeSection(HASH_A))).not.toBe(dataKey(themeSection(HASH_B)));

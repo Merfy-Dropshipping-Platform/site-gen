@@ -6,11 +6,12 @@
  *
  * Бриф: merfy-mcp/docs/plans/2026-09-23-wave1-content-port.md §1.1.
  */
-import { Injectable } from '@nestjs/common';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { DocumentAdapter } from './document.adapter';
-import { buildThemeCanon } from './canon';
-import type * as schema from '../db/schema';
+import { Injectable } from "@nestjs/common";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { DocumentAdapter } from "./document.adapter";
+import { buildThemeCanon } from "./canon";
+import { assertSectionIds } from "./section-ids";
+import type * as schema from "../db/schema";
 import type {
   CreateRevisionParams,
   CreateRevisionResult,
@@ -29,7 +30,7 @@ import type {
   SaveResult,
   StoreContent,
   StoreContentSite,
-} from './store-content.port';
+} from "./store-content.port";
 
 @Injectable()
 export class StoreContentService implements StoreContent {
@@ -39,11 +40,18 @@ export class StoreContentService implements StoreContent {
     return this.resolveAdapter(opts.site).load(siteId, opts);
   }
 
-  async loadOrNull(siteId: string, opts: LoadOptions): Promise<LoadResult | null> {
+  async loadOrNull(
+    siteId: string,
+    opts: LoadOptions,
+  ): Promise<LoadResult | null> {
     return this.resolveAdapter(opts.site).loadOrNull(siteId, opts);
   }
 
   async save(siteId: string, params: SaveParams): Promise<SaveResult> {
+    // Повтор id секции на странице — отказ до записи (блок 1 «Секций и SDK»,
+    // п. 10). Запись операциями (ops) документа целиком не несёт — её
+    // проверяет save-on-base.ts после операций.
+    assertSectionIds(params.document);
     return this.resolveAdapter(params.site).save(siteId, params);
   }
 
@@ -64,10 +72,17 @@ export class StoreContentService implements StoreContent {
     revisionId: string,
     opts: GetOptions,
   ): Promise<RevisionEnvelope | null> {
-    return this.resolveAdapter(opts.site).envelopeOrNull(siteId, revisionId, opts);
+    return this.resolveAdapter(opts.site).envelopeOrNull(
+      siteId,
+      revisionId,
+      opts,
+    );
   }
 
-  async rollback(siteId: string, params: RollbackParams): Promise<RollbackResult> {
+  async rollback(
+    siteId: string,
+    params: RollbackParams,
+  ): Promise<RollbackResult> {
     return this.resolveAdapter(params.site).rollback(siteId, params);
   }
 
@@ -110,9 +125,9 @@ export class StoreContentService implements StoreContent {
   }
 
   private resolveAdapter(site: StoreContentSite): StoreContent {
-    const contentModel = site.contentModel ?? 'document';
-    if (contentModel === 'document') return this.documentAdapter;
-    throw new Error('content_model_not_supported');
+    const contentModel = site.contentModel ?? "document";
+    if (contentModel === "document") return this.documentAdapter;
+    throw new Error("content_model_not_supported");
   }
 
   /**
@@ -141,7 +156,7 @@ function toSaveParams(params: CreateRevisionParams): SaveParams {
   };
   if (params.base === undefined) {
     return {
-      mode: 'blind',
+      mode: "blind",
       setCurrent: params.setCurrent,
       expectedVersion: params.expectedCurrentRevisionId,
       ...common,
@@ -149,14 +164,14 @@ function toSaveParams(params: CreateRevisionParams): SaveParams {
   }
   // Запись от базы всегда делает ревизию текущей и не знает жёсткого CAS:
   // такие сочетания — явная ошибка, а не тихий уход в другой путь.
-  if (!params.setCurrent) throw new Error('base_requires_set_current');
+  if (!params.setCurrent) throw new Error("base_requires_set_current");
   if (params.expectedCurrentRevisionId !== undefined) {
-    throw new Error('base_and_expected_version_are_exclusive');
+    throw new Error("base_and_expected_version_are_exclusive");
   }
   return {
-    mode: 'on-base',
+    mode: "on-base",
     base: params.base,
-    mergePolicy: params.mergePolicy ?? 'reject-conflicts',
+    mergePolicy: params.mergePolicy ?? "reject-conflicts",
     ...common,
   };
 }

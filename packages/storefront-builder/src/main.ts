@@ -18,11 +18,11 @@ import { startDrawServer } from './draw';
 import { createIndexNow } from './indexnow';
 import { jsonLog } from './log';
 import { previewVia } from './preview';
+import { createPreviewRenderers } from './preview-renderers';
 import { openRpc } from './rpc';
 import { enqueueVia, startRuntime, type RuntimeDeps } from './runtime';
 import { storeFontBytes } from './preview-fonts';
 import { consumeSectionErrors } from './section-error-store';
-import { acceptSectionReleases, releaseFolders } from './section-releases';
 import { RETRY_DELAYS_MS, readSettings } from './settings';
 import { createSlots } from './slots';
 import { archiveLoader, createThemeCatalog, recordedVersions } from './theme-catalog';
@@ -143,8 +143,6 @@ const deps: RuntimeDeps = {
   reconcileMs: settings.reconcileMs,
 };
 
-// Секции платформы и тем — в реестр до первой сборки (дверь выпуска, п. 21); отказ — строка журнала, старт идёт дальше.
-await acceptSectionReleases({ db, store, log }, releaseFolders(ROOT, shell.version, loaded.themes));
 const runtime = await startRuntime(deps);
 // Ошибки секций из браузеров (блок 11, часть 4): очередь шлюза → таблица storefront_section_error.
 await consumeSectionErrors({ broker, db, log });
@@ -164,7 +162,19 @@ await conductor.resume();
 // Превью — версией закрепления магазина; схема панели — по темам образа (блок 10, задача 4).
 const previewOf = (themeId: string, version: string) => catalog.previewAt(themeId, version);
 const fonts = storeFontBytes(store);
-const preview = { db, themes: loaded.previews, pins: catalog, previewOf, apiUrl: settings.apiUrl, fonts, log };
+const previewRenderers = createPreviewRenderers({ limit: settings.previewRenderers });
+const preview = {
+  db,
+  themes: loaded.previews,
+  pins: catalog,
+  previewOf,
+  apiUrl: settings.apiUrl,
+  fonts,
+  log,
+  snapshot: pinnedSnapshot,
+  catalog,
+  renderers: previewRenderers,
+};
 const drawDeps = {
   store,
   snapshot: pinnedSnapshot,
@@ -196,6 +206,7 @@ async function shutdown(): Promise<void> {
   await broker.close();
   await rpc.close();
   await catalog.close();
+  await previewRenderers.close();
   await loaded.close();
   await db.end();
   log('builder-stopped');

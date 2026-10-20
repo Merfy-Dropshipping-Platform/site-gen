@@ -6,8 +6,8 @@ const fixture = (name: string): string => fileURLToPath(new URL(`../fixtures/wor
 const INPUT = {
   prefix: 'nova',
   files: {
-    'section.json': JSON.stringify({ v: 1, name: 'scarf-colors', kind: 'section', title: 'Цвета шарфа' }),
-    'template.html': '<p>Цвета</p>',
+    'section.json': JSON.stringify({ sdk: 1, name: 'scarf-colors', kind: 'section', title: 'Цвета шарфа' }),
+    'template.astro': '<p>Цвета</p>',
   },
 };
 

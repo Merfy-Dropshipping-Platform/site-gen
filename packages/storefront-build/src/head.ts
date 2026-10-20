@@ -7,13 +7,14 @@ import {
   type TokenEdits,
   type TokenMigrations,
 } from '@merfy/tokens';
-import { codeHead, pageSections } from './code';
+import { codeHead } from './code';
 import { themeFonts, themeTokensCss } from './fonts';
 import { countersOf } from './counters';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals, ShopSocial } from './locals';
 import type { ShopRoute } from './routes';
+import { EMPTY_PAGE_CONTENT, type PageContent, type PageMode } from './sections-render';
 
 // Данные страницы для рисовальщика (design.md блока 4, В4-4 Б и SEO). Всё индексируемое — язык, заголовок, описание,
 // ключевые слова, канонический адрес — считает сборка. Конфиг магазина (блок 3) и CSS токенов с правками мерчанта (блок 1) приходят
@@ -63,11 +64,21 @@ function pageStyles(inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMi
   return { fontsCss: fonts.css, fontPreload: fonts.preload ?? '', tokensCss: tokens };
 }
 
+type ConfigAnalytics = Parameters<typeof buildStorefrontConfig>[0]['analytics'];
+
+// Аналитика — только на опубликованном сайте: превью конструктора событий не шлёт (Р1).
+const ANALYTICS_BY_MODE: Record<PageMode, (inputs: BuildInputs) => ConfigAnalytics> = {
+  live: (inputs) => ({ url: inputs.env.analyticsUrl, counters: countersOf(inputs.data.entities) }),
+  preview: () => null,
+};
+
+// content — секции страницы, нарисованные заранее (page.ts): разметка, CSS и режим. По умолчанию секций нет.
 export function pageLocals(
   inputs: BuildInputs,
   route: ShopRoute,
   theme: ParsedTheme,
   migrations: TokenMigrations = NO_MIGRATIONS,
+  content: PageContent = EMPTY_PAGE_CONTENT,
 ): ShopPageLocals {
   const name = shopName(inputs.site);
   const config = buildStorefrontConfig({
@@ -75,8 +86,8 @@ export function pageLocals(
     theme: inputs.theme,
     env: inputs.env,
     page: { id: route.id, path: route.path },
-    mode: 'live',
-    analytics: { url: inputs.env.analyticsUrl, counters: countersOf(inputs.data.entities) },
+    mode: content.mode,
+    analytics: ANALYTICS_BY_MODE[content.mode](inputs),
   });
   const head = {
     lang: config.locale,
@@ -89,8 +100,8 @@ export function pageLocals(
     configHtml: configTag(config),
     ...pageStyles(inputs, theme, migrations),
     // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены.
-    codeHtml: codeHead(inputs, route.id),
+    codeHtml: codeHead(inputs, route.id, content.sectionsCss, content.mode),
     social: socialOf(name, config.locale, inputs.site.logoUrl),
   };
-  return { head, shop: { name }, year: inputs.year, sections: pageSections(inputs, route.id) };
+  return { head, shop: { name }, year: inputs.year, sections: content.sections };
 }

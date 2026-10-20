@@ -18,6 +18,7 @@ import {
 } from "./storefront-builder.client";
 
 const PREVIEW_PATH = /^\/api\/sites\/([^/]+)\/preview\/?$/;
+const PREVIEW_BLOCK_PATH = /^\/api\/sites\/([^/]+)\/preview\/block\/?$/;
 const PUCK_CONFIG_PATH = /^\/api\/themes\/([^/]+)\/puck-config\/?$/;
 
 export function sendAnswer(res: Response, answer: BuilderAnswer): void {
@@ -28,7 +29,10 @@ export function sendAnswer(res: Response, answer: BuilderAnswer): void {
     .send(answer.body);
 }
 
-/** GET /api/sites/:id/preview — стенд новой темы от сборщика. */
+/**
+ * GET /api/sites/:id/preview — превью магазина новой темы от сборщика:
+ * главная с секциями (page нет, "/" или "home") или стенд темы (page=stand).
+ */
 @Injectable()
 export class StandPreviewMiddleware implements NestMiddleware {
   constructor(
@@ -40,7 +44,38 @@ export class StandPreviewMiddleware implements NestMiddleware {
     const siteId = PREVIEW_PATH.exec(req.path)?.[1];
     if (siteId === undefined || !(await this.handoff.isNewTheme(siteId)))
       return next();
-    sendAnswer(res, await this.builder.call("/preview", { shop: siteId }));
+    const page = typeof req.query.page === "string" ? req.query.page : "";
+    sendAnswer(
+      res,
+      await this.builder.call("/preview", { shop: siteId, page }),
+    );
+  }
+}
+
+/**
+ * POST /api/sites/:id/preview/block (блок 1 «Секций и SDK») — один блок превью
+ * магазина новой темы: тело { instance } → { html, css } от сборщика. Нынешние
+ * темы идут дальше, в PreviewController, как раньше.
+ */
+@Injectable()
+export class PreviewBlockMiddleware implements NestMiddleware {
+  constructor(
+    private readonly handoff: StorefrontHandoff,
+    private readonly builder: StorefrontBuilderClient,
+  ) {}
+
+  async use(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const siteId = PREVIEW_BLOCK_PATH.exec(req.path)?.[1];
+    if (siteId === undefined || !(await this.handoff.isNewTheme(siteId)))
+      return next();
+    sendAnswer(
+      res,
+      await this.builder.call(
+        "/preview/section",
+        { shop: siteId },
+        JSON.stringify(req.body ?? {}),
+      ),
+    );
   }
 }
 

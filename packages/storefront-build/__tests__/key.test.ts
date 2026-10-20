@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseBuildInputs, type BuildInputs } from '../src/inputs';
 import { buildKey } from '../src/key';
 import { changedInputs, standInputs } from './support';
-import { SHELL, STYLE_ONLY, codeInputs } from './support-code';
+import { NO_SCRIPT, SHELL, codeInputs } from './support-code';
 
 const OTHER_HASH = `sha256:${'f'.repeat(64)}`;
 
@@ -15,7 +15,7 @@ const EDITS: Record<string, (inputs: BuildInputs) => void> = {
   'theme.contentHash': (inputs) => (inputs.theme.contentHash = OTHER_HASH),
   shell: (inputs) => (inputs.shell = structuredClone(SHELL)),
   fonts: (inputs) => (inputs.fonts = OTHER_HASH),
-  code: (inputs) => (inputs.code = structuredClone(STYLE_ONLY)),
+  code: (inputs) => (inputs.code = structuredClone(NO_SCRIPT)),
   'revision.tokens': (inputs) => (inputs.revision.tokens = { root: { 'radius-button': 6 } }),
   'site.id': (inputs) => (inputs.site.id = '00000000-0000-4000-8000-000000000002'),
   'site.name': (inputs) => (inputs.site.name = 'Стенд Nova 2'),
@@ -70,11 +70,10 @@ describe('buildKey', () => {
     expect(buildKey(removed)).not.toBe(buildKey(standInputs));
   });
 
-  it('правка внутри кода секций — другой ключ: разметка, стили, скрипт, порядок мест, место убрали', () => {
+  it('правка внутри кода секций — другой ключ: модуль рендера, скрипт, порядок мест, место убрали', () => {
     const base = buildKey(codeInputs());
     const edits: ((inputs: BuildInputs) => void)[] = [
-      (inputs) => (inputs.code.sections[1].html = '<p>Другая разметка</p>'),
-      (inputs) => (inputs.code.sections[1].css = 'p{margin:0}'),
+      (inputs) => (inputs.code.sections[1].render = inputs.code.sections[3].render),
       (inputs) => (inputs.code.sections[2].script = inputs.code.sections[3].script),
       (inputs) => inputs.code.pages.home.reverse(),
       (inputs) => inputs.code.pages.home.pop(),

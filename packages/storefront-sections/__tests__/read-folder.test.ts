@@ -7,7 +7,7 @@ const SECTIONS = fileURLToPath(new URL('../fixtures/sections', import.meta.url))
 describe('папки секций', () => {
   it('файлы секции — путь от папки через «/» и текст', async () => {
     const files = await readSectionFolder(`${SECTIONS}/theme-scarf-colors`);
-    expect(Object.keys(files)).toEqual(['lib/label.ts', 'script.ts', 'section.json', 'styles.css', 'template.html']);
+    expect(Object.keys(files)).toEqual(['lib/label.ts', 'script.ts', 'section.json', 'template.astro']);
     expect(files['lib/label.ts']).toContain('Выбран');
   });
 
@@ -15,8 +15,8 @@ describe('папки секций', () => {
     const folders = await listSectionFolders(SECTIONS);
     expect(folders.map((folder) => folder.slice(SECTIONS.length + 1))).toEqual([
       'bad-import',
-      'bad-style',
       'geo-locate',
+      'hero',
       'reviews-list',
       'shop-broken',
       'shop-color-match',

@@ -6,7 +6,7 @@ import { acceptSection } from '../src/accept';
 import { doorSchema, type Door } from '../src/doors';
 import { problemText } from '../src/problems';
 import { readSectionFolder } from '../src/read-folder';
-import { rollbackSection, sectionHistory, type SectionRow } from '../src/registry';
+import { publishDrafts, rollbackSection, sectionHistory, type SectionRow } from '../src/registry';
 
 // pnpm sections — двери своей секции и расширения, пока нет конструктора, MCP и регистрации версии в сервисе
 // расширений (design.md блока 7, п. 21); история своей секции и «верни как было» (С7-20 Б). База и хранилище —
@@ -15,6 +15,7 @@ import { rollbackSection, sectionHistory, type SectionRow } from '../src/registr
 //   pnpm sections accept <папка> --extension <id> --release <версия>
 //   pnpm sections history --shop <uuid> --name shop:<имя>
 //   pnpm sections rollback --shop <uuid> --name shop:<имя> --id <id строки>
+//   pnpm sections publish --shop <uuid>
 // Ответ — одна строка JSON; отказ приёма, неверная команда или нет строки — код выхода 1.
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
@@ -94,11 +95,18 @@ async function rollback(): Promise<Answer> {
   };
 }
 
-const COMMANDS: Partial<Record<string, () => Promise<Answer>>> = { accept, history, rollback };
+// Публикация своих секций магазина без сборки (блок 1 «Секций и SDK»: наши секции в магазин — как у мерчанта, пп. 1,
+// 27): текущие правки — на витрину, как при публикации магазина. Ответ — имена секций, у которых витрина сменилась.
+async function publish(): Promise<Answer> {
+  const sections = await publishDrafts(db, required('--shop', values.shop));
+  return { output: { status: 'published', sections }, ok: true };
+}
+
+const COMMANDS: Partial<Record<string, () => Promise<Answer>>> = { accept, history, rollback, publish };
 
 try {
   const run = COMMANDS[command];
-  if (run === undefined) throw new Error('команда: accept, history или rollback');
+  if (run === undefined) throw new Error('команда: accept, history, rollback или publish');
   const answer = await run();
   process.stdout.write(`${JSON.stringify(answer.output)}\n`);
   process.exitCode = answer.ok ? 0 : 1;

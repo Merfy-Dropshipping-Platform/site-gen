@@ -1,57 +1,106 @@
 import { sha256 } from '@merfy/storefront-build';
 import type { SectionRow } from '@merfy/storefront-sections';
 import { describe, expect, it } from 'vitest';
-import { EXTENSIONS_QUEUE, codeOf, enabledExtensions } from '../src/code';
+import { EXTENSIONS_QUEUE, codeOf, enabledExtensions, type CodeContext } from '../src/code';
 import type { LogFields } from '../src/log';
 
 // Код магазина из строк реестра и ответ сервиса extensions — без базы и брокера.
 const SHELL = { version: '0.1.0', hash: sha256('ядро'), preload: ['shell.js'], files: [] };
 const SHOP = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
+const HEADING = { id: 'heading', label: 'Заголовок', setting: { kind: 'string', default: 'Тёплые шарфы из кашемира' } };
 
-// Строка реестра блока 7: секция или глобальный скрипт; script — текст готового модуля или null.
+// Строка реестра SDK 1: секция с модулем рендера или глобальный скрипт; script — текст готового модуля или null.
 function row(name: string, kind: SectionRow['kind'], script: string | null): SectionRow {
-  const [owner = '', id = ''] = name.split(':');
+  const [prefix = '', id = ''] = name.split(':');
+  const own = prefix === 'shop';
+  const render = kind === 'section' ? `export default 1; // ${name}` : null;
   return {
     id: name,
     name,
     kind,
-    author: 'theme',
-    owner,
-    release: '0.0.1',
+    author: own ? 'shop' : 'extension',
+    owner: own ? SHOP : prefix,
+    release: own ? null : '0.0.1',
     sourceHash: sha256(`исходник ${name}`),
     contentHash: sha256(`правка ${name}`),
-    manifest: { v: 1, name: id, kind, title: name, fields: [] },
+    manifest: { sdk: 1, name: id, kind, title: name, settings: kind === 'section' ? [HEADING] : [] },
     template: `<p>${name}</p>`,
     style: '',
+    render,
+    renderHash: render === null ? null : sha256(render),
     script,
     scriptHash: script === null ? null : sha256(script),
     warnings: [],
     draft: false,
-    published: false,
+    published: own,
     createdAt: '2026-10-10T09:00:00.000Z',
   };
 }
 
 const GEO = row('geo:locate', 'global', 'export default {}; // город');
-const SCARF = row('nova:scarf-colors', 'section', null);
-const BADGE = row('platform:cart-badge', 'section', 'export default {}; // значок');
+const HERO = row('shop:hero', 'section', null);
+const BADGE = row('shop:cart-badge', 'section', 'export default {}; // значок');
+const instance = (id: string, section: string, settings: Record<string, unknown> = {}) => ({ id, section, settings });
+
+function contextOf(): { context: CodeContext; logged: [string, LogFields][] } {
+  const logged: [string, LogFields][] = [];
+  const log = (event: string, fields: LogFields = {}): void => {
+    logged.push([event, fields]);
+  };
+  return { context: { shell: SHELL, shopId: SHOP, log }, logged };
+}
 
 describe('codeOf', () => {
-  it('места — только видимые секции; глобальные — все; скрипты — по отпечатку; ядро — раз есть скрипт', () => {
-    const placement = { home: ['platform:cart-badge', 'reviews:list', 'nova:scarf-colors', 'geo:locate'], about: [] };
-    const shop = codeOf([GEO, SCARF, BADGE], placement, SHELL);
-    expect(shop.code.pages).toEqual({ home: ['platform:cart-badge', 'nova:scarf-colors'], about: [] });
+  it('экземпляры видимых секций, значения — правки поверх умолчаний; глобальные — все; модули — по отпечатку', () => {
+    const { context } = contextOf();
+    const placement = {
+      home: [
+        instance('cart-badge-1', 'shop:cart-badge'),
+        instance('list-1', 'reviews:list'),
+        instance('hero-1', 'shop:hero', { heading: 'Шарфы к первым холодам' }),
+        instance('locate-1', 'geo:locate'),
+      ],
+      about: [],
+    };
+    const shop = codeOf([GEO, HERO, BADGE], placement, context);
+    expect(shop.code.pages).toEqual({
+      home: [
+        { id: 'cart-badge-1', section: 'shop:cart-badge', settings: { heading: 'Тёплые шарфы из кашемира' } },
+        { id: 'hero-1', section: 'shop:hero', settings: { heading: 'Шарфы к первым холодам' } },
+      ],
+      about: [],
+    });
     expect(shop.code.globals).toEqual(['geo:locate']);
-    expect(shop.code.sections.map((section) => [section.name, section.hash, section.html, section.script])).toEqual(
-      [GEO, SCARF, BADGE].map((source) => [source.name, source.contentHash, source.template, source.scriptHash]),
+    expect(shop.code.sections.map((section) => [section.name, section.hash, section.render, section.script])).toEqual(
+      [GEO, HERO, BADGE].map((source) => [source.name, source.contentHash, source.renderHash, source.scriptHash]),
     );
+    expect([...shop.assets.renders.keys()]).toEqual([HERO.renderHash, BADGE.renderHash]);
     expect([...shop.assets.modules.keys()]).toEqual([GEO.scriptHash, BADGE.scriptHash]);
     expect(shop.shell).toEqual({ version: '0.1.0', hash: SHELL.hash, preload: ['shell.js'] });
   });
 
+  it('неверная правка — умолчание и строка журнала section-settings-invalid', () => {
+    const { context, logged } = contextOf();
+    const shop = codeOf([HERO], { home: [instance('hero-1', 'shop:hero', { heading: 5, color: 'red' })] }, context);
+    expect(shop.code.pages.home).toEqual([
+      { id: 'hero-1', section: 'shop:hero', settings: { heading: 'Тёплые шарфы из кашемира' } },
+    ]);
+    expect(logged.map(([event, fields]) => [event, fields.id])).toEqual([['section-settings-invalid', 'hero-1']]);
+  });
+
+  it('строка до SDK 1 — её нет в коде, строка журнала section-old-format', () => {
+    const { context, logged } = contextOf();
+    const old = { ...HERO, manifest: { v: 1, name: 'hero', kind: 'section', title: 'Первый экран', fields: [] } };
+    const shop = codeOf([old], { home: [instance('hero-1', 'shop:hero')] }, context);
+    expect(shop.code.pages.home).toEqual([]);
+    expect(shop.code.sections).toEqual([]);
+    expect(logged.map(([event]) => event)).toEqual(['section-old-format']);
+  });
+
   it('секция не стоит ни на одной странице — её нет в коде; скриптов нет — ядра нет', () => {
-    const shop = codeOf([SCARF, BADGE], { home: ['nova:scarf-colors'] }, SHELL);
-    expect(shop.code.sections.map((section) => section.name)).toEqual(['nova:scarf-colors']);
+    const { context } = contextOf();
+    const shop = codeOf([HERO, BADGE], { home: [instance('hero-1', 'shop:hero')] }, context);
+    expect(shop.code.sections.map((section) => section.name)).toEqual(['shop:hero']);
     expect(shop.shell).toBeNull();
     expect(shop.assets.modules.size).toBe(0);
   });

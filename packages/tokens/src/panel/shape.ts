@@ -54,7 +54,7 @@ const settingSpecShape = z.discriminatedUnion('kind', [
     .strict(),
 ]);
 
-const settingFieldShape = z
+export const settingFieldShape = z
   .object({ ...fieldBase, setting: settingSpecShape, control: z.literal('segment').optional() })
   .strict();
 

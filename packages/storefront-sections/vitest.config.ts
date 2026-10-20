@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 // Быстрые тесты приёма: __tests__/*.test.ts, без базы и сети. Порог покрытия — от 80 % (решение владельца 23.09).
-// Запросы к базе и приём целиком (registry.ts, accept.ts, release.ts) покрывают тесты на стенде (`pnpm test:stack`,
+// Запросы к базе и приём целиком (registry.ts, accept.ts) покрывают тесты на стенде (`pnpm test:stack`,
 // vitest.stack.config.ts); процесс сборки (worker.ts) — тесты sandbox.ts: он идёт в отдельном процессе.
 export default defineConfig({
   test: {

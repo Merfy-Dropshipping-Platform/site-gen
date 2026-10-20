@@ -31,4 +31,5 @@
 ## Команды
 
 - `pnpm test`, `pnpm test:coverage` — без базы; `pnpm test:stack` — на стенде сборщика (Postgres, MinIO).
-- `pnpm sections accept|history|rollback` — двери и история своей секции из командной строки (задача 10).
+- `pnpm sections accept|history|rollback|publish` — сохранение секции, история своей секции и публикация своих секций
+  магазина без сборки из командной строки (задача 10; `publish` — блок 1 «Секций и SDK»).

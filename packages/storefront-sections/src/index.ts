@@ -19,3 +19,10 @@ export {
 } from './registry';
 export { currentSection, type CurrentSection } from './current';
 export { DEFAULT_SANDBOX, prepareInWorker, type SandboxOptions } from './sandbox';
+export {
+  startSectionRenderer,
+  withSectionRenderer,
+  type RendererOptions,
+  type SectionRenderRequest,
+  type SectionRenderer,
+} from './render';

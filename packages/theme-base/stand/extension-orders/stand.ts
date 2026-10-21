@@ -19,6 +19,7 @@ import {
   mountRecordRows,
 } from "../../runtime/extension-orders";
 import { EXTENSION_ORDERS_STYLES } from "../../runtime/extension-orders.styles";
+import { applyStandLook } from "../stand-look";
 import {
   STAND_EXTENSION_ID,
   STAND_GET_FN,
@@ -118,6 +119,7 @@ const VIEWS: Record<string, (main: HTMLElement) => Promise<unknown>> = {
 async function start(): Promise<void> {
   const host = document.getElementById("stand");
   if (host === null) return;
+  applyStandLook(host);
   window.fetch = standFetch;
   const style = document.createElement("style");
   style.textContent = EXTENSION_ORDERS_STYLES;

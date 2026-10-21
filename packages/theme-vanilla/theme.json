@@ -296,6 +296,7 @@
     "wishlist": false,
     "requests": true,
     "extensionPurchase": true,
+    "extensionLook": "theme",
     "color-swatches": false,
     "filter-sidebar": true,
     "puckDrivenPages": true

@@ -1,11 +1,14 @@
-import type { Logger } from '@nestjs/common';
-import { getThemeManifest, type ThemeManifest } from './theme-manifest-loader';
-import { applyPageBinding } from '../render/page-transclude';
-import { getPageResolver } from './page-resolver-instance';
-import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
-import { unifyFooterWithHome, unifyHeaderWithHome } from '../utils/revision-migrations';
-import { parityOn } from './parity-switch';
-import { isBodyBlockOnPage } from './page-registry';
+import type { Logger } from "@nestjs/common";
+import { getThemeManifest, type ThemeManifest } from "./theme-manifest-loader";
+import { applyPageBinding } from "../render/page-transclude";
+import { getPageResolver } from "./page-resolver-instance";
+import { normalizeSlideshowProps } from "../generator/legacy-prop-normalizer";
+import {
+  unifyFooterWithHome,
+  unifyHeaderWithHome,
+} from "../utils/revision-migrations";
+import { parityOn } from "./parity-switch";
+import { isBodyBlockOnPage } from "./page-registry";
 
 /**
  * Extract the rendered block list for a page from a (migrated) site revision.
@@ -41,12 +44,12 @@ export async function extractPageBlocks(
   // bare (home, cart, account). Try both forms in order.
   const candidates = [
     page,
-    page.startsWith('page-') ? page.slice('page-'.length) : `page-${page}`,
+    page.startsWith("page-") ? page.slice("page-".length) : `page-${page}`,
   ];
   let pageData: Record<string, unknown> | undefined;
   for (const key of candidates) {
     const found = pagesData[key];
-    if (found && typeof found === 'object') {
+    if (found && typeof found === "object") {
       pageData = found as Record<string, unknown>;
       break;
     }
@@ -67,12 +70,13 @@ export async function extractPageBlocks(
           // иначе ниже `Array.isArray` не проходит и страница из темы молча
           // считается несуществующей.
           const raw = resolved.content as unknown;
-          const blocks =
-            Array.isArray(raw)
-              ? raw
-              : raw && typeof raw === 'object' && Array.isArray((raw as { content?: unknown }).content)
-                ? (raw as { content: unknown[] }).content
-                : null;
+          const blocks = Array.isArray(raw)
+            ? raw
+            : raw &&
+                typeof raw === "object" &&
+                Array.isArray((raw as { content?: unknown }).content)
+              ? (raw as { content: unknown[] }).content
+              : null;
           if (!blocks) continue;
           // Пункт 13: сид темы несёт СВОЮ шапку (дефолтное название/меню/схему).
           // Прогоняем досеянную страницу через тот же канон, что и миграция
@@ -81,12 +85,16 @@ export async function extractPageBlocks(
           // unifyHeaderWithHome работает над картой страниц, а home берёт из
           // самой ревизии, поэтому подкладываем её рядом.
           const withHomeHeader = unifyHeaderWithHome({
-            home: (data.pagesData as Record<string, unknown> | undefined)?.['home'],
+            home: (data.pagesData as Record<string, unknown> | undefined)?.[
+              "home"
+            ],
             __lazy: { content: blocks },
           });
           // Пункт 3б: подвал досеянной страницы — тоже с главной (PARITY_FOOTER).
           const unified = (
-            parityOn('FOOTER', siteId) ? unifyFooterWithHome(withHomeHeader) : withHomeHeader
+            parityOn("FOOTER", siteId)
+              ? unifyFooterWithHome(withHomeHeader)
+              : withHomeHeader
           ) as Record<string, { content?: unknown[] } | undefined>;
           pageData = { content: unified.__lazy?.content ?? blocks };
           break;
@@ -103,7 +111,7 @@ export async function extractPageBlocks(
   if (!pageData) return null;
   const raw = pageData.content;
   let parsed: unknown;
-  if (typeof raw === 'string') {
+  if (typeof raw === "string") {
     try {
       parsed = JSON.parse(raw);
     } catch {
@@ -119,109 +127,123 @@ export async function extractPageBlocks(
   // Страница коллекции: подставляем {{COLLECTION_*}} плейсхолдеры в строковых
   // props (зеркало substituteVars из generatePuckCollectionsSlugPage на live).
   // Резолвится по ключу page-collection (с учётом page-/bare вариантов).
-  const isCollectionPage =
-    page === 'page-collection' || page === 'collection';
+  const isCollectionPage = page === "page-collection" || page === "collection";
 
-  return parsed
-    .filter(
-      (b): b is { type: string; props: Record<string, unknown> } =>
-        !!b &&
-        typeof b === 'object' &&
-        typeof (b as { type?: unknown }).type === 'string',
-    )
-    // Скрытые секции («глаз» в outline конструктора → props.hidden=true) не
-    // попадают ни в превью, ни в live-сборку. Зеркало item-уровневого
-    // `hidden` (см. coerceCollectionsProps: raw.hidden===true → drop). Строгая
-    // проверка `=== true`: legacy-ревизии без поля (undefined) рендерятся как
-    // раньше — обратная совместимость со старыми сайтами.
-    .filter(
-      (b) =>
-        (b.props as { hidden?: unknown } | undefined)?.hidden !== true,
-    )
-    // Хром витрины на чужой странице — не тело. У чекаута
-    // (`getChromeKindByPageId(page) === 'checkout'`) шапку магазина заменяет
-    // `CheckoutHeader` из сборки хрома, а подвала на странице нет вообще
-    // (владелец, 14.09: «УДАЛИТЬ В ЧЕКАУТЕ»), — и ни то ни другое НЕ секции
-    // страницы.
-    //
-    // Баг тестировщика 14.09 (повтор 18-А): «во вкладке Оформление заказа
-    // убрать подвал, где идёт Powered by merfy» — на скриншоте внизу чекаута
-    // полный подвал витрины (колонки «Навигация»/«Информация», телефон,
-    // иконки платёжных систем). Прошлый круг лечил РЕНДЕР (подмена последнего
-    // <footer> правовой полосой в `injectChromeIntoHtml`), а причина осталась:
-    // `migrateCheckoutPage` ДОПИСЫВАЕТ в страницу чекаута блок `Footer` —
-    // копию подвала главной вместе с его id. Замер на main (jest, 14.09):
-    // extractPageBlocks(ревизия,'page-checkout') → [CheckoutHeader,
-    // CheckoutForm, CheckoutSummary, **Footer**]. Любой путь, который идёт по
-    // блокам, а не через хром, рисовал подвал витрины — в проде это фолбэк
-    // превью (шелла `theme-preview/<тема>/checkout/index.html` нет → блоб-путь
-    // отдаёт null → страница собирается из блоков). Поэтому фильтр стоит здесь,
-    // в ОБЩЕЙ точке, а не ещё одним `if` в контроллере.
-    //
-    // Блок остаётся в ревизии: на нём держится узел «Подвал» в дереве
-    // конструктора — состав панели не меняется. Красить им на чекауте больше
-    // нечего (полосы нет), но убирать узел нельзя: состав панелей — канон.
-    .filter((b) => isBodyBlockOnPage(page, b.type))
-    .map((b) => {
-      const props = prepareBlockProps(b.type, b.props, { publicUrl, siteId, themeBlocks });
-      // Product block: when the constructor navigates from a Catalog card
-      // click, productId is provided as a query override and takes priority
-      // over Puck props.
-      if (b.type === 'Product' && productIdOverride) {
-        logger?.log(
-          `[preview] Product block: overriding productId ${props.productId} → ${productIdOverride}`,
-        );
-        props.productId = productIdOverride;
-      }
-      // Подстановка плейсхолдеров коллекции в строковые props (рекурсивно,
-      // включая arrayFields) — только на странице page-collection. Общая
-      // функция: ЕЁ ЖЕ зовёт точечный hot-render секции (POST /preview/block),
-      // иначе правка в панели подменяет заголовок сырым {{COLLECTION_NAME}}.
-      let finalProps = isCollectionPage
-        ? applyCollectionContextToProps(b.type, props, collectionContext)
-        : props;
-      // Секция «Страница» с привязкой (`pageId` из пикера «Выбор страницы»):
-      // заголовок и текст берутся у ВЫБРАННОЙ страницы магазина, а не из
-      // собственных props секции. Один резолвер на превью и витрину.
-      if (b.type === 'Page') {
-        finalProps = applyPageBinding(finalProps, {
-          revision: data,
-          policies,
-          selfPageId: page,
+  return (
+    parsed
+      .filter(
+        (b): b is { type: string; props: Record<string, unknown> } =>
+          !!b &&
+          typeof b === "object" &&
+          typeof (b as { type?: unknown }).type === "string",
+      )
+      // Скрытые секции («глаз» в outline конструктора → props.hidden=true) не
+      // попадают ни в превью, ни в live-сборку. Зеркало item-уровневого
+      // `hidden` (см. coerceCollectionsProps: raw.hidden===true → drop). Строгая
+      // проверка `=== true`: legacy-ревизии без поля (undefined) рендерятся как
+      // раньше — обратная совместимость со старыми сайтами.
+      .filter(
+        (b) => (b.props as { hidden?: unknown } | undefined)?.hidden !== true,
+      )
+      // Хром витрины на чужой странице — не тело. У чекаута
+      // (`getChromeKindByPageId(page) === 'checkout'`) шапку магазина заменяет
+      // `CheckoutHeader` из сборки хрома, а подвала на странице нет вообще
+      // (владелец, 14.09: «УДАЛИТЬ В ЧЕКАУТЕ»), — и ни то ни другое НЕ секции
+      // страницы.
+      //
+      // Баг тестировщика 14.09 (повтор 18-А): «во вкладке Оформление заказа
+      // убрать подвал, где идёт Powered by merfy» — на скриншоте внизу чекаута
+      // полный подвал витрины (колонки «Навигация»/«Информация», телефон,
+      // иконки платёжных систем). Прошлый круг лечил РЕНДЕР (подмена последнего
+      // <footer> правовой полосой в `injectChromeIntoHtml`), а причина осталась:
+      // `migrateCheckoutPage` ДОПИСЫВАЕТ в страницу чекаута блок `Footer` —
+      // копию подвала главной вместе с его id. Замер на main (jest, 14.09):
+      // extractPageBlocks(ревизия,'page-checkout') → [CheckoutHeader,
+      // CheckoutForm, CheckoutSummary, **Footer**]. Любой путь, который идёт по
+      // блокам, а не через хром, рисовал подвал витрины — в проде это фолбэк
+      // превью (шелла `theme-preview/<тема>/checkout/index.html` нет → блоб-путь
+      // отдаёт null → страница собирается из блоков). Поэтому фильтр стоит здесь,
+      // в ОБЩЕЙ точке, а не ещё одним `if` в контроллере.
+      //
+      // Блок остаётся в ревизии: на нём держится узел «Подвал» в дереве
+      // конструктора — состав панели не меняется. Красить им на чекауте больше
+      // нечего (полосы нет), но убирать узел нельзя: состав панелей — канон.
+      .filter((b) => isBodyBlockOnPage(page, b.type))
+      .map((b) => {
+        const props = prepareBlockProps(b.type, b.props, {
+          publicUrl,
+          siteId,
+          themeBlocks,
         });
-      }
-      // Спека 118 §5 (T013c): тумблер features.requests из theme.json →
-      // проп requestsEnabled секции «Товар» (контейнер+остров формы заявки
-      // вместо «В корзину», когда у товара назначена форма; рендер и логика —
-      // theme-base Product.astro + runtime/requests-form). Механизм — тот же
-      // оверрайд-приём, что productIdOverride выше: ОБЩАЯ точка extractPageBlocks
-      // (её идут превью, live-пересадка /product и per-slug renderProductSectionForId),
-      // значение решает МАНИФЕСТ ТЕМЫ. Проп ревизии может включить форму и без
-      // флага; при флаге false (дефолт всех тем) поведение не меняется вовсе.
-      if (
-        b.type === "Product" &&
-        (page === "page-product" || page === "product")
-      ) {
-        const featureOn =
-          themeId != null &&
-          getThemeManifest(themeId)?.features?.requests === true;
-        if (featureOn || finalProps.requestsEnabled === true) {
-          finalProps.requestsEnabled = true;
+        // Product block: when the constructor navigates from a Catalog card
+        // click, productId is provided as a query override and takes priority
+        // over Puck props.
+        if (b.type === "Product" && productIdOverride) {
+          logger?.log(
+            `[preview] Product block: overriding productId ${props.productId} → ${productIdOverride}`,
+          );
+          props.productId = productIdOverride;
         }
-        // Спека 120, задача 5.1: тумблер features.extensionPurchase → проп
-        // extensionPurchaseEnabled (форма расширения вместо «В корзину»). Тот же
-        // приём, но без включения пропом ревизии: пока только flux, значение
-        // решает один манифест темы. Какая из двух форм монтируется, решает
-        // секция «Товар» (новая вытесняет requestsEnabled).
+        // Подстановка плейсхолдеров коллекции в строковые props (рекурсивно,
+        // включая arrayFields) — только на странице page-collection. Общая
+        // функция: ЕЁ ЖЕ зовёт точечный hot-render секции (POST /preview/block),
+        // иначе правка в панели подменяет заголовок сырым {{COLLECTION_NAME}}.
+        let finalProps = isCollectionPage
+          ? applyCollectionContextToProps(b.type, props, collectionContext)
+          : props;
+        // Секция «Страница» с привязкой (`pageId` из пикера «Выбор страницы»):
+        // заголовок и текст берутся у ВЫБРАННОЙ страницы магазина, а не из
+        // собственных props секции. Один резолвер на превью и витрину.
+        if (b.type === "Page") {
+          finalProps = applyPageBinding(finalProps, {
+            revision: data,
+            policies,
+            selfPageId: page,
+          });
+        }
+        // Спека 118 §5 (T013c): тумблер features.requests из theme.json →
+        // проп requestsEnabled секции «Товар» (контейнер+остров формы заявки
+        // вместо «В корзину», когда у товара назначена форма; рендер и логика —
+        // theme-base Product.astro + runtime/requests-form). Механизм — тот же
+        // оверрайд-приём, что productIdOverride выше: ОБЩАЯ точка extractPageBlocks
+        // (её идут превью, live-пересадка /product и per-slug renderProductSectionForId),
+        // значение решает МАНИФЕСТ ТЕМЫ. Проп ревизии может включить форму и без
+        // флага; при флаге false (дефолт всех тем) поведение не меняется вовсе.
         if (
-          themeId != null &&
-          getThemeManifest(themeId)?.features?.extensionPurchase === true
+          b.type === "Product" &&
+          (page === "page-product" || page === "product")
         ) {
-          finalProps.extensionPurchaseEnabled = true;
+          const featureOn =
+            themeId != null &&
+            getThemeManifest(themeId)?.features?.requests === true;
+          if (featureOn || finalProps.requestsEnabled === true) {
+            finalProps.requestsEnabled = true;
+          }
+          // Спека 120, задача 5.1: тумблер features.extensionPurchase → проп
+          // extensionPurchaseEnabled (форма расширения вместо «В корзину»). Тот же
+          // приём, но без включения пропом ревизии: пока только flux, значение
+          // решает один манифест темы. Какая из двух форм монтируется, решает
+          // секция «Товар» (новая вытесняет requestsEnabled).
+          if (
+            themeId != null &&
+            getThemeManifest(themeId)?.features?.extensionPurchase === true
+          ) {
+            finalProps.extensionPurchaseEnabled = true;
+          }
+          // Спека 120, этап 5 на vanilla: features.extensionLook === 'theme' →
+          // проп extensionLook. Блок «Товар» ставит его атрибутом data-look на
+          // контейнер формы — стили формы берут цвета и скругления из токенов
+          // темы (runtime/extension-purchase.styles.ts). Пока только vanilla.
+          if (
+            themeId != null &&
+            getThemeManifest(themeId)?.features?.extensionLook === "theme"
+          ) {
+            finalProps.extensionLook = "theme";
+          }
         }
-      }
-      return { type: b.type, props: finalProps };
-    });
+        return { type: b.type, props: finalProps };
+      })
+  );
 }
 
 /**
@@ -254,27 +276,29 @@ export function applyCollectionContextToProps(
   // Catalog на странице коллекции: заголовок/подзаголовок из самой коллекции
   // (collection.name / .description), если мерчант не задал свои в секции.
   // Иначе Catalog падает на хардкод «КАТАЛОГ». Зеркало dynamic-pages-generator.
-  if (blockType === 'Catalog') {
+  if (blockType === "Catalog") {
     const ct = out.categoryTitle;
     const ctText =
-      typeof ct === 'string'
+      typeof ct === "string"
         ? ct
-        : (ct && typeof ct === 'object' && (ct as { text?: string }).text) || '';
+        : (ct && typeof ct === "object" && (ct as { text?: string }).text) ||
+          "";
     const cs = out.categorySubtitle;
     const csText =
-      typeof cs === 'string'
+      typeof cs === "string"
         ? cs
-        : (cs && typeof cs === 'object' && (cs as { text?: string }).text) || '';
-    const collName = ctx?.name && ctx.name.trim() ? ctx.name : 'Каталог';
+        : (cs && typeof cs === "object" && (cs as { text?: string }).text) ||
+          "";
+    const collName = ctx?.name && ctx.name.trim() ? ctx.name : "Каталог";
     if (!String(ctText).trim()) out.categoryTitle = collName;
-    if (!String(csText).trim()) out.categorySubtitle = ctx?.description ?? '';
+    if (!String(csText).trim()) out.categorySubtitle = ctx?.description ?? "";
     // Товары «Группы товаров» на странице коллекции — из ЭТОЙ коллекции, как
     // на витрине: там адрес `collections/<slug>` перебивает проп секции
     // (`collectionSlug={slug}` в generatePuckCollectionsSlugPage). Превью
     // брало имя и описание из контекста, а сетке оставляло проп из ревизии:
     // после любой правки в панели на странице «Bloom» были все 6 товаров
     // магазина (замер 23.09 на сайте владельца, satin, путь конструктора).
-    if (ctx?.slug && ctx.slug !== 'preview') out.collectionSlug = ctx.slug;
+    if (ctx?.slug && ctx.slug !== "preview") out.collectionSlug = ctx.slug;
   }
   return out;
 }
@@ -293,10 +317,10 @@ function substituteCollectionVars(
   value: unknown,
   ctx: { name?: string; description?: string; image?: string } | undefined,
 ): unknown {
-  const name = ctx?.name && ctx.name.trim() ? ctx.name : 'Каталог';
-  const description = ctx?.description ?? '';
-  const image = ctx?.image ?? '';
-  if (typeof value === 'string') {
+  const name = ctx?.name && ctx.name.trim() ? ctx.name : "Каталог";
+  const description = ctx?.description ?? "";
+  const image = ctx?.image ?? "";
+  if (typeof value === "string") {
     return value
       .replace(/\{\{COLLECTION_NAME\}\}/g, name)
       .replace(/\{\{COLLECTION_DESCRIPTION\}\}/g, description)
@@ -305,7 +329,7 @@ function substituteCollectionVars(
   if (Array.isArray(value)) {
     return value.map((v) => substituteCollectionVars(v, ctx));
   }
-  if (value && typeof value === 'object') {
+  if (value && typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const k of Object.keys(value as Record<string, unknown>)) {
       out[k] = substituteCollectionVars(
@@ -318,7 +342,7 @@ function substituteCollectionVars(
   return value;
 }
 
-type ThemeBlocks = NonNullable<ThemeManifest['blocks']>;
+type ThemeBlocks = NonNullable<ThemeManifest["blocks"]>;
 
 export interface BlockPropsContext {
   /** Адрес сайта для относительных путей картинок (null — не переписывать). */
@@ -364,7 +388,7 @@ function applyThemeVariantDefault(
   props: Record<string, unknown>,
   themeCfg: ThemeBlocks[string] | undefined,
 ): void {
-  if (!themeCfg || 'override' in themeCfg) return;
+  if (!themeCfg || "override" in themeCfg) return;
   const variant = (themeCfg as { variant?: string }).variant;
   if (variant && !props.variant) props.variant = variant;
 }
@@ -421,41 +445,41 @@ export function adaptLegacyProps(
   // а Slideshow (единственный `return` из switch) не проскакивает мимо.
   dropHiddenArrayItems(out);
   switch (blockType) {
-    case 'Hero':
+    case "Hero":
       coerceHeroProps(out, publicUrl);
       break;
-    case 'Header':
+    case "Header":
       coerceHeaderProps(out);
       break;
-    case 'PopularProducts':
+    case "PopularProducts":
       coercePopularProductsProps(out);
       break;
-    case 'ContactForm':
+    case "ContactForm":
       coerceContactFormProps(out);
       break;
-    case 'Gallery':
+    case "Gallery":
       coerceGalleryProps(out);
       break;
-    case 'Collections':
+    case "Collections":
       coerceCollectionsProps(out, publicUrl);
       break;
-    case 'Footer':
+    case "Footer":
       coerceFooterProps(out);
       break;
-    case 'ImageWithText':
+    case "ImageWithText":
       coerceImageWithTextProps(out, publicUrl);
       break;
-    case 'MainText':
+    case "MainText":
       coerceMainTextProps(out);
       break;
-    case 'Publications':
+    case "Publications":
       coerceGenericLegacyProps(out);
       coercePublicationsProps(out);
       break;
-    case 'Product':
+    case "Product":
       coerceProductProps(out);
       break;
-    case 'Slideshow':
+    case "Slideshow":
       return normalizeSlideshowProps(out);
     default:
       // Generic fallback for the 15 blocks without a hand-written coercer
@@ -521,9 +545,9 @@ function dropHiddenArrayItems(out: Record<string, unknown>): void {
  * `heading: {text, size}` → `headingSize`, `text: {content, size}` → `textSize`.
  */
 const TEXT_SIZE_ENVELOPES: ReadonlyArray<readonly [string, string]> = [
-  ['heading', 'headingSize'],
-  ['text', 'textSize'],
-  ['subheading', 'subheadingSize'],
+  ["heading", "headingSize"],
+  ["text", "textSize"],
+  ["subheading", "subheadingSize"],
 ];
 
 function coerceGenericLegacyProps(out: Record<string, unknown>): void {
@@ -556,13 +580,13 @@ function coerceGenericLegacyProps(out: Record<string, unknown>): void {
     out[k] = coerceLegacyValue(v);
   }
   restoreButtonEnvelopes(out, buttonsBefore);
-  if (typeof out.colorScheme === 'string') {
+  if (typeof out.colorScheme === "string") {
     out.colorScheme = coerceSchemeNumber(out.colorScheme);
   }
-  if (typeof out.containerColorScheme === 'string') {
+  if (typeof out.containerColorScheme === "string") {
     out.containerColorScheme = coerceSchemeNumber(out.containerColorScheme);
   }
-  if (typeof out.copyrightColorScheme === 'string') {
+  if (typeof out.copyrightColorScheme === "string") {
     out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
   }
   foldLegacyContainerToggle(out);
@@ -590,7 +614,7 @@ function foldLegacyContainerToggle(out: Record<string, unknown>): void {
   const legacy = out.container;
   if (!isPlainObject(legacy)) return;
   const enabled = (legacy as Record<string, unknown>).enabled;
-  if (typeof enabled !== 'string' && typeof enabled !== 'boolean') return;
+  if (typeof enabled !== "string" && typeof enabled !== "boolean") return;
   out.containerEnabled = String(enabled);
 }
 
@@ -645,10 +669,10 @@ function coerceProductProps(out: Record<string, unknown>): void {
 
 /** `'X'` / `{text:'X'}` → `{content:'X'}`; канон-форму отдаёт как есть. */
 function liftContentPanel(v: unknown): unknown {
-  if (typeof v === 'string') return { content: v };
+  if (typeof v === "string") return { content: v };
   if (!isPlainObject(v)) return v;
-  if (typeof v.content === 'string') return v;
-  if (typeof v.text === 'string') {
+  if (typeof v.content === "string") return v;
+  if (typeof v.text === "string") {
     const { text, ...rest } = v;
     return { ...rest, content: text };
   }
@@ -657,10 +681,10 @@ function liftContentPanel(v: unknown): unknown {
 
 /** `'X'` / `{content:'X'}` → `{text:'X'}`; канон-форму отдаёт как есть. */
 function liftTextPanel(v: unknown): unknown {
-  if (typeof v === 'string') return { text: v };
+  if (typeof v === "string") return { text: v };
   if (!isPlainObject(v)) return v;
-  if (typeof v.text === 'string') return v;
-  if (typeof v.content === 'string') {
+  if (typeof v.text === "string") return v;
+  if (typeof v.content === "string") {
     const { content, ...rest } = v;
     return { ...rest, text: content };
   }
@@ -671,7 +695,7 @@ function liftTextPanel(v: unknown): unknown {
 function liftButtonsPanel(v: unknown): unknown {
   if (!isPlainObject(v)) return v;
   const next: Record<string, unknown> = { ...v };
-  for (const key of ['addToCart', 'buyNow']) {
+  for (const key of ["addToCart", "buyNow"]) {
     if (v[key] === undefined) continue;
     next[key] = liftTextPanel(v[key]);
   }
@@ -689,7 +713,7 @@ function coercePublicationsProps(out: Record<string, unknown>): void {
 
 function coercePublicationCount(value: unknown, fallback = 3): number {
   const numeric =
-    typeof value === 'number' && Number.isFinite(value)
+    typeof value === "number" && Number.isFinite(value)
       ? Math.trunc(value)
       : fallback;
   return Math.min(4, Math.max(1, numeric));
@@ -704,7 +728,13 @@ function coercePublicationCount(value: unknown, fallback = 3): number {
 // не рисовали ссылку вовсе, и все пять вели на несуществующий путь /МЕТКА.
 // Восстановление ниже трогает только схлопнутые объекты: строковый `link`
 // (списки колонок и рядов) остаётся строкой.
-const BUTTON_ENVELOPE_KEYS = ['button', 'primaryButton', 'secondaryButton', 'cta', 'link'] as const;
+const BUTTON_ENVELOPE_KEYS = [
+  "button",
+  "primaryButton",
+  "secondaryButton",
+  "cta",
+  "link",
+] as const;
 
 /**
  * Возвращает кнопке форму объекта, если общая развёртка конвертов схлопнула её
@@ -719,15 +749,16 @@ function restoreButtonEnvelopes(
     const raw = before[key];
     if (!isPlainObject(raw)) continue;
     const now = out[key];
-    if (typeof now !== 'string') continue; // объект уцелел — трогать нечего
+    if (typeof now !== "string") continue; // объект уцелел — трогать нечего
     const src = raw as Record<string, unknown>;
     const link = src.link;
     const href =
-      (typeof src.href === 'string' && src.href) ||
-      (typeof link === 'string' && link) ||
-      (isPlainObject(link) && typeof (link as Record<string, unknown>).href === 'string'
+      (typeof src.href === "string" && src.href) ||
+      (typeof link === "string" && link) ||
+      (isPlainObject(link) &&
+      typeof (link as Record<string, unknown>).href === "string"
         ? ((link as Record<string, unknown>).href as string)
-        : '');
+        : "");
     out[key] = href ? { text: now, href } : { text: now };
   }
 }
@@ -753,16 +784,17 @@ function собратьРассыпаннуюСтроку(obj: Record<string, un
       continue;
     }
     // Рядом с буквами допустимы только служебные поля конверта.
-    if (k !== 'size' && k !== 'alignment' && k !== 'enabled') return null;
+    if (k !== "size" && k !== "alignment" && k !== "enabled") return null;
   }
   if (индексы.length < 2) return null;
   индексы.sort((a, b) => a - b);
   // Индексы обязаны идти подряд с нуля — иначе это не рассыпанная строка.
-  if (индексы[0] !== 0 || индексы[индексы.length - 1] !== индексы.length - 1) return null;
-  let текст = '';
+  if (индексы[0] !== 0 || индексы[индексы.length - 1] !== индексы.length - 1)
+    return null;
+  let текст = "";
   for (const i of индексы) {
     const ч = obj[String(i)];
-    if (typeof ч !== 'string' || ч.length !== 1) return null;
+    if (typeof ч !== "string" || ч.length !== 1) return null;
     текст += ч;
   }
   return текст;
@@ -784,7 +816,7 @@ const hasOnlyFields = (keys: string[], allowed: readonly string[]): boolean =>
   keys.every((k) => allowed.includes(k));
 
 function coerceLegacyValue(v: unknown): unknown {
-  if (v === null || typeof v !== 'object') return v;
+  if (v === null || typeof v !== "object") return v;
   if (Array.isArray(v)) return v.map(coerceLegacyValue);
   const obj = v as Record<string, unknown>;
   const собранное = собратьРассыпаннуюСтроку(obj);
@@ -797,31 +829,31 @@ function coerceLegacyValue(v: unknown): unknown {
 
   // {text: "...", size?, enabled?, alignment?} → text
   if (
-    typeof obj.text === 'string' &&
-    keys.every((k) => ['text', 'size', 'enabled', 'alignment'].includes(k))
+    typeof obj.text === "string" &&
+    keys.every((k) => ["text", "size", "enabled", "alignment"].includes(k))
   ) {
     return obj.text;
   }
   // {content: "...", size?, enabled?} → content
   if (
-    typeof obj.content === 'string' &&
-    keys.every((k) => ['content', 'size', 'enabled', 'alignment'].includes(k))
+    typeof obj.content === "string" &&
+    keys.every((k) => ["content", "size", "enabled", "alignment"].includes(k))
   ) {
     return obj.content;
   }
   // {text, link, enabled?} → {text, href}
   if (
-    typeof obj.text === 'string' &&
-    typeof obj.link === 'string' &&
+    typeof obj.text === "string" &&
+    typeof obj.link === "string" &&
     hasOnlyFields(keys, BUTTON_ENVELOPE_FIELDS)
   ) {
     return { text: obj.text, href: obj.link };
   }
   // {text, link:{href}, enabled?} → {text, href}
   if (
-    typeof obj.text === 'string' &&
+    typeof obj.text === "string" &&
     isPlainObject(obj.link) &&
-    typeof (obj.link as Record<string, unknown>).href === 'string' &&
+    typeof (obj.link as Record<string, unknown>).href === "string" &&
     hasOnlyFields(keys, BUTTON_ENVELOPE_FIELDS)
   ) {
     return {
@@ -838,17 +870,15 @@ function coerceLegacyValue(v: unknown): unknown {
   return next;
 }
 
-function unwrapTextSize(
-  v: unknown,
-): { value: string; present: boolean } {
-  if (typeof v === 'string') return { value: v, present: true };
+function unwrapTextSize(v: unknown): { value: string; present: boolean } {
+  if (typeof v === "string") return { value: v, present: true };
   if (isPlainObject(v)) {
     const obj = v as Record<string, unknown>;
-    if (typeof obj.text === 'string') return { value: obj.text, present: true };
-    if (typeof obj.content === 'string')
+    if (typeof obj.text === "string") return { value: obj.text, present: true };
+    if (typeof obj.content === "string")
       return { value: obj.content, present: true };
   }
-  return { value: '', present: false };
+  return { value: "", present: false };
 }
 
 /**
@@ -856,15 +886,18 @@ function unwrapTextSize(
  * ставим "": пустая строка значит «мерчант стёр» (секция рисует пусто),
  * отсутствие — «не задано» (дефолт темы или заглушка порта). Владелец 26.09.
  */
-function flattenTextField(out: Record<string, unknown>, key: 'heading' | 'text'): void {
+function flattenTextField(
+  out: Record<string, unknown>,
+  key: "heading" | "text",
+): void {
   const field = unwrapTextSize(out[key]);
   if (field.present) out[key] = field.value;
   else delete out[key];
 }
 
 function coerceSchemeNumber(v: unknown, fallback = 1): number {
-  if (typeof v === 'number' && v >= 1 && v <= 5) return v;
-  if (typeof v === 'string') {
+  if (typeof v === "number" && v >= 1 && v <= 5) return v;
+  if (typeof v === "string") {
     const m = /^scheme-(\d+)$/.exec(v);
     if (m) {
       const n = Number(m[1]);
@@ -885,68 +918,78 @@ function coerceHeroProps(
   const subtitle = unwrapTextSize(out.text);
   if (subtitle.present && !out.subtitle) out.subtitle = subtitle.value;
   // image: "/path.png" (string legacy) → {url, alt}
-  if (typeof out.image === 'string' && out.image) {
+  if (typeof out.image === "string" && out.image) {
     out.image = {
       url: rewriteAssetUrl(out.image as string, publicUrl),
-      alt: '',
+      alt: "",
     };
   }
   // backgroundImage → image.url (older legacy)
-  if (!out.image && typeof out.backgroundImage === 'string') {
+  if (!out.image && typeof out.backgroundImage === "string") {
     out.image = {
       url: rewriteAssetUrl(out.backgroundImage, publicUrl),
-      alt: '',
+      alt: "",
     };
   }
   // primaryButton OR button {text, link:{href}} → cta{text, href}
-  const legacyBtn =
-    isPlainObject(out.primaryButton)
-      ? (out.primaryButton as Record<string, unknown>)
-      : isPlainObject(out.button)
-        ? (out.button as Record<string, unknown>)
-        : null;
+  const legacyBtn = isPlainObject(out.primaryButton)
+    ? (out.primaryButton as Record<string, unknown>)
+    : isPlainObject(out.button)
+      ? (out.button as Record<string, unknown>)
+      : null;
   if (!out.cta && legacyBtn) {
     const href =
-      typeof legacyBtn.href === 'string'
+      typeof legacyBtn.href === "string"
         ? legacyBtn.href
         : isPlainObject(legacyBtn.link) &&
-            typeof (legacyBtn.link as Record<string, unknown>).href === 'string'
+            typeof (legacyBtn.link as Record<string, unknown>).href === "string"
           ? String((legacyBtn.link as Record<string, unknown>).href)
-          : '';
-    out.cta = { text: String(legacyBtn.text ?? ''), href };
+          : "";
+    out.cta = { text: String(legacyBtn.text ?? ""), href };
   }
   // Legacy `position` ('bottom-center', 'overlay') → variant hint. Only
   // set when we can derive meaning from it — leaving variant undefined
   // lets theme-manifest's block.variant default take effect (e.g. Rose
   // forces 'overlay' theme-wide).
-  const position = String(out.position ?? '');
-  const imagePosition = String(out.imagePosition ?? '');
+  const position = String(out.position ?? "");
+  const imagePosition = String(out.imagePosition ?? "");
   if (!out.variant) {
-    if (imagePosition === 'fullscreen' || position.includes('overlay')) {
-      out.variant = 'overlay';
-    } else if (imagePosition === 'split' || position.includes('split')) {
-      out.variant = 'split';
-    } else if (position === 'left' || position === 'right' || position === 'center') {
-      out.variant = 'overlay';
+    if (imagePosition === "fullscreen" || position.includes("overlay")) {
+      out.variant = "overlay";
+    } else if (imagePosition === "split" || position.includes("split")) {
+      out.variant = "split";
+    } else if (
+      position === "left" ||
+      position === "right" ||
+      position === "center"
+    ) {
+      out.variant = "overlay";
     }
     // else: leave undefined for theme manifest or Astro frontmatter default
   }
-  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.colorScheme !== undefined)
+    out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // Не затираем отсутствующий title/subtitle пустой строкой — Astro Hero ждёт
   // undefined, чтобы сработал фолбэк верстальщика («Искусство заботы…»).
-  if (typeof out.title === 'string' && !out.title.trim()) delete out.title;
-  if (typeof out.subtitle === 'string' && !out.subtitle.trim()) delete out.subtitle;
-  if (!out.image) out.image = { url: '', alt: '' };
-  if (!out.cta) out.cta = { text: '', href: '#' };
+  if (typeof out.title === "string" && !out.title.trim()) delete out.title;
+  if (typeof out.subtitle === "string" && !out.subtitle.trim())
+    delete out.subtitle;
+  if (!out.image) out.image = { url: "", alt: "" };
+  if (!out.cta) out.cta = { text: "", href: "#" };
   // overlay: numeric 0-100. legacy overlayOpacity may be 0..1 float.
-  if (typeof out.overlay !== 'number' && typeof out.overlayOpacity === 'number') {
+  if (
+    typeof out.overlay !== "number" &&
+    typeof out.overlayOpacity === "number"
+  ) {
     out.overlay = Math.round(out.overlayOpacity * 100);
   }
 }
 
 function coerceHeaderProps(out: Record<string, unknown>): void {
-  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  if (out.menuColorScheme !== undefined) out.menuColorScheme = coerceSchemeNumber(out.menuColorScheme);
+  if (out.colorScheme !== undefined)
+    out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.menuColorScheme !== undefined)
+    out.menuColorScheme = coerceSchemeNumber(out.menuColorScheme);
   // actionButtons: legacy has "true"/"false" strings, theme-base wants boolean.
   if (isPlainObject(out.actionButtons)) {
     const ab = out.actionButtons as Record<string, unknown>;
@@ -958,8 +1001,8 @@ function coerceHeaderProps(out: Record<string, unknown>): void {
   } else {
     out.actionButtons = { showSearch: true, showCart: true, showProfile: true };
   }
-  if (typeof out.siteTitle !== 'string') out.siteTitle = '';
-  if (typeof out.logo !== 'string') out.logo = '';
+  if (typeof out.siteTitle !== "string") out.siteTitle = "";
+  if (typeof out.logo !== "string") out.logo = "";
   if (!Array.isArray(out.navigationLinks)) out.navigationLinks = [];
   // padding: absent → undefined lets blockDefaults (e.g. rose Header.padding {24,24}) win.
   // logoPosition/stickiness/menuType — enums; accept legacy values verbatim.
@@ -987,60 +1030,58 @@ function coercePopularProductsProps(out: Record<string, unknown>): void {
   const headingEnv = isPlainObject(out.heading)
     ? (out.heading as Record<string, unknown>)
     : null;
-  if (headingEnv && typeof headingEnv.size === 'string') {
+  if (headingEnv && typeof headingEnv.size === "string") {
     const obj: Record<string, unknown> = {
-      text: heading.present ? heading.value : 'Популярные товары',
+      text: heading.present ? heading.value : "Популярные товары",
       size: headingEnv.size,
     };
-    if (typeof headingEnv.alignment === 'string') {
+    if (typeof headingEnv.alignment === "string") {
       obj.alignment = headingEnv.alignment;
     }
     out.heading = obj;
   } else {
-    out.heading = heading.present ? heading.value : 'Популярные товары';
+    out.heading = heading.present ? heading.value : "Популярные товары";
   }
   // subtitle legacy shape: {text} or {content} envelope OR flat string
   const subtitle = unwrapTextSize(out.text);
   if (subtitle.present) out.subtitle = subtitle.value;
-  if (typeof out.subtitle !== 'string') out.subtitle = '';
+  if (typeof out.subtitle !== "string") out.subtitle = "";
   // productCard.columns → columns, legacy `cards` stays
   if (!out.columns && isPlainObject(out.productCard)) {
     const pc = out.productCard as Record<string, unknown>;
-    if (typeof pc.columns === 'number') out.columns = pc.columns;
+    if (typeof pc.columns === "number") out.columns = pc.columns;
   }
-  if (typeof out.cards !== 'number') out.cards = 4;
-  if (typeof out.columns !== 'number') out.columns = 4;
-  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (typeof out.cards !== "number") out.cards = 4;
+  if (typeof out.columns !== "number") out.columns = 4;
+  if (out.colorScheme !== undefined)
+    out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // padding: absent → undefined lets blockDefaults win.
 }
 
 function coerceContactFormProps(out: Record<string, unknown>): void {
-  const headingEnvelope = isPlainObject(out.heading)
-    ? out.heading
-    : null;
+  const headingEnvelope = isPlainObject(out.heading) ? out.heading : null;
   if (isHeadingSize(headingEnvelope?.size)) {
     out.headingSize = headingEnvelope.size;
   }
   const heading = unwrapTextSize(out.heading);
-  out.heading = heading.present ? heading.value : 'Связаться с нами';
-  if (typeof out.description !== 'string') out.description = '';
-  if (typeof out.buttonText !== 'string') out.buttonText = 'Отправить';
+  out.heading = heading.present ? heading.value : "Связаться с нами";
+  if (typeof out.description !== "string") out.description = "";
+  if (typeof out.buttonText !== "string") out.buttonText = "Отправить";
   if (!isPlainObject(out.fields)) {
     out.fields = {
-      name: { enabled: true, required: true, label: 'Имя' },
-      email: { enabled: true, required: true, label: 'Email' },
-      phone: { enabled: false, required: false, label: 'Телефон' },
-      message: { enabled: true, required: false, label: 'Сообщение' },
+      name: { enabled: true, required: true, label: "Имя" },
+      email: { enabled: true, required: true, label: "Email" },
+      phone: { enabled: false, required: false, label: "Телефон" },
+      message: { enabled: true, required: false, label: "Сообщение" },
     };
   }
-  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.colorScheme !== undefined)
+    out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // padding: absent → undefined lets blockDefaults win.
 }
 
 function coerceGalleryProps(out: Record<string, unknown>): void {
-  const headingEnvelope = isPlainObject(out.heading)
-    ? out.heading
-    : null;
+  const headingEnvelope = isPlainObject(out.heading) ? out.heading : null;
   const nestedHeadingSize = headingEnvelope?.size;
 
   coerceGenericLegacyProps(out);
@@ -1073,29 +1114,30 @@ function coerceImageWithTextProps(
   if (isHeadingSize(textEnvelope?.size) && !isHeadingSize(out.textSize)) {
     out.textSize = textEnvelope!.size;
   }
-  flattenTextField(out, 'heading');
-  flattenTextField(out, 'text');
+  flattenTextField(out, "heading");
+  flattenTextField(out, "text");
   // image: "" (legacy) → undefined, so Astro renders placeholder SVG
-  if (typeof out.image === 'string') {
+  if (typeof out.image === "string") {
     out.image = out.image
-      ? { url: rewriteAssetUrl(out.image as string, publicUrl), alt: '' }
+      ? { url: rewriteAssetUrl(out.image as string, publicUrl), alt: "" }
       : undefined;
   }
   // button: {link: "/about", text, enabled} → {href, text}
   if (isPlainObject(out.button)) {
     const b = out.button as Record<string, unknown>;
     const href =
-      typeof b.href === 'string'
+      typeof b.href === "string"
         ? b.href
-        : typeof b.link === 'string'
+        : typeof b.link === "string"
           ? b.link
           : isPlainObject(b.link) &&
-              typeof (b.link as Record<string, unknown>).href === 'string'
+              typeof (b.link as Record<string, unknown>).href === "string"
             ? String((b.link as Record<string, unknown>).href)
-            : '#';
-    out.button = { text: String(b.text ?? ''), href };
+            : "#";
+    out.button = { text: String(b.text ?? ""), href };
   }
-  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.colorScheme !== undefined)
+    out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // photoPosition: "left"|"right" → imagePosition (ТОЛЬКО перенос legacy-поля).
   // Раньше ветка else ставила 'left' всем подряд — и это затирало сторону,
   // которую тема уже объявила. Замер рендером: собственный фолбэк порта у
@@ -1105,8 +1147,8 @@ function coerceImageWithTextProps(
   // витрине vanilla/bloom картинка уезжала влево, а панель показывала «справа».
   // Нет legacy-поля — не трогаем: сторону выберет theme.json, а если и там
   // пусто — дефолтная ветка самого порта.
-  if (!out.imagePosition && typeof out.photoPosition === 'string') {
-    out.imagePosition = out.photoPosition === 'right' ? 'right' : 'left';
+  if (!out.imagePosition && typeof out.photoPosition === "string") {
+    out.imagePosition = out.photoPosition === "right" ? "right" : "left";
   }
   // padding: absent → undefined lets blockDefaults win.
 }
@@ -1133,9 +1175,10 @@ function coerceMainTextProps(out: Record<string, unknown>): void {
   if (isHeadingSize(textEnvelope?.size)) {
     out.textSize = textEnvelope!.size;
   }
-  flattenTextField(out, 'heading');
-  flattenTextField(out, 'text');
-  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  flattenTextField(out, "heading");
+  flattenTextField(out, "text");
+  if (out.colorScheme !== undefined)
+    out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // align, padding: absent → undefined lets blockDefaults win.
 }
 
@@ -1143,16 +1186,18 @@ function coerceFooterProps(out: Record<string, unknown>): void {
   // Footer schema expects nested heading/text/newsletter, which is what the
   // legacy data already has. The only mismatches are scalar colour schemes
   // and missing defaults.
-  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  if (out.copyrightColorScheme !== undefined) out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
+  if (out.colorScheme !== undefined)
+    out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.copyrightColorScheme !== undefined)
+    out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
   if (!isPlainObject(out.heading)) {
-    out.heading = { text: '', size: 'small', alignment: 'center' };
+    out.heading = { text: "", size: "small", alignment: "center" };
   } else {
     const h = out.heading as Record<string, unknown>;
-    if (typeof h.alignment !== 'string') h.alignment = 'center';
+    if (typeof h.alignment !== "string") h.alignment = "center";
   }
   if (!isPlainObject(out.text)) {
-    out.text = { content: '', size: 'small' };
+    out.text = { content: "", size: "small" };
   }
   // newsletter.enabled may be "true"/"false" string
   if (isPlainObject(out.newsletter)) {
@@ -1168,9 +1213,9 @@ function coerceFooterProps(out: Record<string, unknown>): void {
 }
 
 function truthy(v: unknown): boolean {
-  if (typeof v === 'boolean') return v;
-  if (typeof v === 'string') return v === 'true' || v === '1';
-  if (typeof v === 'number') return v !== 0;
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") return v === "true" || v === "1";
+  if (typeof v === "number") return v !== 0;
   return false;
 }
 
@@ -1179,8 +1224,8 @@ function truthy(v: unknown): boolean {
  * shape — per-block coercers handle that.
  */
 function rewriteValueUrls(v: unknown, publicUrl: string | null): unknown {
-  if (typeof v === 'string') return rewriteAssetUrl(v, publicUrl);
-  if (v === null || typeof v !== 'object') return v;
+  if (typeof v === "string") return rewriteAssetUrl(v, publicUrl);
+  if (v === null || typeof v !== "object") return v;
   if (Array.isArray(v)) return v.map((x) => rewriteValueUrls(x, publicUrl));
   const out: Record<string, unknown> = {};
   for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
@@ -1199,7 +1244,7 @@ function coerceCollectionsProps(
   out: Record<string, unknown>,
   publicUrl: string | null,
 ): void {
-  if (typeof out.title === 'string' && !out.heading) {
+  if (typeof out.title === "string" && !out.heading) {
     out.heading = out.title;
   }
   // T13: envelope heading {text, size} — схема Collections ждёт heading
@@ -1208,16 +1253,16 @@ function coerceCollectionsProps(
   if (isPlainObject(out.heading)) {
     const env = out.heading as Record<string, unknown>;
     const h = unwrapTextSize(out.heading);
-    if (typeof env.size === 'string' && out.headingSize === undefined) {
+    if (typeof env.size === "string" && out.headingSize === undefined) {
       out.headingSize = env.size;
     }
     if (h.present) out.heading = h.value;
   }
-  if (typeof out.subtitle !== 'string') out.subtitle = '';
-  if (typeof out.columnsCount === 'number' && !out.columns) {
+  if (typeof out.subtitle !== "string") out.subtitle = "";
+  if (typeof out.columnsCount === "number" && !out.columns) {
     out.columns = out.columnsCount;
   }
-  if (typeof out.colorScheme === 'string') {
+  if (typeof out.colorScheme === "string") {
     const m = /^scheme-(\d+)$/.exec(out.colorScheme);
     out.colorScheme = m ? Number(m[1]) : 1;
   }
@@ -1228,7 +1273,7 @@ function coerceCollectionsProps(
         const raw = item as Record<string, unknown>;
         // hidden === true сюда уже не доходит: общий dropHiddenArrayItems
         // отсеивает скрытые элементы ЛЮБОГО списка до блочных коэрсеров.
-        const heading = String(raw.heading ?? raw.name ?? '');
+        const heading = String(raw.heading ?? raw.name ?? "");
         const imageSrc = raw.image
           ? rewriteAssetUrl(String(raw.image), publicUrl)
           : undefined;
@@ -1236,10 +1281,10 @@ function coerceCollectionsProps(
         const result: Record<string, unknown> = {
           id,
           collectionId:
-            typeof raw.collectionId === 'string' ? raw.collectionId : null,
+            typeof raw.collectionId === "string" ? raw.collectionId : null,
           heading,
         };
-        if (typeof raw.description === 'string') {
+        if (typeof raw.description === "string") {
           result.description = raw.description;
         }
         if (imageSrc) result.image = imageSrc;
@@ -1250,11 +1295,11 @@ function coerceCollectionsProps(
 }
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
-  return !!v && typeof v === 'object' && !Array.isArray(v);
+  return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
-function isHeadingSize(v: unknown): v is 'small' | 'medium' | 'large' {
-  return v === 'small' || v === 'medium' || v === 'large';
+function isHeadingSize(v: unknown): v is "small" | "medium" | "large" {
+  return v === "small" || v === "medium" || v === "large";
 }
 
 // buildTokensCss + scheme helpers moved to `src/themes/tokens-css.ts` so the
@@ -1267,15 +1312,15 @@ function isHeadingSize(v: unknown): v is 'small' | 'medium' | 'large' {
  * null for invalid / missing input so callers can skip emitting the var.
  */
 function hexToRgbTriple(v: unknown): string | null {
-  if (typeof v !== 'string') return null;
-  const hex = v.trim().replace(/^#/, '');
+  if (typeof v !== "string") return null;
+  const hex = v.trim().replace(/^#/, "");
   if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(hex)) return null;
   const full =
     hex.length === 3
       ? hex
-          .split('')
+          .split("")
           .map((c) => c + c)
-          .join('')
+          .join("")
       : hex;
   const r = parseInt(full.slice(0, 2), 16);
   const g = parseInt(full.slice(2, 4), 16);
@@ -1296,11 +1341,11 @@ const ASSET_EXT_RE = /\.(svg|png|jpe?g|gif|webp|avif|ico|mp4|webm|pdf)$/i;
  */
 function rewriteAssetUrl(url: string, publicUrl: string | null): string {
   if (!publicUrl) return url;
-  if (!url.startsWith('/')) return url;
-  if (url.startsWith('//')) return url;
-  if (url.startsWith('/placeholders/')) return url;
-  if (url.startsWith('/__theme/')) return url;
+  if (!url.startsWith("/")) return url;
+  if (url.startsWith("//")) return url;
+  if (url.startsWith("/placeholders/")) return url;
+  if (url.startsWith("/__theme/")) return url;
   if (!ASSET_EXT_RE.test(url)) return url;
-  const origin = publicUrl.replace(/\/$/, '');
+  const origin = publicUrl.replace(/\/$/, "");
   return origin + url;
 }

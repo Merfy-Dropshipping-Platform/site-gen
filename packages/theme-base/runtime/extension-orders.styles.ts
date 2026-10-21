@@ -10,6 +10,14 @@
  * ИЗОЛЯЦИЯ. Каждое правило под `.xo-row` (строка в чужом списке заказов) или
  * `.xo` (страница записи); цвета — переменные `--xo-*` в этих областях.
  * Шрифт не задаётся: `var(--font-body)` идёт от темы.
+ *
+ * РЕЖИМ «КАК ТЕМА» (спека 120, этап 5 на vanilla): атрибут
+ * `data-look="theme"` на самой .xo/.xo-row или любом их предке (например, на
+ * контейнере списка заказов) перекрашивает палитру прототипа в токены темы и
+ * схемы секции — переопределяются те же переменные `--xo-*`. Без атрибута
+ * значения по умолчанию дают прежний вид байт в байт (снимок
+ * __tests__/extension-theme-look.test.ts). Цвета статусов (info, warning,
+ * success, danger, neutral) — не темы: статусы остаются читаемыми.
  */
 export const EXTENSION_ORDERS_STYLES = `
 .xo, .xo-row {
@@ -29,13 +37,20 @@ export const EXTENSION_ORDERS_STYLES = `
   --xo-danger: #B3261E;
   --xo-neutral-bg: #F1F1F3;
   --xo-neutral: #6B6B70;
+  --xo-weight: 300;
+  --xo-radius-row: 12px;
+  --xo-radius-button: 9px;
+  --xo-btn-bg: #141414;
+  --xo-btn-text: #FFFFFF;
+  --xo-btn-bg-hover: #141414;
+  --xo-btn-text-hover: #FFFFFF;
   box-sizing: border-box;
   font-family: var(--font-body, system-ui, sans-serif);
-  font-weight: 300;
+  font-weight: var(--xo-weight);
   color: var(--xo-ink);
 }
 .xo *, .xo-row * { box-sizing: border-box; }
-.xo-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--xo-line); border-radius: 12px; background: var(--xo-surface); text-decoration: none; }
+.xo-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--xo-line); border-radius: var(--xo-radius-row); background: var(--xo-surface); text-decoration: none; }
 .xo-row-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .xo-row-title { font-size: 15px; line-height: 1.35; }
 .xo-row-date { font-size: 12px; color: var(--xo-muted); }
@@ -62,6 +77,29 @@ export const EXTENSION_ORDERS_STYLES = `
 .xo-pair { justify-content: flex-start; }
 .xo-pair .xo-label { flex: 0 0 50%; color: var(--xo-muted); }
 .xo-pair .xo-value { text-align: left; }
-.xo-button { display: flex; align-items: center; justify-content: center; height: 46px; border-radius: 9px; background: var(--xo-ink); color: var(--xo-surface); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; }
+.xo-button { display: flex; align-items: center; justify-content: center; height: 46px; border-radius: var(--xo-radius-button); background: var(--xo-btn-bg); color: var(--xo-btn-text); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; }
 .xo-state { margin: 0; color: var(--xo-faint); }
+
+/* Режим «как тема»: тот же набор переменных, значения — токены темы и схемы
+   секции. Селекторы: атрибут на самих .xo/.xo-row или на любом предке. */
+.xo[data-look="theme"], .xo-row[data-look="theme"], [data-look="theme"] .xo, [data-look="theme"] .xo-row {
+  --xo-ink: rgb(var(--color-text));
+  --xo-back: rgb(var(--color-muted));
+  --xo-muted: rgb(var(--color-muted));
+  --xo-faint: rgb(var(--color-muted));
+  --xo-line: rgb(var(--color-text) / .2);
+  --xo-surface: rgb(var(--color-bg));
+  --xo-weight: var(--weight-body);
+  --xo-radius-row: var(--radius-card);
+  --xo-radius-button: var(--radius-button);
+  --xo-btn-bg: var(--color-button-bg);
+  --xo-btn-text: var(--color-button-text);
+  --xo-btn-border: var(--color-button-border);
+  --xo-btn-bg-hover: var(--color-button-bg-hover);
+  --xo-btn-text-hover: var(--color-button-text-hover);
+  font-family: var(--font-body);
+}
+/* Кнопка записи получает рамку кнопочного токена; наведение — hover-токены. */
+:is(.xo[data-look="theme"], [data-look="theme"] .xo) .xo-button { border: 1px solid var(--xo-btn-border); }
+:is(.xo[data-look="theme"], [data-look="theme"] .xo) .xo-button:hover { background: var(--xo-btn-bg-hover); color: var(--xo-btn-text-hover); }
 `.trim();

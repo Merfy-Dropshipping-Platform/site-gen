@@ -131,16 +131,16 @@ export const EXTENSION_PURCHASE_STYLES = `
   --xp-radius-icon: var(--radius-input);
   --xp-radius-media: var(--radius-media);
   --xp-radius-button: var(--radius-button);
-  --xp-btn-bg: var(--color-button-bg);
-  --xp-btn-text: var(--color-button-text);
-  --xp-btn-border: var(--color-button-border);
-  --xp-btn-bg-hover: var(--color-button-bg-hover);
-  --xp-btn-text-hover: var(--color-button-text-hover);
-  --xp-btn2-bg: var(--color-button-2-bg);
-  --xp-btn2-text: var(--color-button-2-text);
-  --xp-btn2-border: var(--color-button-2-border);
-  --xp-btn2-bg-hover: var(--color-button-2-bg-hover);
-  --xp-btn2-text-hover: var(--color-button-2-text-hover);
+  --xp-btn-bg: rgb(var(--color-button-bg));
+  --xp-btn-text: rgb(var(--color-button-text));
+  --xp-btn-border: rgb(var(--color-button-border));
+  --xp-btn-bg-hover: rgb(var(--color-button-bg-hover));
+  --xp-btn-text-hover: rgb(var(--color-button-text-hover));
+  --xp-btn2-bg: rgb(var(--color-button-2-bg));
+  --xp-btn2-text: rgb(var(--color-button-2-text));
+  --xp-btn2-border: rgb(var(--color-button-2-border));
+  --xp-btn2-bg-hover: rgb(var(--color-button-2-bg-hover));
+  --xp-btn2-text-hover: rgb(var(--color-button-2-text-hover));
 }
 /* У кнопок появляется рамка кнопочного токена; наведение — hover-токены. */
 :is(.xp[data-look="theme"], [data-look="theme"] .xp) .sf-btn { border: 1px solid var(--xp-btn-border); }

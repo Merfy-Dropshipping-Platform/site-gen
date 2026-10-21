@@ -92,11 +92,11 @@ export const EXTENSION_ORDERS_STYLES = `
   --xo-weight: var(--weight-body);
   --xo-radius-row: var(--radius-card);
   --xo-radius-button: var(--radius-button);
-  --xo-btn-bg: var(--color-button-bg);
-  --xo-btn-text: var(--color-button-text);
-  --xo-btn-border: var(--color-button-border);
-  --xo-btn-bg-hover: var(--color-button-bg-hover);
-  --xo-btn-text-hover: var(--color-button-text-hover);
+  --xo-btn-bg: rgb(var(--color-button-bg));
+  --xo-btn-text: rgb(var(--color-button-text));
+  --xo-btn-border: rgb(var(--color-button-border));
+  --xo-btn-bg-hover: rgb(var(--color-button-bg-hover));
+  --xo-btn-text-hover: rgb(var(--color-button-text-hover));
   font-family: var(--font-body);
 }
 /* Кнопка записи получает рамку кнопочного токена; наведение — hover-токены. */

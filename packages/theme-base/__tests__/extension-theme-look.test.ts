@@ -80,21 +80,25 @@ describe("стили формы покупки: режим «как тема»",
   });
 
   it("главная и вторая кнопки — из кнопочных токенов, включая наведение", () => {
-    expect(theme).toContain("--xp-btn-bg: var(--color-button-bg)");
-    expect(theme).toContain("--xp-btn-text: var(--color-button-text)");
-    expect(theme).toContain("--xp-btn-border: var(--color-button-border)");
-    expect(theme).toContain("--xp-btn-bg-hover: var(--color-button-bg-hover)");
+    expect(theme).toContain("--xp-btn-bg: rgb(var(--color-button-bg))");
+    expect(theme).toContain("--xp-btn-text: rgb(var(--color-button-text))");
+    expect(theme).toContain("--xp-btn-border: rgb(var(--color-button-border))");
     expect(theme).toContain(
-      "--xp-btn-text-hover: var(--color-button-text-hover)",
-    );
-    expect(theme).toContain("--xp-btn2-bg: var(--color-button-2-bg)");
-    expect(theme).toContain("--xp-btn2-text: var(--color-button-2-text)");
-    expect(theme).toContain("--xp-btn2-border: var(--color-button-2-border)");
-    expect(theme).toContain(
-      "--xp-btn2-bg-hover: var(--color-button-2-bg-hover)",
+      "--xp-btn-bg-hover: rgb(var(--color-button-bg-hover))",
     );
     expect(theme).toContain(
-      "--xp-btn2-text-hover: var(--color-button-2-text-hover)",
+      "--xp-btn-text-hover: rgb(var(--color-button-text-hover))",
+    );
+    expect(theme).toContain("--xp-btn2-bg: rgb(var(--color-button-2-bg))");
+    expect(theme).toContain("--xp-btn2-text: rgb(var(--color-button-2-text))");
+    expect(theme).toContain(
+      "--xp-btn2-border: rgb(var(--color-button-2-border))",
+    );
+    expect(theme).toContain(
+      "--xp-btn2-bg-hover: rgb(var(--color-button-2-bg-hover))",
+    );
+    expect(theme).toContain(
+      "--xp-btn2-text-hover: rgb(var(--color-button-2-text-hover))",
     );
   });
 
@@ -145,12 +149,14 @@ describe("стили записей в заказах: режим «как те�
   });
 
   it("кнопка и скругления — из кнопочных и радиусных токенов", () => {
-    expect(theme).toContain("--xo-btn-bg: var(--color-button-bg)");
-    expect(theme).toContain("--xo-btn-text: var(--color-button-text)");
-    expect(theme).toContain("--xo-btn-border: var(--color-button-border)");
-    expect(theme).toContain("--xo-btn-bg-hover: var(--color-button-bg-hover)");
+    expect(theme).toContain("--xo-btn-bg: rgb(var(--color-button-bg))");
+    expect(theme).toContain("--xo-btn-text: rgb(var(--color-button-text))");
+    expect(theme).toContain("--xo-btn-border: rgb(var(--color-button-border))");
     expect(theme).toContain(
-      "--xo-btn-text-hover: var(--color-button-text-hover)",
+      "--xo-btn-bg-hover: rgb(var(--color-button-bg-hover))",
+    );
+    expect(theme).toContain(
+      "--xo-btn-text-hover: rgb(var(--color-button-text-hover))",
     );
     expect(theme).toContain("--xo-radius-row: var(--radius-card)");
     expect(theme).toContain("--xo-radius-button: var(--radius-button)");

@@ -295,6 +295,7 @@
     "otp-auth": true,
     "wishlist": false,
     "requests": true,
+    "extensionPurchase": true,
     "color-swatches": false,
     "filter-sidebar": true,
     "puckDrivenPages": true

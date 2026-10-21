@@ -3,14 +3,14 @@
  * extensionPurchaseEnabled секции «Товар» (форма расширения вместо кнопки
  * покупки). Инжект — в общей точке extractPageBlocks, как у requestsEnabled
  * (requests-product-flag.spec.ts); значение решает манифест темы. Включено
- * только на flux (решение владельца: «только на одной теме флюкс»).
+ * включено на flux (решение владельца от 11.10) и vanilla (этап 5 на vanilla).
  */
 import { extractPageBlocks } from '../page-blocks';
 
 jest.mock('../theme-manifest-loader', () => ({
   ...jest.requireActual('../theme-manifest-loader'),
   getThemeManifest: (id: string) => ({
-    features: { requests: true, extensionPurchase: id === 'flux' },
+    features: { requests: true, extensionPurchase: id === 'flux' || id === 'vanilla' },
   }),
 }));
 
@@ -41,7 +41,11 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
     expect((await productProps('flux'))?.extensionPurchaseEnabled).toBe(true);
   });
 
-  it.each(['rose', 'vanilla', 'satin', 'bloom'])(
+  it('vanilla: флаг включён → проп true', async () => {
+    expect((await productProps('vanilla'))?.extensionPurchaseEnabled).toBe(true);
+  });
+
+  it.each(['rose', 'satin', 'bloom'])(
     '%s: флаг выключен → пропа нет',
     async (themeId) => {
       expect((await productProps(themeId))?.extensionPurchaseEnabled).toBeUndefined();
@@ -62,14 +66,15 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
     expect(props?.extensionPurchaseEnabled).toBe(true);
   });
 
-  it('реальные манифесты: только flux включает форму расширения', () => {
+  it('реальные манифесты: форму расширения включают flux и vanilla', () => {
     const features = (theme: string) =>
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       (require(`../../../packages/theme-${theme}/theme.json`) as {
         features?: Record<string, boolean>;
       }).features;
     expect(features('flux')?.extensionPurchase).toBe(true);
-    for (const theme of ['rose', 'vanilla', 'satin', 'bloom']) {
+    expect(features('vanilla')?.extensionPurchase).toBe(true);
+    for (const theme of ['rose', 'satin', 'bloom']) {
       expect(features(theme)?.extensionPurchase).not.toBe(true);
     }
   });

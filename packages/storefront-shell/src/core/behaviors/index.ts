@@ -23,3 +23,5 @@ export { accordion } from './accordion';
 export { dialog } from './dialog';
 export { carousel } from './carousel';
 export { reveal } from './reveal';
+export { tabs } from './tabs';
+export { navMenu } from './nav-menu';

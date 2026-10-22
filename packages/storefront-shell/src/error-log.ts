@@ -1,4 +1,5 @@
 import type { StorefrontConfig } from '@merfy/storefront-config';
+import { SECTION_FAILURE_EVENT } from './core/events';
 import { SECTION_ERROR_EVENT, type FailureStage } from './report';
 
 // Канал ошибок секций (design.md блока 7, С7-16 А; план блока 11, часть 4). На витрине (mode: live) ядро копит записи
@@ -24,8 +25,11 @@ export interface ErrorRecord {
 }
 
 export interface ErrorLogDeps {
-  // Куда ядро шлёт merfy:section-error — окно страницы.
+  // Куда ядро шлёт событие сбоя: каркас — merfy:section-error на окно, ядро секций (блок 5) — merfy:section:error на
+  // документ.
   target: EventTarget;
+  // Имя события сбоя; без него — merfy:section-error каркаса.
+  event?: string;
   // Документ: уход страницы в фон (visibilitychange) отправляет пачку сразу.
   document: EventTarget & { readonly visibilityState: DocumentVisibilityState };
   send: (url: string, body: string) => void;
@@ -46,11 +50,18 @@ const textAt = (value: object, key: string): string => {
   return typeof field === 'string' ? field : '';
 };
 
+// Хеш скрипта: ядро секций (блок 5) записывает его в поле script, каркас — в адрес файла (поле src).
+const SCRIPT_HASH = /^[0-9a-f]{64}$/;
+const scriptOf = (detail: object): string | undefined => {
+  const script = textAt(detail, 'script');
+  return SCRIPT_HASH.test(script) ? script : SCRIPT_FILE.exec(textAt(detail, 'src'))?.[1];
+};
+
 // Запись из события сбоя. Событие может прислать и чужой скрипт страницы, поэтому поля проверяются. Без отпечатка
 // скрипта или с чужой стадией — null: такую запись не по чему найти в реестре секций.
 export function recordOf(detail: unknown): ErrorRecord | null {
   if (typeof detail !== 'object' || detail === null) return null;
-  const script = SCRIPT_FILE.exec(textAt(detail, 'src'))?.[1];
+  const script = scriptOf(detail);
   const section = textAt(detail, 'section');
   const stage = textAt(detail, 'stage');
   if (script === undefined || section === '' || !STAGES.includes(stage)) return null;
@@ -85,14 +96,29 @@ export function listenSectionErrors(deps: ErrorLogDeps): void {
   const onVisibility = (): void => {
     if (deps.document.visibilityState === 'hidden') flush(deps, state);
   };
-  deps.target.addEventListener(SECTION_ERROR_EVENT, onFailure, { signal: deps.signal });
+  deps.target.addEventListener(deps.event ?? SECTION_ERROR_EVENT, onFailure, { signal: deps.signal });
   deps.document.addEventListener('visibilitychange', onVisibility, { signal: deps.signal });
 }
 
+// Откуда брать события сбоя: каркас шлёт merfy:section-error на окно, ядро секций (блок 5) — merfy:section:error на
+// документ.
+export interface ErrorSource {
+  target: 'window' | 'document';
+  event: string;
+}
+const SHELL_ERRORS: ErrorSource = { target: 'window', event: SECTION_ERROR_EVENT };
+export const CORE_ERRORS: ErrorSource = { target: 'document', event: SECTION_FAILURE_EVENT };
+
 // Ядро на витрине: окно, конфиг магазина и сигнал остановки ядра. Адрес — <api.url>/storefront/section-errors.
-export function watchSectionErrors(win: Window, config: StorefrontConfig, signal: AbortSignal): void {
+export function watchSectionErrors(
+  win: Window,
+  config: StorefrontConfig,
+  signal: AbortSignal,
+  source: ErrorSource = SHELL_ERRORS,
+): void {
   listenSectionErrors({
-    target: win,
+    target: source.target === 'window' ? win : win.document,
+    event: source.event,
     document: win.document,
     send: (url, body) => void win.navigator.sendBeacon(url, body),
     later: (run, ms) => void win.setTimeout(run, ms),

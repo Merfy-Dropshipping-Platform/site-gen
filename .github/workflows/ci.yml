@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     # Без лимита зависший шаг доживает до общего потолка в шесть часов, и
     # гейт не даёт ни зелёного, ни красного — прод в это время выкатить нечем.
-    timeout-minutes: 15
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17-alpine

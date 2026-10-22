@@ -230,13 +230,14 @@ export async function extractPageBlocks(
           ) {
             finalProps.extensionPurchaseEnabled = true;
           }
-          // Спека 120, этап 5 на vanilla: features.extensionLook === 'theme' →
-          // проп extensionLook. Блок «Товар» ставит его атрибутом data-look на
-          // контейнер формы — стили формы берут цвета и скругления из токенов
-          // темы (runtime/extension-purchase.styles.ts). Пока только vanilla.
+          // Спека 120, этап 5 на vanilla: тумблер features.extensionThemeLook
+          // → проп extensionLook: 'theme'. Блок «Товар» ставит его атрибутом
+          // data-look на контейнер формы — стили формы берут цвета и скругления
+          // из токенов темы (runtime/extension-purchase.styles.ts). Пока только
+          // vanilla; у темы без тумблера пропа нет.
           if (
             themeId != null &&
-            getThemeManifest(themeId)?.features?.extensionLook === "theme"
+            getThemeManifest(themeId)?.features?.extensionThemeLook === true
           ) {
             finalProps.extensionLook = "theme";
           }

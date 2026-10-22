@@ -97,18 +97,18 @@ describe("extensionPurchase: тумблер features.extensionPurchase → Produ
   });
 });
 
-describe("extensionLook: витринная часть этапа 5 на vanilla — вид формы из темы", () => {
+describe("extensionThemeLook: витринная часть этапа 5 на vanilla — вид формы из темы", () => {
   function manifestMock(themeId: string) {
     return {
       features: {
         requests: true,
         extensionPurchase: themeId === "flux" || themeId === "vanilla",
-        extensionLook: themeId === "vanilla" ? "theme" : undefined,
+        extensionThemeLook: themeId === "vanilla",
       },
     };
   }
 
-  it("vanilla: флаг extensionLook → проп extensionLook = theme", async () => {
+  it("vanilla: тумблер extensionThemeLook → проп extensionLook = theme", async () => {
     manifestMocked.mockImplementation(manifestMock as never);
     const props = await productProps("vanilla");
     expect(props?.extensionLook).toBe("theme");
@@ -119,17 +119,17 @@ describe("extensionLook: витринная часть этапа 5 на vanilla
     expect((await productProps("flux"))?.extensionLook).toBeUndefined();
   });
 
-  it("реальные манифесты: extensionLook = theme только у vanilla", () => {
+  it("реальные манифесты: тумблер extensionThemeLook только у vanilla", () => {
     const look = (theme: string) =>
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       (
         require(`../../../packages/theme-${theme}/theme.json`) as {
           features?: Record<string, string>;
         }
-      ).features?.extensionLook;
-    expect(look("vanilla")).toBe("theme");
+      ).features?.extensionThemeLook;
+    expect(look("vanilla")).toBe(true);
     for (const theme of ["flux", "rose", "satin", "bloom"]) {
-      expect(look(theme)).not.toBe("theme");
+      expect(look(theme)).not.toBe(true);
     }
   });
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { blockFormatProblems } from './blocks';
 import { sectionFieldShape } from './fields';
 import { problem, when, type Checked, type SectionProblem } from './problems';
 import { settingsTexts } from './settings';
@@ -32,12 +33,26 @@ export const sectionIdSchema = z
 export const SECTION_KINDS = ['section', 'global'] as const;
 export type SectionKind = (typeof SECTION_KINDS)[number];
 
+// Тип блока секции (часть 3, design.md 3.16, Р53): подпись в конструкторе, сколько блоков типа в секции, поля. Имя типа
+// и значения блоков по умолчанию проверяет blocks.ts.
+const blockTypeSchema = z.strictObject({
+  title: z.string().min(1).max(80),
+  limit: z.int().min(1).max(50),
+  settings: z.array(sectionFieldShape).default([]),
+});
+const defaultBlockSchema = z.strictObject({
+  type: z.string(),
+  settings: z.record(z.string(), z.unknown()).default({}),
+});
+
 export const sectionManifestSchema = z.strictObject({
   sdk: z.literal(SECTION_SDK),
   name: sectionIdSchema,
   kind: z.enum(SECTION_KINDS),
   title: z.string().min(1).max(80),
   settings: z.array(sectionFieldShape).default([]),
+  blocks: z.record(z.string(), blockTypeSchema).optional(),
+  defaultBlocks: z.array(defaultBlockSchema).max(50).optional(),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;
@@ -139,10 +154,13 @@ export function readManifest(files: SectionFiles): Checked<SectionManifest> {
   if (early.length > 0) return { ok: false, problems: early };
   const parsed = sectionManifestSchema.safeParse(json.value, RUSSIAN_ERRORS);
   if (!parsed.success) return { ok: false, problems: parsed.error.issues.map(issueProblem) };
-  const settings = settingsTexts(parsed.data.settings).map((message) =>
-    problem('setting-invalid', MANIFEST_FILE, message),
-  );
-  return settings.length > 0 ? { ok: false, problems: settings } : { ok: true, value: parsed.data };
+  const blocks = blockFormatProblems(parsed.data);
+  const problems = [
+    ...settingsTexts(parsed.data.settings).map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
+    ...blocks.structure.map((message) => problem('manifest-invalid', MANIFEST_FILE, message)),
+    ...blocks.settings.map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
+  ];
+  return problems.length > 0 ? { ok: false, problems } : { ok: true, value: parsed.data };
 }
 
 // Секция — с шаблоном; глобальный скрипт (С7-21 А) — секция без места: без шаблона, со скриптом.

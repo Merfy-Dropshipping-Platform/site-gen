@@ -15,6 +15,7 @@ import { instanceSchema, readVisibleSections } from './code';
 import type { DrawAnswer } from './draw';
 import { inlineAssets } from './inline-assets';
 import { inlineFonts } from './preview-fonts';
+import { withPreviewPolicy } from './preview-policy';
 import { readSnapshot } from './snapshot';
 import { answer, isAnswer, jsonAnswer, standPreview, standShop, type PreviewDeps } from './stand-preview';
 
@@ -104,7 +105,7 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   // Оба скрипта превью (1а-13): слушатель токенов и скрипт секций — select-block, update-block, reconcile.
   const agents = `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script>`;
   const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), agents);
-  return answer(200, found.inline(await inlinePageFonts(html, deps)));
+  return answer(200, withPreviewPolicy(found.inline(await inlinePageFonts(html, deps))));
 }
 
 function jsonOf(body: string): unknown {

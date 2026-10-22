@@ -158,15 +158,16 @@ FROM runtime AS storefront-builder
 COPY --from=storefront-renderer /app/themes/nova /app/themes/nova
 COPY --from=storefront-renderer /app/packages/storefront-shell/dist /app/packages/storefront-shell/dist
 # Процессы рендера и проверки секций (блок 2 «Секций и SDK», «Решил сам» пп. 1, 2): бинарник Node 26 — под --permission
-# сеть закрыта только с 25-й версии, сам сборщик остаётся на 24; база образов одна — alpine 3.24. Процессы идут от
-# пользователя sandbox (uid 10001), сборщик — root: соседний процесс Node другого пользователя ОС открыть нельзя
-# (process._debugProcess → EPERM). --disable-sigusr1 у сборщика — запасной слой; процессам рендера NODE_OPTIONS не
-# достаётся (окружение у них пустое), этот флаг им ставит isolation.ts. Отчёт песочницы — строка журнала render-sandbox
-# при старте сборщика.
+# сеть закрыта только с 25-й версии, сам сборщик остаётся на 24; база образов одна — alpine 3.24. Сборщик — root, у
+# каждого процесса — свой пользователь ОС (В2-3 А): uid 10001–11000, по одному на живой процесс, группа sandbox (10001).
+# Сигнал процессу другого пользователя ОС ядро не пропускает (EPERM) — ни сборщику, ни соседнему процессу рендера, и
+# инспектор по сигналу (process._debugProcess) у них не открыть. Записей этих uid в /etc/passwd нет: Node запускает
+# процесс по числу. --disable-sigusr1 у сборщика — запасной слой; процессам рендера NODE_OPTIONS не достаётся (окружение
+# у них пустое), этот флаг им ставит isolation.ts. Отчёт песочницы — строка журнала render-sandbox при старте сборщика.
 COPY --from=node:26.12.0-alpine3.24 /usr/local/bin/node /usr/local/bin/node26
-RUN addgroup -g 10001 -S sandbox && adduser -S -D -H -u 10001 -G sandbox sandbox
+RUN addgroup -g 10001 -S sandbox
 COPY --from=storefront-renderer /app/packages/storefront-sections/dist-render /app/packages/storefront-sections/dist-render
-ENV SECTION_RENDER_NODE=/usr/local/bin/node26 SECTION_RENDER_UID=10001 SECTION_RENDER_GID=10001
+ENV SECTION_RENDER_NODE=/usr/local/bin/node26 SECTION_RENDER_UID_FIRST=10001 SECTION_RENDER_UID_COUNT=1000 SECTION_RENDER_GID=10001
 ENV NODE_OPTIONS=--disable-sigusr1
 ENV PORT=8080
 EXPOSE 8080

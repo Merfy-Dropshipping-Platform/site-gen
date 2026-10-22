@@ -40,8 +40,9 @@ const log = jsonLog((line) => process.stdout.write(line), clock);
 
 const settings = readSettings(process.env);
 // Песочница процессов рендера секций (блок 2 «Секций и SDK»): что на этой машине закрыто — строка журнала при старте.
-// Бинарник Node и пользователь ОС — из SECTION_RENDER_NODE, SECTION_RENDER_UID, SECTION_RENDER_GID (Dockerfile). Проба
-// сборщик не останавливает: строку сверяют после выкатки, секции мерчантов включают только при всём closed.
+// Бинарник Node и пользователи ОС — из SECTION_RENDER_NODE, SECTION_RENDER_UID_FIRST, SECTION_RENDER_UID_COUNT,
+// SECTION_RENDER_GID (Dockerfile). Проба сборщик не останавливает: строку сверяют после выкатки, секции мерчантов
+// включают только при всём closed.
 await sandboxReport().then(
   (report) => log('render-sandbox', report),
   (error: unknown) => log('render-sandbox-failed', { error: errorText(error) }),

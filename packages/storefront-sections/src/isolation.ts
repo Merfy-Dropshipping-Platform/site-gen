@@ -8,37 +8,76 @@ import { z } from 'zod';
 // Процессы с чужим кодом секций (блок 2 «Секций и SDK», «Решил сам» пп. 1, 2, 5): процесс рендера и процесс проверки.
 // Права — моделью разрешений Node: читать можно только папку собранного файла процесса и зависимости пакета; сети
 // (на Node 26), дочерних процессов, аддонов, потоков и записи файлов нет; окружение пустое — секретов сборщика у процесса
-// нет. На сервере процесс идёт от своего пользователя ОС: процесс рендера с тем же пользователем, что у сборщика,
-// открыл бы у сборщика инспектор (process._debugProcess) или убил бы его сигналом. Инспектор по сигналу у самого
-// процесса выключен (--disable-sigusr1): соседний процесс того же пользователя его не откроет. Бинарник Node
-// и пользователь — из SECTION_RENDER_NODE, SECTION_RENDER_UID и SECTION_RENDER_GID окружения процесса (их задаёт
-// Dockerfile сборщика); переменных нет — Node и пользователь вызывающего процесса (тесты, ноутбук).
+// нет. На сервере у каждого процесса свой пользователь ОС (В2-3 А): процесс рендера с тем же пользователем, что у
+// сборщика, открыл бы у сборщика инспектор (process._debugProcess) или убил бы его сигналом, а с тем же, что у соседнего
+// процесса рендера, остановил бы соседа (SIGSTOP) — секции другого магазина пропали бы с витрины. Инспектор по сигналу у
+// самого процесса выключен (--disable-sigusr1). Бинарник Node и пользователи — из SECTION_RENDER_NODE,
+// SECTION_RENDER_UID_FIRST, SECTION_RENDER_UID_COUNT и SECTION_RENDER_GID окружения процесса (их задаёт Dockerfile
+// сборщика); переменных нет — Node и пользователь вызывающего процесса (тесты, ноутбук).
 export interface IsolatedLaunch {
   node: string;
-  user: { uid: number; gid: number } | null;
+  users: UserPool | null;
 }
 
+// Пользователи ОС процессов: uid first … first + count − 1, у каждого живого процесса — свой, группа у всех одна.
+// Сигнал чужому процессу ядро пропускает, только если uid отправителя и получателя совпадают (или отправитель — root),
+// группа тут не участвует. Свободный uid ищется по кругу от следующего за последним выданным: освободившийся uid
+// выдаётся новому процессу как можно позже. Все заняты — процесс не запускается (сбой процесса, ошибка без стадии).
+export class UserPool {
+  private readonly busy = new Set<number>();
+  private next = 0;
+  readonly first: number;
+  readonly count: number;
+  readonly gid: number;
+
+  constructor(first: number, count: number, gid: number) {
+    this.first = first;
+    this.count = count;
+    this.gid = gid;
+  }
+
+  take(): { uid: number; gid: number } {
+    for (let step = 0; step < this.count; step += 1) {
+      const offset = (this.next + step) % this.count;
+      const uid = this.first + offset;
+      if (!this.busy.has(uid)) {
+        this.busy.add(uid);
+        this.next = (offset + 1) % this.count;
+        return { uid, gid: this.gid };
+      }
+    }
+    throw new Error(`все ${this.count} пользователей процессов секций заняты`);
+  }
+
+  release(uid: number): void {
+    this.busy.delete(uid);
+  }
+}
+
+// uid 0 и группа 0 — root: процесс от них не отделён от сборщика, поэтому только положительные.
 export const launchEnvSchema = z.object({
   SECTION_RENDER_NODE: z.string().min(1).optional(),
-  SECTION_RENDER_UID: z.coerce.number().int().nonnegative().optional(),
-  SECTION_RENDER_GID: z.coerce.number().int().nonnegative().optional(),
+  SECTION_RENDER_UID_FIRST: z.coerce.number().int().positive().optional(),
+  SECTION_RENDER_UID_COUNT: z.coerce.number().int().positive().optional(),
+  SECTION_RENDER_GID: z.coerce.number().int().positive().optional(),
 });
 export type LaunchEnv = z.infer<typeof launchEnvSchema>;
 
-// Пользователь — обе переменные или ни одной.
+// Пользователи — все три переменные или ни одной.
 export function launchOf(env: LaunchEnv): IsolatedLaunch {
-  const { SECTION_RENDER_UID: uid, SECTION_RENDER_GID: gid } = env;
-  if ((uid === undefined) !== (gid === undefined))
-    throw new Error('SECTION_RENDER_UID и SECTION_RENDER_GID задаются вместе');
-  const user = uid === undefined || gid === undefined ? null : { uid, gid };
-  return { node: env.SECTION_RENDER_NODE ?? process.execPath, user };
+  const node = env.SECTION_RENDER_NODE ?? process.execPath;
+  const { SECTION_RENDER_UID_FIRST: first, SECTION_RENDER_UID_COUNT: count, SECTION_RENDER_GID: gid } = env;
+  if (first === undefined && count === undefined && gid === undefined) return { node, users: null };
+  if (first === undefined || count === undefined || gid === undefined)
+    throw new Error('SECTION_RENDER_UID_FIRST, SECTION_RENDER_UID_COUNT и SECTION_RENDER_GID задаются вместе');
+  return { node, users: new UserPool(first, count, gid) };
 }
 
 export const readLaunch = (env: NodeJS.ProcessEnv): IsolatedLaunch => launchOf(launchEnvSchema.parse(env));
 
 let fromEnv: IsolatedLaunch | null = null;
 
-// Запуск по умолчанию — из окружения этого процесса, один раз.
+// Запуск по умолчанию — из окружения этого процесса, один раз: пул пользователей один на процесс.
 export const defaultLaunch = (): IsolatedLaunch => (fromEnv ??= readLaunch(process.env));
 
 export interface IsolatedProcess {
@@ -77,10 +116,17 @@ export function isolatedArgs(spec: IsolatedProcess): string[] {
 }
 
 export function spawnIsolated(spec: IsolatedProcess, launch: IsolatedLaunch, stdio: StdioOptions): ChildProcess {
-  return spawn(launch.node, isolatedArgs(spec), {
-    cwd: dirname(spec.script),
-    env: {},
-    stdio,
-    ...(launch.user ?? {}),
-  });
+  const options = { cwd: dirname(spec.script), env: {}, stdio };
+  const { users } = launch;
+  if (users === null) return spawn(launch.node, isolatedArgs(spec), options);
+  const user = users.take();
+  try {
+    const child = spawn(launch.node, isolatedArgs(spec), { ...options, ...user });
+    // uid свободен, когда процесс вышел и его потоки закрылись; close приходит и после error (процесс не запустился).
+    child.once('close', () => users.release(user.uid));
+    return child;
+  } catch (error) {
+    users.release(user.uid);
+    throw error;
+  }
 }

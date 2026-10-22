@@ -70,6 +70,17 @@ async function lookOf(query: string): Promise<Look> {
   return look;
 }
 
+describe('стенд формы покупки: ?look=rose — вычисленные стили из токенов rose', () => {
+  it('скругления поля и кнопки 8px, шрифт Manrope, кнопка из схемы 1', async () => {
+    const look = await lookOf('?state=filled&look=rose');
+    expect(look.fieldRadius).toBe('8px');
+    expect(look.buttonRadius).toBe('8px');
+    expect(look.font).toContain('Manrope');
+    expect(look.buttonBg).toBe('rgb(0, 0, 0)');
+    expect(look.buttonColor).toBe('rgb(255, 255, 255)');
+  });
+});
+
 describe('стенд формы покупки: ?look=vanilla — вычисленные стили из токенов vanilla', () => {
   it('скругления поля и кнопки 0px, шрифт Arsenal, кнопка из схемы 1', async () => {
     const look = await lookOf('?state=filled&look=vanilla');

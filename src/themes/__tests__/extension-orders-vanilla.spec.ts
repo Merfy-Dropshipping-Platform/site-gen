@@ -3,7 +3,7 @@
  * расширений в «Моих заказах» и страница записи, вход по ссылке письма ведёт
  * по `next`, страницы и ссылка «Мои заявки» первой версии убраны. Этап 5 на
  * vanilla: список записей и страница записи — в режиме «как тема»
- * (data-look='theme'): цвета и скругления из токенов vanilla, строки записей
+ * (data-look="theme"): цвета и скругления из токенов vanilla, строки записей
  * не отличаются от строк заказов рядом.
  *
  * Секция «Заказы» проверяется по тому, что реально уезжает на витрину:
@@ -19,7 +19,7 @@ import { EXTENSION_ORDERS_STYLES } from '../../../packages/theme-base/runtime/ex
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 const RENDERER = resolve(__dirname, 'render-theme-sections.mjs');
 const VANILLA_PAGES = resolve(SITES_ROOT, 'themes/vanilla/src/pages');
-const OTHER_THEMES = ['rose', 'bloom', 'satin'] as const;
+const OTHER_THEMES = ['bloom', 'satin'] as const;
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 
@@ -51,17 +51,17 @@ describe('vanilla: секция «Заказы» добавляет записи
 
   it('зовёт mountRows со страницей записи /account/entry и показывает список, если строки пришли', () => {
     expect(html).toContain('window.__merfyExtensionOrders');
-    expect(html).toContain('entryPath: '/account/entry'');
+    expect(html).toContain('entryPath: "/account/entry"');
     expect(html).toContain('if (count > 0) showList(root);');
   });
 
-  it('контейнер списка — с data-look='theme': строки записей в токенах vanilla', () => {
-    expect(html).toContain('id='orders-list'');
-    expect(html).toContain('data-look='theme'');
+  it('контейнер списка — с data-look="theme": строки записей в токенах vanilla', () => {
+    expect(html).toContain('id="orders-list"');
+    expect(html).toContain('data-look="theme"');
   });
 
   it('строка заказа несёт дату — по ней записи встают среди заказов', () => {
-    expect(html).toContain('row.dataset.date = order.createdAt || '';');
+    expect(html).toContain('row.dataset.date = order.createdAt || "";');
   });
 });
 
@@ -75,7 +75,7 @@ describe('vanilla: страница записи без пункта меню', 
     expect(entry).toContain("ordersPath: '/account/orders'");
     expect(entry).toContain('search: window.location.search');
     expect(entry).toContain('set:html={EXTENSION_ORDERS_STYLES}');
-    expect(entry).toContain('data-look='theme'');
+    expect(entry).toContain('data-look="theme"');
   });
 
   it('без сессии покупателя — на вход', () => {
@@ -84,7 +84,7 @@ describe('vanilla: страница записи без пункта меню', 
 
   it('в меню кабинета её нет, ссылки «Мои заявки» тоже', () => {
     const index = read(resolve(VANILLA_PAGES, 'account/index.astro'));
-    expect(index).toContain('href='/account/orders'');
+    expect(index).toContain('href="/account/orders"');
     expect(index).not.toContain('/account/entry');
     expect(index).not.toContain('/account/requests');
     expect(index).not.toContain('Мои заявки');

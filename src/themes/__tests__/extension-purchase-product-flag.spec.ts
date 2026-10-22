@@ -12,8 +12,8 @@ jest.mock('../theme-manifest-loader', () => ({
   getThemeManifest: jest.fn((id: string) => ({
     features: {
       requests: true,
-      extensionPurchase: id === 'flux' || id === 'vanilla',
-      extensionThemeLook: id === 'vanilla',
+      extensionPurchase: id === 'flux' || id === 'vanilla' || id === 'rose',
+      extensionThemeLook: id === 'vanilla' || id === 'rose',
     },
   })),
 }));
@@ -53,7 +53,13 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
     expect((await productProps('vanilla'))?.extensionPurchaseEnabled).toBe(true);
   });
 
-  it.each(['rose', 'satin', 'bloom'])(
+  it('rose: оба пропа — форма расширения и вид из темы', async () => {
+    const props = await productProps('rose');
+    expect(props?.extensionPurchaseEnabled).toBe(true);
+    expect(props?.extensionLook).toBe('theme');
+  });
+
+  it.each(['satin', 'bloom'])(
     '%s: флаг выключен → пропа нет',
     async (themeId) => {
       expect((await productProps(themeId))?.extensionPurchaseEnabled).toBeUndefined();
@@ -82,7 +88,8 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
       }).features;
     expect(features('flux')?.extensionPurchase).toBe(true);
     expect(features('vanilla')?.extensionPurchase).toBe(true);
-    for (const theme of ['rose', 'satin', 'bloom']) {
+    expect(features('rose')?.extensionPurchase).toBe(true);
+    for (const theme of ['satin', 'bloom']) {
       expect(features(theme)?.extensionPurchase).not.toBe(true);
     }
   });
@@ -105,7 +112,8 @@ describe('extensionThemeLook: витринная часть этапа 5 на va
         features?: Record<string, boolean>;
       }).features?.extensionThemeLook;
     expect(look('vanilla')).toBe(true);
-    for (const theme of ['flux', 'rose', 'satin', 'bloom']) {
+    expect(look('rose')).toBe(true);
+    for (const theme of ['flux', 'satin', 'bloom']) {
       expect(look(theme)).not.toBe(true);
     }
   });

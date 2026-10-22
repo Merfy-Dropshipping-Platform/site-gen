@@ -3,14 +3,17 @@ import {
   type BuildInputs,
   type CodeAssets,
   type Entity,
+  type RevisionPage,
   type ThemeState,
 } from '@merfy/storefront-build';
 import { z } from 'zod';
+import { fetchBilling } from './billing';
 import { NO_CODE, readShopCode, type CodeDeps } from './code';
 import { fetchCounters, type CounterRequest } from './counters';
 import { StorefrontBuilderError, errorText } from './errors';
-import type { Log } from './log';
+import type { Log, LogFields } from './log';
 import type { Call } from './rpc';
+import { revisionPagesOf } from './revision-pages';
 import type { Queryable } from './shop-state';
 import type { ThemePins } from './theme-catalog';
 
@@ -161,15 +164,28 @@ async function rowsOf<T>(db: Queryable, sql: string, siteId: string, schema: z.Z
 // (site.current_revision_id), как у нынешней сборки.
 export const revisionKeySql = (key: 'tokens' | 'settings'): string =>
   `CASE WHEN jsonb_typeof(r.data->'${key}') = 'object' THEN r.data->'${key}' ELSE '{}'::jsonb END`;
-const REVISION_SQL = `SELECT ${revisionKeySql('tokens')} AS tokens FROM site s
-  LEFT JOIN site_revision r ON r.id = s.current_revision_id WHERE s.id = $1`;
+// Свои страницы (часть 4, Р1-4-8) — ключ pages ревизии: список; не список — своих страниц нет.
+const REVISION_SQL = `SELECT ${revisionKeySql('tokens')} AS tokens, ${revisionKeySql('settings')} AS settings,
+  CASE WHEN jsonb_typeof(r.data->'pages') = 'array' THEN r.data->'pages' ELSE '[]'::jsonb END AS pages
+  FROM site s LEFT JOIN site_revision r ON r.id = s.current_revision_id WHERE s.id = $1`;
 const jsonObject = z.record(z.string(), z.json());
 export type JsonObject = z.infer<typeof jsonObject>;
+const revisionRow = z.object({ tokens: jsonObject, settings: jsonObject, pages: z.array(z.unknown()) });
 
-// Правки токенов мерчанта из текущей ревизии: во входы сборки (revision.tokens блока 4).
-export async function readRevisionTokens(db: Queryable, siteId: string): Promise<JsonObject> {
-  const rows = await rowsOf(db, REVISION_SQL, siteId, z.object({ tokens: jsonObject }));
-  return rows[0]?.tokens ?? {};
+// Ревизия во входах сборки: правки токенов (блок 1), правки настроек темы — их читают секции с "uses": ["theme"] (часть
+// 4 блока 1 «Секций и SDK»), и свои страницы мерчанта.
+export interface RevisionInput {
+  tokens: JsonObject;
+  settings: JsonObject;
+  pages: RevisionPage[];
+}
+
+// Ревизия из текущей ревизии магазина. Неверная своя страница — без неё, строка журнала page-invalid.
+export async function readRevision(db: Queryable, siteId: string, log: Log): Promise<RevisionInput> {
+  const row = (await rowsOf(db, REVISION_SQL, siteId, revisionRow)).at(0);
+  if (row === undefined) return { tokens: {}, settings: {}, pages: [] };
+  const invalid = (fields: LogFields): void => log('page-invalid', { shopId: siteId, ...fields });
+  return { tokens: row.tokens, settings: row.settings, pages: revisionPagesOf(row.pages, invalid) };
 }
 
 // Сущности магазина из базы sites: политики, контакты, опубликованные статьи блога.
@@ -226,7 +242,7 @@ export interface InputsParts {
   year: number;
   entities: readonly Entity[];
   received: boolean;
-  tokens: JsonObject;
+  revision: RevisionInput;
   shell: BuildInputs['shell'];
   code: BuildInputs['code'];
 }
@@ -275,23 +291,25 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<
   if (shop === null) throw new StorefrontBuilderError('shop-invalid', 'магазина нет', { path: `site/${siteId}` });
   const theme = await themeOf(deps, shop);
   const address = shopAddress(shop);
-  const [siteEntities, products, tokens, shopCode, counters] = await Promise.all([
+  // Оплата онлайн (часть 4, Р1-4-6) — тем же RPC-клиентом, что товары; billing не ответил — оплаты нет, данные получены.
+  const [siteEntities, products, revision, shopCode, counters, billing] = await Promise.all([
     readSiteEntities(deps.db, siteId),
     fetchProducts(deps.products, shop),
-    readRevisionTokens(deps.db, siteId),
+    readRevision(deps.db, siteId, deps.products.log),
     readShopCode(deps.code, siteId),
     fetchCounters(deps.counters, shop),
+    fetchBilling(deps.products, siteId),
   ]);
-  const entities = [...siteEntities, ...(products ?? []), ...(counters ?? [])];
+  const entities = [...siteEntities, ...(products ?? []), ...(counters ?? []), billing];
   const year = deps.clock().getUTCFullYear();
   const received = products !== null && shopCode !== null && counters !== null;
   const { shell, code, assets, extensions } = shopCode ?? NO_CODE;
-  const parts = { platform: deps.platform, theme, shop, address, year, entities, received, tokens, shell, code };
+  const parts = { platform: deps.platform, theme, shop, address, year, entities, received, revision, shell, code };
   return { shop, address, inputs: buildInputsOf(parts), assets, extensions };
 }
 
 // Входы сборки блока 4 одним объектом. Правки токенов мерчанта — из текущей ревизии (их пишет панель темы, блок 8).
-// Настройки не про вид в живую сборку не идут: в конфиге v1 их нет, читатель появится с секциями (блок 8, раздел 4).
+// Настройки темы идут в ревизию входов: их читают секции с "uses": ["theme"] (часть 4 блока 1 «Секций и SDK»).
 export const buildInputsOf = (parts: InputsParts) => ({
   platform: { renderHash: parts.platform.renderHash },
   theme: parts.theme,
@@ -299,7 +317,7 @@ export const buildInputsOf = (parts: InputsParts) => ({
   // Версия библиотеки шрифтов (блок 12) — реестр этого образа.
   fonts: FONT_LIBRARY_HASH,
   code: parts.code,
-  revision: { tokens: parts.tokens },
+  revision: parts.revision,
   site: {
     id: parts.shop.id,
     name: parts.shop.name,

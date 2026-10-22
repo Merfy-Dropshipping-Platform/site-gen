@@ -252,3 +252,53 @@ describe('codeOf: блоки секции (часть 3)', () => {
     expect(instanceSchema.safeParse({ ...base, blocks: {} }).success).toBe(false);
   });
 });
+
+describe('codeOf: группы, limit, меню, флаги (часть 4)', () => {
+  const MENU = { id: 'menu', label: 'Изменить пункты меню', setting: { kind: 'menu', default: 'main' } };
+  const HEADER: SectionRow = {
+    ...row('shop:header', 'section', null),
+    manifest: {
+      sdk: 1,
+      name: 'header',
+      kind: 'section',
+      title: 'Шапка',
+      settings: [MENU],
+      groups: ['header'],
+      limit: 1,
+      removable: false,
+      uses: ['theme', 'shop'],
+    },
+  };
+  const MENUS = [{ id: 'main', title: 'Главное меню', items: [{ label: 'О нас', url: '/o-nas' }] }];
+  const idsOf = (pages: Record<string, readonly { id: string }[]>) =>
+    Object.fromEntries(Object.entries(pages).map(([list, items]) => [list, items.map((item) => item.id)]));
+
+  it('шапка — только в списке header и одна; лишняя и не своей группы — строка журнала, сборка идёт', () => {
+    const { context, logged } = contextOf();
+    const placement = {
+      header: [instance('header-1', 'shop:header'), instance('header-2', 'shop:header')],
+      home: [instance('header-3', 'shop:header'), instance('hero-1', 'shop:hero')],
+      footer: [instance('hero-2', 'shop:hero')],
+    };
+    const shop = codeOf([HEADER, HERO], placement, context, MENUS);
+    expect(idsOf(shop.code.pages)).toEqual({ header: ['header-1'], home: ['hero-1'], footer: [] });
+    expect(logged.map(([event, fields]) => [event, fields.id, fields.list])).toEqual([
+      ['section-limit-exceeded', 'header-2', 'header'],
+      ['section-group-invalid', 'header-3', 'home'],
+      ['section-group-invalid', 'hero-2', 'footer'],
+    ]);
+  });
+
+  it('меню экземпляра — деревом по значению настройки; removable и uses — у секции, как в section.json', () => {
+    const { context } = contextOf();
+    const shop = codeOf([HEADER], { header: [instance('header-1', 'shop:header')] }, context, MENUS);
+    expect(shop.code.pages.header?.[0]?.menus).toEqual({
+      menu: { title: 'Главное меню', items: [{ label: 'О нас', url: '/o-nas', items: [] }] },
+    });
+    expect(shop.code.sections[0]).toMatchObject({ name: 'shop:header', removable: false, uses: ['theme', 'shop'] });
+    const plain = codeOf([HERO], { home: [instance('hero-1', 'shop:hero')] }, context);
+    expect(plain.code.pages.home?.[0]).not.toHaveProperty('menus');
+    expect(plain.code.sections[0]).not.toHaveProperty('removable');
+    expect(plain.code.sections[0]).not.toHaveProperty('uses');
+  });
+});

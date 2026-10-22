@@ -21,12 +21,12 @@ export interface RenderBlock {
 export interface MenuTreeItem {
   label: string;
   url: string;
-  items: readonly MenuTreeItem[];
+  items: MenuTreeItem[];
 }
 
 export interface MenuTree {
   title: string;
-  items: readonly MenuTreeItem[];
+  items: MenuTreeItem[];
 }
 
 // Что страница даёт секциям сверх их настроек (часть 4, Р1-4-4, Р1-4-6): настройки темы и данные магазина. Получает

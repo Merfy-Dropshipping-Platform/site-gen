@@ -100,6 +100,22 @@ describe('превью главной', () => {
     expect(answer.body).toContain(`<head>${PREVIEW_POLICY_META}`);
     expect(answer.body.match(/http-equiv="Content-Security-Policy"/g)).toHaveLength(1);
   });
+
+  it('главная: предзагрузки файлов шрифтов /_fonts/ нет — шрифты уже data:-адресами; другие предзагрузки на месте (блок 2, часть 2б)', async () => {
+    const { deps } = depsOf();
+    const preloads =
+      '<link rel="preload" href="/_fonts/onest-cyrillic-wght.68e5e01d6265bd68.woff2" as="font" type="font/woff2" crossorigin>' +
+      '<link as="font" crossorigin href="/_fonts/onest-latin-wght.0123456789abcdef.woff2" rel="preload" type="font/woff2">' +
+      '<link rel="preload" href="/_merfy/hero.webp" as="image">';
+    const fontsTheme: ShopTheme = {
+      ...THEME,
+      render: async (path, locals) => (await THEME.render(path, locals)).replace('<head>', `<head>${preloads}`),
+    };
+    const answer = await shopPreview({ ...deps, theme: () => Promise.resolve(fontsTheme) }, url(`shop=${SHOP}`));
+    expect(answer.status).toBe(200);
+    expect(answer.body).not.toContain('/_fonts/');
+    expect(answer.body).toContain('<link rel="preload" href="/_merfy/hero.webp" as="image">');
+  });
 });
 
 describe('превью одного блока', () => {

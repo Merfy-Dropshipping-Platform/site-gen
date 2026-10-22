@@ -8,32 +8,16 @@ import { cleanRichtext } from './richtext';
 // умолчаний; значение richtext очищается (richtext.ts) — и умолчание, и правка. format.ts импортирует этот файл,
 // поэтому этот файл format.ts не импортирует.
 
-// id поля — строчные латинские буквы и цифры через одиночный дефис, как имя секции (словарь имён, решение 5 А).
-const SETTING_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 type SettingCheck = (field: SectionField, index: number, settings: readonly SectionField[]) => string[];
 
 const textIf = (text: string | undefined): string[] => (text === undefined ? [] : [text]);
 
-function conditionTexts(field: SectionField, index: number, settings: readonly SectionField[]): string[] {
-  const condition = field.visibleWhen;
-  if (condition === undefined) return [];
-  const target = settings.find((other) => other.id === condition.setting);
-  if (target === undefined) return [`settings.${index}.visibleWhen: настройки ${condition.setting} нет`];
-  return textIf(sectionSettingProblem(`settings.${index}.visibleWhen.equals`, target.setting, condition.equals));
-}
-
 const SETTING_CHECKS: readonly SettingCheck[] = [
-  (field, index) =>
-    SETTING_ID.test(field.id)
-      ? []
-      : [`settings.${index}.id: нужны строчные латинские буквы и цифры через одиночный дефис`],
   (field, index, settings) =>
     settings.findIndex((other) => other.id === field.id) === index
       ? []
       : [`settings.${index}.id: ${field.id} уже есть`],
   (field, index) => textIf(sectionSettingProblem(`settings.${index}.default`, field.setting, field.setting.default)),
-  conditionTexts,
 ];
 
 // Проблемы полей настроек section.json — текстом с путём; пусто — поля годятся.

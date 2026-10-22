@@ -125,6 +125,8 @@ export function pageHtml(options: PageOptions): string {
   const head = [
     '<meta charset="utf-8">',
     configTag(options.mode ?? 'live'),
+    // Геометрические проверки (верх немодального окна, появления) считают от края окна: у страницы тестов нет отступа.
+    '<style>body{margin:0}</style>',
     options.headScript ? `<script>${MOTION_HEAD_SCRIPT}</script><style>${MOTION_CSS}</style>` : '',
     options.css ? `<style>${options.css}</style>` : '',
     options.beforeCore ? `<script>${options.beforeCore}</script>` : '',

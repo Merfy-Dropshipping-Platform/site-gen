@@ -19,3 +19,5 @@ export type {
   RevealHost,
 } from './types';
 export { animate } from './motion';
+export { accordion } from './accordion';
+export { dialog } from './dialog';

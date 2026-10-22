@@ -90,6 +90,8 @@ describe('снимок входов', () => {
       'contacts:main',
       'publication:' + inputs.data.entities[2].id,
       'product:p-1',
+      // Оплата онлайн (часть 4, Р1-4-6): подставной billing — не подключена, сущность всё равно есть.
+      'billing:main',
     ]);
     expect(inputs.data.entities[0]).toMatchObject({ data: { content: 'новый текст' } });
   });
@@ -129,9 +131,10 @@ describe('снимок входов', () => {
     const broken = await insertSite(db);
     await insertRevision(db, broken.id, { tokens: ['не объект'] });
     const revision = async (siteId: string) => parseBuildInputs((await readSnapshot(deps(), siteId)).inputs).revision;
-    expect(await revision(edited.id)).toEqual({ tokens });
-    expect(await revision(plain.id)).toEqual({ tokens: {} });
-    expect(await revision(broken.id)).toEqual({ tokens: {} });
+    // Часть 4: в ревизии входов ещё настройки темы и свои страницы (readRevision).
+    expect(await revision(edited.id)).toEqual({ tokens, settings: { 'cart-type': 'page' }, pages: [] });
+    expect(await revision(plain.id)).toEqual({ tokens: {}, settings: {}, pages: [] });
+    expect(await revision(broken.id)).toEqual({ tokens: {}, settings: {}, pages: [] });
   });
 
   it.each(['fail', 'error', 'silent'] as const)('товары: %s — снимок не получен, сборки не будет', async (answer) => {

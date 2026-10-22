@@ -1,7 +1,8 @@
 // Скрипт превью секций (блок 1 «Секций и SDK»; сообщения — как у превью нынешних тем). Работает рядом со слушателем
 // токенов (preview-agent.ts) на превью главной. Шлёт ready каждые 300 мс, пока не придёт init (не больше 40 раз). Клик
 // по секции — select-block; set-selection — рамка выбранной секции с её названием и «Удалить» (Р7; у верхнего края
-// страницы подпись — внутри рамки), секция за краем окна — прокрутка к ней; «Удалить» — delete-block. update-block —
+// страницы подпись — внутри рамки) и «Скопировать» — duplicate-block; кнопки — по set-selection.actions (п. 24),
+// секция за краем окна — прокрутка к ней; «Удалить» — delete-block. update-block —
 // POST <адрес превью>/block с экземпляром и замена секции по data-section-id; ответ на старую правку отбрасывается.
 // reconcile — лишние секции убираются, новые и изменённые запрашиваются, порядок — как в списке, ответ —
 // reconcile-ack; ответ блока, на который уже ушёл более новый запрос, тоже отбрасывается — на странице остаётся новый
@@ -12,9 +13,14 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var blockUrl = new URL('preview/block', location.href).href;
   var STYLE = '#merfy-selection{position:absolute;display:none;pointer-events:none;box-sizing:border-box;border:2px solid #88b0da;z-index:2147483646}'
     + '#merfy-selection [data-merfy-label]{position:absolute;left:-2px;top:-26px;display:flex;align-items:center;gap:8px;height:24px;padding:0 8px;border-radius:8px 8px 0 0;background:#181818;color:#c3c3c3;font:500 12px/24px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:auto;white-space:nowrap}'
-    + '#merfy-selection [data-merfy-delete]{display:flex;align-items:center;gap:4px;border:0;padding:0;background:none;color:inherit;font:inherit;cursor:pointer}';
+    + '#merfy-selection [data-merfy-delete],#merfy-selection [data-merfy-duplicate]{display:flex;align-items:center;gap:4px;border:0;padding:0;background:none;color:inherit;font:inherit;cursor:pointer}';
   var DELETE_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
+  // «Скопировать» — значок подписи превью пяти тем (src/services/preview.service.ts, строки 2107–2109), 16 px.
+  var COPY_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
   var labels = {};
+  // Какие кнопки показать на подписи (set-selection.actions, п. 24): duplicate: false — без «Скопировать»,
+  // remove: false — без «Удалить»; флагов нет — обе.
+  var actions = {};
   var selected = null;
   var frame = null;
   var initialized = false;
@@ -50,8 +56,11 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     document.head.appendChild(style);
     frame = document.createElement('div');
     frame.id = 'merfy-selection';
+    // Подсказки кнопок — escape-последовательности: страница превью может быть декодирована не в UTF-8, литералы в
+    // script-строке искажаются.
     frame.innerHTML = '<div data-merfy-label><span data-merfy-name></span>'
-      + '<button type="button" data-merfy-delete>' + DELETE_ICON + 'Удалить</button></div>';
+      + '<button type="button" data-merfy-duplicate title="\\u0421\\u043a\\u043e\\u043f\\u0438\\u0440\\u043e\\u0432\\u0430\\u0442\\u044c" aria-label="\\u0421\\u043a\\u043e\\u043f\\u0438\\u0440\\u043e\\u0432\\u0430\\u0442\\u044c">' + COPY_ICON + '</button>'
+      + '<button type="button" data-merfy-delete title="\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u044c" aria-label="\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u044c">' + DELETE_ICON + '</button></div>';
     document.body.appendChild(frame);
     return frame;
   }
@@ -82,6 +91,11 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     if (!section) return;
     var rect = section.getBoundingClientRect();
     if (rect.bottom < 0 || rect.top > window.innerHeight) section.scrollIntoView({ block: 'start' });
+  }
+  function showActions() {
+    if (!frame) return;
+    frame.querySelector('[data-merfy-duplicate]').style.display = actions.duplicate === false ? 'none' : '';
+    frame.querySelector('[data-merfy-delete]').style.display = actions.remove === false ? 'none' : '';
   }
   function setCss(id, css) {
     var old = document.querySelector('style[data-merfy-block-css="' + id + '"]');
@@ -184,6 +198,12 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     'click',
     function (event) {
       var target = event.target;
+      if (target && target.closest && target.closest('[data-merfy-duplicate]')) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (selected !== null) post({ type: 'duplicate-block', blockId: selected });
+        return;
+      }
       if (target && target.closest && target.closest('[data-merfy-delete]')) {
         event.preventDefault();
         event.stopPropagation();
@@ -207,7 +227,11 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     else if (data.type === 'set-labels') {
       labels = data.componentLabels || {};
       place();
-    } else if (data.type === 'set-selection') select(data.sectionId || null);
+    } else if (data.type === 'set-selection') {
+      actions = data.actions || {};
+      select(data.sectionId || null);
+      showActions();
+    }
     else if (data.type === 'update-block') updateBlock(data);
     else if (data.type === 'reconcile') reconcile(data);
   });

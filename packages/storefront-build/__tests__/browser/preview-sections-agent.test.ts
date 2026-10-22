@@ -178,4 +178,41 @@ describe('скрипт превью секций', () => {
     };
     await expect.poll(gap).toBeGreaterThanOrEqual(0);
   });
+
+  it('«Скопировать» на подписи — duplicate-block с id выбранной секции; у кнопок — подсказки, как на проде (Р19)', async () => {
+    await send({
+      type: 'set-selection',
+      sectionId: 'hero-1',
+      sectionType: 'shop:hero',
+      subsectionParentId: null,
+      subsectionIndex: null,
+      cookieBanner: false,
+    });
+    const copy = frame().locator('#merfy-selection [data-merfy-duplicate]');
+    expect(await copy.getAttribute('title')).toBe('Скопировать');
+    expect(await frame().locator('#merfy-selection [data-merfy-delete]').getAttribute('title')).toBe('Удалить');
+    await copy.click();
+    await expect.poll(() => lastOf('duplicate-block')).toEqual({ type: 'duplicate-block', blockId: 'hero-1' });
+  });
+
+  it('actions в set-selection: duplicate: false — без «Скопировать», remove: false — без «Удалить»; без actions — обе', async () => {
+    const selection = {
+      type: 'set-selection',
+      sectionId: 'hero-1',
+      sectionType: 'shop:hero',
+      subsectionParentId: null,
+      subsectionIndex: null,
+      cookieBanner: false,
+    };
+    const shown = (button: string) => frame().locator(`#merfy-selection [data-merfy-${button}]`).isVisible();
+    await send({ ...selection, actions: { duplicate: false, remove: false } });
+    await expect.poll(() => shown('duplicate')).toBe(false);
+    expect(await shown('delete')).toBe(false);
+    await send({ ...selection, actions: { duplicate: true, remove: false } });
+    await expect.poll(() => shown('duplicate')).toBe(true);
+    expect(await shown('delete')).toBe(false);
+    await send(selection);
+    await expect.poll(() => shown('delete')).toBe(true);
+    expect(await shown('duplicate')).toBe(true);
+  });
 });

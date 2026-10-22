@@ -72,7 +72,8 @@ export async function loadThemeFrom(root: string, files: RendererFiles, state: T
   const panel = panelForTheme(parsePanel(await readJson(join(root, PANEL_FILE)), tokens.dictionary), themeJson.panel);
   const clientFiles = await readClientFiles(files.clientDir);
   const stand = options.standPage ? { stand: { tokens, panel, renderStand: renderer.renderStand } } : {};
-  const build = { tokens, render: renderer.render, clientFiles, migrations, ...stand };
+  // Схема панели — и у сборки (часть 4 блока 1 «Секций и SDK»): по ней настройки темы для секций с "uses": ["theme"].
+  const build = { tokens, render: renderer.render, clientFiles, migrations, panel, ...stand };
   const theme: LoadedTheme = { ...state, build };
   const preview: PreviewTheme = {
     version: state.version,

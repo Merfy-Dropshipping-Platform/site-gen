@@ -1,0 +1,11 @@
+---
+// Своя страница магазина (блок 1 «Секций и SDK», часть 4): /o-nas и другие адреса из ревизии. Адрес страницы считает
+// сборщик — это канонический адрес в head; другой адрес — 404: у темы такой страницы нет (page-unknown).
+import ShopPage from "../ShopPage.astro";
+
+const page = Astro.locals.merfy;
+if (page === undefined) throw new Error("Страницу магазина рендерит только сборщик: нет Astro.locals.merfy");
+if (new URL(page.head.canonical).pathname !== `/${Astro.params.slug}`) return new Response(null, { status: 404 });
+---
+
+<ShopPage />

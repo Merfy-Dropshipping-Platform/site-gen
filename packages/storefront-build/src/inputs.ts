@@ -62,6 +62,9 @@ const codeSectionSchema = z.strictObject({
   hash: hashSchema,
   render: hashSchema.nullable(),
   script: hashSchema.nullable(),
+  // Часть 4 (Р1-4-2): флаги section.json — только если объявлены, иначе входы и ключ прежние.
+  removable: z.literal(false).optional(),
+  uses: z.array(z.enum(['theme', 'shop'])).optional(),
 });
 
 // Экземпляр секции на странице (блок 1 «Секций и SDK», В1-1 А): id на странице, имя секции и значения всех настроек —
@@ -70,12 +73,27 @@ const codeSectionSchema = z.strictObject({
 // blocks — показанные блоки со значениями (часть 3, Р55, Р56): только у секций с blocks в section.json; скрытых блоков
 // во входах нет — их убрал сборщик.
 const valuesSchema = z.record(z.string(), z.union([z.string(), z.boolean()]));
+// Дерево меню (часть 4, Р1-4-3): три уровня, у пункта последнего уровня пунктов нет.
+const menuLeafSchema = z.strictObject({ label: z.string(), url: z.string(), items: z.tuple([]) });
+const menuMiddleSchema = z.strictObject({ label: z.string(), url: z.string(), items: z.array(menuLeafSchema) });
+const menuItemSchema = z.strictObject({ label: z.string(), url: z.string(), items: z.array(menuMiddleSchema) });
+const menuTreeSchema = z.strictObject({ title: z.string(), items: z.array(menuItemSchema) });
+// Своя страница (часть 4, Р1-4-8): id, адрес /o-nas, имя и SEO страницы.
+const PAGE_SLUG = /^\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const pageSchema = z.strictObject({
+  id: kebabIdSchema,
+  slug: z.string().regex(PAGE_SLUG, { error: 'нужен адрес вида /o-nas: строчные латинские буквы и цифры через дефис' }),
+  name: z.string().max(SHOP_NAME_MAX),
+  seo: z.strictObject({ title: z.string(), description: z.string(), keywords: z.string() }),
+});
 const instanceSchema = z.strictObject({
   id: kebabIdSchema,
   section: sectionNameSchema,
   settings: valuesSchema,
   hidden: z.literal(true).optional(),
   blocks: z.array(z.strictObject({ id: kebabIdSchema, type: kebabIdSchema, settings: valuesSchema })).optional(),
+  // Часть 4 (Р1-4-3): деревья меню по id настройки вида menu — только у секций с такими настройками.
+  menus: z.record(kebabIdSchema, menuTreeSchema).optional(),
 });
 
 // Код магазина: видимые ему секции, которые где-то стоят, и глобальные скрипты. Места — экземпляры секций по id страницы
@@ -104,8 +122,13 @@ const buildInputsSchema = z.strictObject({
   fonts: hashSchema,
   // Код секций магазина (блок 7).
   code: codeSchema,
-  // Ревизия мерчанта — по содержимому, не по id (факт 6). Пока в ней только правки токенов (блок 1).
-  revision: z.strictObject({ tokens: jsonObject }),
+  // Ревизия мерчанта — по содержимому, не по id (факт 6): правки токенов (блок 1); правки настроек темы — их читают
+  // секции с "uses": ["theme"], и свои страницы (часть 4 блока 1 «Секций и SDK»).
+  revision: z.strictObject({
+    tokens: jsonObject,
+    settings: jsonObject.optional(),
+    pages: z.array(pageSchema).optional(),
+  }),
   site: z.strictObject({
     id: z.uuid(),
     // Имя и SEO мерчант может оставить пустыми: страница берёт вместо имени адрес магазина, пустое SEO не рисует.
@@ -146,6 +169,7 @@ export type ShellInput = z.infer<typeof shellSchema>;
 export type CodeInput = z.infer<typeof codeSchema>;
 export type CodeSection = z.infer<typeof codeSectionSchema>;
 export type CodeInstance = z.infer<typeof instanceSchema>;
+export type RevisionPage = z.infer<typeof pageSchema>;
 type CodeKind = CodeSection['kind'];
 
 function checkReceived(inputs: BuildInputs): void {
@@ -253,5 +277,26 @@ export function parseBuildInputs(raw: unknown): BuildInputs {
   checkReceived(inputs);
   checkUniqueEntities(inputs.data.entities);
   checkCode(inputs);
+  checkPages(inputs);
   return inputs;
+}
+
+// Свои страницы (часть 4, Р1-4-8): id — один раз и не главная, шапка или подвал (их списки секций); адрес — один раз
+// и не стенд темы (STAND_PAGE_PATH, renderer.ts). Первая ошибка — с путём.
+const RESERVED_PAGE_IDS: ReadonlySet<string> = new Set(['home', 'header', 'footer']);
+const RESERVED_SLUGS: ReadonlySet<string> = new Set(['/theme-stand']);
+
+function checkPages(inputs: BuildInputs): void {
+  const pages = inputs.revision.pages ?? [];
+  const issue = pages
+    .flatMap((page, index): CodeIssue[] => {
+      const path = `revision.pages.${index}`;
+      if (RESERVED_PAGE_IDS.has(page.id) || pages.findIndex((other) => other.id === page.id) !== index)
+        return [{ path: `${path}.id`, text: `id страницы ${page.id} занят` }];
+      if (RESERVED_SLUGS.has(page.slug) || pages.findIndex((other) => other.slug === page.slug) !== index)
+        return [{ path: `${path}.slug`, text: `адрес ${page.slug} занят` }];
+      return [];
+    })
+    .at(0);
+  if (issue !== undefined) throw new StorefrontBuildError('inputs-invalid', issue.text, { path: issue.path });
 }

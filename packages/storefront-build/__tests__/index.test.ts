@@ -50,6 +50,7 @@ const API = [
   'lookTokensBetween',
   'manifestSchema',
   'modulePath',
+  'pagePropsOf',
   'parseBuildInputs',
   'parseChangelog',
   'parseThemeVersions',

@@ -45,6 +45,17 @@ const defaultBlockSchema = z.strictObject({
   settings: z.record(z.string(), z.unknown()).default({}),
 });
 
+// Место секции и что шаблон читает (часть 4, design.md 3.21–3.22, Р1-4-2): groups — группы страницы, куда секцию можно
+// поставить (нет ключа — только страницы, ['page']); limit — сколько экземпляров в одном списке (шапка, подвал или
+// страница; скрытые считаются); removable: false — секцию нельзя удалить, её ошибка рендера — ошибка сборки; uses —
+// что шаблон читает сверх settings и blocks: theme — настройки темы, shop — публичные данные магазина; newPage — id
+// настройки вида string: секция ставится на новую страницу, в эту настройку пишется имя страницы.
+export const SECTION_GROUPS = ['header', 'page', 'footer'] as const;
+export type SectionGroup = (typeof SECTION_GROUPS)[number];
+export const SECTION_USES = ['theme', 'shop'] as const;
+export type SectionUse = (typeof SECTION_USES)[number];
+const unique = (list: readonly string[]): boolean => new Set(list).size === list.length;
+
 export const sectionManifestSchema = z.strictObject({
   // путь к generated/section.schema.json для редактора (блок 3 «Секций и SDK», Р3.12); проверка его не читает
   $schema: z.string().optional(),
@@ -55,6 +66,11 @@ export const sectionManifestSchema = z.strictObject({
   settings: z.array(sectionFieldShape).default([]),
   blocks: z.record(z.string(), blockTypeSchema).optional(),
   defaultBlocks: z.array(defaultBlockSchema).max(50).optional(),
+  groups: z.array(z.enum(SECTION_GROUPS)).min(1).max(3).refine(unique, { error: 'группа дважды' }).optional(),
+  limit: z.int().min(1).max(50).optional(),
+  removable: z.literal(false).optional(),
+  uses: z.array(z.enum(SECTION_USES)).max(2).refine(unique, { error: 'значение дважды' }).optional(),
+  newPage: z.string().min(1).optional(),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;
@@ -161,6 +177,8 @@ export function readManifest(files: SectionFiles): Checked<SectionManifest> {
     ...settingsTexts(parsed.data.settings).map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
     ...blocks.structure.map((message) => problem('manifest-invalid', MANIFEST_FILE, message)),
     ...blocks.settings.map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
+    ...placeProblems(parsed.data).map((message) => problem('manifest-invalid', MANIFEST_FILE, message)),
+    ...blockMenuProblems(parsed.data).map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
   ];
   return problems.length > 0 ? { ok: false, problems } : { ok: true, value: parsed.data };
 }
@@ -194,3 +212,35 @@ export const kindProblems = (manifest: SectionManifest, files: SectionFiles): Se
   KIND_RULES[manifest.kind]
     .filter((rule) => rule.broken(files))
     .map((rule) => problem('kind-mismatch', rule.file, rule.message));
+
+// Группы секции (часть 4, Р1-4-2): нет ключа groups — только страницы.
+export const sectionGroupsOf = (manifest: SectionManifest): readonly SectionGroup[] => manifest.groups ?? ['page'];
+
+const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage'] as const;
+
+// newPage — настройка вида string секции, которую ставят на страницу.
+function newPageProblems(manifest: SectionManifest): string[] {
+  const id = manifest.newPage;
+  if (id === undefined) return [];
+  const field = manifest.settings.find((item) => item.id === id);
+  if (field === undefined || field.setting.kind !== 'string')
+    return [`newPage: нужна настройка вида string, ${id} — не она`];
+  return sectionGroupsOf(manifest).includes('page') ? [] : ['newPage: секция ставится на страницу — нужна группа page'];
+}
+
+// У глобального скрипта места на странице нет — ключи места ему не нужны.
+function placeProblems(manifest: SectionManifest): string[] {
+  if (manifest.kind === 'global')
+    return PLACE_KEYS.filter((key) => manifest[key] !== undefined).map(
+      (key) => `${key}: у глобального скрипта нет места на странице`,
+    );
+  return newPageProblems(manifest);
+}
+
+// Вид menu — только у настроек секции: меню блока конструктор не правит (окно меню — у поля секции).
+const blockMenuProblems = (manifest: SectionManifest): string[] =>
+  Object.entries(manifest.blocks ?? {}).flatMap(([type, block]) =>
+    block.settings.flatMap((field, index) =>
+      field.setting.kind === 'menu' ? [`blocks.${type}.settings.${index}: вид menu — только у настроек секции`] : [],
+    ),
+  );

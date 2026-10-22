@@ -1,4 +1,4 @@
-import { sha256 } from '@merfy/storefront-build';
+import { sha256, type MenuTree } from '@merfy/storefront-build';
 import { TEMPLATE_FILE } from './format';
 import { problem, type SectionProblem } from './problems';
 import { withSectionRenderer, type RendererOptions } from './render';
@@ -14,8 +14,10 @@ async function renderError(
   settings: SettingValues,
   options: RendererOptions,
   blocks: readonly TemplateBlock[],
+  menus: Readonly<Record<string, MenuTree>>,
 ): Promise<string | undefined> {
-  const request = { section: 'trial', hash: sha256(Buffer.from(render, 'utf8')), module: render, settings, blocks };
+  const hash = sha256(Buffer.from(render, 'utf8'));
+  const request = { section: 'trial', hash, module: render, settings, blocks, menus };
   try {
     await withSectionRenderer((draw) => draw(request), options);
     return undefined;
@@ -29,8 +31,9 @@ export async function trialRender(
   settings: SettingValues,
   options: RendererOptions = {},
   blocks: readonly TemplateBlock[] = [],
+  menus: Readonly<Record<string, MenuTree>> = {},
 ): Promise<SectionProblem[]> {
-  const text = await renderError(render, settings, options, blocks);
+  const text = await renderError(render, settings, options, blocks, menus);
   return text === undefined
     ? []
     : [problem('render-failed', TEMPLATE_FILE, `шаблон не отрисовался с умолчаниями настроек: ${text}`)];
@@ -41,8 +44,9 @@ export async function emptyTrialRender(
   render: string,
   settings: SettingValues,
   options: RendererOptions = {},
+  menus: Readonly<Record<string, MenuTree>> = {},
 ): Promise<SectionProblem[]> {
-  const text = await renderError(render, settings, options, []);
+  const text = await renderError(render, settings, options, [], menus);
   return text === undefined
     ? []
     : [problem('render-empty-failed', TEMPLATE_FILE, `шаблон не отрисовался с пустыми значениями настроек: ${text}`)];

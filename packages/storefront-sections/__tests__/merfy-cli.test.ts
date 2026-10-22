@@ -112,3 +112,13 @@ describe('секции тест-магазина (часть 3)', () => {
     });
   }, 30_000);
 });
+
+describe('шапка, подвал и страница тест-магазина (часть 4)', () => {
+  it('«Шапка», «Подвал» и «Страница» из fixtures/shop проходят без предупреждений', async () => {
+    for (const name of ['header', 'footer', 'page'])
+      expect(await merfy('section', 'check', `fixtures/shop/${name}`)).toEqual({
+        code: 0,
+        stdout: `shop:${name}: проверка прошла\n`,
+      });
+  }, 90_000);
+});

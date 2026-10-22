@@ -2,6 +2,7 @@ import type { Dictionary } from '@merfy/tokens';
 import { sha256 } from './canonical';
 import { StorefrontBuildError } from './errors';
 import { sectionCss } from './section-css';
+import { EMPTY_SHOP, type ShopProps } from './shop-props';
 
 // Рендер секций страницы (блок 1 «Секций и SDK», Р1, Р2): модуль шаблона по отпечатку и значения настроек → HTML
 // секции. Пакет Astro и компилятор не подключает: функцию рендера даёт сборщик — процесс рендера storefront-sections
@@ -16,6 +17,29 @@ export interface RenderBlock {
   settings: SettingValues;
 }
 
+// Дерево меню в шаблоне (часть 4, Р1-4-3): пункт — подпись, адрес и вложенные пункты (всегда список, до трёх уровней).
+export interface MenuTreeItem {
+  label: string;
+  url: string;
+  items: MenuTreeItem[];
+}
+
+export interface MenuTree {
+  title: string;
+  items: MenuTreeItem[];
+}
+
+// Что страница даёт секциям сверх их настроек (часть 4, Р1-4-4, Р1-4-6): настройки темы и данные магазина. Получает
+// только секция, которая объявила их в "uses".
+export type PropsUse = 'theme' | 'shop';
+
+export interface PageProps {
+  theme: SettingValues;
+  shop: ShopProps;
+}
+
+export const NO_PAGE_PROPS: PageProps = { theme: {}, shop: EMPTY_SHOP };
+
 export interface SectionRenderRequest {
   section: string;
   hash: string;
@@ -24,6 +48,10 @@ export interface SectionRenderRequest {
   // Часть 3: показанные блоки секции и режим превью (метки блоков); нет — блоков нет, режим — витрина.
   blocks?: readonly RenderBlock[];
   preview?: boolean;
+  // Часть 4: деревья меню по id настройки вида menu, настройки темы и данные магазина — только секциям с "uses".
+  menus?: Readonly<Record<string, MenuTree>>;
+  theme?: SettingValues;
+  shop?: ShopProps;
 }
 
 export type RenderSection = (request: SectionRenderRequest) => Promise<string>;
@@ -60,6 +88,8 @@ export interface PageRender {
   mode: PageMode;
   // Кому сообщить об упавшей секции опубликованного сайта; нет — без сообщения.
   failed?: SectionFailed;
+  // Настройки темы и данные магазина страницы (часть 4); нет — пустые.
+  props?: PageProps;
 }
 
 // Экземпляр секции на странице: id, полное имя, отпечаток модуля рендера и значения всех настроек.
@@ -71,15 +101,21 @@ export interface PlacedSection {
   // Показанные блоки по порядку (часть 3): только у секций с blocks в section.json.
   blocks?: readonly RenderBlock[];
   // false — секцию нельзя пропустить (шапка, подвал): её ошибка — ошибка сборки, на сайте остаётся прежняя сборка (блок
-  // 2, «Решил сам» п. 7). Флаг — "removable" из section.json, его заводит часть 4 блока 1; до неё у всех секций true.
+  // 2, «Решил сам» п. 7). Флаг — "removable" из section.json (часть 4 блока 1); нет — секцию можно пропустить.
   removable?: boolean;
+  // Часть 4: деревья меню по id настройки вида menu; что шаблон читает сверх settings и blocks ("uses").
+  menus?: Readonly<Record<string, MenuTree>>;
+  uses?: readonly PropsUse[];
 }
 
 // HTML секций одной страницы, байт (блок 2, «Решил сам» п. 3): секция, которая не влезает, не рендерится (render-output).
 export const PAGE_SECTIONS_BYTES = 4 * 1024 * 1024;
 
+// sections — секции страницы; header и footer — шапка и подвал (часть 4); нет — пусто.
 export interface PageContent {
+  header?: string[];
   sections: string[];
+  footer?: string[];
   sectionsCss: string;
   mode: PageMode;
 }
@@ -144,11 +180,20 @@ function failedHtml(placed: PlacedSection, mode: PageMode, error: unknown, faile
   return html === '' ? '' : wrapper(placed, html);
 }
 
+// Сверх settings и blocks (часть 4, Р1-4-5): меню — у секции с настройками вида menu; theme и shop — только тем, кто их
+// объявил в "uses": данные магазина не уходят в модуль секции без спроса.
+const propsOf = (placed: PlacedSection, props: PageProps): Pick<SectionRenderRequest, 'menus' | 'theme' | 'shop'> => ({
+  ...(placed.menus === undefined ? {} : { menus: placed.menus }),
+  ...(placed.uses?.includes('theme') === true ? { theme: props.theme } : {}),
+  ...(placed.uses?.includes('shop') === true ? { shop: props.shop } : {}),
+});
+
 export async function renderSection(
   placed: PlacedSection,
   sections: SectionsRender,
   mode: PageMode,
   failed?: SectionFailed,
+  props: PageProps = NO_PAGE_PROPS,
 ): Promise<string> {
   const module = sections.modules.get(placed.hash);
   if (module === undefined || sha256(Buffer.from(module, 'utf8')) !== placed.hash)
@@ -163,6 +208,7 @@ export async function renderSection(
       settings: placed.settings,
       blocks: placed.blocks ?? [],
       preview: mode === 'preview',
+      ...propsOf(placed, props),
     });
     return wrapper(placed, html);
   } catch (error) {
@@ -176,7 +222,7 @@ const overflow = (): Error =>
 // Секция в остаток предела страницы; не влезла — отказ render-output, как у секции с большим ответом.
 async function withinPage(placed: PlacedSection, page: PageRender, left: number): Promise<string> {
   if (left <= 0) return failedHtml(placed, page.mode, overflow(), page.failed);
-  const html = await renderSection(placed, page.sections, page.mode, page.failed);
+  const html = await renderSection(placed, page.sections, page.mode, page.failed, page.props);
   return Buffer.byteLength(html) <= left ? html : failedHtml(placed, page.mode, overflow(), page.failed);
 }
 

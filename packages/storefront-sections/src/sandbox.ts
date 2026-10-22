@@ -2,6 +2,7 @@ import { defaultLaunch, spawnIsolated, type IsolatedLaunch } from './isolation';
 import { prepareResultSchema, type PrepareInput, type PrepareResult } from './prepare';
 import { problem } from './problems';
 import { resolveSectionBlocks } from './blocks';
+import { sectionMenus } from './menus';
 import { defaultSettings, emptySettings } from './settings';
 import { emptyTrialRender, trialRender } from './trial';
 import { WORKER_FILES } from './worker-files';
@@ -78,10 +79,13 @@ export async function prepareInWorker(
   const settings = defaultSettings(result.section.manifest.settings);
   // Блоки новой секции (defaultBlocks): шаблон с blocks.map проверяется на них.
   const { blocks } = resolveSectionBlocks(result.section.manifest, undefined);
-  const trial = await trialRender(result.section.render, settings, { launch: options.launch }, blocks);
+  // Меню новой секции (часть 4): у настроек вида menu — пустое дерево; theme и shop — пустые (процесс рендера).
+  const menus = sectionMenus(result.section.manifest.settings, settings, []);
+  const trial = await trialRender(result.section.render, settings, { launch: options.launch }, blocks, menus);
   if (trial.length > 0) return { ok: false, problems: trial };
   // Второй пробный рендер — с пустыми значениями (блок 3 «Секций и SDK», Р3.11): мерчант может стереть заголовок.
   const empty = emptySettings(result.section.manifest.settings);
-  const blank = await emptyTrialRender(result.section.render, empty, { launch: options.launch });
+  const emptyMenus = sectionMenus(result.section.manifest.settings, empty, []);
+  const blank = await emptyTrialRender(result.section.render, empty, { launch: options.launch }, emptyMenus);
   return blank.length > 0 ? { ok: false, problems: blank } : result;
 }

@@ -1,0 +1,38 @@
+---
+const { settings, blocks, theme, shop } = Astro.props;
+---
+<div class:list={['mx-auto flex max-w-page items-center gap-4 px-4 py-3 font-body', { 'flex-col': settings['logo-position'] === 'top-center', 'justify-between': settings['logo-position'] !== 'center-absolute' }]}>
+  <a class="font-heading text-xl text-heading no-underline" href="/">
+    {theme['logo-image'] ? <img class="h-10 w-auto" src={theme['logo-image']} alt={shop.name} /> : shop.name}
+  </a>
+  <nav data-menu-type={settings['menu-type']}>
+    <ul class="m-0 flex list-none gap-4 p-0">
+      {settings.menu.items.map((item) => (
+        <li>
+          <a class="text-foreground no-underline" href={item.url}>{item.label}</a>
+          {item.items.length > 0 && (
+            <ul class="m-0 list-none p-0">
+              {item.items.map((child) => (
+                <li>
+                  <a class="text-foreground no-underline" href={child.url}>{child.label}</a>
+                  {child.items.length > 0 && (
+                    <ul class="m-0 list-none p-0">
+                      {child.items.map((leaf) => <li><a class="text-foreground no-underline" href={leaf.url}>{leaf.label}</a></li>)}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <div class="flex items-center gap-4">
+    {blocks.map((block) => (
+      <a class="text-foreground no-underline" href={block.type === 'search' ? '/catalog' : block.type === 'wishlist' ? '/wishlist' : block.type === 'cart' ? '/cart' : '/login'}>
+        {block.type === 'search' ? 'Поиск' : block.type === 'wishlist' ? 'Избранное' : block.type === 'cart' ? 'Корзина' : 'Профиль'}
+      </a>
+    ))}
+  </div>
+</div>

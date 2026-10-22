@@ -7,7 +7,7 @@ import { shopFonts } from './head';
 import { buildKey, dataKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
 import { renderShopPage, type RenderedPage, type ShopTheme } from './page';
-import { SHOP_ROUTES } from './routes';
+import { shopRoutes } from './routes';
 import { NO_SECTIONS, type PageRender, type RenderSection, type SectionFailed } from './sections-render';
 import { renderStandPage, type StandBuild } from './stand';
 
@@ -60,7 +60,9 @@ export async function buildStorefront(
   // Секции рендерит процесс рендера сборщика. Упавшей секции на странице нет, сборка идёт дальше (блок 2, В2-1 А); упала
   // секция с removable: false или сам процесс рендера — ошибка сборки, сборку не выкладываем.
   const page = livePageOf(assets, render, failed);
-  const shopPages = await Promise.all(SHOP_ROUTES.map((route) => renderShopPage(inputs, route.path, theme, page)));
+  // Главная и свои страницы (часть 4 блока 1 «Секций и SDK»).
+  const routes = shopRoutes(inputs);
+  const shopPages = await Promise.all(routes.map((route) => renderShopPage(inputs, route.path, theme, page)));
   const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
   const pages = [...shopPages, ...standPages];
   const files = [...theme.clientFiles, ...code, ...pages.map((page) => page.file)].sort(byPath);

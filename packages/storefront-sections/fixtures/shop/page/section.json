@@ -1,0 +1,15 @@
+{
+  "sdk": 1,
+  "name": "page",
+  "kind": "section",
+  "title": "Страница",
+  "newPage": "heading",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Страница" } },
+    {
+      "id": "text",
+      "label": "Текст",
+      "setting": { "kind": "richtext", "default": "<p>Расскажите покупателям, о чём эта страница.</p>" }
+    }
+  ]
+}

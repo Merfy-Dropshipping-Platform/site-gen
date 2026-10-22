@@ -11,12 +11,13 @@ export {
   type CodeSection,
   type Entity,
   type EntityType,
+  type RevisionPage,
   type ShellInput,
 } from './inputs';
 export { DATA_KEY_VERSION, KEY_VERSION, buildKey, dataKey } from './key';
 export { entityHashes, entityKey } from './entities';
 export { buildStorefront, type BuildReferences, type StorefrontBuild, type ThemeBuild } from './build';
-export { renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
+export { pagePropsOf, renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
 export { SHOP_ROUTES, routeOf, type ShopRoute } from './routes';
 export { REBUILD_EVENT_INPUTS } from './event-inputs';
 
@@ -33,8 +34,11 @@ export {
   WRAPPER_CLASS,
   renderPlacedSections,
   renderSection,
+  type MenuTree,
+  type MenuTreeItem,
   type PageContent,
   type PageMode,
+  type PageProps,
   type PageRender,
   type PlacedSection,
   type RenderBlock,
@@ -47,6 +51,7 @@ export {
   type SettingValues,
 } from './sections-render';
 export { htmlClasses, sectionCss } from './section-css';
+export { type ShopProps } from './shop-props';
 export { SHELL_DIST, readShellBuild } from './shell';
 
 // Манифест, граф, build.json

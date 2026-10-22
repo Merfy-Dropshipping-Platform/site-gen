@@ -2,7 +2,7 @@ import { init, parse as lexImports } from 'es-module-lexer';
 import { z } from 'zod';
 import { ASTRO_RUNTIME } from './astro-runtime';
 import { MAX_TEMPLATE_DEPTH, templateDepth } from './depth';
-import { TEMPLATE_FILE, type SectionManifest } from './format';
+import { TEMPLATE_FILE, type SectionManifest, type SectionUse } from './format';
 import { blockSelectProblems, markBlocks } from './marks';
 import { isWarning, problem, type SectionProblem } from './problems';
 import { NO_RICHTEXT, richtextIdsOf, type RichtextIds } from './set-html';
@@ -64,16 +64,19 @@ export async function moduleImportProblems(code: string): Promise<SectionProblem
 
 // Что проверке шаблона нужно от section.json (часть 3): id настроек richtext (set:html, Р58) и есть ли у секции блоки
 // (метки, Р57).
+// uses (часть 4, Р1-4-5): какие из theme и shop шаблону можно читать; нет — ни одного.
 export interface TemplateOptions {
   richtext: RichtextIds;
   blocks: boolean;
+  uses?: readonly SectionUse[];
 }
 
-export const NO_TEMPLATE_OPTIONS: TemplateOptions = { richtext: NO_RICHTEXT, blocks: false };
+export const NO_TEMPLATE_OPTIONS: TemplateOptions = { richtext: NO_RICHTEXT, blocks: false, uses: [] };
 
 export const templateOptionsOf = (manifest: SectionManifest): TemplateOptions => ({
   richtext: richtextIdsOf(manifest),
   blocks: manifest.blocks !== undefined,
+  uses: manifest.uses ?? [],
 });
 
 // Глубже предела — сразу отказ, до разбора: компилятор такой шаблон не переварит (depth.ts). Дальше запреты и
@@ -88,7 +91,7 @@ export async function checkTemplate(
     return { problems: [problem('template-too-deep', TEMPLATE_FILE, message)], render: null };
   }
   const [forbidden, compiled, marked] = await Promise.all([
-    templateProblems(text, options.richtext),
+    templateProblems(text, options.richtext, options.uses ?? []),
     compileTemplate(text),
     markBlocks(text),
   ]);

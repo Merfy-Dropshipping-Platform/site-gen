@@ -20,5 +20,7 @@
   },
   "shop": { "name": "Стенд Nova" },
   "year": 2026,
-  "sections": []
+  "header": [],
+  "sections": [],
+  "footer": []
 }

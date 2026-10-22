@@ -125,7 +125,9 @@ describe('пределы процесса рендера', () => {
 
   it('куча кончилась — render-memory', async () => {
     const renderer = open({ limits: { memoryMb: 32 } });
-    const greedy = await moduleOf(`${FRONT}<p>{Array.from({ length: 5e7 }, (_, i) => ({ i })).length}</p>`);
+    // Много строк по 100 КБ: куча кончается быстрее срока секции и на медленном CI-раннере,
+    // иначе вместо render-memory приходит render-timeout (замер на GitHub Actions, x86_64).
+    const greedy = await moduleOf(`${FRONT}<p>{Array.from({ length: 1e5 }, () => 'x'.repeat(1e5)).length}</p>`);
     expect((await refusal(renderer.render({ section: 'shop:greedy', ...greedy, settings: {} }))).stage).toBe(
       'render-memory',
     );

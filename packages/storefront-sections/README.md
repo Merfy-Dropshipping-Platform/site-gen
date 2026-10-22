@@ -56,3 +56,21 @@
 - Ответ процесса рендера — в дескриптор 3, рамкой `<ключ> <id> <байт>`; ключ процесс получает первой строкой stdin.
   stdout и stderr процесса никуда не идут.
 - Сломанные секции для проверки руками — `fixtures/broken/`.
+
+## Правила полей секции (блок 3 «Секций и SDK»)
+
+- Имя поля — из словаря `names.json`, вид поля — из `kinds` этого имени. Имя не из словаря — `setting-name-unknown`:
+  ближайшее имя, подсказка из `not-names.json` или настройка «Настроек темы» (`generated/shared-settings.json` — поля
+  панели темы с `"shared": true`; секция читает их через `"uses": ["theme"]`). Вид не из `kinds` — `setting-name-kind`.
+- Лимиты — `SETTINGS_LIMITS` (`src/limits.ts`): 20 полей у секции, 10 у типа блока, 6 типов блоков, сумма `limit` 50,
+  вариантов 2–10, подписи до 32 знаков, `sublabel` до 120; отказ `settings-limit`.
+- Условие показа — поле своего списка вида `toggle`, `select`, `radio` или `alignment`, значение из его значений,
+  цепочка до двух переходов, без кругов; отказ `visible-when-invalid`.
+- Второй пробный рендер — с пустыми строками, текстами, адресами и картинками, без блоков; исключение —
+  `render-empty-failed`.
+- Место ошибки — строка и колонка значения в `section.json` (`jsonc-parser`; в процессе проверки — внешний модуль).
+- `pnpm generate` пишет `generated/`: `section.schema.json` (для `"$schema"` в `section.json`), `names.schema.json`,
+  `NAMES.md`, `shared-settings.json`; тест сверяет их с генерацией. Поменял словарь, формат секции или пометки
+  `shared` в панели темы — запусти `pnpm generate`.
+- `pnpm merfy section names` — словарь текстом `NAMES.md`.
+- Секция с ошибкой на каждое правило — `fixtures/broken/fields-broken`.

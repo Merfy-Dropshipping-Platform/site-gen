@@ -13,8 +13,11 @@ export interface FixtureServer {
 
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
 const SHELL_PREFIX = '/_merfy/shell/';
+// Бандл страницы ядра секций (блок 5, раздел 3.10): /_merfy/b/<файл> → <distDir>/b/<файл>.
+const BUNDLE_PREFIX = '/_merfy/b/';
 
 function pathOf(url: URL, fixturesDir: string, distDir: string): string {
+  if (url.pathname.startsWith(BUNDLE_PREFIX)) return join(distDir, 'b', url.pathname.slice(BUNDLE_PREFIX.length));
   if (!url.pathname.startsWith(SHELL_PREFIX))
     return join(fixturesDir, url.pathname === '/' ? 'index.html' : url.pathname);
   const [build = '', ...rest] = url.pathname.slice(SHELL_PREFIX.length).split('/');

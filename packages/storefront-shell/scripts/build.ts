@@ -1,10 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildBehaviors } from '../build/behaviors';
 import { buildShell } from '../build/build';
+import { buildCore } from '../build/core';
 import { parseCoreParts } from '../build/core-parts';
 
 // pnpm build — ядро в dist/shell/ и dist/shell.json. Состав — core-parts.json (С7-3 Б), версия — package.json пакета.
+// Ядро секций (блок 5 «Секций и SDK») — рядом: dist/core.js и dist/core.json; бандл страницы из него собирает часть 5б.
 const PACKAGE_DIR = fileURLToPath(new URL('..', import.meta.url));
 
 async function readJson(file: string): Promise<unknown> {
@@ -22,3 +25,8 @@ const core = parseCoreParts(await readJson('core-parts.json'));
 const version = versionOf(await readJson('package.json'));
 const manifest = await buildShell({ packageDir: PACKAGE_DIR, outDir: join(PACKAGE_DIR, 'dist'), core, version });
 process.stdout.write(`ядро ${manifest.version}: ${manifest.preload.join(', ')} — ${manifest.brotliBytes} Б brotli\n`);
+const sdk = await buildCore({ packageDir: PACKAGE_DIR, outDir: join(PACKAGE_DIR, 'dist'), core, version });
+process.stdout.write(`ядро секций ${sdk.version}: core.js — ${sdk.brotliBytes} Б brotli на странице без секций\n`);
+// Поведения и анимации (блок 6) — dist/behaviors/: файл на поведение и общие куски; бандл страницы собирает часть 6б.
+const kit = await buildBehaviors({ packageDir: PACKAGE_DIR, outDir: join(PACKAGE_DIR, 'dist', 'behaviors'), version });
+process.stdout.write(`поведения ${kit.version}: ${Object.keys(kit.entries).length} файлов — ${kit.total} Б brotli\n`);

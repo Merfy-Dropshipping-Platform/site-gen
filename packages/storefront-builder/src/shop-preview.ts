@@ -20,6 +20,7 @@ import { instanceSchema, readVisibleSections } from './code';
 import type { DrawAnswer } from './draw';
 import { inlineAssets } from './inline-assets';
 import { inlineFonts } from './preview-fonts';
+import { withPreviewPolicy } from './preview-policy';
 import { readSnapshot } from './snapshot';
 import { answer, isAnswer, jsonAnswer, standPreview, standShop, type PreviewDeps } from './stand-preview';
 
@@ -96,6 +97,28 @@ async function inlinePageFonts(html: string, deps: ShopPreviewDeps): Promise<str
   return html.replace(match[0], () => `<style id="merfy-fonts">${css}</style>`);
 }
 
+// Предзагрузка файла шрифта в превью не нужна и ломает документ: байты уже data:-адресами в CSS (inlinePageFonts),
+// а /_fonts/ на адресе превью не раздаётся — тег даёт ошибку загрузки (блок 2, часть 2б).
+const LINK_TAG = /<link\b[^>]*>/gi;
+const LINK_ATTRIBUTE = /([a-z]+)(?:="([^"]*)")?/gi;
+const FONT_PRELOAD_PREFIX = '/_fonts/';
+
+const attributeOf = (tag: string, name: string): string | undefined => {
+  for (const match of tag.matchAll(LINK_ATTRIBUTE)) {
+    if ((match[1] ?? '').toLowerCase() === name) return match[2] ?? '';
+  }
+  return undefined;
+};
+
+const isFontPreload = (tag: string): boolean => {
+  if (attributeOf(tag, 'rel') !== 'preload') return false;
+  return (attributeOf(tag, 'href') ?? '').startsWith(FONT_PRELOAD_PREFIX);
+};
+
+function withoutFontPreloads(html: string): string {
+  return html.replace(LINK_TAG, (tag) => (isFontPreload(tag) ? '' : tag));
+}
+
 export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<DrawAnswer> {
   const rawShop = url.searchParams.get('shop');
   const page = url.searchParams.get('page') ?? '';
@@ -109,7 +132,7 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   // Оба скрипта превью (1а-13): слушатель токенов и скрипт секций — select-block, update-block, reconcile.
   const agents = `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script>`;
   const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), agents);
-  return answer(200, found.inline(await inlinePageFonts(html, deps)));
+  return answer(200, withPreviewPolicy(found.inline(withoutFontPreloads(await inlinePageFonts(html, deps)))));
 }
 
 function jsonOf(body: string): unknown {

@@ -24,6 +24,8 @@ from '@merfy/shell'` (С7-2 А, п. 12).
 
 - `pnpm build` — ядро в `dist/shell/` и `dist/shell.json` (версия, подсказки `modulepreload`, вес). Образ site-gen
   собирает его в `Dockerfile`; сборщик витрин кладёт копию в каждую сборку магазина.
+- Тот же `pnpm build` собирает ядро секций блока 5 «Секций и SDK»: `dist/core.js` и `dist/core.json` — версия и вес
+  brotli бандла страницы без секций (бюджет 8 КБ, `build/core.ts`).
 - `pnpm test`, `pnpm test:coverage` — jsdom; `pnpm test:browser` — Chromium по собранному ядру.
 - `pnpm typecheck`, `pnpm lint`, `pnpm format:check`.
 
@@ -55,3 +57,47 @@ from '@merfy/shell'` (С7-2 А, п. 12).
   в сборщик аналитики (`analytics.url` конфига) по таблице согласия `consent.ts`; счётчики мерчанта — после «принять».
   Вес — до 3 КБ brotli (`__tests__/analytics-budget.test.ts`). Свои файлы секция импортирует с `.ts`: так их находит
   сборка приёма.
+
+## Ядро секций (блок 5 «Секций и SDK», часть 5а)
+
+`@merfy/shell/core` (`src/core/`) — новое ядро секций рядом со старым. Страницы магазинов его пока не загружают: бандл
+страницы собирает часть 5б, она же удаляет старое ядро (загрузчик, список модулей, карту импортов).
+
+- Секция — `export default defineSection({ mount, actions, unmount })`. Код секции получает элементы только обёртками
+  `El` и работает со страницей только через `ctx` (design.md блока 5, разделы 3.1–3.3).
+- Все секции запускаются разом в порядке страницы, потом глобальные скрипты; затем `merfy:page:ready` и
+  `merfy:page:view`. Подписки, таймеры и слушатели экземпляра ядро снимает само, когда элемент ушёл из документа;
+  перенос узла экземпляр не перезапускает.
+- Входные данные экземпляра — тег `<script type="application/json" data-merfy-input>` последним дочерним элементом
+  `<merfy-section>`: `{ settings, blocks, data }`, до 32 КБ (`src/core/input.ts`).
+- Сбой — на экземпляр: `data-merfy-state="failed"`, элементам с `data-action` — `aria-disabled`, событие
+  `merfy:section:error` на `document` с `{ section, id, script, stage, message }`, строка в консоли; на витрине —
+  запись в журнал ошибок шлюза (`src/error-log.ts`, `CORE_ERRORS`).
+- Части SDK `cart`, `favorites`, `auth` (`src/core/parts/`) — сторы `{ get }` и действия с `Result`; данные — в
+  памяти страницы до блоков 9 и 10. Действия разметки: `cart.add` — `data-product-id`, `data-variant-id`,
+  `data-quantity`; `cart.remove` — `data-line-id`; `favorites.toggle` — `data-product-id`.
+- Атрибуты, которые код секции пишет через `El.attr` и `El.cssVar`, — по списку `src/core/attributes.ts`; остальное —
+  ошибка `attr-forbidden`.
+
+## Поведения и анимации (блок 6 «Секций и SDK»)
+
+- Вход — `@merfy/shell/behaviors`: часть `behaviors({ list, reveal, animate })`, девять поведений, появления
+  `reveal`, провайдер `animate` для `ctx.animate`; каталог — `@merfy/shell/behaviors/catalog`.
+- Разметка секции: `data-behavior="<имя>"` на корне, части — `data-part`, параметры — `data-<имя>` (вид, умолчание и
+  границы — `BEHAVIORS`). Девять поведений: `accordion` (`<details>` + Motion: плавное раскрытие значений satin,
+  общий `name` — открыт один), `dialog` (`<dialog>` + Motion: `fade`, `drawer`, `drawer-back`, `drop`; модальные и
+  немодальные, запрет прокрутки, Escape/фон/ссылка), `carousel` (Embla с Autoplay и Fade: стрелки, точки, миниатюры,
+  счётчик, текст слайда, кнопка паузы, ←/→), `tabs` и `nav-menu` (свой код по W3C APG), `quantity` (браузерные
+  `stepUp`/`stepDown`), `card-photos` (наведение и свайп фото карточки), `sticky-header` (ставит и снимает
+  `data-hidden`), `video` (кнопка «Смотреть»). Что делает браузер, что — SDK — `BEHAVIORS` в каталоге.
+- Появления: `data-animate="<пресет>"` и `data-delay` — пресеты `PRESETS` со значениями пяти тем «один в один»;
+  появлений нет при выключенном выборе «Появление секций» (`data-motion-reveal`), при «уменьшить движение» и в
+  превью. Флаг `data-merfy-motion` ставит встроенный скрипт `MOTION_HEAD_SCRIPT`, снимает часть behaviors по
+  `merfy:page:ready`; `MOTION_CSS` — запасной показ через 3 с, если ядро не запустилось. Всё это встраивает в `<head>`
+  сборка страницы (часть 6б).
+- `ctx.animate(el, кадры, параметры)`: свойства — из списка `src/core/keyframes.ts`, значения без `url()`, кавычек и
+  «\», длительность и задержка — мс, кривые — по имени из `EASINGS` или массивом Безье; элемент — только своей секции;
+  превью и «уменьшить движение» — сразу последний кадр; снятие секции останавливает анимацию.
+- Сборка: `pnpm build` → `dist/behaviors/` (файл на поведение, появления, провайдер и часть; общий код — в кусках,
+  бюджеты brotli — `build/behaviors.ts`); бандл страницы склеивает их (часть 6б). Тесты — `pnpm test` (unit) и
+  `pnpm test:browser` (настоящий Chromium).

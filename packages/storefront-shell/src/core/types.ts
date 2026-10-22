@@ -185,10 +185,18 @@ export interface CustomerState {
 export interface AuthModule {
   readonly $customer: ReadableStore<CustomerState>;
 }
+// Подписка на рассылку магазина — форма подвала (блок 1, раздел 3.22): тот же запрос, что у rose и flux.
+export interface NewsletterModule {
+  subscribe(
+    args: { readonly email: string },
+    options?: ActionOptions,
+  ): Promise<Result<{ readonly alreadySubscribed: boolean }>>;
+}
 export interface Modules {
   readonly cart: CartModule;
   readonly favorites: FavoritesModule;
   readonly auth: AuthModule;
+  readonly newsletter: NewsletterModule;
 }
 export type ModuleName = keyof Modules;
 

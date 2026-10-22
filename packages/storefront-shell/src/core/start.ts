@@ -104,7 +104,9 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
   return { core, started, apiOf };
 }
 
-const isModuleName = (name: string): name is ModuleName => name === 'cart' || name === 'favorites' || name === 'auth';
+const MODULE_NAMES: readonly string[] = ['cart', 'favorites', 'auth', 'newsletter'];
+
+const isModuleName = (name: string): name is ModuleName => MODULE_NAMES.includes(name);
 
 function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts: CoreParts): InstanceRuntime {
   const attachAll = (host: InstanceHost): void => {

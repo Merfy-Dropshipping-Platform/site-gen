@@ -162,7 +162,7 @@ describe("save с базой: устаревшая база сливается (
     expect(savedA.effect?.merged).toBe(true);
     expect(savedA.effect?.overwritten).toEqual([]);
     expect(fake.site.currentRevisionId).toBe(savedA.version);
-    const now = (await load()).document;
+    const now = (await load()).document as Doc;
     expect(now.sections.home.map((instance: Doc) => instance.id)).toEqual([
       "hero-a",
       "hero-b",

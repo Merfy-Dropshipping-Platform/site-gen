@@ -28,7 +28,7 @@ import {
 import { apply } from "./apply";
 import { atomicContainers, diffWithPlan } from "./diff";
 import { deepEqual, orNull } from "./json";
-import { idsOf, isVolatile } from "./shape";
+import { idsOf, isVolatile, withSectionLists } from "./shape";
 import type {
   ContestedValue,
   Doc,
@@ -165,6 +165,29 @@ export function merge3(
   incoming: Doc,
   policy: MergePolicy,
   options: MergeOptions = {},
+): MergeResult {
+  // Секции новой темы: недостающий у стороны список страницы — пустой, иначе
+  // первые секции двух вкладок спорят о списке целиком (`withSectionLists`).
+  const [alignedBase, alignedCurrent, alignedIncoming] = withSectionLists(
+    base,
+    current,
+    incoming,
+  );
+  return mergeDocs(
+    alignedBase,
+    alignedCurrent,
+    alignedIncoming,
+    policy,
+    options,
+  );
+}
+
+function mergeDocs(
+  base: Doc,
+  current: Doc,
+  incoming: Doc,
+  policy: MergePolicy,
+  options: MergeOptions,
 ): MergeResult {
   const isAuto = options.isAuto ?? NOTHING_IS_AUTO;
   const plan = atomicContainers([base, current, incoming]);

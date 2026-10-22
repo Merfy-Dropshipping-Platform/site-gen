@@ -14,7 +14,7 @@
  */
 import { covers } from "./address";
 import { isPlainObject } from "./json";
-import type { Op } from "./types";
+import type { Doc, Op } from "./types";
 
 export interface RecordShape {
   kind: "record";
@@ -65,10 +65,27 @@ const PAGE_DATA: RecordShape = {
   },
 };
 
+const instanceId = (item: unknown): unknown =>
+  isPlainObject(item) ? item.id : undefined;
+
+/**
+ * Секции страниц новой темы — ключ ревизии `sections` (блок 1 «Секций и
+ * SDK», В1-1 А): страница → экземпляры `{ id, section, settings }` по
+ * порядку, ключ — `id`. Сливаются по id, как секции пяти тем в `pagesData`:
+ * `sections/home/hero-k3f9x2a1/settings/heading`, порядок —
+ * `sections/home/order`.
+ */
+const SECTIONS: MapShape = {
+  kind: "map",
+  entryPrefix: "",
+  entry: { kind: "list", itemPrefix: "", idOf: instanceId, item: RECORD },
+};
+
 export const DOCUMENT: RecordShape = {
   kind: "record",
   fields: {
     pages: { kind: "list", itemPrefix: "", idOf: pageId, item: RECORD },
+    sections: SECTIONS,
   },
   hoisted: {
     pagesData: { kind: "map", entryPrefix: "page:", entry: PAGE_DATA },
@@ -122,4 +139,39 @@ export function childShape(record: RecordShape, key: string): Shape {
 
 export function idsOf(shape: ListShape, list: unknown[]): string[] {
   return list.map((item) => shape.idOf(item) as string);
+}
+
+function sectionListsOf(doc: Doc): Record<string, unknown> {
+  return isPlainObject(doc.sections) ? doc.sections : {};
+}
+
+/**
+ * Списки секций новой темы у трёх сторон слияния — на одних и тех же
+ * страницах: если у какой-то стороны есть `sections.<страница>`, у остальных
+ * недостающий список — пустой. Иначе первые секции страницы, добавленные в
+ * двух вкладках, спорят о списке целиком: `diff` ставит его одной операцией.
+ * Документы без `sections` (пять тем) возвращаются как есть; `sections` не
+ * объект — тоже.
+ */
+export function withSectionLists(
+  base: Doc,
+  current: Doc,
+  incoming: Doc,
+): [Doc, Doc, Doc] {
+  const pages = [
+    ...new Set(
+      [base, current, incoming].flatMap((doc) =>
+        Object.keys(sectionListsOf(doc)),
+      ),
+    ),
+  ];
+  const align = (doc: Doc): Doc => {
+    if (doc.sections !== undefined && !isPlainObject(doc.sections)) return doc;
+    const own = sectionListsOf(doc);
+    const missing = pages.filter((page) => own[page] === undefined);
+    if (missing.length === 0) return doc;
+    const empty = Object.fromEntries(missing.map((page) => [page, []]));
+    return { ...doc, sections: { ...own, ...empty } };
+  };
+  return [align(base), align(current), align(incoming)];
 }

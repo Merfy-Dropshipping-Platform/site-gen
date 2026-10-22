@@ -1,5 +1,6 @@
 import {
   PREVIEW_AGENT,
+  PREVIEW_SECTIONS_AGENT,
   parseBuildInputs,
   renderPlacedSections,
   renderShopPage,
@@ -100,7 +101,9 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   const { inputs, renders } = await deps.inputs(found.shopId);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
   const rendered = await renderShopPage(inputs, '/', theme, previewPage(deps, found.shopId, renders));
-  const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), `<script>${PREVIEW_AGENT}</script>`);
+  // Оба скрипта превью (1а-13): слушатель токенов и скрипт секций — select-block, update-block, reconcile.
+  const agents = `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script>`;
+  const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), agents);
   return answer(200, found.inline(await inlinePageFonts(html, deps)));
 }
 

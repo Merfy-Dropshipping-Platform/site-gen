@@ -1,4 +1,4 @@
-import { PREVIEW_AGENT, parseBuildInputs, sha256, type ShopTheme } from '@merfy/storefront-build';
+import { PREVIEW_AGENT, PREVIEW_SECTIONS_AGENT, parseBuildInputs, sha256, type ShopTheme } from '@merfy/storefront-build';
 import type { CurrentSection, SectionRenderRequest } from '@merfy/storefront-sections';
 import { parseTheme, platformDictionary } from '@merfy/tokens';
 import { z } from 'zod';
@@ -89,7 +89,7 @@ describe('превью главной', () => {
     expect(answer.status).toBe(200);
     expect(answer.body).toContain('data-section-id="hero-1"');
     expect(answer.body).toContain('Шарфы к первым холодам');
-    expect(answer.body).toContain(`<script>${PREVIEW_AGENT}</script></body>`);
+    expect(answer.body).toContain(`<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script></body>`);
     expect(answer.body).not.toContain('id="merfy-modules"');
     expect(rendered.map(([shopId]) => shopId)).toEqual([SHOP]);
   });

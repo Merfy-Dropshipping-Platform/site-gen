@@ -197,6 +197,8 @@ export interface BaseCtx<State extends object> {
   listen<E extends EventName>(name: E, fn: (detail: EventDetail<E>) => void): Stop;
   emit(name: string, detail?: Json): void; // уходит как '<имя секции>:<name>'
   log(...values: unknown[]): void; // превью — в консоль браузера с именем и id; витрина — ничего
+  // Блок 6: элемент только своей секции; превью и «уменьшить движение» — сразу последний кадр; снятие — остановка.
+  animate(el: El, keyframes: Keyframes, options?: AnimateOptions): Animation;
 }
 
 export type Ctx<State extends object = Record<string, unknown>, Uses extends ModuleName = ModuleName> = BaseCtx<State> &

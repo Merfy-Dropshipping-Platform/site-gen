@@ -1,5 +1,6 @@
 import { messageOf } from '../report';
 import { listenActions } from './actions';
+import type { AnimateProvider } from './behaviors/types';
 import { createElScope, type ElScope } from './el';
 import { SECTION_FAILURE_EVENT, type EventBus } from './events';
 import { createGuard, type Guard } from './guard';
@@ -27,6 +28,7 @@ export interface InstanceRuntime {
   readonly bus: EventBus;
   readonly page: KeyValue;
   partApi(name: string): unknown; // нет такой части — ShellError part-unknown
+  apiOfPart(name: string): unknown; // API созданной части платформы; части нет — null; секциям не отдаётся
   attachAll(host: InstanceHost): void; // attach частей с их API; ошибка в части — строка в консоли
   markup(name: string): MarkupCall | null; // 'cart.add' → действие add части cart
 }
@@ -165,6 +167,15 @@ function listenActionsOf(runtime: InstanceRuntime, state: InstanceState, ctx: Ba
   });
 }
 
+// Провайдер ctx.animate — поле animate у API части behaviors (блок 6); нет части или поля — null.
+const isAnimateProvider = (value: unknown): value is AnimateProvider => typeof value === 'function';
+
+function animateOfPart(runtime: InstanceRuntime): AnimateProvider | null {
+  const api = runtime.apiOfPart('behaviors');
+  if (typeof api !== 'object' || api === null || !('animate' in api)) return null;
+  return isAnimateProvider(api.animate) ? api.animate : null;
+}
+
 const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: SectionInput): CtxDeps => ({
   win: runtime.win,
   bus: runtime.bus,
@@ -177,6 +188,7 @@ const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: Sectio
   id: state.id,
   mode: runtime.mode,
   input,
+  animate: animateOfPart(runtime),
 });
 
 // ctx, attach частей до mount и сам mount (раздел 3.6, шаг 4).

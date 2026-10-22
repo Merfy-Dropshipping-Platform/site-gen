@@ -1,7 +1,9 @@
 import { ShellError } from '../errors';
+import type { AnimateProvider } from './behaviors/types';
 import type { ElScope } from './el';
 import type { EventBus } from './events';
 import type { Guard } from './guard';
+import { checkKeyframes } from './keyframes';
 import type { SectionInput } from './input';
 import { sectionLog } from './log';
 import { createSectionStorage, type KeyValue } from './storage';
@@ -23,6 +25,7 @@ export interface CtxDeps {
   readonly id: string;
   readonly mode: Mode;
   readonly input: SectionInput;
+  readonly animate: AnimateProvider | null; // провайдер части behaviors (блок 6); нет — ctx.animate бросает part-unknown
 }
 
 const DOM_EVENTS: ReadonlySet<string> = new Set(['keydown', 'keyup', 'scroll', 'resize', 'pointerdown']);
@@ -136,7 +139,20 @@ const methodsOf = (deps: CtxDeps, signal: AbortSignal) => ({
   listen: listenOf(deps.bus, deps.owner, deps.run, signal),
   emit: (emitName: string, detail?: Json): void => deps.bus.emit(`${deps.name}:${emitName}`, detail ?? null),
   log: (...values: unknown[]) => sectionLog(deps.mode, deps.name, deps.id, values),
+  animate: animateOf(deps),
 });
+
+// ctx.animate (блок 6, design.md раздел 10): узел — только своей секции, кадры — из списка, провайдер — часть behaviors.
+function animateOf(deps: CtxDeps): BaseCtx<Record<string, unknown>>['animate'] {
+  return (el, keyframes, options) => {
+    const node = deps.scope.nodeOf(el);
+    if (node === null) throw new ShellError('sdk-call-invalid', 'ctx.animate: элемент не из этой секции');
+    checkKeyframes(keyframes);
+    if (deps.animate === null)
+      throw new ShellError('part-unknown', 'ctx.animate: на странице нет кода анимаций — пересоберите страницу');
+    return deps.animate(node, keyframes, options, deps.signal, deps.mode);
+  };
+}
 
 export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknown>>): BaseCtx<Record<string, unknown>> {
   let state: Partial<Record<string, unknown>> = {};

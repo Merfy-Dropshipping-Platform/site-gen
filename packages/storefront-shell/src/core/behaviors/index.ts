@@ -18,3 +18,4 @@ export type {
   Reveal,
   RevealHost,
 } from './types';
+export { animate } from './motion';

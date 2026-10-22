@@ -23,6 +23,7 @@ interface AttachedBehavior {
 }
 
 interface SectionRow {
+  readonly element: HTMLElement; // экземпляры одного элемента; замена секции с тем же id пишет свою строку
   readonly attached: readonly AttachedBehavior[];
 }
 
@@ -58,20 +59,18 @@ function reportOnce(state: PageState, key: string, text: string): void {
 
 function attachToRow(state: PageState, host: InstanceHost, attached: AttachedBehavior): void {
   const row = state.rows.get(host.id);
-  if (row === undefined) {
-    state.rows.set(host.id, { attached: [attached] });
-    dropRowOnAbort(state, host);
-    return;
-  }
-  state.rows.set(host.id, { attached: [...row.attached, attached] });
-}
-
-// Снятие экземпляра удаляет его строку, если в таблице всё ещё она.
-function dropRowOnAbort(state: PageState, host: InstanceHost): void {
+  const sameElement = row !== undefined && row.element === host.element;
+  state.rows.set(host.id, {
+    element: host.element,
+    attached: sameElement ? [...row?.attached ?? [], attached] : [attached],
+  });
+  // Снятие экземпляра удаляет строку, если в таблице всё ещё строка его элемента: замена секции с тем же id
+  // записывает свою — её старый сигнал не трогает.
   host.signal.addEventListener(
     'abort',
     () => {
-      state.rows.delete(host.id);
+      const current = state.rows.get(host.id);
+      if (current !== undefined && current.element === host.element) state.rows.delete(host.id);
     },
     { once: true },
   );

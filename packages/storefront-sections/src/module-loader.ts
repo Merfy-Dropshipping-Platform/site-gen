@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { init, parse } from 'es-module-lexer';
-import { ASTRO_RUNTIME } from './compile';
+import { ASTRO_RUNTIME } from './astro-runtime';
 import type { TemplateComponent } from './trial-render';
 
 // Фабрика компонента Astro среди значений модуля: у неё есть собственные свойства (результат компиляции Astro).

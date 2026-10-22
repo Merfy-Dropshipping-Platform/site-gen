@@ -1,5 +1,6 @@
 import { init, parse as lexImports } from 'es-module-lexer';
 import { z } from 'zod';
+import { ASTRO_RUNTIME } from './astro-runtime';
 import { TEMPLATE_FILE } from './format';
 import { problem, type SectionProblem } from './problems';
 import { templateProblems } from './template';
@@ -7,7 +8,7 @@ import { templateProblems } from './template';
 // Компиляция шаблона секции (блок 1 «Секций и SDK»): template.astro → модуль JS, который рисует HTML через рантайм Astro.
 // Модуль идёт в процесс рендера сборщика (1а-8), поэтому импорт в нём один — статический импорт рантайма; остальное —
 // import-forbidden. Компилятор подключается динамически: в процессе сборщика его нет.
-export const ASTRO_RUNTIME = 'astro/runtime/server/index.js';
+export { ASTRO_RUNTIME };
 
 export type Compiled = { ok: true; code: string } | { ok: false; problems: SectionProblem[] };
 

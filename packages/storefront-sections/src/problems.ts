@@ -24,10 +24,12 @@ export const PROBLEM_CODES = [
   'build-timeout',
   'build-crashed',
   'release-changed',
+  'block-select-unavailable',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];
 
-const WARNING_CODES: ReadonlySet<ProblemCode> = new Set(['script-heavy']);
+// block-select-unavailable — подпункт выбирается только слева (часть 3, Р57): секция сохраняется.
+const WARNING_CODES: ReadonlySet<ProblemCode> = new Set(['script-heavy', 'block-select-unavailable']);
 
 export const sectionProblemSchema = z.strictObject({
   code: z.enum(PROBLEM_CODES),

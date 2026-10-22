@@ -9,6 +9,7 @@
         {
           "id": "logo-image",
           "label": "Картинка",
+          "shared": true,
           "setting": { "kind": "image", "default": "", "maxBytes": 512000 }
         },
         {
@@ -229,31 +230,37 @@
         {
           "id": "social-telegram",
           "label": "Telegram",
+          "shared": true,
           "setting": { "kind": "url", "default": "", "placeholder": "https://t.me/..." }
         },
         {
           "id": "social-vk",
           "label": "Вконтакте",
+          "shared": true,
           "setting": { "kind": "url", "default": "", "placeholder": "https://vk.com/..." }
         },
         {
           "id": "social-dzen",
           "label": "Дзен",
+          "shared": true,
           "setting": { "kind": "url", "default": "", "placeholder": "https://dzen.ru/..." }
         },
         {
           "id": "social-youtube",
           "label": "Youtube",
+          "shared": true,
           "setting": { "kind": "url", "default": "", "placeholder": "https://youtube.com/..." }
         },
         {
           "id": "social-tiktok",
           "label": "TikTok",
+          "shared": true,
           "setting": { "kind": "url", "default": "", "placeholder": "https://tiktok.com/..." }
         },
         {
           "id": "social-max",
           "label": "MAX",
+          "shared": true,
           "setting": { "kind": "url", "default": "", "placeholder": "https://max.ru/..." }
         }
       ]
@@ -265,6 +272,7 @@
         {
           "id": "cart-type",
           "label": "Вид корзины",
+          "shared": true,
           "control": "segment",
           "setting": {
             "kind": "select",
@@ -291,6 +299,7 @@
         {
           "id": "cookie-banner-enabled",
           "label": "Баннер cookie",
+          "shared": true,
           "setting": { "kind": "toggle", "default": true, "labels": { "on": "Вкл", "off": "Выкл" } }
         },
         {

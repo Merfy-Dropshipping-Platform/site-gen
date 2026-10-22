@@ -44,7 +44,16 @@ export {
 // Схема панели темы и настройки не про вид (блок 8)
 export { parsePanel, panelForTheme } from './panel/panel';
 export { classesOf } from './kinds';
-export { fieldVisible, isSettingField, isTokenField, panelFields, settingFields, tokenFields } from './panel/fields';
+export {
+  fieldVisible,
+  isSettingField,
+  isTokenField,
+  panelFields,
+  settingFields,
+  sharedSettings,
+  tokenFields,
+  type SharedSetting,
+} from './panel/fields';
 export { parseSettingsEdits, readSettingsEdits, resolveSettings, settingProblem } from './panel/settings';
 export { panelJsonSchema, settingFieldShape } from './panel/shape';
 export type * from './panel/types';

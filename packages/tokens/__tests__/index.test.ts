@@ -48,6 +48,7 @@ describe('API пакета (design.md, раздел 9)', () => {
       'settingFieldShape',
       'settingFields',
       'settingProblem',
+      'sharedSettings',
       'sourceOf',
       'tailwindCss',
       'themeTokensJsonSchema',

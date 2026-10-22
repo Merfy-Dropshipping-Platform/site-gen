@@ -735,9 +735,10 @@ const STAND_SLUG = "/theme-stand";
 const MAIN_MENU = "main";
 const MAIN_MENU_TITLE = "Главное меню";
 
-type MenuItem = { label: string; url: string; items?: MenuItem[] };
-type Menu = { id: string; title: string; items: MenuItem[] };
-type SectionInstance = {
+// Экспортированы: типы видны в ответах контроллеров (сборка nest build).
+export type MenuItem = { label: string; url: string; items?: MenuItem[] };
+export type Menu = { id: string; title: string; items: MenuItem[] };
+export type SectionInstance = {
   id: string;
   section: string;
   settings: Record<string, string>;

@@ -119,13 +119,9 @@ const TABLE: readonly Row[] = [
     observedCode: 'login-goes-to-account',
     ref: 'themes/satin/src/pages/login.astro#/navTo',
   },
-  {
-    id: 'satin.flow.auth.verify-return-propagation',
-    status: 'GAP',
-    expectedCode: 'verify-preserves-return',
-    observedCode: 'verify-return-lost',
-    ref: 'themes/satin/src/pages/verify.astro',
-  },
+  // satin.flow.auth.verify-return-propagation (GAP «verify терял возврат»)
+  // закрыт 21.10 — спека 120, этап 5: verify.astro читает ?next= общей
+  // nextPathOf и ведёт туда после входа (extension-orders-satin.spec.ts).
   {
     id: 'satin.flow.checkout-config.scheme-initial-injection',
     status: 'GAP',
@@ -403,12 +399,13 @@ describe('Satin known-current classification — REAL pipeline reproduces the ta
     expect(missing).toEqual([]);
   });
 
-  it('reproduces at least the 34 enumerated semantic + decision findings', () => {
+  it('reproduces at least the 33 enumerated semantic + decision findings', () => {
     // 32 semantic rows (36 − 3 remediated − 1 header-search suggestions,
     // 22.09) + the explicit lifecycle/authoring decisions ≥ 36 (the real
     // pipeline emitted 36 structural findings on 22.09). 20.10 закрыты две
-    // находки публикаций (detail-route, merchant-data — PUB-1/PUB-2) → 34.
-    expect(CURRENT.length).toBeGreaterThanOrEqual(34);
+    // находки публикаций (detail-route, merchant-data — PUB-1/PUB-2) → 34;
+    // 21.10 закрыт verify-return-propagation (спека 120, этап 5) → 33.
+    expect(CURRENT.length).toBeGreaterThanOrEqual(33);
     // No emitted id may be a PASS-status leak.
     for (const i of CURRENT) expect(i.status).not.toBe('PASS');
   });

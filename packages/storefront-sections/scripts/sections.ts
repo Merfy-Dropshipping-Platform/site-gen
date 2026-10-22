@@ -7,6 +7,7 @@ import { doorSchema, type Door } from '../src/doors';
 import { problemText } from '../src/problems';
 import { readSectionFolder } from '../src/read-folder';
 import { publishDrafts, rollbackSection, sectionHistory, type SectionRow } from '../src/registry';
+import { buildWorkers } from './build-workers';
 
 // pnpm sections — двери своей секции и расширения, пока нет конструктора, MCP и регистрации версии в сервисе
 // расширений (design.md блока 7, п. 21); история своей секции и «верни как было» (С7-20 Б). База и хранилище —
@@ -75,6 +76,7 @@ async function accept(): Promise<Answer> {
     secretAccessKey: env.S3_SECRET_KEY,
   };
   const files = await readSectionFolder(required('путь к папке секции', folder));
+  await buildWorkers();
   const result = await acceptSection({ db, store: createS3Store(s3) }, doorOf(), files);
   if (result.status === 'refused')
     return { output: { status: 'refused', problems: result.problems.map(problemText) }, ok: false };

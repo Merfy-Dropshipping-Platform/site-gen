@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SANDBOX, prepareInWorker } from '../src/sandbox';
 
-const fixture = (name: string): string => fileURLToPath(new URL(`../fixtures/workers/${name}.ts`, import.meta.url));
+const fixture = (name: string): string => fileURLToPath(new URL(`../fixtures/workers/${name}.mjs`, import.meta.url));
 const INPUT = {
   prefix: 'nova',
   files: {
@@ -10,6 +10,10 @@ const INPUT = {
     'template.astro': '<p>Цвета</p>',
   },
 };
+const messageOf = (result: Awaited<ReturnType<typeof prepareInWorker>>): string =>
+  result.ok ? '' : (result.problems[0]?.message ?? '');
+// macOS сам добавляет каждому процессу __CF_USER_TEXT_ENCODING, даже при пустом окружении.
+const OS_ENV = process.platform === 'darwin' ? ['__CF_USER_TEXT_ENCODING'] : [];
 
 afterEach(() => {
   delete process.env.MERFY_SANDBOX_PROBE;
@@ -32,16 +36,35 @@ describe('приём в отдельном процессе', () => {
 
   it('процесс упал или ответил не JSON — build-crashed', async () => {
     const exited = await prepareInWorker(INPUT, { ...DEFAULT_SANDBOX, workerPath: fixture('exit') });
-    expect(exited.ok ? '' : exited.problems[0]?.message).toBe('процесс сборки завершился с кодом 3');
+    expect(messageOf(exited)).toBe('процесс сборки завершился с кодом 3');
     const garbage = await prepareInWorker(INPUT, { ...DEFAULT_SANDBOX, workerPath: fixture('garbage') });
-    expect(garbage.ok ? '' : garbage.problems[0]?.message).toBe('процесс сборки ответил не JSON');
+    expect(messageOf(garbage)).toBe('процесс сборки ответил не JSON');
   });
 
-  it('окружение процесса — только предел памяти: переменных сборщика он не видит', async () => {
+  it('окружение процесса пустое: переменных окружения сборщика у него нет', async () => {
     process.env.MERFY_SANDBOX_PROBE = 'секрет';
     const result = await prepareInWorker(INPUT, { ...DEFAULT_SANDBOX, workerPath: fixture('env') });
-    const names = result.ok ? [] : (result.problems[0]?.message.split(',') ?? []);
-    expect(names).toContain('GOMEMLIMIT');
-    expect(names).not.toContain('MERFY_SANDBOX_PROBE');
+    expect(messageOf(result)).toBe(`env:${OS_ENV.join(',')}`);
+  });
+
+  it('права процесса: без записи файлов, дочерних процессов, потоков и аддонов; WASI — есть', async () => {
+    const result = await prepareInWorker(INPUT, { ...DEFAULT_SANDBOX, workerPath: fixture('permission') });
+    const allowed: unknown = JSON.parse(messageOf(result));
+    expect(allowed).toEqual({
+      'fs.write': false,
+      child: false,
+      worker: false,
+      addon: false,
+      wasi: true,
+    });
+  });
+
+  it('пробный рендер — в процессе рендера: шаблон, который падает с умолчаниями, — render-failed', async () => {
+    const files = {
+      ...INPUT.files,
+      'template.astro': '---\nconst { settings } = Astro.props;\n---\n<p>{settings.a.b}</p>',
+    };
+    const result = await prepareInWorker({ ...INPUT, files });
+    expect(result.ok ? [] : result.problems.map((item) => item.code)).toEqual(['render-failed']);
   });
 });

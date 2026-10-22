@@ -22,3 +22,4 @@ export { animate } from './motion';
 export { accordion } from './accordion';
 export { dialog } from './dialog';
 export { carousel } from './carousel';
+export { reveal } from './reveal';

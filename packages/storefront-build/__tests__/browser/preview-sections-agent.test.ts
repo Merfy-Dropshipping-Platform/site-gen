@@ -53,7 +53,10 @@ beforeAll(async () => {
     // Медленный ответ: на правку, которая ушла раньше, ответ приходит позже следующей.
     if (instance.settings.heading === 'медленно') await new Promise((resolve) => setTimeout(resolve, 500));
     const html = section(instance.id, instance.settings.heading ?? 'Новый');
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ html, css: '.flex{display:flex}' }) });
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ html, css: '.flex{display:flex}' }),
+    });
   });
   await page.goto(`${ORIGIN}/parent`);
 });
@@ -102,8 +105,16 @@ describe('скрипт превью секций', () => {
 
   it('update-block — POST preview/block с экземпляром и замена секции', async () => {
     const settings = { heading: 'Шарфы к первым холодам' };
-    await send({ type: 'update-block', pageId: 'home', blockId: 'hero-1', blockType: 'shop:hero', props: { id: 'hero-1', settings } });
-    await expect.poll(() => frame().locator('[data-section-id="hero-1"] h2').textContent()).toBe('Шарфы к первым холодам');
+    await send({
+      type: 'update-block',
+      pageId: 'home',
+      blockId: 'hero-1',
+      blockType: 'shop:hero',
+      props: { id: 'hero-1', settings },
+    });
+    await expect
+      .poll(() => frame().locator('[data-section-id="hero-1"] h2').textContent())
+      .toBe('Шарфы к первым холодам');
     expect(blockBodies.at(-1)).toEqual({ instance: { id: 'hero-1', section: 'shop:hero', settings } });
   });
 
@@ -150,19 +161,33 @@ describe('скрипт превью секций', () => {
       ],
     });
     const settings = { heading: 'Быстро' };
-    await send({ type: 'update-block', pageId: 'home', blockId: 'hero-3', blockType: 'shop:hero', props: { id: 'hero-3', settings } });
+    await send({
+      type: 'update-block',
+      pageId: 'home',
+      blockId: 'hero-3',
+      blockType: 'shop:hero',
+      props: { id: 'hero-3', settings },
+    });
     await expect.poll(() => lastOf('reconcile-ack')).toMatchObject({ type: 'reconcile-ack', version: 8, ok: true });
     expect(await frame().locator('[data-section-id="hero-3"] h2').textContent()).toBe('Быстро');
   });
 
   it('ошибка блока — render-error', async () => {
     const settings = { heading: 'сломать' };
-    await send({ type: 'update-block', pageId: 'home', blockId: 'hero-1', blockType: 'shop:hero', props: { id: 'hero-1', settings } });
+    await send({
+      type: 'update-block',
+      pageId: 'home',
+      blockId: 'hero-1',
+      blockType: 'shop:hero',
+      props: { id: 'hero-1', settings },
+    });
     await expect.poll(() => countOf('render-error')).toBeGreaterThan(0);
   });
 
   it('секция у верхнего края страницы — подпись внутри рамки, «Удалить» видно', async () => {
-    await frame().locator('body').evaluate((body) => (body.style.paddingTop = '0'));
+    await frame()
+      .locator('body')
+      .evaluate((body) => (body.style.paddingTop = '0'));
     await send({
       type: 'set-selection',
       sectionId: 'hero-3',

@@ -14,11 +14,16 @@ const write = writeSync;
 const CHANNEL = 3;
 const PAUSE = new Int32Array(new SharedArrayBuffer(4));
 
+// Значения настроек: секции и каждого блока. blocks и preview — часть 3; в запросе старой формы их нет: блоков нет,
+// режим — витрина.
+const valuesSchema = z.record(z.string(), z.union([z.string(), z.boolean()]));
 const requestSchema = z.strictObject({
   id: z.number().int().positive(),
   hash: z.string().min(1),
   module: z.string().optional(),
-  settings: z.record(z.string(), z.union([z.string(), z.boolean()])),
+  settings: valuesSchema,
+  blocks: z.array(z.strictObject({ id: z.string(), type: z.string(), settings: valuesSchema })).default([]),
+  preview: z.boolean().default(false),
 });
 
 const templates = new Map<string, Promise<TemplateComponent>>();
@@ -62,12 +67,12 @@ function requestOf(line: string) {
 async function answerTo(line: string): Promise<{ id: number; answer: object }> {
   const parsed = requestOf(line);
   if (parsed === null || !parsed.success) return { id: 0, answer: { error: 'запрос не по форме', denied: false } };
-  const { id, hash, module, settings } = parsed.data;
+  const { id, hash, module, settings, blocks, preview } = parsed.data;
   try {
     if (module !== undefined && !templates.has(hash)) templates.set(hash, loadTemplate(module));
     const template = templates.get(hash);
     if (template === undefined) return { id, answer: { error: `модуля ${hash} в процессе нет`, denied: false } };
-    return { id, answer: { html: await renderTemplate(await template, settings) } };
+    return { id, answer: { html: await renderTemplate(await template, { settings, blocks, preview }) } };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { id, answer: { error: message, denied: denied(error) } };

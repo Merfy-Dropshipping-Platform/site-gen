@@ -1,6 +1,7 @@
 import { defaultLaunch, spawnIsolated, type IsolatedLaunch } from './isolation';
 import { prepareResultSchema, type PrepareInput, type PrepareResult } from './prepare';
 import { problem } from './problems';
+import { resolveSectionBlocks } from './blocks';
 import { defaultSettings } from './settings';
 import { trialRender } from './trial';
 import { WORKER_FILES } from './worker-files';
@@ -75,6 +76,8 @@ export async function prepareInWorker(
   if (!result.ok || result.section.render === null) return result;
   // Пробный рендер — только когда всё остальное прошло: модуль без проблем, поля настроек верные.
   const settings = defaultSettings(result.section.manifest.settings);
-  const trial = await trialRender(result.section.render, settings, { launch: options.launch });
+  // Блоки новой секции (defaultBlocks): шаблон с blocks.map проверяется на них.
+  const { blocks } = resolveSectionBlocks(result.section.manifest, undefined);
+  const trial = await trialRender(result.section.render, settings, { launch: options.launch }, blocks);
   return trial.length > 0 ? { ok: false, problems: trial } : result;
 }

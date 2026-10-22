@@ -1,7 +1,7 @@
 import type { ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import type { RenderStage } from '@merfy/storefront-build';
+import type { RenderBlock, RenderStage } from '@merfy/storefront-build';
 import { z } from 'zod';
 import { defaultLaunch, spawnIsolated, type IsolatedLaunch } from './isolation';
 import type { SettingValues } from './trial-render';
@@ -19,6 +19,9 @@ export interface SectionRenderRequest {
   hash: string;
   module: string;
   settings: SettingValues;
+  // Часть 3: показанные блоки секции и режим превью (метки блоков); нет — блоков нет, режим — витрина.
+  blocks?: readonly RenderBlock[];
+  preview?: boolean;
 }
 
 export interface SectionRenderer {
@@ -245,8 +248,15 @@ class Renderer implements SectionRenderer {
 
   private send(running: Running, job: Job): void {
     const id = this.nextId++;
-    const { hash, settings, module } = job.request;
-    const message = { id, hash, settings, ...(running.sent.has(hash) ? {} : { module }) };
+    const { hash, settings, module, blocks, preview } = job.request;
+    const message = {
+      id,
+      hash,
+      settings,
+      blocks: blocks ?? [],
+      preview: preview === true,
+      ...(running.sent.has(hash) ? {} : { module }),
+    };
     running.sent.add(hash);
     this.current = { id, job };
     this.arm(running, this.limits.timeoutMs, { stage: 'render-timeout', message: TEXT.timeout(this.limits.timeoutMs) });

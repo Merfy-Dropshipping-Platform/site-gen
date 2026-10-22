@@ -1,0 +1,16 @@
+{
+  "sdk": 1,
+  "name": "render-fail",
+  "kind": "section",
+  "title": "Падает на восклицательном",
+  "settings": [
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "setting": {
+        "kind": "string",
+        "default": "Шарфы к первым холодам"
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+---
+const { settings } = Astro.props;
+---
+<p class="m-0">{settings.heading.startsWith('!') ? settings.heading.missing.length : settings.heading}</p>

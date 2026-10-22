@@ -11,7 +11,7 @@ import {
 } from './format';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
 import { buildScript } from './script';
-import { checkTemplate } from './compile';
+import { NO_TEMPLATE_OPTIONS, checkTemplate, templateOptionsOf } from './compile';
 
 // Одна функция приёма (design.md блока 7, С7-11 А, п. 21): разбор section.json, проверка, сборка — одинаково для
 // платформы, темы, своей секции и расширения. Автора функция не знает: приставку имени даёт дверь (п. 22), запись в
@@ -56,7 +56,9 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
   const template = files[TEMPLATE_FILE];
   const entry = scriptEntryOf(files);
   const [checked, script] = await Promise.all([
-    template === undefined ? null : checkTemplate(template),
+    template === undefined
+      ? null
+      : checkTemplate(template, manifest.ok ? templateOptionsOf(manifest.value) : NO_TEMPLATE_OPTIONS),
     entry === null ? null : buildScript(files, entry),
   ]);
   const problems = [

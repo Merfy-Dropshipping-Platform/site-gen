@@ -2,7 +2,7 @@ import { sha256 } from '@merfy/storefront-build';
 import { TEMPLATE_FILE } from './format';
 import { problem, type SectionProblem } from './problems';
 import { withSectionRenderer, type RendererOptions } from './render';
-import type { SettingValues } from './trial-render';
+import type { SettingValues, TemplateBlock } from './trial-render';
 
 // Пробный рендер при сохранении (блок 2 «Секций и SDK», «Решил сам» п. 5): модуль шаблона рендерит процесс рендера — с теми же
 // правами и пределами, что на витрине. Процесс проверки чужой JS не исполняет: у него WASI, которого у процесса рендера
@@ -11,8 +11,9 @@ export async function trialRender(
   render: string,
   settings: SettingValues,
   options: RendererOptions = {},
+  blocks: readonly TemplateBlock[] = [],
 ): Promise<SectionProblem[]> {
-  const request = { section: 'trial', hash: sha256(Buffer.from(render, 'utf8')), module: render, settings };
+  const request = { section: 'trial', hash: sha256(Buffer.from(render, 'utf8')), module: render, settings, blocks };
   try {
     await withSectionRenderer((draw) => draw(request), options);
     return [];

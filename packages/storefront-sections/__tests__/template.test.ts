@@ -19,9 +19,9 @@ describe('запреты шаблона секции', () => {
   });
 
   it('компонент запрещён; Fragment, свой элемент и svg — можно', async () => {
-    expect(await textsOf(`${FRONT}<Foo /><Fragment><merfy-badge></merfy-badge><svg><linearGradient /></svg></Fragment>`)).toEqual([
-      'компонент <Foo>: в шаблоне секции компонентов нет, кроме <Fragment>',
-    ]);
+    expect(
+      await textsOf(`${FRONT}<Foo /><Fragment><merfy-badge></merfy-badge><svg><linearGradient /></svg></Fragment>`),
+    ).toEqual(['компонент <Foo>: в шаблоне секции компонентов нет, кроме <Fragment>']);
   });
 
   it('обработчик, set:html, директивы, {...}', async () => {

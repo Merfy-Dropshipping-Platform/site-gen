@@ -9,11 +9,21 @@ import { sectionCss } from './section-css';
 // выбирает и заменяет секцию. CSS секций — классы Tailwind из их разметки (section-css.ts).
 export type SettingValues = Readonly<Record<string, string | boolean>>;
 
+// Блок секции в шаблоне (часть 3): показанный блок со значениями настроек.
+export interface RenderBlock {
+  id: string;
+  type: string;
+  settings: SettingValues;
+}
+
 export interface SectionRenderRequest {
   section: string;
   hash: string;
   module: string;
   settings: SettingValues;
+  // Часть 3: показанные блоки секции и режим превью (метки блоков); нет — блоков нет, режим — витрина.
+  blocks?: readonly RenderBlock[];
+  preview?: boolean;
 }
 
 export type RenderSection = (request: SectionRenderRequest) => Promise<string>;
@@ -58,6 +68,8 @@ export interface PlacedSection {
   name: string;
   hash: string;
   settings: SettingValues;
+  // Показанные блоки по порядку (часть 3): только у секций с blocks в section.json.
+  blocks?: readonly RenderBlock[];
   // false — секцию нельзя пропустить (шапка, подвал): её ошибка — ошибка сборки, на сайте остаётся прежняя сборка (блок
   // 2, «Решил сам» п. 7). Флаг — "removable" из section.json, его заводит часть 4 блока 1; до неё у всех секций true.
   removable?: boolean;
@@ -82,7 +94,13 @@ export const NO_SECTIONS: SectionsRender = {
 export const LIVE_PAGE: PageRender = { sections: NO_SECTIONS, mode: 'live' };
 export const EMPTY_PAGE_CONTENT: PageContent = { sections: [], sectionsCss: '', mode: 'live' };
 
-const ESCAPES: Readonly<Record<string, string>> = { '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;', "'": '&#39;' };
+const ESCAPES: Readonly<Record<string, string>> = {
+  '&': '&amp;',
+  '"': '&quot;',
+  '<': '&lt;',
+  '>': '&gt;',
+  "'": '&#39;',
+};
 const escapeHtml = (text: string): string => text.replace(/[&"<>']/g, (char) => ESCAPES[char] ?? char);
 const errorText = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 const isRenderStage = (value: unknown): value is RenderStage => RENDER_STAGES.some((stage) => stage === value);
@@ -134,9 +152,18 @@ export async function renderSection(
 ): Promise<string> {
   const module = sections.modules.get(placed.hash);
   if (module === undefined || sha256(Buffer.from(module, 'utf8')) !== placed.hash)
-    throw new StorefrontBuildError('code-missing', 'нет модуля рендера секции с этим отпечатком', { path: placed.hash });
+    throw new StorefrontBuildError('code-missing', 'нет модуля рендера секции с этим отпечатком', {
+      path: placed.hash,
+    });
   try {
-    const html = await sections.render({ section: placed.name, hash: placed.hash, module, settings: placed.settings });
+    const html = await sections.render({
+      section: placed.name,
+      hash: placed.hash,
+      module,
+      settings: placed.settings,
+      blocks: placed.blocks ?? [],
+      preview: mode === 'preview',
+    });
     return wrapper(placed, html);
   } catch (error) {
     return failedHtml(placed, mode, error, failed);

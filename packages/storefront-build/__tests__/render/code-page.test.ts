@@ -37,10 +37,13 @@ describe('код секций на рисовальщике nova', () => {
     await renderer.close();
   });
 
-// Подставной рендер секций: имя секции и класс из словаря.
-const renderSectionStub = (request: SectionRenderRequest): Promise<string> =>
-  Promise.resolve(`<p class="flex">${request.section}</p>`);
-const pageOf = (mode: PageRender['mode']): PageRender => ({ sections: { modules: RENDERS, render: renderSectionStub }, mode });
+  // Подставной рендер секций: имя секции и класс из словаря.
+  const renderSectionStub = (request: SectionRenderRequest): Promise<string> =>
+    Promise.resolve(`<p class="flex">${request.section}</p>`);
+  const pageOf = (mode: PageRender['mode']): PageRender => ({
+    sections: { modules: RENDERS, render: renderSectionStub },
+    mode,
+  });
 
   it('<head>: конфиг, токены, стили секций, список модулей, import map, подсказки, ядро; секции — в <main> после имени', async () => {
     const html = text((await renderShopPage(codeInputs(), '/', theme, pageOf('live'))).file.content);
@@ -49,7 +52,9 @@ const pageOf = (mode: PageRender['mode']): PageRender => ({ sections: { modules:
     expect(at.every((index) => index >= 0)).toBe(true);
     expect([...at].sort((left, right) => left - right)).toEqual(at);
     const main = html.slice(html.indexOf('<main>'), html.indexOf('</main>'));
-    const names = [...main.matchAll(/<merfy-section data-section="([^"]+)" data-section-id="([^"]+)"/g)].map(([, name]) => name);
+    const names = [...main.matchAll(/<merfy-section data-section="([^"]+)" data-section-id="([^"]+)"/g)].map(
+      ([, name]) => name,
+    );
     expect(names).toEqual(['shop:cart-badge', 'shop:hero', 'reviews:list', 'reviews:list']);
     expect(main).toContain('<p class="flex">shop:hero</p>');
     expect(main.indexOf('<h1>')).toBeLessThan(main.indexOf('<merfy-section'));

@@ -18,12 +18,9 @@ export {
   type Visibility,
 } from './registry';
 export { currentSection, type CurrentSection } from './current';
-export {
-  defaultSettings,
-  resolveSectionSettings,
-  settingsTexts,
-  type ResolvedSettings,
-} from './settings';
+export { resolveSectionBlocks, type BlockValues, type ResolvedBlocks, type RevisionBlock } from './blocks';
+export { type SectionField } from './fields';
+export { defaultSettings, resolveSectionSettings, settingsTexts, type ResolvedSettings } from './settings';
 export { DEFAULT_SANDBOX, prepareInWorker, type SandboxOptions } from './sandbox';
 export {
   RENDER_LIMITS,

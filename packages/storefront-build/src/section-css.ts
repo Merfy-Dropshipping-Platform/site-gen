@@ -15,14 +15,19 @@ type Compiler = Awaited<ReturnType<typeof compile>>;
 const compilers = new WeakMap<Dictionary, Promise<Compiler>>();
 
 function loadStylesheet(id: string, base: string) {
-  const file = id.startsWith(TAILWIND_PREFIX) ? join(TAILWIND_DIR, id.slice(TAILWIND_PREFIX.length)) : resolve(base, id);
+  const file = id.startsWith(TAILWIND_PREFIX)
+    ? join(TAILWIND_DIR, id.slice(TAILWIND_PREFIX.length))
+    : resolve(base, id);
   return Promise.resolve({ content: readFileSync(file, 'utf8'), base: dirname(file), path: file });
 }
 
 function compilerOf(dictionary: Dictionary): Promise<Compiler> {
   const known = compilers.get(dictionary);
   if (known !== undefined) return known;
-  const created = compile(`${SOURCE}${tailwindCss(dictionary, { base: false })}`, { base: TAILWIND_DIR, loadStylesheet });
+  const created = compile(`${SOURCE}${tailwindCss(dictionary, { base: false })}`, {
+    base: TAILWIND_DIR,
+    loadStylesheet,
+  });
   compilers.set(dictionary, created);
   return created;
 }

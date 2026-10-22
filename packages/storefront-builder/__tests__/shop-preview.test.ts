@@ -1,4 +1,10 @@
-import { PREVIEW_AGENT, PREVIEW_SECTIONS_AGENT, parseBuildInputs, sha256, type ShopTheme } from '@merfy/storefront-build';
+import {
+  PREVIEW_AGENT,
+  PREVIEW_SECTIONS_AGENT,
+  parseBuildInputs,
+  sha256,
+  type ShopTheme,
+} from '@merfy/storefront-build';
 import type { CurrentSection, SectionRenderRequest } from '@merfy/storefront-sections';
 import { parseTheme, platformDictionary } from '@merfy/tokens';
 import { z } from 'zod';
@@ -14,7 +20,11 @@ import type { ShopPageLocals } from '@merfy/storefront-build';
 const SHOP = '00000000-0000-4000-8000-000000000001';
 const MODULE = 'export default 1; // первый экран';
 const HASH = sha256(MODULE);
-const HEADING = { id: 'heading', label: 'Заголовок', setting: { kind: 'string' as const, default: 'Тёплые шарфы из кашемира' } };
+const HEADING = {
+  id: 'heading',
+  label: 'Заголовок',
+  setting: { kind: 'string' as const, default: 'Тёплые шарфы из кашемира' },
+};
 const HERO: CurrentSection = {
   name: 'shop:hero',
   manifest: { sdk: 1, name: 'hero', kind: 'section', title: 'Первый экран', settings: [HEADING] },
@@ -56,7 +66,12 @@ const THEME: ShopTheme = {
   },
 };
 
-function depsOf(sections: ReadonlyMap<string, CurrentSection> | null = new Map([[HERO.name, HERO], [ANALYTICS.name, ANALYTICS]])) {
+function depsOf(
+  sections: ReadonlyMap<string, CurrentSection> | null = new Map([
+    [HERO.name, HERO],
+    [ANALYTICS.name, ANALYTICS],
+  ]),
+) {
   const rendered: [string, SectionRenderRequest][] = [];
   const deps: ShopPreviewDeps = {
     shop: () => Promise.resolve({ shopId: SHOP, dictionary: platformDictionary, inline: (html) => html }),
@@ -145,6 +160,80 @@ describe('список секций магазина', () => {
     const answer = await shopSections(depsOf().deps, SHOP);
     expect(JSON.parse(answer.body)).toEqual({
       sections: [{ name: 'shop:hero', title: 'Первый экран', settings: [HEADING] }],
+    });
+  });
+});
+
+describe('блоки секции (часть 3)', () => {
+  const FAQ: CurrentSection = {
+    name: 'shop:faq',
+    manifest: {
+      sdk: 1,
+      name: 'faq',
+      kind: 'section',
+      title: 'Вопросы и ответы',
+      settings: [HEADING],
+      blocks: {
+        question: {
+          title: 'Вопрос',
+          limit: 20,
+          settings: [{ id: 'answer', label: 'Ответ', setting: { kind: 'richtext', default: '<p>Ответ</p>' } }],
+        },
+      },
+      defaultBlocks: [
+        { type: 'question', settings: {} },
+        { type: 'question', settings: { answer: '<p>Два дня</p>' } },
+      ],
+    },
+    render: MODULE,
+    renderHash: HASH,
+  };
+
+  it('превью одного блока: показанные блоки из запроса, richtext очищен; без ключа blocks — умолчания; режим — превью', async () => {
+    const { deps, rendered } = depsOf(new Map([[FAQ.name, FAQ]]));
+    const blocks = [
+      { id: 'question-a', type: 'question', settings: { answer: '<p onclick="x()">Да</p>' } },
+      { id: 'question-b', type: 'question', settings: {}, hidden: true },
+    ];
+    expect(
+      (await sectionPreview(deps, SHOP, block({ id: 'faq-1', section: 'shop:faq', settings: {}, blocks }))).status,
+    ).toBe(200);
+    expect((await sectionPreview(deps, SHOP, block({ id: 'faq-1', section: 'shop:faq', settings: {} }))).status).toBe(
+      200,
+    );
+    expect(rendered.map(([, request]) => [request.blocks, request.preview])).toEqual([
+      [[{ id: 'question-a', type: 'question', settings: { answer: '<p>Да</p>' } }], true],
+      [
+        [
+          { id: 'question-1', type: 'question', settings: { answer: '<p>Ответ</p>' } },
+          { id: 'question-2', type: 'question', settings: { answer: '<p>Два дня</p>' } },
+        ],
+        true,
+      ],
+    ]);
+  });
+
+  it('список секций: у секции с blocks — blocks и defaultBlocks, у остальных ключей нет', async () => {
+    const answer = await shopSections(
+      depsOf(
+        new Map([
+          [HERO.name, HERO],
+          [FAQ.name, FAQ],
+        ]),
+      ).deps,
+      SHOP,
+    );
+    expect(JSON.parse(answer.body)).toEqual({
+      sections: [
+        { name: 'shop:hero', title: 'Первый экран', settings: [HEADING] },
+        {
+          name: 'shop:faq',
+          title: 'Вопросы и ответы',
+          settings: [HEADING],
+          blocks: FAQ.manifest.blocks,
+          defaultBlocks: FAQ.manifest.defaultBlocks,
+        },
+      ],
     });
   });
 });

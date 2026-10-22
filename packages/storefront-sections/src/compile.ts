@@ -2,8 +2,10 @@ import { init, parse as lexImports } from 'es-module-lexer';
 import { z } from 'zod';
 import { ASTRO_RUNTIME } from './astro-runtime';
 import { MAX_TEMPLATE_DEPTH, templateDepth } from './depth';
-import { TEMPLATE_FILE } from './format';
-import { problem, type SectionProblem } from './problems';
+import { TEMPLATE_FILE, type SectionManifest } from './format';
+import { blockSelectProblems, markBlocks } from './marks';
+import { isWarning, problem, type SectionProblem } from './problems';
+import { NO_RICHTEXT, richtextIdsOf, type RichtextIds } from './set-html';
 import { templateProblems } from './template';
 
 // Компиляция шаблона секции (блок 1 «Секций и SDK»): template.astro → модуль JS, который рисует HTML через рантайм Astro.
@@ -38,7 +40,9 @@ function diagnosticProblem(diagnostic: Diagnostic): SectionProblem {
 
 export async function compileTemplate(text: string): Promise<Compiled> {
   const { transform } = await import('@astrojs/compiler-rs');
-  const result = await Promise.resolve(transform(text, { filename: TEMPLATE_FILE, resolvePath: (specifier: string) => specifier }));
+  const result = await Promise.resolve(
+    transform(text, { filename: TEMPLATE_FILE, resolvePath: (specifier: string) => specifier }),
+  );
   const errors = z.array(diagnosticSchema).parse(result.diagnostics).filter(isError);
   if (errors.length > 0) return { ok: false, problems: errors.map(diagnosticProblem) };
   return { ok: true, code: result.code };
@@ -58,16 +62,44 @@ export async function moduleImportProblems(code: string): Promise<SectionProblem
     );
 }
 
+// Что проверке шаблона нужно от section.json (часть 3): id настроек richtext (set:html, Р58) и есть ли у секции блоки
+// (метки, Р57).
+export interface TemplateOptions {
+  richtext: RichtextIds;
+  blocks: boolean;
+}
+
+export const NO_TEMPLATE_OPTIONS: TemplateOptions = { richtext: NO_RICHTEXT, blocks: false };
+
+export const templateOptionsOf = (manifest: SectionManifest): TemplateOptions => ({
+  richtext: richtextIdsOf(manifest),
+  blocks: manifest.blocks !== undefined,
+});
+
 // Глубже предела — сразу отказ, до разбора: компилятор такой шаблон не переварит (depth.ts). Дальше запреты и
-// компиляция — разом: все проблемы шаблона автор получает за один заход.
-export async function checkTemplate(text: string): Promise<TemplateCheck> {
+// компиляция — разом: все проблемы шаблона автор получает за один заход. Модуль рендера — из шаблона с метками блоков.
+export async function checkTemplate(
+  text: string,
+  options: TemplateOptions = NO_TEMPLATE_OPTIONS,
+): Promise<TemplateCheck> {
   const depth = templateDepth(text);
   if (depth > MAX_TEMPLATE_DEPTH) {
     const message = `шаблон вложен на ${depth} уровней (теги и скобки), предел — ${MAX_TEMPLATE_DEPTH}`;
     return { problems: [problem('template-too-deep', TEMPLATE_FILE, message)], render: null };
   }
-  const [forbidden, compiled] = await Promise.all([templateProblems(text), compileTemplate(text)]);
+  const [forbidden, compiled, marked] = await Promise.all([
+    templateProblems(text, options.richtext),
+    compileTemplate(text),
+    markBlocks(text),
+  ]);
   if (!compiled.ok) return { problems: [...forbidden, ...compiled.problems], render: null };
-  const problems = [...forbidden, ...(await moduleImportProblems(compiled.code))];
-  return { problems, render: problems.length === 0 ? compiled.code : null };
+  // Модуль рендера — из шаблона с метками блоков (Р57); запреты и места ошибок — по исходному тексту.
+  const module = marked.marks > 0 ? await compileTemplate(marked.text) : compiled;
+  if (!module.ok) return { problems: [...forbidden, ...module.problems], render: null };
+  const problems = [
+    ...forbidden,
+    ...blockSelectProblems(text, marked, options.blocks),
+    ...(await moduleImportProblems(module.code)),
+  ];
+  return { problems, render: problems.some((item) => !isWarning(item)) ? null : module.code };
 }

@@ -54,10 +54,21 @@ export const RENDERS: ReadonlyMap<string, string> = new Map(
   Object.values(RENDER_MODULES).map((module): [string, string] => [sha256(bytes(module)), module]),
 );
 
-function section(name: string, kind: CodeSection['kind'], render: string | null, script: Uint8Array | null): CodeSection {
+function section(
+  name: string,
+  kind: CodeSection['kind'],
+  render: string | null,
+  script: Uint8Array | null,
+): CodeSection {
   const renderHash = render === null ? null : sha256(bytes(render));
   const scriptHash = script === null ? null : sha256(script);
-  return { name, kind, hash: hashOf({ name, render: renderHash, script: scriptHash }), render: renderHash, script: scriptHash };
+  return {
+    name,
+    kind,
+    hash: hashOf({ name, render: renderHash, script: scriptHash }),
+    render: renderHash,
+    script: scriptHash,
+  };
 }
 
 export const GEO = section('geo:locate', 'global', null, SCRIPTS.geo);

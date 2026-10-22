@@ -3,6 +3,7 @@ import { SERVICE_PREFIX, expressionProblems, type Found } from './expressions';
 import { TEMPLATE_FILE } from './format';
 import { positionAt } from './position';
 import { problem, type SectionProblem } from './problems';
+import { NO_RICHTEXT, setHtmlFound, type RichtextIds } from './set-html';
 
 // Шаблон секции SDK 1 — template.astro (блок 1 «Секций и SDK», Р3, Р4; design.md блока 7, п. 17). Проверка — по дереву
 // разбора @astrojs/compiler-rs, а не по тексту: тег, атрибут и выражение видны там, где их видит Astro. Скрипт — только
@@ -36,7 +37,6 @@ const TEXT = {
   tag: (name: string) => `тег <${name}> в шаблоне секции запрещён: скрипт — script.ts, документ — у сборки`,
   component: (name: string) => `компонент <${name}>: в шаблоне секции компонентов нет, кроме <Fragment>`,
   handler: (name: string) => `обработчик ${name}: события — только в script.ts`,
-  setHtml: 'set:html можно только с настройкой вида richtext',
   directive: (name: string) => `директива ${name} в шаблоне секции запрещена`,
   spread: '{...} в атрибутах запрещён: перечисли атрибуты по одному',
   scriptUrl: 'адрес javascript: в шаблоне секции запрещён: действия — в script.ts',
@@ -68,7 +68,8 @@ function tagTexts(name: string): string[] {
 }
 
 function attributeTexts(name: string): string[] {
-  if (name === 'set:html') return [TEXT.setHtml];
+  // set:html проверяет set-html.ts: можно только с настройкой вида richtext (часть 3, Р58).
+  if (name === 'set:html') return [];
   if (DIRECTIVE.test(name)) return [TEXT.directive(name)];
   return HANDLER.test(name) ? [TEXT.handler(name)] : [];
 }
@@ -100,10 +101,14 @@ const NODE_RULES: Partial<Record<string, NodeRule>> = {
 const rulesOf = (node: AstNode, text: string): Found[] =>
   node.type.includes('Frontmatter') ? frontmatterFound(node, text) : (NODE_RULES[node.type]?.(node, text) ?? []);
 
-export async function templateProblems(text: string): Promise<SectionProblem[]> {
+export async function templateProblems(text: string, richtext: RichtextIds = NO_RICHTEXT): Promise<SectionProblem[]> {
   const { parse } = await import('@astrojs/compiler-rs');
   const { ast } = await Promise.resolve(parse(text));
-  return [...nodesOf(ast).flatMap((node) => rulesOf(node, text)), ...expressionProblems(ast)]
+  return [
+    ...nodesOf(ast).flatMap((node) => rulesOf(node, text)),
+    ...expressionProblems(ast),
+    ...setHtmlFound(ast, richtext),
+  ]
     .sort((left, right) => left.at - right.at)
     .map((found) => problem('template-forbidden', TEMPLATE_FILE, found.message, positionAt(text, found.at)));
 }

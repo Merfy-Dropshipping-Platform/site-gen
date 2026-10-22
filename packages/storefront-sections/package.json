@@ -9,9 +9,10 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:stack": "vitest run --coverage --config vitest.stack.config.ts",
+    "build:workers": "tsx scripts/build-workers.ts",
+    "test": "tsx scripts/build-workers.ts && vitest run",
+    "test:coverage": "tsx scripts/build-workers.ts && vitest run --coverage",
+    "test:stack": "tsx scripts/build-workers.ts && vitest run --coverage --config vitest.stack.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write --no-error-on-unmatched-pattern src __tests__ scripts",

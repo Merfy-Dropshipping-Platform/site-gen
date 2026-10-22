@@ -32,3 +32,5 @@ export {
   type SectionRenderRequest,
   type SectionRenderer,
 } from './render';
+// Песочница процессов с чужим кодом (блок 2 «Секций и SDK»): бинарник Node и пользователь ОС, отчёт при старте.
+export { defaultLaunch, readLaunch, type IsolatedLaunch } from './isolation';

@@ -1,5 +1,6 @@
 import amqplib from 'amqplib';
 import { z } from 'zod';
+import { BILLING_QUEUE } from '../../src/billing';
 import { PRODUCT_QUEUE } from '../../src/snapshot';
 import { startFakeAnalytics, type FakeAnalytics } from './fake-analytics';
 import { STACK } from './stack';
@@ -48,6 +49,18 @@ export async function startFakeProducts(): Promise<FakeProducts> {
     const reply = replyFor(fake, request.data.siteId);
     if (reply === null) return;
     const body = Buffer.from(JSON.stringify({ ...reply, isDisposed: true, id: request.id }));
+    const correlationId = String(message.properties.correlationId);
+    channel.sendToQueue(String(message.properties.replyTo), body, { correlationId });
+  });
+  // Подставной billing (часть 4 блока 1 «Секций и SDK»): get_public — оплата онлайн не подключена, как у нового магазина.
+  await channel.assertQueue(BILLING_QUEUE, { durable: true });
+  await channel.purgeQueue(BILLING_QUEUE);
+  await channel.consume(BILLING_QUEUE, (message) => {
+    if (message === null) return;
+    channel.ack(message);
+    const { id } = z.object({ id: z.string() }).parse(JSON.parse(message.content.toString('utf8')));
+    const response = { success: true, yookassaEnabled: false, yookassaShopId: null, activeProvider: null };
+    const body = Buffer.from(JSON.stringify({ err: null, response, isDisposed: true, id }));
     const correlationId = String(message.properties.correlationId);
     channel.sendToQueue(String(message.properties.replyTo), body, { correlationId });
   });

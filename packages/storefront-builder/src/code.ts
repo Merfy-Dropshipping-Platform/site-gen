@@ -10,9 +10,14 @@ import {
   currentSection,
   resolveSectionBlocks,
   resolveSectionSettings,
+  revisionMenusSchema,
+  sectionGroupsOf,
+  sectionMenus,
   visibleSections,
   type CurrentSection,
   type Queryable,
+  type RevisionMenu,
+  type SectionGroup,
   type SectionRow,
 } from '@merfy/storefront-sections';
 import { z } from 'zod';
@@ -29,9 +34,11 @@ export const EXTENSIONS_QUEUE = 'extensions_queue';
 const ENABLED_FOR_SHOP = 'extensions.enabledForShop';
 // Места секций — ключ sections ревизии (В1-1 А): { "<id страницы>": [{ id, section, settings }, …] }; settings — только
 // изменённое мерчантом. Ключа нет или он не объект — мест нет.
+// Меню (часть 4, Р1-4-3) — ключ menus той же ревизии: список меню; не список — меню нет.
 const PLACEMENT_SQL = `SELECT CASE WHEN jsonb_typeof(r.data->'sections') = 'object' THEN r.data->'sections'
-  ELSE '{}'::jsonb END AS sections FROM site s LEFT JOIN site_revision r ON r.id = s.current_revision_id
-  WHERE s.id = $1`;
+  ELSE '{}'::jsonb END AS sections,
+  CASE WHEN jsonb_typeof(r.data->'menus') = 'array' THEN r.data->'menus' ELSE '[]'::jsonb END AS menus
+  FROM site s LEFT JOIN site_revision r ON r.id = s.current_revision_id WHERE s.id = $1`;
 
 export interface ShopCode {
   shell: BuildInputs['shell'];
@@ -68,7 +75,7 @@ const extensionsAnswer = z.object({
   success: z.boolean(),
   data: z.array(z.object({ id: z.string().min(1), version: z.string().min(1) })).optional(),
 });
-const placementRow = z.object({ sections: z.unknown() });
+const placementRow = z.object({ sections: z.unknown(), menus: z.unknown().optional() });
 // Экземпляр секции в ревизии: id — kebab до 40 знаков, один раз на странице; settings — правки мерчанта; hidden —
 // скрыта (п. 22); name — имя мерчанта в конструкторе (п. 24), в код магазина не идёт (Р17).
 // Блок экземпляра (часть 3, Р54): id — kebab до 40 знаков, один раз в экземпляре (повтор отклоняет sites); type — тип из
@@ -113,14 +120,26 @@ export async function enabledExtensions(
   }
 }
 
-// Места секций магазина. null — ключ sections не той формы: его пишет конструктор, причина — в журнале.
-async function readPlacement(deps: CodeDeps, shopId: string): Promise<Placement | null> {
+interface ShopPlacement {
+  placement: Placement;
+  menus: RevisionMenu[];
+}
+
+const issuesText = (error: z.ZodError): string => error.issues.map((issue) => issue.message).join('; ');
+
+// Места секций и меню магазина. null — ключ sections не той формы: его пишет конструктор, причина — в журнале. Меню не
+// той формы — меню нет, строка журнала menus-invalid; сборка идёт (Р1-4-3).
+async function readPlacement(deps: CodeDeps, shopId: string): Promise<ShopPlacement | null> {
   const { rows } = await deps.db.query(PLACEMENT_SQL, [shopId]);
-  const value = rows.map((row) => placementRow.parse(row).sections).at(0) ?? {};
-  const parsed = placementSchema.safeParse(value);
-  if (parsed.success) return parsed.data;
-  deps.log('sections-invalid', { shopId, error: parsed.error.issues.map((issue) => issue.message).join('; ') });
-  return null;
+  const row = rows.map((item) => placementRow.parse(item)).at(0);
+  const parsed = placementSchema.safeParse(row?.sections ?? {});
+  if (!parsed.success) {
+    deps.log('sections-invalid', { shopId, error: issuesText(parsed.error) });
+    return null;
+  }
+  const menus = revisionMenusSchema.safeParse(row?.menus ?? []);
+  if (!menus.success) deps.log('menus-invalid', { shopId, error: issuesText(menus.error) });
+  return { placement: parsed.data, menus: menus.success ? menus.data : [] };
 }
 
 // Видимая строка реестра и она же в формате SDK 1 (currentSection).
@@ -138,6 +157,9 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   hash: row.contentHash,
   render: current.renderHash,
   script: row.scriptHash,
+  // Часть 4: флаги section.json — только если объявлены, иначе входы и ключ прежние.
+  ...(current.manifest.removable === undefined ? {} : { removable: current.manifest.removable }),
+  ...(current.manifest.uses === undefined ? {} : { uses: current.manifest.uses }),
 });
 
 // Файл скрипта — текст готового модуля из строки реестра: те же байты хранятся в storefront/blobs (приём, задача 10).
@@ -161,7 +183,12 @@ function currentRows(rows: readonly SectionRow[], context: CodeContext): Map<str
 
 // Экземпляр на странице: значения настроек — правки мерчанта поверх умолчаний секции. Неверная правка — умолчание и
 // строка журнала section-settings-invalid; сборка идёт.
-function placedOf(instance: SectionInstance, current: CurrentSection, context: CodeContext): CodeInstance {
+function placedOf(
+  instance: SectionInstance,
+  current: CurrentSection,
+  context: CodeContext,
+  menus: readonly RevisionMenu[],
+): CodeInstance {
   const resolved = resolveSectionSettings(current.manifest.settings, instance.settings);
   if (resolved.invalid.length > 0)
     context.log('section-settings-invalid', {
@@ -175,6 +202,7 @@ function placedOf(instance: SectionInstance, current: CurrentSection, context: C
     section: instance.section,
     settings: resolved.values,
     ...blocksOf(instance, current, context),
+    ...menusOf(current, resolved.values, menus),
   };
   return instance.hidden === true ? { ...placed, hidden: true } : placed;
 }
@@ -204,15 +232,15 @@ export function codeOf(
   rows: readonly SectionRow[],
   placement: Placement,
   context: CodeContext,
+  menus: readonly RevisionMenu[] = [],
 ): Omit<ShopCode, 'extensions'> {
   const visible = currentRows(rows, context);
-  const placedOn = (instances: readonly SectionInstance[]): CodeInstance[] =>
-    instances.flatMap((instance) => {
-      const entry = visible.get(instance.section);
-      return entry !== undefined && entry[0].kind === 'section' ? [placedOf(instance, entry[1], context)] : [];
-    });
+  const placedOn = (list: string, instances: readonly SectionInstance[]): CodeInstance[] =>
+    allowedOn(list, instances, visible, context).map(([instance, current]) =>
+      placedOf(instance, current, context, menus),
+    );
   const pages = Object.fromEntries(
-    Object.entries(placement).map(([page, instances]): [string, CodeInstance[]] => [page, placedOn(instances)]),
+    Object.entries(placement).map(([page, instances]): [string, CodeInstance[]] => [page, placedOn(page, instances)]),
   );
   const placed = new Set(Object.values(pages).flatMap((instances) => instances.map((instance) => instance.section)));
   const used = [...visible.values()].filter(([row]) => row.kind === 'global' || placed.has(row.name));
@@ -227,11 +255,12 @@ export function codeOf(
 
 // Код магазина целиком. null — не получен: расширения не ответили или места не той формы.
 export async function readShopCode(deps: CodeDeps, shopId: string): Promise<ShopCode | null> {
-  const [extensions, placement] = await Promise.all([enabledExtensions(deps, shopId), readPlacement(deps, shopId)]);
-  if (extensions === null || placement === null) return null;
+  const [extensions, read] = await Promise.all([enabledExtensions(deps, shopId), readPlacement(deps, shopId)]);
+  if (extensions === null || read === null) return null;
   const visibility = { shopId, extensions };
   const rows = await visibleSections(deps.db, visibility);
-  return { ...codeOf(rows, placement, { shell: deps.shell, log: deps.log, shopId }), extensions };
+  const context = { shell: deps.shell, log: deps.log, shopId };
+  return { ...codeOf(rows, read.placement, context, read.menus), extensions };
 }
 
 // Секции SDK 1, видимые магазину, по имени — для превью одного блока и списка секций конструктора (блок 1 «Секций и
@@ -246,4 +275,46 @@ export async function readVisibleSections(deps: CodeDeps, shopId: string): Promi
       return current === null ? [] : [[row.name, current]];
     }),
   );
+}
+
+// Группа списка ревизии (часть 4, Р1-4-2): header — шапка, footer — подвал, остальные списки — страницы.
+const groupOf = (list: string): SectionGroup => (list === 'header' || list === 'footer' ? list : 'page');
+
+// Экземпляры списка, которые встают на страницу: видимая секция (не глобальный скрипт), её группы включают группу
+// списка, экземпляров секции в списке не больше limit — по порядку, скрытые считаются. Остальные — строка журнала
+// section-group-invalid или section-limit-exceeded; сборка идёт.
+function allowedOn(
+  list: string,
+  instances: readonly SectionInstance[],
+  visible: ReadonlyMap<string, VisibleRow>,
+  context: CodeContext,
+): [SectionInstance, CurrentSection][] {
+  const counts = new Map<string, number>();
+  return instances.flatMap((instance): [SectionInstance, CurrentSection][] => {
+    const entry = visible.get(instance.section);
+    if (entry === undefined || entry[0].kind !== 'section') return [];
+    const [, current] = entry;
+    const fields = { shopId: context.shopId, section: instance.section, id: instance.id, list };
+    if (!sectionGroupsOf(current.manifest).includes(groupOf(list))) {
+      context.log('section-group-invalid', fields);
+      return [];
+    }
+    const count = (counts.get(instance.section) ?? 0) + 1;
+    counts.set(instance.section, count);
+    if (count > (current.manifest.limit ?? Number.POSITIVE_INFINITY)) {
+      context.log('section-limit-exceeded', fields);
+      return [];
+    }
+    return [[instance, current]];
+  });
+}
+
+// Деревья меню экземпляра (часть 4, Р1-4-3): только у секций с настройками вида menu.
+function menusOf(
+  current: CurrentSection,
+  values: Readonly<Record<string, string | boolean>>,
+  menus: readonly RevisionMenu[],
+): Pick<CodeInstance, 'menus'> {
+  const trees = sectionMenus(current.manifest.settings, values, menus);
+  return Object.keys(trees).length === 0 ? {} : { menus: trees };
 }

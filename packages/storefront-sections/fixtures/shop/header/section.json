@@ -1,0 +1,52 @@
+{
+  "sdk": 1,
+  "name": "header",
+  "kind": "section",
+  "title": "Шапка",
+  "groups": ["header"],
+  "limit": 1,
+  "removable": false,
+  "uses": ["theme", "shop"],
+  "settings": [
+    {
+      "id": "logo-position",
+      "label": "Положение логотипа",
+      "setting": {
+        "kind": "select",
+        "default": "top-left",
+        "options": [
+          { "value": "top-left", "label": "Сверху слева" },
+          { "value": "top-center", "label": "Сверху в центре" },
+          { "value": "center-left", "label": "Слева" },
+          { "value": "center-absolute", "label": "По центру" }
+        ]
+      }
+    },
+    {
+      "id": "menu-type",
+      "label": "Тип меню",
+      "setting": {
+        "kind": "select",
+        "default": "dropdown",
+        "options": [
+          { "value": "sidebar", "label": "Боковое" },
+          { "value": "dropdown", "label": "Выпадающее" },
+          { "value": "mega-menu", "label": "Расширенное" }
+        ]
+      }
+    },
+    { "id": "menu", "label": "Изменить пункты меню", "setting": { "kind": "menu", "default": "main" } }
+  ],
+  "blocks": {
+    "search": { "title": "Поиск", "limit": 1, "settings": [] },
+    "wishlist": { "title": "Избранное", "limit": 1, "settings": [] },
+    "cart": { "title": "Корзина", "limit": 1, "settings": [] },
+    "profile": { "title": "Профиль", "limit": 1, "settings": [] }
+  },
+  "defaultBlocks": [
+    { "type": "search", "settings": {} },
+    { "type": "wishlist", "settings": {} },
+    { "type": "cart", "settings": {} },
+    { "type": "profile", "settings": {} }
+  ]
+}

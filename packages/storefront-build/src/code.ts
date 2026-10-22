@@ -3,6 +3,7 @@ import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs, CodeSection, ShellInput } from './inputs';
+import { pageListsOf } from './routes';
 import type { PageMode, PlacedSection } from './sections-render';
 
 // Код секций в странице и в сборке магазина (design.md блока 7, п. 12, 16, 19; С7-7 Г, С7-10 Б). Разметка секции — в
@@ -54,7 +55,10 @@ const shellSrc = (shell: ShellInput, file: string): string => `/${shellDir(shell
 // Секции страницы: места мерчанта по порядку, потом глобальные скрипты; имя — один раз, хоть секция и стоит дважды.
 function pageCode(inputs: BuildInputs, pageId: string): CodeSection[] {
   const byName = new Map(inputs.code.sections.map((section): [string, CodeSection] => [section.name, section]));
-  const placed = (inputs.code.pages[pageId] ?? []).map((instance) => instance.section);
+  // Шапка, страница и подвал (часть 4): код секций всех трёх списков.
+  const placed = pageListsOf(pageId).flatMap((list) =>
+    (inputs.code.pages[list] ?? []).map((instance) => instance.section),
+  );
   const names = new Set([...placed, ...inputs.code.globals]);
   return [...names].flatMap((name) => byName.get(name) ?? []);
 }
@@ -118,6 +122,8 @@ export function placedSections(inputs: BuildInputs, pageId: string): PlacedSecti
     hash: renders.get(instance.section) ?? '',
     settings: instance.settings,
     ...(instance.blocks === undefined ? {} : { blocks: instance.blocks }),
+    ...(instance.menus === undefined ? {} : { menus: instance.menus }),
+    ...placeFlags(inputs, instance.section),
   }));
 }
 
@@ -144,4 +150,13 @@ function moduleFile(hash: string, modules: ReadonlyMap<string, Uint8Array>): Bui
 export function codeFiles(inputs: BuildInputs, assets: CodeAssets): BuildFile[] {
   const scripts = new Set(inputs.code.sections.flatMap((section) => section.script ?? []));
   return [...shellFiles(inputs.shell, assets.shell), ...[...scripts].map((hash) => moduleFile(hash, assets.modules))];
+}
+
+// removable и uses секции (часть 4) — из кода магазина по имени: у секции без них ключей нет.
+function placeFlags(inputs: BuildInputs, name: string): Pick<PlacedSection, 'removable' | 'uses'> {
+  const section = inputs.code.sections.find((candidate) => candidate.name === name);
+  return {
+    ...(section?.removable === undefined ? {} : { removable: section.removable }),
+    ...(section?.uses === undefined ? {} : { uses: section.uses }),
+  };
 }

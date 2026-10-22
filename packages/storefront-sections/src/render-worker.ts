@@ -17,6 +17,28 @@ const PAUSE = new Int32Array(new SharedArrayBuffer(4));
 // Значения настроек: секции и каждого блока. blocks и preview — часть 3; в запросе старой формы их нет: блоков нет,
 // режим — витрина.
 const valuesSchema = z.record(z.string(), z.union([z.string(), z.boolean()]));
+// Часть 4 (Р1-4-3, Р1-4-4, Р1-4-6): деревья меню по id настройки, настройки темы, данные магазина. Схемы — здесь же:
+// процесс рендера собран в один файл и пакеты сборки во время работы не загружает. Нет ключа — пусто.
+const menuLeafSchema = z.strictObject({ label: z.string(), url: z.string(), items: z.tuple([]) });
+const menuMiddleSchema = z.strictObject({ label: z.string(), url: z.string(), items: z.array(menuLeafSchema) });
+const menuItemSchema = z.strictObject({ label: z.string(), url: z.string(), items: z.array(menuMiddleSchema) });
+const menuTreeSchema = z.strictObject({ title: z.string(), items: z.array(menuItemSchema) });
+const shopSchema = z.strictObject({
+  name: z.string(),
+  contacts: z.strictObject({
+    phone: z.string(),
+    email: z.string(),
+    fields: z.array(z.strictObject({ label: z.string(), value: z.string() })),
+  }),
+  policies: z.array(z.strictObject({ type: z.string(), title: z.string(), url: z.string() })),
+  payments: z.strictObject({ online: z.boolean() }),
+});
+const EMPTY_SHOP = {
+  name: '',
+  contacts: { phone: '', email: '', fields: [] },
+  policies: [],
+  payments: { online: false },
+};
 const requestSchema = z.strictObject({
   id: z.number().int().positive(),
   hash: z.string().min(1),
@@ -24,6 +46,9 @@ const requestSchema = z.strictObject({
   settings: valuesSchema,
   blocks: z.array(z.strictObject({ id: z.string(), type: z.string(), settings: valuesSchema })).default([]),
   preview: z.boolean().default(false),
+  menus: z.record(z.string(), menuTreeSchema).default({}),
+  theme: valuesSchema.default({}),
+  shop: shopSchema.default(EMPTY_SHOP),
 });
 
 const templates = new Map<string, Promise<TemplateComponent>>();
@@ -67,12 +92,13 @@ function requestOf(line: string) {
 async function answerTo(line: string): Promise<{ id: number; answer: object }> {
   const parsed = requestOf(line);
   if (parsed === null || !parsed.success) return { id: 0, answer: { error: 'запрос не по форме', denied: false } };
-  const { id, hash, module, settings, blocks, preview } = parsed.data;
+  const { id, hash, module, settings, blocks, preview, menus, theme, shop } = parsed.data;
   try {
     if (module !== undefined && !templates.has(hash)) templates.set(hash, loadTemplate(module));
     const template = templates.get(hash);
     if (template === undefined) return { id, answer: { error: `модуля ${hash} в процессе нет`, denied: false } };
-    return { id, answer: { html: await renderTemplate(await template, { settings, blocks, preview }) } };
+    const props = { settings, blocks, preview, menus, theme, shop };
+    return { id, answer: { html: await renderTemplate(await template, props) } };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { id, answer: { error: message, denied: denied(error) } };

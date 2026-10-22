@@ -42,6 +42,10 @@ export interface ShopPageLocals {
   year: number;
   // Разметка секций страницы (блок 7) в порядке мерчанта: <merfy-section data-section="…">; тема печатает её в <main>.
   sections: string[];
+  // Шапка и подвал (блок 1 «Секций и SDK», часть 4): разметка секций списков header и footer; тема печатает шапку до
+  // <main>, подвал — после.
+  header: string[];
+  footer: string[];
 }
 
 // Стенд темы в превью конструктора (design.md блока 8, П8-1 А): та же серверная сборка темы рисует /theme-stand с

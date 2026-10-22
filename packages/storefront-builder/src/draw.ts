@@ -1,6 +1,12 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { StorefrontBuildError, parseBuildInputs, renderShopPage, type RenderSection } from '@merfy/storefront-build';
+import {
+  StorefrontBuildError,
+  parseBuildInputs,
+  renderShopPage,
+  type PageRender,
+  type RenderSection,
+} from '@merfy/storefront-build';
 import { withSectionRenderer } from '@merfy/storefront-sections';
 import { hexOf, recordDrawnPage, type ObjectStore } from '@merfy/storefront-storage';
 import { z } from 'zod';
@@ -73,6 +79,26 @@ async function sameVersion(deps: DrawDeps, query: DrawQuery): Promise<boolean> {
   return (await deps.catalog.stateOf(label.id, label.version)) !== null;
 }
 
+// Рендер страницы опубликованного сайта по запросу: упавшую секцию пропускаем, как в сборке (блок 2 «Секций и SDK»),
+// и пишем строку журнала; строку таблицы ошибок пишет сборка — данные у них одни.
+function livePage(
+  deps: DrawDeps,
+  query: DrawQuery,
+  modules: ReadonlyMap<string, string>,
+  render: RenderSection,
+): PageRender {
+  const failed: PageRender['failed'] = (failure) =>
+    deps.log('section-render-failed', {
+      shopId: query.shop,
+      path: query.path,
+      section: failure.section,
+      sectionId: failure.id,
+      stage: failure.stage,
+      error: failure.message,
+    });
+  return { sections: { modules, render }, mode: 'live', failed };
+}
+
 async function draw(deps: DrawDeps, query: DrawQuery): Promise<DrawAnswer> {
   if (!(await sameVersion(deps, query))) return { status: 409, body: TEXT.version };
   const label = labelOf(query.theme);
@@ -81,8 +107,9 @@ async function draw(deps: DrawDeps, query: DrawQuery): Promise<DrawAnswer> {
   if (snapshot.inputs.theme.version !== label.version) return { status: 409, body: TEXT.version };
   const theme = await deps.catalog.themeAt(label.id, label.version);
   const inputs = parseBuildInputs(snapshot.inputs);
-  const live = (render: RenderSection) => ({ sections: { modules: snapshot.assets.renders, render }, mode: 'live' as const });
-  const page = await withSectionRenderer((render) => renderShopPage(inputs, query.path, theme.build, live(render)));
+  const page = await withSectionRenderer((render) =>
+    renderShopPage(inputs, query.path, theme.build, livePage(deps, query, snapshot.assets.renders, render)),
+  );
   const drawn = { shop: query.shop, build: query.build, row: page.row, content: page.file.content };
   await recordDrawnPage(deps.store, drawn);
   return { status: 200, body: new TextDecoder().decode(page.file.content), hash: hexOf(page.row.hash) };

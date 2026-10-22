@@ -7,19 +7,19 @@
  * Падает на коде без режима «как тема» (задача 2): стили берутся из
  * runtime/extension-purchase.styles.ts, стенд включает токены theme.json.
  */
-import { execFileSync } from "node:child_process";
-import { resolve } from "node:path";
-import { chromium, type Browser } from "playwright";
+import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import { chromium, type Browser } from 'playwright';
 
-const ROOT = resolve(__dirname, "..", "..", "..");
-const STAND = `file://${resolve(ROOT, "packages/theme-base/stand/extension-purchase/dist/index.html")}`;
+const ROOT = resolve(__dirname, '..', '..', '..');
+const STAND = `file://${resolve(ROOT, 'packages/theme-base/stand/extension-purchase/dist/index.html')}`;
 
 beforeAll(() => {
   // Стенд собирается из тех же исходников, что уходят на витрину.
   execFileSync(
-    "pnpm",
-    ["--dir", resolve(ROOT, "packages/theme-base"), "build:purchase-stand"],
-    { stdio: "ignore" },
+    'pnpm',
+    ['--dir', resolve(ROOT, 'packages/theme-base'), 'build:purchase-stand'],
+    { stdio: 'ignore' },
   );
 }, 60_000);
 
@@ -27,7 +27,7 @@ let shared: Promise<Browser> | null = null;
 function browser(): Promise<Browser> {
   shared ??= chromium
     .launch()
-    .catch(() => chromium.launch({ channel: "chrome" }));
+    .catch(() => chromium.launch({ channel: 'chrome' }));
   return shared;
 }
 afterAll(async () => {
@@ -52,11 +52,11 @@ async function lookOf(query: string): Promise<Look> {
   await page.goto(`${STAND}${query}`);
   await page.waitForTimeout(500);
   const look = await page.evaluate(() => {
-    const form = document.querySelector(".xp");
-    const field = form?.querySelector<HTMLElement>(".sf-in");
-    const button = form?.querySelector<HTMLElement>(".sf-btn");
+    const form = document.querySelector('.xp');
+    const field = form?.querySelector<HTMLElement>('.sf-in');
+    const button = form?.querySelector<HTMLElement>('.sf-btn');
     if (field === null || button === null || form === null)
-      throw new Error("форма не нарисована");
+      throw new Error('форма не нарисована');
     const cs = (el: Element) => getComputedStyle(el);
     return {
       fieldRadius: cs(field).borderRadius,
@@ -70,21 +70,21 @@ async function lookOf(query: string): Promise<Look> {
   return look;
 }
 
-describe("стенд формы покупки: ?look=vanilla — вычисленные стили из токенов vanilla", () => {
-  it("скругления поля и кнопки 0px, шрифт Arsenal, кнопка из схемы 1", async () => {
-    const look = await lookOf("?state=filled&look=vanilla");
-    expect(look.fieldRadius).toBe("0px");
-    expect(look.buttonRadius).toBe("0px");
-    expect(look.font).toContain("Arsenal");
-    expect(look.buttonBg).toBe("rgb(58, 69, 48)");
-    expect(look.buttonColor).toBe("rgb(255, 255, 255)");
+describe('стенд формы покупки: ?look=vanilla — вычисленные стили из токенов vanilla', () => {
+  it('скругления поля и кнопки 0px, шрифт Arsenal, кнопка из схемы 1', async () => {
+    const look = await lookOf('?state=filled&look=vanilla');
+    expect(look.fieldRadius).toBe('0px');
+    expect(look.buttonRadius).toBe('0px');
+    expect(look.font).toContain('Arsenal');
+    expect(look.buttonBg).toBe('rgb(58, 69, 48)');
+    expect(look.buttonColor).toBe('rgb(255, 255, 255)');
   });
 
-  it("без параметра стенд прежний: палитра прототипа PM", async () => {
-    const look = await lookOf("?state=filled");
-    expect(look.fieldRadius).toBe("9px");
-    expect(look.buttonRadius).toBe("9px");
-    expect(look.buttonBg).toBe("rgb(20, 20, 20)");
-    expect(look.font).toContain("Manrope");
+  it('без параметра стенд прежний: палитра прототипа PM', async () => {
+    const look = await lookOf('?state=filled');
+    expect(look.fieldRadius).toBe('9px');
+    expect(look.buttonRadius).toBe('9px');
+    expect(look.buttonBg).toBe('rgb(20, 20, 20)');
+    expect(look.font).toContain('Manrope');
   });
 });

@@ -33,6 +33,8 @@ export {
   WRAPPER_CLASS,
   renderPlacedSections,
   renderSection,
+  type MenuTree,
+  type MenuTreeItem,
   type PageContent,
   type PageMode,
   type PageRender,

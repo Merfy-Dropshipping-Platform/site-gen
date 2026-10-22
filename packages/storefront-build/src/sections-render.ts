@@ -16,6 +16,18 @@ export interface RenderBlock {
   settings: SettingValues;
 }
 
+// Дерево меню в шаблоне (часть 4, Р1-4-3): пункт — подпись, адрес и вложенные пункты (всегда список, до трёх уровней).
+export interface MenuTreeItem {
+  label: string;
+  url: string;
+  items: readonly MenuTreeItem[];
+}
+
+export interface MenuTree {
+  title: string;
+  items: readonly MenuTreeItem[];
+}
+
 export interface SectionRenderRequest {
   section: string;
   hash: string;

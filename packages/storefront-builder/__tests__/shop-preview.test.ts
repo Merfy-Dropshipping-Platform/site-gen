@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 import standInputsJson from '../../storefront-build/fixtures/stand-inputs.json';
 import novaThemeJson from '../../theme-nova/theme.json';
+import { PREVIEW_POLICY_META } from '../src/preview-policy';
 import { sectionPreview, shopPreview, shopSections, type ShopPreviewDeps } from '../src/shop-preview';
 import type { ShopPageLocals } from '@merfy/storefront-build';
 
@@ -92,6 +93,12 @@ describe('превью главной', () => {
     expect(answer.body).toContain(`<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script></body>`);
     expect(answer.body).not.toContain('id="merfy-modules"');
     expect(rendered.map(([shopId]) => shopId)).toEqual([SHOP]);
+  });
+
+  it('главная: политика превью form-action none — первой в <head>, одна (блок 2, часть 2б)', async () => {
+    const answer = await shopPreview(depsOf().deps, url(`shop=${SHOP}`));
+    expect(answer.body).toContain(`<head>${PREVIEW_POLICY_META}`);
+    expect(answer.body.match(/http-equiv="Content-Security-Policy"/g)).toHaveLength(1);
   });
 });
 

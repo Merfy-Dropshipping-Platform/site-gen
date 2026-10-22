@@ -1,0 +1,34 @@
+[
+  {
+    "id": "section-view", "names": ["layout", "variant", "mode", "view", "design", "style"],
+    "refusal": "Секция другого вида — новая секция: её делает ИИ или автор. Мелкие отличия — поля `image-position`, `columns`, `height`"
+  },
+  {
+    "id": "own-color", "names": ["color", "colour", "background", "background-color", "text-color"],
+    "refusal": "Своего цвета у поля нет: цвет секции — общая настройка «Цветовая схема», цвет части секции — поле `color-scheme`"
+  },
+  {
+    "id": "font", "names": ["font", "font-family", "font-size", "font-weight", "typography"],
+    "refusal": "Шрифт и насыщенность — токены темы `font-heading` и `font-body`; размер — поля `heading-size` и `text-size`"
+  },
+  {
+    "id": "spacing", "names": ["margin", "padding-top", "padding-bottom", "gap", "spacing"],
+    "refusal": "Отступы секции — общая настройка «Отступы» в `wrapper`; внутри секции — классы словаря"
+  },
+  {
+    "id": "width", "names": ["width", "container", "full-width"],
+    "refusal": "Ширина секции будет общей настройкой секции; своего поля ширины у секции нет"
+  },
+  {
+    "id": "show-hide", "names": ["show-*", "hide-*", "visible", "hidden"],
+    "refusal": "Показать или скрыть часть секции — блок с `limit: 1`: его скрывают в конструкторе"
+  },
+  {
+    "id": "wrapper", "names": ["scheme", "padding", "sticky"],
+    "refusal": "Общая настройка секции: в `settings` её не объявляют, секция перечисляет её в `wrapper`"
+  },
+  {
+    "id": "shop-data", "names": ["products", "product", "collection", "posts"],
+    "refusal": "Полей выбора товаров, товара, коллекции и публикаций у секций пока нет: они появятся вместе с данными магазина в секциях"
+  }
+]

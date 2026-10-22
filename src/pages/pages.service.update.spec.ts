@@ -50,7 +50,9 @@ describe("PagesService.updatePage", () => {
   it("deep-merge seo по ключам + patch name + lockVersion+1", async () => {
     const { db, captured, storeContent } = makeDb(
       site,
-      revWith([{ id: "pg", name: "Old", seo: { title: "t", description: "keep" } }]),
+      revWith([
+        { id: "pg", name: "Old", seo: { title: "t", description: "keep" } },
+      ]),
     );
     const svc = new PagesService(db, storeContent);
 
@@ -66,7 +68,10 @@ describe("PagesService.updatePage", () => {
     expect(res.page.seo).toEqual({ title: "new", description: "keep" });
     expect(res.page.name).toBe("New name");
     expect(captured.data.lockVersion).toBe(4);
-    expect(captured.data.pages[0].seo).toEqual({ title: "new", description: "keep" });
+    expect(captured.data.pages[0].seo).toEqual({
+      title: "new",
+      description: "keep",
+    });
     // Новая ревизия от прочитанной (база r1), с метками кто/откуда.
     expect(captured.params).toMatchObject({
       mode: "on-base",
@@ -78,9 +83,17 @@ describe("PagesService.updatePage", () => {
   });
 
   it("seo при отсутствии существующего seo просто кладётся", async () => {
-    const { db, captured, storeContent } = makeDb(site, revWith([{ id: "pg", name: "P", seo: null }]));
+    const { db, captured, storeContent } = makeDb(
+      site,
+      revWith([{ id: "pg", name: "P", seo: null }]),
+    );
     const svc = new PagesService(db, storeContent);
-    await svc.updatePage({ tenantId: "t1", siteId: "s1", pageId: "pg", seo: { title: "X", keywords: "k" } });
+    await svc.updatePage({
+      tenantId: "t1",
+      siteId: "s1",
+      pageId: "pg",
+      seo: { title: "X", keywords: "k" },
+    });
     expect(captured.data.pages[0].seo).toEqual({ title: "X", keywords: "k" });
   });
 
@@ -88,7 +101,12 @@ describe("PagesService.updatePage", () => {
     const { db, storeContent } = makeDb(site, revWith([{ id: "other" }]));
     const svc = new PagesService(db, storeContent);
     await expect(
-      svc.updatePage({ tenantId: "t1", siteId: "s1", pageId: "pg", seo: { title: "x" } }),
+      svc.updatePage({
+        tenantId: "t1",
+        siteId: "s1",
+        pageId: "pg",
+        seo: { title: "x" },
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -170,7 +188,11 @@ describe("PagesService.updatePage", () => {
 
     const blocks = captured.data.pagesData.pg.content;
     // Порядок: Header → Page (вставлен) → Footer.
-    expect(blocks.map((b: any) => b.type)).toEqual(["Header", "Page", "Footer"]);
+    expect(blocks.map((b: any) => b.type)).toEqual([
+      "Header",
+      "Page",
+      "Footer",
+    ]);
     const pageBlock = blocks.find((b: any) => b.type === "Page");
     expect(pageBlock.props.content).toBe("<p>Восстановленное тело</p>");
     // heading берётся из существующего имени страницы (в патче name нет).

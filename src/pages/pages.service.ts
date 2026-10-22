@@ -38,6 +38,8 @@ import {
 import { toStoreContentSite } from "../content/store-content.port";
 import type { StoreContent } from "../content/store-content.port";
 import { rewriteCurrent } from "../content/rewrite-current";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
+import { StorefrontBuilderClient } from "../storefront-preview/storefront-builder.client";
 
 type SiteRow = typeof schema.site.$inferSelect;
 type SiteScope = { tenantId: string; siteId: string };
@@ -70,6 +72,10 @@ export class PagesService {
     // получают DocumentAdapter на том же db.
     @Optional()
     private readonly injectedStoreContent?: StoreContentService,
+    // Новая тема (блок 1 «Секций и SDK», часть 4): магазин на ней — у StorefrontHandoff (глобальный модуль блока 6);
+    // секции, которые можно поставить на новую страницу, — у сборщика витрин (GET /sections).
+    @Optional() private readonly handoff?: StorefrontHandoff,
+    @Optional() private readonly builder?: StorefrontBuilderClient,
   ) {}
 
   private storeContentInstance?: StoreContent;
@@ -153,6 +159,8 @@ export class PagesService {
     templatePageId?: string;
   }) {
     const { site, revisionId, revData } = await this.readCurrent(params);
+    if (await this.isNewTheme(site.id))
+      return this.createNewThemePage(params, site, revisionId, revData);
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const pagesData = revData.pagesData ?? {};
 
@@ -180,21 +188,7 @@ export class PagesService {
     }
 
     const newId = `page-custom-${crypto.randomUUID()}`;
-    const newPage = {
-      id: newId,
-      name: params.name,
-      slug: params.slug,
-      role: "custom" as const,
-      isCustom: true,
-      source: "user" as const,
-      createdAt: Date.now(),
-      seo: null,
-      locale: null,
-      variant: null,
-      schedule: null,
-      permissions: null,
-      targeting: null,
-    };
+    const newPage = customPageOf(newId, params.name, params.slug);
 
     let newContent: any;
     if (params.templatePageId && pagesData[params.templatePageId]) {
@@ -210,17 +204,27 @@ export class PagesService {
       // Шапку и подвал берём с главной: они общие для сайта, без клонирования
       // новая страница получала пустую шапку — без логотипа и без меню магазина.
       const homeContent =
-        (pagesData["home"] as { content?: Array<Record<string, any>> } | undefined)?.content ?? [];
+        (
+          pagesData["home"] as
+            | { content?: Array<Record<string, any>> }
+            | undefined
+        )?.content ?? [];
       const homeHeader = homeContent.find((b) => b?.type === "Header");
       const homeFooter = homeContent.find((b) => b?.type === "Footer");
       newContent = {
         content: [
           homeHeader
-            ? { ...homeHeader, props: { ...homeHeader.props, id: `Header-${newId}` } }
+            ? {
+                ...homeHeader,
+                props: { ...homeHeader.props, id: `Header-${newId}` },
+              }
             : { type: "Header", props: { id: `Header-${newId}` } },
           emptyPageBlock(newId),
           homeFooter
-            ? { ...homeFooter, props: { ...homeFooter.props, id: `Footer-${newId}` } }
+            ? {
+                ...homeFooter,
+                props: { ...homeFooter.props, id: `Footer-${newId}` },
+              }
             : { type: "Footer", props: { id: `Footer-${newId}` } },
         ],
         root: { props: { title: params.name } },
@@ -233,12 +237,16 @@ export class PagesService {
     // пункт вручную можно только через модалку меню шапки. Шапка общая, поэтому
     // дописываем ссылку в navigationLinks каждой страницы. Идемпотентно по href.
     const withNavLink = (data: unknown): unknown => {
-      const pageData = data as { content?: Array<Record<string, any>> } | undefined;
+      const pageData = data as
+        | { content?: Array<Record<string, any>> }
+        | undefined;
       if (!pageData || !Array.isArray(pageData.content)) return data;
       let touched = false;
       const content = pageData.content.map((block) => {
         if (block?.type !== "Header") return block;
-        const links: Array<{ href?: string }> = Array.isArray(block.props?.navigationLinks)
+        const links: Array<{ href?: string }> = Array.isArray(
+          block.props?.navigationLinks,
+        )
           ? block.props.navigationLinks
           : [];
         if (links.some((l) => l?.href === newPage.slug)) return block;
@@ -247,7 +255,10 @@ export class PagesService {
           ...block,
           props: {
             ...block.props,
-            navigationLinks: [...links, { href: newPage.slug, label: newPage.name }],
+            navigationLinks: [
+              ...links,
+              { href: newPage.slug, label: newPage.name },
+            ],
           },
         };
       });
@@ -285,6 +296,8 @@ export class PagesService {
     pageId: string;
   }) {
     const { site, revisionId, revData } = await this.readCurrent(params);
+    if (await this.isNewTheme(site.id))
+      return this.deleteNewThemePage(params, site, revisionId, revData);
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const target = pages.find((p: any) => p.id === params.pageId);
     if (!target) throw new NotFoundException("page_not_found");
@@ -309,8 +322,7 @@ export class PagesService {
         // resolver unavailable — fall back to raw role check
       }
     }
-    if (isSystemPage)
-      throw new ForbiddenException("cannot_delete_system_page");
+    if (isSystemPage) throw new ForbiddenException("cannot_delete_system_page");
 
     const newPages = pages.filter((p: any) => p.id !== params.pageId);
     const newPagesData = { ...revData.pagesData };
@@ -341,6 +353,119 @@ export class PagesService {
    * (injectCustomPagesSeo) на следующей публикации; тело → секция «Страница» рендерит
    * heading/content на витрине. Тело правим только для страниц с секцией «Страница».
    */
+  private async isNewTheme(siteId: string): Promise<boolean> {
+    return (await this.handoff?.isNewTheme(siteId)) === true;
+  }
+
+  // ── Новая тема (блок 1 «Секций и SDK», часть 4, Р1-4-13) ──
+  // Строка pages — та же, что у пяти тем; содержимое страницы — секции ревизии (ключ sections), не дерево Puck: пустое
+  // дерево в pagesData — чтобы прежний код sites видел страницу. На новую страницу ставится секция с "newPage" из
+  // списка секций магазина (сборщик, GET /sections), в её настройку пишется имя страницы; такой секции нет — секций
+  // нет. Пункт страницы — в конец меню main (В1-4 А); меню нет — создаётся.
+  private async createNewThemePage(
+    params: { tenantId: string; name: string; slug: string },
+    site: SiteRow,
+    revisionId: string,
+    revData: Record<string, any>,
+  ) {
+    if (!NEW_PAGE_SLUG.test(params.slug))
+      throw new BadRequestException("slug_invalid");
+    if (params.slug === STAND_SLUG)
+      throw new BadRequestException("slug_collides_with_system_page");
+    const pages = Array.isArray(revData.pages) ? revData.pages : [];
+    if (pages.some((p: any) => p.slug === params.slug))
+      throw new BadRequestException("slug_already_in_use");
+
+    const newId = `page-custom-${crypto.randomUUID()}`;
+    const page = customPageOf(newId, params.name, params.slug);
+    const placed = await this.newPageSections(site.id, params.name);
+    const menus = withMenuItem(menusOf(revData), {
+      label: params.name,
+      url: params.slug,
+    });
+    const newRevData = {
+      ...revData,
+      pages: [...pages, page],
+      pagesData: {
+        ...(revData.pagesData ?? {}),
+        [newId]: {
+          content: [],
+          root: { props: { title: params.name } },
+          zones: {},
+        },
+      },
+      sections: { ...sectionsOf(revData), [newId]: placed },
+      menus,
+      lockVersion: (revData.lockVersion ?? 1) + 1,
+    };
+    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
+    return { page, sections: { [newId]: placed }, menus };
+  }
+
+  // Главную удалить нельзя. Удаление убирает строку страницы, её дерево и секции, её пункты (с подпунктами) из всех
+  // меню (п. 20: на проде пункты оставались и вели на 404).
+  private async deleteNewThemePage(
+    params: { tenantId: string; pageId: string },
+    site: SiteRow,
+    revisionId: string,
+    revData: Record<string, any>,
+  ) {
+    const pages = Array.isArray(revData.pages) ? revData.pages : [];
+    const target = pages.find((p: any) => p.id === params.pageId);
+    if (
+      params.pageId === "home" ||
+      target?.slug === "/" ||
+      target?.role === "system"
+    )
+      throw new ForbiddenException("cannot_delete_system_page");
+    if (!target) throw new NotFoundException("page_not_found");
+
+    const sections = { ...sectionsOf(revData) };
+    delete sections[params.pageId];
+    const pagesData = { ...(revData.pagesData ?? {}) };
+    delete pagesData[params.pageId];
+    const menus = menusOf(revData).map((menu) => ({
+      ...menu,
+      items: withoutUrl(menu.items, target.slug),
+    }));
+    const newRevData = {
+      ...revData,
+      pages: pages.filter((p: any) => p.id !== params.pageId),
+      pagesData,
+      sections,
+      menus,
+      currentPageId:
+        revData.currentPageId === params.pageId
+          ? "home"
+          : revData.currentPageId,
+      lockVersion: (revData.lockVersion ?? 1) + 1,
+    };
+    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
+    return { deleted: params.pageId, menus };
+  }
+
+  // Секция новой страницы: первая по имени секция магазина с "newPage", в её настройку — имя страницы.
+  private async newPageSections(
+    siteId: string,
+    name: string,
+  ): Promise<SectionInstance[]> {
+    const answer = await this.builder?.call("/sections", { shop: siteId });
+    const list = answer?.status === 200 ? newPageSectionsOf(answer.body) : null;
+    if (list === null) {
+      this.logger.warn(
+        `new page of ${siteId}: sections list not received (${answer?.status ?? "no builder"})`,
+      );
+      return [];
+    }
+    const section = [...list].sort((a, b) => a.name.localeCompare(b.name))[0];
+    if (!section) return [];
+    const base = section.name.slice(section.name.indexOf(":") + 1).slice(0, 31);
+    const id = `${base}-${crypto.randomBytes(4).toString("hex")}`;
+    return [
+      { id, section: section.name, settings: { [section.newPage]: name } },
+    ];
+  }
+
   async updatePage(params: {
     tenantId: string;
     siteId: string;
@@ -506,7 +631,8 @@ export class PagesService {
     const loaded = await this.storeContent
       .load(site.id, { site: toStoreContentSite(site), asStored: true })
       .catch((e: unknown) => {
-        if (e instanceof Error && e.message === "revision_not_found") return null;
+        if (e instanceof Error && e.message === "revision_not_found")
+          return null;
         throw e;
       });
     if (!loaded) return { pages: [] };
@@ -533,9 +659,9 @@ export class PagesService {
     // ThemeManifest не декларирует `pages`, но рантайм-JSON их содержит.
     let homePageId: string | null = null;
     if (site.themeId) {
-      const manifest = getThemeManifest(site.themeId) as
-        | { pages?: Array<{ id?: string; isHome?: boolean }> }
-        | null;
+      const manifest = getThemeManifest(site.themeId) as {
+        pages?: Array<{ id?: string; isHome?: boolean }>;
+      } | null;
       const manifestPages = manifest?.pages ?? [];
       const homeEntry =
         manifestPages.find((p) => p?.isHome) ?? manifestPages[0];
@@ -597,5 +723,92 @@ export class PagesService {
         };
       }),
     };
+  }
+}
+
+// ── Новая тема: строка страницы, меню и секции ревизии (блок 1 «Секций и SDK», часть 4) ──
+
+// Адрес своей страницы новой темы: /o-nas — строчные латинские буквы и цифры через дефис.
+const NEW_PAGE_SLUG = /^\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// Адрес стенда темы в превью (STAND_PAGE_PATH сборки витрин).
+const STAND_SLUG = "/theme-stand";
+const MAIN_MENU = "main";
+const MAIN_MENU_TITLE = "Главное меню";
+
+type MenuItem = { label: string; url: string; items?: MenuItem[] };
+type Menu = { id: string; title: string; items: MenuItem[] };
+type SectionInstance = {
+  id: string;
+  section: string;
+  settings: Record<string, string>;
+};
+
+// Строка своей страницы в revision.pages — одна форма у пяти тем и у новой темы.
+function customPageOf(id: string, name: string, slug: string) {
+  return {
+    id,
+    name,
+    slug,
+    role: "custom" as const,
+    isCustom: true,
+    source: "user" as const,
+    createdAt: Date.now(),
+    seo: null,
+    locale: null,
+    variant: null,
+    schedule: null,
+    permissions: null,
+    targeting: null,
+  };
+}
+
+const isRecord = (value: unknown): value is Record<string, any> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const sectionsOf = (revData: Record<string, any>): Record<string, unknown> =>
+  isRecord(revData.sections) ? revData.sections : {};
+
+const menusOf = (revData: Record<string, any>): Menu[] =>
+  Array.isArray(revData.menus) ? revData.menus : [];
+
+// Пункт — в конец меню main; там уже есть пункт с этим адресом — меню как есть; меню main нет — создаётся.
+function withMenuItem(menus: Menu[], item: MenuItem): Menu[] {
+  const main = menus.find((menu) => menu.id === MAIN_MENU);
+  if (main === undefined)
+    return [...menus, { id: MAIN_MENU, title: MAIN_MENU_TITLE, items: [item] }];
+  if (main.items.some((existing) => existing.url === item.url)) return menus;
+  return menus.map((menu) =>
+    menu === main ? { ...menu, items: [...menu.items, item] } : menu,
+  );
+}
+
+// Пункты с адресом страницы — вместе с подпунктами, на всех уровнях.
+function withoutUrl(items: MenuItem[], url: string): MenuItem[] {
+  return items
+    .filter((item) => item.url !== url)
+    .map((item) =>
+      item.items === undefined
+        ? item
+        : { ...item, items: withoutUrl(item.items, url) },
+    );
+}
+
+// Секции из ответа сборщика, которые ставятся на новую страницу. null — ответ не той формы.
+function newPageSectionsOf(
+  body: string,
+): { name: string; newPage: string }[] | null {
+  try {
+    const value: unknown = JSON.parse(body);
+    const sections = isRecord(value) ? value.sections : undefined;
+    if (!Array.isArray(sections)) return null;
+    return sections.flatMap((item: unknown) =>
+      isRecord(item) &&
+      typeof item.name === "string" &&
+      typeof item.newPage === "string"
+        ? [{ name: item.name, newPage: item.newPage }]
+        : [],
+    );
+  } catch {
+    return null;
   }
 }

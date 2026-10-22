@@ -9,7 +9,15 @@
     <script>
       // Копии событий ядра на document — для теста. Встроенный скрипт идёт раньше бандла: тот модульный.
       window.__merfy = [];
-      ['merfy:section:mount', 'merfy:section:error', 'merfy:page:ready', 'merfy:page:view', 'shop:ticker:tick'].forEach(
+      [
+        'merfy:section:mount',
+        'merfy:section:error',
+        'merfy:page:ready',
+        'merfy:page:view',
+        'shop:ticker:tick',
+        'merfy:cart:add',
+        'merfy:notice:show',
+      ].forEach(
         (name) => document.addEventListener(name, (event) => window.__merfy.push({ name, detail: event.detail })),
       );
     </script>

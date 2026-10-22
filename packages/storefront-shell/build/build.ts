@@ -10,8 +10,9 @@ import { preloadOf } from './meta';
 // Сборка ядра (design.md блока 7, С-1 А, С-3 Б, С7-3 Б) — один раз на версию платформы, в образе site-gen. Выход:
 // <outDir>/shell/ — shell.js и файлы part-<hash>.js; <outDir>/shell.json — версия, подсказки modulepreload и вес.
 // Бюджет — вес brotli файла ядра с его статическими зависимостями (то, что страница качает сразу). Число — допущение
-// плана: «бюджет в CI» без числа в design.md.
-export const CORE_BUDGET_BYTES = 8 * 1024;
+// плана: «бюджет в CI» без числа в design.md. С блока 9 «Секций и SDK» — 12 КБ (Р9а-16): ядро секций с корзиной на
+// сервере и Nano Stores — 10,1 КБ по замеру 22.10; скрипт действий Shopify на каждой странице — 11 КБ.
+export const CORE_BUDGET_BYTES = 12 * 1024;
 export const SHELL_FILE = 'shell.js';
 const ENTRY_ID = 'merfy-shell-entry';
 

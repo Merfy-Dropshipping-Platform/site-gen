@@ -70,8 +70,37 @@ afterAll(async () => {
   await server?.close();
 });
 
-async function openPage() {
+// Шлюз фикстуры (api.url — http://127.0.0.1:9/api) подменяет Playwright (блок 9, часть 9а): корзина c-1, строка l-1
+// копит штуки; offline — обрыв связи. Запрос CORS с preflight Playwright отвечает сам — в ответе нужен только
+// access-control-allow-origin.
+type GatewayMode = 'working' | 'offline';
+const API_ROUTE = 'http://127.0.0.1:9/api/**';
+const CORS = { 'access-control-allow-origin': '*' };
+
+async function routeGateway(page: Page, mode: GatewayMode): Promise<void> {
+  let quantity = 0;
+  await page.route(API_ROUTE, async (route) => {
+    if (mode === 'offline') return route.abort('internetdisconnected');
+    if (new URL(route.request().url()).pathname === '/api/store/carts') {
+      return route.fulfill({ status: 201, headers: CORS, json: { cart: { id: 'c-1' } } });
+    }
+    const requested: unknown = route.request().postDataJSON();
+    const added: unknown = typeof requested === 'object' && requested !== null ? Reflect.get(requested, 'quantity') : 0;
+    quantity += typeof added === 'number' ? added : 0;
+    const item = { id: 'l-1', productId: 'p12', variantCombinationId: null, quantity, unitPriceCents: 249000 };
+    return route.fulfill({ status: 201, headers: CORS, json: { item } });
+  });
+}
+
+// Данные копий событий одного имени из window.__merfy — по порядку.
+const eventDetails = (page: Page, name: string): Promise<unknown> =>
+  page.evaluate(
+    `window.__merfy.filter((event) => event.name === ${JSON.stringify(name)}).map((event) => event.detail)`,
+  );
+
+async function openPage(gateway: GatewayMode = 'working') {
   const page = await browser.newPage();
+  await routeGateway(page, gateway);
   const consoleErrors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -123,7 +152,25 @@ describe('ядро секций в Chromium', () => {
     expect(await pick.locator('[data-coat="grey"]').getAttribute('aria-pressed')).toBe('false');
     expect(await pick.locator('[data-ref="hint"]').textContent()).toBe('Подберите шарф: black');
     await page.locator('merfy-section[data-section-id="buy-1"] button').click();
-    await expect.poll(() => page.locator('[data-ref="count"]').textContent()).toBe('2');
+    await expect
+      .poll(() => eventDetails(page, 'merfy:cart:add'))
+      .toEqual([
+        { lineId: 'l-1', productId: 'p12', variantId: null, quantity: 2, price: { amount: 249000, currency: 'RUB' } },
+      ]);
+    expect(await page.locator('[data-ref="count"]').textContent()).toBe('2');
+    await page.close();
+  });
+
+  it('«В корзину» без связи с магазином — уведомление network, число на значке вернулось к 0', async () => {
+    const { page } = await openPage('offline');
+    await page.locator('merfy-section[data-section-id="buy-1"] button').click();
+    await expect
+      .poll(() => eventDetails(page, 'merfy:notice:show'))
+      .toEqual([
+        { level: 'error', message: 'Нет связи с магазином. Проверьте интернет и попробуйте ещё раз', code: 'network' },
+      ]);
+    expect(await page.locator('[data-ref="count"]').textContent()).toBe('0');
+    expect(await eventDetails(page, 'merfy:cart:add')).toEqual([]);
     await page.close();
   });
 

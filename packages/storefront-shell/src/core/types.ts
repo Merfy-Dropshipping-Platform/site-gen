@@ -79,16 +79,56 @@ export interface SectionFailureDetail {
   readonly message: string;
 }
 
-// Каталог событий, которые отправляет ядро блока 5 (13а А). Остальные имена каталога — блок 9 (events.json).
+// Деньги в событиях и сторах: копейки целым числом, как *_cents в orders; валюта — из конфига витрины (RUB).
+export interface Money {
+  readonly amount: number;
+  readonly currency: string;
+}
+export type NoticeLevel = 'error' | 'warning';
+export type ConsentState = 'accepted' | 'declined';
+type NoDetail = Readonly<Record<string, never>>;
+
+// Закрытый каталог событий витрины (13а А; блок 9, «Решил сам» п. 11) — публичный интерфейс для секций мерчантов и
+// «своего кода» (16б Г). Внутри "sdk": 1 имя и поле можно только добавить. Вид полей для проверки — event-catalog.ts.
+// merfy:geo:change отложено 20.10 вместе с городом по IP.
 export interface EventMap {
-  'merfy:page:ready': Readonly<Record<string, never>>;
+  'merfy:page:ready': NoDetail;
   'merfy:page:view': { readonly path: string };
-  'merfy:page:hidden': Readonly<Record<string, never>>;
-  'merfy:page:visible': Readonly<Record<string, never>>;
-  'merfy:page:restore': Readonly<Record<string, never>>;
-  'merfy:page:leave': Readonly<Record<string, never>>;
+  'merfy:page:hidden': NoDetail;
+  'merfy:page:visible': NoDetail;
+  'merfy:page:restore': NoDetail;
+  'merfy:page:leave': NoDetail;
+  'merfy:cart:add': {
+    readonly lineId: string;
+    readonly productId: string;
+    readonly variantId: string | null;
+    readonly quantity: number; // сколько штук добавилось
+    readonly price: Money; // за штуку
+  };
+  'merfy:cart:remove': {
+    readonly lineId: string;
+    readonly productId: string;
+    readonly variantId: string | null;
+    readonly quantity: number;
+  };
+  'merfy:cart:change': {
+    readonly lineId: string;
+    readonly productId: string;
+    readonly variantId: string | null;
+    readonly quantity: number;
+    readonly previousQuantity: number;
+  };
+  'merfy:variant:change': { readonly productId: string; readonly variantId: string };
+  'merfy:favorites:add': { readonly productId: string };
+  'merfy:favorites:remove': { readonly productId: string };
+  'merfy:auth:signin': NoDetail;
+  'merfy:auth:signout': NoDetail;
+  'merfy:search:submit': { readonly query: string };
+  'merfy:catalog:page': { readonly page: number };
   'merfy:section:mount': { readonly section: string };
   'merfy:section:error': SectionFailureDetail;
+  'merfy:notice:show': { readonly level: NoticeLevel; readonly message: string; readonly code?: ErrorCode };
+  'merfy:consent:change': { readonly state: ConsentState };
 }
 export type EventName = keyof EventMap;
 export type EventDetail<E extends EventName> = EventMap[E];
@@ -102,25 +142,27 @@ export interface ActionOptions {
   readonly quiet?: boolean;
 }
 
-// Модули по uses (11г А) — вид для секций по 3.12 и каталогам блоков 9 и 10. Данные — в памяти страницы до блоков 9 и 10.
+// Модули по uses (11г А) — вид для секций по 3.12 и каталогам блоков 9 и 10. Корзина — на сервере (блок 9, часть 9а):
+// строка — ответ шлюза, id строки — номер строки на сервере. cart.remove и cart.change — блок 10. Избранное и вход — в
+// памяти страницы до блока 10.
 export interface CartLine {
   readonly id: string;
   readonly productId: string;
   readonly variantId: string | null;
   readonly quantity: number;
+  readonly price: Money; // за штуку
 }
 export interface CartState {
-  readonly ready: boolean;
+  readonly ready: boolean; // false — корзину с сервера ещё не прочитали
   readonly lines: readonly CartLine[];
 }
 export interface CartModule {
   readonly $cart: ReadableStore<CartState>;
-  readonly $count: ReadableStore<number>;
+  readonly $count: ReadableStore<number>; // штук в корзине плюс ждущих ответа сервера
   add(
     args: { readonly productId: string; readonly variantId?: string; readonly quantity?: number },
     options?: ActionOptions,
   ): Promise<Result<CartState>>;
-  remove(args: { readonly lineId: string }, options?: ActionOptions): Promise<Result<CartState>>;
 }
 export interface FavoritesState {
   readonly ready: boolean;
@@ -143,10 +185,18 @@ export interface CustomerState {
 export interface AuthModule {
   readonly $customer: ReadableStore<CustomerState>;
 }
+// Подписка на рассылку магазина — форма подвала (блок 1, раздел 3.22): тот же запрос, что у rose и flux.
+export interface NewsletterModule {
+  subscribe(
+    args: { readonly email: string },
+    options?: ActionOptions,
+  ): Promise<Result<{ readonly alreadySubscribed: boolean }>>;
+}
 export interface Modules {
   readonly cart: CartModule;
   readonly favorites: FavoritesModule;
   readonly auth: AuthModule;
+  readonly newsletter: NewsletterModule;
 }
 export type ModuleName = keyof Modules;
 

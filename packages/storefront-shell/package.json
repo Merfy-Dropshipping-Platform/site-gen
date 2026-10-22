@@ -27,7 +27,8 @@
     "embla-carousel": "8.6.0",
     "embla-carousel-autoplay": "8.6.0",
     "embla-carousel-fade": "8.6.0",
-    "motion": "14.0.0"
+    "motion": "14.0.0",
+    "nanostores": "1.5.4"
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",

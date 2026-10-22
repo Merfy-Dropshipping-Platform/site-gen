@@ -24,6 +24,11 @@ export const PROBLEM_CODES = [
   'build-timeout',
   'build-crashed',
   'release-changed',
+  'setting-name-unknown',
+  'setting-name-kind',
+  'settings-limit',
+  'visible-when-invalid',
+  'render-empty-failed',
   'block-select-unavailable',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];

@@ -20,7 +20,7 @@ const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 const RENDERER = resolve(__dirname, 'render-theme-sections.mjs');
 const VANILLA_PAGES = resolve(SITES_ROOT, 'themes/rose/src/pages');
 // Темы, которые ещё хранят requests.astro первой версии (здесь rose убрала).
-const OTHER_THEMES = ['bloom', 'satin'] as const;
+const OTHER_THEMES = ['bloom'] as const;
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 

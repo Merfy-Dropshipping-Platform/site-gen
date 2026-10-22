@@ -17,9 +17,8 @@ import { EXTENSION_ORDERS_STYLES } from '../../../packages/theme-base/runtime/ex
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 const RENDERER = resolve(__dirname, 'render-theme-sections.mjs');
 const FLUX_PAGES = resolve(SITES_ROOT, 'themes/flux/src/pages');
-// rose и vanilla хранят requests.astro? Нет: этап 5 убрал их страницы первой
-// версии (extension-orders-vanilla.spec.ts, extension-orders-rose.spec.ts).
-const OTHER_THEMES = ['bloom', 'satin'] as const;
+// rose, satin и vanilla убрали страницы первой версии (свои спеки).
+const OTHER_THEMES = ['bloom'] as const;
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 

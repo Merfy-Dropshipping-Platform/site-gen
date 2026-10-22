@@ -1,6 +1,7 @@
 import { init, parse as lexImports } from 'es-module-lexer';
 import { z } from 'zod';
 import { ASTRO_RUNTIME } from './astro-runtime';
+import { MAX_TEMPLATE_DEPTH, templateDepth } from './depth';
 import { TEMPLATE_FILE } from './format';
 import { problem, type SectionProblem } from './problems';
 import { templateProblems } from './template';
@@ -57,8 +58,14 @@ export async function moduleImportProblems(code: string): Promise<SectionProblem
     );
 }
 
-// Запреты и компиляция — разом: автор видит все проблемы шаблона за один заход.
+// Глубже предела — сразу отказ, до разбора: компилятор такой шаблон не переварит (depth.ts). Дальше запреты и
+// компиляция — разом: все проблемы шаблона автор получает за один заход.
 export async function checkTemplate(text: string): Promise<TemplateCheck> {
+  const depth = templateDepth(text);
+  if (depth > MAX_TEMPLATE_DEPTH) {
+    const message = `шаблон вложен на ${depth} уровней (теги и скобки), предел — ${MAX_TEMPLATE_DEPTH}`;
+    return { problems: [problem('template-too-deep', TEMPLATE_FILE, message)], render: null };
+  }
   const [forbidden, compiled] = await Promise.all([templateProblems(text), compileTemplate(text)]);
   if (!compiled.ok) return { problems: [...forbidden, ...compiled.problems], render: null };
   const problems = [...forbidden, ...(await moduleImportProblems(compiled.code))];

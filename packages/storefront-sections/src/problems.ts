@@ -14,6 +14,7 @@ export const PROBLEM_CODES = [
   'source-too-large',
   'kind-mismatch',
   'template-forbidden',
+  'template-too-deep',
   'template-compile',
   'render-failed',
   'script-invalid',

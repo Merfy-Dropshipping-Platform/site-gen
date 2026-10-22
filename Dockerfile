@@ -109,6 +109,13 @@ RUN test -f /app/themes/nova/dist-renderer/server/entry.mjs \
 RUN pnpm --filter @merfy/shell build
 RUN test -f /app/packages/storefront-shell/dist/shell.json \
     || (echo "FATAL: @merfy/shell build did not produce packages/storefront-shell/dist/shell.json" && exit 1)
+# Процессы проверки и рендера секций (блок 2 «Секций и SDK»): собранные файлы dist-render — их запускает Node под
+# --permission, без tsx.
+RUN pnpm --filter @merfy/storefront-sections build:workers
+RUN for f in render-worker check-worker sandbox-probe; do \
+      test -f "/app/packages/storefront-sections/dist-render/$f.mjs" \
+        || (echo "FATAL: storefront-sections build:workers did not produce dist-render/$f.mjs" && exit 1); \
+    done
 
 # ========================
 # Stage 2: Production
@@ -150,6 +157,17 @@ FROM runtime AS storefront-builder
 # Тема nova с её зависимостями и сборкой рисовальщика — только в образе сборщика.
 COPY --from=storefront-renderer /app/themes/nova /app/themes/nova
 COPY --from=storefront-renderer /app/packages/storefront-shell/dist /app/packages/storefront-shell/dist
+# Процессы рендера и проверки секций (блок 2 «Секций и SDK», «Решил сам» пп. 1, 2): бинарник Node 26 — под --permission
+# сеть закрыта только с 25-й версии, сам сборщик остаётся на 24; база образов одна — alpine 3.24. Процессы идут от
+# пользователя sandbox (uid 10001), сборщик — root: соседний процесс Node другого пользователя ОС открыть нельзя
+# (process._debugProcess → EPERM). --disable-sigusr1 у сборщика — запасной слой; процессам рендера NODE_OPTIONS не
+# достаётся (окружение у них пустое), этот флаг им ставит isolation.ts. Отчёт песочницы — строка журнала render-sandbox
+# при старте сборщика.
+COPY --from=node:26.12.0-alpine3.24 /usr/local/bin/node /usr/local/bin/node26
+RUN addgroup -g 10001 -S sandbox && adduser -S -D -H -u 10001 -G sandbox sandbox
+COPY --from=storefront-renderer /app/packages/storefront-sections/dist-render /app/packages/storefront-sections/dist-render
+ENV SECTION_RENDER_NODE=/usr/local/bin/node26 SECTION_RENDER_UID=10001 SECTION_RENDER_GID=10001
+ENV NODE_OPTIONS=--disable-sigusr1
 ENV PORT=8080
 EXPOSE 8080
 WORKDIR /app/packages/storefront-builder

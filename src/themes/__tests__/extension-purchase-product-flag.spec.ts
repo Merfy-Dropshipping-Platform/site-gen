@@ -3,16 +3,24 @@
  * extensionPurchaseEnabled секции «Товар» (форма расширения вместо кнопки
  * покупки). Инжект — в общей точке extractPageBlocks, как у requestsEnabled
  * (requests-product-flag.spec.ts); значение решает манифест темы. Включено
- * только на flux (решение владельца: «только на одной теме флюкс»).
+ * на flux (решение владельца от 11.10) и vanilla (этап 5 на vanilla).
  */
 import { extractPageBlocks } from '../page-blocks';
 
 jest.mock('../theme-manifest-loader', () => ({
   ...jest.requireActual('../theme-manifest-loader'),
-  getThemeManifest: (id: string) => ({
-    features: { requests: true, extensionPurchase: id === 'flux' },
-  }),
+  getThemeManifest: jest.fn((id: string) => ({
+    features: {
+      requests: true,
+      extensionPurchase: id === 'flux' || id === 'vanilla',
+      extensionThemeLook: id === 'vanilla',
+    },
+  })),
 }));
+
+import { getThemeManifest } from '../theme-manifest-loader';
+
+const manifestMocked = jest.mocked(getThemeManifest);
 
 function revisionWithProduct(page: string) {
   return {
@@ -41,7 +49,11 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
     expect((await productProps('flux'))?.extensionPurchaseEnabled).toBe(true);
   });
 
-  it.each(['rose', 'vanilla', 'satin', 'bloom'])(
+  it('vanilla: флаг включён → проп true', async () => {
+    expect((await productProps('vanilla'))?.extensionPurchaseEnabled).toBe(true);
+  });
+
+  it.each(['rose', 'satin', 'bloom'])(
     '%s: флаг выключен → пропа нет',
     async (themeId) => {
       expect((await productProps(themeId))?.extensionPurchaseEnabled).toBeUndefined();
@@ -62,15 +74,48 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
     expect(props?.extensionPurchaseEnabled).toBe(true);
   });
 
-  it('реальные манифесты: только flux включает форму расширения', () => {
+  it('реальные манифесты: форму расширения включают flux и vanilla', () => {
     const features = (theme: string) =>
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       (require(`../../../packages/theme-${theme}/theme.json`) as {
         features?: Record<string, boolean>;
       }).features;
     expect(features('flux')?.extensionPurchase).toBe(true);
-    for (const theme of ['rose', 'vanilla', 'satin', 'bloom']) {
+    expect(features('vanilla')?.extensionPurchase).toBe(true);
+    for (const theme of ['rose', 'satin', 'bloom']) {
       expect(features(theme)?.extensionPurchase).not.toBe(true);
     }
+  });
+});
+
+describe('extensionThemeLook: витринная часть этапа 5 на vanilla — вид формы из темы', () => {
+  it('vanilla: тумблер extensionThemeLook → проп extensionLook = theme', async () => {
+    const props = await productProps('vanilla');
+    expect(props?.extensionLook).toBe('theme');
+  });
+
+  it('flux и остальные: пропа нет — палитра прототипа PM', async () => {
+    expect((await productProps('flux'))?.extensionLook).toBeUndefined();
+  });
+
+  it('реальные манифесты: тумблер extensionThemeLook только у vanilla', () => {
+    const look = (theme: string) =>
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      (require(`../../../packages/theme-${theme}/theme.json`) as {
+        features?: Record<string, boolean>;
+      }).features?.extensionThemeLook;
+    expect(look('vanilla')).toBe(true);
+    for (const theme of ['flux', 'rose', 'satin', 'bloom']) {
+      expect(look(theme)).not.toBe(true);
+    }
+  });
+
+  it('блок «Товар» ставит атрибут на контейнер формы — режим «как тема» включается', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const product = require('node:fs').readFileSync(
+      require('node:path').resolve(__dirname, '../../../packages/theme-base/blocks/Product/Product.astro'),
+      'utf8',
+    );
+    expect(product).toContain('data-look={extensionLook}');
   });
 });

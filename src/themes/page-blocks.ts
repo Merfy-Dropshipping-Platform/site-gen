@@ -210,14 +210,25 @@ export async function extractPageBlocks(
         }
         // Спека 120, задача 5.1: тумблер features.extensionPurchase → проп
         // extensionPurchaseEnabled (форма расширения вместо «В корзину»). Тот же
-        // приём, но без включения пропом ревизии: пока только flux, значение
-        // решает один манифест темы. Какая из двух форм монтируется, решает
+        // приём, но без включения пропом ревизии: значение решает один манифест
+        // темы (flux и vanilla, этап 5). Какая из двух форм монтируется, решает
         // секция «Товар» (новая вытесняет requestsEnabled).
         if (
           themeId != null &&
           getThemeManifest(themeId)?.features?.extensionPurchase === true
         ) {
           finalProps.extensionPurchaseEnabled = true;
+        }
+        // Спека 120, этап 5 на vanilla: тумблер features.extensionThemeLook
+        // → проп extensionLook: 'theme'. Блок «Товар» ставит его атрибутом
+        // data-look на контейнер формы — стили формы берут цвета и скругления
+        // из токенов темы (runtime/extension-purchase.styles.ts). Пока только
+        // vanilla; у темы без тумблера пропа нет.
+        if (
+          themeId != null &&
+          getThemeManifest(themeId)?.features?.extensionThemeLook === true
+        ) {
+          finalProps.extensionLook = 'theme';
         }
       }
       return { type: b.type, props: finalProps };

@@ -1,0 +1,57 @@
+---
+// Страница записи расширения из «Моих заказов» (спека 120, этап 5 на vanilla,
+// по образцу flux из задачи 5.4). Пункта в меню нет: сюда ведёт строка записи
+// в списке заказов (`/account/entry?ext=<расширение>&id=<запись>`). Шапку и
+// блоки записи рисует общий рантайм theme-base (runtime/extension-orders.ts);
+// обёртка .xo с data-look="theme" — строки записи в токенах vanilla, рядом с
+// «Моими заказами» тот же отступ, шрифт и скругления.
+import Layout from '../../layouts/Layout.astro';
+import { EXTENSION_ORDERS_STYLES } from '../../../../../packages/theme-base/runtime/extension-orders.styles';
+
+const shopId = "";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
+---
+<Layout title="Мои заказы">
+  <script is:inline define:vars={{ shopId, apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+  </script>
+  <style is:inline set:html={EXTENSION_ORDERS_STYLES}></style>
+
+  <div class="account-page-container" style="padding-top: 7rem;">
+    <div class="xo" data-look="theme" id="extension-entry">
+      <p class="xo-state">Загрузка...</p>
+    </div>
+  </div>
+
+  <script>
+    import { mountRecordEntry } from '../../../../../packages/theme-base/runtime/extension-orders';
+    import { navTo, getToken } from '../../lib/auth';
+
+    function initEntryPage(): void {
+      const root = document.getElementById('extension-entry');
+      if (!root || root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      // Запись видит только вошедший покупатель: без сессии — на вход.
+      if (!getToken()) {
+        navTo('/login');
+        return;
+      }
+
+      const w = window as unknown as { __MERFY_CONFIG__?: { shopId?: string; storeId?: string; apiUrl?: string } };
+      const cfg = w.__MERFY_CONFIG__ || {};
+      void mountRecordEntry(root, {
+        storeId: cfg.shopId || cfg.storeId || '',
+        apiBase: cfg.apiUrl || '',
+        ordersPath: '/account/orders',
+        search: window.location.search,
+      });
+    }
+
+    initEntryPage();
+    document.addEventListener('astro:page-load', initEntryPage);
+  </script>
+</Layout>

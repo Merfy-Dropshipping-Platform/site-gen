@@ -13,6 +13,7 @@
  * проходят настоящую загрузку в три шага против подменённого шлюза.
  */
 import { mountExtensionPurchase } from "../../runtime/extension-purchase";
+import { applyStandLook } from "../stand-look";
 import { EXTENSION_PURCHASE_STYLES } from "../../runtime/extension-purchase.styles";
 import {
   STAND_EXTENSION_ID,
@@ -176,6 +177,7 @@ const STATES: Record<string, (root: ParentNode) => Promise<void>> = {
 async function start(): Promise<void> {
   const host = document.getElementById("stand");
   if (host === null) return;
+  applyStandLook(host);
   window.fetch = standFetch;
   const style = document.createElement("style");
   style.textContent = EXTENSION_PURCHASE_STYLES;

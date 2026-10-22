@@ -17,7 +17,9 @@ import { EXTENSION_ORDERS_STYLES } from '../../../packages/theme-base/runtime/ex
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 const RENDERER = resolve(__dirname, 'render-theme-sections.mjs');
 const FLUX_PAGES = resolve(SITES_ROOT, 'themes/flux/src/pages');
-const OTHER_THEMES = ['rose', 'bloom', 'satin', 'vanilla'] as const;
+// vanilla хранит requests.astro? Нет: этап 5 убрал её страницы первой версии
+// (extension-orders-vanilla.spec.ts), поэтому здесь только нетронутые темы.
+const OTHER_THEMES = ['rose', 'bloom', 'satin'] as const;
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 
@@ -75,7 +77,7 @@ describe('flux: страница записи без пункта меню', () 
   });
 });
 
-describe('flux: страницы первой версии убраны, у остальных тем — пока на месте', () => {
+describe('flux: страницы первой версии убраны (vanilla — тоже, этап 5)', () => {
   it('у flux нет account/requests.astro и account/request.astro', () => {
     expect(existsSync(resolve(FLUX_PAGES, 'account/requests.astro'))).toBe(false);
     expect(existsSync(resolve(FLUX_PAGES, 'account/request.astro'))).toBe(false);

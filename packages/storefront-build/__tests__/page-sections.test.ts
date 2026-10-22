@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { CodeInstance } from '../src/inputs';
 import { renderShopPage, type ShopTheme } from '../src/page';
 import { NO_SECTIONS, type PageRender, type SectionRenderRequest } from '../src/sections-render';
-import { NO_SCRIPT, RENDERS, codeInputs } from './support-code';
+import { NO_SCRIPT, RENDERS, SRC, codeInputs } from './support-code';
 import { fakeRender, novaTokens } from './support-theme';
 
 // Страница с секциями SDK 1 (блок 1 «Секций и SDK»): секции рисует функция рендера, CSS — классы Tailwind их разметки.
@@ -41,5 +42,23 @@ describe('страница с секциями', () => {
   it('страница без секций — как раньше, без процесса рендера', async () => {
     const inputs = codeInputs((changed) => (changed.code = { sections: [], pages: {}, globals: [] }));
     expect(text((await renderShopPage(inputs, '/', theme)).file.content)).not.toContain('<merfy-section');
+  });
+
+  it('скрытый экземпляр (hidden: true, п. 22) — его нет ни в сборке, ни в превью: ни разметки, ни модуля', async () => {
+    const hide = new Set(['cart-badge-1', 'list-1']);
+    const inputs = codeInputs((changed) => {
+      changed.code.pages.home = (changed.code.pages.home ?? []).map(
+        (instance): CodeInstance => (hide.has(instance.id) ? { ...instance, hidden: true } : instance),
+      );
+    });
+    const live = text((await renderShopPage(inputs, '/', theme, pageOf('live'))).file.content);
+    const preview = text((await renderShopPage(inputs, '/', theme, pageOf('preview'))).file.content);
+    for (const html of [live, preview]) {
+      expect([...html.matchAll(/data-section-id="([^"]+)"/g)].map((match) => match[1])).toEqual(['hero-1', 'list-2']);
+      expect(html).not.toContain('data-section="shop:cart-badge"');
+    }
+    // Модуль скрытого «Значка корзины» в список модулей страницы не попадает; отзывы видимы — их модуль на месте.
+    expect(live).not.toContain(SRC.badge);
+    expect(live).toContain(SRC.reviews);
   });
 });

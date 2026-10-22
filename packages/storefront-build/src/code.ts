@@ -97,6 +97,17 @@ export function codeHead(inputs: BuildInputs, pageId: string, css: string, mode:
 
 // Экземпляры секций страницы в порядке мерчанта — для рендера (sections-render.ts). Глобальным скриптам место не
 // нужно: скрытый элемент им ставит ядро.
+// Входы без скрытых экземпляров (hidden: true, п. 22): у страницы нет ни их разметки, ни модулей, ни CSS. Зовёт её
+// только renderShopPage — одна функция для сборки, рендера по запросу и превью; автор секции hidden не проверяет.
+export function withoutHidden(inputs: BuildInputs): BuildInputs {
+  const pages = Object.fromEntries(
+    Object.entries(inputs.code.pages).map(
+      ([page, instances]) => [page, instances.filter((instance) => instance.hidden !== true)] as const,
+    ),
+  );
+  return { ...inputs, code: { ...inputs.code, pages } };
+}
+
 export function placedSections(inputs: BuildInputs, pageId: string): PlacedSection[] {
   const renders = new Map(inputs.code.sections.map((section): [string, string] => [section.name, section.render ?? '']));
   return (inputs.code.pages[pageId] ?? []).map((instance) => ({

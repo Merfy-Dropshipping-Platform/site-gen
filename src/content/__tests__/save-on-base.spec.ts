@@ -143,6 +143,32 @@ describe("save с базой: база совпадает с текущей (о�
 });
 
 describe("save с базой: устаревшая база сливается (И2)", () => {
+  it("две вкладки добавили по секции новой темы (sections) — после слияния обе на месте", async () => {
+    const { fake, load, save } = await freshStore();
+    const tabA = await load();
+    const tabB = await load();
+    const hero = (id: string) => ({ id, section: "shop:hero", settings: {} });
+
+    const savedB = await save(
+      { ...tabB.document, sections: { home: [hero("hero-b")] } },
+      tabB.version,
+    );
+    expect(savedB.effect?.merged).toBe(false);
+    const savedA = await save(
+      { ...tabA.document, sections: { home: [hero("hero-a")] } },
+      tabA.version,
+    );
+
+    expect(savedA.effect?.merged).toBe(true);
+    expect(savedA.effect?.overwritten).toEqual([]);
+    expect(fake.site.currentRevisionId).toBe(savedA.version);
+    const now = (await load()).document as Doc;
+    expect(now.sections.home.map((instance: Doc) => instance.id)).toEqual([
+      "hero-a",
+      "hero-b",
+    ]);
+  });
+
   it("две вкладки: правки в разных секциях — обе на месте, без 409", async () => {
     const { fake, load, save } = await freshStore();
     const tabA = await load();

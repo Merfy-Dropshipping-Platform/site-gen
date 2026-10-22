@@ -1,7 +1,7 @@
 import { sha256 } from '@merfy/storefront-build';
 import type { SectionRow } from '@merfy/storefront-sections';
 import { describe, expect, it } from 'vitest';
-import { EXTENSIONS_QUEUE, codeOf, enabledExtensions, type CodeContext } from '../src/code';
+import { EXTENSIONS_QUEUE, codeOf, enabledExtensions, instanceSchema, type CodeContext } from '../src/code';
 import type { LogFields } from '../src/log';
 
 // Код магазина из строк реестра и ответ сервиса extensions — без базы и брокера.
@@ -103,6 +103,27 @@ describe('codeOf', () => {
     expect(shop.code.sections.map((section) => section.name)).toEqual(['shop:hero']);
     expect(shop.shell).toBeNull();
     expect(shop.assets.modules.size).toBe(0);
+  });
+
+  it('hidden: true — в коде магазина hidden: true (убирает renderShopPage); hidden: false и name в код не идут (Р17)', () => {
+    const { context } = contextOf();
+    const placement = {
+      home: [
+        { ...instance('hero-1', 'shop:hero'), hidden: true, name: 'Осенний баннер' },
+        { ...instance('hero-2', 'shop:hero'), hidden: false },
+      ],
+    };
+    const shop = codeOf([HERO], placement, context);
+    expect(shop.code.pages.home).toEqual([
+      { id: 'hero-1', section: 'shop:hero', settings: { heading: 'Тёплые шарфы из кашемира' }, hidden: true },
+      { id: 'hero-2', section: 'shop:hero', settings: { heading: 'Тёплые шарфы из кашемира' } },
+    ]);
+  });
+
+  it('схема экземпляра в ревизии: hidden и name проходят, чужой ключ — нет', () => {
+    const base = { id: 'hero-1', section: 'shop:hero', settings: {} };
+    expect(instanceSchema.safeParse({ ...base, hidden: true, name: 'Осенний баннер' }).success).toBe(true);
+    expect(instanceSchema.safeParse({ ...base, color: 'red' }).success).toBe(false);
   });
 });
 

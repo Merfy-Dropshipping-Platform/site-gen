@@ -25,7 +25,7 @@ from '@merfy/shell'` (С7-2 А, п. 12).
 - `pnpm build` — ядро в `dist/shell/` и `dist/shell.json` (версия, подсказки `modulepreload`, вес). Образ site-gen
   собирает его в `Dockerfile`; сборщик витрин кладёт копию в каждую сборку магазина.
 - Тот же `pnpm build` собирает ядро секций блока 5 «Секций и SDK»: `dist/core.js` и `dist/core.json` — версия и вес
-  brotli бандла страницы без секций (бюджет 8 КБ, `build/core.ts`).
+  brotli бандла страницы без секций (бюджет 12 КБ, `build/core.ts`).
 - `pnpm test`, `pnpm test:coverage` — jsdom; `pnpm test:browser` — Chromium по собранному ядру.
 - `pnpm typecheck`, `pnpm lint`, `pnpm format:check`.
 
@@ -73,9 +73,9 @@ from '@merfy/shell'` (С7-2 А, п. 12).
 - Сбой — на экземпляр: `data-merfy-state="failed"`, элементам с `data-action` — `aria-disabled`, событие
   `merfy:section:error` на `document` с `{ section, id, script, stage, message }`, строка в консоли; на витрине —
   запись в журнал ошибок шлюза (`src/error-log.ts`, `CORE_ERRORS`).
-- Части SDK `cart`, `favorites`, `auth` (`src/core/parts/`) — сторы `{ get }` и действия с `Result`; данные — в
-  памяти страницы до блоков 9 и 10. Действия разметки: `cart.add` — `data-product-id`, `data-variant-id`,
-  `data-quantity`; `cart.remove` — `data-line-id`; `favorites.toggle` — `data-product-id`.
+- Части SDK `cart`, `favorites`, `auth`, `newsletter` (`src/core/parts/`) — сторы `{ get }` и действия с `Result`.
+  Корзина — на сервере (блок 9); избранное и вход — в памяти страницы до блока 10. Действия разметки: `cart.add` —
+  `data-product-id`, `data-variant-id`, `data-quantity`; `favorites.toggle` — `data-product-id`.
 - Атрибуты, которые код секции пишет через `El.attr` и `El.cssVar`, — по списку `src/core/attributes.ts`; остальное —
   ошибка `attr-forbidden`.
 
@@ -101,3 +101,21 @@ from '@merfy/shell'` (С7-2 А, п. 12).
 - Сборка: `pnpm build` → `dist/behaviors/` (файл на поведение, появления, провайдер и часть; общий код — в кусках,
   бюджеты brotli — `build/behaviors.ts`); бандл страницы склеивает их (часть 6б). Тесты — `pnpm test` (unit) и
   `pnpm test:browser` (настоящий Chromium).
+
+## Сторы, события и действия (блок 9 «Секций и SDK», часть 9а)
+
+- Сторы ядра — Nano Stores 1.5.4 (`src/core/stores.ts`): `atom` замораживает значение, `set` с тем же значением
+  подписчиков не вызывает; `batch`, `computed`, `onMount` — из Nano Stores. Секциям — по-прежнему фасад `{ get }` и
+  `ctx.watch`.
+- Каталог событий — `src/core/event-catalog.ts`, вход `@merfy/shell/events`: 20 имён `merfy:объект:действие`, правила
+  полей, семь кодов ошибок, `checkEventDetail` для превью и тестов. Типы данных — `EventMap` (`src/core/types.ts`).
+  Имена и поля внутри `"sdk": 1` только добавляются. На витрине данные событий не проверяются.
+- Таблица действий — `src/core/action-catalog.ts`, вход `@merfy/shell/actions`: `cart.add`, `favorites.toggle`,
+  `newsletter.subscribe` (без разметки) — для проверки при сохранении и документации.
+- Ошибки действий — `src/core/failures.ts`: ответ шлюза → код SDK (код в теле `{ code }` главнее статуса), тексты
+  уведомлений, `quiet`. Покупатель видит `merfy:notice:show` с текстом SDK; `invalid` — только строка в консоли.
+- Корзина — на сервере (`src/core/parts/cart.ts`): номер — `merfy:cart-id:v1` (в превью — в памяти страницы), чтение при
+  первой подписке и по событиям страницы, `cart.add` — очередь по одному, `$count` растёт сразу и откатывается при
+  ошибке. `cart.remove` — блок 10.
+- Подписка на рассылку — `ctx.newsletter.subscribe({ email })` по `uses: ["newsletter"]`.
+- Бюджет бандла страницы без секций — 12 КБ brotli (`build/build.ts`).

@@ -11,6 +11,7 @@ export {
   type CodeSection,
   type Entity,
   type EntityType,
+  type RevisionPage,
   type ShellInput,
 } from './inputs';
 export { DATA_KEY_VERSION, KEY_VERSION, buildKey, dataKey } from './key';
@@ -37,6 +38,7 @@ export {
   type MenuTreeItem,
   type PageContent,
   type PageMode,
+  type PageProps,
   type PageRender,
   type PlacedSection,
   type RenderBlock,

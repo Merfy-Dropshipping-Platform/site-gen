@@ -54,7 +54,9 @@ describe('входы: свои страницы, настройки темы, м
     expect(errorOf(withPage({ ...PAGE, id: 'page-custom-2', slug: '/theme-stand' }))).toMatchObject({
       path: 'revision.pages.1.slug',
     });
-    expect(errorOf(withPage({ ...PAGE, id: 'page-custom-2', slug: '/О-нас' }))).toMatchObject({ code: 'inputs-invalid' });
+    expect(errorOf(withPage({ ...PAGE, id: 'page-custom-2', slug: '/О-нас' }))).toMatchObject({
+      code: 'inputs-invalid',
+    });
   });
 
   it('ключ сборки и ключ данных: правка настроек темы, своей страницы или меню — другой ключ', () => {

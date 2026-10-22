@@ -17,7 +17,7 @@ export {
 export { DATA_KEY_VERSION, KEY_VERSION, buildKey, dataKey } from './key';
 export { entityHashes, entityKey } from './entities';
 export { buildStorefront, type BuildReferences, type StorefrontBuild, type ThemeBuild } from './build';
-export { renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
+export { pagePropsOf, renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
 export { SHOP_ROUTES, routeOf, type ShopRoute } from './routes';
 export { REBUILD_EVENT_INPUTS } from './event-inputs';
 

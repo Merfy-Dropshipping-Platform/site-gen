@@ -12,7 +12,7 @@ import { themeFonts, themeTokensCss } from './fonts';
 import { countersOf } from './counters';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
-import type { ShopPageLocals, ShopSocial } from './locals';
+import type { ShopPageHead, ShopPageLocals, ShopSocial } from './locals';
 import type { ShopRoute } from './routes';
 import { EMPTY_PAGE_CONTENT, type PageContent, type PageMode } from './sections-render';
 
@@ -33,7 +33,25 @@ function editsOf(inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMigra
 }
 
 // Имя магазина для страницы: мерчант его стёр — адрес магазина. Пустого заголовка и имени в конфиге (блок 3) не бывает.
-const shopName = (site: BuildInputs['site']): string => site.name.trim() || new URL(site.publicUrl).host;
+export const shopName = (site: BuildInputs['site']): string => site.name.trim() || new URL(site.publicUrl).host;
+
+// SEO страницы. У главной — SEO магазина: заголовок мерчанта, иначе имя магазина, иначе адрес. У своей страницы (часть
+// 4, Р1-4-8) — её SEO из ревизии: без заголовка — имя страницы, нет и его — имя магазина. Пусто — мерчант не заполнил:
+// тема тег не рендерит (договор SEO, seo.ts).
+function seoOf(inputs: BuildInputs, route: ShopRoute, name: string) {
+  const page = (inputs.revision.pages ?? []).find((candidate) => candidate.id === route.id);
+  if (page === undefined)
+    return {
+      title: inputs.site.seoTitle.trim() || name,
+      description: inputs.site.description.trim(),
+      keywords: inputs.site.keywords.trim(),
+    };
+  return {
+    title: page.seo.title.trim() || page.name.trim() || name,
+    description: page.seo.description.trim(),
+    keywords: page.seo.keywords.trim(),
+  };
+}
 
 // Картинка для соцсетей (блок 9) — логотип магазина из брендинга. Соцсети показывают картинку по адресу https в PNG,
 // JPEG, WebP или GIF; SVG, http и путь без адреса — пустая строка: тега og:image нет, сборка идёт.
@@ -72,6 +90,35 @@ const ANALYTICS_BY_MODE: Record<PageMode, (inputs: BuildInputs) => ConfigAnalyti
   preview: () => null,
 };
 
+// <head> страницы: язык, SEO, канонический адрес, конфиг, стили, код секций и теги соцсетей.
+function headOf(
+  inputs: BuildInputs,
+  route: ShopRoute,
+  theme: ParsedTheme,
+  migrations: TokenMigrations,
+  content: PageContent,
+  name: string,
+): ShopPageHead {
+  const config = buildStorefrontConfig({
+    site: { ...inputs.site, name },
+    theme: inputs.theme,
+    env: inputs.env,
+    page: { id: route.id, path: route.path },
+    mode: content.mode,
+    analytics: ANALYTICS_BY_MODE[content.mode](inputs),
+  });
+  return {
+    lang: config.locale,
+    ...seoOf(inputs, route, name),
+    canonical: new URL(route.path, inputs.site.publicUrl).href,
+    configHtml: configTag(config),
+    ...pageStyles(inputs, theme, migrations),
+    // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены.
+    codeHtml: codeHead(inputs, route.id, content.sectionsCss, content.mode),
+    social: socialOf(name, config.locale, inputs.site.logoUrl),
+  };
+}
+
 // content — секции страницы, нарисованные заранее (page.ts): разметка, CSS и режим. По умолчанию секций нет.
 export function pageLocals(
   inputs: BuildInputs,
@@ -81,27 +128,12 @@ export function pageLocals(
   content: PageContent = EMPTY_PAGE_CONTENT,
 ): ShopPageLocals {
   const name = shopName(inputs.site);
-  const config = buildStorefrontConfig({
-    site: { ...inputs.site, name },
-    theme: inputs.theme,
-    env: inputs.env,
-    page: { id: route.id, path: route.path },
-    mode: content.mode,
-    analytics: ANALYTICS_BY_MODE[content.mode](inputs),
-  });
-  const head = {
-    lang: config.locale,
-    // SEO-заголовок мерчанта; не заполнил — имя магазина, нет и его — адрес.
-    title: inputs.site.seoTitle.trim() || name,
-    // Пусто — мерчант не заполнил: тема тег не рисует (договор SEO, seo.ts).
-    description: inputs.site.description.trim(),
-    keywords: inputs.site.keywords.trim(),
-    canonical: new URL(route.path, inputs.site.publicUrl).href,
-    configHtml: configTag(config),
-    ...pageStyles(inputs, theme, migrations),
-    // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены.
-    codeHtml: codeHead(inputs, route.id, content.sectionsCss, content.mode),
-    social: socialOf(name, config.locale, inputs.site.logoUrl),
+  return {
+    head: headOf(inputs, route, theme, migrations, content, name),
+    shop: { name },
+    year: inputs.year,
+    header: content.header ?? [],
+    sections: content.sections,
+    footer: content.footer ?? [],
   };
-  return { head, shop: { name }, year: inputs.year, sections: content.sections };
 }

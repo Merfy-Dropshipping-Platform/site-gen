@@ -124,7 +124,11 @@ const buildInputsSchema = z.strictObject({
   code: codeSchema,
   // Ревизия мерчанта — по содержимому, не по id (факт 6): правки токенов (блок 1); правки настроек темы — их читают
   // секции с "uses": ["theme"], и свои страницы (часть 4 блока 1 «Секций и SDK»).
-  revision: z.strictObject({ tokens: jsonObject, settings: jsonObject.optional(), pages: z.array(pageSchema).optional() }),
+  revision: z.strictObject({
+    tokens: jsonObject,
+    settings: jsonObject.optional(),
+    pages: z.array(pageSchema).optional(),
+  }),
   site: z.strictObject({
     id: z.uuid(),
     // Имя и SEO мерчант может оставить пустыми: страница берёт вместо имени адрес магазина, пустое SEO не рисует.

@@ -111,8 +111,11 @@ export interface PlacedSection {
 // HTML секций одной страницы, байт (блок 2, «Решил сам» п. 3): секция, которая не влезает, не рендерится (render-output).
 export const PAGE_SECTIONS_BYTES = 4 * 1024 * 1024;
 
+// sections — секции страницы; header и footer — шапка и подвал (часть 4); нет — пусто.
 export interface PageContent {
+  header?: string[];
   sections: string[];
+  footer?: string[];
   sectionsCss: string;
   mode: PageMode;
 }

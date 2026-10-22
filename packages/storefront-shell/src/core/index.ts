@@ -4,6 +4,9 @@
 export { defineSection } from './define';
 export { SECTION_FAILURE_EVENT } from './events';
 export { start, type CoreEnv, type StartedCore } from './start';
+export { auth } from './parts/auth';
+export { cart } from './parts/cart';
+export { favorites } from './parts/favorites';
 export {
   EMPTY_INPUT,
   INPUT_PARSE_FAILED,

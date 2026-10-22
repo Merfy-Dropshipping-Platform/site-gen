@@ -34,6 +34,11 @@ export default tseslint.config(
       'max-lines-per-function': ['error', { max: 30, skipBlankLines: true, skipComments: true }],
     },
   },
+  // ctx.log ядра секций (блок 5 «Секций и SDK», раздел 3.2): в превью — console.info с именем секции. Только этот файл.
+  {
+    files: ['src/core/log.ts'],
+    rules: { 'no-console': ['error', { allow: ['error', 'info'] }] },
+  },
   {
     files: ['src/**/*.ts', 'sections/**/*.ts'],
     rules: {

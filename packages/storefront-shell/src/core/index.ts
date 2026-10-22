@@ -2,6 +2,8 @@
 // отсюда start и части SDK; код секции — defineSection и типы. Главный вход @merfy/shell (каркас блока 7) до части 5б
 // не меняется.
 export { defineSection } from './define';
+export { SECTION_FAILURE_EVENT } from './events';
+export { start, type CoreEnv, type StartedCore } from './start';
 export {
   EMPTY_INPUT,
   INPUT_PARSE_FAILED,

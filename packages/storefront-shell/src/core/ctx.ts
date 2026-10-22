@@ -102,21 +102,10 @@ const watchOf =
     return stopWithSignal(stop, signal);
   };
 
-// Форма детали события по имени (раздел 3.2): шина стирает типы, здесь детали каталога проверяются, чужая форма — мимо.
-const DETAIL_TEXTS: Readonly<Record<EventName, readonly string[]>> = {
-  'merfy:page:ready': [],
-  'merfy:page:view': ['path'],
-  'merfy:page:hidden': [],
-  'merfy:page:visible': [],
-  'merfy:page:restore': [],
-  'merfy:page:leave': [],
-  'merfy:section:mount': ['section'],
-  'merfy:section:error': ['section', 'id', 'script', 'stage', 'message'],
-};
-
-function isDetail<E extends EventName>(name: E, detail: unknown): detail is EventDetail<E> {
-  if (!isRecord(detail)) return false;
-  return DETAIL_TEXTS[name].every((key) => typeof detail[key] === 'string');
+// События merfy:* в шину отправляет только ядро и части SDK (CoreHandle.emit, типы EventMap); ctx.emit секции добавляет к
+// имени имя секции. На витрине данные событий не проверяем (блок 9, «Решил сам» п. 11).
+function isDetail<E extends EventName>(_name: E, detail: unknown): detail is EventDetail<E> {
+  return isRecord(detail);
 }
 
 const listenOf =

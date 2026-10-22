@@ -1,73 +1,238 @@
-import { atom, readable } from '../stores';
-import type { CartLine, CartModule, CartState, Result, SdkPart } from '../types';
+import { messageOf } from '../../report';
+import { withLine } from '../cart-lines';
+import type { AddItemBody, AddedItem, CartApi, CreatedCart, ReadCart } from '../cart-server';
+import { addItem, createCart, readCart } from '../cart-server';
+import { type Failure, failed, failureOf, partialText, reportFailure, reportWarning } from '../failures';
+import { pageStorage, type KeyValue } from '../storage';
+import { type Atom, atom, batch, computed, onMount, readable } from '../stores';
+import type { ActionOptions, CartLine, CartModule, CartState, CoreHandle, Result, SdkPart } from '../types';
 
-// Корзина в новом виде (design.md блока 5, раздел 3.12; каталог блока 10): сторы { get } и действия с Result. Данные —
-// в памяти страницы до блока 10; id строки — productId или productId:variantId.
+// Корзина на сервере (блок 9, часть 9а): $cart — ответ шлюза, $count — штуки плюс ждущие ответа, cart.add — по одному
+// запросу в порядке нажатий. Номер — CART_ID_KEY в pageStorage (Р9а-15); cart.remove — блок 10 (Р9а-7).
 
-const countOf = (lines: readonly CartLine[]): number => lines.reduce((total, line) => total + line.quantity, 0);
+export const CART_ID_KEY = 'merfy:cart-id:v1';
+export const REREAD_AFTER_MS = 30_000;
 
-const lineIdOf = (productId: string, variantId?: string): string =>
-  variantId === undefined ? productId : `${productId}:${variantId}`;
-
-const withAdded = (
-  lines: readonly CartLine[],
-  id: string,
-  productId: string,
-  variantId: string | null,
-  quantity: number,
-): readonly CartLine[] => {
-  const existing = lines.find((line) => line.id === id);
-  if (existing === undefined) return [...lines, { id, productId, variantId, quantity }];
-  return lines.map((line) => (line.id === id ? { ...line, quantity: line.quantity + quantity } : line));
-};
-
-const invalid = (message: string): Result<never> => ({ ok: false, error: { code: 'invalid', message } });
-
-interface CartArgs {
+interface AddArgs {
   readonly productId: string;
   readonly variantId?: string;
   readonly quantity?: number;
 }
 
-type Commit = (lines: readonly CartLine[]) => CartState;
-
-function addLines(commit: Commit, current: () => readonly CartLine[], args: CartArgs): Result<CartState> {
-  const quantity = args.quantity ?? 1;
-  if (args.productId === '') return invalid('cart.add: productId — непустая строка');
-  if (!Number.isInteger(quantity) || quantity < 1) return invalid('cart.add: quantity — целое число от 1');
-  const id = lineIdOf(args.productId, args.variantId);
-  const lines = withAdded(current(), id, args.productId, args.variantId ?? null, quantity);
-  return { ok: true, data: commit(lines) };
+interface ArgRule {
+  readonly ok: (args: AddArgs) => boolean;
+  readonly message: string;
 }
 
-function removeLine(commit: Commit, current: () => readonly CartLine[], lineId: string): Result<CartState> {
-  const lines = current();
-  if (!lines.some((line) => line.id === lineId)) return invalid(`cart.remove: строки ${lineId} нет`);
-  return { ok: true, data: commit(lines.filter((line) => line.id !== lineId)) };
+// Общее состояние модуля корзины: сторы, очередь, хранилище номера и отметка чтения.
+type SettledItem = Exclude<AddedItem, { readonly kind: 'missing' }>;
+
+interface CartRuntime {
+  readonly core: CoreHandle;
+  readonly state: Atom<CartState>;
+  readonly adding: Atom<number>;
+  readonly page: KeyValue;
+  readonly enqueue: <T>(task: () => Promise<T>) => Promise<T>;
+  readonly writeStores: (write: () => void) => void;
+  readDone: boolean;
+  readAt: number;
 }
+
+const isText = (value: unknown): boolean => typeof value === 'string' && value !== '';
+const isQuantity = (v: unknown): boolean => typeof v === 'number' && Number.isInteger(v) && v >= 1;
+// Проверка аргументов cart.add — таблицей, по порядку (п. 3).
+const ARG_RULES: readonly ArgRule[] = [
+  { ok: (a) => isText(a.productId), message: 'cart.add: productId — непустая строка' },
+  { ok: (a) => a.variantId === undefined || isText(a.variantId), message: 'cart.add: variantId — непустая строка' },
+  { ok: (a) => a.quantity === undefined || isQuantity(a.quantity), message: 'cart.add: quantity — целое число от 1' },
+];
+
+const argProblem = (args: AddArgs): string | null => ARG_RULES.find((rule) => !rule.ok(args))?.message ?? null;
+const countOfLines = (lines: readonly CartLine[]): number => lines.reduce((total, line) => total + line.quantity, 0);
 
 const quantityFrom = (value: string | undefined): number | undefined =>
   value === undefined ? undefined : Number(value);
 
+// Очередь: чтение и добавление по одному, в порядке вызова; ошибка задачи не рвёт цепочку (п. 4).
+function createQueue(): CartRuntime['enqueue'] {
+  let tail: Promise<unknown> = Promise.resolve();
+  return <T>(task: () => Promise<T>): Promise<T> => {
+    const run = tail.then(task, task);
+    tail = run.catch(() => undefined);
+    return run;
+  };
+}
+
+// События страницы (Р9а-9): вкладку вернули позже REREAD_AFTER_MS, «Назад» из кеша, другая вкладка сменила номер.
+function listenPage(rt: CartRuntime, reread: () => void): () => void {
+  const signal = new AbortController();
+  const onVisible = (): void => {
+    if (document.visibilityState === 'visible' && Date.now() - rt.readAt > REREAD_AFTER_MS) reread();
+  };
+  const onRestore = (event: PageTransitionEvent): void => void (event.persisted ? reread() : undefined);
+  const onStorage = (event: StorageEvent): void => void (event.key === CART_ID_KEY ? reread() : undefined);
+  document.addEventListener('visibilitychange', onVisible, { signal: signal.signal });
+  window.addEventListener('pageshow', onRestore, { signal: signal.signal });
+  window.addEventListener('storage', onStorage, { signal: signal.signal });
+  return () => signal.abort();
+}
+
+const apiOf = (core: CoreHandle): CartApi | null => {
+  const config = core.config;
+  if (config === null) return null;
+  return { url: config.api.url, storeId: config.shop.id, currency: config.currency };
+};
+
+const cartIdOf = (page: KeyValue): string | null => page.getItem(CART_ID_KEY);
+
+function markRead(rt: CartRuntime, lines: readonly CartLine[]): null {
+  rt.readDone = true;
+  rt.readAt = Date.now();
+  rt.writeStores(() => rt.state.set({ ready: true, lines }));
+  return null;
+}
+
+// Чтение корзины: 404 и cart_not_found — номер стёрт, пустая готовая; ошибка — Failure для вызвавшего (фон — Р9а-13).
+async function readCartInto(rt: CartRuntime): Promise<Failure | null> {
+  const conf = apiOf(rt.core);
+  if (conf === null) return failureOf('server', 'cart: конфиг витрины не прочитан');
+  const id = cartIdOf(rt.page);
+  if (id === null) return markRead(rt, []);
+  const outcome: ReadCart = await readCart(conf, id);
+  if (outcome.kind === 'missing') {
+    rt.page.removeItem(CART_ID_KEY);
+    return markRead(rt, []);
+  }
+  if (outcome.kind === 'failure') return outcome.failure;
+  return markRead(rt, outcome.lines);
+}
+
+const failAdd = (rt: CartRuntime, failure: Failure, n: number, options?: ActionOptions): Result<CartState> => {
+  rt.writeStores(() => rt.adding.set(rt.adding.get() - n));
+  reportFailure(rt.core, failure, options);
+  return failed(failure);
+};
+
+// Успех: стор → событие → ответ; «сколько добавилось» — разница с прежним количеством строки (п. 8).
+function finishAdd(rt: CartRuntime, outcome: SettledItem, n: number, options?: ActionOptions): Result<CartState> {
+  if (outcome.kind === 'failure') return failAdd(rt, outcome.failure, n, options);
+  const line = outcome.line;
+  const previous = rt.state.get().lines.find((current) => current.id === line.id)?.quantity ?? 0;
+  const added = line.quantity - previous;
+  rt.writeStores(() => {
+    rt.state.set({ ready: true, lines: withLine(rt.state.get().lines, line) });
+    rt.adding.set(rt.adding.get() - n);
+  });
+  if (added <= 0) {
+    const failure = failureOf('stock-limit', '');
+    reportFailure(rt.core, failure, options);
+    return failed(failure);
+  }
+  rt.core.emit('merfy:cart:add', {
+    lineId: line.id,
+    productId: line.productId,
+    variantId: line.variantId,
+    quantity: added,
+    price: line.price,
+  });
+  if (added < n) reportWarning(rt.core, partialText(added), options);
+  return { ok: true, data: rt.state.get() };
+}
+
+const itemBodyOf = (args: AddArgs, n: number): AddItemBody =>
+  args.variantId === undefined
+    ? { product_id: args.productId, quantity: n }
+    : { product_id: args.productId, quantity: n, variant_id: args.variantId };
+
+async function retryOnNewCart(rt: CartRuntime, conf: CartApi, args: AddArgs, n: number): Promise<SettledItem> {
+  const created: CreatedCart = await createCart(conf);
+  if (created.kind === 'failure') return { kind: 'failure', failure: created.failure };
+  rt.page.setItem(CART_ID_KEY, created.id);
+  const outcome = await addItem(conf, created.id, itemBodyOf(args, n));
+  return outcome.kind === 'missing' ? { kind: 'failure', failure: failureOf('server', '') } : outcome;
+}
+
+// Номер из хранилища или новая корзина; cart_not_found с сохранённым номером — номер стёрт и повтор один раз (п. 5).
+async function postItem(rt: CartRuntime, conf: CartApi, args: AddArgs, n: number): Promise<SettledItem> {
+  const storedId = cartIdOf(rt.page);
+  const fresh: CreatedCart = storedId === null ? await createCart(conf) : { kind: 'id', id: storedId };
+  if (fresh.kind === 'failure') return { kind: 'failure', failure: fresh.failure };
+  if (storedId === null) rt.page.setItem(CART_ID_KEY, fresh.id);
+  const outcome = await addItem(conf, fresh.id, itemBodyOf(args, n));
+  if (outcome.kind !== 'missing') return outcome;
+  if (storedId === null) return { kind: 'failure', failure: failureOf('server', '') };
+  rt.page.removeItem(CART_ID_KEY);
+  markRead(rt, []);
+  return retryOnNewCart(rt, conf, args, n);
+}
+
+// Задача добавления в очереди: сначала чтение непрочитанной корзины, потом запросы шлюза (п. 3).
+async function addOnServer(
+  rt: CartRuntime,
+  args: AddArgs,
+  n: number,
+  options?: ActionOptions,
+): Promise<Result<CartState>> {
+  const conf = apiOf(rt.core);
+  if (conf === null) return failAdd(rt, failureOf('server', 'cart: конфиг витрины не прочитан'), n, options);
+  if (!rt.readDone) {
+    const readFailure = await readCartInto(rt);
+    if (readFailure !== null) return failAdd(rt, readFailure, n, options);
+  }
+  const outcome = await postItem(rt, conf, args, n);
+  return finishAdd(rt, outcome, n, options);
+}
+
+const addInModule =
+  (rt: CartRuntime) =>
+  async (args: AddArgs, options?: ActionOptions): Promise<Result<CartState>> => {
+    const problem = argProblem(args);
+    if (problem !== null) {
+      const failure = failureOf('invalid', problem);
+      reportFailure(rt.core, failure, options);
+      return failed(failure);
+    }
+    if (apiOf(rt.core) === null) {
+      const failure = failureOf('server', 'cart.add: конфиг витрины не прочитан');
+      reportFailure(rt.core, failure, options);
+      return failed(failure);
+    }
+    const n = args.quantity ?? 1;
+    rt.writeStores(() => rt.adding.set(rt.adding.get() + n));
+    return rt.enqueue(() => addOnServer(rt, args, n, options));
+  };
+
 export const cart: SdkPart<'cart', CartModule> = {
   name: 'cart',
-  create: (): CartModule => {
-    const state = atom<CartState>({ ready: true, lines: [] });
-    const count = atom(0);
-    const commit: Commit = (lines) => {
-      const next: CartState = { ready: true, lines };
-      state.set(next);
-      count.set(countOf(lines));
-      return next;
+  create: (core: CoreHandle): CartModule => {
+    const state = atom<CartState>({ ready: false, lines: [] });
+    const adding = atom(0);
+    const count = computed([state, adding], (cartState, waiting) => countOfLines(cartState.lines) + waiting);
+    // Запись в сторы — одним batch: $cart и $adding меняются вместе; ошибка подписчика — строкой в консоль (Р9а-11).
+    const writeStores = (write: () => void): void => {
+      try {
+        batch(write);
+      } catch (error) {
+        console.error(`Подписчик стора корзины: ${messageOf(error)}`);
+      }
     };
-    const current = (): readonly CartLine[] => state.get().lines;
-    return {
-      $cart: readable(state),
-      $count: readable(count),
-      add: (args: CartArgs): Promise<Result<CartState>> => Promise.resolve(addLines(commit, current, args)),
-      remove: (args: { readonly lineId: string }): Promise<Result<CartState>> =>
-        Promise.resolve(removeLine(commit, current, args.lineId)),
+    const rt: CartRuntime = {
+      core,
+      state,
+      adding,
+      page: pageStorage(window, core.mode),
+      enqueue: createQueue(),
+      writeStores,
+      readDone: false,
+      readAt: 0,
     };
+    // Первая подписка на $cart или $count: чтение непрочитанной корзины и слушатели страницы до отключения стора.
+    onMount(state, () => {
+      const reread = (): void => void rt.enqueue(() => readCartInto(rt));
+      if (!rt.readDone && core.config !== null) reread();
+      return listenPage(rt, reread);
+    });
+    return { $cart: readable(state), $count: readable(count), add: addInModule(rt) };
   },
   markup: {
     add: {
@@ -75,13 +240,9 @@ export const cart: SdkPart<'cart', CartModule> = {
       call: (api: CartModule, values): Promise<Result<unknown>> =>
         api.add({
           productId: values['product-id'] ?? '',
-          variantId: values['variant-id'],
-          quantity: quantityFrom(values.quantity),
+          ...(values['variant-id'] === undefined ? {} : { variantId: values['variant-id'] }),
+          ...(values.quantity === undefined ? {} : { quantity: quantityFrom(values.quantity) }),
         }),
-    },
-    remove: {
-      params: ['line-id'],
-      call: (api: CartModule, values): Promise<Result<unknown>> => api.remove({ lineId: values['line-id'] ?? '' }),
     },
   },
 };

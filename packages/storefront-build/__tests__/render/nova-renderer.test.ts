@@ -40,9 +40,26 @@ describe('рисовальщик темы nova', () => {
     expect(html).toContain('<meta name="twitter:card" content="summary">');
   });
 
-  it('имя магазина и год — из данных сборщика', () => {
-    expect(html).toContain('<h1>Стенд Nova</h1>');
-    expect(html).toContain('© 2026 Стенд Nova');
+  // Шапка, страница и подвал (блок 1 «Секций и SDK», часть 4): разметка секций по группам; своих заголовка и подвала у
+  // темы нет — их выводят секции.
+  it('шапка — до <main>, секции страницы — в <main>, подвал — после; своих <h1> и подвала нет', async () => {
+    const page = await renderer.render('/', {
+      ...probeLocals,
+      header: ['<merfy-section data-section-id="header-1">Шапка</merfy-section>'],
+      sections: ['<merfy-section data-section-id="hero-1">Первый экран</merfy-section>'],
+      footer: ['<merfy-section data-section-id="footer-1">Подвал</merfy-section>'],
+    });
+    const at = ['header-1', '<main>', 'hero-1', '</main>', 'footer-1'].map((marker) => page.indexOf(marker));
+    expect(at.every((index) => index >= 0)).toBe(true);
+    expect([...at].sort((left, right) => left - right)).toEqual(at);
+    expect(page).not.toContain('<h1>');
+    expect(page).not.toContain('©');
+  });
+
+  it('своя страница — по каноническому адресу страницы; другой адрес — page-unknown', async () => {
+    const head = { ...probeLocals.head, canonical: 'https://nova-stand.example/o-nas' };
+    await expect(renderer.render('/o-nas', { ...probeLocals, head })).resolves.toContain('<main>');
+    await expect(renderer.render('/dostavka', { ...probeLocals, head })).rejects.toMatchObject({ code: 'page-unknown' });
   });
 
   it('конфиг и CSS токенов встают в <head> как есть', () => {

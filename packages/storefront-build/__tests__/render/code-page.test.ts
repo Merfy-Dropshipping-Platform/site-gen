@@ -57,7 +57,7 @@ describe('код секций на рисовальщике nova', () => {
     );
     expect(names).toEqual(['shop:cart-badge', 'shop:hero', 'reviews:list', 'reviews:list']);
     expect(main).toContain('<p class="flex">shop:hero</p>');
-    expect(main.indexOf('<h1>')).toBeLessThan(main.indexOf('<merfy-section'));
+    expect(main).not.toContain('<h1>');
   });
 
   it('магазин без кода — ни стилей секций, ни ядра, ни <merfy-section>', async () => {

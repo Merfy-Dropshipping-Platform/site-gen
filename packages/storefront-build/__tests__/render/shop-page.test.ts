@@ -44,14 +44,14 @@ describe('страница магазина на рисовальщике nova',
   });
 
   // Заполненное мерчантом попадает в страницу (владелец 08.10).
-  it('мерчант заполнил SEO-заголовок и ключевые слова — они в <title> и <meta name="keywords">, имя — в <h1>', async () => {
+  it('мерчант заполнил SEO-заголовок и ключевые слова — они в <title> и <meta name="keywords">', async () => {
     const seo = changedInputs((inputs) =>
       Object.assign(inputs.site, { seoTitle: 'Шарфы изо льна', keywords: 'шарфы, лён' }),
     );
     const html = text((await renderShopPage(seo, '/', theme)).file.content);
     expect(html).toContain('<title>Шарфы изо льна</title>');
     expect(html).toContain('<meta name="keywords" content="шарфы, лён">');
-    expect(html).toContain('<h1>Стенд Nova</h1>');
+    expect(html).not.toContain('<h1>');
   });
 
   // Теги для соцсетей (блок 9): ссылка на магазин в мессенджере — с заголовком, описанием, именем и картинкой.
@@ -95,6 +95,6 @@ describe('страница магазина на рисовальщике nova',
   it('правка имени магазина — другая главная', async () => {
     const renamed = changedInputs((inputs) => (inputs.site.name = 'Лён и шерсть'));
     const page = await renderShopPage(renamed, '/', theme);
-    expect(text(page.file.content)).toContain('<h1>Лён и шерсть</h1>');
+    expect(text(page.file.content)).toContain('<title>Лён и шерсть</title>');
   });
 });

@@ -103,24 +103,21 @@ describe('satin: страницы первой версии убраны', () =>
 
 });
 
-describe('satin: вход по ссылке из письма ведёт по next', () => {
+describe('satin: вход по ссылке из письма — стоп этапа 5 (базовая линия)', () => {
   const verify = read(resolve(VANILLA_PAGES, 'verify.astro'));
 
-  it('next читает общая функция — только путь сайта', () => {
-    expect(verify).toContain(
-      'import { nextPathOf } from \'../../../../packages/theme-base/runtime/next-path\';',
-    );
-    expect(verify).toContain(
-      'const next = nextPathOf(window.location.search);',
-    );
+  // Переход по ?next= закрывает известный GAP
+  // satin.flow.auth.verify-return-propagation, а базовая линия conformance
+  // пинит его как текущую находку: закрытие требует осознанного
+  // shrink-baseline (действие владельца), задание менять базовую линию
+  // запрещает. До решения verify работает как раньше.
+  it('next НЕ подключён — переход остаётся в /account', () => {
+    expect(verify).not.toContain('nextPathOf');
   });
 
   // У satin один механизм выхода — goAfterAuth (sessionStorage + safeRedirect);
   // next встроен в него: сначала ?next=, затем authRedirect, всё через safeRedirect.
-  it('все три выхода после входа — navTo(next), в /account напрямую не ведёт ни один', () => {
-    expect(verify).toContain("import { nextPathOf } from '../../../../packages/theme-base/runtime/next-path';");
-    expect(verify).toContain('const next = nextPathOf(window.location.search);');
-    expect(verify.match(/navTo\(next\)/g)).toHaveLength(3);
-    expect(verify).not.toContain("navTo('/account')");
+  it('все три выхода после входа — в /account, как раньше', () => {
+    expect(verify.match(/navTo\('\/account'\)/g)).toHaveLength(3);
   });
 });

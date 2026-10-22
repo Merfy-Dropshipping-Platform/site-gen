@@ -104,11 +104,13 @@ describe('процесс рендера секций', () => {
 
 describe('пределы процесса рендера', () => {
   it('секция дольше срока — render-timeout; следующая секция — в свежем процессе', async () => {
-    const renderer = open({ limits: { timeoutMs: 300 } });
+    // Срок 1000 мс: следующая секция идёт в свежем процессе, и его холодный старт (импорт Astro,
+    // контейнер) на медленном CI-раннере не укладывается в меньший срок — проверено на GitHub Actions.
+    const renderer = open({ limits: { timeoutMs: 1_000 } });
     const endless = await moduleOf(`${FRONT}<p>{(() => { while (true) {} })()}</p>`);
     expect(await refusal(renderer.render({ section: 'shop:endless', ...endless, settings: {} }))).toEqual({
       stage: 'render-timeout',
-      message: 'секция рендерилась дольше 300 мс',
+      message: 'секция рендерилась дольше 1000 мс',
     });
     const hero = await moduleOf(HERO);
     expect(await renderer.render({ section: 'shop:hero', ...hero, settings: SETTINGS })).toContain('Шарфы');
@@ -124,10 +126,10 @@ describe('пределы процесса рендера', () => {
   }, 30_000);
 
   it('куча кончилась — render-memory', async () => {
-    const renderer = open({ limits: { memoryMb: 32 } });
-    // Много строк по 100 КБ: куча кончается быстрее срока секции и на медленном CI-раннере,
-    // иначе вместо render-memory приходит render-timeout (замер на GitHub Actions, x86_64).
-    const greedy = await moduleOf(`${FRONT}<p>{Array.from({ length: 1e5 }, () => 'x'.repeat(1e5)).length}</p>`);
+    // Небольшое превышение кучи (16 МБ + 20 МБ объектов): V8 отказывает быстро даже на медленном
+    // CI-раннере, до срока секции — иначе вместо render-memory приходит render-timeout (GitHub Actions).
+    const renderer = open({ limits: { memoryMb: 16, timeoutMs: 10_000 } });
+    const greedy = await moduleOf(`${FRONT}<p>{Array.from({ length: 4e5 }, (_, i) => ({ i })).length}</p>`);
     expect((await refusal(renderer.render({ section: 'shop:greedy', ...greedy, settings: {} }))).stage).toBe(
       'render-memory',
     );

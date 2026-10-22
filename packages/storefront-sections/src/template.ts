@@ -1,12 +1,13 @@
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
+import { SERVICE_PREFIX, expressionProblems, type Found } from './expressions';
 import { TEMPLATE_FILE } from './format';
 import { positionAt } from './position';
 import { problem, type SectionProblem } from './problems';
 
 // Шаблон секции SDK 1 — template.astro (блок 1 «Секций и SDK», Р3, Р4; design.md блока 7, п. 17). Проверка — по дереву
 // разбора @astrojs/compiler-rs, а не по тексту: тег, атрибут и выражение видны там, где их видит Astro. Скрипт — только
-// файлом скрипта, своего CSS нет (классы Tailwind из словаря), документ — у сборки. Ошибки разбора здесь не
-// сообщаются — их сообщает компиляция (compile.ts) с местом в шаблоне.
+// файлом скрипта, своего CSS нет (классы Tailwind из словаря), документ — у сборки. Что можно в выражениях —
+// expressions.ts (блок 2). Ошибки разбора здесь не сообщаются — их сообщает компиляция (compile.ts) с местом в шаблоне.
 export const FORBIDDEN_TAGS: ReadonlySet<string> = new Set([
   'script',
   'style',
@@ -28,7 +29,6 @@ const HTML_TAG = /^[a-z][A-Za-z0-9-]*$/;
 const DIRECTIVE = /^(?:set|is|define|client|server|transition):/;
 const HANDLER = /^on/i;
 const SCRIPT_URL = /^\s*javascript:/i;
-const SERVICE_PREFIX = '__merfy';
 // Операторы frontmatter — без пробелов и «;». В части 1 в Astro.props только settings (Р3); blocks — часть 3.
 const FRONTMATTER: ReadonlySet<string> = new Set(['const{settings}=Astro.props', 'const{settings,blocks}=Astro.props']);
 
@@ -43,11 +43,6 @@ const TEXT = {
   service: (name: string) => `имя ${name}: префикс __merfy — служебный`,
   frontmatter: 'во frontmatter только const { settings } = Astro.props;',
 } as const;
-
-interface Found {
-  at: number;
-  message: string;
-}
 
 type NodeRule = (node: AstNode, text: string) => Found[];
 
@@ -108,8 +103,7 @@ const rulesOf = (node: AstNode, text: string): Found[] =>
 export async function templateProblems(text: string): Promise<SectionProblem[]> {
   const { parse } = await import('@astrojs/compiler-rs');
   const { ast } = await Promise.resolve(parse(text));
-  return nodesOf(ast)
-    .flatMap((node) => rulesOf(node, text))
+  return [...nodesOf(ast).flatMap((node) => rulesOf(node, text)), ...expressionProblems(ast)]
     .sort((left, right) => left.at - right.at)
     .map((found) => problem('template-forbidden', TEMPLATE_FILE, found.message, positionAt(text, found.at)));
 }

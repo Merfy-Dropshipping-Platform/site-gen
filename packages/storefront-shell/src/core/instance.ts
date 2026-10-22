@@ -1,4 +1,5 @@
 import { messageOf } from '../report';
+import { listenActions } from './actions';
 import { createElScope, type ElScope } from './el';
 import { SECTION_FAILURE_EVENT, type EventBus } from './events';
 import { createGuard, type Guard } from './guard';
@@ -151,6 +152,33 @@ function stateOf(runtime: InstanceRuntime, element: HTMLElement, entry: SectionE
   };
 }
 
+// Слушатели действий разметки (раздел 3.4): на тип события — один слушатель на корне секции.
+function listenActionsOf(runtime: InstanceRuntime, state: InstanceState, ctx: BaseCtx<Record<string, unknown>>): void {
+  listenActions({
+    root: state.element,
+    scope: state.scope,
+    ctx,
+    actions: state.entry?.definition.actions ?? {},
+    markup: (name: string) => runtime.markup(name),
+    signal: state.controller.signal,
+    run: (work: () => unknown): unknown => state.run('runtime', work),
+  });
+}
+
+const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: SectionInput): CtxDeps => ({
+  win: runtime.win,
+  bus: runtime.bus,
+  owner: state,
+  scope: state.scope,
+  run: state.run,
+  signal: state.controller.signal,
+  page: runtime.page,
+  name: state.name,
+  id: state.id,
+  mode: runtime.mode,
+  input,
+});
+
 // ctx, attach частей до mount и сам mount (раздел 3.6, шаг 4).
 function launchOf(
   runtime: InstanceRuntime,
@@ -158,21 +186,9 @@ function launchOf(
   input: SectionInput,
   modules: Record<string, unknown>,
 ): void {
-  const depsOf = (): CtxDeps => ({
-    win: runtime.win,
-    bus: runtime.bus,
-    owner: state,
-    scope: state.scope,
-    run: state.run,
-    signal: state.controller.signal,
-    page: runtime.page,
-    name: state.name,
-    id: state.id,
-    mode: runtime.mode,
-    input,
-  });
-  state.ctx = createCtx(depsOf(), modules);
-  // слушатели действий — задача 5а-5
+  const ctx = createCtx(ctxDepsOf(runtime, state, input), modules);
+  state.ctx = ctx;
+  listenActionsOf(runtime, state, ctx);
   runtime.attachAll({
     element: state.element,
     name: state.name,

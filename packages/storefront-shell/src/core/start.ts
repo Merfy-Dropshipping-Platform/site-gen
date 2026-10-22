@@ -138,7 +138,8 @@ const startFor = (
   element: HTMLElement,
 ): Instance | null => {
   const entry = byName.get(element.getAttribute('data-section') ?? '') ?? null;
-  if (entry === null && element.querySelector(SDK_MARKUP_SELECTOR) === null) return null;
+  if (entry === null && !element.matches(SDK_MARKUP_SELECTOR) && element.querySelector(SDK_MARKUP_SELECTOR) === null)
+    return null;
   const instance = startInstance(runtime, element, entry);
   instances.set(element, instance);
   return instance;

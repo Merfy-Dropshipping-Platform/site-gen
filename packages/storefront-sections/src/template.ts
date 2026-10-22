@@ -1,6 +1,6 @@
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
-import { SERVICE_PREFIX, expressionProblems, type Found } from './expressions';
-import { TEMPLATE_FILE } from './format';
+import { SERVICE_PREFIX, USE_NAMES, expressionProblems, usesText, type Found } from './expressions';
+import { TEMPLATE_FILE, type SectionUse } from './format';
 import { positionAt } from './position';
 import { problem, type SectionProblem } from './problems';
 import { NO_RICHTEXT, setHtmlFound, type RichtextIds } from './set-html';
@@ -30,8 +30,10 @@ const HTML_TAG = /^[a-z][A-Za-z0-9-]*$/;
 const DIRECTIVE = /^(?:set|is|define|client|server|transition):/;
 const HANDLER = /^on/i;
 const SCRIPT_URL = /^\s*javascript:/i;
-// Операторы frontmatter — без пробелов и «;». В части 1 в Astro.props только settings (Р3); blocks — часть 3.
-const FRONTMATTER: ReadonlySet<string> = new Set(['const{settings}=Astro.props', 'const{settings,blocks}=Astro.props']);
+// Оператор frontmatter — без пробелов и «;»: const { <имена> } = Astro.props. Имена — settings и blocks (части 1, 3),
+// theme и shop — только с "uses" в section.json (часть 4, Р1-4-5); каждое один раз, порядок любой.
+const FRONTMATTER = /^const\{([A-Za-z_$][\w$]*(?:,[A-Za-z_$][\w$]*)*)\}=Astro\.props$/;
+const BASE_PROPS: ReadonlySet<string> = new Set(['settings', 'blocks']);
 
 const TEXT = {
   tag: (name: string) => `тег <${name}> в шаблоне секции запрещён: скрипт — script.ts, документ — у сборки`,
@@ -77,15 +79,22 @@ function attributeTexts(name: string): string[] {
 const serviceTexts = (name: string): string[] => (name.startsWith(SERVICE_PREFIX) ? [TEXT.service(name)] : []);
 const scriptUrlTexts = (value: string): string[] => (SCRIPT_URL.test(value) ? [TEXT.scriptUrl] : []);
 
-function frontmatterFound(node: AstNode, text: string): Found[] {
+// Один оператор frontmatter: не по форме, имя дважды или имя не из Astro.props секции — прежний отказ; theme или shop без
+// "uses" — отказ с подсказкой про uses.
+function statementFound(compact: string, at: number, uses: ReadonlySet<string>): Found[] {
+  const names = FRONTMATTER.exec(compact)?.[1]?.split(',');
+  if (names === undefined || new Set(names).size !== names.length) return [{ at, message: TEXT.frontmatter }];
+  if (names.some((name) => !BASE_PROPS.has(name) && !USE_NAMES.has(name))) return [{ at, message: TEXT.frontmatter }];
+  return names.filter((name) => USE_NAMES.has(name) && !uses.has(name)).map((name) => ({ at, message: usesText(name) }));
+}
+
+function frontmatterFound(node: AstNode, text: string, uses: ReadonlySet<string>): Found[] {
   // У AstroFrontmatter операторы — в program.body.
   const program = fieldOf(node, 'program');
   const body = isNode(program) ? fieldOf(program, 'body') : fieldOf(node, 'body');
   const statements = Array.isArray(body) ? body.filter(isNode) : [];
   return statements.flatMap((statement) =>
-    FRONTMATTER.has(text.slice(statement.start, statement.end).replace(/[\s;]/g, ''))
-      ? []
-      : [{ at: statement.start, message: TEXT.frontmatter }],
+    statementFound(text.slice(statement.start, statement.end).replace(/[\s;]/g, ''), statement.start, uses),
   );
 }
 
@@ -98,15 +107,20 @@ const NODE_RULES: Partial<Record<string, NodeRule>> = {
   Literal: (node) => at(node, scriptUrlTexts(stringOf(fieldOf(node, 'value')))),
 };
 
-const rulesOf = (node: AstNode, text: string): Found[] =>
-  node.type.includes('Frontmatter') ? frontmatterFound(node, text) : (NODE_RULES[node.type]?.(node, text) ?? []);
+const rulesOf = (node: AstNode, text: string, uses: ReadonlySet<string>): Found[] =>
+  node.type.includes('Frontmatter') ? frontmatterFound(node, text, uses) : (NODE_RULES[node.type]?.(node, text) ?? []);
 
-export async function templateProblems(text: string, richtext: RichtextIds = NO_RICHTEXT): Promise<SectionProblem[]> {
+export async function templateProblems(
+  text: string,
+  richtext: RichtextIds = NO_RICHTEXT,
+  uses: readonly SectionUse[] = [],
+): Promise<SectionProblem[]> {
+  const declared = new Set(uses);
   const { parse } = await import('@astrojs/compiler-rs');
   const { ast } = await Promise.resolve(parse(text));
   return [
-    ...nodesOf(ast).flatMap((node) => rulesOf(node, text)),
-    ...expressionProblems(ast),
+    ...nodesOf(ast).flatMap((node) => rulesOf(node, text, declared)),
+    ...expressionProblems(ast, declared),
     ...setHtmlFound(ast, richtext),
   ]
     .sort((left, right) => left.at - right.at)

@@ -72,6 +72,11 @@ const TEXT = {
   body: 'функция с телом { … }: в шаблоне секции — только (x) => выражение',
 } as const;
 
+// theme и shop (часть 4, Р1-4-5): имена Astro.props, которые секция объявляет в "uses"; без него — отказ с подсказкой.
+export const USE_NAMES: ReadonlySet<string> = new Set(['theme', 'shop']);
+export const usesText = (name: string): string => `${name} в Astro.props — только с "uses": ["${name}"] в section.json`;
+const NO_NAMES: ReadonlySet<string> = new Set();
+
 export interface Found {
   at: number;
   message: string;
@@ -146,7 +151,7 @@ function referenceStep(node: AstNode, scope: Scope): Step {
   const name = stringOf(fieldOf(node, 'name'));
   if (scope.has(name) || EXPRESSION_GLOBALS.has(name) || name.startsWith(SERVICE_PREFIX))
     return { found: [], next: [] };
-  return found(node, TEXT.name(name));
+  return found(node, USE_NAMES.has(name) ? usesText(name) : TEXT.name(name));
 }
 
 // Шаблон параметра: имена уже в области видимости; проверяются ключи и значения по умолчанию.
@@ -192,9 +197,10 @@ const ROLE_STEPS: Readonly<Record<Role, (node: AstNode, scope: Scope) => Step>> 
 };
 
 // Все запреты выражений шаблона. Обход — стеком: глубину шаблона уже ограничил depth.ts, но рекурсии здесь нет.
-export function expressionProblems(root: unknown): Found[] {
+// names — имена Astro.props сверх settings и blocks, которые секция объявила в "uses".
+export function expressionProblems(root: unknown, names: ReadonlySet<string> = NO_NAMES): Found[] {
   const problems: Found[] = [];
-  const stack: Item[] = [item(root, new Set(), 'jsx')];
+  const stack: Item[] = [item(root, names, 'jsx')];
   for (let current = stack.pop(); current !== undefined; current = stack.pop()) {
     for (const node of nodesIn(current.value)) {
       const step = ROLE_STEPS[current.role](node, current.scope);

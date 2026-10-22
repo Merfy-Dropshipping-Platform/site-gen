@@ -25,3 +25,7 @@ export { carousel } from './carousel';
 export { reveal } from './reveal';
 export { tabs } from './tabs';
 export { navMenu } from './nav-menu';
+export { quantity } from './quantity';
+export { cardPhotos } from './card-photos';
+export { stickyHeader } from './sticky-header';
+export { video } from './video';

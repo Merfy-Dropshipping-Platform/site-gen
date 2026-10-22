@@ -14,7 +14,7 @@ const SOURCES = [
 ];
 // analytics — ещё и поле аналитики страницы (storefront-build/src/head.ts: ConfigAnalytics), не только имя секции:
 // сторож на него не смотрит.
-const NAMES = /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|heading-size|button-label|button-link)$/;
+const NAMES = /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|heading-size|button-label|button-link|faq|open-first)$/;
 const LITERAL = /'([^'\\\n]*)'|"([^"\\\n]*)"|`([^`\\]*)`/g;
 
 const filesOf = (dir: string): string[] =>

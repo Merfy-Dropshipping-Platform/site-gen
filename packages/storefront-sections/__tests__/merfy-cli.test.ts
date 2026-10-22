@@ -70,3 +70,45 @@ describe('модуль шаблона', () => {
     expect(RUNTIME_URL.startsWith('file://')).toBe(true);
   });
 });
+
+describe('секции тест-магазина (часть 3)', () => {
+  it('«Первый экран» и «Вопросы и ответы» из fixtures/shop проходят без предупреждений', async () => {
+    expect(await merfy('section', 'check', 'fixtures/shop/hero')).toEqual({
+      code: 0,
+      stdout: 'shop:hero: проверка прошла\n',
+    });
+    expect(await merfy('section', 'check', 'fixtures/shop/faq')).toEqual({
+      code: 0,
+      stdout: 'shop:faq: проверка прошла\n',
+    });
+  }, 60_000);
+
+  it('блоки без корневого элемента — предупреждение block-select-unavailable, код выхода 0', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'merfy-faq-'));
+    const manifest = {
+      sdk: 1,
+      name: 'faq',
+      kind: 'section',
+      title: 'Вопросы и ответы',
+      settings: [],
+      blocks: {
+        question: {
+          title: 'Вопрос',
+          limit: 20,
+          settings: [{ id: 'question', label: 'Вопрос', setting: { kind: 'string', default: 'Новый вопрос' } }],
+        },
+      },
+      defaultBlocks: [{ type: 'question', settings: {} }],
+    };
+    await writeFile(join(dir, 'section.json'), JSON.stringify(manifest));
+    await writeFile(
+      join(dir, 'template.astro'),
+      '---\nconst { settings, blocks } = Astro.props;\n---\n<div>{blocks.map((block) => (block.settings.question ? <p>{block.settings.question}</p> : <span>?</span>))}</div>',
+    );
+    expect(await merfy('section', 'check', dir)).toEqual({
+      code: 0,
+      stdout:
+        'shop:faq: проверка прошла\ntemplate.astro:4:7 — blocks.map без одного корневого элемента: подпункт выбирается только слева [block-select-unavailable]\n',
+    });
+  }, 30_000);
+});

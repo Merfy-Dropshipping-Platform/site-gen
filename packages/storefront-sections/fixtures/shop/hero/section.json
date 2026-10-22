@@ -1,0 +1,48 @@
+{
+  "sdk": 1,
+  "name": "hero",
+  "kind": "section",
+  "title": "Первый экран",
+  "settings": [
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "section": "Оформление",
+      "setting": {
+        "kind": "select",
+        "default": "large",
+        "options": [
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Крупный" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "heading": {
+      "title": "Заголовок",
+      "limit": 1,
+      "settings": [{ "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Тёплые шарфы из кашемира" } }]
+    },
+    "text": {
+      "title": "Текст",
+      "limit": 1,
+      "settings": [
+        { "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "Мягкие, лёгкие и не колются. Доставим за два дня." } }
+      ]
+    },
+    "button": {
+      "title": "Кнопка",
+      "limit": 1,
+      "settings": [
+        { "id": "label", "label": "Текст кнопки", "setting": { "kind": "string", "default": "Смотреть шарфы" } },
+        { "id": "link", "label": "Ссылка кнопки", "setting": { "kind": "url", "default": "/catalog" } }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "heading", "settings": {} },
+    { "type": "text", "settings": {} },
+    { "type": "button", "settings": {} }
+  ]
+}

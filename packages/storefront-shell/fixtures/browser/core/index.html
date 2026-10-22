@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ядро секций — фикстура блока 5</title>
+    <script type="application/json" id="merfy-config">
+      {"v":1,"mode":"live","shop":{"id":"7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70","name":"Шарфы","url":"https://scarves.example"},"currency":"RUB","locale":"ru-RU","api":{"url":"http://127.0.0.1:9/api"},"theme":{"id":"nova","version":"0.0.4"},"page":{"id":"home","path":"/"}}
+    </script>
+    <script>
+      // Копии событий ядра на document — для теста. Встроенный скрипт идёт раньше бандла: тот модульный.
+      window.__merfy = [];
+      ['merfy:section:mount', 'merfy:section:error', 'merfy:page:ready', 'merfy:page:view', 'shop:ticker:tick'].forEach(
+        (name) => document.addEventListener(name, (event) => window.__merfy.push({ name, detail: event.detail })),
+      );
+    </script>
+    <script type="module" src="/_merfy/b/page.js"></script>
+  </head>
+  <body>
+    <merfy-section data-section="shop:scarf-match" data-section-id="pick-1">
+      <p data-ref="hint">Выберите пальто</p>
+      <button type="button" data-ref="coat" data-action="pick" data-coat="grey">Серое</button>
+      <button type="button" data-ref="coat" data-action="pick" data-coat="black">Чёрное</button>
+      <script type="application/json" data-merfy-input>{"settings":{"title":"Подберите шарф"},"blocks":[],"data":{}}</script>
+    </merfy-section>
+    <merfy-section data-section="shop:broken" data-section-id="broken-1">
+      <button type="button" data-action="pick">Подобрать</button>
+      <a href="#after-broken">Ссылка внутри сломанной секции</a>
+      <script type="application/json" data-merfy-input>{"settings":{},"blocks":[],"data":{}}</script>
+    </merfy-section>
+    <merfy-section data-section="shop:buy" data-section-id="buy-1">
+      <button type="button" data-action="cart.add" data-product-id="p12" data-quantity="2">В корзину</button>
+    </merfy-section>
+    <merfy-section data-section="shop:cart-badge" data-section-id="badge-1">
+      <a href="/cart">Корзина <span data-ref="count">0</span></a>
+      <script type="application/json" data-merfy-input>{"settings":{},"blocks":[],"data":{}}</script>
+    </merfy-section>
+    <merfy-section data-section="shop:ticker" data-section-id="ticker-1">
+      <p>Тикает раз в 100 мс</p>
+      <script type="application/json" data-merfy-input>{"settings":{},"blocks":[],"data":{}}</script>
+    </merfy-section>
+    <merfy-section data-section="shop:static" data-section-id="static-1"><p>Секция без скрипта</p></merfy-section>
+  </body>
+</html>

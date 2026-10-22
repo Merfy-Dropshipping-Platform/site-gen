@@ -10,12 +10,7 @@
  * к sites-service через RabbitMQ.
  */
 import { Controller, Logger } from "@nestjs/common";
-import {
-  Ctx,
-  MessagePattern,
-  Payload,
-  RmqContext,
-} from "@nestjs/microservices";
+import { Ctx, MessagePattern, Payload, RmqContext } from "@nestjs/microservices";
 import { PagesService } from "./pages.service";
 
 interface CreatePagePayload {
@@ -60,8 +55,7 @@ export class PagesMicroserviceController {
   ) {
     try {
       this.logger.log(`pages.create request: ${JSON.stringify(data)}`);
-      const { tenantId, siteId, name, slug, templatePageId } =
-        data ?? ({} as CreatePagePayload);
+      const { tenantId, siteId, name, slug, templatePageId } = data ?? ({} as CreatePagePayload);
       if (!tenantId || !siteId || !name || !slug) {
         return {
           success: false,
@@ -109,7 +103,10 @@ export class PagesMicroserviceController {
   }
 
   @MessagePattern("sites.pages.list")
-  async listPages(@Payload() data: ListPagesPayload, @Ctx() _ctx: RmqContext) {
+  async listPages(
+    @Payload() data: ListPagesPayload,
+    @Ctx() _ctx: RmqContext,
+  ) {
     try {
       this.logger.log(`pages.list request: ${JSON.stringify(data)}`);
       const { tenantId, siteId } = data ?? ({} as ListPagesPayload);

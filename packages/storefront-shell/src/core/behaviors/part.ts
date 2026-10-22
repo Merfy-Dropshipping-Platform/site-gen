@@ -62,7 +62,7 @@ function attachToRow(state: PageState, host: InstanceHost, attached: AttachedBeh
   const sameElement = row !== undefined && row.element === host.element;
   state.rows.set(host.id, {
     element: host.element,
-    attached: sameElement ? [...row?.attached ?? [], attached] : [attached],
+    attached: sameElement ? [...(row?.attached ?? []), attached] : [attached],
   });
   // Снятие экземпляра удаляет строку, если в таблице всё ещё строка его элемента: замена секции с тем же id
   // записывает свою — её старый сигнал не трогает.

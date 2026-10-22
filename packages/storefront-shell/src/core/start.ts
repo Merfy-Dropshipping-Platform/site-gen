@@ -128,7 +128,9 @@ function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts
     if (!isModuleName(name)) throw new ShellError('part-unknown', `части ${name} на странице нет`);
     return parts.apiOf(name);
   };
-  return { win, mode, bus, page, partApi, attachAll, markup };
+  // API созданной части платформы по имени (для ядра, не для кода секций): так ctx.animate получает провайдер behaviors.
+  const apiOfPart = (name: string): unknown => parts.started.find(({ part }) => part.name === name)?.api ?? null;
+  return { win, mode, bus, page, partApi, apiOfPart, attachAll, markup };
 }
 
 const startFor = (
@@ -138,7 +140,8 @@ const startFor = (
   element: HTMLElement,
 ): Instance | null => {
   const entry = byName.get(element.getAttribute('data-section') ?? '') ?? null;
-  if (entry === null && element.querySelector(SDK_MARKUP_SELECTOR) === null) return null;
+  if (entry === null && !element.matches(SDK_MARKUP_SELECTOR) && element.querySelector(SDK_MARKUP_SELECTOR) === null)
+    return null;
   const instance = startInstance(runtime, element, entry);
   instances.set(element, instance);
   return instance;

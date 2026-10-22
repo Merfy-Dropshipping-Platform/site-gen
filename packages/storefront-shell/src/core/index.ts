@@ -7,6 +7,8 @@ export { start, type CoreEnv, type StartedCore } from './start';
 export { auth } from './parts/auth';
 export { cart } from './parts/cart';
 export { favorites } from './parts/favorites';
+// Блок 6: типы ctx.animate. Поведения и анимации — @merfy/shell/behaviors.
+export type { AnimateOptions, Animation, Bezier, EasingName, KeyframeValue, Keyframes } from './types';
 export {
   EMPTY_INPUT,
   INPUT_PARSE_FAILED,

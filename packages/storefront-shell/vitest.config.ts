@@ -9,7 +9,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts', 'build/**/*.ts', 'sections/analytics/**/*.ts'],
-      exclude: ['src/browser.ts', 'src/index.ts', 'src/core/index.ts', 'sections/analytics/script.ts'],
+      // Поведения и появления (блок 6) работают с вёрсткой и WAAPI — их покрывают тесты Chromium (проект browser).
+      exclude: [
+        'src/browser.ts',
+        'src/index.ts',
+        'src/core/index.ts',
+        'src/core/behaviors/index.ts',
+        'src/core/behaviors/{accordion,dialog,carousel,tabs,nav-menu,quantity,card-photos,sticky-header,video,reveal,motion}.ts',
+        'sections/analytics/script.ts',
+      ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },

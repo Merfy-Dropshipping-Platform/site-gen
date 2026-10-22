@@ -1,0 +1,4 @@
+---
+const { settings } = Astro.props;
+---
+<p class="m-0 text-lg">{Array(Number(settings.count)).fill(settings.word).join(' ')}</p>

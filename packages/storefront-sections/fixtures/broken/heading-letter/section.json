@@ -1,0 +1,16 @@
+{
+  "sdk": 1,
+  "name": "heading-letter",
+  "kind": "section",
+  "title": "Буквица заголовка",
+  "settings": [
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "setting": {
+        "kind": "string",
+        "default": "Шарфы к первым холодам"
+      }
+    }
+  ]
+}

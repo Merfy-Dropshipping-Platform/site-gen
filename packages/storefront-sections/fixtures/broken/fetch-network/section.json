@@ -1,0 +1,6 @@
+{
+  "sdk": 1,
+  "name": "fetch-network",
+  "kind": "section",
+  "title": "Запрос в сеть"
+}

@@ -1,0 +1,16 @@
+{
+  "sdk": 1,
+  "name": "slow-grid",
+  "kind": "section",
+  "title": "Таблица умножения",
+  "settings": [
+    {
+      "id": "count",
+      "label": "Размер таблицы",
+      "setting": {
+        "kind": "string",
+        "default": "3"
+      }
+    }
+  ]
+}

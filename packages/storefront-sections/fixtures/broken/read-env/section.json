@@ -1,0 +1,6 @@
+{
+  "sdk": 1,
+  "name": "read-env",
+  "kind": "section",
+  "title": "Переменные окружения"
+}

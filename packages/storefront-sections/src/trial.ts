@@ -1,4 +1,4 @@
-import { sha256 } from '@merfy/storefront-build';
+import { sha256, type MenuTree } from '@merfy/storefront-build';
 import { TEMPLATE_FILE } from './format';
 import { problem, type SectionProblem } from './problems';
 import { withSectionRenderer, type RendererOptions } from './render';
@@ -12,8 +12,10 @@ export async function trialRender(
   settings: SettingValues,
   options: RendererOptions = {},
   blocks: readonly TemplateBlock[] = [],
+  menus: Readonly<Record<string, MenuTree>> = {},
 ): Promise<SectionProblem[]> {
-  const request = { section: 'trial', hash: sha256(Buffer.from(render, 'utf8')), module: render, settings, blocks };
+  const hash = sha256(Buffer.from(render, 'utf8'));
+  const request = { section: 'trial', hash, module: render, settings, blocks, menus };
   try {
     await withSectionRenderer((draw) => draw(request), options);
     return [];

@@ -2,6 +2,7 @@ import type { Dictionary } from '@merfy/tokens';
 import { sha256 } from './canonical';
 import { StorefrontBuildError } from './errors';
 import { sectionCss } from './section-css';
+import type { ShopProps } from './shop-props';
 
 // Рендер секций страницы (блок 1 «Секций и SDK», Р1, Р2): модуль шаблона по отпечатку и значения настроек → HTML
 // секции. Пакет Astro и компилятор не подключает: функцию рендера даёт сборщик — процесс рендера storefront-sections
@@ -36,6 +37,10 @@ export interface SectionRenderRequest {
   // Часть 3: показанные блоки секции и режим превью (метки блоков); нет — блоков нет, режим — витрина.
   blocks?: readonly RenderBlock[];
   preview?: boolean;
+  // Часть 4: деревья меню по id настройки вида menu, настройки темы и данные магазина — только секциям с "uses".
+  menus?: Readonly<Record<string, MenuTree>>;
+  theme?: SettingValues;
+  shop?: ShopProps;
 }
 
 export type RenderSection = (request: SectionRenderRequest) => Promise<string>;

@@ -2,6 +2,7 @@ import { defaultLaunch, spawnIsolated, type IsolatedLaunch } from './isolation';
 import { prepareResultSchema, type PrepareInput, type PrepareResult } from './prepare';
 import { problem } from './problems';
 import { resolveSectionBlocks } from './blocks';
+import { sectionMenus } from './menus';
 import { defaultSettings } from './settings';
 import { trialRender } from './trial';
 import { WORKER_FILES } from './worker-files';
@@ -78,6 +79,8 @@ export async function prepareInWorker(
   const settings = defaultSettings(result.section.manifest.settings);
   // Блоки новой секции (defaultBlocks): шаблон с blocks.map проверяется на них.
   const { blocks } = resolveSectionBlocks(result.section.manifest, undefined);
-  const trial = await trialRender(result.section.render, settings, { launch: options.launch }, blocks);
+  // Меню новой секции (часть 4): у настроек вида menu — пустое дерево; theme и shop — пустые (процесс рендера).
+  const menus = sectionMenus(result.section.manifest.settings, settings, []);
+  const trial = await trialRender(result.section.render, settings, { launch: options.launch }, blocks, menus);
   return trial.length > 0 ? { ok: false, problems: trial } : result;
 }

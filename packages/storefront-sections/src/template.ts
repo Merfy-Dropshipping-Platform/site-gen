@@ -85,7 +85,9 @@ function statementFound(compact: string, at: number, uses: ReadonlySet<string>):
   const names = FRONTMATTER.exec(compact)?.[1]?.split(',');
   if (names === undefined || new Set(names).size !== names.length) return [{ at, message: TEXT.frontmatter }];
   if (names.some((name) => !BASE_PROPS.has(name) && !USE_NAMES.has(name))) return [{ at, message: TEXT.frontmatter }];
-  return names.filter((name) => USE_NAMES.has(name) && !uses.has(name)).map((name) => ({ at, message: usesText(name) }));
+  return names
+    .filter((name) => USE_NAMES.has(name) && !uses.has(name))
+    .map((name) => ({ at, message: usesText(name) }));
 }
 
 function frontmatterFound(node: AstNode, text: string, uses: ReadonlySet<string>): Found[] {

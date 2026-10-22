@@ -49,6 +49,7 @@ export {
   type SettingValues,
 } from './sections-render';
 export { htmlClasses, sectionCss } from './section-css';
+export { type ShopProps } from './shop-props';
 export { SHELL_DIST, readShellBuild } from './shell';
 
 // Манифест, граф, build.json

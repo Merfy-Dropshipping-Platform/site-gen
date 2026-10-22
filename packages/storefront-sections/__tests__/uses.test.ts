@@ -29,7 +29,9 @@ describe('theme и shop в шаблоне', () => {
 
   it('имя дважды или не из Astro.props секции — прежний отказ frontmatter', async () => {
     expect(await messages('---\nconst { settings, settings } = Astro.props;\n---\n<p></p>')).toEqual([FRONTMATTER]);
-    expect(await messages('---\nconst { settings, cart } = Astro.props;\n---\n<p></p>', ['shop'])).toEqual([FRONTMATTER]);
+    expect(await messages('---\nconst { settings, cart } = Astro.props;\n---\n<p></p>', ['shop'])).toEqual([
+      FRONTMATTER,
+    ]);
   });
 
   it('templateOptionsOf передаёт uses: секция с uses проходит проверку шаблона целиком', async () => {

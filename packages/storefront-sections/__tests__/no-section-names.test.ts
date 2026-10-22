@@ -14,7 +14,10 @@ const SOURCES = [
 ];
 // analytics — ещё и поле аналитики страницы (storefront-build/src/head.ts: ConfigAnalytics), не только имя секции:
 // сторож на него не смотрит.
-const NAMES = /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|heading-size|button-label|button-link|faq|open-first)$/;
+const NAMES =
+  /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|heading-size|button-label|button-link|faq|open-first|logo-position|menu-type|text-size|newsletter)$/;
+// Сервис sites (часть 4): страницы магазина и меню новой темы — тоже без имён секций; тесты (*.spec.ts) — нет.
+const SITES_SOURCES = ['../src/pages'];
 const LITERAL = /'([^'\\\n]*)'|"([^"\\\n]*)"|`([^`\\]*)`/g;
 
 const filesOf = (dir: string): string[] =>
@@ -30,7 +33,8 @@ const namedLiterals = (file: string): string[] =>
 
 describe('в коде платформы нет имён секций и их полей', () => {
   it('строки с именами секций и полей «Первого экрана» есть только в section.json', () => {
-    expect(SOURCES.flatMap((source) => filesOf(join(PACKAGES, source))).flatMap(namedLiterals)).toEqual([]);
+    const files = [...SOURCES, ...SITES_SOURCES].flatMap((source) => filesOf(join(PACKAGES, source)));
+    expect(files.filter((file) => !file.endsWith('.spec.ts')).flatMap(namedLiterals)).toEqual([]);
   });
 
   it('сторож видит такую строку', () => {

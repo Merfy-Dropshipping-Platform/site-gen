@@ -1,0 +1,46 @@
+{
+  "sdk": 1,
+  "name": "footer",
+  "kind": "section",
+  "title": "Подвал",
+  "groups": ["footer"],
+  "limit": 1,
+  "removable": false,
+  "uses": ["theme", "shop"],
+  "settings": [
+    { "id": "logo", "label": "Логотип", "setting": { "kind": "image", "default": "", "maxBytes": 512000 } },
+    {
+      "id": "newsletter",
+      "label": "Рассылка",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "" } },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "small",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "" } },
+    {
+      "id": "text-size",
+      "label": "Размер текста",
+      "setting": {
+        "kind": "select",
+        "default": "small",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    }
+  ]
+}

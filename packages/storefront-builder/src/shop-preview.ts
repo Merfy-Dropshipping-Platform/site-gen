@@ -1,17 +1,22 @@
 import {
   PREVIEW_AGENT,
   PREVIEW_SECTIONS_AGENT,
+  pagePropsOf,
   parseBuildInputs,
   renderPlacedSections,
   renderShopPage,
   type BuildInputs,
+  type PageProps,
   type PageRender,
   type ShopTheme,
 } from '@merfy/storefront-build';
 import {
   resolveSectionBlocks,
   resolveSectionSettings,
+  revisionMenusSchema,
+  sectionMenus,
   type CurrentSection,
+  type RevisionMenu,
   type SectionRenderRequest,
 } from '@merfy/storefront-sections';
 import type { Dictionary } from '@merfy/tokens';
@@ -48,12 +53,17 @@ export interface ShopPreviewDeps {
 const HOME_PAGES: ReadonlySet<string> = new Set(['', '/', 'home']);
 const FONTS_STYLE = /<style id="merfy-fonts">([\s\S]*?)<\/style>/;
 const TEXT = {
-  page: 'в превью есть главная (page=home) и стенд темы (page=stand)',
-  block: 'нужно тело JSON { instance: { id, section, settings } }',
+  page: 'в превью есть главная (page=home), свои страницы (page=<id страницы>) и стенд темы (page=stand)',
+  block: 'нужно тело JSON { instance: { id, section, settings }, menus?, theme? }',
   section: (name: string) => `секции ${name} у магазина нет`,
   extensions: 'сервис расширений не ответил',
 } as const;
-const blockSchema = z.object({ instance: instanceSchema });
+// Часть 4 (Р1-4-11): меню ревизии и правки настроек темы — несохранённые, из конструктора.
+const blockSchema = z.object({
+  instance: instanceSchema,
+  menus: revisionMenusSchema.optional(),
+  theme: z.record(z.string(), z.unknown()).optional(),
+});
 
 const isPreviewAnswer = (value: PreviewShop | DrawAnswer): value is DrawAnswer => 'status' in value;
 
@@ -123,12 +133,14 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   const rawShop = url.searchParams.get('shop');
   const page = url.searchParams.get('page') ?? '';
   if (page === 'stand') return deps.stand(rawShop);
-  if (!HOME_PAGES.has(page)) return answer(404, TEXT.page);
   const found = await deps.shop(rawShop);
   if (isPreviewAnswer(found)) return found;
   const { inputs, renders } = await deps.inputs(found.shopId);
+  // Главная или своя страница по id (часть 4, Р1-4-9): адрес — из ревизии; другой страницы в превью нет.
+  const path = HOME_PAGES.has(page) ? '/' : inputs.revision.pages?.find((candidate) => candidate.id === page)?.slug;
+  if (path === undefined) return answer(404, TEXT.page);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
-  const rendered = await renderShopPage(inputs, '/', theme, previewPage(deps, found.shopId, renders));
+  const rendered = await renderShopPage(inputs, path, theme, previewPage(deps, found.shopId, renders));
   // Оба скрипта превью (1а-13): слушатель токенов и скрипт секций — select-block, update-block, reconcile.
   const agents = `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script>`;
   const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), agents);
@@ -148,7 +160,7 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   if (isPreviewAnswer(found)) return found;
   const parsed = blockSchema.safeParse(jsonOf(body));
   if (!parsed.success) return jsonAnswer(400, { problems: [TEXT.block] });
-  const { instance } = parsed.data;
+  const { instance, menus, theme } = parsed.data;
   const sections = await deps.sections(found.shopId);
   if (sections === null) return jsonAnswer(502, { problems: [TEXT.extensions] });
   const current = sections.get(instance.section);
@@ -160,10 +172,42 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
     current.manifest.blocks === undefined
       ? {}
       : { blocks: resolveSectionBlocks(current.manifest, instance.blocks).blocks };
-  const placed = { id: instance.id, name: instance.section, hash: current.renderHash, settings, ...blocks };
+  // Часть 4 (Р1-4-11): деревья меню по значениям настроек; uses — только если объявлен.
+  const placed = {
+    id: instance.id,
+    name: instance.section,
+    hash: current.renderHash,
+    settings,
+    ...blocks,
+    ...placedExtras(current, settings, menus ?? []),
+  };
+  const props = (current.manifest.uses ?? []).length > 0 ? await previewProps(deps, found.shopId, theme) : undefined;
   const modules = new Map([[current.renderHash, current.render]]);
-  const content = await renderPlacedSections([placed], found.dictionary, previewPage(deps, found.shopId, modules));
+  const content = await renderPlacedSections([placed], found.dictionary, {
+    ...previewPage(deps, found.shopId, modules),
+    props,
+  });
   return jsonAnswer(200, { html: content.sections[0] ?? '', css: content.sectionsCss });
+}
+
+// Меню и uses экземпляра превью (часть 4): деревья меню — только у секций с настройками вида menu.
+function placedExtras(
+  current: CurrentSection,
+  settings: Readonly<Record<string, string | boolean>>,
+  menus: readonly RevisionMenu[],
+): Record<string, unknown> {
+  const trees = sectionMenus(current.manifest.settings, settings, menus);
+  return {
+    ...(Object.keys(trees).length === 0 ? {} : { menus: trees }),
+    ...(current.manifest.uses === undefined ? {} : { uses: current.manifest.uses }),
+  };
+}
+
+// Настройки темы и данные магазина для превью одного блока (часть 4, Р1-4-11): themeEdits нет — правки из ревизии.
+async function previewProps(deps: ShopPreviewDeps, shopId: string, themeEdits: unknown): Promise<PageProps> {
+  const { inputs } = await deps.inputs(shopId);
+  const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
+  return pagePropsOf(inputs, theme, themeEdits ?? inputs.revision.settings ?? {});
 }
 
 export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null): Promise<DrawAnswer> {
@@ -181,6 +225,14 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
       ...(section.manifest.blocks === undefined
         ? {}
         : { blocks: section.manifest.blocks, defaultBlocks: section.manifest.defaultBlocks ?? [] }),
+      ...placeKeys(section.manifest),
     }));
   return jsonAnswer(200, { sections: list });
+}
+
+// Место секции (часть 4, Р1-4-2): groups, limit, removable, uses, newPage — только объявленные в section.json.
+const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage'] as const;
+
+function placeKeys(manifest: CurrentSection['manifest']): Record<string, unknown> {
+  return Object.fromEntries(PLACE_KEYS.flatMap((key) => (manifest[key] === undefined ? [] : [[key, manifest[key]]])));
 }

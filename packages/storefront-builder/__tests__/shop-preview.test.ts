@@ -6,10 +6,11 @@ import {
   type ShopTheme,
 } from '@merfy/storefront-build';
 import type { CurrentSection, SectionRenderRequest } from '@merfy/storefront-sections';
-import { parseTheme, platformDictionary } from '@merfy/tokens';
+import { panelForTheme, parsePanel, parseTheme, platformDictionary } from '@merfy/tokens';
 import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 import standInputsJson from '../../storefront-build/fixtures/stand-inputs.json';
+import panelJson from '../../theme-contract/panel/theme-panel.json';
 import novaThemeJson from '../../theme-nova/theme.json';
 import { PREVIEW_POLICY_META } from '../src/preview-policy';
 import { sectionPreview, shopPreview, shopSections, type ShopPreviewDeps } from '../src/shop-preview';
@@ -58,7 +59,9 @@ const THEME: ShopTheme = {
   tokens: parseTheme(novaThemeJson.tokens),
   render: (_path, locals) => {
     const { head } = locals;
-    const meta = `<meta name="description" content="${head.description}"><link rel="canonical" href="${head.canonical}">`;
+    // Пустое описание — тега нет: договор SEO (seo.ts), как у настоящей темы.
+    const description = head.description === '' ? '' : `<meta name="description" content="${head.description}">`;
+    const meta = `${description}<link rel="canonical" href="${head.canonical}">`;
     const tokens = `<style id="merfy-tokens">${head.tokensCss}</style>`;
     const headHtml = `${head.configHtml}<title>${head.title}</title>${meta}${socialTags(head)}${tokens}${head.codeHtml}`;
     const body = `${locals.sections.join('')}`;
@@ -235,5 +238,115 @@ describe('блоки секции (часть 3)', () => {
         },
       ],
     });
+  });
+});
+
+describe('свои страницы, шапка и подвал в превью (часть 4)', () => {
+  const MENU_FIELD = { id: 'menu', label: 'Изменить пункты меню', setting: { kind: 'menu' as const, default: 'main' } };
+  const HEADER: CurrentSection = {
+    name: 'shop:header',
+    manifest: {
+      sdk: 1,
+      name: 'header',
+      kind: 'section',
+      title: 'Шапка',
+      settings: [MENU_FIELD],
+      groups: ['header'],
+      limit: 1,
+      removable: false,
+      uses: ['theme', 'shop'],
+    },
+    render: MODULE,
+    renderHash: HASH,
+  };
+  const PANEL = panelForTheme(parsePanel(panelJson, THEME.tokens.dictionary), undefined);
+  const PAGE_INPUTS = parseBuildInputs({
+    ...standInputsJson,
+    revision: {
+      tokens: {},
+      pages: [
+        { id: 'page-custom-1', slug: '/o-nas', name: 'О нас', seo: { title: '', description: '', keywords: '' } },
+      ],
+    },
+    code: {
+      sections: [{ name: 'shop:hero', kind: 'section', hash: sha256('правка'), render: HASH, script: null }],
+      pages: { 'page-custom-1': [{ id: 'hero-2', section: 'shop:hero', settings: {} }] },
+      globals: [],
+    },
+  });
+
+  it('page=<id своей страницы> — её секции; неизвестный id — 404', async () => {
+    const { deps } = depsOf();
+    deps.inputs = () => Promise.resolve({ inputs: PAGE_INPUTS, renders: new Map([[HASH, MODULE]]) });
+    const answer = await shopPreview(deps, url(`shop=${SHOP}&page=page-custom-1`));
+    expect(answer.status).toBe(200);
+    expect(answer.body).toContain('data-section-id="hero-2"');
+    expect((await shopPreview(deps, url(`shop=${SHOP}&page=page-custom-2`))).status).toBe(404);
+  });
+
+  it('блок шапки: меню из тела — деревом, настройки темы — правкой из тела поверх панели, данные магазина', async () => {
+    const { deps, rendered } = depsOf(new Map([[HEADER.name, HEADER]]));
+    deps.theme = () => Promise.resolve({ ...THEME, panel: PANEL });
+    const body = JSON.stringify({
+      instance: { id: 'header-1', section: 'shop:header', settings: {} },
+      menus: [{ id: 'main', title: 'Главное меню', items: [{ label: 'О нас', url: '/o-nas' }] }],
+      theme: { 'social-telegram': 'https://t.me/scarves' },
+    });
+    expect((await sectionPreview(deps, SHOP, body)).status).toBe(200);
+    const request = rendered[0]?.[1];
+    expect(request?.menus).toEqual({
+      menu: { title: 'Главное меню', items: [{ label: 'О нас', url: '/o-nas', items: [] }] },
+    });
+    expect(request?.theme?.['social-telegram']).toBe('https://t.me/scarves');
+    expect(request?.shop?.name).toBe('Стенд Nova');
+  });
+
+  it('без меню в теле — пустое дерево; секции без uses theme и shop не получают', async () => {
+    const { deps, rendered } = depsOf(
+      new Map([
+        [HEADER.name, HEADER],
+        [HERO.name, HERO],
+      ]),
+    );
+    await sectionPreview(deps, SHOP, block({ id: 'header-1', section: 'shop:header', settings: {} }));
+    await sectionPreview(deps, SHOP, block({ id: 'hero-1', section: 'shop:hero', settings: {} }));
+    expect(rendered.map(([, request]) => [request.menus, request.theme, request.shop === undefined])).toEqual([
+      [{ menu: { title: '', items: [] } }, {}, false],
+      [undefined, undefined, true],
+    ]);
+  });
+
+  it('меню в теле не по форме — 400', async () => {
+    const { deps } = depsOf(new Map([[HEADER.name, HEADER]]));
+    const body = JSON.stringify({
+      instance: { id: 'header-1', section: 'shop:header', settings: {} },
+      menus: [{ id: 'Main' }],
+    });
+    expect((await sectionPreview(deps, SHOP, body)).status).toBe(400);
+  });
+
+  it('список секций: groups, limit, removable, uses, newPage — у секций, где объявлены', async () => {
+    const answer = await shopSections(
+      depsOf(
+        new Map([
+          [HEADER.name, HEADER],
+          [HERO.name, HERO],
+        ]),
+      ).deps,
+      SHOP,
+    );
+    const list = z.object({ sections: z.array(z.unknown()) }).parse(JSON.parse(answer.body));
+    expect(list.sections).toEqual([
+      {
+        name: 'shop:header',
+        title: 'Шапка',
+        settings: [MENU_FIELD],
+        groups: ['header'],
+        limit: 1,
+        removable: false,
+        uses: ['theme', 'shop'],
+      },
+      { name: 'shop:hero', title: 'Первый экран', settings: [HEADING] },
+    ]);
   });
 });

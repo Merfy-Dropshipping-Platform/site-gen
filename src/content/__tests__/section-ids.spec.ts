@@ -109,3 +109,47 @@ describe("id секций на странице", () => {
     });
   });
 });
+
+describe("id блоков внутри экземпляра (блок 1 «Секций и SDK», часть 3)", () => {
+  const faq = (id: string, blocks: unknown) => ({
+    id,
+    section: "shop:faq",
+    settings: {},
+    blocks,
+  });
+  const question = (id: string) => ({ id, type: "question", settings: {} });
+
+  it("повтор id блока в одном экземпляре — повтор «экземпляр/блок»; один id блока в разных экземплярах — можно", () => {
+    const document = {
+      sections: {
+        home: [
+          faq("faq-1", [
+            question("question-1"),
+            question("question-1"),
+            question("question-2"),
+          ]),
+          faq("faq-2", [question("question-1")]),
+        ],
+      },
+    };
+    expect(sectionIdDuplicates(document)).toEqual([
+      { page: "home", id: "faq-1/question-1" },
+    ]);
+  });
+
+  it("повторы экземпляров — первыми, потом блоков; blocks не список или блок без id — не повтор", () => {
+    const document = {
+      sections: {
+        home: [
+          faq("faq-1", [question("q-1"), question("q-1")]),
+          faq("faq-1", "не список"),
+          faq("faq-3", [{ type: "question" }, { type: "question" }]),
+        ],
+      },
+    };
+    expect(sectionIdDuplicates(document)).toEqual([
+      { page: "home", id: "faq-1" },
+      { page: "home", id: "faq-1/q-1" },
+    ]);
+  });
+});

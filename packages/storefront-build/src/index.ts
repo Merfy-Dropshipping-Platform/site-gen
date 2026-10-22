@@ -37,6 +37,7 @@ export {
   type PageMode,
   type PageRender,
   type PlacedSection,
+  type RenderBlock,
   type RenderSection,
   type RenderStage,
   type SectionFailed,

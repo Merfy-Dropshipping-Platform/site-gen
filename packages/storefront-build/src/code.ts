@@ -109,12 +109,15 @@ export function withoutHidden(inputs: BuildInputs): BuildInputs {
 }
 
 export function placedSections(inputs: BuildInputs, pageId: string): PlacedSection[] {
-  const renders = new Map(inputs.code.sections.map((section): [string, string] => [section.name, section.render ?? '']));
+  const renders = new Map(
+    inputs.code.sections.map((section): [string, string] => [section.name, section.render ?? '']),
+  );
   return (inputs.code.pages[pageId] ?? []).map((instance) => ({
     id: instance.id,
     name: instance.section,
     hash: renders.get(instance.section) ?? '',
     settings: instance.settings,
+    ...(instance.blocks === undefined ? {} : { blocks: instance.blocks }),
   }));
 }
 

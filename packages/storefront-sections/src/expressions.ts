@@ -124,7 +124,7 @@ function propertyStep(node: AstNode, scope: Scope, role: Role): Step {
 }
 
 // Имена, которые связывает шаблон параметра: x, { a, b: c }, [d], e = 1, ...f.
-function bindingNames(pattern: unknown): string[] {
+export function bindingNames(pattern: unknown): string[] {
   if (!isNode(pattern)) return [];
   if (pattern.type === 'Identifier') return [stringOf(fieldOf(pattern, 'name'))];
   if (pattern.type === 'Property') return bindingNames(fieldOf(pattern, 'value'));

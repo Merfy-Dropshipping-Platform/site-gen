@@ -64,7 +64,9 @@ async function seedContent(siteId: string): Promise<void> {
     ON CONFLICT (site_id, handle) DO NOTHING`,
     [blogId, siteId],
   );
-  const blog = await db.query<{ id: string }>(`SELECT id FROM blogs WHERE site_id = $1 AND handle = 'novosti'`, [siteId]);
+  const blog = await db.query<{ id: string }>(`SELECT id FROM blogs WHERE site_id = $1 AND handle = 'novosti'`, [
+    siteId,
+  ]);
   await db.query(
     `INSERT INTO publications (id, organization_id, site_id, blog_id, title, slug, status, updated_at)
     VALUES ($1, 'org', $2, $5, 'Как ухаживать за льном', 'linen', 'published', $3),

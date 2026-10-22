@@ -122,7 +122,9 @@ describe('стенд в превью: GET /preview', () => {
     const old = await insertSite(harness.db, { themeId: 'rose' });
     expect((await fetch(`${base}/preview?page=stand&shop=nope`)).status).toBe(400);
     expect((await fetch(`${base}/preview?page=stand&shop=00000000-0000-4000-8000-00000000000f`)).status).toBe(404);
-    expect(await (await fetch(`${base}/preview?page=stand&shop=${old.id}`)).text()).toBe('тема магазина — не новой архитектуры');
+    expect(await (await fetch(`${base}/preview?page=stand&shop=${old.id}`)).text()).toBe(
+      'тема магазина — не новой архитектуры',
+    );
     expect((await fetch(`${base}/preview?page=stand&shop=${old.id}`, { method: 'POST' })).status).toBe(405);
     server.close();
     await serve(false);

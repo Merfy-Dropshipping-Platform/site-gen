@@ -17,10 +17,7 @@ const withReviews = (hash: string): BuildInputs => ({
   ...INPUTS,
   code: {
     ...INPUTS.code,
-    sections: [
-      ...INPUTS.code.sections,
-      { name: 'reviews:stars', kind: 'section', hash, render: null, script: null },
-    ],
+    sections: [...INPUTS.code.sections, { name: 'reviews:stars', kind: 'section', hash, render: null, script: null }],
   },
 });
 const liveOf = (built: BuildInputs, withDataKey = true) => ({

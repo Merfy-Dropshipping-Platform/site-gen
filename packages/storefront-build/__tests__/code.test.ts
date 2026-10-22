@@ -3,17 +3,7 @@ import { sha256 } from '../src/canonical';
 import { NO_ASSETS, codeFiles, codeHead, placedSections, shellDir } from '../src/code';
 import { parseBuildInputs } from '../src/inputs';
 import { changedInputs, errorOf, rawInputs, standInputs } from './support';
-import {
-  ASSETS,
-  BADGE,
-  CODE,
-  MODULES,
-  NO_SCRIPT,
-  SHELL,
-  SHELL_BUILD,
-  SRC,
-  codeInputs,
-} from './support-code';
+import { ASSETS, BADGE, CODE, MODULES, NO_SCRIPT, SHELL, SHELL_BUILD, SRC, codeInputs } from './support-code';
 
 // Код секций в странице и в сборке (design.md блока 7, п. 12, 16, 19).
 const DIR = shellDir(SHELL.hash);
@@ -40,11 +30,26 @@ const withCode = (code: unknown, shell: unknown = SHELL): unknown =>
 const instance = (id: string, section: string, settings: Record<string, string> = {}) => ({ id, section, settings });
 const INVALID_CODE: [string, unknown, string][] = [
   ['секция в коде дважды', withCode({ ...CODE, sections: [...CODE.sections, BADGE] }), 'code.sections.4'],
-  ['на странице — глобальный скрипт', withCode({ ...CODE, pages: { home: [instance('x-1', 'geo:locate')] } }), 'code.pages.home.0'],
+  [
+    'на странице — глобальный скрипт',
+    withCode({ ...CODE, pages: { home: [instance('x-1', 'geo:locate')] } }),
+    'code.pages.home.0',
+  ],
   ['в globals — секцию нельзя', withCode({ ...CODE, globals: ['shop:hero'] }), 'code.globals.0'],
   ['скрипт без ядра', withCode(CODE, null), 'code.sections.0.script'],
-  ['у секции нет модуля рендера', withCode({ ...CODE, sections: CODE.sections.map((section) => (section.kind === 'section' ? { ...section, render: null } : section)) }), 'code.sections.1.render'],
-  ['id экземпляра дважды на странице', withCode({ ...CODE, pages: { home: [instance('hero-1', 'shop:hero'), instance('hero-1', 'shop:hero')] } }), 'code.pages.home.1.id'],
+  [
+    'у секции нет модуля рендера',
+    withCode({
+      ...CODE,
+      sections: CODE.sections.map((section) => (section.kind === 'section' ? { ...section, render: null } : section)),
+    }),
+    'code.sections.1.render',
+  ],
+  [
+    'id экземпляра дважды на странице',
+    withCode({ ...CODE, pages: { home: [instance('hero-1', 'shop:hero'), instance('hero-1', 'shop:hero')] } }),
+    'code.pages.home.1.id',
+  ],
 ];
 
 describe('код секций в <head>', () => {
@@ -99,10 +104,17 @@ describe('код секций в <head>', () => {
 
 describe('экземпляры секций страницы', () => {
   it('в порядке мерчанта, повтор — второй экземпляр; глобальному скрипту места нет; нет мест — нет экземпляров', () => {
-    const renders = new Map(codeInputs().code.sections.map((section): [string, string] => [section.name, section.render ?? '']));
+    const renders = new Map(
+      codeInputs().code.sections.map((section): [string, string] => [section.name, section.render ?? '']),
+    );
     expect(placedSections(codeInputs(), 'home')).toEqual([
       { id: 'cart-badge-1', name: 'shop:cart-badge', hash: renders.get('shop:cart-badge'), settings: {} },
-      { id: 'hero-1', name: 'shop:hero', hash: renders.get('shop:hero'), settings: { heading: 'Шарфы к первым холодам' } },
+      {
+        id: 'hero-1',
+        name: 'shop:hero',
+        hash: renders.get('shop:hero'),
+        settings: { heading: 'Шарфы к первым холодам' },
+      },
       { id: 'list-1', name: 'reviews:list', hash: renders.get('reviews:list'), settings: {} },
       { id: 'list-2', name: 'reviews:list', hash: renders.get('reviews:list'), settings: {} },
     ]);

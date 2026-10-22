@@ -1,3 +1,5 @@
+// Подпункты (часть 3): клик — select-subsection, выбранный — рамка #88b0da, наведение на секцию — #cfdff0 у её
+// подпунктов; подписи и кнопок у подпункта нет (Р59).
 // Скрипт превью секций (блок 1 «Секций и SDK»; сообщения — как у превью нынешних тем). Работает рядом со слушателем
 // токенов (preview-agent.ts) на превью главной. Шлёт ready каждые 300 мс, пока не придёт init (не больше 40 раз). Клик
 // по секции — select-block; set-selection — рамка выбранной секции с её названием и «Удалить» (Р7; у верхнего края
@@ -13,7 +15,9 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var blockUrl = new URL('preview/block', location.href).href;
   var STYLE = '#merfy-selection{position:absolute;display:none;pointer-events:none;box-sizing:border-box;border:2px solid #88b0da;z-index:2147483646}'
     + '#merfy-selection [data-merfy-label]{position:absolute;left:-2px;top:-26px;display:flex;align-items:center;gap:8px;height:24px;padding:0 8px;border-radius:8px 8px 0 0;background:#181818;color:#c3c3c3;font:500 12px/24px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:auto;white-space:nowrap}'
-    + '#merfy-selection [data-merfy-delete],#merfy-selection [data-merfy-duplicate]{display:flex;align-items:center;gap:4px;border:0;padding:0;background:none;color:inherit;font:inherit;cursor:pointer}';
+    + '#merfy-selection [data-merfy-delete],#merfy-selection [data-merfy-duplicate]{display:flex;align-items:center;gap:4px;border:0;padding:0;background:none;color:inherit;font:inherit;cursor:pointer}'
+    + '[data-merfy-block][data-merfy-block-hint]{outline:2px solid #cfdff0 !important;outline-offset:2px}'
+    + '[data-merfy-block][data-merfy-block-selected]{outline:2px solid #88b0da !important;outline-offset:2px}';
   var DELETE_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
   // «Скопировать» — значок подписи превью пяти тем (src/services/preview.service.ts, строки 2107–2109), 16 px.
   var COPY_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
@@ -23,6 +27,10 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var actions = {};
   var selected = null;
   var frame = null;
+  // Подпункты (часть 3, Р59, Р60): выбранный — секция и место среди разных data-merfy-block секции; секция под курсором.
+  var blockParent = null;
+  var blockIndex = null;
+  var hinted = null;
   var initialized = false;
   var readySent = 0;
   var tickets = {};
@@ -48,6 +56,37 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       if (node.tagName === 'MERFY-SECTION' && node.hasAttribute('data-section-id')) return node;
     }
     return null;
+  }
+  // Разные id блоков секции в порядке страницы: место в этом списке — index в select-subsection и set-selection.
+  function blockIdsOf(section) {
+    var ids = [];
+    Array.prototype.forEach.call(section.querySelectorAll('[data-merfy-block]'), function (node) {
+      var id = node.getAttribute('data-merfy-block');
+      if (ids.indexOf(id) === -1) ids.push(id);
+    });
+    return ids;
+  }
+  function blockNodesOf(section, id) {
+    return Array.prototype.filter.call(section.querySelectorAll('[data-merfy-block]'), function (node) {
+      return node.getAttribute('data-merfy-block') === id;
+    });
+  }
+  // Атрибут подсветки — только у этих узлов: у остальных снимается.
+  function mark(attribute, nodes) {
+    Array.prototype.forEach.call(document.querySelectorAll('[' + attribute + ']'), function (node) {
+      node.removeAttribute(attribute);
+    });
+    nodes.forEach(function (node) {
+      node.setAttribute(attribute, '');
+    });
+  }
+  // Рамка выбранного подпункта — как на проде: только рамка, без подписи. Возвращает первый его узел или null.
+  function showBlock() {
+    var section = blockParent === null ? null : byId(blockParent);
+    var id = section && blockIndex !== null ? blockIdsOf(section)[blockIndex] : undefined;
+    var nodes = section && id !== undefined ? blockNodesOf(section, id) : [];
+    mark('data-merfy-block-selected', nodes);
+    return nodes[0] || null;
   }
   function ensureFrame() {
     if (frame) return frame;
@@ -87,10 +126,12 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     selected = id;
     ensureFrame();
     place();
+    var block = showBlock();
     var section = id === null ? null : byId(id);
-    if (!section) return;
-    var rect = section.getBoundingClientRect();
-    if (rect.bottom < 0 || rect.top > window.innerHeight) section.scrollIntoView({ block: 'start' });
+    var target = block || section;
+    if (!target) return;
+    var rect = target.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > window.innerHeight) target.scrollIntoView({ block: block ? 'center' : 'start' });
   }
   function showActions() {
     if (!frame) return;
@@ -119,8 +160,11 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       return response.json();
     });
   }
+  // blocks — как в ревизии, со скрытыми (часть 3): только если у экземпляра есть ключ.
   function instanceOf(id, type, props) {
-    return { id: id, section: type, settings: (props && props.settings) || {} };
+    var instance = { id: id, section: type, settings: (props && props.settings) || {} };
+    if (props && Array.isArray(props.blocks)) instance.blocks = props.blocks;
+    return instance;
   }
   function failed(error) {
     post({ type: 'render-error', message: error.message });
@@ -137,6 +181,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         setCss(instance.id, answer.css);
         old.parentNode.replaceChild(fresh, old);
         place();
+        showBlock();
       })
       .catch(failed);
   }
@@ -184,6 +229,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
           container.appendChild(node);
         });
         place();
+        showBlock();
         post({ type: 'reconcile-ack', version: data.version, ok: true, applied: changed.length });
       })
       .catch(function (error) {
@@ -210,6 +256,16 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         if (selected !== null) post({ type: 'delete-block', blockId: selected });
         return;
       }
+      // Подпункт (Р60): select-subsection с местом блока среди разных id секции, выбора секции нет. Ссылка внутри
+      // подпункта превью не уводит; остальное (раскрыть <details>) работает, как на проде.
+      var blockNode = target && target.closest ? target.closest('[data-merfy-block]') : null;
+      var parent = blockNode ? sectionOf(blockNode) : null;
+      if (blockNode && parent) {
+        if (target.closest('a')) event.preventDefault();
+        var index = blockIdsOf(parent).indexOf(blockNode.getAttribute('data-merfy-block'));
+        post({ type: 'select-subsection', parentId: parent.getAttribute('data-section-id'), index: index, field: null });
+        return;
+      }
       var node = sectionOf(target);
       if (!node) return;
       event.preventDefault();
@@ -220,6 +276,22 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   );
   window.addEventListener('scroll', place, true);
   window.addEventListener('resize', place);
+  // Наведение на секцию — подсветка всех её подпунктов, как на проде (Р59).
+  document.addEventListener(
+    'mouseover',
+    function (event) {
+      var section = sectionOf(event.target);
+      if (section === hinted) return;
+      hinted = section;
+      ensureFrame();
+      mark('data-merfy-block-hint', section ? Array.prototype.slice.call(section.querySelectorAll('[data-merfy-block]')) : []);
+    },
+    true
+  );
+  document.documentElement.addEventListener('mouseleave', function () {
+    hinted = null;
+    mark('data-merfy-block-hint', []);
+  });
   window.addEventListener('message', function (event) {
     var data = event.data;
     if (event.source !== window.parent || !data || typeof data.type !== 'string') return;
@@ -229,6 +301,8 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       place();
     } else if (data.type === 'set-selection') {
       actions = data.actions || {};
+      blockParent = data.subsectionParentId || null;
+      blockIndex = typeof data.subsectionIndex === 'number' ? data.subsectionIndex : null;
       select(data.sectionId || null);
       showActions();
     }

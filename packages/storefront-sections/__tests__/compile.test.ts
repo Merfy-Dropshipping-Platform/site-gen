@@ -22,7 +22,10 @@ describe('компиляция шаблона', () => {
 
   it('чужой и динамический импорт — import-forbidden', async () => {
     const code = `import fs from 'node:fs';\nimport { render } from '${ASTRO_RUNTIME}';\nconst late = import('${ASTRO_RUNTIME}');`;
-    expect((await moduleImportProblems(code)).map((item) => item.code)).toEqual(['import-forbidden', 'import-forbidden']);
+    expect((await moduleImportProblems(code)).map((item) => item.code)).toEqual([
+      'import-forbidden',
+      'import-forbidden',
+    ]);
   });
 
   it('checkTemplate: верный шаблон — модуль рендера; запрет — модуля нет', async () => {

@@ -171,3 +171,84 @@ describe('enabledExtensions', () => {
     ]);
   });
 });
+
+describe('codeOf: блоки секции (часть 3)', () => {
+  const QUESTION = {
+    title: 'Вопрос',
+    limit: 2,
+    settings: [
+      { id: 'question', label: 'Вопрос', setting: { kind: 'string', default: 'Новый вопрос' } },
+      { id: 'answer', label: 'Ответ', setting: { kind: 'richtext', default: '<p>Ответ</p>' } },
+    ],
+  };
+  const FAQ: SectionRow = {
+    ...row('shop:faq', 'section', null),
+    manifest: {
+      sdk: 1,
+      name: 'faq',
+      kind: 'section',
+      title: 'Вопросы и ответы',
+      settings: [HEADING],
+      blocks: { question: QUESTION },
+      defaultBlocks: [{ type: 'question', settings: { question: 'Как стирать кашемир?' } }],
+    },
+  };
+
+  it('нет ключа blocks — блоки по умолчанию с id <тип>-<n>; у секции без blocks в section.json ключа нет', () => {
+    const { context } = contextOf();
+    const shop = codeOf(
+      [HERO, FAQ],
+      { home: [instance('faq-1', 'shop:faq'), instance('hero-1', 'shop:hero')] },
+      context,
+    );
+    expect(shop.code.pages.home).toEqual([
+      {
+        id: 'faq-1',
+        section: 'shop:faq',
+        settings: { heading: 'Тёплые шарфы из кашемира' },
+        blocks: [
+          {
+            id: 'question-1',
+            type: 'question',
+            settings: { question: 'Как стирать кашемир?', answer: '<p>Ответ</p>' },
+          },
+        ],
+      },
+      { id: 'hero-1', section: 'shop:hero', settings: { heading: 'Тёплые шарфы из кашемира' } },
+    ]);
+  });
+
+  it('скрытые, сверх limit и неизвестного типа — не в коде, строка журнала section-blocks-invalid; richtext очищен', () => {
+    const { context, logged } = contextOf();
+    const blocks = [
+      { id: 'question-a', type: 'question', settings: { answer: '<p>Да<script>x()</script></p>' } },
+      { id: 'question-b', type: 'question', settings: {}, hidden: true },
+      { id: 'question-c', type: 'question', settings: {} },
+      { id: 'slide-1', type: 'slide', settings: {} },
+    ];
+    const shop = codeOf([FAQ], { home: [{ ...instance('faq-1', 'shop:faq'), blocks }] }, context);
+    expect(shop.code.pages.home?.[0]?.blocks).toEqual([
+      { id: 'question-a', type: 'question', settings: { question: 'Новый вопрос', answer: '<p>Да</p>' } },
+    ]);
+    expect(logged).toEqual([
+      [
+        'section-blocks-invalid',
+        {
+          shopId: SHOP,
+          section: 'shop:faq',
+          id: 'faq-1',
+          problems: 'blocks.2: блоков question больше 2; blocks.3.type: типа slide у секции нет',
+        },
+      ],
+    ]);
+  });
+
+  it('ревизия: blocks — список { id, type, settings, hidden? }; другая форма — отказ схемы', () => {
+    const base = instance('faq-1', 'shop:faq');
+    const block = { id: 'question-1', type: 'question', settings: {} };
+    expect(instanceSchema.safeParse({ ...base, blocks: [{ ...block, hidden: true }] }).success).toBe(true);
+    expect(instanceSchema.safeParse({ ...base, blocks: [{ ...block, id: 'Question 1' }] }).success).toBe(false);
+    expect(instanceSchema.safeParse({ ...base, blocks: [{ ...block, extra: 1 }] }).success).toBe(false);
+    expect(instanceSchema.safeParse({ ...base, blocks: {} }).success).toBe(false);
+  });
+});

@@ -8,7 +8,12 @@ import {
   type PageRender,
   type ShopTheme,
 } from '@merfy/storefront-build';
-import { resolveSectionSettings, type CurrentSection, type SectionRenderRequest } from '@merfy/storefront-sections';
+import {
+  resolveSectionBlocks,
+  resolveSectionSettings,
+  type CurrentSection,
+  type SectionRenderRequest,
+} from '@merfy/storefront-sections';
 import type { Dictionary } from '@merfy/tokens';
 import { z } from 'zod';
 import { instanceSchema, readVisibleSections } from './code';
@@ -127,7 +132,12 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   if (current === undefined || current.render === null || current.renderHash === null)
     return jsonAnswer(404, { problems: [TEXT.section(instance.section)] });
   const settings = resolveSectionSettings(current.manifest.settings, instance.settings).values;
-  const placed = { id: instance.id, name: instance.section, hash: current.renderHash, settings };
+  // Блоки (часть 3, Р55): показанные, со значениями; у секции без blocks — без ключа.
+  const blocks =
+    current.manifest.blocks === undefined
+      ? {}
+      : { blocks: resolveSectionBlocks(current.manifest, instance.blocks).blocks };
+  const placed = { id: instance.id, name: instance.section, hash: current.renderHash, settings, ...blocks };
   const modules = new Map([[current.renderHash, current.render]]);
   const content = await renderPlacedSections([placed], found.dictionary, previewPage(deps, found.shopId, modules));
   return jsonAnswer(200, { html: content.sections[0] ?? '', css: content.sectionsCss });
@@ -140,6 +150,14 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
   if (sections === null) return jsonAnswer(502, { problems: [TEXT.extensions] });
   const list = [...sections.values()]
     .filter((section) => section.manifest.kind === 'section')
-    .map((section) => ({ name: section.name, title: section.manifest.title, settings: section.manifest.settings }));
+    .map((section) => ({
+      name: section.name,
+      title: section.manifest.title,
+      settings: section.manifest.settings,
+      // Типы блоков и блоки новой секции (часть 3) — только у секций с blocks.
+      ...(section.manifest.blocks === undefined
+        ? {}
+        : { blocks: section.manifest.blocks, defaultBlocks: section.manifest.defaultBlocks ?? [] }),
+    }));
   return jsonAnswer(200, { sections: list });
 }

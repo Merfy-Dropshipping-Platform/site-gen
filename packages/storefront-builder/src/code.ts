@@ -8,6 +8,7 @@ import {
 } from '@merfy/storefront-build';
 import {
   currentSection,
+  resolveSectionBlocks,
   resolveSectionSettings,
   visibleSections,
   type CurrentSection,
@@ -70,12 +71,27 @@ const extensionsAnswer = z.object({
 const placementRow = z.object({ sections: z.unknown() });
 // Экземпляр секции в ревизии: id — kebab до 40 знаков, один раз на странице; settings — правки мерчанта; hidden —
 // скрыта (п. 22); name — имя мерчанта в конструкторе (п. 24), в код магазина не идёт (Р17).
+// Блок экземпляра (часть 3, Р54): id — kebab до 40 знаков, один раз в экземпляре (повтор отклоняет sites); type — тип из
+// blocks section.json; settings — правки мерчанта; hidden — скрыт. Нет ключа blocks — блоки по умолчанию.
+const revisionBlockSchema = z.strictObject({
+  id: z
+    .string()
+    .max(40)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  type: z.string().min(1),
+  settings: z.record(z.string(), z.unknown()),
+  hidden: z.boolean().optional(),
+});
 export const instanceSchema = z.strictObject({
-  id: z.string().max(40).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  id: z
+    .string()
+    .max(40)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   section: z.string().min(1),
   settings: z.record(z.string(), z.unknown()),
   hidden: z.boolean().optional(),
   name: z.string().optional(),
+  blocks: z.array(revisionBlockSchema).optional(),
 });
 export type SectionInstance = z.infer<typeof instanceSchema>;
 const placementSchema = z.record(z.string().regex(/^[a-z0-9-]+$/), z.array(instanceSchema));
@@ -154,8 +170,32 @@ function placedOf(instance: SectionInstance, current: CurrentSection, context: C
       id: instance.id,
       problems: resolved.invalid.join('; '),
     });
-  const placed: CodeInstance = { id: instance.id, section: instance.section, settings: resolved.values };
+  const placed: CodeInstance = {
+    id: instance.id,
+    section: instance.section,
+    settings: resolved.values,
+    ...blocksOf(instance, current, context),
+  };
   return instance.hidden === true ? { ...placed, hidden: true } : placed;
+}
+
+// Блоки экземпляра (часть 3, Р55, Р56): показанные, со значениями. У секции без blocks в section.json ключа нет; пустой
+// invalid — без строки журнала, непустой — section-blocks-invalid, как section-settings-invalid; сборка идёт.
+function blocksOf(
+  instance: SectionInstance,
+  current: CurrentSection,
+  context: CodeContext,
+): Pick<CodeInstance, 'blocks'> {
+  if (current.manifest.blocks === undefined) return {};
+  const resolved = resolveSectionBlocks(current.manifest, instance.blocks);
+  if (resolved.invalid.length > 0)
+    context.log('section-blocks-invalid', {
+      shopId: context.shopId,
+      section: instance.section,
+      id: instance.id,
+      problems: resolved.invalid.join('; '),
+    });
+  return { blocks: resolved.blocks };
 }
 
 // Код из видимых строк: экземпляры секций на страницах (экземпляр без видимой секции пропускается: расширение

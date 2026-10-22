@@ -24,7 +24,9 @@ interface ShopRenderer {
 // незаконченные рендеры.
 function retire(entry: ShopRenderer, closing: Set<Promise<void>>): void {
   const done =
-    entry.busy.size === 0 ? entry.renderer.close() : Promise.allSettled([...entry.busy]).then(() => entry.renderer.close());
+    entry.busy.size === 0
+      ? entry.renderer.close()
+      : Promise.allSettled([...entry.busy]).then(() => entry.renderer.close());
   closing.add(done);
   void done.finally(() => closing.delete(done)).catch(() => undefined);
 }

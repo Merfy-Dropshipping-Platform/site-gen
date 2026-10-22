@@ -20,6 +20,7 @@
     "sections": "tsx scripts/sections.ts"
   },
   "dependencies": {
+    "@astrojs/compiler-binding-wasm32-wasi": "0.5.2",
     "@astrojs/compiler-rs": "0.5.2",
     "@merfy/storefront-build": "workspace:*",
     "@merfy/storefront-storage": "workspace:*",
@@ -27,6 +28,7 @@
     "astro": "7.4.0",
     "es-module-lexer": "1.7.0",
     "esbuild": "0.25.12",
+    "esbuild-wasm": "0.25.12",
     "pg": "8.16.3",
     "tsx": "4.21.0",
     "zod": "4.3.6"

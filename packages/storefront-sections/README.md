@@ -33,3 +33,24 @@
 - `pnpm test`, `pnpm test:coverage` — без базы; `pnpm test:stack` — на стенде сборщика (Postgres, MinIO).
 - `pnpm sections accept|history|rollback|publish` — сохранение секции, история своей секции и публикация своих секций
   магазина без сборки из командной строки (задача 10; `publish` — блок 1 «Секций и SDK»).
+
+## Процессы проверки и рендера (блок 2 «Секций и SDK»)
+
+Код секции выполняется только в отдельных процессах Node под моделью разрешений (`src/isolation.ts`):
+
+| Процесс | Файл | Права |
+|---|---|---|
+| проверка при сохранении | `dist-render/check-worker.mjs` (`src/worker.ts`) | `--permission`, чтение папки процесса, `node_modules` и хранилища pnpm, `--allow-wasi`: компилятор Astro WASI и браузерная сборка `esbuild-wasm`; чужой JS не исполняет |
+| рендер секций | `dist-render/render-worker.mjs` | `--permission`, чтение тех же папок; без сети (Node 26), дочерних процессов, потоков, аддонов и WASI |
+| проба песочницы | `dist-render/sandbox-probe.mjs` | как у рендера; отчёт — строка журнала `render-sandbox` сборщика |
+
+- Окружение процессов пустое, инспектор по сигналу выключен (`--disable-sigusr1`). Бинарник Node —
+  `SECTION_RENDER_NODE`, пользователь ОС — `SECTION_RENDER_UID` и `SECTION_RENDER_GID` (в образе сборщика — Node 26 и
+  uid 10001); без них — Node и пользователь вызывающего процесса.
+- `dist-render/` собирает `pnpm build:workers`; `pnpm test`, команды `merfy` и `sections` собирают его сами.
+- Пределы рендера — `RENDER_LIMITS` (`src/render.ts`): срок секции 1 с, ответ секции 1 МиБ, куча 256 МБ, RSS 512 МБ,
+  свежий процесс после 200 рендеров. Отказ секции — `SectionRenderError` со стадией `render`, `render-timeout`,
+  `render-output`, `render-memory` или `render-denied`: сборка пропускает такую секцию (`storefront-build`).
+- Ответ процесса рендера — в дескриптор 3, рамкой `<ключ> <id> <байт>`; ключ процесс получает первой строкой stdin.
+  stdout и stderr процесса никуда не идут.
+- Сломанные секции для проверки руками — `fixtures/broken/`.

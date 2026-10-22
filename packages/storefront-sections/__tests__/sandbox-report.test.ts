@@ -20,9 +20,15 @@ describe('проба песочницы', () => {
       read: 'closed',
       inspector: 'closed',
       wasi: 'closed',
-      user: launch.user === null ? 'same' : 'separate',
+      // Без пула пользователей у пробы и соседа один uid: сигнал соседу прошёл бы.
+      neighbour: launch.users === null ? 'open' : 'closed',
+      user: launch.users === null ? 'same' : 'separate',
     });
     expect(report.startMs).toBeGreaterThan(0);
+  });
+
+  it('Node не запустился — отчёт отклонён, процесс, который его просил, работает дальше', async () => {
+    await expect(sandboxReport({ node: '/нет/node', users: null })).rejects.toThrow('ENOENT');
   });
 
   it.skipIf(process.env.SECTION_RENDER_NODE === undefined)('Node 26 из SECTION_RENDER_NODE: сеть закрыта', async () => {

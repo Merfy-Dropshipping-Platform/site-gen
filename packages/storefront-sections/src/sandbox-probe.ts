@@ -3,6 +3,7 @@ import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { Session } from 'node:inspector';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { text } from 'node:stream/consumers';
 import { WASI } from 'node:wasi';
 import { Worker } from 'node:worker_threads';
 
@@ -35,7 +36,23 @@ async function attemptAsync(work: () => Promise<unknown>): Promise<Door> {
   }
 }
 
+// Сосед — процесс рендера, который sandbox-report.ts запускает перед пробой, его pid — в stdin (В2-3 А). Сигнал 0 —
+// проверка права послать сигнал, сам сигнал не идёт. closed — ядро отказало (EPERM): у соседа другой пользователь ОС;
+// open — сигнал прошёл бы; missing — соседа нет (pid не пришёл или процесс уже вышел).
+function signalDoor(pid: number): Door | 'missing' {
+  if (!Number.isInteger(pid) || pid <= 0) return 'missing';
+  try {
+    process.kill(pid, 0);
+    return 'open';
+  } catch (error) {
+    const code = codeOf(error);
+    if (code === 'EPERM') return 'closed';
+    return code === 'ESRCH' ? 'missing' : 'open';
+  }
+}
+
 const PROBE_FILE = join(tmpdir(), `merfy-sandbox-probe-${process.pid}`);
+const neighbourPid = Number.parseInt(await text(process.stdin), 10);
 
 const report = {
   node: process.versions.node,
@@ -54,6 +71,7 @@ const report = {
     session.disconnect();
   }),
   wasi: attempt(() => new WASI({ version: 'preview1' })),
+  neighbour: signalDoor(neighbourPid),
   uid: typeof process.getuid === 'function' ? process.getuid() : null,
 };
 process.stdout.write(`${JSON.stringify(report)}\n`);

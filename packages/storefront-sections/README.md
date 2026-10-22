@@ -42,11 +42,13 @@
 |---|---|---|
 | проверка при сохранении | `dist-render/check-worker.mjs` (`src/worker.ts`) | `--permission`, чтение папки процесса, `node_modules` и хранилища pnpm, `--allow-wasi`: компилятор Astro WASI и браузерная сборка `esbuild-wasm`; чужой JS не исполняет |
 | рендер секций | `dist-render/render-worker.mjs` | `--permission`, чтение тех же папок; без сети (Node 26), дочерних процессов, потоков, аддонов и WASI |
-| проба песочницы | `dist-render/sandbox-probe.mjs` | как у рендера; отчёт — строка журнала `render-sandbox` сборщика |
+| проба песочницы | `dist-render/sandbox-probe.mjs` | как у рендера; пробует и сигнал соседнему процессу рендера (`neighbour`); отчёт — строка журнала `render-sandbox` сборщика |
 
 - Окружение процессов пустое, инспектор по сигналу выключен (`--disable-sigusr1`). Бинарник Node —
-  `SECTION_RENDER_NODE`, пользователь ОС — `SECTION_RENDER_UID` и `SECTION_RENDER_GID` (в образе сборщика — Node 26 и
-  uid 10001); без них — Node и пользователь вызывающего процесса.
+  `SECTION_RENDER_NODE`. Пользователь ОС у каждого живого процесса свой (`UserPool`, `src/isolation.ts`): uid из
+  диапазона `SECTION_RENDER_UID_FIRST` и `SECTION_RENDER_UID_COUNT`, группа — `SECTION_RENDER_GID` (в образе сборщика —
+  Node 26, uid 10001–11000, группа 10001). Сигнал процессу другого магазина ядро не пропускает (`EPERM`). Без этих
+  переменных — Node и пользователь вызывающего процесса.
 - `dist-render/` собирает `pnpm build:workers`; `pnpm test`, команды `merfy` и `sections` собирают его сами.
 - Пределы рендера — `RENDER_LIMITS` (`src/render.ts`): срок секции 1 с, ответ секции 1 МиБ, куча 256 МБ, RSS 512 МБ,
   свежий процесс после 200 рендеров. Отказ секции — `SectionRenderError` со стадией `render`, `render-timeout`,

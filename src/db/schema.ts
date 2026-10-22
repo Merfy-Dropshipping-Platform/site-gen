@@ -795,6 +795,7 @@ export const storefrontSection = pgTable(
  * storefront_section_error — ошибки секций витрины из браузеров (блок 11 «Каркаса витрины», часть 4): строка на
  * магазин, секцию, отпечаток скрипта, стадию, текст и минуту приёма; повтор — count. Автор, владелец и выпуск — из
  * storefront_section. Пишет и читает сборщик витрин (packages/storefront-builder/src/section-error-store.ts).
+ * Стадии render* — ошибки рендера секции на сервере (блок 2 «Секций и SDK», drizzle/0030): в script_hash — render_hash.
  */
 export const storefrontSectionError = pgTable(
   "storefront_section_error",
@@ -813,7 +814,7 @@ export const storefrontSectionError = pgTable(
   (table) => ({
     stageCheck: check(
       "storefront_section_error_stage_check",
-      sql`${table.stage} IN ('load', 'define', 'mount', 'unmount', 'runtime')`,
+      sql`${table.stage} IN ('load', 'define', 'mount', 'unmount', 'runtime', 'render', 'render-timeout', 'render-output', 'render-memory', 'render-denied')`,
     ),
     countCheck: check("storefront_section_error_count_check", sql`${table.count} > 0`),
     keyIdx: uniqueIndex("idx_storefront_section_error_key").on(

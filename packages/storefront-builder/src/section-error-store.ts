@@ -1,3 +1,4 @@
+import type { SectionFailure } from '@merfy/storefront-build';
 import { z } from 'zod';
 import { SECTION_ERRORS_QUEUE, type Broker } from './broker';
 import type { Log } from './log';
@@ -26,6 +27,24 @@ CROSS JOIN LATERAL (
 ) s
 WHERE EXISTS (SELECT 1 FROM storefront_shop WHERE site_id = $1)
 ON CONFLICT (site_id, section, script_hash, stage, minute, message) DO UPDATE SET count = e.count + EXCLUDED.count`;
+
+// Ошибки рендера секций (блок 2 «Секций и SDK», «Решил сам» п. 8) сборщик пишет сам, без очереди. Строка — как у ошибки
+// из браузера, в script_hash — хеш модуля рендера; автор, владелец и выпуск — из таблицы секций по имени и render_hash.
+const RECORD_RENDER_SQL = `
+INSERT INTO storefront_section_error AS e
+  (site_id, section, script_hash, author, owner, release, stage, message, minute, count)
+SELECT $1, r.section, r.hash, s.author, s.owner, s.release, r.stage, r.message, $2::timestamptz, r.count
+FROM jsonb_to_recordset($3::jsonb) AS r(section text, hash text, stage text, message text, count integer)
+CROSS JOIN LATERAL (
+  SELECT author, owner, release FROM storefront_section
+  WHERE name = r.section AND render_hash = r.hash AND (author <> 'shop' OR owner = $1)
+  ORDER BY (owner = $1) DESC, created_at DESC, id
+  LIMIT 1
+) s
+WHERE EXISTS (SELECT 1 FROM storefront_shop WHERE site_id = $1)
+ON CONFLICT (site_id, section, script_hash, stage, minute, message) DO UPDATE SET count = e.count + EXCLUDED.count`;
+// Текст ошибки — не длиннее, чем у ошибок из браузеров (section-errors.ts).
+const RENDER_MESSAGE_LENGTH = 300;
 
 // Окно — с минуты since включительно: строки таблицы поминутные.
 const SUMMARY_SQL = `
@@ -68,6 +87,48 @@ export async function recordSectionErrors(db: Queryable, batch: SectionErrorBatc
     count: row.count,
   }));
   const result = await db.query(RECORD_SQL, [batch.shopId, batch.minute, JSON.stringify(rows)]);
+  const written = result.rowCount ?? 0;
+  return { written, skipped: rows.length - written };
+}
+
+export interface RenderErrorBatch {
+  shopId: string;
+  minute: string;
+  failures: readonly SectionFailure[];
+}
+
+interface RenderErrorRow {
+  section: string;
+  hash: string;
+  stage: string;
+  message: string;
+  count: number;
+}
+
+// Одинаковые отказы одной сборки (секция на нескольких страницах) — одна строка со счётчиком: INSERT … ON CONFLICT одну
+// строку дважды не обновит.
+function renderRowsOf(failures: readonly SectionFailure[]): RenderErrorRow[] {
+  const rows = new Map<string, RenderErrorRow>();
+  for (const failure of failures) {
+    const message = failure.message.slice(0, RENDER_MESSAGE_LENGTH);
+    const key = JSON.stringify([failure.section, failure.hash, failure.stage, message]);
+    const row = rows.get(key) ?? {
+      section: failure.section,
+      hash: failure.hash,
+      stage: failure.stage,
+      message,
+      count: 0,
+    };
+    row.count += 1;
+    rows.set(key, row);
+  }
+  return [...rows.values()];
+}
+
+export async function recordRenderErrors(db: Queryable, batch: RenderErrorBatch): Promise<RecordedErrors> {
+  const rows = renderRowsOf(batch.failures);
+  if (rows.length === 0) return { written: 0, skipped: 0 };
+  const result = await db.query(RECORD_RENDER_SQL, [batch.shopId, batch.minute, JSON.stringify(rows)]);
   const written = result.rowCount ?? 0;
   return { written, skipped: rows.length - written };
 }

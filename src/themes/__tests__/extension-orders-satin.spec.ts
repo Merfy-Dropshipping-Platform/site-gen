@@ -20,7 +20,6 @@ const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 const RENDERER = resolve(__dirname, 'render-theme-sections.mjs');
 const VANILLA_PAGES = resolve(SITES_ROOT, 'themes/satin/src/pages');
 // Темы, которые ещё хранят requests.astro первой версии (здесь satin убрала).
-const OTHER_THEMES = ['bloom'] as const;
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 
@@ -92,7 +91,7 @@ describe('satin: страница записи без пункта меню', ()
   });
 });
 
-describe('satin: страницы первой версии убраны, у остальных тем — пока на месте', () => {
+describe('satin: страницы первой версии убраны', () => {
   it('у satin нет account/requests.astro и account/request.astro', () => {
     expect(existsSync(resolve(VANILLA_PAGES, 'account/requests.astro'))).toBe(
       false,
@@ -102,13 +101,6 @@ describe('satin: страницы первой версии убраны, у о�
     );
   });
 
-  it.each(OTHER_THEMES)('%s хранит requests.astro первой версии', (theme) => {
-    expect(
-      existsSync(
-        resolve(SITES_ROOT, `themes/${theme}/src/pages/account/requests.astro`),
-      ),
-    ).toBe(true);
-  });
 });
 
 describe('satin: вход по ссылке из письма ведёт по next', () => {

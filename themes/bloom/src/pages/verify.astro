@@ -44,6 +44,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
 
   <script>
     import { navTo, verifyMagicLink, requestMagicLink, getToken } from '../lib/auth';
+    import { nextPathOf } from '../../../../packages/theme-base/runtime/next-path';
 
     function initVerifyPage() {
       const root = document.getElementById('magic-actions');
@@ -51,7 +52,11 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
       root.dataset.bound = 'true';
 
       // Уже вошёл → редирект.
-      if (getToken()) { navTo('/account'); return; }
+      // Куда после входа: `?next=` из ссылки письма (только путь сайта), иначе /account.
+      const next = nextPathOf(window.location.search);
+
+      // Уже вошёл → редирект.
+      if (getToken()) { navTo(next); return; }
 
       const loadingEl = document.getElementById('magic-loading')!;
       const codeView = document.getElementById('magic-code-view')!;
@@ -83,7 +88,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
           .then((result) => {
             if (result.success) {
               sessionStorage.removeItem('magicEmail');
-              navTo('/account');
+              navTo(next);
             } else {
               throw result;
             }
@@ -151,7 +156,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
             const result = await verifyMagicLink({ email, code: value });
             if (result.success) {
               sessionStorage.removeItem('magicEmail');
-              navTo('/account');
+              navTo(next);
               return;
             }
             throw result;

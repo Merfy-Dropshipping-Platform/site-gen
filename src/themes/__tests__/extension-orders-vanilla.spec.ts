@@ -19,7 +19,6 @@ import { EXTENSION_ORDERS_STYLES } from '../../../packages/theme-base/runtime/ex
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 const RENDERER = resolve(__dirname, 'render-theme-sections.mjs');
 const VANILLA_PAGES = resolve(SITES_ROOT, 'themes/vanilla/src/pages');
-const OTHER_THEMES = ['bloom'] as const;
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 
@@ -91,7 +90,7 @@ describe('vanilla: страница записи без пункта меню', 
   });
 });
 
-describe('vanilla: страницы первой версии убраны, у остальных тем — пока на месте', () => {
+describe('vanilla: страницы первой версии убраны', () => {
   it('у vanilla нет account/requests.astro и account/request.astro', () => {
     expect(existsSync(resolve(VANILLA_PAGES, 'account/requests.astro'))).toBe(
       false,
@@ -101,13 +100,6 @@ describe('vanilla: страницы первой версии убраны, у �
     );
   });
 
-  it.each(OTHER_THEMES)('%s хранит requests.astro первой версии', (theme) => {
-    expect(
-      existsSync(
-        resolve(SITES_ROOT, `themes/${theme}/src/pages/account/requests.astro`),
-      ),
-    ).toBe(true);
-  });
 });
 
 describe('vanilla: вход по ссылке из письма ведёт по next', () => {

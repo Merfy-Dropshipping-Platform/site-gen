@@ -12,8 +12,10 @@ jest.mock('../theme-manifest-loader', () => ({
   getThemeManifest: jest.fn((id: string) => ({
     features: {
       requests: true,
-      extensionPurchase: id === 'flux' || id === 'vanilla' || id === 'rose' || id === 'satin',
-      extensionThemeLook: id === 'vanilla' || id === 'rose' || id === 'satin',
+      extensionPurchase:
+        id === 'flux' || id === 'vanilla' || id === 'rose' || id === 'satin' || id === 'bloom',
+      extensionThemeLook:
+        id === 'vanilla' || id === 'rose' || id === 'satin' || id === 'bloom',
     },
   })),
 }));
@@ -65,12 +67,11 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
     expect(props?.extensionLook).toBe('theme');
   });
 
-  it.each(['bloom'])(
-    '%s: флаг выключен → пропа нет',
-    async (themeId) => {
-      expect((await productProps(themeId))?.extensionPurchaseEnabled).toBeUndefined();
-    },
-  );
+  it('bloom: оба пропа — форма расширения и вид из темы', async () => {
+    const props = await productProps('bloom');
+    expect(props?.extensionPurchaseEnabled).toBe(true);
+    expect(props?.extensionLook).toBe('theme');
+  });
 
   it('работает и на странице с адресом product', async () => {
     expect((await productProps('flux', 'product'))?.extensionPurchaseEnabled).toBe(true);
@@ -96,9 +97,7 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
     expect(features('vanilla')?.extensionPurchase).toBe(true);
     expect(features('rose')?.extensionPurchase).toBe(true);
     expect(features('satin')?.extensionPurchase).toBe(true);
-    for (const theme of ['bloom']) {
-      expect(features(theme)?.extensionPurchase).not.toBe(true);
-    }
+    expect(features('bloom')?.extensionPurchase).toBe(true);
   });
 });
 
@@ -121,9 +120,8 @@ describe('extensionThemeLook: витринная часть этапа 5 на va
     expect(look('vanilla')).toBe(true);
     expect(look('rose')).toBe(true);
     expect(look('satin')).toBe(true);
-    for (const theme of ['flux', 'bloom']) {
-      expect(look(theme)).not.toBe(true);
-    }
+    expect(look('bloom')).toBe(true);
+    expect(look('flux')).not.toBe(true);
   });
 
   it('блок «Товар» ставит атрибут на контейнер формы — режим «как тема» включается', () => {

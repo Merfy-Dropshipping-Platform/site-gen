@@ -142,25 +142,27 @@ export interface ActionOptions {
   readonly quiet?: boolean;
 }
 
-// Модули по uses (11г А) — вид для секций по 3.12 и каталогам блоков 9 и 10. Данные — в памяти страницы до блоков 9 и 10.
+// Модули по uses (11г А) — вид для секций по 3.12 и каталогам блоков 9 и 10. Корзина — на сервере (блок 9, часть 9а):
+// строка — ответ шлюза, id строки — номер строки на сервере. cart.remove и cart.change — блок 10. Избранное и вход — в
+// памяти страницы до блока 10.
 export interface CartLine {
   readonly id: string;
   readonly productId: string;
   readonly variantId: string | null;
   readonly quantity: number;
+  readonly price: Money; // за штуку
 }
 export interface CartState {
-  readonly ready: boolean;
+  readonly ready: boolean; // false — корзину с сервера ещё не прочитали
   readonly lines: readonly CartLine[];
 }
 export interface CartModule {
   readonly $cart: ReadableStore<CartState>;
-  readonly $count: ReadableStore<number>;
+  readonly $count: ReadableStore<number>; // штук в корзине плюс ждущих ответа сервера
   add(
     args: { readonly productId: string; readonly variantId?: string; readonly quantity?: number },
     options?: ActionOptions,
   ): Promise<Result<CartState>>;
-  remove(args: { readonly lineId: string }, options?: ActionOptions): Promise<Result<CartState>>;
 }
 export interface FavoritesState {
   readonly ready: boolean;

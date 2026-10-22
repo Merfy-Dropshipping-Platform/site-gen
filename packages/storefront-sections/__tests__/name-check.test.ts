@@ -23,7 +23,7 @@ describe('имя поля — по словарю', () => {
     ['img', 'image', 'image'],
     ['photo-position', 'radio', 'image-position'],
     ['heding', 'string', 'heading'],
-    ['ansmr', 'richtext', 'answer'],
+    ['answr', 'richtext', 'answer'],
     ['text-align', 'alignment', 'align'],
     ['cta', 'url', 'button-link'],
     ['cta', 'string', 'button-label'],

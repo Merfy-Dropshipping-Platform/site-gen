@@ -1,7 +1,7 @@
 import { parseArgs } from 'node:util';
-import { namesMarkdown } from '../src/generate/names-markdown';
 import { problemText, type SectionProblem } from '../src/problems';
 import { buildWorkers } from './build-workers';
+import { namesMarkdown } from '../src/generate/names-markdown';
 import { readSectionFolder } from '../src/read-folder';
 import { DEFAULT_SANDBOX, prepareInWorker } from '../src/sandbox';
 

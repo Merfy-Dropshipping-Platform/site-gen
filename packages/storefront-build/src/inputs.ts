@@ -66,10 +66,12 @@ const codeSectionSchema = z.strictObject({
 
 // Экземпляр секции на странице (блок 1 «Секций и SDK», В1-1 А): id на странице, имя секции и значения всех настроек —
 // правки мерчанта поверх умолчаний, их сводит сборщик.
+// hidden — экземпляр скрыт (п. 22): его убирает renderShopPage. Имени мерчанта (name) во входах сборки нет (Р17).
 const instanceSchema = z.strictObject({
   id: kebabIdSchema,
   section: sectionNameSchema,
   settings: z.record(z.string(), z.union([z.string(), z.boolean()])),
+  hidden: z.literal(true).optional(),
 });
 
 // Код магазина: видимые ему секции, которые где-то стоят, и глобальные скрипты. Места — экземпляры секций по id страницы

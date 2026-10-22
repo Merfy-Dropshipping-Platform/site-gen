@@ -68,11 +68,14 @@ const extensionsAnswer = z.object({
   data: z.array(z.object({ id: z.string().min(1), version: z.string().min(1) })).optional(),
 });
 const placementRow = z.object({ sections: z.unknown() });
-// Экземпляр секции в ревизии: id — kebab до 40 знаков, один раз на странице; settings — правки мерчанта.
+// Экземпляр секции в ревизии: id — kebab до 40 знаков, один раз на странице; settings — правки мерчанта; hidden —
+// скрыта (п. 22); name — имя мерчанта в конструкторе (п. 24), в код магазина не идёт (Р17).
 export const instanceSchema = z.strictObject({
   id: z.string().max(40).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   section: z.string().min(1),
   settings: z.record(z.string(), z.unknown()),
+  hidden: z.boolean().optional(),
+  name: z.string().optional(),
 });
 export type SectionInstance = z.infer<typeof instanceSchema>;
 const placementSchema = z.record(z.string().regex(/^[a-z0-9-]+$/), z.array(instanceSchema));
@@ -151,7 +154,8 @@ function placedOf(instance: SectionInstance, current: CurrentSection, context: C
       id: instance.id,
       problems: resolved.invalid.join('; '),
     });
-  return { id: instance.id, section: instance.section, settings: resolved.values };
+  const placed: CodeInstance = { id: instance.id, section: instance.section, settings: resolved.values };
+  return instance.hidden === true ? { ...placed, hidden: true } : placed;
 }
 
 // Код из видимых строк: экземпляры секций на страницах (экземпляр без видимой секции пропускается: расширение

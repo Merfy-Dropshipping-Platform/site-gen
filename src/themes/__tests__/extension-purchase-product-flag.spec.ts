@@ -12,8 +12,10 @@ jest.mock('../theme-manifest-loader', () => ({
   getThemeManifest: jest.fn((id: string) => ({
     features: {
       requests: true,
-      extensionPurchase: id === 'flux' || id === 'vanilla',
-      extensionThemeLook: id === 'vanilla',
+      extensionPurchase:
+        id === 'flux' || id === 'vanilla' || id === 'rose' || id === 'satin' || id === 'bloom',
+      extensionThemeLook:
+        id === 'vanilla' || id === 'rose' || id === 'satin' || id === 'bloom',
     },
   })),
 }));
@@ -53,12 +55,23 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
     expect((await productProps('vanilla'))?.extensionPurchaseEnabled).toBe(true);
   });
 
-  it.each(['rose', 'satin', 'bloom'])(
-    '%s: флаг выключен → пропа нет',
-    async (themeId) => {
-      expect((await productProps(themeId))?.extensionPurchaseEnabled).toBeUndefined();
-    },
-  );
+  it('rose: оба пропа — форма расширения и вид из темы', async () => {
+    const props = await productProps('rose');
+    expect(props?.extensionPurchaseEnabled).toBe(true);
+    expect(props?.extensionLook).toBe('theme');
+  });
+
+  it('satin: оба пропа — форма расширения и вид из темы', async () => {
+    const props = await productProps('satin');
+    expect(props?.extensionPurchaseEnabled).toBe(true);
+    expect(props?.extensionLook).toBe('theme');
+  });
+
+  it('bloom: оба пропа — форма расширения и вид из темы', async () => {
+    const props = await productProps('bloom');
+    expect(props?.extensionPurchaseEnabled).toBe(true);
+    expect(props?.extensionLook).toBe('theme');
+  });
 
   it('работает и на странице с адресом product', async () => {
     expect((await productProps('flux', 'product'))?.extensionPurchaseEnabled).toBe(true);
@@ -82,9 +95,9 @@ describe('extensionPurchase: тумблер features.extensionPurchase → Produ
       }).features;
     expect(features('flux')?.extensionPurchase).toBe(true);
     expect(features('vanilla')?.extensionPurchase).toBe(true);
-    for (const theme of ['rose', 'satin', 'bloom']) {
-      expect(features(theme)?.extensionPurchase).not.toBe(true);
-    }
+    expect(features('rose')?.extensionPurchase).toBe(true);
+    expect(features('satin')?.extensionPurchase).toBe(true);
+    expect(features('bloom')?.extensionPurchase).toBe(true);
   });
 });
 
@@ -105,9 +118,10 @@ describe('extensionThemeLook: витринная часть этапа 5 на va
         features?: Record<string, boolean>;
       }).features?.extensionThemeLook;
     expect(look('vanilla')).toBe(true);
-    for (const theme of ['flux', 'rose', 'satin', 'bloom']) {
-      expect(look(theme)).not.toBe(true);
-    }
+    expect(look('rose')).toBe(true);
+    expect(look('satin')).toBe(true);
+    expect(look('bloom')).toBe(true);
+    expect(look('flux')).not.toBe(true);
   });
 
   it('блок «Товар» ставит атрибут на контейнер формы — режим «как тема» включается', () => {

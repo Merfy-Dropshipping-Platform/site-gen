@@ -39,10 +39,19 @@ const { product, id, siteId } = Astro.props;
 // всех тем рендерит общий порт Product (theme-base), куда флаг инжектит
 // extractPageBlocks. Дефолт false → разметка не меняется вовсе.
 import { REQUESTS_FORM_RUNTIME_SOURCE } from "../../../../../packages/theme-base/runtime/requests-form";
+import { EXTENSION_PURCHASE_RUNTIME_SOURCE } from "../../../../../packages/theme-base/runtime/extension-purchase.runtime";
+import { EXTENSION_PURCHASE_STYLES } from "../../../../../packages/theme-base/runtime/extension-purchase.styles";
 import { RequestFormSfStyles } from "../../../../../packages/theme-base/blocks/RequestForm/RequestForm.sf-styles";
 import themeManifestRaw from "../../../../../packages/theme-satin/theme.json";
 const requestsEnabled =
 	(themeManifestRaw as { features?: Record<string, boolean> }).features?.requests === true;
+// Спека 120, этап 5: форма расширения вместо «В корзину» + вид из токенов темы.
+// У satin живой PDP рисует этот компонент (не общий блок «Товар»), поэтому
+// флаги читаются здесь так же, как requestsEnabled выше.
+const themeFeatures = (themeManifestRaw as { features?: Record<string, boolean> }).features ?? {};
+const extensionPurchaseEnabled = themeFeatures.extensionPurchase === true;
+const extensionLook = themeFeatures.extensionThemeLook === true ? 'theme' : undefined;
+const legacyFormEnabled = requestsEnabled && !extensionPurchaseEnabled;
 
 // ── Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Товар». ──
 // Когда товар НЕ выбран мерчантом (preview/skeleton `/product` без products.json
@@ -324,7 +333,7 @@ const cartVariantColor = isPlaceholder ? "" : (product.colors?.[0] ?? "");
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="105"
 				data-puck-subsection-field="buttons"
-				data-product-actions={requestsEnabled ? "true" : undefined}
+				data-product-actions={legacyFormEnabled || extensionPurchaseEnabled ? "true" : undefined}
 			>
 				<div class="flex gap-3">
 					<button
@@ -398,9 +407,16 @@ const cartVariantColor = isPlaceholder ? "" : (product.colors?.[0] ?? "");
 				</button>
 			</div>
 
+			{/* Спека 120, этап 5: контейнер формы расширения — при включённом
+			    extensionPurchase. Скрыт, пока рантайм не получил форму: нет точки
+			    в карте, null или сбой — кнопки покупки работают как были. */}
+			{extensionPurchaseEnabled && (
+				<div class="xp" id="pdp-extension-purchase" data-extension-purchase data-look={extensionLook} hidden></div>
+			)}
+
 			{/* Спека 118 §5 (T013c): контейнер «Формы заявки» — ТОЛЬКО при включённом
 			    флаге темы; дескриптор null → корзина (кнопки выше) работает как была. */}
-			{requestsEnabled && (
+			{legacyFormEnabled && (
 				<div
 					class="rq-sf"
 					id="pdp-requests-form"
@@ -1129,9 +1145,39 @@ const cartVariantColor = isPlaceholder ? "" : (product.colors?.[0] ?? "");
 {/* Спека 118 §5 (T013c): остров «Формы заявки» — общие стиль+рантайм из
     theme-base (как Footer.astro импортирует runtime/footer-logo), без
     копирования логики в тему. Скрипты и контейнер выше — за флагом темы. */}
-{requestsEnabled && <style is:inline set:html={RequestFormSfStyles} />}
-{requestsEnabled && <script is:inline set:html={REQUESTS_FORM_RUNTIME_SOURCE} />}
-{requestsEnabled && (
+{legacyFormEnabled && <style is:inline set:html={RequestFormSfStyles} />}
+{legacyFormEnabled && <script is:inline set:html={REQUESTS_FORM_RUNTIME_SOURCE} />}
+{extensionPurchaseEnabled && <style is:inline set:html={EXTENSION_PURCHASE_STYLES} />}
+{extensionPurchaseEnabled && <script is:inline set:html={EXTENSION_PURCHASE_RUNTIME_SOURCE} />}
+{extensionPurchaseEnabled && (
+<script is:inline define:vars={{ productId: String(product?.id || "") }}>
+	// Спека 120, этап 5 — форма расширения вместо «В корзину». Контейнер один
+	// на странице (PDP) → getElementById допустим (прецедент: старая форма
+	// заявки ниже). Товар — тот, что показывает компонент; live-гидрация
+	// ставит data-product-id у кнопки, поэтому один повтор через 1.2 с.
+	(function () {
+		var container = document.getElementById('pdp-extension-purchase');
+		if (!container || !window.__merfyPurchase) return;
+		var cfg = window.__MERFY_CONFIG__ || {};
+		function currentProductId() {
+			var btn = document.querySelector('[data-add-to-cart][data-product-id]');
+			return (btn && btn.getAttribute('data-product-id')) || productId || '';
+		}
+		function start() {
+			var p = currentProductId();
+			if (!p) return false;
+			window.__merfyPurchase.mount(container.parentElement || container, {
+				productId: String(p),
+				storeId: cfg.shopId || cfg.storeId || '',
+				apiBase: cfg.apiUrl || ''
+			});
+			return true;
+		}
+		if (!start()) setTimeout(start, 1200);
+	})();
+</script>
+)}
+{legacyFormEnabled && (
 <script is:inline define:vars={{ productId: String(product?.id || "") }}>
 	// Контейнер один на странице (PDP) → getElementById допустим (прецедент
 	// OrdersSection); productId подтягивается live-гидрацией компонента

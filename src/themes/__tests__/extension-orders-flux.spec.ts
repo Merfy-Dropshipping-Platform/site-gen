@@ -17,9 +17,6 @@ import { EXTENSION_ORDERS_STYLES } from '../../../packages/theme-base/runtime/ex
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 const RENDERER = resolve(__dirname, 'render-theme-sections.mjs');
 const FLUX_PAGES = resolve(SITES_ROOT, 'themes/flux/src/pages');
-// vanilla хранит requests.astro? Нет: этап 5 убрал её страницы первой версии
-// (extension-orders-vanilla.spec.ts), поэтому здесь только нетронутые темы.
-const OTHER_THEMES = ['rose', 'bloom', 'satin'] as const;
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 
@@ -83,9 +80,6 @@ describe('flux: страницы первой версии убраны (vanilla
     expect(existsSync(resolve(FLUX_PAGES, 'account/request.astro'))).toBe(false);
   });
 
-  it.each(OTHER_THEMES)('%s не тронута', (theme) => {
-    expect(existsSync(resolve(SITES_ROOT, `themes/${theme}/src/pages/account/requests.astro`))).toBe(true);
-  });
 });
 
 describe('flux: вход по ссылке из письма ведёт по next', () => {

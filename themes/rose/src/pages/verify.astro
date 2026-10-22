@@ -44,6 +44,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
 
   <script>
     import { navTo, verifyMagicLink, requestMagicLink, getToken } from '../lib/auth';
+    import { nextPathOf } from '../../../../packages/theme-base/runtime/next-path';
 
     // Санитайзер redirect-параметра: только same-origin относительный путь
     // ('/…', но не '//host'). Иначе — /account. Зеркалит login.astro.
@@ -53,8 +54,14 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
     // 'authRedirect' (login/register перед /verify). Тот же tab → стор жив → назад
     // в /checkout. Ссылка из письма в НОВОЙ вкладке: стор пуст → грациозно /account
     // (известное ограничение — проброс redirect в письмо требует бэкенд-правок).
+    // Спека 120, задача 5.4: сначала `?next=` из самой ссылки письма (общая
+    // nextPathOf — только путь сайта), затем authRedirect; оба — через тот же
+    // safeRedirect, второго механизма нет.
     const goAfterAuth = (): void => {
-      const r = sessionStorage.getItem('authRedirect') || '/account';
+      const next = nextPathOf(window.location.search);
+      const r = next !== '/account'
+        ? next
+        : sessionStorage.getItem('authRedirect') || '/account';
       sessionStorage.removeItem('authRedirect');
       navTo(safeRedirect(r));
     };

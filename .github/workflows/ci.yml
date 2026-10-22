@@ -73,6 +73,17 @@ jobs:
           pnpm --dir themes/nova install --ignore-workspace --frozen-lockfile
           pnpm --filter @merfy/storefront-builder renderer
 
+      # Процессы рендера и проверки секций (блок 2 «Секций и SDK»): на сервере их запускает Node 26 из образа сборщика —
+      # под --permission сеть закрыта только с 25-й версии. Тесты пакетов — тем же Node 26: SECTION_RENDER_NODE.
+      - name: Node 26 для процессов рендера секций
+        run: |
+          curl -fsSL -o /tmp/node26.tar.xz https://nodejs.org/dist/v26.12.0/node-v26.12.0-linux-x64.tar.xz
+          echo "fd47865ecd6391ebb431fc815e01b9135bf83ded5cf373247e9331e196b7aded  /tmp/node26.tar.xz" | sha256sum -c -
+          mkdir -p /tmp/node26
+          tar -xJf /tmp/node26.tar.xz -C /tmp/node26 --strip-components=1
+          /tmp/node26/bin/node --version
+          echo "SECTION_RENDER_NODE=/tmp/node26/bin/node" >> "$GITHUB_ENV"
+
       - name: Тесты пакетов этапа
         run: |
           for package in tokens storefront-config storefront-build storefront-storage storefront-builder stand-check storefront-shell storefront-sections; do

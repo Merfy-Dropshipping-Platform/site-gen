@@ -33,4 +33,20 @@ describe('компиляция шаблона', () => {
     expect(bad.problems.map((item) => item.code)).toEqual(['template-forbidden']);
     expect(bad.render).toBeNull();
   });
+
+  it('глубже предела — template-too-deep до разбора, модуля нет', async () => {
+    const deep = await checkTemplate(`${'<div>'.repeat(5000)}x${'</div>'.repeat(5000)}`);
+    expect(deep).toEqual({
+      problems: [
+        {
+          code: 'template-too-deep',
+          file: 'template.astro',
+          line: null,
+          column: null,
+          message: 'шаблон вложен на 5000 уровней (теги и скобки), предел — 256',
+        },
+      ],
+      render: null,
+    });
+  });
 });

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseChangelog, platformRenderHash, readShellBuild } from '@merfy/storefront-build';
+import { sandboxReport } from '@merfy/storefront-sections';
 import { createS3Store } from '@merfy/storefront-storage';
 import { Pool } from 'pg';
 import { raiseAlert } from './alert';
@@ -15,6 +16,7 @@ import { bootstrapRelease, releasedVersion } from './release/store';
 import { ensureRendererArchive } from './renderer-archive';
 import { openBroker } from './broker';
 import { startDrawServer } from './draw';
+import { errorText } from './errors';
 import { createIndexNow } from './indexnow';
 import { jsonLog } from './log';
 import { previewVia } from './preview';
@@ -37,6 +39,13 @@ const clock = (): Date => new Date();
 const log = jsonLog((line) => process.stdout.write(line), clock);
 
 const settings = readSettings(process.env);
+// Песочница процессов рендера секций (блок 2 «Секций и SDK»): что на этой машине закрыто — строка журнала при старте.
+// Бинарник Node и пользователь ОС — из SECTION_RENDER_NODE, SECTION_RENDER_UID, SECTION_RENDER_GID (Dockerfile). Проба
+// сборщик не останавливает: строку сверяют после выкатки, секции мерчантов включают только при всём closed.
+await sandboxReport().then(
+  (report) => log('render-sandbox', report),
+  (error: unknown) => log('render-sandbox-failed', { error: errorText(error) }),
+);
 const db = new Pool({ connectionString: settings.databaseUrl });
 const store = createS3Store(settings.s3);
 const loaded = await loadThemes(ROOT, { standPage: settings.standPage });

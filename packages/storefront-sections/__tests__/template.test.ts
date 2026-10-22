@@ -55,6 +55,41 @@ describe('запреты шаблона секции', () => {
     expect(await textsOf('<p>без frontmatter</p>')).toEqual([]);
   });
 
+  it('выражения: settings, параметры стрелочных функций и Math, String, JSON — можно', async () => {
+    const list = '<ul>{settings.items.map((item, i) => <li data-i={i}>{item.title}</li>)}</ul>';
+    const text = `${FRONT}${list}<p>{settings.title.at(0).toUpperCase()}{Math.max(1, 2)}{String(settings.n)}</p>`;
+    expect(await templateProblems(text)).toEqual([]);
+  });
+
+  it('выражения: чужие имена, new, this, import(), присваивание, функции с телом, function, async', async () => {
+    const body = "{process.env.X}{fetch('x')}{new Function('a')}{this}{import('x')}{settings.a = 1}";
+    const functions = '{(() => { while (true) {} })()}{function () {}}{async () => 1}';
+    const only = 'выражение только читает данные секции';
+    expect(await textsOf(`${FRONT}<p>${body}${functions}</p>`)).toEqual([
+      'имя process: в выражениях шаблона — только settings, blocks, параметры функций и Math, Number, String, Boolean, JSON, Array',
+      'имя fetch: в выражениях шаблона — только settings, blocks, параметры функций и Math, Number, String, Boolean, JSON, Array',
+      `new: в шаблоне секции нельзя — ${only}`,
+      `this: в шаблоне секции нельзя — ${only}`,
+      `import(): в шаблоне секции нельзя — ${only}`,
+      `присваивание: в шаблоне секции нельзя — ${only}`,
+      'функция с телом { … }: в шаблоне секции — только (x) => выражение',
+      `function: в шаблоне секции нельзя — ${only}`,
+      `async: в шаблоне секции нельзя — ${only}`,
+    ]);
+  });
+
+  it('выражения: свойства constructor, __proto__, repeat и ключ в [ ] не строкой', async () => {
+    const body = "{settings['constructor']}{settings[settings.key]}{'x'.repeat(9)}";
+    const pattern = '{settings.items.map(({ constructor: make }) => make)}{ {__proto__: settings} }';
+    expect(await textsOf(`${FRONT}<p>${body}${pattern}</p>`)).toEqual([
+      'свойство constructor: в шаблоне секции нельзя',
+      'ключ в [ ]: в шаблоне секции — только строка или число',
+      'свойство repeat: в шаблоне секции нельзя',
+      'свойство constructor: в шаблоне секции нельзя',
+      'свойство __proto__: в шаблоне секции нельзя',
+    ]);
+  });
+
   it('место — строка и колонка тега', async () => {
     const [found] = await templateProblems(`${FRONT}<div>\n  <script>1</script>\n</div>`);
     expect([found?.line, found?.column]).toEqual([5, 3]);

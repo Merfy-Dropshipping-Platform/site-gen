@@ -1,0 +1,24 @@
+{
+  "sdk": 1,
+  "name": "long-output",
+  "kind": "section",
+  "title": "Повтор слова",
+  "settings": [
+    {
+      "id": "word",
+      "label": "Слово",
+      "setting": {
+        "kind": "string",
+        "default": "шарф"
+      }
+    },
+    {
+      "id": "count",
+      "label": "Сколько раз",
+      "setting": {
+        "kind": "string",
+        "default": "3"
+      }
+    }
+  ]
+}

@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 // двух уровней, без вложенных тернарников, без `as` (кроме `as const`), без `!`, без console. Журнал приёма — функция
 // log из зависимостей, как у сборщика. Комментарии-отключения не действуют: noInlineConfig.
 export default tseslint.config(
-  { ignores: ['eslint.config.mjs', 'coverage/**', 'fixtures/**'] },
+  { ignores: ['eslint.config.mjs', 'coverage/**', 'fixtures/**', 'dist-render/**'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

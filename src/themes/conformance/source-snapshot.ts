@@ -109,6 +109,9 @@ function listFiles(dir: string, exclude: RegExp[] = []): string[] {
 const DIGEST_EXCLUDES = [
   /node_modules/,
   /[/\\]dist[/\\]/,
+  // Кэш astro sync (themes/<тема>/.astro): генерируется сборкой и зависит от версии
+  // Astro, а не от исходников темы; без исключения digest меняется от среды сборки.
+  /[/\\]\.astro[/\\]/,
   /conformance[/\\]inventory[/\\]/,
   /conformance[/\\]baselines[/\\]/,
   /conformance-results[/\\]/,

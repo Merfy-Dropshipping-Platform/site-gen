@@ -8,7 +8,7 @@ import { buildKey, dataKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
 import { renderShopPage, type RenderedPage, type ShopTheme } from './page';
 import { SHOP_ROUTES } from './routes';
-import { NO_SECTIONS, type PageRender, type RenderSection } from './sections-render';
+import { NO_SECTIONS, type PageRender, type RenderSection, type SectionFailed } from './sections-render';
 import { renderStandPage, type StandBuild } from './stand';
 
 // Справки сборки: в ключ не входят, в манифест пишутся. Коммит платформы — SOURCE_COMMIT образа sites (В4-1 В).
@@ -38,10 +38,12 @@ const byPath = (left: BuildFile, right: BuildFile): number => (left.path < right
 // рисуется так же, как по запросу (renderShopPage); файлы клиента темы идут как есть. Ядро и скрипты секций (блок 7) —
 // из assets: входы называют их отпечатками. Ни часов, ни случайного: одинаковые входы — одинаковые файлы, ключ и
 // манифест.
-// Страница сборки: модули рендера из активов и функция рендера процесса, режим live.
-const livePageOf = (assets: CodeAssets, render: RenderSection): PageRender => ({
+// Страница сборки: модули рендера из активов и функция рендера процесса, режим live; упавшую секцию сборка пропускает и
+// сообщает failed (блок 2 «Секций и SDK»).
+const livePageOf = (assets: CodeAssets, render: RenderSection, failed?: SectionFailed): PageRender => ({
   sections: { modules: assets.renders, render },
   mode: 'live',
+  failed,
 });
 
 export async function buildStorefront(
@@ -50,12 +52,14 @@ export async function buildStorefront(
   theme: ThemeBuild,
   assets: CodeAssets = NO_ASSETS,
   render: RenderSection = NO_SECTIONS.render,
+  failed?: SectionFailed,
 ): Promise<StorefrontBuild> {
   const inputs = parseBuildInputs(raw);
   // Файлы кода — до рендера: нет ядра или скрипта — ошибка, рисовать не начинали.
   const code = codeFiles(inputs, assets);
-  // Секции рисует процесс рендера сборщика; ошибка секции — ошибка сборки (Р2): сборку не выкладываем.
-  const page = livePageOf(assets, render);
+  // Секции рендерит процесс рендера сборщика. Упавшей секции на странице нет, сборка идёт дальше (блок 2, В2-1 А); упала
+  // секция с removable: false или сам процесс рендера — ошибка сборки, сборку не выкладываем.
+  const page = livePageOf(assets, render, failed);
   const shopPages = await Promise.all(SHOP_ROUTES.map((route) => renderShopPage(inputs, route.path, theme, page)));
   const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
   const pages = [...shopPages, ...standPages];

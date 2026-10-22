@@ -4,6 +4,7 @@ import {
   buildStorefront,
   parseBuildInputs,
   type Changelog,
+  type SectionFailure,
   type ThemeBuild,
 } from '@merfy/storefront-build';
 import { withSectionRenderer } from '@merfy/storefront-sections';
@@ -24,6 +25,8 @@ import {
   type ShopStateOptions,
   type StartedJob,
 } from './shop-state';
+import { recordRenderErrors } from './section-error-store';
+import { minuteOf } from './section-errors';
 import { readSnapshot, type Snapshot, type SnapshotDeps } from './snapshot';
 import { pinShop, type ThemeCatalog } from './theme-catalog';
 import { recordBuild, type BuildOutcome, type Steps } from './build-record';
@@ -102,13 +105,45 @@ async function themeFor(deps: BuilderDeps, snapshot: Snapshot): Promise<ThemeBui
 const pin = (deps: BuilderDeps, siteId: string): Promise<void> =>
   pinShop({ db: deps.db, pins: deps.snapshot.pins, themeIds: [...deps.themes.keys()], log: deps.log }, siteId);
 
-async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, theme: ThemeBuild) {
+// Упавшие секции сборки (блок 2 «Секций и SDK», «Решил сам» п. 7): строка журнала section-render-failed сразу, строки
+// таблицы ошибок — после сборки, даже если она упала. База не ответила — строка журнала, сборка идёт своим ходом.
+function failureLog(deps: BuilderDeps, job: ClaimedJob, failures: SectionFailure[]) {
+  return (failure: SectionFailure): void => {
+    failures.push(failure);
+    deps.log('section-render-failed', {
+      shopId: job.siteId,
+      buildId: job.build,
+      section: failure.section,
+      sectionId: failure.id,
+      stage: failure.stage,
+      error: failure.message,
+    });
+  };
+}
+
+async function recordFailures(deps: BuilderDeps, job: ClaimedJob, failures: SectionFailure[]): Promise<void> {
+  const batch = { shopId: job.siteId, minute: minuteOf(deps.clock().toISOString()), failures };
+  await recordRenderErrors(deps.db, batch).catch((error: unknown) =>
+    deps.log('section-render-errors-failed', { shopId: job.siteId, buildId: job.build, error: errorText(error) }),
+  );
+}
+
+async function buildWithSections(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, theme: ThemeBuild) {
   // Справки сборки: коммит образа и включённые расширения магазина (блок 10, задача 11) — в манифест, не в ключ.
   const references = { platformCommit: deps.platformCommit, extensions: snapshot.extensions };
+  const failures: SectionFailure[] = [];
   // Секции рисует процесс рендера (storefront-sections): он запускается при первой секции и закрывается после сборки.
-  const build = await withSectionRenderer((render) =>
-    buildStorefront(snapshot.inputs, references, theme, snapshot.assets, render),
-  );
+  try {
+    return await withSectionRenderer((render) =>
+      buildStorefront(snapshot.inputs, references, theme, snapshot.assets, render, failureLog(deps, job, failures)),
+    );
+  } finally {
+    await recordFailures(deps, job, failures);
+  }
+}
+
+async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, theme: ThemeBuild) {
+  const build = await buildWithSections(deps, job, snapshot, theme);
   const request = { label: snapshot.address.label, build: job.build, manifest: build.manifest, files: build.files };
   const now = deps.clock().toISOString();
   const options = { ...request, publicUrl: snapshot.address.url, indexable: deps.indexable, now };

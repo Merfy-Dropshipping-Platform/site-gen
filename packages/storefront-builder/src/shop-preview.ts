@@ -21,7 +21,7 @@ import {
 } from '@merfy/storefront-sections';
 import type { Dictionary } from '@merfy/tokens';
 import { z } from 'zod';
-import { instanceSchema, readVisibleSections } from './code';
+import { instanceSchema, readVisibleSections, type SectionInstance } from './code';
 import type { DrawAnswer } from './draw';
 import { inlineAssets } from './inline-assets';
 import { inlineFonts } from './preview-fonts';
@@ -173,14 +173,7 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
       ? {}
       : { blocks: resolveSectionBlocks(current.manifest, instance.blocks).blocks };
   // Часть 4 (Р1-4-11): деревья меню по значениям настроек; uses — только если объявлен.
-  const placed = {
-    id: instance.id,
-    name: instance.section,
-    hash: current.renderHash,
-    settings,
-    ...blocks,
-    ...placedExtras(current, settings, menus ?? []),
-  };
+  const placed = previewPlaced(instance, current, settings, blocks, menus ?? [], current.renderHash);
   const props = (current.manifest.uses ?? []).length > 0 ? await previewProps(deps, found.shopId, theme) : undefined;
   const modules = new Map([[current.renderHash, current.render]]);
   const content = await renderPlacedSections([placed], found.dictionary, {
@@ -190,14 +183,22 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   return jsonAnswer(200, { html: content.sections[0] ?? '', css: content.sectionsCss });
 }
 
-// Меню и uses экземпляра превью (часть 4): деревья меню — только у секций с настройками вида menu.
-function placedExtras(
+// Экземпляр превью: блоки, деревья меню и uses — только те ключи, что у секции есть.
+function previewPlaced(
+  instance: SectionInstance,
   current: CurrentSection,
   settings: Readonly<Record<string, string | boolean>>,
+  blocks: Record<string, unknown>,
   menus: readonly RevisionMenu[],
-): Record<string, unknown> {
+  hash: string,
+) {
   const trees = sectionMenus(current.manifest.settings, settings, menus);
   return {
+    id: instance.id,
+    name: instance.section,
+    hash,
+    settings,
+    ...blocks,
     ...(Object.keys(trees).length === 0 ? {} : { menus: trees }),
     ...(current.manifest.uses === undefined ? {} : { uses: current.manifest.uses }),
   };

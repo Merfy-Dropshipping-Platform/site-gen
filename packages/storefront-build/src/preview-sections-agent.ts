@@ -1,5 +1,6 @@
 // Подпункты (часть 3): клик — select-subsection, выбранный — рамка #88b0da, наведение на секцию — #cfdff0 у её
-// подпунктов; подписи и кнопок у подпункта нет (Р59).
+// подпунктов; подписи и кнопок у подпункта нет (Р59). Часть 4: место секции по группе из reconcile, navigate по
+// ссылке на свою страницу, меню и настройки темы — в запросе блока.
 // Скрипт превью секций (блок 1 «Секций и SDK»; сообщения — как у превью нынешних тем). Работает рядом со слушателем
 // токенов (preview-agent.ts) на превью главной. Шлёт ready каждые 300 мс, пока не придёт init (не больше 40 раз). Клик
 // по секции — select-block; set-selection — рамка выбранной секции с её названием и «Удалить» (Р7; у верхнего края
@@ -152,9 +153,12 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     holder.innerHTML = html;
     return holder.firstElementChild;
   }
-  function fetchBlock(instance) {
-    var body = JSON.stringify({ instance: instance });
-    var request = { method: 'POST', headers: { 'content-type': 'application/json' }, body: body };
+  // Тело запроса блока: экземпляр; меню ревизии и правки настроек темы (часть 4) — если конструктор их прислал.
+  function fetchBlock(instance, props) {
+    var payload = { instance: instance };
+    if (props && Array.isArray(props.menus)) payload.menus = props.menus;
+    if (props && props.theme && typeof props.theme === 'object') payload.theme = props.theme;
+    var request = { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) };
     return fetch(blockUrl, request).then(function (response) {
       if (!response.ok) throw new Error('блок ' + instance.id + ': ответ ' + response.status);
       return response.json();
@@ -169,11 +173,18 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   function failed(error) {
     post({ type: 'render-error', message: error.message });
   }
+  // Ссылка на страницу своего сайта (часть 4, Р1-4-12): после выбора — navigate, конструктор открывает страницу, как на
+  // проде (site-gen, src/services/preview.service.ts: href с «/», не с «//»). Чужая ссылка превью не уводит.
+  function navigateTo(target) {
+    var link = target && target.closest ? target.closest('a[href]') : null;
+    var href = link ? link.getAttribute('href') || '' : '';
+    if (href.charAt(0) === '/' && href.charAt(1) !== '/') post({ type: 'navigate', path: href });
+  }
   function updateBlock(data) {
     var instance = instanceOf(data.blockId, data.blockType, data.props);
     var ticket = (tickets[instance.id] || 0) + 1;
     tickets[instance.id] = ticket;
-    fetchBlock(instance)
+    fetchBlock(instance, data.props)
       .then(function (answer) {
         var old = byId(instance.id);
         var fresh = nodeOf(answer.html);
@@ -188,6 +199,38 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   function containerOf() {
     var first = all()[0];
     return (first && first.parentNode) || document.querySelector('main') || document.body;
+  }
+  // Место секции по группе (часть 4, Р1-4-11): header — перед <main>, page — в <main>, footer — сразу после <main>;
+  // внутри группы — порядок списка; группы нет — page. <main> нет — все в контейнер, как раньше.
+  function placeAll(blocks, nodes, container) {
+    var main = document.querySelector('main');
+    var groups = { header: [], page: [], footer: [] };
+    blocks.forEach(function (block) {
+      var old = byId(block.id);
+      var node = nodes[block.id] || old;
+      if (!node) return;
+      if (old && old !== node) old.parentNode.removeChild(old);
+      var group = block.props && block.props.group;
+      groups[group === 'header' || group === 'footer' ? group : 'page'].push(node);
+    });
+    if (!main) {
+      groups.header.concat(groups.page, groups.footer).forEach(function (node) {
+        container.appendChild(node);
+      });
+      return;
+    }
+    groups.header.forEach(function (node) {
+      main.parentNode.insertBefore(node, main);
+    });
+    groups.page.forEach(function (node) {
+      main.appendChild(node);
+    });
+    groups.footer
+      .slice()
+      .reverse()
+      .forEach(function (node) {
+        main.parentNode.insertBefore(node, main.nextSibling);
+      });
   }
   function reconcile(data) {
     var blocks = data.blocks || [];
@@ -208,7 +251,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       changed.map(function (block) {
         var ticket = (tickets[block.id] || 0) + 1;
         tickets[block.id] = ticket;
-        return fetchBlock(instanceOf(block.id, block.type, block.props)).then(function (answer) {
+        return fetchBlock(instanceOf(block.id, block.type, block.props), block.props).then(function (answer) {
           if (tickets[block.id] !== ticket) return { id: block.id, node: null };
           hashes[block.id] = block.propsHash;
           setCss(block.id, answer.css);
@@ -221,13 +264,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         fresh.forEach(function (item) {
           if (item.node) nodes[item.id] = item.node;
         });
-        blocks.forEach(function (block) {
-          var old = byId(block.id);
-          var node = nodes[block.id] || old;
-          if (!node) return;
-          if (old && old !== node) old.parentNode.removeChild(old);
-          container.appendChild(node);
-        });
+        placeAll(blocks, nodes, container);
         place();
         showBlock();
         post({ type: 'reconcile-ack', version: data.version, ok: true, applied: changed.length });
@@ -264,6 +301,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         if (target.closest('a')) event.preventDefault();
         var index = blockIdsOf(parent).indexOf(blockNode.getAttribute('data-merfy-block'));
         post({ type: 'select-subsection', parentId: parent.getAttribute('data-section-id'), index: index, field: null });
+        navigateTo(target);
         return;
       }
       var node = sectionOf(target);
@@ -271,6 +309,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       event.preventDefault();
       event.stopPropagation();
       post({ type: 'select-block', blockId: node.getAttribute('data-section-id') });
+      navigateTo(target);
     },
     true
   );

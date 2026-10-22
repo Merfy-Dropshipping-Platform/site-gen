@@ -1,4 +1,4 @@
 ---
 const { settings } = Astro.props;
 ---
-<p class="m-0 text-lg">{Array.from({ length: Number(settings.count) }, (_, row) => Array.from({ length: Number(settings.count) }, (_, column) => row * column).length).length}</p>
+<p class="m-0 text-lg">{Array.from({ length: Number(settings.heading) }, (_, row) => Array.from({ length: Number(settings.heading) }, (_, column) => row * column).length).length}</p>

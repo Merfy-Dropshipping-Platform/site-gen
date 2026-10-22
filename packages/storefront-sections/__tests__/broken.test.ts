@@ -42,8 +42,8 @@ describe('сломанные секции для проверки руками',
   it('с правками мерчанта рендер отказывает: render, render-output, render-timeout', async () => {
     const cases: [string, Record<string, string>, string][] = [
       ['heading-letter', { heading: '' }, 'render'],
-      ['long-output', { word: 'шарф', count: '1000000' }, 'render-output'],
-      ['slow-grid', { count: '100000' }, 'render-timeout'],
+      ['long-output', { heading: 'шарф', subheading: '1000000' }, 'render-output'],
+      ['slow-grid', { heading: '100000' }, 'render-timeout'],
     ];
     const stages = await withSectionRenderer(async (render) => {
       const found: string[] = [];

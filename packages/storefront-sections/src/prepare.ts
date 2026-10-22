@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import { fieldRuleProblems } from './field-rules';
 import {
+  MANIFEST_FILE,
   TEMPLATE_FILE,
   fileProblems,
   limitProblems,
@@ -8,6 +10,8 @@ import {
   scriptEntryOf,
   sectionIdSchema,
   sectionManifestSchema,
+  type SectionFiles,
+  type SectionManifest,
 } from './format';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
 import { buildScript } from './script';
@@ -42,6 +46,12 @@ export type PrepareResult = z.infer<typeof prepareResultSchema>;
 
 const refuse = (problems: SectionProblem[]): PrepareResult => ({ ok: false, problems });
 
+// Проблемы section.json: разбор, вид секции и файлы, правила полей (блок 3 «Секций и SDK») — когда файл разобран.
+function manifestProblems(manifest: Checked<SectionManifest>, files: SectionFiles): SectionProblem[] {
+  if (!manifest.ok) return manifest.problems;
+  return [...kindProblems(manifest.value, files), ...fieldRuleProblems(manifest.value, files[MANIFEST_FILE] ?? '')];
+}
+
 function problemsOf(checked: Checked<{ warnings: SectionProblem[] }> | null): SectionProblem[] {
   if (checked === null) return [];
   return checked.ok ? checked.value.warnings : checked.problems;
@@ -63,7 +73,7 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
   ]);
   const problems = [
     ...fileProblems(files),
-    ...(manifest.ok ? kindProblems(manifest.value, files) : manifest.problems),
+    ...manifestProblems(manifest, files),
     ...(checked?.problems ?? []),
     ...problemsOf(script),
   ];

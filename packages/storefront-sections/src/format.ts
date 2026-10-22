@@ -46,6 +46,8 @@ const defaultBlockSchema = z.strictObject({
 });
 
 export const sectionManifestSchema = z.strictObject({
+  // путь к generated/section.schema.json для редактора (блок 3 «Секций и SDK», Р3.12); проверка его не читает
+  $schema: z.string().optional(),
   sdk: z.literal(SECTION_SDK),
   name: sectionIdSchema,
   kind: z.enum(SECTION_KINDS),

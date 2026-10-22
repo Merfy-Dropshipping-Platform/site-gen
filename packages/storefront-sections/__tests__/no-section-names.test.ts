@@ -6,7 +6,12 @@ import { describe, expect, it } from 'vitest';
 // В коде платформы нет имён секций и их полей (владелец, 18.10: «чтобы левые секции и правые там не было хардкода
 // секций. Точнее, параметров секций»): имена и поля приходят из section.json через реестр.
 const PACKAGES = fileURLToPath(new URL('../../', import.meta.url));
-const SOURCES = ['storefront-sections/src', 'storefront-sections/scripts', 'storefront-build/src', 'storefront-builder/src'];
+const SOURCES = [
+  'storefront-sections/src',
+  'storefront-sections/scripts',
+  'storefront-build/src',
+  'storefront-builder/src',
+];
 // analytics — ещё и поле аналитики страницы (storefront-build/src/head.ts: ConfigAnalytics), не только имя секции:
 // сторож на него не смотрит.
 const NAMES = /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|heading-size|button-label|button-link)$/;

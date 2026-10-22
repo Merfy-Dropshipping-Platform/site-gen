@@ -1,12 +1,12 @@
-import { settingFieldShape } from '@merfy/tokens';
 import { z } from 'zod';
+import { sectionFieldShape } from './fields';
 import { problem, when, type Checked, type SectionProblem } from './problems';
 import { settingsTexts } from './settings';
 
 // Формат секции SDK 1 (блок 1 «Секций и SDK»; design.md блока 7, п. 20) — один у всех авторов (С7-11 А): папка с
 // section.json, template.astro и скриптом, если он есть (п. 16), — script.ts или script.js и его файлы .ts/.js. Своего
-// CSS у секции нет: классы Tailwind из словаря темы (7 Г). Поля настроек — settings, схема поля настройки блока 8
-// (settingFieldShape из @merfy/tokens).
+// CSS у секции нет: классы Tailwind из словаря темы (7 Г). Поля настроек — settings: поле настройки блока 8
+// (settingFieldShape из @merfy/tokens) или richtext (fields.ts, часть 3). Блоки — blocks и defaultBlocks (часть 3).
 export const MANIFEST_FILE = 'section.json';
 export const TEMPLATE_FILE = 'template.astro';
 export const SECTION_SDK = 1;
@@ -37,7 +37,7 @@ export const sectionManifestSchema = z.strictObject({
   name: sectionIdSchema,
   kind: z.enum(SECTION_KINDS),
   title: z.string().min(1).max(80),
-  settings: z.array(settingFieldShape).default([]),
+  settings: z.array(sectionFieldShape).default([]),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;
@@ -81,8 +81,7 @@ const FILE_CHECKS: readonly FilesCheck[] = [
     ),
 ];
 
-export const limitProblems = (files: SectionFiles): SectionProblem[] =>
-  LIMIT_CHECKS.flatMap((check) => check(files));
+export const limitProblems = (files: SectionFiles): SectionProblem[] => LIMIT_CHECKS.flatMap((check) => check(files));
 
 export const fileProblems = (files: SectionFiles): SectionProblem[] => [
   ...limitProblems(files),

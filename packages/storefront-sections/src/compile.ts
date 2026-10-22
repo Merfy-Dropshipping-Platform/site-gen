@@ -38,7 +38,9 @@ function diagnosticProblem(diagnostic: Diagnostic): SectionProblem {
 
 export async function compileTemplate(text: string): Promise<Compiled> {
   const { transform } = await import('@astrojs/compiler-rs');
-  const result = await Promise.resolve(transform(text, { filename: TEMPLATE_FILE, resolvePath: (specifier: string) => specifier }));
+  const result = await Promise.resolve(
+    transform(text, { filename: TEMPLATE_FILE, resolvePath: (specifier: string) => specifier }),
+  );
   const errors = z.array(diagnosticSchema).parse(result.diagnostics).filter(isError);
   if (errors.length > 0) return { ok: false, problems: errors.map(diagnosticProblem) };
   return { ok: true, code: result.code };

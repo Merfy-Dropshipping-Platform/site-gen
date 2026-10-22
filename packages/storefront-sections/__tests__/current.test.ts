@@ -38,7 +38,9 @@ describe('строка реестра в формате SDK 1', () => {
   });
 
   it('манифест до SDK 1 — null', () => {
-    expect(currentSection(row({ manifest: { v: 1, name: 'hero', kind: 'section', title: 'Первый экран' } }))).toBeNull();
+    expect(
+      currentSection(row({ manifest: { v: 1, name: 'hero', kind: 'section', title: 'Первый экран' } })),
+    ).toBeNull();
   });
 
   it('секция без модуля рендера — null', () => {

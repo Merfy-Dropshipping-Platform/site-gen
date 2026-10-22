@@ -17,8 +17,11 @@ interface Run {
 
 function merfy(...args: string[]): Promise<Run> {
   return new Promise((resolve) => {
-    execFile(process.execPath, ['--import', 'tsx', 'scripts/merfy.ts', ...args], { cwd: PACKAGE_DIR }, (error, stdout) =>
-      resolve({ code: error === null ? 0 : Number(Reflect.get(error, 'code')), stdout }),
+    execFile(
+      process.execPath,
+      ['--import', 'tsx', 'scripts/merfy.ts', ...args],
+      { cwd: PACKAGE_DIR },
+      (error, stdout) => resolve({ code: error === null ? 0 : Number(Reflect.get(error, 'code')), stdout }),
     );
   });
 }
@@ -41,14 +44,18 @@ describe('pnpm merfy section check', () => {
   it('запрет в шаблоне — строка с местом и кодом, выход 1', async () => {
     const run = await merfy('section', 'check', await folderWith('<div>\n  <button onclick="x">a</button>\n</div>'));
     expect(run.code).toBe(1);
-    expect(run.stdout).toBe('template.astro:2:11 — обработчик onclick: события — только в script.ts [template-forbidden]\n');
+    expect(run.stdout).toBe(
+      'template.astro:2:11 — обработчик onclick: события — только в script.ts [template-forbidden]\n',
+    );
   }, 30_000);
 
   it('шаблон падает при рендере — render-failed', async () => {
     const template = '---\nconst { settings } = Astro.props;\n---\n<p>{settings.missing.deep}</p>';
     const run = await merfy('section', 'check', await folderWith(template));
     expect(run.code).toBe(1);
-    expect(run.stdout).toMatch(/^template\.astro — шаблон не отрисовался с умолчаниями настроек: .+ \[render-failed\]\n$/);
+    expect(run.stdout).toMatch(
+      /^template\.astro — шаблон не отрисовался с умолчаниями настроек: .+ \[render-failed\]\n$/,
+    );
   }, 30_000);
 
   it('неверная команда — выход 2', async () => {

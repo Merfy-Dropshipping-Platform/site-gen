@@ -8,6 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./core": "./src/core/index.ts",
+    "./behaviors": "./src/core/behaviors/index.ts",
+    "./behaviors/catalog": "./src/core/behaviors/catalog.ts",
     "./core-parts.json": "./core-parts.json"
   },
   "scripts": {
@@ -21,7 +23,11 @@
     "format:check": "prettier --check --no-error-on-unmatched-pattern src build sections __tests__ scripts"
   },
   "dependencies": {
-    "@merfy/storefront-config": "workspace:*"
+    "@merfy/storefront-config": "workspace:*",
+    "embla-carousel": "8.6.0",
+    "embla-carousel-autoplay": "8.6.0",
+    "embla-carousel-fade": "8.6.0",
+    "motion": "14.0.0"
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",

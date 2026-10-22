@@ -150,7 +150,33 @@ export interface Modules {
 }
 export type ModuleName = keyof Modules;
 
-// ctx экземпляра (раздел 3.2). animate — блок 6; theme и ext — блок 9.
+// Анимация кода секции — ctx.animate (блок 6, design.md раздел 10): Motion внутри SDK, код секции его не импортирует.
+// Кривая — по имени (значения — EASINGS в behaviors/catalog.ts) или массивом Безье; свойства — из списка keyframes.ts.
+export type EasingName =
+  | 'linear'
+  | 'ease-out'
+  | 'decelerate'
+  | 'material'
+  | 'power2.out'
+  | 'power3.out'
+  | 'power2.in'
+  | 'power3.in'
+  | 'power2.inOut'
+  | 'back.out';
+export type Bezier = readonly [number, number, number, number];
+export type KeyframeValue = string | number;
+export type Keyframes = Readonly<Record<string, KeyframeValue | readonly KeyframeValue[]>>;
+export interface AnimateOptions {
+  readonly duration?: number; // мс, по умолчанию 300
+  readonly delay?: number; // мс, по умолчанию 0
+  readonly easing?: EasingName | Bezier; // по умолчанию 'ease-out'
+}
+export interface Animation {
+  readonly finished: Promise<void>; // закончилась или остановлена
+  stop(): void;
+}
+
+// ctx экземпляра (раздел 3.2). animate — блок 6 (типы выше); theme и ext — блок 9.
 export interface BaseCtx<State extends object> {
   readonly name: string; // имя с префиксом автора: 'shop:…'
   readonly id: string; // data-section-id; у глобального скрипта — имя

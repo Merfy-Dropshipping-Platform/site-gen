@@ -2,8 +2,8 @@ import { defaultLaunch, spawnIsolated, type IsolatedLaunch } from './isolation';
 import { prepareResultSchema, type PrepareInput, type PrepareResult } from './prepare';
 import { problem } from './problems';
 import { resolveSectionBlocks } from './blocks';
-import { defaultSettings } from './settings';
-import { trialRender } from './trial';
+import { defaultSettings, emptySettings } from './settings';
+import { emptyTrialRender, trialRender } from './trial';
 import { WORKER_FILES } from './worker-files';
 
 // Отдельный процесс для приёма (design.md блока 7, С7-11 А: код любого автора проверяет и собирает sites). Чужой код
@@ -79,5 +79,9 @@ export async function prepareInWorker(
   // Блоки новой секции (defaultBlocks): шаблон с blocks.map проверяется на них.
   const { blocks } = resolveSectionBlocks(result.section.manifest, undefined);
   const trial = await trialRender(result.section.render, settings, { launch: options.launch }, blocks);
-  return trial.length > 0 ? { ok: false, problems: trial } : result;
+  if (trial.length > 0) return { ok: false, problems: trial };
+  // Второй пробный рендер — с пустыми значениями (блок 3 «Секций и SDK», Р3.11): мерчант может стереть заголовок.
+  const empty = emptySettings(result.section.manifest.settings);
+  const blank = await emptyTrialRender(result.section.render, empty, { launch: options.launch });
+  return blank.length > 0 ? { ok: false, problems: blank } : result;
 }

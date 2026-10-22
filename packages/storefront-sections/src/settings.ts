@@ -1,5 +1,5 @@
 import type { SettingValue } from '@merfy/tokens';
-import { sectionSettingProblem, type SectionField } from './fields';
+import { sectionSettingProblem, type SectionField, type SectionSettingSpec } from './fields';
 import { cleanRichtext } from './richtext';
 
 // Поля настроек секции (блок 1 «Секций и SDK»; design.md блока 7, п. 23): поле настройки панели темы (блок 8) или
@@ -26,6 +26,22 @@ export const settingsTexts = (settings: readonly SectionField[]): string[] =>
 
 export const defaultSettings = (settings: readonly SectionField[]): Record<string, SettingValue> =>
   Object.fromEntries(settings.map((field): [string, SettingValue] => [field.id, field.setting.default]));
+
+// Пустое значение по виду (блок 3 «Секций и SDK», Р3.11): мерчант может стереть заголовок. У строк, текстов,
+// richtext, адресов и картинок пустого значения нет — пустая строка; у выборов, переключателей, ползунков,
+// выравнивания, схемы и отступов — умолчание. menu и image-pair добавят части 4 и 5 блока 1.
+const EMPTY_VALUES: Readonly<Partial<Record<SectionSettingSpec['kind'], SettingValue>>> = {
+  string: '',
+  text: '',
+  richtext: '',
+  url: '',
+  image: '',
+};
+
+export const emptySettings = (settings: readonly SectionField[]): Record<string, SettingValue> =>
+  Object.fromEntries(
+    settings.map((field): [string, SettingValue] => [field.id, EMPTY_VALUES[field.setting.kind] ?? field.setting.default]),
+  );
 
 export interface ResolvedSettings {
   values: Record<string, SettingValue>;

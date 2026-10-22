@@ -3,5 +3,5 @@ const { settings } = Astro.props;
 ---
 <div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
   <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h1>
-  <div class="text-foreground" set:html={settings.content}></div>
+  <div class="text-foreground" set:html={settings.text}></div>
 </div>

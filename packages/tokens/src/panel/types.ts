@@ -41,6 +41,9 @@ export type SettingField = FieldBase & {
   setting: SettingSpec;
   // Выбор рисуется кнопками в ряд, а не выпадающим списком: «Сайдбар / Страница».
   control?: 'segment';
+  // Сквозная настройка (блок 3 «Секций и SDK», раздел 3.7): одна на магазин, секции её читают через "uses": ["theme"].
+  // Только в панели темы: у полей секций ключа нет.
+  shared?: true;
 };
 
 export type PanelField = TokenField | SettingField;

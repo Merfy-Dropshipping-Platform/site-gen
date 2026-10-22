@@ -14,3 +14,15 @@ export const settingFields = (panel: PanelSchema): SettingField[] => panelFields
 // Поле видно при этих настройках? Условия нет — видно всегда. settings — все настройки (resolveSettings).
 export const fieldVisible = (field: PanelField, settings: Readonly<SettingsEdits>): boolean =>
   field.visibleWhen === undefined || settings[field.visibleWhen.setting] === field.visibleWhen.equals;
+
+// Сквозные настройки панели (блок 3 «Секций и SDK», раздел 3.7): поля с shared и заголовок их группы. По ним пакет
+// секций пишет список для проверки полей секции и для документации ИИ.
+export type SharedSetting = { group: string; field: SettingField };
+
+export const sharedSettings = (panel: PanelSchema): SharedSetting[] =>
+  panel.groups.flatMap((group) =>
+    groupFields(group)
+      .filter(isSettingField)
+      .filter((field) => field.shared === true)
+      .map((field) => ({ group: group.title, field })),
+  );

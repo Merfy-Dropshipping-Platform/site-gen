@@ -1,0 +1,47 @@
+[
+  {
+    "id": "logo-image",
+    "label": "Картинка",
+    "group": "Логотип"
+  },
+  {
+    "id": "social-telegram",
+    "label": "Telegram",
+    "group": "Социальные сети"
+  },
+  {
+    "id": "social-vk",
+    "label": "Вконтакте",
+    "group": "Социальные сети"
+  },
+  {
+    "id": "social-dzen",
+    "label": "Дзен",
+    "group": "Социальные сети"
+  },
+  {
+    "id": "social-youtube",
+    "label": "Youtube",
+    "group": "Социальные сети"
+  },
+  {
+    "id": "social-tiktok",
+    "label": "TikTok",
+    "group": "Социальные сети"
+  },
+  {
+    "id": "social-max",
+    "label": "MAX",
+    "group": "Социальные сети"
+  },
+  {
+    "id": "cart-type",
+    "label": "Вид корзины",
+    "group": "Корзина"
+  },
+  {
+    "id": "cookie-banner-enabled",
+    "label": "Баннер cookie",
+    "group": "Баннер"
+  }
+]

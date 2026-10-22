@@ -3,8 +3,8 @@ import { prepareResultSchema, type PrepareInput, type PrepareResult } from './pr
 import { problem } from './problems';
 import { resolveSectionBlocks } from './blocks';
 import { sectionMenus } from './menus';
-import { defaultSettings } from './settings';
-import { trialRender } from './trial';
+import { defaultSettings, emptySettings } from './settings';
+import { emptyTrialRender, trialRender } from './trial';
 import { WORKER_FILES } from './worker-files';
 
 // Отдельный процесс для приёма (design.md блока 7, С7-11 А: код любого автора проверяет и собирает sites). Чужой код
@@ -82,5 +82,10 @@ export async function prepareInWorker(
   // Меню новой секции (часть 4): у настроек вида menu — пустое дерево; theme и shop — пустые (процесс рендера).
   const menus = sectionMenus(result.section.manifest.settings, settings, []);
   const trial = await trialRender(result.section.render, settings, { launch: options.launch }, blocks, menus);
-  return trial.length > 0 ? { ok: false, problems: trial } : result;
+  if (trial.length > 0) return { ok: false, problems: trial };
+  // Второй пробный рендер — с пустыми значениями (блок 3 «Секций и SDK», Р3.11): мерчант может стереть заголовок.
+  const empty = emptySettings(result.section.manifest.settings);
+  const emptyMenus = sectionMenus(result.section.manifest.settings, empty, []);
+  const blank = await emptyTrialRender(result.section.render, empty, { launch: options.launch }, emptyMenus);
+  return blank.length > 0 ? { ok: false, problems: blank } : result;
 }

@@ -7,7 +7,7 @@
   "settings": [
     { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Страница" } },
     {
-      "id": "content",
+      "id": "text",
       "label": "Текст",
       "setting": { "kind": "richtext", "default": "<p>Расскажите покупателям, о чём эта страница.</p>" }
     }

@@ -46,3 +46,10 @@ export {
 // Песочница процессов с чужим кодом (блок 2 «Секций и SDK»): бинарник Node и пользователь ОС, отчёт при старте.
 export { defaultLaunch, readLaunch, type IsolatedLaunch } from './isolation';
 export { sandboxReport, type SandboxReport } from './sandbox-report';
+// Правила полей секции (блок 3 «Секций и SDK»): словарь имён и его текст для людей и ИИ, проверка имени, лимиты, тип
+// значения поля по виду.
+export { NAMES, type NameEntry, type NamesDictionary, type SdkKind } from './names';
+export { nameIssue } from './name-check';
+export { namesMarkdown } from './generate/names-markdown';
+export { SETTINGS_LIMITS } from './limits';
+export type { SettingValueOf } from './setting-value';

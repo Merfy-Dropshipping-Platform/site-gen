@@ -25,7 +25,8 @@ describe('поля настроек секции', () => {
     expect(settingsTexts([HEADING, SIZE])).toEqual([]);
   });
 
-  it('id не по словарю, повтор id, неверное умолчание, условие на несуществующую настройку', () => {
+  // Имя поля по словарю и условия показа проверяют правила полей (блок 3 «Секций и SDK»: name-check.ts, visibility.ts).
+  it('повтор id и неверное умолчание; имя не по словарю и условие — не здесь', () => {
     const texts = settingsTexts([
       { ...HEADING, id: 'Heading' },
       HEADING,
@@ -33,12 +34,7 @@ describe('поля настроек секции', () => {
       { id: 'heading-size', label: 'Размер', setting: { kind: 'select', default: 'huge', options: SIZE_OPTIONS } },
       { ...HEADING, id: 'text', visibleWhen: { setting: 'align', equals: 'left' } },
     ]);
-    expect(pathsOf(texts)).toEqual(['settings.0.id', 'settings.2.id', 'settings.3.default', 'settings.4.visibleWhen']);
-  });
-
-  it('условие показа: значение — из вариантов той настройки', () => {
-    const texts = settingsTexts([SIZE, { ...HEADING, visibleWhen: { setting: 'heading-size', equals: 'huge' } }]);
-    expect(pathsOf(texts)).toEqual(['settings.1.visibleWhen.equals']);
+    expect(pathsOf(texts)).toEqual(['settings.2.id', 'settings.3.default']);
   });
 });
 

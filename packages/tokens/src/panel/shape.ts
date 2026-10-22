@@ -58,7 +58,11 @@ export const settingFieldShape = z
   .object({ ...fieldBase, setting: settingSpecShape, control: z.literal('segment').optional() })
   .strict();
 
-const fieldShape = z.union([tokenFieldShape, settingFieldShape]);
+// Поле настройки в панели темы — ещё пометка сквозной настройки (блок 3 «Секций и SDK», раздел 3.7): одна на магазин,
+// секции её только читают. У полей секций пометки нет: section.json проверяет settingFieldShape без неё.
+const panelSettingFieldShape = settingFieldShape.extend({ shared: z.literal(true).optional() });
+
+const fieldShape = z.union([tokenFieldShape, panelSettingFieldShape]);
 const sidebarShape = z.object({ title: z.string().min(1), fields: z.array(fieldShape).min(1) }).strict();
 const groupShape = z
   .object({

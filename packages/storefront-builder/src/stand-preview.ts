@@ -8,6 +8,7 @@ import {
 import { TokenError, migrateTokenEdits, parseTokenEdits, type TokenMigrations } from '@merfy/tokens';
 import type { ThemeCatalog, ThemePins } from './theme-catalog';
 import { z } from 'zod';
+import { panelForConstructor } from './constructor-panel';
 import type { DrawAnswer } from './draw';
 import { inlineAssets, type Assets } from './inline-assets';
 import { inlineFonts, type FontBytes } from './preview-fonts';
@@ -165,5 +166,7 @@ export function themePanel(deps: PreviewDeps, themeId: string | null): DrawAnswe
   const theme = deps.themes.get(themeId ?? '');
   if (themeId === null || theme === undefined) return answer(404, TEXT.theme);
   const panelTheme = { id: themeId, version: theme.version, tokens: theme.themeTokens };
-  return jsonAnswer(200, { components: {}, categories: {}, themePanel: { panel: theme.panel, theme: panelTheme } });
+  // Без пометки сквозных: конструктор разбирает панель строгой формой @merfy/tokens 0.1.0 (constructor-panel.ts).
+  const panel = panelForConstructor(theme.panel);
+  return jsonAnswer(200, { components: {}, categories: {}, themePanel: { panel, theme: panelTheme } });
 }

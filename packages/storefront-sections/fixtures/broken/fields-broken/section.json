@@ -1,0 +1,44 @@
+{
+  "sdk": 1,
+  "name": "fields-broken",
+  "kind": "section",
+  "title": "Сломанные поля",
+  "settings": [
+    { "id": "coatColor", "label": "Цвет пальто", "setting": { "kind": "select", "default": "matte", "options": [{ "value": "matte", "label": "Матовый" }, { "value": "glossy", "label": "Глянцевый" }] } },
+    { "id": "layout", "label": "Вёрстка", "setting": { "kind": "select", "default": "grid", "options": [{ "value": "grid", "label": "Сетка" }, { "value": "list", "label": "Список" }] } },
+    { "id": "cart-type", "label": "Вид корзины", "setting": { "kind": "select", "default": "drawer", "options": [{ "value": "drawer", "label": "Сайдбар" }, { "value": "page", "label": "Страница" }] } },
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "text", "default": "" } },
+    {
+      "id": "height", "label": "Высота",
+      "setting": { "kind": "select", "default": "1", "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" },
+        { "value": "3", "label": "3" },
+        { "value": "4", "label": "4" },
+        { "value": "5", "label": "5" },
+        { "value": "6", "label": "6" },
+        { "value": "7", "label": "7" },
+        { "value": "8", "label": "8" },
+        { "value": "9", "label": "9" },
+        { "value": "10", "label": "10" },
+        { "value": "11", "label": "11" }
+      ] }
+    },
+    { "id": "autoplay", "label": "Листать сами", "setting": { "kind": "toggle", "default": false, "labels": { "on": "Да", "off": "Нет" } } },
+    { "id": "content-position", "label": "Где текст", "visibleWhen": { "setting": "autoplay", "equals": true }, "setting": { "kind": "select", "default": "center", "options": [{ "value": "center", "label": "По центру" }, { "value": "top-left", "label": "Сверху слева" }] } },
+    { "id": "aspect-ratio", "label": "Пропорции", "visibleWhen": { "setting": "content-position", "equals": "center" }, "setting": { "kind": "select", "default": "square", "options": [{ "value": "square", "label": "1:1" }, { "value": "wide", "label": "16:9" }] } },
+    { "id": "text-size", "label": "Размер текста", "visibleWhen": { "setting": "aspect-ratio", "equals": "square" }, "setting": { "kind": "select", "default": "medium", "options": [{ "value": "medium", "label": "Средний" }, { "value": "large", "label": "Крупный" }] } },
+    { "id": "logo-position", "label": "Положение логотипа", "visibleWhen": { "setting": "menu-type", "equals": "dropdown" }, "setting": { "kind": "select", "default": "left", "options": [{ "value": "left", "label": "Слева" }, { "value": "center", "label": "По центру" }] } },
+    { "id": "menu-type", "label": "Тип меню", "visibleWhen": { "setting": "logo-position", "equals": "left" }, "setting": { "kind": "select", "default": "dropdown", "options": [{ "value": "dropdown", "label": "Выпадающее" }, { "value": "drawer", "label": "Боковое" }] } },
+    { "id": "subheading", "label": "Подзаголовок", "setting": { "kind": "string", "default": "" } },
+    { "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "" } },
+    { "id": "button-label", "label": "Текст кнопки", "setting": { "kind": "string", "default": "" } },
+    { "id": "button-link", "label": "Ссылка кнопки", "setting": { "kind": "url", "default": "/catalog" } },
+    { "id": "image", "label": "Картинка", "setting": { "kind": "image", "default": "", "maxBytes": 512000 } },
+    { "id": "label", "label": "Подпись", "setting": { "kind": "string", "default": "" } },
+    { "id": "link", "label": "Ссылка", "setting": { "kind": "url", "default": "" } },
+    { "id": "question", "label": "Вопрос", "setting": { "kind": "string", "default": "" } },
+    { "id": "author", "label": "Имя", "setting": { "kind": "string", "default": "" } },
+    { "id": "caption", "label": "Подпись под именем", "setting": { "kind": "string", "default": "" } }
+  ]
+}

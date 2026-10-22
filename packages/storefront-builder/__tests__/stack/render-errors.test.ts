@@ -72,11 +72,11 @@ describe('ошибки рендера секций', () => {
   it('recordRenderErrors: одинаковые отказы — одна строка со счётчиком; незнакомый хеш не пишется', async () => {
     const site = await insertSite(harness.db);
     await harness.db.query('INSERT INTO storefront_shop (site_id) VALUES ($1)', [site.id]);
-    await accept({ author: 'shop', shopId: site.id }, `${BROKEN}/heading-letter`);
-    const hash = await renderHashOf(site.id, 'shop:heading-letter');
+    await accept({ author: 'shop', shopId: site.id }, `${BROKEN}/render-fail`);
+    const hash = await renderHashOf(site.id, 'shop:render-fail');
     const failure = {
       id: 'letter-1',
-      section: 'shop:heading-letter',
+      section: 'shop:render-fail',
       hash,
       stage: 'render' as const,
       message: 'а'.repeat(400),
@@ -89,7 +89,7 @@ describe('ошибки рендера секций', () => {
     expect(await recordRenderErrors(harness.db, batch)).toEqual({ written: 1, skipped: 1 });
     expect(await errorRows(site.id)).toEqual([
       {
-        section: 'shop:heading-letter',
+        section: 'shop:render-fail',
         scriptHash: hash,
         author: 'shop',
         owner: site.id,
@@ -112,14 +112,14 @@ describe('ошибки рендера секций', () => {
       sections: {
         home: [
           instance('hero-1', 'shop:hero'),
-          instance('letter-1', 'shop:heading-letter', { heading: '' }),
-          instance('words-1', 'shop:long-output', { count: '1000000' }),
-          instance('grid-1', 'shop:slow-grid', { count: '100000' }),
+          instance('letter-1', 'shop:render-fail', { heading: '!шарф' }),
+          instance('words-1', 'shop:long-output', { heading: 'шарф', subheading: '1000000' }),
+          instance('grid-1', 'shop:slow-grid', { heading: '100000' }),
         ],
       },
     });
     await accept({ author: 'shop', shopId: site.id }, `${SECTIONS}/hero`);
-    for (const name of ['heading-letter', 'long-output', 'slow-grid'])
+    for (const name of ['render-fail', 'long-output', 'slow-grid'])
       await accept({ author: 'shop', shopId: site.id }, `${BROKEN}/${name}`);
     await publishAndBuild(site.id);
     expect(logged(harness.lines, 'build-finish').at(-1)).toMatchObject({ shopId: site.id, outcome: 'live' });
@@ -134,10 +134,10 @@ describe('ошибки рендера секций', () => {
     ]);
     const rows = await errorRows(site.id);
     expect(rows.map((row) => [row.section, row.stage, row.author, row.owner, row.release, row.count])).toEqual([
-      ['shop:heading-letter', 'render', 'shop', site.id, null, 1],
       ['shop:long-output', 'render-output', 'shop', site.id, null, 1],
+      ['shop:render-fail', 'render', 'shop', site.id, null, 1],
       ['shop:slow-grid', 'render-timeout', 'shop', site.id, null, 1],
     ]);
-    expect(rows[0]?.scriptHash).toBe(await renderHashOf(site.id, 'shop:heading-letter'));
+    expect(rows[1]?.scriptHash).toBe(await renderHashOf(site.id, 'shop:render-fail'));
   }, 60_000);
 });

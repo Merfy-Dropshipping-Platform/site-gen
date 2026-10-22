@@ -7,8 +7,9 @@ import { readSectionFolder } from '../src/read-folder';
 import { SectionRenderError, withSectionRenderer } from '../src/render';
 import { prepareInWorker } from '../src/sandbox';
 
-// Намеренно сломанные секции для проверки руками (блок 2 «Секций и SDK», «Решил сам» п. 9): три проходят проверку и
-// падают только при рендере с правками мерчанта, четыре проверка не сохраняет.
+// Намеренно сломанные секции для проверки руками (блок 2 «Секций и SDK», «Решил сам» п. 9): две проходят проверку и
+// падают только при рендере с правками мерчанта, пять проверка не сохраняет. «Буквица» (heading-letter) с блока 3 падает
+// на пробном рендере с пустыми значениями — render-empty-failed.
 const BROKEN = fileURLToPath(new URL('../fixtures/broken', import.meta.url));
 
 async function codesOf(name: string): Promise<string[]> {
@@ -26,11 +27,12 @@ async function requestOf(name: string, settings: Record<string, string>) {
 const stageOf = (error: unknown): string => (error instanceof SectionRenderError ? error.stage : 'не отказ секции');
 
 describe('сломанные секции для проверки руками', () => {
-  it.each(['heading-letter', 'long-output', 'slow-grid'])('%s — проверка сохраняет', async (name) => {
+  it.each(['long-output', 'slow-grid'])('%s — проверка сохраняет', async (name) => {
     expect(await codesOf(name)).toEqual([]);
   });
 
   it.each([
+    ['heading-letter', 'render-empty-failed'],
     ['read-env', 'template-forbidden'],
     ['fetch-network', 'template-forbidden'],
     ['endless-loop', 'template-forbidden'],
@@ -42,8 +44,8 @@ describe('сломанные секции для проверки руками',
   it('с правками мерчанта рендер отказывает: render, render-output, render-timeout', async () => {
     const cases: [string, Record<string, string>, string][] = [
       ['heading-letter', { heading: '' }, 'render'],
-      ['long-output', { word: 'шарф', count: '1000000' }, 'render-output'],
-      ['slow-grid', { count: '100000' }, 'render-timeout'],
+      ['long-output', { heading: 'шарф', subheading: '1000000' }, 'render-output'],
+      ['slow-grid', { heading: '100000' }, 'render-timeout'],
     ];
     const stages = await withSectionRenderer(async (render) => {
       const found: string[] = [];

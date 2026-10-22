@@ -5,7 +5,7 @@
   "title": "Таблица умножения",
   "settings": [
     {
-      "id": "count",
+      "id": "heading",
       "label": "Размер таблицы",
       "setting": {
         "kind": "string",

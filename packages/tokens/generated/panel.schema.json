@@ -347,6 +347,10 @@
                     "control": {
                       "type": "string",
                       "const": "segment"
+                    },
+                    "shared": {
+                      "type": "boolean",
+                      "const": true
                     }
                   },
                   "required": [
@@ -686,6 +690,10 @@
                         "control": {
                           "type": "string",
                           "const": "segment"
+                        },
+                        "shared": {
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [

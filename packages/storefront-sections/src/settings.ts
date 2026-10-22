@@ -1,5 +1,5 @@
 import type { SettingValue } from '@merfy/tokens';
-import { sectionSettingProblem, type SectionField } from './fields';
+import { sectionSettingProblem, type SectionField, type SectionSettingSpec } from './fields';
 import { cleanRichtext } from './richtext';
 
 // Поля настроек секции (блок 1 «Секций и SDK»; design.md блока 7, п. 23): поле настройки панели темы (блок 8) или
@@ -8,32 +8,16 @@ import { cleanRichtext } from './richtext';
 // умолчаний; значение richtext очищается (richtext.ts) — и умолчание, и правка. format.ts импортирует этот файл,
 // поэтому этот файл format.ts не импортирует.
 
-// id поля — строчные латинские буквы и цифры через одиночный дефис, как имя секции (словарь имён, решение 5 А).
-const SETTING_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 type SettingCheck = (field: SectionField, index: number, settings: readonly SectionField[]) => string[];
 
 const textIf = (text: string | undefined): string[] => (text === undefined ? [] : [text]);
 
-function conditionTexts(field: SectionField, index: number, settings: readonly SectionField[]): string[] {
-  const condition = field.visibleWhen;
-  if (condition === undefined) return [];
-  const target = settings.find((other) => other.id === condition.setting);
-  if (target === undefined) return [`settings.${index}.visibleWhen: настройки ${condition.setting} нет`];
-  return textIf(sectionSettingProblem(`settings.${index}.visibleWhen.equals`, target.setting, condition.equals));
-}
-
 const SETTING_CHECKS: readonly SettingCheck[] = [
-  (field, index) =>
-    SETTING_ID.test(field.id)
-      ? []
-      : [`settings.${index}.id: нужны строчные латинские буквы и цифры через одиночный дефис`],
   (field, index, settings) =>
     settings.findIndex((other) => other.id === field.id) === index
       ? []
       : [`settings.${index}.id: ${field.id} уже есть`],
   (field, index) => textIf(sectionSettingProblem(`settings.${index}.default`, field.setting, field.setting.default)),
-  conditionTexts,
 ];
 
 // Проблемы полей настроек section.json — текстом с путём; пусто — поля годятся.
@@ -42,6 +26,22 @@ export const settingsTexts = (settings: readonly SectionField[]): string[] =>
 
 export const defaultSettings = (settings: readonly SectionField[]): Record<string, SettingValue> =>
   Object.fromEntries(settings.map((field): [string, SettingValue] => [field.id, field.setting.default]));
+
+// Пустое значение по виду (блок 3 «Секций и SDK», Р3.11): мерчант может стереть заголовок. У строк, текстов,
+// richtext, адресов и картинок пустого значения нет — пустая строка; у выборов, переключателей, ползунков,
+// выравнивания, схемы и отступов — умолчание. menu и image-pair добавят части 4 и 5 блока 1.
+const EMPTY_VALUES: Readonly<Partial<Record<SectionSettingSpec['kind'], SettingValue>>> = {
+  string: '',
+  text: '',
+  richtext: '',
+  url: '',
+  image: '',
+};
+
+export const emptySettings = (settings: readonly SectionField[]): Record<string, SettingValue> =>
+  Object.fromEntries(
+    settings.map((field): [string, SettingValue] => [field.id, EMPTY_VALUES[field.setting.kind] ?? field.setting.default]),
+  );
 
 export interface ResolvedSettings {
   values: Record<string, SettingValue>;

@@ -19,6 +19,15 @@ export { entityHashes, entityKey } from './entities';
 export { buildStorefront, type BuildReferences, type StorefrontBuild, type ThemeBuild } from './build';
 export { pagePropsOf, renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
 export { SHOP_ROUTES, routeOf, type ShopRoute } from './routes';
+export {
+  HOME_PAGE,
+  NOT_FOUND_PAGE_ID,
+  SPECIAL_PAGES,
+  SPECIAL_PAGE_IDS,
+  SPECIAL_PAGE_SLUGS,
+  type PageInfo,
+  type SpecialPage,
+} from './special-pages';
 export { REBUILD_EVENT_INPUTS } from './event-inputs';
 
 // Код секций (блок 7) и бандл страницы (блок 5 «Секций и SDK», часть 5б)

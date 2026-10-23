@@ -3,6 +3,7 @@ import { hashSchema } from './canonical';
 import { entityKey } from './entities';
 import { StorefrontBuildError } from './errors';
 import { parseWith } from './parse';
+import { SPECIAL_PAGE_IDS, SPECIAL_PAGE_SLUGS } from './special-pages';
 
 // Входы сборки магазина новой темы (design.md блока 4, В4-3 Б): всё, от чего зависят файлы, — явно и в одном месте.
 // Таблица входов — эта схема: ключ сборки считается по ней целиком, тест ключа правит каждый её лист. Новый вход —
@@ -287,8 +288,9 @@ export function parseBuildInputs(raw: unknown): BuildInputs {
 
 // Свои страницы (часть 4, Р1-4-8): id — один раз и не главная, шапка или подвал (их списки секций); адрес — один раз
 // и не стенд темы (STAND_PAGE_PATH, renderer.ts). Первая ошибка — с путём.
-const RESERVED_PAGE_IDS: ReadonlySet<string> = new Set(['home', 'header', 'footer']);
-const RESERVED_SLUGS: ReadonlySet<string> = new Set(['/theme-stand']);
+// Особые страницы платформы (блок 7, часть 7а) — тоже заняты: id и адреса из special-pages.json.
+const RESERVED_PAGE_IDS: ReadonlySet<string> = new Set(['header', 'footer', ...SPECIAL_PAGE_IDS]);
+const RESERVED_SLUGS: ReadonlySet<string> = new Set(['/theme-stand', ...SPECIAL_PAGE_SLUGS]);
 
 function checkPages(inputs: BuildInputs): void {
   const pages = inputs.revision.pages ?? [];

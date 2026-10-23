@@ -1,4 +1,6 @@
 import { buildStorefrontConfig, configTag } from '@merfy/storefront-config';
+import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 import {
   NO_MIGRATIONS,
   migrateTokenEdits,
@@ -8,7 +10,7 @@ import {
   type TokenMigrations,
 } from '@merfy/tokens';
 import { codeHead } from './code';
-import { PAGE_BASE_CSS } from './page-base';
+import { shopSectionTokensCss } from './section-tokens';
 import { themeFonts, themeTokensCss } from './fonts';
 import { countersOf } from './counters';
 import { StorefrontBuildError } from './errors';
@@ -75,12 +77,23 @@ const socialOf = (name: string, locale: string, logoUrl: string): ShopSocial => 
 export const shopFonts = (inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMigrations = NO_MIGRATIONS) =>
   themeFonts(theme, editsOf(inputs, theme, migrations));
 
-// CSS страницы по одним правкам мерчанта: шрифты (блок 12) и токены (блок 1).
+// CSS страницы по одним правкам мерчанта: шрифты (блок 12) и токены (блок 1); CSS токенов секций магазина —
+// правилами на обёртках секций (блок 4, Р4-10). Неверные правки секций увидит превью — сборка идёт с умолчаниями.
+// База страницы (Р4-12) читается при первой голове, не при загрузке модуля: процесс проверки секций (sandbox)
+// этот файл не читает — он вне разрешённых процессу папок.
+let pageBase: string | undefined;
+function pageBaseCss(): string {
+  pageBase ??= readFileSync(createRequire(import.meta.url).resolve('@merfy/tokens/base.css'), 'utf8');
+  return pageBase;
+}
+
 function pageStyles(inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMigrations) {
   const edits = editsOf(inputs, theme, migrations);
   const fonts = themeFonts(theme, edits);
   const tokens = themeTokensCss(theme, edits);
-  return { baseCss: PAGE_BASE_CSS, fontsCss: fonts.css, fontPreload: fonts.preload ?? '', tokensCss: tokens };
+  const sectionTokens = shopSectionTokensCss(inputs.code.sections, inputs.revision.tokens);
+  const tokensCss = [tokens, sectionTokens.css].filter((part) => part !== '').join('\n');
+  return { baseCss: pageBaseCss(), fontsCss: fonts.css, fontPreload: fonts.preload ?? '', tokensCss };
 }
 
 type ConfigAnalytics = Parameters<typeof buildStorefrontConfig>[0]['analytics'];

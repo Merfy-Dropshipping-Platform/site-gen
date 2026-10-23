@@ -121,3 +121,6 @@ export { StorefrontBuildError, type StorefrontBuildErrorCode } from './errors';
 
 // Один Tailwind для проверки классов и сборки (блок 4 «Секций и SDK», Р4-3).
 export { classSystem, type ClassSystem } from './tailwind-system';
+
+// Токены секций в сборке и превью (блок 4 «Секций и SDK», Р4-10, Р4-11).
+export { pageSectionTheme, shopSectionTokensCss, type TokenedSection } from './section-tokens';

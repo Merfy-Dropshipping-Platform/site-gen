@@ -121,6 +121,18 @@ function failureLog(deps: BuilderDeps, job: ClaimedJob, failures: SectionFailure
   };
 }
 
+// Классы без CSS в готовом HTML секции (блок 4 «Секций и SDK», Р4-14): предупреждение — сборка идёт дальше.
+function classLog(deps: BuilderDeps, job: ClaimedJob) {
+  return (section: string, classes: readonly string[]): void => {
+    deps.log('section-class-unknown', {
+      shopId: job.siteId,
+      buildId: job.build,
+      section,
+      classes: classes.join(' '),
+    });
+  };
+}
+
 async function recordFailures(deps: BuilderDeps, job: ClaimedJob, failures: SectionFailure[]): Promise<void> {
   const batch = { shopId: job.siteId, minute: minuteOf(deps.clock().toISOString()), failures };
   await recordRenderErrors(deps.db, batch).catch((error: unknown) =>
@@ -135,7 +147,15 @@ async function buildWithSections(deps: BuilderDeps, job: ClaimedJob, snapshot: S
   // Секции рисует процесс рендера (storefront-sections): он запускается при первой секции и закрывается после сборки.
   try {
     return await withSectionRenderer((render) =>
-      buildStorefront(snapshot.inputs, references, theme, snapshot.assets, render, failureLog(deps, job, failures)),
+      buildStorefront(
+        snapshot.inputs,
+        references,
+        theme,
+        snapshot.assets,
+        render,
+        failureLog(deps, job, failures),
+        classLog(deps, job),
+      ),
     );
   } finally {
     await recordFailures(deps, job, failures);

@@ -14,7 +14,15 @@ import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
 import { pageListsOf, routeOf, type ShopRoute } from './routes';
-import { LIVE_PAGE, renderPlacedSections, type PageContent, type PageProps, type PageRender } from './sections-render';
+import { pageSectionTheme } from './section-tokens';
+import {
+  LIVE_PAGE,
+  renderPlacedSections,
+  type PageContent,
+  type PageProps,
+  type PageRender,
+  type PlacedSection,
+} from './sections-render';
 import { checkSeo } from './seo';
 import { shopPropsOf } from './shop-props';
 
@@ -84,6 +92,27 @@ function splitContent(content: PageContent, [header = 0, own = 0]: readonly numb
 
 // page — как рендерить секции: модули, функция рендера и режим. По умолчанию — опубликованный сайт без процесса
 // рендера: страница без секций рендерится, страница с секцией — ошибка.
+// Строки @theme токенов секций страницы (блок 4, Р4-10): классы токенов секций получают CSS вместе со словарём.
+const sectionThemeOf = (inputs: BuildInputs, placed: readonly PlacedSection[]): string =>
+  pageSectionTheme(
+    inputs.code.sections,
+    placed.map((entry) => entry.name),
+  );
+
+// Строка манифеста страницы: путь, файл, сущность и её зависимости, время обновления данных.
+function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer): PageRow {
+  const entity = pageEntity(inputs, route);
+  const deps = [entityKey(entity.type, entity.id)];
+  return checkPageRow({
+    path: route.path,
+    file: route.file,
+    hash: sha256(content),
+    entity,
+    deps,
+    dataUpdatedAt: dataUpdatedAt(inputs, deps),
+  });
+}
+
 export async function renderShopPage(
   inputs: BuildInputs,
   path: string,
@@ -95,7 +124,13 @@ export async function renderShopPage(
   const shown = withoutHidden(inputs);
   const lists = pageListsOf(route.id).map((list) => placedSections(shown, list));
   const props = pagePropsOf(shown, theme);
-  const rendered = await renderPlacedSections(lists.flat(), theme.tokens.dictionary, { ...page, props });
+  const placed = lists.flat();
+  const rendered = await renderPlacedSections(
+    placed,
+    theme.tokens.dictionary,
+    { ...page, props },
+    sectionThemeOf(inputs, placed),
+  );
   const pageContent = splitContent(
     rendered,
     lists.map((list) => list.length),
@@ -103,15 +138,5 @@ export async function renderShopPage(
   const html = await theme.render(route.path, pageLocals(shown, route, theme.tokens, theme.migrations, pageContent));
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');
-  const entity = pageEntity(inputs, route);
-  const deps = [entityKey(entity.type, entity.id)];
-  const row = checkPageRow({
-    path: route.path,
-    file: route.file,
-    hash: sha256(content),
-    entity,
-    deps,
-    dataUpdatedAt: dataUpdatedAt(inputs, deps),
-  });
-  return { row, file: { path: route.file, content } };
+  return { row: pageRowOf(inputs, route, content), file: { path: route.file, content } };
 }

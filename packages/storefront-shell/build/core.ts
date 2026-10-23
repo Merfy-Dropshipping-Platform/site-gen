@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { brotliCompressSync } from 'node:zlib';
 import { build } from 'esbuild';
 import { ShellError } from '../src/errors';
-import type { PartName } from '../src/parts/types';
+import type { ModuleName } from '../src/core/types';
 import { CORE_BUDGET_BYTES } from './build';
 
 // Сборка ядра секций (design.md блока 5, раздел 3.10; Р5а-13) — ESM-библиотека dist/core.js: start, defineSection и
@@ -15,7 +15,7 @@ export const CORE_FILE = 'core.js';
 export interface CoreBuildOptions {
   packageDir: string;
   outDir: string;
-  core: readonly PartName[]; // части из core-parts.json — они всегда в бандле страницы
+  core: readonly ModuleName[]; // части из core-parts.json — они всегда в бандле страницы
   version: string;
   budgetBytes?: number; // по умолчанию CORE_BUDGET_BYTES из build/build.ts
 }
@@ -23,6 +23,7 @@ export interface CoreBuildOptions {
 export interface CoreManifest {
   version: string;
   brotliBytes: number; // вес brotli бандла страницы без секций
+  parts: ModuleName[]; // части страницы из core-parts.json — их читает сборка магазина (storefront-build/src/shell.ts)
 }
 
 const ESBUILD_BASE = {
@@ -46,7 +47,7 @@ async function pageBundleBytes(options: CoreBuildOptions): Promise<number> {
 
 async function writeLibrary(packageDir: string, outDir: string, manifest: CoreManifest): Promise<void> {
   const result = await build({ entryPoints: [join(packageDir, 'src/core/index.ts')], ...ESBUILD_BASE });
-  await mkdir(outDir, { recursive: true }); // outDir не очищается: в dist/ рядом собирается старое ядро
+  await mkdir(outDir, { recursive: true }); // outDir не очищается: в dist/ рядом собираются поведения (dist/behaviors/)
   const code = result.outputFiles[0]?.contents ?? new Uint8Array();
   await writeFile(join(outDir, CORE_FILE), code);
   await writeFile(join(outDir, 'core.json'), `${JSON.stringify(manifest, null, 2)}\n`);
@@ -61,7 +62,7 @@ export async function buildCore(options: CoreBuildOptions): Promise<CoreManifest
       `ядро секций весит ${brotliBytes} Б brotli на странице без секций, бюджет ${budget} Б`,
     );
   }
-  const manifest: CoreManifest = { version: options.version, brotliBytes };
+  const manifest: CoreManifest = { version: options.version, brotliBytes, parts: [...options.core] };
   await writeLibrary(options.packageDir, options.outDir, manifest);
   return manifest;
 }

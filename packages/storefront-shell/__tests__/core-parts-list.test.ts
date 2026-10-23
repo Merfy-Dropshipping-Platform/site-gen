@@ -1,20 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { parseCoreParts } from '../build/core-parts';
-import { shellEntry } from '../build/entry';
 import coreParts from '../core-parts.json';
 
+// Состав ядра секций — один список core-parts.json (С7-3 Б; блок 5 «Секций и SDK», часть 5б): части из него — в бандле
+// каждой страницы магазина, их получает каждая секция до части 5в.
 describe('состав ядра — один список', () => {
-  it('часть из списка — статический импорт, вне списка — import(); порядок в списке не важен', () => {
-    const entry = shellEntry(['cart']);
-    expect(entry).toContain("import * as cartPart from './src/parts/cart.ts';");
-    expect(entry).toContain('  cart: () => Promise.resolve(cartPart),');
-    expect(entry).toContain("  auth: () => import('./src/parts/auth.ts'),");
-    expect(entry).toContain("  favorites: () => import('./src/parts/favorites.ts'),");
-    expect(entry).not.toContain('import * as authPart');
-    expect(entry.endsWith('startBrowserShell();\n')).toBe(true);
-    expect(shellEntry(['favorites', 'auth'])).toBe(shellEntry(['auth', 'favorites']));
-  });
-
   it('core-parts.json пакета — все три части в ядре', () => {
     expect(parseCoreParts(coreParts)).toEqual(['auth', 'cart', 'favorites']);
   });

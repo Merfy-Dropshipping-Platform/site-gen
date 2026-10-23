@@ -28,6 +28,8 @@ describe('сборка ядра секций', () => {
     const manifest = await buildCore({ packageDir: PACKAGE_DIR, outDir, core: ALL_PARTS, version: '0.1.0' });
     expect(manifest.version).toBe('0.1.0');
     expect(manifest.brotliBytes).toBeGreaterThan(0);
+    // Части страницы — в core.json: их читает сборка магазина (storefront-build/src/shell.ts).
+    expect(manifest.parts).toEqual(['auth', 'cart', 'favorites']);
     expect(manifest.brotliBytes).toBeLessThanOrEqual(CORE_BUDGET_BYTES);
     expect((await readdir(outDir)).sort()).toEqual(['core.js', 'core.json']);
     const written: unknown = JSON.parse(await readFile(join(outDir, 'core.json'), 'utf8'));

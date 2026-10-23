@@ -9,6 +9,8 @@ import type { DeriveRule, Dictionary, RuleName, TokenDef, TokenKind } from './ty
 export const NAME_PATTERN = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 export const MIN_ABOUT = 3;
 export const THEME_MARK = 'theme';
+// Метка своих токенов секции (блок 4 «Секций и SDK», Р4-9) — та же, что SECTION_MARK в section-tokens.ts.
+const SECTION_MARK = 'custom';
 const RESERVED_MARKS = [THEME_MARK, 'custom'];
 
 const textShape = z.object({ min: z.number(), max: z.number(), leading: z.number() }).strict();
@@ -79,7 +81,7 @@ export function usesOf(def: TokenDef): string[] {
 }
 
 // ---- чтение записей
-type Origin = 'platform' | 'extension';
+type Origin = 'platform' | 'extension' | 'section';
 export type CheckContext = { tokens: Readonly<Record<string, TokenDef>>; groupIds: readonly string[]; origin: Origin };
 type EntryCheck = (name: string, def: TokenDef, context: CheckContext) => string[];
 export type EntriesReading = { tokens: Record<string, TokenDef>; problems: string[] };
@@ -122,6 +124,11 @@ const MARK_CHECKS: Record<Origin, (name: string, def: TokenDef) => string[]> = {
     markOf(name, def.kind) === THEME_MARK
       ? []
       : [`${name}: свой токен темы называется ${KINDS[def.kind].prefix}theme-…`],
+  // Свои токены секции (блок 4 «Секций и SDK», Р4-9): метка custom у имени вида.
+  section: (name, def) =>
+    markOf(name, def.kind) === SECTION_MARK
+      ? []
+      : [`${name}: свой токен секции называется ${KINDS[def.kind].prefix}custom-…`],
 };
 const checkMark: EntryCheck = (name, def, context) => MARK_CHECKS[context.origin](name, def);
 

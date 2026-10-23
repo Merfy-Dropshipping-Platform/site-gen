@@ -28,6 +28,10 @@ const TAILWIND_UTILITY: Partial<Record<TokenKind, (name: string) => string>> = {
   'border-width': (name) => `@utility ${name} { border-style: solid; border-width: var(--${name}); }`,
 };
 
+// Строки одного токена для @theme и @utility (блок 4 «Секций и SDK», Р4-10): те же таблицы, по одному токену секции.
+export const tokenThemeLines = (kind: TokenKind, name: string): string[] => TAILWIND_THEME[kind]?.(name) ?? [];
+export const tokenUtilityLine = (kind: TokenKind, name: string): string | null => TAILWIND_UTILITY[kind]?.(name) ?? null;
+
 // Тени drop-shadow, text-shadow и inset-shadow у Tailwind — сырой чёрный мимо токенов (блок 4 «Секций и SDK», 4.6).
 const TAILWIND_RESETS = [
   '--color-*: initial;',

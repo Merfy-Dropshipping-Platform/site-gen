@@ -1,10 +1,12 @@
-import { bundlePage, type BundleSection, type PageBundle } from './bundle';
+import { MOTION_CSS, MOTION_HEAD_SCRIPT } from '@merfy/shell/behaviors/motion-css';
+import { bundlePage, type BundleKit, type BundleSection, type PageBundle } from './bundle';
+import { kitPlanOf } from './features';
 import { sha256 } from './canonical';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs, CodeSection, ShellInput } from './inputs';
 import { pageListsOf } from './routes';
-import type { PageRender, PlacedSection } from './sections-render';
-import type { ShellBuild } from './shell';
+import type { PageContent, PageRender, PlacedSection } from './sections-render';
+import type { ShellBuild, ShellKit } from './shell';
 
 // Код секций в странице и в сборке магазина (design.md блока 7, п. 12, 16, 19; блок 5 «Секций и SDK», раздел 3.10).
 // Разметка секции — в HTML страницы, в <merfy-section data-section="<имя>">. В <head> после токенов темы: стили секций
@@ -129,11 +131,17 @@ function withScript(section: CodeSection): ScriptSection[] {
 
 // Бандл страницы опубликованного сайта (раздел 3.10). Превью, рендер без кода (page.code нет) и входы без ядра — без
 // бандла. Каждой секции — все части ядра из core.json (до части 5в, где их выберет uses). Предупреждения — page.notice.
-export async function pageBundle(inputs: BuildInputs, pageId: string, page: PageRender): Promise<PageBundle | null> {
+export async function pageBundle(
+  inputs: BuildInputs,
+  pageId: string,
+  page: PageRender,
+  content: PageHtml = NO_HTML,
+): Promise<PageBundle | null> {
   const shell = inputs.shell;
   const assets = page.code;
   if (page.mode !== 'live' || assets === undefined || shell === null) return null;
-  const core = checkedShell(shell, assets.shell).code;
+  const built = checkedShell(shell, assets.shell);
+  const core = built.code;
   const scripts = pageCode(inputs, pageId).flatMap(withScript);
   const sections = scripts.map(
     ({ section, hash }): BundleSection => ({
@@ -144,7 +152,22 @@ export async function pageBundle(inputs: BuildInputs, pageId: string, page: Page
     }),
   );
   const modules = new Map(scripts.map(({ hash }): [string, string] => [hexOf(hash), moduleText(hash, assets.modules)]));
-  const bundle = await bundlePage({ core, parts: [...shell.parts, ...LIVE_PARTS], sections, modules });
+  const kit = kitOf(built.kit, content, [...modules.values()]);
+  const source = { core, parts: [...shell.parts, ...LIVE_PARTS], sections, modules };
+  const bundle = await bundlePage(kit === undefined ? source : { ...source, kit });
   bundle.notices.forEach((notice) => page.notice?.(pageId, notice));
-  return bundle;
+  return kit?.plan.reveal === true ? { ...bundle, tag: `${MOTION_HEAD}${bundle.tag}` } : bundle;
+}
+
+// Поведения и анимации страницы (блок 6, часть 6б; Р6б-2, Р6б-5): что нужно — по HTML секций страницы и текстам их
+// скриптов. Флаг data-merfy-motion и запасной CSS — только у страницы с data-animate: часть behaviors снимает флаг по
+// merfy:page:ready, а через 3 с CSS показывает всё, если ядро не запустилось.
+type PageHtml = Pick<PageContent, 'header' | 'sections' | 'footer'>;
+const NO_HTML: PageHtml = { sections: [] };
+const MOTION_HEAD = `<script>${MOTION_HEAD_SCRIPT}</script><style id="merfy-motion">${MOTION_CSS}</style>`;
+
+function kitOf(kit: ShellKit | undefined, content: PageHtml, scripts: readonly string[]): BundleKit | undefined {
+  if (kit === undefined) return undefined;
+  const html = [...(content.header ?? []), ...content.sections, ...(content.footer ?? [])];
+  return { files: kit.files, plan: kitPlanOf(kit.behaviors, html, scripts) };
 }

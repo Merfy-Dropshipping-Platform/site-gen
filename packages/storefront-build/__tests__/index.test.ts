@@ -41,6 +41,7 @@ const API = [
   'checkPageRow',
   'checkSeo',
   'checkThemeVersion',
+  'classSystem',
   'dataKey',
   'dependentPages',
   'entityHashes',

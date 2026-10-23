@@ -12,7 +12,8 @@ const SOURCE = '@import "tailwindcss/theme.css" layer(theme);\n@import "tailwind
 const CLASS_ATTRIBUTE = /\sclass="([^"]*)"/g;
 
 type Compiler = Awaited<ReturnType<typeof compile>>;
-const compilers = new WeakMap<Dictionary, Promise<Compiler>>();
+// Компилятор — один на пару (словарь, строки @theme токенов секций страницы, Р4-10).
+const compilers = new WeakMap<Dictionary, Map<string, Promise<Compiler>>>();
 
 function loadStylesheet(id: string, base: string) {
   const file = id.startsWith(TAILWIND_PREFIX)
@@ -21,14 +22,16 @@ function loadStylesheet(id: string, base: string) {
   return Promise.resolve({ content: readFileSync(file, 'utf8'), base: dirname(file), path: file });
 }
 
-function compilerOf(dictionary: Dictionary): Promise<Compiler> {
-  const known = compilers.get(dictionary);
+function compilerOf(dictionary: Dictionary, sectionTheme: string): Promise<Compiler> {
+  const byTheme = compilers.get(dictionary) ?? new Map<string, Promise<Compiler>>();
+  compilers.set(dictionary, byTheme);
+  const known = byTheme.get(sectionTheme);
   if (known !== undefined) return known;
-  const created = compile(`${SOURCE}${tailwindCss(dictionary, { base: false })}`, {
+  const created = compile(`${SOURCE}${tailwindCss(dictionary, { base: false })}\n${sectionTheme}`, {
     base: TAILWIND_DIR,
     loadStylesheet,
   });
-  compilers.set(dictionary, created);
+  byTheme.set(sectionTheme, created);
   return created;
 }
 
@@ -38,8 +41,9 @@ export const htmlClasses = (html: string): string[] =>
     .filter((name) => name !== '')
     .sort();
 
-export async function sectionCss(html: string, dictionary: Dictionary): Promise<string> {
+// sectionTheme — строки @theme токенов секций страницы (Р4-10): дописываются к источнику компилятора.
+export async function sectionCss(html: string, dictionary: Dictionary, sectionTheme = ''): Promise<string> {
   const classes = htmlClasses(html);
   if (classes.length === 0) return '';
-  return (await compilerOf(dictionary)).build(classes);
+  return (await compilerOf(dictionary, sectionTheme)).build(classes);
 }

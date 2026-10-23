@@ -118,3 +118,6 @@ export { RENDER_GUARD_RULES, readShopSources, renderGuardProblems, type SourceFi
 export { SEO_LIMIT_BYTES, checkSeo, seoProblems } from './seo';
 export { canonicalJson, hashOf, sha256 } from './canonical';
 export { StorefrontBuildError, type StorefrontBuildErrorCode } from './errors';
+
+// Один Tailwind для проверки классов и сборки (блок 4 «Секций и SDK», Р4-3).
+export { classSystem, type ClassSystem } from './tailwind-system';

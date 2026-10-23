@@ -1,0 +1,10 @@
+---
+const { settings } = Astro.props;
+---
+
+<section class="p-section">
+  <h2 class="text-6xl">{settings.heading}</h2>
+  <p class="bg-[#c9a227] dark:bg-foreground">Золотой фон</p>
+  <p class="bg-theme-gold">Свой токен темы</p>
+  <p class={settings.heading}>Класс из строки</p>
+</section>

@@ -1,5 +1,9 @@
 import { z } from 'zod';
+import { classSystem } from '@merfy/storefront-build';
+import { platformDictionary, sectionTailwindTheme } from '@merfy/tokens';
+import { classProblems, type ClassField, type ClassFields } from './classes';
 import { fieldRuleProblems } from './field-rules';
+import type { SectionField } from './fields';
 import {
   MANIFEST_FILE,
   TEMPLATE_FILE,
@@ -15,6 +19,7 @@ import {
 } from './format';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
 import { buildScript } from './script';
+import { sectionTokensOf, tokenProblems } from './token-rules';
 import { NO_TEMPLATE_OPTIONS, checkTemplate, templateOptionsOf } from './compile';
 
 // Одна функция приёма (design.md блока 7, С7-11 А, п. 21): разбор section.json, проверка, сборка — одинаково для
@@ -57,6 +62,32 @@ function problemsOf(checked: Checked<{ warnings: SectionProblem[] }> | null): Se
   return checked.ok ? checked.value.warnings : checked.problems;
 }
 
+// Поля для подстановки значений в классах (Р4-6): настройки секции и поля всех типов блоков подряд.
+function classFieldsOf(manifest: SectionManifest): ClassFields {
+  const toClassField = (field: SectionField): ClassField => ({
+    id: field.id,
+    label: field.label,
+    setting:
+      field.setting.kind === 'select'
+        ? { kind: field.setting.kind, options: field.setting.options }
+        : { kind: field.setting.kind },
+  });
+  const blockFields = Object.values(manifest.blocks ?? {}).flatMap((type) => type.settings.map(toClassField));
+  return { settings: manifest.settings.map(toClassField), blocks: blockFields };
+}
+
+// Шаг «Классы» и токены секции (блок 4 «Секций и SDK», Р4-2): когда section.json прочитан и шаблон есть.
+async function styleProblems(
+  manifest: SectionManifest,
+  files: SectionFiles,
+  template: string,
+): Promise<SectionProblem[]> {
+  const tokens = sectionTokensOf(manifest);
+  const system = await classSystem(platformDictionary, sectionTailwindTheme(tokens));
+  const classes = await classProblems(template, classFieldsOf(manifest), system, platformDictionary);
+  return [...tokenProblems(manifest, files[MANIFEST_FILE] ?? ''), ...classes];
+}
+
 export async function prepareSection(input: PrepareInput): Promise<PrepareResult> {
   const { files } = input;
   // Больше пределов — сразу отказ: такие файлы не разбираем. Дальше проблемы собираются все разом.
@@ -65,17 +96,19 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
   const manifest = readManifest(files);
   const template = files[TEMPLATE_FILE];
   const entry = scriptEntryOf(files);
-  const [checked, script] = await Promise.all([
+  const [checked, script, styles] = await Promise.all([
     template === undefined
       ? null
       : checkTemplate(template, manifest.ok ? templateOptionsOf(manifest.value) : NO_TEMPLATE_OPTIONS),
     entry === null ? null : buildScript(files, entry),
+    manifest.ok && template !== undefined ? styleProblems(manifest.value, files, template) : [],
   ]);
   const problems = [
     ...fileProblems(files),
     ...manifestProblems(manifest, files),
     ...(checked?.problems ?? []),
     ...problemsOf(script),
+    ...styles,
   ];
   if (!manifest.ok || problems.some((item) => !isWarning(item))) return refuse(problems);
   const name = `${input.prefix}:${manifest.value.name}`;

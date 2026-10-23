@@ -89,13 +89,12 @@ const isAttributeVariant = (variant: string): boolean => ATTRIBUTE_VARIANT.test(
 function textProblem(name: string): RuleFinding | undefined {
   const { variants, utility } = partsOf(name);
   const plainUtility = utility.replace(/!+$/, '');
-  const withImportant = utility.includes('!');
-  if (variants.includes(DARK_VARIANT)) return { code: 'class-dark', message: TEXT.dark(name) };
+  const withImportant = utility.includes('!'); if (variants.includes(DARK_VARIANT)) return { code: 'class-dark', message: TEXT.dark(name) };
   if (hasArbitrary(plainUtility)) return { code: 'class-arbitrary', message: arbitraryMessage(name, plainUtility) };
   if (withImportant) return { code: 'class-arbitrary', message: TEXT.important(name) };
   const wrongVariant = variants.find((variant) => hasArbitrary(variant) && !isAttributeVariant(variant));
   if (wrongVariant !== undefined) return { code: 'class-arbitrary', message: variantMessage(name, wrongVariant) };
-
+  
   if (THEME_MARK.test(plainUtility)) return { code: 'class-theme-token', message: TEXT.themeToken(name) };
   return undefined;
 }

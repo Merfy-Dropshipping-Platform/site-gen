@@ -18,15 +18,7 @@ const ENTRIES: Readonly<Record<string, string>> = {
 // («Dynamic require of "./impl/format" is not supported»), а ESM-сборку пакета Node без сборщика не загружает.
 // sanitize-html (часть 3 блока 1) — тоже из node_modules: это CommonJS с require('path') внутри, в собранном ESM-файле
 // он не загружается («Dynamic require of "path" is not supported»). Процесс проверки получает его через format.ts.
-const EXTERNAL = [
-  'astro',
-  'astro/*',
-  '@astrojs/compiler-rs',
-  'esbuild-wasm',
-  'jsonc-parser',
-  'sanitize-html',
-  'tailwindcss',
-];
+const EXTERNAL = ['astro', 'astro/*', '@astrojs/compiler-rs', 'esbuild-wasm', 'jsonc-parser', 'sanitize-html', 'tailwindcss'];
 
 async function bundle(entry: string): Promise<string> {
   const result = await build({

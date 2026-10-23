@@ -12,12 +12,7 @@ const ALIGNMENT_VALUES = ['left', 'center', 'right'] as const;
 const TOGGLE_VALUES = ['true', 'false'] as const;
 
 const quoteList = (values: readonly string[]): string =>
-  values.length === 1
-    ? `\`${values[0]}\``
-    : `${values
-        .slice(0, -1)
-        .map((value) => `\`${value}\``)
-        .join(', ')} или \`${values.at(-1)}\``;
+  values.length === 1 ? `\`${values[0]}\`` : `${values.slice(0, -1).map((value) => `\`${value}\``).join(', ')} или \`${values.at(-1)}\``;
 
 // Допустимые значения цели по её виду.
 function valuesOf(target: RuleField): readonly string[] {
@@ -79,9 +74,7 @@ function listIssues(list: FieldList): FieldIssue[] {
     const message = [...DIRECT_CHECKS.map((check) => check(field, list)), chainText(field, list)].find(
       (text) => text !== undefined,
     );
-    return message === undefined
-      ? []
-      : [{ code: 'visible-when-invalid' as const, path: [...list.path, index, 'visibleWhen'], message }];
+    return message === undefined ? [] : [{ code: 'visible-when-invalid' as const, path: [...list.path, index, 'visibleWhen'], message }];
   });
 }
 

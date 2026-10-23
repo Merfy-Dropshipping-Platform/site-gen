@@ -71,6 +71,8 @@ export const sectionManifestSchema = z.strictObject({
   removable: z.literal(false).optional(),
   uses: z.array(z.enum(SECTION_USES)).max(2).refine(unique, { error: 'значение дважды' }).optional(),
   newPage: z.string().min(1).optional(),
+  // Свои токены секции (блок 4 «Секций и SDK», Р4-9): запись словаря; проверяет token-rules.ts.
+  tokens: z.record(z.string(), z.unknown()).optional(),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;

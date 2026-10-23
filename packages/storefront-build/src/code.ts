@@ -18,8 +18,8 @@ const SHELL_DIR_HASH_LENGTH = 16;
 const HASH_PREFIX = 'sha256:';
 const MODULES_VERSION = 1;
 const SHELL_IMPORT = '@merfy/shell';
-// Секция — блочный элемент; скрытый элемент глобального скрипта не виден, даже если тема задала свой display.
-const BASE_CSS = 'merfy-section{display:block}merfy-section[hidden]{display:none}';
+// Блочная обёртка секции — в базе страницы (@merfy/tokens/base.css, блок 4 «Секций и SDK», Р4-13): в слое base
+// классы обёртки её перекрывают; скрытый элемент закрывает правило [hidden] из preflight с !important.
 
 // Сборка ядра @merfy/shell для сборки магазина: версия, отпечаток файлов, подсказки и сами файлы (shell.ts).
 export interface ShellBuild {
@@ -71,7 +71,7 @@ const moduleLines = (sections: readonly CodeSection[]): ModuleLine[] =>
 // CSS секций страницы — классы Tailwind из их разметки (section-css.ts). </style внутри CSS закрыл бы тег раньше
 // времени: сборка страхует.
 function styleTag(css: string): string {
-  return `<style id="merfy-sections">${(BASE_CSS + css).replaceAll('</style', '<\\/style')}</style>`;
+  return `<style id="merfy-sections">${css.replaceAll('</style', '<\\/style')}</style>`;
 }
 
 const jsonTag = (attributes: string, value: unknown): string =>

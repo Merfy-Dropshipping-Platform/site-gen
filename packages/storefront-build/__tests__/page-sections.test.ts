@@ -20,7 +20,8 @@ describe('страница с секциями', () => {
     const order = [...html.matchAll(/data-section-id="([^"]+)"/g)].map((match) => match[1]);
     expect(order).toEqual(['cart-badge-1', 'hero-1', 'list-1', 'list-2']);
     expect(html).toContain('shop:hero Шарфы к первым холодам');
-    expect(html).toMatch(/<style id="merfy-sections">merfy-section\{display:block\}[^<]*\.flex/);
+    // База обёртки — в base.css словаря (блок 4 «Секций и SDK», Р4-13); в стилях секций её больше нет.
+    expect(html).toMatch(/<style id="merfy-sections">[^<]*\.flex/);
     expect(html).toContain('id="merfy-modules"');
   });
 

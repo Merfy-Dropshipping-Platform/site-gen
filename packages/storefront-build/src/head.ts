@@ -8,6 +8,7 @@ import {
   type TokenMigrations,
 } from '@merfy/tokens';
 import { codeHead } from './code';
+import { PAGE_BASE_CSS } from './page-base';
 import { themeFonts, themeTokensCss } from './fonts';
 import { countersOf } from './counters';
 import { StorefrontBuildError } from './errors';
@@ -79,7 +80,7 @@ function pageStyles(inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMi
   const edits = editsOf(inputs, theme, migrations);
   const fonts = themeFonts(theme, edits);
   const tokens = themeTokensCss(theme, edits);
-  return { fontsCss: fonts.css, fontPreload: fonts.preload ?? '', tokensCss: tokens };
+  return { baseCss: PAGE_BASE_CSS, fontsCss: fonts.css, fontPreload: fonts.preload ?? '', tokensCss: tokens };
 }
 
 type ConfigAnalytics = Parameters<typeof buildStorefrontConfig>[0]['analytics'];

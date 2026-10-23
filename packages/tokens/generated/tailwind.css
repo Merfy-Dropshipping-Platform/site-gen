@@ -5,6 +5,9 @@
   --text-*: initial;
   --radius-*: initial;
   --shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --inset-shadow-*: initial;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

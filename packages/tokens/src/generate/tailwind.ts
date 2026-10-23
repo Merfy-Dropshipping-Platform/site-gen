@@ -28,12 +28,16 @@ const TAILWIND_UTILITY: Partial<Record<TokenKind, (name: string) => string>> = {
   'border-width': (name) => `@utility ${name} { border-style: solid; border-width: var(--${name}); }`,
 };
 
+// Тени drop-shadow, text-shadow и inset-shadow у Tailwind — сырой чёрный мимо токенов (блок 4 «Секций и SDK», 4.6).
 const TAILWIND_RESETS = [
   '--color-*: initial;',
   '--font-*: initial;',
   '--text-*: initial;',
   '--radius-*: initial;',
   '--shadow-*: initial;',
+  '--drop-shadow-*: initial;',
+  '--text-shadow-*: initial;',
+  '--inset-shadow-*: initial;',
 ];
 
 const BASE_LAYER = [

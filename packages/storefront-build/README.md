@@ -93,4 +93,11 @@
   Превью, стенд и рендер без кода — без бандла.
 - Байты — из `CodeAssets` (`readShellBuild` и скрипты из таблицы секций); нет их или байты не те — `shell-missing`,
   `shell-mismatch`, `code-missing` до рендера.
+- Поведения и анимации (блок 6, часть 6б): в бандл попадают только поведения из `data-behavior` в HTML секций страницы
+  (`header`, `sections`, `footer`) и в текстах их скриптов; `data-animate` — появления (`reveal`); слово `animate` в
+  скрипте секции — провайдер для `ctx.animate`. Файлы — `packages/storefront-shell/dist/behaviors/` (`readShellBuild`
+  читает `behaviors.json` и все файлы из него, `ShellBuild.kit`); хеш ядра во входах — по `core.js` и этим файлам. У
+  страницы с `data-animate` в `<head>` перед бандлом — `<script>` с флагом `data-merfy-motion` и `<style id="merfy-motion">`
+  (запасной показ через 3 с, если ядро не запустилось). Превью — без бандла (часть 6в). Нет страницы без поведений:
+  вес бандла как в 5б.
 - Ключ — версии 6: ядро секций и код входят целиком. Секции темы (`themes/<тема>/sections/`) — в хеше темы.

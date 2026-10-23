@@ -107,20 +107,6 @@ async function renderWithBundle(
   return { html, bundle };
 }
 
-// Строка манифеста страницы: сущность и её зависимости, хеш содержимого.
-function pageRowOf(inputs: BuildInputs, route: ReturnType<typeof routeOf>, content: Buffer): PageRow {
-  const entity = pageEntity(inputs, route);
-  const deps = [entityKey(entity.type, entity.id)];
-  return checkPageRow({
-    path: route.path,
-    file: route.file,
-    hash: sha256(content),
-    entity,
-    deps,
-    dataUpdatedAt: dataUpdatedAt(inputs, deps),
-  });
-}
-
 // page — как рендерить секции: модули, функция рендера и режим. По умолчанию — опубликованный сайт без процесса
 // рендера: страница без секций рендерится, страница с секцией — ошибка.
 // Строки @theme токенов секций страницы (блок 4, Р4-10): классы токенов секций получают CSS вместе со словарём.

@@ -8,11 +8,13 @@
   "exports": {
     ".": "./src/index.ts",
     "./tailwind.css": "./generated/tailwind.css",
+    "./base.css": "./generated/base.css",
     "./dictionary.json": "./dictionary.json"
   },
   "files": [
     "dist",
     "generated/tailwind.css",
+    "generated/base.css",
     "generated/panel.schema.json",
     "generated/fonts.schema.json",
     "dictionary.json",
@@ -27,6 +29,7 @@
         "import": "./dist/index.js"
       },
       "./tailwind.css": "./generated/tailwind.css",
+      "./base.css": "./generated/base.css",
       "./dictionary.json": "./dictionary.json"
     }
   },

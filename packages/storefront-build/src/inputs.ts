@@ -66,6 +66,8 @@ const codeSectionSchema = z.strictObject({
   // Часть 4 (Р1-4-2): флаги section.json — только если объявлены, иначе входы и ключ прежние.
   removable: z.literal(false).optional(),
   uses: z.array(z.enum(['theme', 'shop'])).optional(),
+  // Свои токены секции из section.json (блок 4, Р4-10) — только если объявлены.
+  tokens: z.record(z.string(), z.unknown()).optional(),
 });
 
 // Экземпляр секции на странице (блок 1 «Секций и SDK», В1-1 А): id на странице, имя секции и значения всех настроек —

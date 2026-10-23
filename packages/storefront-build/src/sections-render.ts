@@ -1,11 +1,12 @@
-import type { Dictionary } from '@merfy/tokens';
+import { classesOf, type Dictionary } from '@merfy/tokens';
 import type { CodeNoticed } from './bundle';
 import { sha256 } from './canonical';
 import type { CodeAssets } from './code';
 import { StorefrontBuildError } from './errors';
 import { sectionInputTag } from './input-tag';
-import { sectionCss } from './section-css';
+import { htmlClasses, sectionCss } from './section-css';
 import { EMPTY_SHOP, type ShopProps } from './shop-props';
+import { classSystem } from './tailwind-system';
 
 // Рендер секций страницы (блок 1 «Секций и SDK», Р1, Р2): модуль шаблона по отпечатку и значения настроек → HTML
 // секции. Пакет Astro и компилятор не подключает: функцию рендера даёт сборщик — процесс рендера storefront-sections
@@ -91,6 +92,8 @@ export interface PageRender {
   mode: PageMode;
   // Кому сообщить об упавшей секции опубликованного сайта; нет — без сообщения.
   failed?: SectionFailed;
+  // Кому сообщить о классах без CSS в готовом HTML секции (блок 4, Р4-14); нет — без сообщения.
+  classUnknown?: (section: string, classes: readonly string[]) => void;
   // Настройки темы и данные магазина страницы (часть 4); нет — пустые.
   props?: PageProps;
   // Бандл страницы (блок 5 «Секций и SDK», часть 5б): ядро и модули секций. Нет — страница без бандла (превью, рендер
@@ -238,12 +241,38 @@ async function withinPage(placed: PlacedSection, page: PageRender, left: number)
   return Buffer.byteLength(html) <= left ? html : failedHtml(placed, page.mode, overflow(), page.failed);
 }
 
+// Классы без CSS в готовом HTML секции (блок 4 «Секций и SDK», Р4-14): секцию сохранили до смены словаря или версии
+// Tailwind. Классы платформы и color-scheme-* обёртки — не ошибка: их CSS — в токенах темы или ставит платформа.
+const PLATFORM_WRAPPER_CLASS: RegExp = /^(?:group|peer)(?:\/[a-z0-9-]+)?$/;
+
+async function reportUnknownClasses(
+  placed: readonly PlacedSection[],
+  htmls: readonly string[],
+  dictionary: Dictionary,
+  sectionTheme: string,
+  report: (section: string, classes: readonly string[]) => void,
+): Promise<void> {
+  const system = await classSystem(dictionary, sectionTheme);
+  const scheme = new Set(
+    Object.entries(dictionary.tokens)
+      .filter(([, def]) => def.kind === 'scheme')
+      .flatMap(([name, def]) => classesOf(name, def)),
+  );
+  const known = (name: string): boolean =>
+    PLATFORM_WRAPPER_CLASS.test(name) || scheme.has(name) || name.startsWith('color-scheme-');
+  for (const [index, entry] of placed.entries()) {
+    const classes = htmlClasses(htmls[index] ?? '').filter((name) => !known(name) && system.cssOf([name])[0] === null);
+    if (classes.length > 0) report(entry.name, classes);
+  }
+}
+
 // Секции страницы по порядку и CSS их классов. Секций нет — процесс рендера не нужен, Tailwind не собирается. Секции
 // рендерятся по одной: процесс рендера держит в работе один запрос, предел страницы считается по порядку.
 export async function renderPlacedSections(
   placed: readonly PlacedSection[],
   dictionary: Dictionary,
   page: PageRender,
+  sectionTheme = '',
 ): Promise<PageContent> {
   if (placed.length === 0) return { ...EMPTY_PAGE_CONTENT, mode: page.mode };
   const sections: string[] = [];
@@ -253,5 +282,9 @@ export async function renderPlacedSections(
     left -= Buffer.byteLength(html);
     sections.push(html);
   }
-  return { sections, sectionsCss: await sectionCss(sections.join(''), dictionary), mode: page.mode };
+  const sectionsCss = await sectionCss(sections.join(''), dictionary, sectionTheme);
+  if (page.classUnknown !== undefined) {
+    await reportUnknownClasses(placed, sections, dictionary, sectionTheme, page.classUnknown);
+  }
+  return { sections, sectionsCss, mode: page.mode };
 }

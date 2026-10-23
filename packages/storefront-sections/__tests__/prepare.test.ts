@@ -6,7 +6,7 @@ const manifest = (name: string, kind = 'section', title = 'Секция'): strin
 
 const COLOR_MATCH = {
   'section.json': manifest('color-match', 'section', 'Подбор шарфа по цвету пальто'),
-  'template.astro': '<div class="advice" data-advice>Выберите цвет пальто</div>',
+  'template.astro': '<div class="mt-4" data-advice>Выберите цвет пальто</div>',
   'script.ts': "import { defineSection } from '@merfy/shell';\nexport default defineSection({ mount() {} });",
 };
 

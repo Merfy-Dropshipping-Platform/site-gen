@@ -41,6 +41,12 @@ const ROOT_CSS: Partial<Record<TokenKind, Printer>> = {
   width: length,
 };
 
+// Строки одного токена по его виду — та же печать, что у корня; вид без печати корня (цвет) — значение как есть.
+export function tokenDeclarations(kind: TokenKind, name: string, value: TokenValue): string[] {
+  const print = ROOT_CSS[kind];
+  return print === undefined ? [declaration(name, scalarText(value))] : print(name, value);
+}
+
 const namesWhere = (dictionary: Dictionary, test: (def: TokenDef) => boolean): string[] =>
   dictionaryNames(dictionary).filter((name) => test(dictionary.tokens[name]));
 

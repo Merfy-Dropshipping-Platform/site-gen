@@ -4,9 +4,11 @@
 // Словарь
 export { parseDictionary, platformDictionary } from './dictionary';
 export { extendDictionary } from './extend';
+export { SECTION_TOKENS_MAX, readSectionTokens, sectionTailwindTheme, sectionTokensCss } from './section-tokens';
+export type { SectionEdits, SectionTokenDefs, SectionTokenSet } from './section-tokens';
 
 // Значения
-export { parseTheme, parseTokenEdits, readTokenEdits } from './values';
+export { parseTheme, parseTokenEdits, readSectionEdits, readTokenEdits } from './values';
 
 // Расчёт и печать — чистые функции
 export { choiceAttributes, resolveTokens } from './resolve';

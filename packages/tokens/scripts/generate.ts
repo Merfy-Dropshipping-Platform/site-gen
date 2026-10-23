@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { platformDictionary } from '../src/dictionary';
+import { baseCss } from './base-css';
 import { packageFiles, themeFiles, type GeneratedFiles } from '../src/generate/files';
 import { parseTheme } from '../src/values';
 
@@ -29,10 +30,14 @@ function themeDirOf(args: readonly string[]): string | undefined {
   return resolve(dir);
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const themeDir = themeDirOf(process.argv.slice(2));
   if (themeDir === undefined) {
-    writeFiles(PACKAGE_DIR, packageFiles(platformDictionary));
+    // База страницы (блок 4 «Секций и SDK») — асинхронно: её компилирует Tailwind.
+    writeFiles(PACKAGE_DIR, {
+      ...packageFiles(platformDictionary),
+      'generated/base.css': await baseCss(platformDictionary),
+    });
     return;
   }
   const raw: unknown = JSON.parse(readFileSync(join(themeDir, 'theme.json'), 'utf8'));
@@ -40,9 +45,7 @@ function main(): void {
   writeFiles(themeDir, themeFiles(theme.dictionary));
 }
 
-try {
-  main();
-} catch (error) {
+main().catch((error: unknown) => {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;
-}
+});

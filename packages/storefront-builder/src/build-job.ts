@@ -136,6 +136,18 @@ function codeNotice(deps: BuilderDeps, job: ClaimedJob): CodeNoticed {
     });
 }
 
+// Классы без CSS в готовом HTML секции (блок 4 «Секций и SDK», Р4-14): предупреждение — сборка идёт дальше.
+function classLog(deps: BuilderDeps, job: ClaimedJob) {
+  return (section: string, classes: readonly string[]): void => {
+    deps.log('section-class-unknown', {
+      shopId: job.siteId,
+      buildId: job.build,
+      section,
+      classes: classes.join(' '),
+    });
+  };
+}
+
 async function recordFailures(deps: BuilderDeps, job: ClaimedJob, failures: SectionFailure[]): Promise<void> {
   const batch = { shopId: job.siteId, minute: minuteOf(deps.clock().toISOString()), failures };
   await recordRenderErrors(deps.db, batch).catch((error: unknown) =>
@@ -158,6 +170,7 @@ async function buildWithSections(deps: BuilderDeps, job: ClaimedJob, snapshot: S
         render,
         failureLog(deps, job, failures),
         codeNotice(deps, job),
+        classLog(deps, job),
       ),
     );
   } finally {

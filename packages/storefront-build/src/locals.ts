@@ -10,6 +10,8 @@ export interface ShopPageHead {
   keywords: string;
   canonical: string;
   configHtml: string;
+  // База страницы (блок 4 «Секций и SDK», Р4-12): preflight и база словаря — <style id="merfy-base"> первым стилем.
+  baseCss: string;
   // CSS шрифтов (блок 12): @font-face частями и подогнанный запасной — в <style id="merfy-fonts"> перед токенами.
   fontsCss: string;
   // Путь главного файла шрифта текста для <link rel="preload">; пустая строка — шрифт системный, ссылки нет.

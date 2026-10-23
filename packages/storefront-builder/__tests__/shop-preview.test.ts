@@ -162,7 +162,7 @@ describe('список секций магазина', () => {
   it('только секции вида section: имя, название и поля', async () => {
     const answer = await shopSections(depsOf().deps, SHOP);
     expect(JSON.parse(answer.body)).toEqual({
-      sections: [{ name: 'shop:hero', title: 'Первый экран', settings: [HEADING] }],
+      sections: [{ name: 'shop:hero', title: 'Первый экран', settings: [HEADING], tokens: {} }],
     });
   });
 });
@@ -228,11 +228,12 @@ describe('блоки секции (часть 3)', () => {
     );
     expect(JSON.parse(answer.body)).toEqual({
       sections: [
-        { name: 'shop:hero', title: 'Первый экран', settings: [HEADING] },
+        { name: 'shop:hero', title: 'Первый экран', settings: [HEADING], tokens: {} },
         {
           name: 'shop:faq',
           title: 'Вопросы и ответы',
           settings: [HEADING],
+          tokens: {},
           blocks: FAQ.manifest.blocks,
           defaultBlocks: FAQ.manifest.defaultBlocks,
         },
@@ -341,12 +342,13 @@ describe('свои страницы, шапка и подвал в превью 
         name: 'shop:header',
         title: 'Шапка',
         settings: [MENU_FIELD],
+        tokens: {},
         groups: ['header'],
         limit: 1,
         removable: false,
         uses: ['theme', 'shop'],
       },
-      { name: 'shop:hero', title: 'Первый экран', settings: [HEADING] },
+      { name: 'shop:hero', title: 'Первый экран', settings: [HEADING], tokens: {} },
     ]);
   });
 });

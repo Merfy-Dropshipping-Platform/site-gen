@@ -1,5 +1,6 @@
 import {
   previewTokens,
+  shopSectionTokensCss,
   standLocals,
   type StandInputs,
   type StandPageLocals,
@@ -7,6 +8,7 @@ import {
 } from '@merfy/storefront-build';
 import { TokenError, migrateTokenEdits, parseTokenEdits, type TokenMigrations } from '@merfy/tokens';
 import type { ThemeCatalog, ThemePins } from './theme-catalog';
+import { readVisibleSections } from './code';
 import { z } from 'zod';
 import { panelForConstructor } from './constructor-panel';
 import type { DrawAnswer } from './draw';
@@ -143,6 +145,17 @@ function readBody(body: string): unknown {
   }
 }
 
+// Токены секций магазина для превью (блок 4, Р4-10): секции — как их читает /sections, правки — из того же тела.
+async function previewSectionTokens(deps: PreviewDeps, shopId: string, rawTokens: unknown) {
+  const sections = await readVisibleSections(deps.snapshot.code, shopId);
+  if (sections === null) return shopSectionTokensCss([], rawTokens);
+  const tokened = [...sections.values()].map((section) => ({
+    name: section.name,
+    tokens: section.manifest.tokens,
+  }));
+  return shopSectionTokensCss(tokened, rawTokens);
+}
+
 // CSS токенов и атрибуты выборов по правкам из конструктора. Правки не подошли теме — 400 со списком проблем.
 export async function standTokens(deps: PreviewDeps, rawShop: string | null, body: string): Promise<DrawAnswer> {
   const found = await standShop(deps, rawShop);
@@ -152,7 +165,10 @@ export async function standTokens(deps: PreviewDeps, rawShop: string | null, bod
   try {
     const edits = parseTokenEdits(found.theme.tokens, migrateTokenEdits(parsed.data.tokens, found.theme.migrations));
     const answer = previewTokens(found.theme.tokens, edits);
-    return jsonAnswer(200, { ...answer, fontsCss: await inlineFonts(answer.fontsCss, deps.fonts) });
+    const sections = await previewSectionTokens(deps, found.row.id, parsed.data.tokens);
+    if (sections.problems.length > 0) return jsonAnswer(400, { problems: sections.problems });
+    const css = [answer.css, sections.css].filter((part) => part !== '').join('\n');
+    return jsonAnswer(200, { ...answer, css, fontsCss: await inlineFonts(answer.fontsCss, deps.fonts) });
   } catch (error) {
     if (error instanceof TokenError) return jsonAnswer(400, { problems: error.problems });
     throw error;

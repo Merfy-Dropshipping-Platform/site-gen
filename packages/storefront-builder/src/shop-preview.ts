@@ -222,6 +222,8 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
       name: section.name,
       title: section.manifest.title,
       settings: section.manifest.settings,
+      // Свои токены секции (блок 4, Р4-9) — записи из section.json; нет — {}.
+      tokens: section.manifest.tokens ?? {},
       // Типы блоков и блоки новой секции (часть 3) — только у секций с blocks.
       ...(section.manifest.blocks === undefined
         ? {}

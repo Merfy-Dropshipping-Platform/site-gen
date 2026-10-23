@@ -1,0 +1,10 @@
+{
+  "sdk": 1,
+  "name": "swatch-token",
+  "kind": "section",
+  "title": "Образцы ткани",
+  "settings": [],
+  "tokens": {
+    "custom-swatch": { "kind": "color", "about": "Обводка образца ткани", "derive": { "rule": "alias", "from": "primary" } }
+  }
+}

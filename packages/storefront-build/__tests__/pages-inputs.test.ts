@@ -93,7 +93,11 @@ describe('menus, theme и shop в запросе рендера', () => {
         },
       },
       mode: 'live',
-      props: { theme: { 'social-telegram': 'https://t.me/scarves' }, shop: { ...EMPTY_SHOP, name: 'Шарфы' } },
+      props: {
+        theme: { 'social-telegram': 'https://t.me/scarves' },
+        shop: { ...EMPTY_SHOP, name: 'Шарфы' },
+        page: { id: 'home', path: '/' },
+      },
     };
   }
 

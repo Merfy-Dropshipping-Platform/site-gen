@@ -1,4 +1,4 @@
-import type { MenuTree, ShopProps } from '@merfy/storefront-build';
+import type { MenuTree, PageInfo, ShopProps } from '@merfy/storefront-build';
 import type { experimental_AstroContainer } from 'astro/container';
 
 // Рендер секции по модулю шаблона (блок 1 «Секций и SDK»): контейнер Astro, один на процесс, создаётся при первом
@@ -25,6 +25,8 @@ export interface TemplateProps {
   menus: Readonly<Record<string, MenuTree>>;
   theme: SettingValues;
   shop: ShopProps;
+  // Блок 7, часть 7а: страница секции — у каждой секции, без "uses".
+  page: PageInfo;
 }
 
 let container: Promise<AstroContainer> | null = null;
@@ -43,9 +45,9 @@ const marksOf = (preview: boolean) => ({
 });
 
 export async function renderTemplate(component: TemplateComponent, props: TemplateProps): Promise<string> {
-  const { settings, blocks, preview, menus, theme, shop } = props;
+  const { settings, blocks, preview, menus, theme, shop, page } = props;
   const values = { ...settings, ...menus };
   return (await containerOf()).renderToString(component, {
-    props: { settings: values, blocks, theme, shop, __merfy: marksOf(preview) },
+    props: { settings: values, blocks, theme, shop, page, __merfy: marksOf(preview) },
   });
 }

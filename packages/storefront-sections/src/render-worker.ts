@@ -39,6 +39,9 @@ const EMPTY_SHOP = {
   policies: [],
   payments: { online: false },
 };
+// Блок 7, часть 7а: страница, на которой стоит секция; у страницы 404 адреса нет. Нет ключа — главная.
+const pageSchema = z.strictObject({ id: z.string(), path: z.string().nullable() });
+const HOME_PAGE = { id: 'home', path: '/' };
 const requestSchema = z.strictObject({
   id: z.number().int().positive(),
   hash: z.string().min(1),
@@ -49,6 +52,7 @@ const requestSchema = z.strictObject({
   menus: z.record(z.string(), menuTreeSchema).default({}),
   theme: valuesSchema.default({}),
   shop: shopSchema.default(EMPTY_SHOP),
+  page: pageSchema.default(HOME_PAGE),
 });
 
 const templates = new Map<string, Promise<TemplateComponent>>();
@@ -92,12 +96,12 @@ function requestOf(line: string) {
 async function answerTo(line: string): Promise<{ id: number; answer: object }> {
   const parsed = requestOf(line);
   if (parsed === null || !parsed.success) return { id: 0, answer: { error: 'запрос не по форме', denied: false } };
-  const { id, hash, module, settings, blocks, preview, menus, theme, shop } = parsed.data;
+  const { id, hash, module, settings, blocks, preview, menus, theme, shop, page } = parsed.data;
   try {
     if (module !== undefined && !templates.has(hash)) templates.set(hash, loadTemplate(module));
     const template = templates.get(hash);
     if (template === undefined) return { id, answer: { error: `модуля ${hash} в процессе нет`, denied: false } };
-    const props = { settings, blocks, preview, menus, theme, shop };
+    const props = { settings, blocks, preview, menus, theme, shop, page };
     return { id, answer: { html: await renderTemplate(await template, props) } };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -1,6 +1,7 @@
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { PageEntityType } from './manifest';
+import { NOT_FOUND_PAGE_ID, type PageInfo } from './special-pages';
 
 // Страницы магазина новой темы (design.md блока 4, Св-1): главная и свои страницы мерчанта (блок 1 «Секций и SDK»,
 // часть 4, Р1-4-8). Страница рендерит три списка секций ревизии: шапку, свой список и подвал. Страницы товаров,
@@ -19,6 +20,12 @@ export const SHOP_ROUTES: readonly ShopRoute[] = [{ id: 'home', path: '/', file:
 
 // Списки секций страницы по порядку: шапка, страница, подвал.
 export const pageListsOf = (pageId: string): readonly string[] => [HEADER_LIST, pageId, FOOTER_LIST];
+
+// Страница для секций (блок 7, часть 7а): id и адрес; у страницы 404 адреса нет — она отвечает на любой адрес.
+export const pageInfoOf = (route: ShopRoute): PageInfo => ({
+  id: route.id,
+  path: route.id === NOT_FOUND_PAGE_ID ? null : route.path,
+});
 
 // Главная и свои страницы ревизии: /o-nas → o-nas/index.html. Своя страница, как главная, — страница сайта.
 export const shopRoutes = (inputs: BuildInputs): ShopRoute[] => [

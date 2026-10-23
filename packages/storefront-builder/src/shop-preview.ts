@@ -19,6 +19,7 @@ import {
   type CurrentSection,
   type RevisionMenu,
   type SectionRenderRequest,
+  settingFieldsOf,
 } from '@merfy/storefront-sections';
 import type { Dictionary } from '@merfy/tokens';
 import { z } from 'zod';
@@ -167,7 +168,7 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   const current = sections.get(instance.section);
   if (current === undefined || current.render === null || current.renderHash === null)
     return jsonAnswer(404, { problems: [TEXT.section(instance.section)] });
-  const settings = resolveSectionSettings(current.manifest.settings, instance.settings).values;
+  const settings = resolveSectionSettings(settingFieldsOf(current.manifest.settings), instance.settings).values;
   // Блоки (часть 3, Р55): показанные, со значениями; у секции без blocks — без ключа.
   const blocks =
     current.manifest.blocks === undefined
@@ -193,7 +194,7 @@ function previewPlaced(
   menus: readonly RevisionMenu[],
   hash: string,
 ) {
-  const trees = sectionMenus(current.manifest.settings, settings, menus);
+  const trees = sectionMenus(settingFieldsOf(current.manifest.settings), settings, menus);
   return {
     id: instance.id,
     name: instance.section,

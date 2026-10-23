@@ -19,6 +19,7 @@ import {
   type RevisionMenu,
   type SectionGroup,
   type SectionRow,
+  settingFieldsOf,
 } from '@merfy/storefront-sections';
 import { z } from 'zod';
 import { StorefrontBuilderError, errorText } from './errors';
@@ -191,7 +192,7 @@ function placedOf(
   context: CodeContext,
   menus: readonly RevisionMenu[],
 ): CodeInstance {
-  const resolved = resolveSectionSettings(current.manifest.settings, instance.settings);
+  const resolved = resolveSectionSettings(settingFieldsOf(current.manifest.settings), instance.settings);
   if (resolved.invalid.length > 0)
     context.log('section-settings-invalid', {
       shopId: context.shopId,
@@ -318,6 +319,6 @@ function menusOf(
   values: Readonly<Record<string, unknown>>,
   menus: readonly RevisionMenu[],
 ): Pick<CodeInstance, 'menus'> {
-  const trees = sectionMenus(current.manifest.settings, values, menus);
+  const trees = sectionMenus(settingFieldsOf(current.manifest.settings), values, menus);
   return Object.keys(trees).length === 0 ? {} : { menus: trees };
 }

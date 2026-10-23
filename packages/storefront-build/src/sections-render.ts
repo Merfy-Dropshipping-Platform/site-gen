@@ -36,6 +36,13 @@ export interface MenuTree {
   items: MenuTreeItem[];
 }
 
+// Вид обёртки секции (часть 5 блока 1, Р1-5-7): классы и атрибуты на <merfy-section> — общие настройки секции. Считает
+// сборщик (wrapperView пакета секций), во входах сборки ключ wrapper экземпляра; нет ключа — класс WRAPPER_CLASS.
+export interface WrapperView {
+  classes: string[];
+  attributes: Record<string, string>;
+}
+
 // Что страница даёт секциям сверх их настроек (часть 4, Р1-4-4, Р1-4-6): настройки темы и данные магазина. Получает
 // только секция, которая объявила их в "uses".
 export type PropsUse = 'theme' | 'shop';

@@ -29,7 +29,28 @@ export {
 } from './registry';
 export { currentSection, type CurrentSection } from './current';
 export { resolveSectionBlocks, type BlockValues, type ResolvedBlocks, type RevisionBlock } from './blocks';
-export { type SectionField } from './fields';
+export {
+  isSettingField,
+  settingFieldsOf,
+  type SectionField,
+  type SectionValue,
+  type SettingsEntry,
+  type WrapperRef,
+} from './fields';
+export {
+  DEFAULT_WRAPPER_IDS,
+  DEFAULT_WRAPPER_VIEW,
+  STICKY_VIEW,
+  WRAPPER_FIELDS,
+  WRAPPER_IDS,
+  isDefaultWrapperView,
+  resolveWrapper,
+  resolveWrapperView,
+  wrapperIdsOf,
+  wrapperView,
+  type WrapperId,
+  type WrapperValues,
+} from './wrapper';
 export { MAIN_MENU, menuTreeOf, revisionMenusSchema, sectionMenus, type RevisionMenu } from './menus';
 export { defaultSettings, resolveSectionSettings, settingsTexts, type ResolvedSettings } from './settings';
 export { DEFAULT_SANDBOX, prepareInWorker, type SandboxOptions } from './sandbox';

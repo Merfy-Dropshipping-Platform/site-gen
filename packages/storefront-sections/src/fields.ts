@@ -160,3 +160,15 @@ export function sectionSettingProblem(path: string, spec: SectionSettingSpec, va
   if (spec.kind === 'padding') return paddingText(path, spec.max ?? PADDING_MAX_DEFAULT, value);
   return settingProblem(path, spec, value);
 }
+
+// Элемент settings: поле или ссылка на общую настройку (часть 5, Р1-5-5). Ссылка ставит общую настройку на своё место
+// в панели; сборка и проверка значений работают только с полями — settingFieldsOf.
+export type WrapperRef = { wrapper: 'scheme' | 'padding' | 'sticky' };
+export type SettingsEntry = SectionField | WrapperRef;
+// Значения-литералы дублируют WRAPPER_IDS типом WrapperId: импорт значения из wrapper.ts создал бы цикл модулей.
+const WRAPPER_REF_IDS: readonly ['scheme', 'padding', 'sticky'] = ['scheme', 'padding', 'sticky'];
+export const wrapperRefShape = z.strictObject({ wrapper: z.enum(WRAPPER_REF_IDS) });
+export const settingsEntryShape = z.union([sectionFieldShape, wrapperRefShape]);
+
+export const isSettingField = (entry: SettingsEntry): entry is SectionField => !('wrapper' in entry);
+export const settingFieldsOf = (entries: readonly SettingsEntry[]): SectionField[] => entries.filter(isSettingField);

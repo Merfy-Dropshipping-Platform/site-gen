@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { classSystem } from '@merfy/storefront-build/tailwind-system';
 import { platformDictionary, sectionTailwindTheme } from '@merfy/tokens';
 import { classProblems, type ClassField, type ClassFields } from './classes';
+import { settingFieldsOf } from './fields';
 import { fieldRuleProblems } from './field-rules';
 import type { SectionField } from './fields';
 import {
@@ -78,7 +79,7 @@ function classFieldsOf(manifest: SectionManifest): ClassFields {
     return { ...base, setting: { kind: field.setting.kind } };
   };
   const blockFields = Object.values(manifest.blocks ?? {}).flatMap((type) => type.settings.map(toClassField));
-  return { settings: manifest.settings.map(toClassField), blocks: blockFields };
+  return { settings: settingFieldsOf(manifest.settings).map(toClassField), blocks: blockFields };
 }
 
 // Шаг «Классы» и токены секции (блок 4 «Секций и SDK», Р4-2): когда section.json прочитан и шаблон есть.

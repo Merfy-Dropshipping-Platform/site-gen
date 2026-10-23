@@ -26,31 +26,51 @@ const variantShape = z.object({
     setting: z.object({ oneOf: optionsShape }),
   }),
 });
+// Часть 5 (Р1-5-5): элемент settings — поле или ссылка; варианты имён — внутри ветки поля.
 const namedShape = z.object({
-  properties: z.object({ settings: z.object({ items: z.object({ anyOf: z.array(variantShape) }) }) }),
+  properties: z.object({
+    settings: z.object({
+      items: z.object({
+        anyOf: z.array(z.union([z.object({ anyOf: z.array(variantShape) }), z.object({ properties: z.unknown() })])),
+      }),
+    }),
+  }),
 });
+// Часть 5 (Р1-5-5): элемент settings — поле или ссылка, поэтому items — объединение anyOf; setting — у ветки поля.
 const formatShape = z.object({
   properties: z.object({
     settings: z.object({
       items: z.object({
-        properties: z.object({
-          setting: z.union([z.object({ oneOf: optionsShape }), z.object({ anyOf: optionsShape })]),
-        }),
+        anyOf: z.array(
+          z.union([
+            z.object({
+              properties: z.object({
+                setting: z.union([z.object({ oneOf: optionsShape }), z.object({ anyOf: optionsShape })]),
+              }),
+            }),
+            z.object({ properties: z.object({ wrapper: z.unknown() }) }),
+          ]),
+        ),
       }),
     }),
   }),
 });
 
-const variants = namedShape.parse(sectionJsonSchema()).properties.settings.items.anyOf.map(({ properties }) => ({
-  id: properties.id.const,
-  about: properties.id.description,
-  kinds: properties.setting.oneOf.map((option) => option.properties.kind.const),
-}));
-const formatSetting = formatShape.parse(z.toJSONSchema(sectionManifestSchema, { io: 'input' })).properties.settings
-  .items.properties.setting;
-const formatKinds = ('oneOf' in formatSetting ? formatSetting.oneOf : formatSetting.anyOf).map(
-  (option) => option.properties.kind.const,
-);
+const namedVariants = namedShape.parse(sectionJsonSchema()).properties.settings.items.anyOf;
+const variants = namedVariants
+  .filter((branch): branch is { anyOf: z.infer<typeof variantShape>[] } => 'anyOf' in branch)
+  .flatMap((branch) => branch.anyOf)
+  .map(({ properties }) => ({
+    id: properties.id.const,
+    about: properties.id.description,
+    kinds: properties.setting.oneOf.map((option) => option.properties.kind.const),
+  }));
+const formatItems = formatShape.parse(z.toJSONSchema(sectionManifestSchema, { io: 'input' })).properties.settings.items;
+const formatKinds = formatItems.anyOf.flatMap((variant) => {
+  if (!('setting' in variant.properties)) return [];
+  const setting = variant.properties.setting;
+  return ('oneOf' in setting ? setting.oneOf : setting.anyOf).map((option) => option.properties.kind.const);
+});
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);

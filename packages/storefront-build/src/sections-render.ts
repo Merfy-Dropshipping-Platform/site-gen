@@ -12,7 +12,9 @@ import { classSystem } from './tailwind-system';
 // секции. Пакет Astro и компилятор не подключает: функцию рендера даёт сборщик — процесс рендера storefront-sections
 // (render.ts). Обёртка — <merfy-section data-section data-section-id class="py-section">: по data-section-id превью
 // выбирает и заменяет секцию. CSS секций — классы Tailwind из их разметки (section-css.ts).
-export type SettingValues = Readonly<Record<string, string | boolean>>;
+// Значение настройки секции — любое значение JSON (часть 5 блока 1, Р1-5-2): строка, число, да/нет, объект, null.
+export type SectionValue = string | number | boolean | null | { readonly [key: string]: SectionValue } | readonly SectionValue[];
+export type SettingValues = Readonly<Record<string, SectionValue>>;
 
 // Блок секции в шаблоне (часть 3): показанный блок со значениями настроек.
 export interface RenderBlock {

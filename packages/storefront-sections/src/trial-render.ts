@@ -1,3 +1,4 @@
+import type { SectionValue } from './fields';
 import type { MenuTree, ShopProps } from '@merfy/storefront-build';
 import type { experimental_AstroContainer } from 'astro/container';
 
@@ -6,7 +7,9 @@ import type { experimental_AstroContainer } from 'astro/container';
 // В Astro.props — settings, blocks (показанные блоки со значениями, часть 3) и __merfy: метка блока для превью (Р57)
 // создаётся здесь, в процессе рендера, — функции через границу процесса не передаются. Пробный рендер при сохранении —
 // trial.ts: он идёт в процессе рендера (блок 2, «Решил сам» п. 5).
-export type SettingValues = Readonly<Record<string, string | boolean>>;
+// Значение настройки — любое значение JSON (часть 5 блока 1, Р1-5-2); тип объявлен в fields.ts, в 5а-2 переедет в
+// storefront-build и здесь станет реэкспортом.
+export type SettingValues = Readonly<Record<string, SectionValue>>;
 type AstroContainer = Awaited<ReturnType<typeof experimental_AstroContainer.create>>;
 export type TemplateComponent = Parameters<AstroContainer['renderToString']>[0];
 

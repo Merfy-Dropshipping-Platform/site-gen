@@ -187,7 +187,7 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
 function previewPlaced(
   instance: SectionInstance,
   current: CurrentSection,
-  settings: Readonly<Record<string, string | boolean>>,
+  settings: Readonly<Record<string, unknown>>,
   blocks: Record<string, unknown>,
   menus: readonly RevisionMenu[],
   hash: string,

@@ -315,7 +315,7 @@ function allowedOn(
 // Деревья меню экземпляра (часть 4, Р1-4-3): только у секций с настройками вида menu.
 function menusOf(
   current: CurrentSection,
-  values: Readonly<Record<string, string | boolean>>,
+  values: Readonly<Record<string, unknown>>,
   menus: readonly RevisionMenu[],
 ): Pick<CodeInstance, 'menus'> {
   const trees = sectionMenus(current.manifest.settings, values, menus);

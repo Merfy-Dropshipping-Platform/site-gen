@@ -89,6 +89,15 @@ const pageSchema = z.strictObject({
   name: z.string().max(SHOP_NAME_MAX),
   seo: z.strictObject({ title: z.string(), description: z.string(), keywords: z.string() }),
 });
+// Вид обёртки (часть 5, Р1-5-7): во входы идёт только безопасное — токены классов Tailwind и атрибуты data-* с простыми
+// значениями; из этих строк печатается атрибут class и атрибуты обёртки.
+const CLASS_TOKEN = /^[a-z0-9][a-z0-9:_.\-/[\]]*$/;
+const DATA_ATTRIBUTE = /^data-[a-z]+(?:-[a-z]+)*$/;
+const DATA_VALUE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const wrapperViewSchema = z.strictObject({
+  classes: z.array(z.string().max(80).regex(CLASS_TOKEN)).max(16),
+  attributes: z.record(z.string().regex(DATA_ATTRIBUTE), z.string().max(40).regex(DATA_VALUE)),
+});
 const instanceSchema = z.strictObject({
   id: kebabIdSchema,
   section: sectionNameSchema,
@@ -97,6 +106,8 @@ const instanceSchema = z.strictObject({
   blocks: z.array(z.strictObject({ id: kebabIdSchema, type: kebabIdSchema, settings: valuesSchema })).optional(),
   // Часть 4 (Р1-4-3): деревья меню по id настройки вида menu — только у секций с такими настройками.
   menus: z.record(kebabIdSchema, menuTreeSchema).optional(),
+  // Часть 5 (Р1-5-7, Р1-5-8): вид обёртки — только если он не вид по умолчанию.
+  wrapper: wrapperViewSchema.optional(),
 });
 
 // Код магазина: видимые ему секции, которые где-то стоят, и глобальные скрипты. Места — экземпляры секций по id страницы

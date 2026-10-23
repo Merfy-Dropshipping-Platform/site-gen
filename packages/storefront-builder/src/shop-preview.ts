@@ -20,10 +20,12 @@ import {
   type RevisionMenu,
   type SectionRenderRequest,
   settingFieldsOf,
+  wrapperIdsOf,
+  WRAPPER_FIELDS,
 } from '@merfy/storefront-sections';
 import type { Dictionary } from '@merfy/tokens';
 import { z } from 'zod';
-import { instanceSchema, readVisibleSections, type SectionInstance } from './code';
+import { instanceSchema, readVisibleSections, wrapperOf, type SectionInstance } from './code';
 import type { DrawAnswer } from './draw';
 import { inlineAssets } from './inline-assets';
 import { inlineFonts } from './preview-fonts';
@@ -200,6 +202,7 @@ function previewPlaced(
     name: instance.section,
     hash,
     settings,
+    ...wrapperOf(instance, current),
     ...blocks,
     ...(Object.keys(trees).length === 0 ? {} : { menus: trees }),
     ...(current.manifest.uses === undefined ? {} : { uses: current.manifest.uses }),
@@ -224,6 +227,8 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
       name: section.name,
       title: section.manifest.title,
       settings: section.manifest.settings,
+      // Часть 5 (Р1-5-5): список общих настроек секции — всегда, чтобы конструктору не нужно знать умолчание.
+      wrapper: wrapperIdsOf(section.manifest),
       // Свои токены секции (блок 4, Р4-9) — записи из section.json; нет — {}.
       tokens: section.manifest.tokens ?? {},
       // Типы блоков и блоки новой секции (часть 3) — только у секций с blocks.
@@ -232,7 +237,7 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
         : { blocks: section.manifest.blocks, defaultBlocks: section.manifest.defaultBlocks ?? [] }),
       ...placeKeys(section.manifest),
     }));
-  return jsonAnswer(200, { sections: list });
+  return jsonAnswer(200, { sections: list, wrapper: WRAPPER_FIELDS });
 }
 
 // Место секции (часть 4, Р1-4-2): groups, limit, removable, uses, newPage — только объявленные в section.json.

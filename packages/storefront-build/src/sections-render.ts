@@ -13,7 +13,8 @@ import { classSystem } from './tailwind-system';
 // (render.ts). Обёртка — <merfy-section data-section data-section-id class="py-section">: по data-section-id превью
 // выбирает и заменяет секцию. CSS секций — классы Tailwind из их разметки (section-css.ts).
 // Значение настройки секции — любое значение JSON (часть 5 блока 1, Р1-5-2): строка, число, да/нет, объект, null.
-export type SectionValue = string | number | boolean | null | { readonly [key: string]: SectionValue } | readonly SectionValue[];
+// Контейнеры изменяемые, как z.json() во входах сборки: значения ревизии проходят во входы без приведения.
+export type SectionValue = string | number | boolean | null | { [key: string]: SectionValue } | SectionValue[];
 export type SettingValues = Readonly<Record<string, SectionValue>>;
 
 // Блок секции в шаблоне (часть 3): показанный блок со значениями настроек.

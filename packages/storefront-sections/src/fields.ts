@@ -83,14 +83,10 @@ export type SectionField = z.infer<typeof sectionFieldShape>;
 export type SectionSettingSpec = SectionField['setting'];
 
 // Значение настройки секции — любое значение JSON (часть 5 блока 1, Р1-5-2): строка, число, да/нет, объект, null.
-// В части 5а-2 тип переезжает в storefront-build/src/sections-render.ts, здесь останется реэкспорт.
-export type SectionValue =
-  | string
-  | number
-  | boolean
-  | null
-  | { readonly [key: string]: SectionValue }
-  | readonly SectionValue[];
+// Тип объявлен в storefront-build (5а-2), здесь — импорт и реэкспорт для потребителей пакета секций.
+import type { SectionValue } from '@merfy/storefront-build';
+
+export type { SectionValue };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);

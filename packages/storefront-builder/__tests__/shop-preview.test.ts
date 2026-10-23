@@ -84,7 +84,8 @@ function depsOf(
     sections: () => Promise.resolve(sections),
     render: (shopId, request) => {
       rendered.push([shopId, request]);
-      return Promise.resolve(`<h2 class="flex">${String(request.settings.heading)}</h2>`);
+      const heading = request.settings.heading;
+      return Promise.resolve(`<h2 class="flex">${typeof heading === 'string' ? heading : ''}</h2>`);
     },
     fonts: (css) => Promise.resolve(css),
   };

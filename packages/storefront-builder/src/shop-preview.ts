@@ -8,6 +8,7 @@ import {
   type BuildInputs,
   type PageProps,
   type PageRender,
+  type SettingValues,
   type ShopTheme,
 } from '@merfy/storefront-build';
 import {
@@ -187,7 +188,7 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
 function previewPlaced(
   instance: SectionInstance,
   current: CurrentSection,
-  settings: Readonly<Record<string, unknown>>,
+  settings: SettingValues,
   blocks: Record<string, unknown>,
   menus: readonly RevisionMenu[],
   hash: string,

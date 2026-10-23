@@ -75,7 +75,7 @@ const codeSectionSchema = z.strictObject({
 // hidden — экземпляр скрыт (п. 22): его убирает renderShopPage. Имени мерчанта (name) во входах сборки нет (Р17).
 // blocks — показанные блоки со значениями (часть 3, Р55, Р56): только у секций с blocks в section.json; скрытых блоков
 // во входах нет — их убрал сборщик.
-const valuesSchema = z.record(z.string(), z.union([z.string(), z.boolean()]));
+const valuesSchema = z.record(z.string(), z.json());
 // Дерево меню (часть 4, Р1-4-3): три уровня, у пункта последнего уровня пунктов нет.
 const menuLeafSchema = z.strictObject({ label: z.string(), url: z.string(), items: z.tuple([]) });
 const menuMiddleSchema = z.strictObject({ label: z.string(), url: z.string(), items: z.array(menuLeafSchema) });

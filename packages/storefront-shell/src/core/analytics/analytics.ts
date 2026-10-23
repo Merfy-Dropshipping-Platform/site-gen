@@ -1,5 +1,4 @@
-import type { CartPart, CartState } from '@merfy/shell';
-import { cartChanges } from './cart.ts';
+import { cartChanges, type CartFeed, type CartState } from './cart.ts';
 import { collectorDestination, type Beacon, type Destination } from './collector.ts';
 import { consentRule } from './consent.ts';
 import { loadCounters } from './counters.ts';
@@ -9,12 +8,12 @@ import { readSettings, type AnalyticsSettings } from './settings.ts';
 import { storageOf, type KeyValue } from './storage.ts';
 import { applyOwnerParam, trafficOf, type TrafficEnv } from './traffic.ts';
 
-// Модуль аналитики магазина (design.md блока 11) — глобальный скрипт платформы platform:analytics (блок 7, С7-21 А),
-// стоит на каждой странице новой темы. Ядро зовёт mount на каждой странице, и после смены страницы роутером тоже, —
-// просмотр страницы; корзину ядра модуль слушает с первого mount — «в корзину» и «из корзины». Каждое событие заново
-// читает ответ о согласии (С11-2 В, таблица consent.ts). Пачки — раз в 5 с и когда страница уходит в фон (решил сам
-// 5); счётчики мерчанта — после загрузки страницы и только с разрешения (решил сам 13). Превью конструктора и магазин
-// без analytics в конфиге ничего не отправляют (решил сам 8).
+// Модуль аналитики магазина (design.md блока 11) — часть SDK analytics ядра секций (блок 5 «Секций и SDK», часть 5б,
+// part.ts): сборка магазина добавляет её в бандл каждой страницы опубликованного сайта. Просмотр страницы — по
+// merfy:page:view ядра; корзину ядра модуль слушает с первого просмотра — «в корзину» и «из корзины». Каждое событие
+// заново читает ответ о согласии (С11-2 В, таблица consent.ts). Пачки — раз в 5 с и когда страница уходит в фон (решил
+// сам 5); счётчики мерчанта — после загрузки страницы и только с разрешения (решил сам 13). Превью конструктора и
+// магазин без analytics в конфиге ничего не отправляют (решил сам 8).
 export const BATCH_MS = 5_000;
 const COMPLETE: DocumentReadyState = 'complete';
 const HIDDEN: DocumentVisibilityState = 'hidden';
@@ -22,7 +21,7 @@ const HIDDEN: DocumentVisibilityState = 'hidden';
 export interface AnalyticsDeps {
   win: Window;
   beacon: Beacon;
-  cart: () => Promise<CartPart>;
+  cart: () => Promise<CartFeed>;
   newId: () => string;
 }
 

@@ -21,8 +21,16 @@ export { pagePropsOf, renderShopPage, type RenderPage, type RenderedPage, type S
 export { SHOP_ROUTES, routeOf, type ShopRoute } from './routes';
 export { REBUILD_EVENT_INPUTS } from './event-inputs';
 
-// Код секций (блок 7)
-export { NO_ASSETS, modulePath, shellDir, type CodeAssets, type ShellBuild } from './code';
+// Код секций (блок 7) и бандл страницы (блок 5 «Секций и SDK», часть 5б)
+export { NO_ASSETS, type CodeAssets } from './code';
+export {
+  BUNDLE_DIR,
+  BUNDLE_INLINE_MAX_BYTES,
+  PAGE_SCRIPT_WARN_BYTES,
+  type CodeNotice,
+  type CodeNoticed,
+} from './bundle';
+export { SECTION_INPUT_MAX_BYTES } from './input-tag';
 
 // Секции SDK 1: рендер экземпляров и CSS секций (блок 1 «Секций и SDK»)
 export {
@@ -52,7 +60,7 @@ export {
 } from './sections-render';
 export { htmlClasses, sectionCss } from './section-css';
 export { type ShopProps } from './shop-props';
-export { SHELL_DIST, readShellBuild } from './shell';
+export { SHELL_DIST, readShellBuild, type ShellBuild } from './shell';
 
 // Манифест, граф, build.json
 export {

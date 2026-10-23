@@ -32,7 +32,7 @@ const reviews = (hash: string): BuildInputs =>
 const newPlatform: BuildInputs = {
   ...INPUTS,
   platform: { renderHash: OTHER },
-  shell: { version: '9.9.9', hash: OTHER, preload: ['shell.js'] },
+  shell: { version: '9.9.9', hash: OTHER, parts: ['cart'] },
 };
 
 describe('dataKey', () => {

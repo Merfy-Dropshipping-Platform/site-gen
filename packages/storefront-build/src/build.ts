@@ -1,6 +1,7 @@
 import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
-import { NO_ASSETS, codeFiles, type CodeAssets } from './code';
+import type { CodeNoticed } from './bundle';
+import { NO_ASSETS, checkCodeAssets, type CodeAssets } from './code';
 import { entityHashes } from './entities';
 import { parseBuildInputs, type BuildInputs } from './inputs';
 import { shopFonts } from './head';
@@ -40,11 +41,26 @@ const byPath = (left: BuildFile, right: BuildFile): number => (left.path < right
 // манифест.
 // Страница сборки: модули рендера из активов и функция рендера процесса, режим live; упавшую секцию сборка пропускает и
 // сообщает failed (блок 2 «Секций и SDK»).
-const livePageOf = (assets: CodeAssets, render: RenderSection, failed?: SectionFailed): PageRender => ({
+// Бандл страницы (часть 5б) — из ядра и скриптов в assets; предупреждения сборки бандла — notice.
+const livePageOf = (
+  assets: CodeAssets,
+  render: RenderSection,
+  failed?: SectionFailed,
+  notice?: CodeNoticed,
+): PageRender => ({
   sections: { modules: assets.renders, render },
   mode: 'live',
   failed,
+  code: assets,
+  notice,
 });
+
+// Файлы бандлов страниц: страницы с тем же набором секций дают тот же файл — он в сборке один раз.
+const bundleFiles = (pages: readonly RenderedPage[]): BuildFile[] => [
+  ...new Map(
+    pages.flatMap((page) => (page.bundle === undefined ? [] : [[page.bundle.path, page.bundle] as const])),
+  ).values(),
+];
 
 export async function buildStorefront(
   raw: unknown,
@@ -53,19 +69,20 @@ export async function buildStorefront(
   assets: CodeAssets = NO_ASSETS,
   render: RenderSection = NO_SECTIONS.render,
   failed?: SectionFailed,
+  notice?: CodeNoticed,
 ): Promise<StorefrontBuild> {
   const inputs = parseBuildInputs(raw);
-  // Файлы кода — до рендера: нет ядра или скрипта — ошибка, рисовать не начинали.
-  const code = codeFiles(inputs, assets);
+  // Байты кода — до рендера: нет ядра или скрипта — ошибка, рендер не начинали.
+  checkCodeAssets(inputs, assets);
   // Секции рендерит процесс рендера сборщика. Упавшей секции на странице нет, сборка идёт дальше (блок 2, В2-1 А); упала
   // секция с removable: false или сам процесс рендера — ошибка сборки, сборку не выкладываем.
-  const page = livePageOf(assets, render, failed);
+  const page = livePageOf(assets, render, failed, notice);
   // Главная и свои страницы (часть 4 блока 1 «Секций и SDK»).
   const routes = shopRoutes(inputs);
   const shopPages = await Promise.all(routes.map((route) => renderShopPage(inputs, route.path, theme, page)));
   const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
   const pages = [...shopPages, ...standPages];
-  const files = [...theme.clientFiles, ...code, ...pages.map((page) => page.file)].sort(byPath);
+  const files = [...theme.clientFiles, ...bundleFiles(pages), ...pages.map((page) => page.file)].sort(byPath);
   // Файлы шрифтов (блок 12) — только в манифесте: байты уже в хранилище по отпечатку, их не льём.
   const fontFiles = shopFonts(inputs, theme.tokens, theme.migrations).files.map(
     (file) => [file.path, file.hash] as const,

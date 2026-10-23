@@ -2,10 +2,10 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { hashOf, sha256 } from '../src/canonical';
+import { sha256 } from '../src/canonical';
 import { SHELL_DIST, readShellBuild } from '../src/shell';
 
-// Корень site-gen во временной папке: только dist ядра (packages/storefront-shell/dist).
+// Корень site-gen во временной папке: только dist ядра секций (packages/storefront-shell/dist).
 async function fakeRoot(files: Record<string, string>): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'merfy-shell-'));
   for (const [path, text] of Object.entries(files)) {
@@ -16,36 +16,43 @@ async function fakeRoot(files: Record<string, string>): Promise<string> {
   return root;
 }
 
+const CORE_JS = 'export const start = () => {}; export const cart = {};';
 const BUILT = {
-  'shell.json': JSON.stringify({ version: '0.1.0', preload: ['shell.js', 'part-AB12CD34.js'], brotliBytes: 2048 }),
-  'shell/shell.js': 'import "./part-AB12CD34.js";',
-  'shell/part-AB12CD34.js': 'export const cart = {};',
-  'shell/part-EF56GH78.js': 'export const favorites = {};',
+  'core.json': JSON.stringify({ version: '0.1.0', brotliBytes: 7784, parts: ['auth', 'cart', 'favorites'] }),
+  'core.js': CORE_JS,
 };
 
 describe('readShellBuild', () => {
-  it('версия и подсказки — из shell.json, файлы — из dist/shell по пути, отпечаток — от путей и байтов', async () => {
+  it('версия и части — из core.json, текст — core.js, hash — sha256 core.js', async () => {
     const build = await readShellBuild(await fakeRoot(BUILT));
-    expect(build.version).toBe('0.1.0');
-    expect(build.preload).toEqual(['shell.js', 'part-AB12CD34.js']);
-    expect(build.files.map((file) => file.path)).toEqual(['part-AB12CD34.js', 'part-EF56GH78.js', 'shell.js']);
-    const hashes = Object.fromEntries(build.files.map((file): [string, string] => [file.path, sha256(file.content)]));
-    expect(build.hash).toBe(hashOf(hashes));
-    const other = await readShellBuild(
-      await fakeRoot({ ...BUILT, 'shell/shell.js': 'import "./part-AB12CD34.js"; // 2' }),
-    );
+    expect(build).toEqual({
+      version: '0.1.0',
+      hash: sha256(CORE_JS),
+      parts: ['auth', 'cart', 'favorites'],
+      code: CORE_JS,
+    });
+    const other = await readShellBuild(await fakeRoot({ ...BUILT, 'core.js': `${CORE_JS} // 2` }));
     expect(other.hash).not.toBe(build.hash);
   });
 
-  it('нет сборки или подсказка называет файл, которого нет, — shell-missing', async () => {
-    await expect(readShellBuild(await fakeRoot({}))).rejects.toMatchObject({
+  it('нет core.json или core.js — shell-missing с подсказкой, как собрать', async () => {
+    const message = `${SHELL_DIST}: нет сборки ядра: pnpm --filter @merfy/shell build`;
+    await expect(readShellBuild(await fakeRoot({}))).rejects.toMatchObject({ code: 'shell-missing', message });
+    await expect(readShellBuild(await fakeRoot({ 'core.json': BUILT['core.json'] }))).rejects.toMatchObject({
       code: 'shell-missing',
-      message: `${SHELL_DIST}: нет сборки ядра: pnpm --filter @merfy/shell build`,
+      message,
     });
-    const wrong = JSON.stringify({ version: '0.1.0', preload: ['shell.js', 'part-00000000.js'], brotliBytes: 1 });
-    await expect(readShellBuild(await fakeRoot({ ...BUILT, 'shell.json': wrong }))).rejects.toMatchObject({
+  });
+
+  it('core.json старого вида (без parts) или с чужим именем части — shell-missing', async () => {
+    const old = JSON.stringify({ version: '0.1.0', brotliBytes: 7784 });
+    await expect(readShellBuild(await fakeRoot({ ...BUILT, 'core.json': old }))).rejects.toMatchObject({
       code: 'shell-missing',
-      message: `${SHELL_DIST}: в сборке ядра нет part-00000000.js`,
+    });
+    const strange = JSON.stringify({ version: '0.1.0', brotliBytes: 7784, parts: ['Cart'] });
+    await expect(readShellBuild(await fakeRoot({ ...BUILT, 'core.json': strange }))).rejects.toMatchObject({
+      code: 'shell-missing',
+      path: 'parts.0',
     });
   });
 });

@@ -41,17 +41,18 @@ const jsonObject = z.record(z.string(), z.json());
 
 // Код секций (design.md блока 7, п. 19 и 22): полное имя — приставка автора и имя секции, как в списке модулей ядра.
 const SECTION_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*$/;
-// Файл сборки ядра: shell.js и part-<хэш>.js.
-const SHELL_FILE = /^[A-Za-z0-9_-]+\.js$/;
+// Часть ядра секций — имя экспорта dist/core.js (auth, cart, favorites): в бандл страницы оно идёт кодом как есть.
+const PART_NAME = /^[a-z][a-z0-9]*$/;
 const CODE_KINDS = ['section', 'global'] as const;
 const sectionNameSchema = z.string().regex(SECTION_NAME, { error: 'нужно полное имя секции: nova:scarf-colors' });
+export const partNameSchema = z.string().regex(PART_NAME, { error: 'нужно имя части ядра: cart' });
 
-// Ядро @merfy/shell: версия — для людей и манифеста; отпечаток файлов — путь _merfy/shell/<16 знаков>/ и ключ;
-// подсказки modulepreload — файлы ядра, которые нужны сразу (dist/shell.json, задача 3 блока 7).
+// Ядро секций @merfy/shell (блок 5 «Секций и SDK», часть 5б): версия — для людей и манифеста; hash — sha256
+// dist/core.js, он в ключе сборки; parts — части из core.json, их получает каждая секция бандла страницы.
 const shellSchema = z.strictObject({
   version: versionSchema,
   hash: hashSchema,
-  preload: z.array(z.string().regex(SHELL_FILE)).min(1),
+  parts: z.array(partNameSchema),
 });
 
 // Принятая правка секции из реестра (storefront_section): отпечаток правки, отпечаток модуля рендера (у секции; у
@@ -116,7 +117,8 @@ const buildInputsSchema = z.strictObject({
   platform: z.strictObject({ renderHash: hashSchema }),
   // Версия — единица выпуска для людей и волн; отпечаток файлов темы — в ключе (В4-1 В).
   theme: z.strictObject({ id: kebabIdSchema, version: versionSchema, contentHash: hashSchema }),
-  // Ядро @merfy/shell (блок 7). null — у магазина нет скриптов секций: ядро на страницы не идёт.
+  // Ядро секций @merfy/shell. Сборщик пишет его каждому магазину: аналитика — в бандле каждой страницы. null — входы
+  // стенда и снимок без кода: бандла нет.
   shell: shellSchema.nullable(),
   // Версия библиотеки шрифтов (блок 12, «решил сам» 13) — отпечаток реестра FONT_LIBRARY_HASH (src/fonts.ts).
   fonts: hashSchema,

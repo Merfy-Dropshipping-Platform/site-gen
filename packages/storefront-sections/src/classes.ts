@@ -12,7 +12,7 @@ import { problem, type SectionProblem } from './problems';
 export interface ClassField {
   id: string;
   label: string;
-  setting: { kind: string; options?: readonly { value: string }[] };
+  setting: { kind: string; options?: readonly { value: string }[]; min?: number; max?: number; step?: number };
 }
 // Поля секции и поля всех типов блоков подряд (часть 3 блока 1: blocks.<тип>.settings).
 export interface ClassFields {
@@ -20,10 +20,24 @@ export interface ClassFields {
   blocks: readonly ClassField[];
 }
 
-// Виды с конечным набором значений (Р4-6): select — значения вариантов, toggle — 'true' и 'false'.
+// Виды с конечным набором значений (Р4-6, Р1-5-10): select и radio — значения вариантов, toggle — 'true' и 'false',
+// alignment — три стороны, range — значения от min до max на шаге step (строками, как попадут в класс). Больше 101
+// значения или нет одного из min, max, step — пустой список: значения не перечислить (class-dynamic).
+const RANGE_VALUES_MAX = 101;
+const rangeValues = (field: ClassField): readonly string[] => {
+  const { min, max, step } = field.setting;
+  if (min === undefined || max === undefined || step === undefined || step <= 0) return [];
+  const steps = Math.floor((max - min) / step) + 1;
+  if (steps > RANGE_VALUES_MAX) return [];
+  return Array.from({ length: steps }, (_unused, index) => String(min + index * step));
+};
+
 export const FINITE_VALUES: Readonly<Record<string, (field: ClassField) => readonly string[]>> = {
   select: (field) => (field.setting.options ?? []).map((option) => option.value),
+  radio: (field) => (field.setting.options ?? []).map((option) => option.value),
   toggle: () => ['true', 'false'],
+  alignment: () => ['left', 'center', 'right'],
+  range: rangeValues,
 };
 // Классы платформы без своего CSS у Tailwind (Р4-7): group, peer, group/<имя>, peer/<имя>.
 export const PLATFORM_CLASS: RegExp = /^(?:group|peer)(?:\/[a-z0-9-]+)?$/;
@@ -89,12 +103,13 @@ const isAttributeVariant = (variant: string): boolean => ATTRIBUTE_VARIANT.test(
 function textProblem(name: string): RuleFinding | undefined {
   const { variants, utility } = partsOf(name);
   const plainUtility = utility.replace(/!+$/, '');
-  const withImportant = utility.includes('!'); if (variants.includes(DARK_VARIANT)) return { code: 'class-dark', message: TEXT.dark(name) };
+  const withImportant = utility.includes('!');
+  if (variants.includes(DARK_VARIANT)) return { code: 'class-dark', message: TEXT.dark(name) };
   if (hasArbitrary(plainUtility)) return { code: 'class-arbitrary', message: arbitraryMessage(name, plainUtility) };
   if (withImportant) return { code: 'class-arbitrary', message: TEXT.important(name) };
   const wrongVariant = variants.find((variant) => hasArbitrary(variant) && !isAttributeVariant(variant));
   if (wrongVariant !== undefined) return { code: 'class-arbitrary', message: variantMessage(name, wrongVariant) };
-  
+
   if (THEME_MARK.test(plainUtility)) return { code: 'class-theme-token', message: TEXT.themeToken(name) };
   return undefined;
 }
@@ -190,10 +205,20 @@ type ExpressionRule = (node: AstNode, fields: ClassFields, dynamic: Found[]) => 
 const literalClasses = (node: AstNode): ClassAt[] =>
   classesOfSegments([{ text: stringOf(fieldOf(node, 'value')), at: node.start + 1 }]);
 
-function chainOf(node: AstNode): string[] | undefined {
+// Имя члена цепочки (Р1-5-9, Р1-5-10): «.<id>» — имя свойства; «['<id>']» и «["<id>"]» — значение строки-литерала (id
+// полей — kebab-case, поэтому их пишут в скобках). Скобки не с литералом — settings[name], settings[0] — имени не дают:
+// такая запись остаётся динамической.
+function memberNameOf(node: AstNode): string | undefined {
   const property = fieldOf(node, 'property');
-  const name = isNode(property) ? stringOf(fieldOf(property, 'name')) : undefined;
-  if (name === undefined || fieldOf(node, 'computed') === true) return undefined;
+  if (!isNode(property)) return undefined;
+  if (fieldOf(node, 'computed') !== true) return stringOf(fieldOf(property, 'name'));
+  const literal = property.type === 'Literal' ? fieldOf(property, 'value') : undefined;
+  return typeof literal === 'string' ? literal : undefined;
+}
+
+function chainOf(node: AstNode): string[] | undefined {
+  const name = memberNameOf(node);
+  if (name === undefined) return undefined;
   const object = fieldOf(node, 'object');
   if (!isNode(object)) return [name];
   const parent = object.type === 'MemberExpression' ? chainOf(object) : undefined;
@@ -211,8 +236,8 @@ function fieldOfChain(chain: readonly string[], fields: ClassFields): ClassField
 function valuesOfField(node: AstNode, chain: readonly string[], fields: ClassFields, dynamic: Found[]): ClassAt[] {
   const field = fieldOfChain(chain, fields);
   const finite = field === undefined ? undefined : FINITE_VALUES[field.setting.kind];
-  if (field !== undefined && finite !== undefined)
-    return finite(field).map((value) => ({ name: value, at: node.start }));
+  const values = field !== undefined && finite !== undefined ? finite(field) : [];
+  if (values.length > 0) return values.map((value) => ({ name: value, at: node.start }));
   if (field !== undefined) dynamic.push({ at: node.start, message: TEXT.dynamic(field) });
   else dynamic.push({ at: node.start, message: TEXT.expression });
   return [];
@@ -229,6 +254,21 @@ const memberClasses: ExpressionRule = (node, fields, dynamic) => {
 
 type Segment = { text: string; at: number };
 
+// Класс схемы (Р1-5-9): подстановка поля вида color-scheme после ровно «color-» (перед ним — начало строки или пробел)
+// — класс не проверяется: CSS даёт токены магазина, не Tailwind. Маркер после склейки отфильтровывается.
+const SCHEME_PREFIX = 'color-';
+const SCHEME_MARK = '\u0000scheme';
+const textOf = (variant: readonly Segment[]): string => variant.map((segment) => segment.text).join('');
+const endsWithSchemePrefix = (text: string): boolean => {
+  const at = text.lastIndexOf(SCHEME_PREFIX);
+  return at >= 0 && (at === 0 || text[at - 1] === ' ');
+};
+const isSchemeField = (expression: AstNode, fields: ClassFields): boolean => {
+  if (expression.type !== 'MemberExpression') return false;
+  const chain = chainOf(expression);
+  return chain !== undefined && fieldOfChain(chain, fields)?.setting.kind === 'color-scheme';
+};
+
 // Каждое значение подстановки — своим вариантом строки классов (Р4-6): проверяем каждое значение.
 const withValues = (variants: readonly Segment[][], values: readonly ClassAt[], at: number): Segment[][] =>
   variants.flatMap((variant) => values.map((value) => [...variant, { text: value.name, at }]));
@@ -243,11 +283,15 @@ function templateClasses(node: AstNode, fields: ClassFields, dynamic: Found[]): 
     for (const variant of variants) variant.push({ text: valueCookedOf(quasi), at: quasi.start });
     const expression = expressions[index];
     if (expression === undefined) continue;
-    const substituted = expressionClasses(expression, fields, { classes: [], dynamic });
+    const scheme =
+      isSchemeField(expression, fields) && variants.every((variant) => endsWithSchemePrefix(textOf(variant)));
+    const substituted = scheme
+      ? [{ name: SCHEME_MARK, at: expression.start }]
+      : expressionClasses(expression, fields, { classes: [], dynamic });
     const values = substituted.length === 0 ? [{ name: '', at: expression.start }] : substituted;
     variants.push(...withValues(variants.splice(0, variants.length), values, expression.start));
   }
-  return variants.flatMap((variant) => classesOfSegments(variant));
+  return variants.flatMap((variant) => classesOfSegments(variant)).filter((item) => !item.name.includes(SCHEME_MARK));
 }
 
 const valueCookedOf = (quasi: AstNode): string => {
@@ -284,10 +328,18 @@ const objectClasses: ExpressionRule = (node, _fields, dynamic) =>
     .filter(isNode)
     .flatMap((property) => propertyClasses(property, dynamic));
 
+// a && 'x' — классы правой части (левая — условие); a || 'x' и a ?? 'x' — обеих частей (план 4а, Р1-5-9).
+const logicalClasses: ExpressionRule = (node, fields, dynamic) => {
+  const right = fieldOf(node, 'right');
+  const parts = fieldOf(node, 'operator') === '&&' ? [right] : [fieldOf(node, 'left'), right];
+  return parts.filter(isNode).flatMap((part) => expressionClasses(part, fields, { classes: [], dynamic }));
+};
+
 const EXPRESSION_RULES: Partial<Record<string, ExpressionRule>> = {
   Literal: (node) => literalClasses(node),
   TemplateLiteral: (node, fields, dynamic) => templateClasses(node, fields, dynamic),
   ConditionalExpression: conditionalClasses,
+  LogicalExpression: logicalClasses,
   ArrayExpression: arrayClasses,
   ObjectExpression: objectClasses,
   MemberExpression: memberClasses,

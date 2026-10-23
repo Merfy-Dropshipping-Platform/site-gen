@@ -1,12 +1,66 @@
 ---
 const { settings, blocks } = Astro.props;
 ---
-<div class="mx-auto flex max-w-page flex-col items-center gap-4 px-4 text-center font-body">
-  {blocks.map((block) => (
-    <div class="flex flex-col items-center">
-      {block.type === 'heading' && <h2 class:list={['m-0 font-heading weight-heading text-heading', { 'text-3xl': settings['heading-size'] === 'medium', 'text-5xl': settings['heading-size'] === 'large' }]}>{block.settings.heading}</h2>}
-      {block.type === 'text' && <p class="m-0 text-lg text-foreground">{block.settings.text}</p>}
-      {block.type === 'button' && <a class="rounded-button bg-primary px-4 py-2 text-primary-foreground no-underline" href={block.settings.link}>{block.settings.label}</a>}
-    </div>
-  ))}
+<div
+  class:list={[
+    'relative flex overflow-hidden font-body',
+    { 'min-h-64': settings.height === 'small', 'min-h-96': settings.height === 'medium', 'min-h-screen': settings.height === 'large' },
+  ]}
+>
+  {settings.images.url1 !== '' && (
+    <picture>
+      {settings.images.url2 !== '' && <source media="(max-width: 767px)" srcset={settings.images.url2} />}
+      <img src={settings.images.url1} alt="" class="absolute inset-0 h-full w-full object-cover" />
+    </picture>
+  )}
+  {settings.images.url1 !== '' && <div class={`absolute inset-0 bg-foreground opacity-${settings.overlay}`} />}
+  <div
+    class:list={[
+      'relative mx-auto flex w-full max-w-page flex-col justify-center gap-4 px-4 py-10',
+      {
+        'items-start text-left': settings.align === 'left',
+        'items-center text-center': settings.align === 'center',
+        'items-end text-right': settings.align === 'right',
+      },
+    ]}
+  >
+    {blocks.map((block) => (
+      <div
+        class:list={[
+          'flex flex-col',
+          {
+            'items-start': settings.align === 'left',
+            'items-center': settings.align === 'center',
+            'items-end': settings.align === 'right',
+          },
+        ]}
+      >
+        {block.type === 'heading' && (
+          <h2
+            class:list={[
+              'm-0 font-heading weight-heading',
+              {
+                'text-2xl': settings['heading-size'] === 'small',
+                'text-3xl': settings['heading-size'] === 'medium',
+                'text-5xl': settings['heading-size'] === 'large',
+              },
+              settings.images.url1 !== '' ? 'text-background' : 'text-heading',
+            ]}
+          >
+            {block.settings.heading}
+          </h2>
+        )}
+        {block.type === 'text' && (
+          <p class:list={['m-0 text-lg', settings.images.url1 !== '' ? 'text-background' : 'text-foreground']}>
+            {block.settings.text}
+          </p>
+        )}
+        {block.type === 'button' && (
+          <a class="rounded-button bg-primary px-4 py-2 text-primary-foreground no-underline" href={block.settings.link}>
+            {block.settings.label}
+          </a>
+        )}
+      </div>
+    ))}
+  </div>
 </div>

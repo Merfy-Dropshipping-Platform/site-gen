@@ -79,6 +79,7 @@ export function placedSections(inputs: BuildInputs, pageId: string): PlacedSecti
       settings: instance.settings,
       ...(instance.blocks === undefined ? {} : { blocks: instance.blocks }),
       ...(instance.menus === undefined ? {} : { menus: instance.menus }),
+      ...(instance.wrapper === undefined ? {} : { wrapper: instance.wrapper }),
       ...placeFlags(inputs, instance.section),
       ...(script === null ? {} : { script: true }),
     };

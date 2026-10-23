@@ -14,8 +14,8 @@ const problemsOf = (run: () => unknown): string[] => {
 };
 
 describe('словарь имён полей', () => {
-  it('файлы пакета читаются: 33 имени в трёх группах, 8 отказов, 9 сквозных', () => {
-    expect(NAMES.names).toHaveLength(33);
+  it('файлы пакета читаются: 34 имени в трёх группах, 8 отказов, 9 сквозных', () => {
+    expect(NAMES.names).toHaveLength(34);
     expect(NAMES.groups.map((group) => group.title)).toEqual(['Содержимое', 'Вид', 'Поведение']);
     expect(NAMES.refusals.map((refusal) => refusal.id)).toEqual([
       'section-view',
@@ -41,7 +41,12 @@ describe('словарь имён полей', () => {
   });
 
   it('имена — по порядку файла, виды — из списка SDK', () => {
-    expect(NAMES.names.slice(0, 4).map((entry) => entry.name)).toEqual(['heading', 'subheading', 'text', 'button-label']);
+    expect(NAMES.names.slice(0, 4).map((entry) => entry.name)).toEqual([
+      'heading',
+      'subheading',
+      'text',
+      'button-label',
+    ]);
     expect(NAMES.names.flatMap((entry) => entry.kinds).every((kind) => SDK_KINDS.includes(kind))).toBe(true);
   });
 

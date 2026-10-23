@@ -12,7 +12,10 @@ import { classSystem } from './tailwind-system';
 // секции. Пакет Astro и компилятор не подключает: функцию рендера даёт сборщик — процесс рендера storefront-sections
 // (render.ts). Обёртка — <merfy-section data-section data-section-id class="py-section">: по data-section-id превью
 // выбирает и заменяет секцию. CSS секций — классы Tailwind из их разметки (section-css.ts).
-export type SettingValues = Readonly<Record<string, string | boolean>>;
+// Значение настройки секции — любое значение JSON (часть 5 блока 1, Р1-5-2): строка, число, да/нет, объект, null.
+// Контейнеры изменяемые, как z.json() во входах сборки: значения ревизии проходят во входы без приведения.
+export type SectionValue = string | number | boolean | null | { [key: string]: SectionValue } | SectionValue[];
+export type SettingValues = Readonly<Record<string, SectionValue>>;
 
 // Блок секции в шаблоне (часть 3): показанный блок со значениями настроек.
 export interface RenderBlock {
@@ -31,6 +34,13 @@ export interface MenuTreeItem {
 export interface MenuTree {
   title: string;
   items: MenuTreeItem[];
+}
+
+// Вид обёртки секции (часть 5 блока 1, Р1-5-7): классы и атрибуты на <merfy-section> — общие настройки секции. Считает
+// сборщик (wrapperView пакета секций), во входах сборки ключ wrapper экземпляра; нет ключа — класс WRAPPER_CLASS.
+export interface WrapperView {
+  classes: string[];
+  attributes: Record<string, string>;
 }
 
 // Что страница даёт секциям сверх их настроек (часть 4, Р1-4-4, Р1-4-6): настройки темы и данные магазина. Получает
@@ -118,6 +128,8 @@ export interface PlacedSection {
   uses?: readonly PropsUse[];
   // true — у секции есть скрипт: в обёртке последним элементом — тег входных данных (часть 5б, input-tag.ts).
   script?: boolean;
+  // Часть 5 блока 1: вид обёртки (общие настройки секции); нет — WRAPPER_CLASS.
+  wrapper?: WrapperView;
 }
 
 // HTML секций одной страницы, байт (блок 2, «Решил сам» п. 3): секция, которая не влезает, не рендерится (render-output).
@@ -168,8 +180,16 @@ const failureOf = (placed: PlacedSection, stage: RenderStage, error: unknown): S
   message: errorText(error),
 });
 
-const wrapper = (placed: PlacedSection, html: string): string =>
-  `<merfy-section data-section="${escapeHtml(placed.name)}" data-section-id="${escapeHtml(placed.id)}" class="${WRAPPER_CLASS}">${html}</merfy-section>`;
+// Обёртка: имя секции, id экземпляра, классы и атрибуты вида обёртки. Вида нет — WRAPPER_CLASS; пустой список классов —
+// без атрибута class. Значения экранируются: во входах их уже ограничила схема, это вторая линия.
+const wrapper = (placed: PlacedSection, html: string): string => {
+  const view = placed.wrapper ?? { classes: [WRAPPER_CLASS], attributes: {} };
+  const classes = view.classes.length === 0 ? '' : ` class="${escapeHtml(view.classes.join(' '))}"`;
+  const attributes = Object.entries(view.attributes)
+    .map(([name, value]) => ` ${name}="${escapeHtml(value)}"`)
+    .join('');
+  return `<merfy-section data-section="${escapeHtml(placed.name)}" data-section-id="${escapeHtml(placed.id)}"${classes}${attributes}>${html}</merfy-section>`;
+};
 
 // Ошибка рендера секции. На опубликованном сайте (В2-1 А, «Решил сам» п. 7) упавшей секции нет, об ошибке сообщается;
 // секция с removable: false и сбой процесса рендера (ошибка без стадии) — ошибка сборки render-failed, сборку не

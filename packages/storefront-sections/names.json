@@ -132,6 +132,11 @@
       "about": "Затемнение картинки под текстом, в процентах",
       "asks": ["затемнение", "opacity", "dim", "shade", "darken"]
     },
+    "space": {
+      "kinds": ["padding"], "label": "Отступы", "group": "look",
+      "about": "Отступы секции сверху и снизу, в пикселях",
+      "asks": ["отступы", "отступ", "поля", "padding", "spacing"]
+    },
     "columns": {
       "kinds": ["range"], "label": "Колонки", "group": "look",
       "about": "Сколько карточек в ряд на компьютере",

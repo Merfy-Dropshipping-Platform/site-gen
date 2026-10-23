@@ -1,4 +1,4 @@
-import type { SettingValue } from '@merfy/tokens';
+import type { SectionValue } from './fields';
 import type { SectionManifest } from './format';
 import { resolveSectionSettings, settingsTexts } from './settings';
 
@@ -81,7 +81,7 @@ export interface RevisionBlock {
 export interface BlockValues {
   id: string;
   type: string;
-  settings: Record<string, SettingValue>;
+  settings: Record<string, SectionValue>;
 }
 export interface ResolvedBlocks {
   blocks: BlockValues[];

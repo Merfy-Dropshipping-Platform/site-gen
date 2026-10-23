@@ -5,7 +5,7 @@ import { tailwindCss, type Dictionary } from '@merfy/tokens';
 import { __unstable__loadDesignSystem } from 'tailwindcss';
 
 // Один Tailwind для проверки классов и сборки (блок 4 «Секций и SDK», Р4-3): что проверка пропустила, то сборка
-// и нарисует. API помечен unstable — версию не поднимаем без зелёного теста на списки классов (факты 14–17).
+// и отрендерит. API помечен unstable — версию не поднимаем без зелёного теста на списки классов (факты 14–17).
 
 export interface ClassSystem {
   // CSS каждого класса или null — Tailwind со словарём такого класса не знает (candidatesToCss).

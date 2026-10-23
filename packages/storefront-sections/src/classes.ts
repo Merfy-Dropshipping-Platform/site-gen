@@ -29,7 +29,7 @@ export const FINITE_VALUES: Readonly<Record<string, (field: ClassField) => reado
 export const PLATFORM_CLASS: RegExp = /^(?:group|peer)(?:\/[a-z0-9-]+)?$/;
 
 const CLASS_ATTRIBUTES: ReadonlySet<string> = new Set(['class', 'class:list']);
-// Вариант по атрибуту (Р4-5): data-[…] и aria-[…], в том числе с приставками group-, peer-, in-, not-.
+// Вариант по атрибуту (Р4-5): data-[…] и aria-[…], в том числе с префиксами group-, peer-, in-, not-.
 const ATTRIBUTE_VARIANT: RegExp = /^(?:group-|peer-|in-|not-)?(?:data-|aria-)\[/;
 const DARK_VARIANT = 'dark';
 const THEME_MARK = /-theme(?:-|$)/;
@@ -145,8 +145,8 @@ function distanceOf(left: string, right: string): number {
   return previous[right.length] ?? 0;
 }
 
-// Семейство словаря (Р4-8): известные Tailwind имена с той же приставкой, что у класса. Сначала простые имена —
-// без второй приставки: rounded-card, а не rounded-b-card.
+// Семейство словаря (Р4-8): известные Tailwind имена с тем же префиксом, что у класса. Сначала простые имена —
+// без второго префикса: rounded-card, а не rounded-b-card.
 const familyOf = (name: string, system: ClassSystem): readonly string[] => {
   const prefix = name.slice(0, name.lastIndexOf('-') + 1);
   if (prefix === '') return [];

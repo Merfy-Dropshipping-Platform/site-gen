@@ -159,7 +159,7 @@ function elementFound(node: AstNode, outer: string | null): Found[] {
   const root = attributes.find((attribute) => attribute.name === 'data-behavior');
   const ownName = root !== undefined && root.value !== null ? root.value : '';
   const own = ownName === '' ? undefined : specOf(ownName);
-  const found: Found[] = [];
+  const found = attributes.flatMap((attribute) => attributeFound(attribute, own, ownName, outer));
   const delay = delayFound(attributes);
   return delay === null ? found : [...found, delay];
 }

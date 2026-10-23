@@ -1,14 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { valuePosition } from '../src/position';
 
-const TEXT = [
-  '{',
-  '  "settings": [',
-  '    { "id": "coatColor", "label": "Цвет" },',
-  '    { "id": "heading" }',
-  '  ]',
-  '}',
-].join('\n');
+const TEXT = ['{', '  "settings": [', '    { "id": "coatColor", "label": "Цвет" },', '    { "id": "heading" }', '  ]', '}'].join(
+  '\n',
+);
 
 describe('место значения в section.json', () => {
   it('строка и колонка начала значения по пути', () => {

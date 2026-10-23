@@ -12,11 +12,8 @@ interface Run {
 
 function merfy(...args: string[]): Promise<Run> {
   return new Promise((resolve) => {
-    execFile(
-      process.execPath,
-      ['--import', 'tsx', 'scripts/merfy.ts', ...args],
-      { cwd: PACKAGE_DIR },
-      (error, stdout) => resolve({ code: error === null ? 0 : Number(Reflect.get(error, 'code')), stdout }),
+    execFile(process.execPath, ['--import', 'tsx', 'scripts/merfy.ts', ...args], { cwd: PACKAGE_DIR }, (error, stdout) =>
+      resolve({ code: error === null ? 0 : Number(Reflect.get(error, 'code')), stdout }),
     );
   });
 }

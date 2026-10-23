@@ -33,9 +33,7 @@ const formatShape = z.object({
   properties: z.object({
     settings: z.object({
       items: z.object({
-        properties: z.object({
-          setting: z.union([z.object({ oneOf: optionsShape }), z.object({ anyOf: optionsShape })]),
-        }),
+        properties: z.object({ setting: z.union([z.object({ oneOf: optionsShape }), z.object({ anyOf: optionsShape })]) }),
       }),
     }),
   }),
@@ -46,8 +44,8 @@ const variants = namedShape.parse(sectionJsonSchema()).properties.settings.items
   about: properties.id.description,
   kinds: properties.setting.oneOf.map((option) => option.properties.kind.const),
 }));
-const formatSetting = formatShape.parse(z.toJSONSchema(sectionManifestSchema, { io: 'input' })).properties.settings
-  .items.properties.setting;
+const formatSetting = formatShape.parse(z.toJSONSchema(sectionManifestSchema, { io: 'input' })).properties.settings.items
+  .properties.setting;
 const formatKinds = ('oneOf' in formatSetting ? formatSetting.oneOf : formatSetting.anyOf).map(
   (option) => option.properties.kind.const,
 );
@@ -89,11 +87,7 @@ describe('что внутри', () => {
   it('section.schema.json: описание варианта — about имени', () => {
     const about = new Map(NAMES.names.map((entry) => [entry.name, entry.about]));
     expect(variants.filter((variant) => about.get(variant.id) !== variant.about)).toEqual([]);
-    expect(variants).toContainEqual({
-      id: 'heading',
-      about: 'Заголовок секции или блока; у «Страницы» — `<h1>`',
-      kinds: ['string'],
-    });
+    expect(variants).toContainEqual({ id: 'heading', about: 'Заголовок секции или блока; у «Страницы» — `<h1>`', kinds: ['string'] });
   });
 
   it('section.schema.json: полей без имени из словаря нет — ни у секции, ни у блоков; "$schema" можно', () => {
@@ -131,12 +125,7 @@ describe('что внутри', () => {
         "в шаблоне `theme['cart-type']` |\n",
     );
     const lines = markdown.split('\n');
-    expect(lines.filter((line) => line.startsWith('## '))).toEqual([
-      '## Содержимое',
-      '## Вид',
-      '## Поведение',
-      '## Нет в словаре',
-    ]);
+    expect(lines.filter((line) => line.startsWith('## '))).toEqual(['## Содержимое', '## Вид', '## Поведение', '## Нет в словаре']);
     expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(50);
     expect(markdown.endsWith(' |\n')).toBe(true);
   });

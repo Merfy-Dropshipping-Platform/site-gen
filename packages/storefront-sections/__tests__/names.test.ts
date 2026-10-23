@@ -41,12 +41,7 @@ describe('словарь имён полей', () => {
   });
 
   it('имена — по порядку файла, виды — из списка SDK', () => {
-    expect(NAMES.names.slice(0, 4).map((entry) => entry.name)).toEqual([
-      'heading',
-      'subheading',
-      'text',
-      'button-label',
-    ]);
+    expect(NAMES.names.slice(0, 4).map((entry) => entry.name)).toEqual(['heading', 'subheading', 'text', 'button-label']);
     expect(NAMES.names.flatMap((entry) => entry.kinds).every((kind) => SDK_KINDS.includes(kind))).toBe(true);
   });
 

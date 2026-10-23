@@ -1,0 +1,27 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col items-center gap-4 px-4 text-center font-body">
+  <h2
+    class:list={[
+      'm-0 font-heading weight-heading text-heading',
+      {
+        'text-2xl': settings['heading-size'] === 'small',
+        'text-3xl': settings['heading-size'] === 'medium',
+        'text-5xl': settings['heading-size'] === 'large',
+      },
+    ]}
+  >
+    {settings.heading}
+  </h2>
+  <p class="m-0 text-lg text-foreground">{settings.text}</p>
+  {settings.answer !== '' && <div class="max-w-page text-lg text-foreground" set:html={settings.answer} />}
+  <a class="rounded-button bg-primary px-4 py-2 text-primary-foreground no-underline" href={settings['button-link']}>Смотреть</a>
+  {settings.image !== '' && <img src={settings.image} alt="" class="h-48 w-auto object-cover" />}
+  {settings.newsletter && <p class="m-0 text-lg text-foreground">Рассылка включена</p>}
+  <ul class="m-0 flex list-none flex-col gap-2 p-0 text-left text-lg text-foreground">
+    {blocks.map((block) => (
+      <li><a class="no-underline" href={block.settings.link}>{block.settings.label}</a></li>
+    ))}
+  </ul>
+</div>

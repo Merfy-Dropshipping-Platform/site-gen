@@ -4,6 +4,7 @@ import {
   buildStorefront,
   parseBuildInputs,
   type Changelog,
+  type CodeNoticed,
   type SectionFailure,
   type ThemeBuild,
 } from '@merfy/storefront-build';
@@ -121,6 +122,20 @@ function failureLog(deps: BuilderDeps, job: ClaimedJob, failures: SectionFailure
   };
 }
 
+// Предупреждения бандла страницы (блок 5 «Секций и SDK», часть 5б): section-script-skipped, page-script-heavy — строкой
+// журнала; сборка идёт дальше.
+function codeNotice(deps: BuilderDeps, job: ClaimedJob): CodeNoticed {
+  return (page, notice) =>
+    deps.log(notice.code, {
+      shopId: job.siteId,
+      buildId: job.build,
+      page,
+      section: notice.section,
+      bytes: notice.bytes,
+      error: notice.message,
+    });
+}
+
 async function recordFailures(deps: BuilderDeps, job: ClaimedJob, failures: SectionFailure[]): Promise<void> {
   const batch = { shopId: job.siteId, minute: minuteOf(deps.clock().toISOString()), failures };
   await recordRenderErrors(deps.db, batch).catch((error: unknown) =>
@@ -135,7 +150,15 @@ async function buildWithSections(deps: BuilderDeps, job: ClaimedJob, snapshot: S
   // Секции рисует процесс рендера (storefront-sections): он запускается при первой секции и закрывается после сборки.
   try {
     return await withSectionRenderer((render) =>
-      buildStorefront(snapshot.inputs, references, theme, snapshot.assets, render, failureLog(deps, job, failures)),
+      buildStorefront(
+        snapshot.inputs,
+        references,
+        theme,
+        snapshot.assets,
+        render,
+        failureLog(deps, job, failures),
+        codeNotice(deps, job),
+      ),
     );
   } finally {
     await recordFailures(deps, job, failures);

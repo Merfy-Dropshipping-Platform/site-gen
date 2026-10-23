@@ -196,7 +196,7 @@ function builderOf(fake: FakeState) {
   const db = fakeDb(fake);
   const log = (message: string) => void lines.push(message);
   const call = () => Promise.reject(refused);
-  const shell = { version: '0.1.0', hash: OWN, preload: [], files: [] };
+  const shell = { version: '0.1.0', hash: OWN, parts: [], code: '' };
   const deps: BuilderDeps = {
     db,
     store,

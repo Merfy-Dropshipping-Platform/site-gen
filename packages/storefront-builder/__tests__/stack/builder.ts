@@ -1,6 +1,5 @@
 import {
   checkManifest,
-  hashOf,
   sha256,
   type ShellBuild,
   type ShopPageHead,
@@ -78,13 +77,21 @@ export const FAKE_THEME: LoadedTheme = {
 export const RENDER_HASH = `sha256:${'b'.repeat(64)}`;
 export const COMMIT = 'c'.repeat(40);
 
-// Ядро сборок стенда (блок 7): один файл; его версия — выпуск секций платформы.
-const SHELL_FILES = [{ path: 'shell.js', content: new TextEncoder().encode('export const defineSection = (d) => d;') }];
+// Ядро секций сборок стенда (блок 5 «Секций и SDK», часть 5б): маленькая библиотека с теми же экспортами, что у
+// dist/core.js; бандл страницы с ним меньше 4096 Б — он встроен в HTML. Версия — выпуск секций платформы.
+const TEST_CORE = [
+  'export const start = (options) => { globalThis.merfyStarted = options; };',
+  'export const defineSection = (definition) => definition;',
+  "export const auth = { name: 'auth' };",
+  "export const cart = { name: 'cart' };",
+  "export const favorites = { name: 'favorites' };",
+  "export const analytics = { name: 'analytics' };",
+].join('\n');
 export const TEST_SHELL: ShellBuild = {
   version: '0.1.0',
-  hash: hashOf(Object.fromEntries(SHELL_FILES.map((file): [string, string] => [file.path, sha256(file.content)]))),
-  preload: ['shell.js'],
-  files: SHELL_FILES,
+  hash: sha256(TEST_CORE),
+  parts: ['auth', 'cart', 'favorites'],
+  code: TEST_CORE,
 };
 
 // Ответ подставного сервиса extensions на extensions.enabledForShop — задаёт тест; Error — сервис не ответил.

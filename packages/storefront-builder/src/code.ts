@@ -227,7 +227,8 @@ function blocksOf(
 }
 
 // Код из видимых строк: экземпляры секций на страницах (экземпляр без видимой секции пропускается: расширение
-// выключили, своя секция ещё не опубликована) и все глобальные скрипты. Ядро — только если есть хоть один скрипт.
+// выключили, своя секция ещё не опубликована) и все глобальные скрипты. Ядро секций — всегда (часть 5б): аналитика — в
+// бандле каждой страницы опубликованного сайта.
 export function codeOf(
   rows: readonly SectionRow[],
   placement: Placement,
@@ -248,9 +249,9 @@ export function codeOf(
   const modules = new Map(used.flatMap(moduleOf));
   const renders = new Map(used.flatMap(renderOf));
   const { shell } = context;
-  const input = { version: shell.version, hash: shell.hash, preload: shell.preload };
+  const input = { version: shell.version, hash: shell.hash, parts: shell.parts };
   const code = { sections: used.map(sectionOf), pages, globals };
-  return { shell: modules.size > 0 ? input : null, code, assets: { shell, modules, renders } };
+  return { shell: input, code, assets: { shell, modules, renders } };
 }
 
 // Код магазина целиком. null — не получен: расширения не ответили или места не той формы.

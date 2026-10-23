@@ -9,7 +9,7 @@ const OTHER = `sha256:${'e'.repeat(64)}`;
 const newPlatform: BuildInputs = {
   ...INPUTS,
   platform: { renderHash: OTHER },
-  shell: { version: '9.9.9', hash: OTHER, preload: ['shell.js'] },
+  shell: { version: '9.9.9', hash: OTHER, parts: ['cart'] },
 };
 const edited: BuildInputs = { ...INPUTS, revision: { tokens: { root: { 'color-primary': '#123456' } } } };
 const pinned: BuildInputs = { ...INPUTS, theme: { ...INPUTS.theme, version: '9.9.9', contentHash: OTHER } };

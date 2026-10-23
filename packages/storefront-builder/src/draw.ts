@@ -4,6 +4,8 @@ import {
   StorefrontBuildError,
   parseBuildInputs,
   renderShopPage,
+  type CodeAssets,
+  type CodeNoticed,
   type PageRender,
   type RenderSection,
 } from '@merfy/storefront-build';
@@ -80,13 +82,10 @@ async function sameVersion(deps: DrawDeps, query: DrawQuery): Promise<boolean> {
 }
 
 // Рендер страницы опубликованного сайта по запросу: упавшую секцию пропускаем, как в сборке (блок 2 «Секций и SDK»),
-// и пишем строку журнала; строку таблицы ошибок пишет сборка — данные у них одни.
-function livePage(
-  deps: DrawDeps,
-  query: DrawQuery,
-  modules: ReadonlyMap<string, string>,
-  render: RenderSection,
-): PageRender {
+// и пишем строку журнала; строку таблицы ошибок пишет сборка — данные у них одни. Бандл страницы (часть 5б) — из тех же
+// входов и байтов, что у сборки: тот же файл _merfy/b/<sha256>.js, его уже записала сборка; предупреждения бандла —
+// строкой журнала, как у сборки.
+function livePage(deps: DrawDeps, query: DrawQuery, assets: CodeAssets, render: RenderSection): PageRender {
   const failed: PageRender['failed'] = (failure) =>
     deps.log('section-render-failed', {
       shopId: query.shop,
@@ -96,7 +95,16 @@ function livePage(
       stage: failure.stage,
       error: failure.message,
     });
-  return { sections: { modules, render }, mode: 'live', failed };
+  const notice: CodeNoticed = (page, item) =>
+    deps.log(item.code, {
+      shopId: query.shop,
+      path: query.path,
+      page,
+      section: item.section,
+      bytes: item.bytes,
+      error: item.message,
+    });
+  return { sections: { modules: assets.renders, render }, mode: 'live', failed, code: assets, notice };
 }
 
 async function draw(deps: DrawDeps, query: DrawQuery): Promise<DrawAnswer> {
@@ -108,7 +116,7 @@ async function draw(deps: DrawDeps, query: DrawQuery): Promise<DrawAnswer> {
   const theme = await deps.catalog.themeAt(label.id, label.version);
   const inputs = parseBuildInputs(snapshot.inputs);
   const page = await withSectionRenderer((render) =>
-    renderShopPage(inputs, query.path, theme.build, livePage(deps, query, snapshot.assets.renders, render)),
+    renderShopPage(inputs, query.path, theme.build, livePage(deps, query, snapshot.assets, render)),
   );
   const drawn = { shop: query.shop, build: query.build, row: page.row, content: page.file.content };
   await recordDrawnPage(deps.store, drawn);

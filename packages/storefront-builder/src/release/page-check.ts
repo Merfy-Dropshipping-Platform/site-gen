@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
 // Проверка страниц без браузера (design.md блока 10, П10-3 Б): главная магазина отвечает 200; в теге конфига (блок 3)
-// — новая версия темы; CSS токенов (блок 1) не пустой; каждый файл того же адреса, на который ссылаются <link href>,
-// <script src> и import map ядра (блок 7), отвечает 200. Ловит «главная ссылается на файл стилей, которого нет в
-// хранилище». Раздача держит указатель в кэше секунду (блок 5): главную спрашиваем до attempts раз.
+// — новая версия темы; CSS токенов (блок 1) не пустой; каждый файл того же адреса, на который ссылаются <link href> и
+// <script src> (в том числе бандл страницы _merfy/b/<sha256>.js), отвечает 200. Ловит «главная ссылается на файл
+// стилей, которого нет в хранилище». Раздача держит указатель в кэше секунду (блок 5): главную спрашиваем до attempts
+// раз.
 
 export interface PageCheckDeps {
   fetch: (url: string) => Promise<Response>;
@@ -24,10 +25,8 @@ export interface PageCheck {
 
 const CONFIG = /<script type="application\/json" id="merfy-config">([\s\S]*?)<\/script>/;
 const TOKENS = /<style id="merfy-tokens">([\s\S]*?)<\/style>/;
-const IMPORT_MAP = /<script type="importmap"[^>]*>([\s\S]*?)<\/script>/;
 const LINKED = /<(?:link|script)\b[^>]*?\b(?:href|src)="([^"]+)"/g;
 const configSchema = z.object({ theme: z.object({ version: z.string() }) });
-const importMapSchema = z.object({ imports: z.record(z.string(), z.string()) });
 
 type Home = { status: number; html: string };
 
@@ -66,14 +65,11 @@ async function homeOf(deps: PageCheckDeps, url: string, expected: PageExpectatio
 const isStale = (home: Home, expected: PageExpectation): boolean =>
   home.status === 200 && expected.version !== null && versionIn(home.html) !== expected.version;
 
-// Адреса файлов того же магазина: из ссылок и import map. Чужие адреса и data: не проверяем.
+// Адреса файлов того же магазина из <link href> и <script src>. Чужие адреса и data: не проверяем.
 function linkedPaths(html: string, url: string): string[] {
   const origin = new URL(url).origin;
-  const fromLinks = [...html.matchAll(LINKED)].map((match) => match[1]);
-  const map = importMapSchema.safeParse(jsonIn(html, IMPORT_MAP));
-  const fromMap = map.success ? Object.values(map.data.imports) : [];
-  const own = [...fromLinks, ...fromMap]
-    .map((link) => new URL(link, `${url}/`))
+  const own = [...html.matchAll(LINKED)]
+    .map((match) => new URL(match[1], `${url}/`))
     .filter((link) => link.origin === origin);
   return [...new Set(own.map((link) => link.pathname))];
 }

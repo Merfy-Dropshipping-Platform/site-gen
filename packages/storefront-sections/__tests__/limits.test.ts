@@ -11,7 +11,10 @@ const string = (id: string, extra: Partial<RuleField> = {}): RuleField => ({
 const select = (id: string, labels: string[]): RuleField => ({
   id,
   label: id,
-  setting: { kind: 'select', options: labels.map((label, index) => ({ value: String.fromCharCode(97 + index), label })) },
+  setting: {
+    kind: 'select',
+    options: labels.map((label, index) => ({ value: String.fromCharCode(97 + index), label })),
+  },
 });
 const many = (count: number, prefix: string): RuleField[] =>
   Array.from({ length: count }, (_, index) => string(`${prefix}-${index + 1}`));
@@ -75,7 +78,11 @@ describe('лимиты полей секции', () => {
   });
 
   it('вариантов 11 и 1 — проблема, 10 — нет', () => {
-    const fields = [select('height', variants(10)), select('aspect-ratio', variants(11)), select('text-size', variants(1))];
+    const fields = [
+      select('height', variants(10)),
+      select('aspect-ratio', variants(11)),
+      select('text-size', variants(1)),
+    ];
     expect(limitIssues(sectionOf(fields))).toEqual([
       {
         code: 'settings-limit',

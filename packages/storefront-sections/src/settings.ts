@@ -40,7 +40,10 @@ const EMPTY_VALUES: Readonly<Partial<Record<SectionSettingSpec['kind'], SettingV
 
 export const emptySettings = (settings: readonly SectionField[]): Record<string, SettingValue> =>
   Object.fromEntries(
-    settings.map((field): [string, SettingValue] => [field.id, EMPTY_VALUES[field.setting.kind] ?? field.setting.default]),
+    settings.map((field): [string, SettingValue] => [
+      field.id,
+      EMPTY_VALUES[field.setting.kind] ?? field.setting.default,
+    ]),
   );
 
 export interface ResolvedSettings {

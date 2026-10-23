@@ -65,7 +65,10 @@ describe('имя поля — по словарю', () => {
       'Полей выбора товаров, товара, коллекции и публикаций у секций пока нет: они появятся вместе с данными магазина в секциях',
     ],
   ])('%s — отказ с подсказкой', (id, refusal) => {
-    expect(nameIssue(id, 'string')).toEqual({ code: 'setting-name-unknown', message: `поле \`${id}\`: ${UNKNOWN}. ${refusal}` });
+    expect(nameIssue(id, 'string')).toEqual({
+      code: 'setting-name-unknown',
+      message: `поле \`${id}\`: ${UNKNOWN}. ${refusal}`,
+    });
   });
 
   it.each([
@@ -106,8 +109,18 @@ describe('имя поля — по словарю', () => {
   it('nameIssues: место — значение id, у вида — setting.kind; поля блока — со своим путём', () => {
     const section: RuleSection = {
       lists: [
-        { of: 'section', path: ['settings'], owner: 'секции', fields: [field('heading', 'string'), field('coatColor', 'select')] },
-        { of: 'block', path: ['blocks', 'question', 'settings'], owner: 'блока `question`', fields: [field('heading', 'richtext')] },
+        {
+          of: 'section',
+          path: ['settings'],
+          owner: 'секции',
+          fields: [field('heading', 'string'), field('coatColor', 'select')],
+        },
+        {
+          of: 'block',
+          path: ['blocks', 'question', 'settings'],
+          owner: 'блока `question`',
+          fields: [field('heading', 'richtext')],
+        },
       ],
       blocks: [{ type: 'question', title: 'Вопрос', limit: 20 }],
     };
@@ -120,7 +133,8 @@ describe('имя поля — по словарю', () => {
       {
         code: 'setting-name-kind',
         path: ['blocks', 'question', 'settings', 0, 'setting', 'kind'],
-        message: 'поле `heading`: в словаре это `string`, здесь `richtext`; имена с видом `richtext` — `text`, `answer`',
+        message:
+          'поле `heading`: в словаре это `string`, здесь `richtext`; имена с видом `richtext` — `text`, `answer`',
       },
     ]);
   });

@@ -93,7 +93,12 @@ function blocksProblems(section: RuleSection): FieldIssue[] {
   }
   const longTitles = blocks
     .filter((block) => block.title.length > SETTINGS_LIMITS.labelMax)
-    .map((block) => issue(['blocks', block.type, 'title'], `блок \`${block.type}\`: \`title\` длиннее ${SETTINGS_LIMITS.labelMax} знаков`));
+    .map((block) =>
+      issue(
+        ['blocks', block.type, 'title'],
+        `блок \`${block.type}\`: \`title\` длиннее ${SETTINGS_LIMITS.labelMax} знаков`,
+      ),
+    );
   return [...problems, ...longTitles];
 }
 

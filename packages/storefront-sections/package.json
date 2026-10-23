@@ -24,6 +24,7 @@
   "dependencies": {
     "@astrojs/compiler-binding-wasm32-wasi": "0.5.2",
     "@astrojs/compiler-rs": "0.5.2",
+    "@merfy/shell": "workspace:*",
     "@merfy/storefront-build": "workspace:*",
     "@merfy/storefront-storage": "workspace:*",
     "@merfy/tokens": "workspace:*",

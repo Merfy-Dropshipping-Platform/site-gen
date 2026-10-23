@@ -31,7 +31,9 @@ function groupsOf(names: NamesDictionary): readonly string[] {
 }
 
 function refusalsOf(names: NamesDictionary): readonly string[] {
-  return names.refusals.map((refusal) => `| ${refusal.names.map((name) => `\`${name}\``).join(', ')} | ${refusal.refusal} |`);
+  return names.refusals.map(
+    (refusal) => `| ${refusal.names.map((name) => `\`${name}\``).join(', ')} | ${refusal.refusal} |`,
+  );
 }
 
 function sharedOf(names: NamesDictionary): readonly string[] {

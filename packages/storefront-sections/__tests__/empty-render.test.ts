@@ -9,7 +9,11 @@ const FIELDS: SettingField[] = [
   { id: 'heading', label: 'Заголовок', setting: { kind: 'string', default: 'Шарфы' } },
   { id: 'text', label: 'Текст', setting: { kind: 'text', default: 'Тёплые' } },
   { id: 'button-link', label: 'Ссылка кнопки', setting: { kind: 'url', default: '/catalog' } },
-  { id: 'image', label: 'Картинка', setting: { kind: 'image', default: 'https://cdn.merfy.ru/scarf.webp', maxBytes: 512000 } },
+  {
+    id: 'image',
+    label: 'Картинка',
+    setting: { kind: 'image', default: 'https://cdn.merfy.ru/scarf.webp', maxBytes: 512000 },
+  },
   {
     id: 'heading-size',
     label: 'Размер заголовка',
@@ -22,7 +26,11 @@ const FIELDS: SettingField[] = [
       ],
     },
   },
-  { id: 'open-first', label: 'Первый открыт', setting: { kind: 'toggle', default: true, labels: { on: 'Да', off: 'Нет' } } },
+  {
+    id: 'open-first',
+    label: 'Первый открыт',
+    setting: { kind: 'toggle', default: true, labels: { on: 'Да', off: 'Нет' } },
+  },
 ];
 
 const moduleOf = async (body: string): Promise<string> => {
@@ -58,8 +66,12 @@ describe('пробный рендер «всё пустое»', () => {
   });
 
   it('шаблон падает на пустом — render-empty-failed с текстом ошибки', async () => {
-    const problems = await emptyTrialRender(await moduleOf('<p>{settings.heading.at(0).toUpperCase()}</p>'), { heading: '' });
-    expect(problems.map((item) => [item.code, item.file, item.line])).toEqual([['render-empty-failed', 'template.astro', null]]);
+    const problems = await emptyTrialRender(await moduleOf('<p>{settings.heading.at(0).toUpperCase()}</p>'), {
+      heading: '',
+    });
+    expect(problems.map((item) => [item.code, item.file, item.line])).toEqual([
+      ['render-empty-failed', 'template.astro', null],
+    ]);
     expect(problems[0]?.message).toMatch(/^шаблон не отрисовался с пустыми значениями настроек: .*toUpperCase/);
   }, 30_000);
 

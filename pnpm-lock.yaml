@@ -418,6 +418,9 @@ importers:
       '@astrojs/compiler-rs':
         specifier: 0.5.2
         version: 0.5.2
+      '@merfy/shell':
+        specifier: workspace:*
+        version: link:../storefront-shell
       '@merfy/storefront-build':
         specifier: workspace:*
         version: link:../storefront-build

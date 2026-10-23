@@ -18,7 +18,9 @@ const manifestOf = (settings: object[], extra: object = {}) => ({
   settings,
   ...extra,
 });
-const COAT = manifestOf([{ id: 'coatColor', label: 'Цвет', setting: { kind: 'select', default: 'medium', options: SIZE_OPTIONS } }]);
+const COAT = manifestOf([
+  { id: 'coatColor', label: 'Цвет', setting: { kind: 'select', default: 'medium', options: SIZE_OPTIONS } },
+]);
 const textOf = (raw: object): string => JSON.stringify(raw, null, 2);
 const linesOf = (raw: object): string[] =>
   fieldRuleProblems(sectionManifestSchema.parse(raw), textOf(raw)).map((item) => `${problemText(item)} [${item.code}]`);
@@ -45,14 +47,23 @@ describe('правила полей в section.json', () => {
   });
 
   it('условие на поле, которого нет, — место visibleWhen', () => {
-    const heading = { id: 'heading', label: 'Заголовок', visibleWhen: { setting: 'autoplay', equals: true }, setting: HEADING.setting };
+    const heading = {
+      id: 'heading',
+      label: 'Заголовок',
+      visibleWhen: { setting: 'autoplay', equals: true },
+      setting: HEADING.setting,
+    };
     expect(linesOf(manifestOf([heading]))).toEqual([
       'section.json:10:22 — поле `heading`: условие ссылается на поле `autoplay`, его нет среди полей секции [visible-when-invalid]',
     ]);
   });
 
   it('поля по словарю — проблем нет', () => {
-    const size = { id: 'heading-size', label: 'Размер заголовка', setting: { kind: 'select', default: 'medium', options: SIZE_OPTIONS } };
+    const size = {
+      id: 'heading-size',
+      label: 'Размер заголовка',
+      setting: { kind: 'select', default: 'medium', options: SIZE_OPTIONS },
+    };
     expect(linesOf(manifestOf([HEADING, size]))).toEqual([]);
   });
 
@@ -84,7 +95,10 @@ describe('правила полей в section.json', () => {
   it('prepareSection: правила полей и запрет в шаблоне — разом', async () => {
     const files = { 'section.json': textOf(COAT), 'template.astro': '<button onclick="x">Купить</button>' };
     const result = await prepareSection({ prefix: 'shop', files });
-    expect(result.ok ? [] : result.problems.map((item) => item.code)).toEqual(['setting-name-unknown', 'template-forbidden']);
+    expect(result.ok ? [] : result.problems.map((item) => item.code)).toEqual([
+      'setting-name-unknown',
+      'template-forbidden',
+    ]);
   });
 
   it('процесс проверки под правами — то же место и тот же текст', async () => {

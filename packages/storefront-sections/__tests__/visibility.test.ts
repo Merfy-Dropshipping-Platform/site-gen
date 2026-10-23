@@ -12,7 +12,9 @@ const field = (id: string, kind: string, visibleWhen?: When, values: string[] = 
 const sectionOf = (fields: RuleField[], blockFields?: RuleField[]): RuleSection => {
   const owner = 'блока `slide`';
   const block: FieldList[] =
-    blockFields === undefined ? [] : [{ of: 'block', path: ['blocks', 'slide', 'settings'], owner, fields: blockFields }];
+    blockFields === undefined
+      ? []
+      : [{ of: 'block', path: ['blocks', 'slide', 'settings'], owner, fields: blockFields }];
   return { lists: [{ of: 'section', path: ['settings'], owner: 'секции', fields }, ...block], blocks: [] };
 };
 const linesOf = (section: RuleSection): string[][] =>
@@ -43,7 +45,8 @@ describe('условия показа поля', () => {
       {
         code: 'visible-when-invalid',
         path: ['settings', 3, 'visibleWhen'],
-        message: 'поле `heading`: цепочка условий длиннее двух — `heading` → `aspect-ratio` → `content-position` → `autoplay`',
+        message:
+          'поле `heading`: цепочка условий длиннее двух — `heading` → `aspect-ratio` → `content-position` → `autoplay`',
       },
     ]);
   });
@@ -54,7 +57,10 @@ describe('условия показа поля', () => {
       field('menu-type', 'select', { setting: 'logo-position', equals: 'a' }, ['a', 'b']),
     ];
     expect(linesOf(sectionOf(fields))).toEqual([
-      ['settings.0.visibleWhen', 'поле `logo-position`: условия по кругу — `logo-position` → `menu-type` → `logo-position`'],
+      [
+        'settings.0.visibleWhen',
+        'поле `logo-position`: условия по кругу — `logo-position` → `menu-type` → `logo-position`',
+      ],
       ['settings.1.visibleWhen', 'поле `menu-type`: условия по кругу — `menu-type` → `logo-position` → `menu-type`'],
     ]);
   });
@@ -80,7 +86,10 @@ describe('условия показа поля', () => {
       ],
       ['settings.4.visibleWhen', 'поле `caption`: в условии `да`, у поля `autoplay` значения — `true` или `false`'],
       ['settings.6.visibleWhen', 'поле `label`: в условии `c`, у поля `height` значения — `a` или `b`'],
-      ['settings.8.visibleWhen', 'поле `question`: в условии `top`, у поля `align` значения — `left`, `center` или `right`'],
+      [
+        'settings.8.visibleWhen',
+        'поле `question`: в условии `top`, у поля `align` значения — `left`, `center` или `right`',
+      ],
     ]);
   });
 
@@ -93,7 +102,10 @@ describe('условия показа поля', () => {
   });
 
   it('поле блока ссылается только на поля своего типа блока', () => {
-    const section = sectionOf([field('autoplay', 'toggle')], [field('heading', 'string', { setting: 'autoplay', equals: true })]);
+    const section = sectionOf(
+      [field('autoplay', 'toggle')],
+      [field('heading', 'string', { setting: 'autoplay', equals: true })],
+    );
     expect(linesOf(section)).toEqual([
       [
         'blocks.slide.settings.0.visibleWhen',

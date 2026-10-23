@@ -12,11 +12,19 @@ import { parseWith } from './parse';
 export const SHELL_DIST = 'packages/storefront-shell/dist';
 const MISSING_TEXT = 'нет сборки ядра: pnpm --filter @merfy/shell build';
 
+// Поведения и анимации SDK (блок 6): файлы dist/behaviors по имени — тексты — и имена поведений каталога (без part,
+// reveal, animate). Сборка страницы склеивает нужные из них в бандл (bundle.ts).
+export interface ShellKit {
+  files: ReadonlyMap<string, string>;
+  behaviors: readonly string[];
+}
+
 export interface ShellBuild {
   version: string;
-  hash: string;
+  hash: string; // sha256 core.js и всех файлов поведений: другой код — другой ключ сборки магазина (Р6б-4)
   parts: string[];
   code: string; // текст dist/core.js
+  kit?: ShellKit; // нет — страница без поведений и анимаций (подставные сборки тестов)
 }
 
 const coreJsonSchema = z.object({

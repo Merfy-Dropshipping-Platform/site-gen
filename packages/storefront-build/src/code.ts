@@ -2,6 +2,7 @@ import { bundlePage, type BundleSection, type PageBundle } from './bundle';
 import { sha256 } from './canonical';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs, CodeSection, ShellInput } from './inputs';
+import { pageListsOf } from './routes';
 import type { PageRender, PlacedSection } from './sections-render';
 import type { ShellBuild } from './shell';
 
@@ -31,7 +32,10 @@ const hexOf = (hash: string): string => hash.slice(HASH_PREFIX.length);
 // Секции страницы: места мерчанта по порядку, потом глобальные скрипты; имя — один раз, хоть секция и стоит дважды.
 function pageCode(inputs: BuildInputs, pageId: string): CodeSection[] {
   const byName = new Map(inputs.code.sections.map((section): [string, CodeSection] => [section.name, section]));
-  const placed = (inputs.code.pages[pageId] ?? []).map((instance) => instance.section);
+  // Шапка, страница и подвал (часть 4 блока 1): код секций всех трёх списков — и в стилях, и в бандле страницы.
+  const placed = pageListsOf(pageId).flatMap((list) =>
+    (inputs.code.pages[list] ?? []).map((instance) => instance.section),
+  );
   const names = new Set([...placed, ...inputs.code.globals]);
   return [...names].flatMap((name) => byName.get(name) ?? []);
 }

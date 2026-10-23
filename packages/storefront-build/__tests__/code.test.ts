@@ -7,7 +7,8 @@ import { ASSETS, BADGE, CODE, MODULES, NO_SCRIPT, SHELL, SHELL_BUILD, SRC, codeI
 
 // Код секций в странице и в сборке (design.md блока 7, п. 12, 16, 19).
 const DIR = shellDir(SHELL.hash);
-const BASE_CSS = 'merfy-section{display:block}merfy-section[hidden]{display:none}';
+// База обёртки — в base.css словаря (блок 4 «Секций и SDK», Р4-13); в стилях секций её больше нет.
+const BASE_CSS = '';
 const HEAD_ORDER = [
   '<style id="merfy-sections">',
   'id="merfy-modules"',

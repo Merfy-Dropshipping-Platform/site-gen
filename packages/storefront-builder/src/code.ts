@@ -160,6 +160,8 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   // Часть 4: флаги section.json — только если объявлены, иначе входы и ключ прежние.
   ...(current.manifest.removable === undefined ? {} : { removable: current.manifest.removable }),
   ...(current.manifest.uses === undefined ? {} : { uses: current.manifest.uses }),
+  // Свои токены секции (блок 4, Р4-10) — только если объявлены в section.json.
+  ...(current.manifest.tokens === undefined ? {} : { tokens: current.manifest.tokens }),
 });
 
 // Файл скрипта — текст готового модуля из строки реестра: те же байты хранятся в storefront/blobs (приём, задача 10).

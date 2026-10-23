@@ -4632,6 +4632,13 @@
     "newPage": {
       "type": "string",
       "minLength": 1
+    },
+    "tokens": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
     }
   },
   "required": [

@@ -74,3 +74,19 @@
   `shared` в панели темы — запусти `pnpm generate`.
 - `pnpm merfy section names` — словарь текстом `NAMES.md`.
 - Секция с ошибкой на каждое правило — `fixtures/broken/fields-broken`.
+
+## Стили секции (блок 4 «Секций и SDK»)
+
+Своего CSS у секции нет: только классы Tailwind из словаря `@merfy/tokens` и свои токены секции.
+
+- **Шаг «Классы»** при сохранении (`src/classes.ts`): классы атрибутов `class` и `class:list` — строки, обе ветки
+  `?:`, ключи объектов; в шаблонной строке — значения полей `select` и `toggle`. Ошибки: `class-unknown` (Tailwind со
+  словарём не знает класс; в подсказке — семейство словаря и близкие имена), `class-arbitrary` (`[…]`, `(…)`, `!`;
+  варианты `data-[…]` и `aria-[…]` можно), `class-dark` (тёмный вид — схема цвета), `class-theme-token` (свой токен темы
+  — только у одной темы), `class-dynamic` (класс из поля без конечного набора значений).
+- **Токены секции** — `section.json` → `tokens`: та же запись, что в словаре; имя с меткой `custom` (`custom-swatch`,
+  `radius-custom-swatch`), до 10, значение — `default` или `alias` от токена словаря того же вида. Ошибка —
+  `token-invalid`. Класс токена — как у словаря: `bg-custom-swatch`, `rounded-custom-swatch`.
+- **Значения на странице** — `@layer base { merfy-section[data-section="<имя>"] { --<токен>: … } }` в CSS токенов
+  магазина; правка мерчанта — `revision.tokens.sections`, одно значение на магазин.
+- **База страницы** — `@merfy/tokens/base.css` (preflight и база словаря в `@layer base`), первым стилем головы.

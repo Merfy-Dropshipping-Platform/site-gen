@@ -1,0 +1,10 @@
+{
+  "sdk": 1,
+  "name": "classes-broken",
+  "kind": "section",
+  "title": "Сломанные классы",
+  "settings": [{ "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Шарфы" } }],
+  "tokens": {
+    "gold": { "kind": "color", "about": "Золото", "default": "#c9a227" }
+  }
+}

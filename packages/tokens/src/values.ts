@@ -3,7 +3,16 @@ import { dictionaryNames, isBaseToken, platformDictionary, tokenDef, valueContex
 import { RUSSIAN_ERRORS, TokenError, shapeProblems, throwIfProblems } from './errors';
 import { extendDictionary } from './extend';
 import { KINDS, type KindScope } from './kinds';
-import type { Dictionary, ParsedTheme, ThemeTokens, TokenEdits, TokenSet, TokenValue } from './types';
+import type { SectionEdits, SectionTokenSet } from './section-tokens';
+import type {
+  Dictionary,
+  ParsedTheme,
+  ThemeTokens,
+  TokenDef,
+  TokenEdits,
+  TokenSet,
+  TokenValue,
+} from './types';
 
 // Значения темы (design.md 8.2) и правки мерчанта (8.3). Форму проверяет zod, значение — схема вида из kinds.ts:
 // поэтому текст после «нужно» в ошибке тот же, что в карточке токена.
@@ -14,8 +23,13 @@ const rawSetShape = z.record(z.string(), z.unknown());
 const themeShape = z
   .object({ extend: z.unknown().optional(), root: rawSetShape, schemes: z.record(z.string(), rawSetShape) })
   .strict();
+// sections — правки токенов секций (блок 4 «Секций и SDK», Р4-11): их читает readSectionEdits, в TokenEdits их нет.
 const editsShape = z
-  .object({ root: rawSetShape.optional(), schemes: z.record(z.string(), rawSetShape).optional() })
+  .object({
+    root: rawSetShape.optional(),
+    schemes: z.record(z.string(), rawSetShape).optional(),
+    sections: z.record(z.string(), rawSetShape).optional(),
+  })
   .strict();
 
 type RawSet = z.infer<typeof rawSetShape>;
@@ -130,4 +144,51 @@ export function parseTokenEdits(theme: ParsedTheme, raw: unknown): TokenEdits {
   const reading = readTokenEdits(theme.dictionary, theme.tokens, raw);
   throwIfProblems('edits-invalid', reading.problems);
   return reading.edits;
+}
+
+// Значение одного токена секции: та же проверка по виду, что у правки корня, место ошибки — имя токена секции.
+function sectionTokenEdit(
+  tokens: Readonly<Record<string, TokenDef>>,
+  section: string,
+  name: string,
+  raw: unknown,
+): { ok: true; value: TokenValue } | { ok: false; problem: string } {
+  const def = Object.hasOwn(tokens, name) ? tokens[name] : undefined;
+  if (def === undefined) return { ok: false, problem: '' };
+  const context = { values: def.values ?? [], schemeIds: [] };
+  const parsed = KINDS[def.kind].schema(context).safeParse(raw);
+  if (parsed.success) return { ok: true, value: parsed.data };
+  return { ok: false, problem: `sections.${section}.${name}: нужно ${KINDS[def.kind].limits(context)}` };
+}
+
+function sectionEditSet(sections: readonly SectionTokenSet[], section: string, raw: Readonly<Record<string, unknown>>) {
+  const known = sections.find((item) => item.section === section);
+  const edits: TokenSet = {};
+  const problems: string[] = [];
+  if (known === undefined) return { edits, problems };
+  for (const [name, value] of Object.entries(raw)) {
+    const reading = sectionTokenEdit(known.tokens, section, name, value);
+    if (reading.ok) edits[name] = reading.value;
+    else if (reading.problem !== '') problems.push(reading.problem);
+  }
+  return { edits, problems };
+}
+
+// Правки токенов секций мерчанта (revision.tokens.sections, Р4-11): только секции из sections и их токены; чужое —
+// молча мимо; неверное значение — в problems, правка отброшена. raw — значение revision.tokens целиком.
+export function readSectionEdits(
+  sections: readonly SectionTokenSet[],
+  raw: unknown,
+): { edits: SectionEdits; problems: string[] } {
+  const file = editsShape.safeParse(raw, RUSSIAN_ERRORS);
+  if (!file.success) return { edits: {}, problems: shapeProblems(file.error, 'sections') };
+  const readings = Object.entries(file.data.sections ?? {}).map(([section, set]) => ({
+    section,
+    reading: sectionEditSet(sections, section, set),
+  }));
+  const edits = Object.fromEntries(
+    readings.filter((item) => Object.keys(item.reading.edits).length > 0).map((item) => [item.section, item.reading.edits]),
+  );
+  const problems = readings.flatMap((item) => item.reading.problems);
+  return { edits, problems };
 }

@@ -121,8 +121,8 @@ const EXTENSION_OWN = [
 describe('Tailwind по словарю платформы', () => {
   const css = tailwindCss(platformDictionary);
 
-  it('файл — 101 строка', () => {
-    expect(css.trimEnd().split('\n')).toHaveLength(101);
+  it('файл — 104 строки', () => {
+    expect(css.trimEnd().split('\n')).toHaveLength(104);
   });
 
   it.each(OWN)('класс словаря собирается: %s', async (cls) => {

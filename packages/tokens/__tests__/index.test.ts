@@ -5,6 +5,7 @@ describe('API пакета (design.md, раздел 9)', () => {
   it('отдаёт ровно эти имена', () => {
     expect(Object.keys(api).sort()).toEqual([
       'NO_MIGRATIONS',
+      'SECTION_TOKENS_MAX',
       'TokenError',
       'checkEdits',
       'choiceAttributes',
@@ -38,6 +39,8 @@ describe('API пакета (design.md, раздел 9)', () => {
       'parseTokenEdits',
       'parseTokenMigrations',
       'platformDictionary',
+      'readSectionEdits',
+      'readSectionTokens',
       'readSettingsEdits',
       'readTokenEdits',
       'resolveSettings',
@@ -45,6 +48,8 @@ describe('API пакета (design.md, раздел 9)', () => {
       'runTokensTool',
       'searchCatalog',
       'searchTokens',
+      'sectionTailwindTheme',
+      'sectionTokensCss',
       'settingFieldShape',
       'settingFields',
       'settingProblem',

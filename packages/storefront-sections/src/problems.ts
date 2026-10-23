@@ -16,6 +16,13 @@ export const PROBLEM_CODES = [
   'template-forbidden',
   'template-too-deep',
   'template-compile',
+  // Шаг «Классы» и свои токены секции (блок 4 «Секций и SDK», design.md 4.1 и 4.4).
+  'class-unknown',
+  'class-arbitrary',
+  'class-dark',
+  'class-theme-token',
+  'class-dynamic',
+  'token-invalid',
   'render-failed',
   'script-invalid',
   'import-forbidden',

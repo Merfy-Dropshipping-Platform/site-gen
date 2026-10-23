@@ -3,6 +3,11 @@
   "v": 1,
   "versions": [
     {
+      "version": "0.4.1",
+      "date": "2026-10-23",
+      "lines": [{ "kind": "look", "text": "База страницы — первым стилем головы: preflight Tailwind и база словаря в слое base (блок 4 «Секций и SDK», часть 4а)", "tokens": [], "search": true }]
+    },
+    {
       "version": "0.4.0",
       "date": "2026-10-23",
       "lines": [

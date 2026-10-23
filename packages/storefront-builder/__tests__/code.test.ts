@@ -5,7 +5,7 @@ import { EXTENSIONS_QUEUE, codeOf, enabledExtensions, instanceSchema, type CodeC
 import type { LogFields } from '../src/log';
 
 // Код магазина из строк реестра и ответ сервиса extensions — без базы и брокера.
-const SHELL = { version: '0.1.0', hash: sha256('ядро'), preload: ['shell.js'], files: [] };
+const SHELL = { version: '0.1.0', hash: sha256('ядро'), parts: ['auth', 'cart', 'favorites'], code: '' };
 const SHOP = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
 const HEADING = { id: 'heading', label: 'Заголовок', setting: { kind: 'string', default: 'Тёплые шарфы из кашемира' } };
 
@@ -76,7 +76,7 @@ describe('codeOf', () => {
     );
     expect([...shop.assets.renders.keys()]).toEqual([HERO.renderHash, BADGE.renderHash]);
     expect([...shop.assets.modules.keys()]).toEqual([GEO.scriptHash, BADGE.scriptHash]);
-    expect(shop.shell).toEqual({ version: '0.1.0', hash: SHELL.hash, preload: ['shell.js'] });
+    expect(shop.shell).toEqual({ version: '0.1.0', hash: SHELL.hash, parts: ['auth', 'cart', 'favorites'] });
   });
 
   it('неверная правка — умолчание и строка журнала section-settings-invalid', () => {
@@ -97,11 +97,11 @@ describe('codeOf', () => {
     expect(logged.map(([event]) => event)).toEqual(['section-old-format']);
   });
 
-  it('секция не стоит ни на одной странице — её нет в коде; скриптов нет — ядра нет', () => {
+  it('секция не стоит ни на одной странице — её нет в коде; скриптов нет — ядро во входах есть (аналитика)', () => {
     const { context } = contextOf();
     const shop = codeOf([HERO, BADGE], { home: [instance('hero-1', 'shop:hero')] }, context);
     expect(shop.code.sections.map((section) => section.name)).toEqual(['shop:hero']);
-    expect(shop.shell).toBeNull();
+    expect(shop.shell).toEqual({ version: '0.1.0', hash: SHELL.hash, parts: ['auth', 'cart', 'favorites'] });
     expect(shop.assets.modules.size).toBe(0);
   });
 

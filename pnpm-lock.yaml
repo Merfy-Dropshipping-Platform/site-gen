@@ -265,6 +265,9 @@ importers:
       '@merfy/tokens':
         specifier: workspace:*
         version: link:../tokens
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
       tailwindcss:
         specifier: 4.3.2
         version: 4.3.2

@@ -1,6 +1,6 @@
-// @merfy/shell/core — ядро секций в браузере (design.md блока 5, часть 5а). Бандл страницы (часть 5б) импортирует
-// отсюда start и части SDK; код секции — defineSection и типы. Главный вход @merfy/shell (каркас блока 7) до части 5б
-// не меняется.
+// @merfy/shell и @merfy/shell/core — ядро секций в браузере (design.md блока 5). Бандл страницы (часть 5б) импортирует
+// отсюда start и части SDK, в том числе analytics — её получает каждая страница опубликованного сайта; код секции —
+// defineSection и типы.
 export { defineSection } from './define';
 export { SECTION_FAILURE_EVENT } from './events';
 export { start, type CoreEnv, type StartedCore } from './start';
@@ -12,6 +12,8 @@ export type { AnimateOptions, Animation, Bezier, EasingName, KeyframeValue, Keyf
 // Блок 9: подписка на рассылку, типы событий и денег. Каталоги событий и действий — @merfy/shell/events и
 // @merfy/shell/actions.
 export { newsletter } from './parts/newsletter';
+// Часть 5б: аналитика магазина — часть SDK без API для секций (src/core/analytics/).
+export { analytics } from './analytics/part';
 export type { ConsentState, Money, NewsletterModule, NoticeLevel } from './types';
 export {
   EMPTY_INPUT,

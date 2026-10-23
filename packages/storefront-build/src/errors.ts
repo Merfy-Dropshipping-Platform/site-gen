@@ -19,7 +19,9 @@ export type StorefrontBuildErrorCode =
   | 'shell-mismatch'
   | 'code-missing'
   // Журнал версий темы (блок 10) не прошёл схему.
-  | 'changelog-invalid';
+  | 'changelog-invalid'
+  // Бандл страницы (блок 5 «Секций и SDK», часть 5б): esbuild упал не на модуле секции страницы.
+  | 'bundle-failed';
 
 type ErrorDetails = { path?: string; cause?: unknown };
 

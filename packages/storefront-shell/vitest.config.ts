@@ -1,22 +1,19 @@
 import { defineConfig } from 'vitest/config';
 
-// Тесты ядра витрины (design.md блока 7). unit — jsdom: реестр, элемент <merfy-section>, загрузчик, части ядра,
-// превью; файлы сборки ядра помечены «@vitest-environment node»: esbuild в jsdom не работает. browser — настоящий
-// Chromium (Playwright) по собранному ядру: import map, ошибки модулей, повтор загрузки (`pnpm test:browser`).
+// Тесты ядра секций (design.md блока 5 «Секций и SDK»). unit — jsdom: сторы, части SDK, ctx, аналитика; файлы сборки
+// ядра помечены «@vitest-environment node»: esbuild в jsdom не работает. browser — настоящий Chromium (Playwright):
+// ядро секций, поведения, аналитика в бандле страницы (`pnpm test:browser`).
 // Порог покрытия — от 80 % (решение владельца 23.09), его считает unit (`pnpm test:coverage`).
 export default defineConfig({
   test: {
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.ts', 'build/**/*.ts', 'sections/analytics/**/*.ts'],
+      include: ['src/**/*.ts', 'build/**/*.ts'],
       // Поведения и появления (блок 6) работают с вёрсткой и WAAPI — их покрывают тесты Chromium (проект browser).
       exclude: [
-        'src/browser.ts',
-        'src/index.ts',
         'src/core/index.ts',
         'src/core/behaviors/index.ts',
         'src/core/behaviors/{accordion,dialog,carousel,tabs,nav-menu,quantity,card-photos,sticky-header,video,reveal,motion}.ts',
-        'sections/analytics/script.ts',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },

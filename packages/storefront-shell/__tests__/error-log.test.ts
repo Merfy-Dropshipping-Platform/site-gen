@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   FLUSH_DELAY_MS,
   MAX_MESSAGE_LENGTH,
@@ -8,8 +8,6 @@ import {
   type ErrorLogDeps,
 } from '../src/error-log';
 import { SECTION_ERROR_EVENT, type SectionFailure } from '../src/report';
-import { startShell, type Shell } from '../src/start';
-import { watchFailures } from './support';
 
 const HASH = 'a'.repeat(64);
 const SHOP_ID = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
@@ -150,67 +148,5 @@ describe('канал ошибок', () => {
     channel.page.hide();
     expect(channel.timers).toEqual([]);
     expect(channel.sent).toEqual([]);
-  });
-});
-
-describe('канал ошибок в ядре', () => {
-  const MODULE = { kind: 'section', name: 'nova:scarf-colors', src: `/_merfy/m/${HASH}.js` };
-  const config = (mode: string) => ({
-    v: 1,
-    mode,
-    shop: { id: SHOP_ID, name: 'Шарфы', url: 'https://scarves.example' },
-    currency: 'RUB',
-    locale: 'ru-RU',
-    api: { url: 'https://gateway.dev.merfy.ru/api' },
-    theme: { id: 'nova', version: '0.0.4' },
-    page: { id: 'home', path: '/' },
-  });
-  const tag = (id: string, value: unknown): string =>
-    `<script type="application/json" id="${id}">${JSON.stringify(value)}</script>`;
-  const beacon = vi.fn<(url: string, body: string) => boolean>(() => true);
-  let watch: ReturnType<typeof watchFailures>;
-  let shell: Shell | undefined;
-
-  beforeEach(() => {
-    watch = watchFailures();
-    Object.defineProperty(window.navigator, 'sendBeacon', { configurable: true, value: beacon });
-    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
-  });
-
-  afterEach(() => {
-    shell?.stop();
-    shell = undefined;
-    watch.stop();
-    beacon.mockClear();
-    Reflect.deleteProperty(window.navigator, 'sendBeacon');
-    Reflect.deleteProperty(document, 'visibilityState');
-    document.head.replaceChildren();
-    document.body.replaceChildren();
-  });
-
-  async function startWith(mode: string): Promise<void> {
-    document.head.innerHTML = tag('merfy-config', config(mode)) + tag('merfy-modules', { v: 1, modules: [MODULE] });
-    shell = startShell({ window, importModule: () => Promise.reject(new TypeError('Failed to fetch')) });
-    await shell.ready;
-    document.dispatchEvent(new Event('visibilitychange'));
-  }
-
-  it('витрина (live): модуль не загрузился — запись уходит в шлюз', async () => {
-    await startWith('live');
-    expect(watch.failures).toHaveLength(1);
-    expect(beacon).toHaveBeenCalledTimes(1);
-    const [url, body] = beacon.mock.calls[0] ?? [];
-    expect(url).toBe(ENDPOINT);
-    expect(JSON.parse(body ?? '')).toEqual({
-      v: 1,
-      shopId: SHOP_ID,
-      errors: [{ section: 'nova:scarf-colors', script: HASH, stage: 'load', message: 'Failed to fetch' }],
-    });
-  });
-
-  it('превью — ядро ничего не шлёт', async () => {
-    await startWith('preview');
-    expect(watch.failures).toHaveLength(1);
-    expect(beacon).not.toHaveBeenCalled();
   });
 });

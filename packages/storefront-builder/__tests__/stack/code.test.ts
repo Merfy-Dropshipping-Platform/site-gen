@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { buildKey, parseBuildInputs, shellDir } from '@merfy/storefront-build';
+import { buildKey, parseBuildInputs } from '@merfy/storefront-build';
 import { acceptSection, publishDrafts, readSectionFolder, type Door } from '@merfy/storefront-sections';
 import { readPointer } from '@merfy/storefront-storage';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -10,11 +10,12 @@ import { TEST_SHELL, extensions, liveFiles, liveHome, logged, openHarness, type 
 import { startFakeProducts, type FakeProducts } from './fake-product';
 import { insertRevision, insertSite, type SiteFields } from './stack';
 
-// Код магазина на стенде (design.md блока 7, п. 15, 19, 24): свои секции магазина и секции расширений проходят приём
-// блока 7, места — в ревизии магазина, снимок отдаёт видимые, сборка выкладывает ядро и скрипты, публикация выносит
-// черновик своей секции. Секций платформы и тем нет (блок 1 «Секций и SDK», пп. 1, 2).
+// Код магазина на стенде (design.md блока 7, п. 15, 19, 24): свои секции магазина и секции расширений проходят
+// проверку при сохранении, места — в ревизии магазина, снимок отдаёт видимые, сборка выкладывает страницы с бандлом
+// страницы (блок 5 «Секций и SDK», часть 5б), публикация выносит черновик своей секции. Секций платформы и тем нет
+// (блок 1 «Секций и SDK», пп. 1, 2).
 const SECTIONS = fileURLToPath(new URL('../../../storefront-sections/fixtures/sections', import.meta.url));
-// Исходники наших секций — «Значок корзины» и «Аналитика»: магазин сохраняет их как свои (пп. 1, 27).
+// Исходник нашей секции — «Значок корзины»: магазин сохраняет её как свою (пп. 1, 27).
 const OUR_SECTIONS = fileURLToPath(new URL('../../../storefront-shell/sections', import.meta.url));
 const instance = (id: string, section: string, settings: Record<string, string> = {}) => ({ id, section, settings });
 const PLACEMENT = {
@@ -44,10 +45,9 @@ async function accept(door: Door, folder: string): Promise<void> {
     throw new Error(`${folder}: ${result.problems.map((item) => item.message).join('; ')}`);
 }
 
-// Наши секции магазин сохранил и опубликовал, как свои (пп. 1, 27).
+// Нашу секцию магазин сохранил и опубликовал, как свою (пп. 1, 27).
 async function saveOurSections(siteId: string): Promise<void> {
-  for (const name of ['cart-badge', 'analytics'])
-    await accept({ author: 'shop', shopId: siteId }, `${OUR_SECTIONS}/${name}`);
+  await accept({ author: 'shop', shopId: siteId }, `${OUR_SECTIONS}/cart-badge`);
   await publishDrafts(harness.db, siteId);
 }
 
@@ -96,21 +96,16 @@ describe('код магазина', () => {
         { id: 'list-1', section: 'reviews:list', settings: {} },
       ],
     });
-    expect(all.code.globals).toEqual(['geo:locate', 'shop:analytics']);
-    expect(all.code.sections.map((section) => section.name)).toEqual([
-      'geo:locate',
-      'reviews:list',
-      'shop:analytics',
-      'shop:cart-badge',
-    ]);
-    expect(all.shell).toEqual({ version: TEST_SHELL.version, hash: TEST_SHELL.hash, preload: TEST_SHELL.preload });
+    expect(all.code.globals).toEqual(['geo:locate']);
+    expect(all.code.sections.map((section) => section.name)).toEqual(['geo:locate', 'reviews:list', 'shop:cart-badge']);
+    expect(all.shell).toEqual({ version: TEST_SHELL.version, hash: TEST_SHELL.hash, parts: TEST_SHELL.parts });
     extensions.answer = enabled('geo');
     const without = parseBuildInputs((await readSnapshot(harness.deps.snapshot, site.id)).inputs);
     expect(without.code.pages).toEqual({ home: [expect.objectContaining({ id: 'cart-badge-1' })] });
     expect(buildKey(without)).not.toBe(buildKey(all));
   });
 
-  it('публикация: черновик своей секции — на витрину; сборка выкладывает ядро и скрипты; главная — с кодом', async () => {
+  it('публикация: черновик своей секции — на витрину; бандл страницы — в HTML главной; модуль старого вида пропущен', async () => {
     const site = await insertSite(harness.db);
     await insertRevision(harness.db, site.id, { sections: PLACEMENT });
     await saveOurSections(site.id);
@@ -121,12 +116,19 @@ describe('код магазина', () => {
       shopId: site.id,
       sections: 'shop:color-match',
     });
+    // Ядро стенда меньше 4096 Б: бандл встроен в HTML главной, файлов _merfy/ в сборке нет.
     const files = await liveFiles(harness.store, labelOf(site));
-    expect(files.filter((path) => path.startsWith('_merfy/m/'))).toHaveLength(4);
-    expect(files.filter((path) => path.startsWith('_merfy/shell/'))).toEqual([`${shellDir(TEST_SHELL.hash)}/shell.js`]);
+    expect(files.filter((path) => path.startsWith('_merfy/'))).toEqual([]);
     const home = await liveHome(harness.store, labelOf(site));
-    expect(home).toContain('id="merfy-modules"');
+    expect(home.split('merfyStarted')).toHaveLength(2);
+    expect(home).not.toContain('id="merfy-modules"');
     expect(home).toContain('<merfy-section data-section="shop:cart-badge" data-section-id="cart-badge-1"');
+    expect(home).toContain('data-merfy-input');
+    // Отзывы — модуль старого вида (part): секция на странице без скрипта, строка журнала сборщика.
+    expect(logged(harness.lines, 'section-script-skipped').at(-1)).toMatchObject({
+      shopId: site.id,
+      section: 'reviews:list',
+    });
   });
 
   it('extensions не ответил — снимок не получен: сборка failed, строка extensions-failed, живой сайт не тронут', async () => {

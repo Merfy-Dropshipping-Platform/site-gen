@@ -1,49 +1,47 @@
 import { hashOf, sha256 } from '../src/canonical';
-import { modulePath, type CodeAssets, type ShellBuild } from '../src/code';
+import type { CodeAssets } from '../src/code';
 import type { BuildInputs, CodeInput, CodeSection } from '../src/inputs';
+import type { ShellBuild } from '../src/shell';
 import { changedInputs } from './support';
 
-// Код секций для тестов (блок 7; SDK 1 — блок 1 «Секций и SDK»): сборка ядра из двух файлов, три скрипта, модули
-// рендера и четыре секции разных авторов — две своих секции магазина (наши, п. 1), расширения и глобальный скрипт
-// расширения.
+// Код секций для тестов (блок 7; SDK 1 — блок 1 «Секций и SDK»; бандл страницы — блок 5, часть 5б): ядро секций с
+// теми же экспортами, что у dist/core.js, три скрипта, модули рендера и четыре секции разных авторов — две своих
+// секции магазина (наши, п. 1), расширения и глобальный скрипт расширения. Ядро тяжелее 4096 Б: бандл страницы идёт
+// файлом _merfy/b/<sha256>.js, как с настоящим ядром.
 const bytes = (text: string): Uint8Array => Buffer.from(text, 'utf8');
 
-const SHELL_FILES = [
-  { path: 'part-AB12CD34.js', content: bytes('export const cart = { lines: [] };') },
-  {
-    path: 'shell.js',
-    content: bytes('import "./part-AB12CD34.js"; export const defineSection = (definition) => definition;'),
-  },
-];
+const CORE = [
+  `export const start = (options) => { globalThis.merfyStarted = [options, '${'x'.repeat(5000)}']; };`,
+  'export const defineSection = (definition) => definition;',
+  "export const auth = { name: 'auth' };",
+  "export const cart = { name: 'cart' };",
+  "export const favorites = { name: 'favorites' };",
+  "export const analytics = { name: 'analytics' };",
+].join('\n');
 
 export const SHELL_BUILD: ShellBuild = {
   version: '0.1.0',
-  hash: hashOf(Object.fromEntries(SHELL_FILES.map((file): [string, string] => [file.path, sha256(file.content)]))),
-  preload: ['shell.js', 'part-AB12CD34.js'],
-  files: SHELL_FILES,
+  hash: sha256(CORE),
+  parts: ['auth', 'cart', 'favorites'],
+  code: CORE,
 };
 
-// Ядро во входах — без файлов: версия, отпечаток и подсказки.
-export const SHELL = { version: SHELL_BUILD.version, hash: SHELL_BUILD.hash, preload: SHELL_BUILD.preload };
+// Ядро во входах — без текста: версия, хеш и части.
+export const SHELL = { version: SHELL_BUILD.version, hash: SHELL_BUILD.hash, parts: SHELL_BUILD.parts };
 
 const SCRIPTS = {
-  badge: bytes('export default { mount() {} }; // значок корзины'),
-  reviews: bytes('export default { mount() {}, unmount() {} }; // отзывы'),
-  geo: bytes('export default { mount() {} }; // город'),
+  badge: bytes(
+    'import{defineSection as e}from"@merfy/shell";export default e({mount(){globalThis.badge="badge-mounted"}});',
+  ),
+  reviews: bytes('export default {mount(){globalThis.reviews="reviews-mounted"}};'),
+  geo: bytes('export default {mount(){globalThis.geo="geo-mounted"}};'),
 };
 
 export const MODULES: ReadonlyMap<string, Uint8Array> = new Map(
   Object.values(SCRIPTS).map((content): [string, Uint8Array] => [sha256(content), content]),
 );
 
-// Адрес модуля на странице — от корня сайта.
-export const SRC = {
-  badge: `/${modulePath(sha256(SCRIPTS.badge))}`,
-  reviews: `/${modulePath(sha256(SCRIPTS.reviews))}`,
-  geo: `/${modulePath(sha256(SCRIPTS.geo))}`,
-};
-
-// Модули рендера — текст по отпечатку; в тестах страницы их рисует подставная функция рендера.
+// Модули рендера — текст по хешу; в тестах страницы их рендерит подставная функция рендера.
 const RENDER_MODULES = {
   hero: 'export default "hero"; // первый экран',
   badge: 'export default "badge"; // значок корзины',
@@ -76,7 +74,7 @@ export const HERO = section('shop:hero', 'section', RENDER_MODULES.hero, null);
 export const BADGE = section('shop:cart-badge', 'section', RENDER_MODULES.badge, SCRIPTS.badge);
 export const REVIEWS = section('reviews:list', 'section', RENDER_MODULES.reviews, SCRIPTS.reviews);
 
-// Код магазина: секции — по имени, как их отдаёт реестр; на главной отзывы стоят дважды.
+// Код магазина: секции — по имени, как их отдаёт таблица секций; на главной отзывы стоят дважды.
 export const CODE: CodeInput = {
   sections: [GEO, HERO, BADGE, REVIEWS],
   pages: {
@@ -90,7 +88,7 @@ export const CODE: CodeInput = {
   globals: ['geo:locate'],
 };
 
-// Секция без скрипта: ядро не нужно, shell остаётся null.
+// Секция без скрипта: в бандле страницы — только ядро и части.
 export const NO_SCRIPT: CodeInput = {
   sections: [HERO],
   pages: { home: [{ id: 'hero-1', section: 'shop:hero', settings: {} }] },

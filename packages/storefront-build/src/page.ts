@@ -7,7 +7,7 @@ import {
 } from '@merfy/tokens';
 import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
-import { placedSections, withoutHidden } from './code';
+import { pageBundle, placedSections, withoutHidden } from './code';
 import { entityKey } from './entities';
 import { pageLocals, shopName } from './head';
 import type { BuildInputs } from './inputs';
@@ -46,6 +46,8 @@ export interface ShopTheme {
 export interface RenderedPage {
   row: PageRow;
   file: BuildFile;
+  // Файл бандла страницы _merfy/b/<sha256>.js (часть 5б); нет — бандл встроен в HTML или его нет.
+  bundle?: BuildFile;
 }
 
 // Чья страница и от чего она зависит. Главная и свои страницы — страницы сайта.
@@ -88,6 +90,21 @@ function splitContent(content: PageContent, [header = 0, own = 0]: readonly numb
     sections: sections.slice(header, header + own),
     footer: sections.slice(header + own),
   };
+}
+
+// Разметка страницы с бандлом (часть 5б): бандл — по тем же видимым экземплярам, его тег — в <head> после стилей
+// секций. Возврат — HTML и файл бандла (нет — null: бандл встроен в HTML или его нет).
+async function renderWithBundle(
+  shown: BuildInputs,
+  route: ReturnType<typeof routeOf>,
+  theme: ShopTheme,
+  page: PageRender,
+  pageContent: PageContent,
+): Promise<{ html: string; bundle: Awaited<ReturnType<typeof pageBundle>> }> {
+  const bundle = await pageBundle(shown, route.id, page);
+  const withBundle = { ...pageContent, bundleTag: bundle?.tag ?? '' };
+  const html = await theme.render(route.path, pageLocals(shown, route, theme.tokens, theme.migrations, withBundle));
+  return { html, bundle };
 }
 
 // page — как рендерить секции: модули, функция рендера и режим. По умолчанию — опубликованный сайт без процесса
@@ -135,8 +152,10 @@ export async function renderShopPage(
     rendered,
     lists.map((list) => list.length),
   );
-  const html = await theme.render(route.path, pageLocals(shown, route, theme.tokens, theme.migrations, pageContent));
+  const { html, bundle } = await renderWithBundle(shown, route, theme, page, pageContent);
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');
-  return { row: pageRowOf(inputs, route, content), file: { path: route.file, content } };
+  const row = pageRowOf(inputs, route, content);
+  const file = bundle?.file ?? null;
+  return { row, file: { path: route.file, content }, ...(file === null ? {} : { bundle: file }) };
 }

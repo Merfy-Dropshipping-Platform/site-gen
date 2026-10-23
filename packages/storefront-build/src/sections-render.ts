@@ -1,6 +1,9 @@
 import { classesOf, type Dictionary } from '@merfy/tokens';
+import type { CodeNoticed } from './bundle';
 import { sha256 } from './canonical';
+import type { CodeAssets } from './code';
 import { StorefrontBuildError } from './errors';
+import { sectionInputTag } from './input-tag';
 import { htmlClasses, sectionCss } from './section-css';
 import { EMPTY_SHOP, type ShopProps } from './shop-props';
 import { classSystem } from './tailwind-system';
@@ -93,6 +96,10 @@ export interface PageRender {
   classUnknown?: (section: string, classes: readonly string[]) => void;
   // Настройки темы и данные магазина страницы (часть 4); нет — пустые.
   props?: PageProps;
+  // Бандл страницы (блок 5 «Секций и SDK», часть 5б): ядро и модули секций. Нет — страница без бандла (превью, рендер
+  // без кода в тестах). notice — предупреждения сборки бандла.
+  code?: CodeAssets;
+  notice?: CodeNoticed;
 }
 
 // Экземпляр секции на странице: id, полное имя, отпечаток модуля рендера и значения всех настроек.
@@ -109,6 +116,8 @@ export interface PlacedSection {
   // Часть 4: деревья меню по id настройки вида menu; что шаблон читает сверх settings и blocks ("uses").
   menus?: Readonly<Record<string, MenuTree>>;
   uses?: readonly PropsUse[];
+  // true — у секции есть скрипт: в обёртке последним элементом — тег входных данных (часть 5б, input-tag.ts).
+  script?: boolean;
 }
 
 // HTML секций одной страницы, байт (блок 2, «Решил сам» п. 3): секция, которая не влезает, не рендерится (render-output).
@@ -121,6 +130,8 @@ export interface PageContent {
   footer?: string[];
   sectionsCss: string;
   mode: PageMode;
+  // Тег бандла страницы для <head> (часть 5б); нет — без бандла.
+  bundleTag?: string;
 }
 
 export const WRAPPER_CLASS = 'py-section';
@@ -204,6 +215,7 @@ export async function renderSection(
       path: placed.hash,
     });
   try {
+    const input = placed.script === true ? sectionInputTag(placed) : '';
     const html = await sections.render({
       section: placed.name,
       hash: placed.hash,
@@ -213,7 +225,7 @@ export async function renderSection(
       preview: mode === 'preview',
       ...propsOf(placed, props),
     });
-    return wrapper(placed, html);
+    return wrapper(placed, `${html}${input}`);
   } catch (error) {
     return failedHtml(placed, mode, error, failed);
   }

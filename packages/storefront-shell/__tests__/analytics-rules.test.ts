@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONSENT_KEY, CONSENT_RULES, readConsent } from '../sections/analytics/consent';
+import { CONSENT_KEY, CONSENT_RULES, readConsent } from '../src/core/analytics/consent';
 import {
   SESSION_COOKIE,
   VISITOR_COOKIE,
@@ -8,10 +8,10 @@ import {
   VISIT_MS,
   idsFor,
   type IdentityEnv,
-} from '../sections/analytics/identity';
-import { readSettings } from '../sections/analytics/settings';
-import { pageStorage, storageOf, type KeyValue } from '../sections/analytics/storage';
-import { OWNER_KEY, applyOwnerParam, trafficOf, type TrafficEnv } from '../sections/analytics/traffic';
+} from '../src/core/analytics/identity';
+import { readSettings } from '../src/core/analytics/settings';
+import { pageStorage, storageOf, type KeyValue } from '../src/core/analytics/storage';
+import { OWNER_KEY, applyOwnerParam, trafficOf, type TrafficEnv } from '../src/core/analytics/traffic';
 
 // Правила модуля аналитики (design.md блока 11): таблица согласия (С11-2 В), визит и посетитель (решил сам 9), пометка
 // трафика (решил сам 7), настройки из конфига страницы. Чистые функции на хранилищах и cookie в памяти.

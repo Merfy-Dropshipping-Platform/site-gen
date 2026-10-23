@@ -1,36 +1,23 @@
-import { escapeScriptJson } from '@merfy/storefront-config';
+import { bundlePage, type BundleSection, type PageBundle } from './bundle';
 import { sha256 } from './canonical';
-import type { BuildFile } from './client-files';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs, CodeSection, ShellInput } from './inputs';
 import { pageListsOf } from './routes';
-import type { PageMode, PlacedSection } from './sections-render';
+import type { PageRender, PlacedSection } from './sections-render';
+import type { ShellBuild } from './shell';
 
-// Код секций в странице и в сборке магазина (design.md блока 7, п. 12, 16, 19; С7-7 Г, С7-10 Б). Разметка секции — в
-// HTML страницы, в <merfy-section data-section="<имя>">. В <head> после токенов темы: стили секций страницы одним
-// тегом, список модулей страницы (#merfy-modules), import map с единственным именем @merfy/shell, modulepreload ядра и
-// модулей, само ядро. Файлы: ядро — в _merfy/shell/<16 знаков отпечатка>/, скрипт секции — _merfy/m/<sha256>.js: тот же
-// код — тот же файл и адрес во всех магазинах. Нет скриптов на странице — нет и ядра (п. 16).
-export const SHELL_ENTRY = 'shell.js';
-const SHELL_DIR = '_merfy/shell';
-const MODULES_DIR = '_merfy/m';
-const SHELL_DIR_HASH_LENGTH = 16;
+// Код секций в странице и в сборке магазина (design.md блока 7, п. 12, 16, 19; блок 5 «Секций и SDK», раздел 3.10).
+// Разметка секции — в HTML страницы, в <merfy-section data-section="<имя>">. В <head> после токенов темы: стили секций
+// страницы одним тегом, потом бандл страницы — один <script type="module"> (bundle.ts). Бандл — только у страниц
+// опубликованного сайта: ядро секций, его части из core.json и часть аналитики, модули секций страницы со скриптом и
+// глобальные скрипты. Превью (часть 5г), стенд и рендер без кода — без бандла.
 const HASH_PREFIX = 'sha256:';
-const MODULES_VERSION = 1;
-const SHELL_IMPORT = '@merfy/shell';
-// Блочная обёртка секции — в базе страницы (@merfy/tokens/base.css, блок 4 «Секций и SDK», Р4-13): в слое base
-// классы обёртки её перекрывают; скрытый элемент закрывает правило [hidden] из preflight с !important.
+// Части без API для секций — в бандле каждой страницы опубликованного сайта (раздел 3.13): аналитика, как трекер в
+// HTML каждой страницы на проде.
+export const LIVE_PARTS: readonly string[] = ['analytics'];
 
-// Сборка ядра @merfy/shell для сборки магазина: версия, отпечаток файлов, подсказки и сами файлы (shell.ts).
-export interface ShellBuild {
-  version: string;
-  hash: string;
-  preload: string[];
-  files: BuildFile[];
-}
-
-// Байты кода, которых нет во входах: сборка ядра, скрипты секций и модули рендера по отпечатку. Входы называют их
-// отпечатками, сборка сверяет байты с ними.
+// Байты кода, которых нет во входах: сборка ядра, скрипты секций и модули рендера по хешу. Входы называют их хешами,
+// сборка сверяет байты с ними.
 export interface CodeAssets {
   shell: ShellBuild | null;
   modules: ReadonlyMap<string, Uint8Array>;
@@ -40,22 +27,12 @@ export interface CodeAssets {
 
 export const NO_ASSETS: CodeAssets = { shell: null, modules: new Map(), renders: new Map() };
 
-interface ModuleLine {
-  kind: CodeSection['kind'];
-  name: string;
-  src: string;
-}
-
 const hexOf = (hash: string): string => hash.slice(HASH_PREFIX.length);
-
-export const shellDir = (hash: string): string => `${SHELL_DIR}/${hexOf(hash).slice(0, SHELL_DIR_HASH_LENGTH)}`;
-export const modulePath = (hash: string): string => `${MODULES_DIR}/${hexOf(hash)}.js`;
-const shellSrc = (shell: ShellInput, file: string): string => `/${shellDir(shell.hash)}/${file}`;
 
 // Секции страницы: места мерчанта по порядку, потом глобальные скрипты; имя — один раз, хоть секция и стоит дважды.
 function pageCode(inputs: BuildInputs, pageId: string): CodeSection[] {
   const byName = new Map(inputs.code.sections.map((section): [string, CodeSection] => [section.name, section]));
-  // Шапка, страница и подвал (часть 4): код секций всех трёх списков.
+  // Шапка, страница и подвал (часть 4 блока 1): код секций всех трёх списков — и в стилях, и в бандле страницы.
   const placed = pageListsOf(pageId).flatMap((list) =>
     (inputs.code.pages[list] ?? []).map((instance) => instance.section),
   );
@@ -63,40 +40,16 @@ function pageCode(inputs: BuildInputs, pageId: string): CodeSection[] {
   return [...names].flatMap((name) => byName.get(name) ?? []);
 }
 
-const moduleLines = (sections: readonly CodeSection[]): ModuleLine[] =>
-  sections.flatMap(({ kind, name, script }) =>
-    script === null ? [] : [{ kind, name, src: `/${modulePath(script)}` }],
-  );
-
 // CSS секций страницы — классы Tailwind из их разметки (section-css.ts). </style внутри CSS закрыл бы тег раньше
 // времени: сборка страхует.
 function styleTag(css: string): string {
   return `<style id="merfy-sections">${css.replaceAll('</style', '<\\/style')}</style>`;
 }
 
-const jsonTag = (attributes: string, value: unknown): string =>
-  `<script ${attributes}>${escapeScriptJson(JSON.stringify(value))}</script>`;
-
-const preloadLink = (href: string): string => `<link rel="modulepreload" href="${href}">`;
-
-function scriptTags(shell: ShellInput, modules: readonly ModuleLine[]): string[] {
-  return [
-    jsonTag('type="application/json" id="merfy-modules"', { v: MODULES_VERSION, modules }),
-    jsonTag('type="importmap"', { imports: { [SHELL_IMPORT]: shellSrc(shell, SHELL_ENTRY) } }),
-    ...shell.preload.map((file) => preloadLink(shellSrc(shell, file))),
-    ...modules.map((line) => preloadLink(line.src)),
-    `<script type="module" src="${shellSrc(shell, SHELL_ENTRY)}"></script>`,
-  ];
-}
-
-// Код страницы для <head>, после токенов темы. Секций нет — пусто; скриптов нет или превью — только стили (Р1: в превью
-// списка модулей, карты импортов и ядра нет, скрипты секций в превью — блок 5).
-export function codeHead(inputs: BuildInputs, pageId: string, css: string, mode: PageMode): string {
-  const sections = pageCode(inputs, pageId);
-  const modules = moduleLines(sections);
-  if (sections.length === 0) return '';
-  if (mode === 'preview' || inputs.shell === null || modules.length === 0) return styleTag(css);
-  return [styleTag(css), ...scriptTags(inputs.shell, modules)].join('');
+// Код страницы для <head>, после токенов темы: стили секций (секций нет — стилей нет), потом тег бандла страницы.
+export function codeHead(inputs: BuildInputs, pageId: string, css: string, bundleTag = ''): string {
+  const style = pageCode(inputs, pageId).length === 0 ? '' : styleTag(css);
+  return `${style}${bundleTag}`;
 }
 
 // Экземпляры секций страницы в порядке мерчанта — для рендера (sections-render.ts). Глобальным скриптам место не
@@ -112,51 +65,86 @@ export function withoutHidden(inputs: BuildInputs): BuildInputs {
   return { ...inputs, code: { ...inputs.code, pages } };
 }
 
+// script: true — у секции есть скрипт: рендер добавит в обёртку тег входных данных. Флаги section.json (removable,
+// uses — 4а блока 1) и меню экземпляра прокидываются дальше без изменений.
 export function placedSections(inputs: BuildInputs, pageId: string): PlacedSection[] {
-  const renders = new Map(
-    inputs.code.sections.map((section): [string, string] => [section.name, section.render ?? '']),
-  );
-  return (inputs.code.pages[pageId] ?? []).map((instance) => ({
-    id: instance.id,
-    name: instance.section,
-    hash: renders.get(instance.section) ?? '',
-    settings: instance.settings,
-    ...(instance.blocks === undefined ? {} : { blocks: instance.blocks }),
-    ...(instance.menus === undefined ? {} : { menus: instance.menus }),
-    ...placeFlags(inputs, instance.section),
-  }));
+  const byName = new Map(inputs.code.sections.map((section): [string, CodeSection] => [section.name, section]));
+  return (inputs.code.pages[pageId] ?? []).map((instance) => {
+    const section = byName.get(instance.section);
+    const script = section?.script ?? null;
+    return {
+      id: instance.id,
+      name: instance.section,
+      hash: section?.render ?? '',
+      settings: instance.settings,
+      ...(instance.blocks === undefined ? {} : { blocks: instance.blocks }),
+      ...(instance.menus === undefined ? {} : { menus: instance.menus }),
+      ...placeFlags(inputs, instance.section),
+      ...(script === null ? {} : { script: true }),
+    };
+  });
 }
 
-function shellFiles(shell: ShellInput | null, build: ShellBuild | null): BuildFile[] {
-  if (shell === null) return [];
-  if (build === null)
-    throw new StorefrontBuildError('shell-missing', 'во входах есть ядро, а его сборки нет', { path: 'shell' });
-  if (build.hash !== shell.hash)
-    throw new StorefrontBuildError('shell-mismatch', `сборка ядра ${build.hash} — не та, что во входах`, {
-      path: 'shell.hash',
-    });
-  return build.files.map((file) => ({ path: `${shellDir(shell.hash)}/${file.path}`, content: file.content }));
-}
-
-function moduleFile(hash: string, modules: ReadonlyMap<string, Uint8Array>): BuildFile {
-  const content = modules.get(hash);
-  if (content === undefined || sha256(content) !== hash)
-    throw new StorefrontBuildError('code-missing', 'нет файла скрипта секции с этим отпечатком', { path: hash });
-  return { path: modulePath(hash), content };
-}
-
-// Файлы кода сборки: ядро, если оно во входах, и по файлу на отпечаток скрипта. Нет файла или байты не те — ошибка до
-// рендера: живой сайт не трогаем.
-export function codeFiles(inputs: BuildInputs, assets: CodeAssets): BuildFile[] {
-  const scripts = new Set(inputs.code.sections.flatMap((section) => section.script ?? []));
-  return [...shellFiles(inputs.shell, assets.shell), ...[...scripts].map((hash) => moduleFile(hash, assets.modules))];
-}
-
-// removable и uses секции (часть 4) — из кода магазина по имени: у секции без них ключей нет.
 function placeFlags(inputs: BuildInputs, name: string): Pick<PlacedSection, 'removable' | 'uses'> {
   const section = inputs.code.sections.find((candidate) => candidate.name === name);
   return {
     ...(section?.removable === undefined ? {} : { removable: section.removable }),
     ...(section?.uses === undefined ? {} : { uses: section.uses }),
   };
+}
+
+function checkedShell(input: ShellInput, build: ShellBuild | null): ShellBuild {
+  if (build === null)
+    throw new StorefrontBuildError('shell-missing', 'во входах есть ядро, а его сборки нет', { path: 'shell' });
+  if (build.hash !== input.hash)
+    throw new StorefrontBuildError('shell-mismatch', `сборка ядра ${build.hash} — не та, что во входах`, {
+      path: 'shell.hash',
+    });
+  return build;
+}
+
+function moduleText(hash: string, modules: ReadonlyMap<string, Uint8Array>): string {
+  const content = modules.get(hash);
+  if (content === undefined || sha256(content) !== hash)
+    throw new StorefrontBuildError('code-missing', 'нет файла скрипта секции с этим хешем', { path: hash });
+  return Buffer.from(content).toString('utf8');
+}
+
+// Байты кода сверяются до рендера: нет сборки ядра, не та сборка, нет скрипта или байты не те — ошибка, рендер не
+// начинали, опубликованный сайт не трогаем.
+export function checkCodeAssets(inputs: BuildInputs, assets: CodeAssets): void {
+  if (inputs.shell !== null) checkedShell(inputs.shell, assets.shell);
+  inputs.code.sections.flatMap(withScript).forEach(({ hash }) => moduleText(hash, assets.modules));
+}
+
+// Секция со скриптом и хеш её модуля.
+interface ScriptSection {
+  section: CodeSection;
+  hash: string;
+}
+
+function withScript(section: CodeSection): ScriptSection[] {
+  return section.script === null ? [] : [{ section, hash: section.script }];
+}
+
+// Бандл страницы опубликованного сайта (раздел 3.10). Превью, рендер без кода (page.code нет) и входы без ядра — без
+// бандла. Каждой секции — все части ядра из core.json (до части 5в, где их выберет uses). Предупреждения — page.notice.
+export async function pageBundle(inputs: BuildInputs, pageId: string, page: PageRender): Promise<PageBundle | null> {
+  const shell = inputs.shell;
+  const assets = page.code;
+  if (page.mode !== 'live' || assets === undefined || shell === null) return null;
+  const core = checkedShell(shell, assets.shell).code;
+  const scripts = pageCode(inputs, pageId).flatMap(withScript);
+  const sections = scripts.map(
+    ({ section, hash }): BundleSection => ({
+      name: section.name,
+      kind: section.kind,
+      script: hexOf(hash),
+      uses: shell.parts,
+    }),
+  );
+  const modules = new Map(scripts.map(({ hash }): [string, string] => [hexOf(hash), moduleText(hash, assets.modules)]));
+  const bundle = await bundlePage({ core, parts: [...shell.parts, ...LIVE_PARTS], sections, modules });
+  bundle.notices.forEach((notice) => page.notice?.(pageId, notice));
+  return bundle;
 }

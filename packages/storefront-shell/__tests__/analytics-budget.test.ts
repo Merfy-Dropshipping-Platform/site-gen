@@ -4,10 +4,10 @@ import { brotliCompressSync } from 'node:zlib';
 import { build } from 'esbuild';
 import { describe, expect, it } from 'vitest';
 
-// Вес модуля аналитики (design.md блока 11, решил сам 13): до 3 КБ brotli. Сборка — как у приёма секции (блок 7,
-// packages/storefront-sections/src/script.ts): esm, es2022, minify, @merfy/shell — внешний. Бюджет стережёт этот тест
-// в pnpm test пакета; CI site-gen его гоняет вместе с остальными тестами ядра.
-const ENTRY = fileURLToPath(new URL('../sections/analytics/script.ts', import.meta.url));
+// Вес модуля аналитики (design.md блока 11, решил сам 13): до 3 КБ brotli — отдельно от бюджета ядра секций (12 КБ):
+// часть analytics идёт в бандл страницы сверх частей из core-parts.json (блок 5 «Секций и SDK», часть 5б). Сборка — esm,
+// es2022, minify. Бюджет стережёт этот тест в pnpm test пакета; CI site-gen его гоняет вместе с остальными тестами ядра.
+const ENTRY = fileURLToPath(new URL('../src/core/analytics/analytics.ts', import.meta.url));
 const BUDGET_BYTES = 3 * 1024;
 
 async function brotliBytes(): Promise<number> {

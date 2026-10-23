@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { classSystem } from '@merfy/storefront-build';
+// tailwind-system напрямую, не вход пакета: процесс проверки не тянет esbuild из bundle.ts (5б).
+import { classSystem } from '@merfy/storefront-build/tailwind-system';
 import { platformDictionary, sectionTailwindTheme } from '@merfy/tokens';
 import { classProblems, type ClassField, type ClassFields } from './classes';
 import { fieldRuleProblems } from './field-rules';

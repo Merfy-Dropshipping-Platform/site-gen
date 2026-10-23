@@ -1,11 +1,11 @@
 import { COUNTER_KINDS as CONFIG_KINDS, COUNTER_NUMBERS as CONFIG_NUMBERS } from '@merfy/storefront-config';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cartChanges } from '../sections/analytics/cart';
-import { BATCH_MAX, collectorDestination, collectorEvent } from '../sections/analytics/collector';
-import { CONSENT_RULES } from '../sections/analytics/consent';
-import { COUNTER_NUMBERS, loadCounters } from '../sections/analytics/counters';
-import { pageContext, type ShopEvent } from '../sections/analytics/events';
-import { COUNTER_KINDS } from '../sections/analytics/settings';
+import { cartChanges } from '../src/core/analytics/cart';
+import { BATCH_MAX, collectorDestination, collectorEvent } from '../src/core/analytics/collector';
+import { CONSENT_RULES } from '../src/core/analytics/consent';
+import { COUNTER_NUMBERS, loadCounters } from '../src/core/analytics/counters';
+import { pageContext, type ShopEvent } from '../src/core/analytics/events';
+import { COUNTER_KINDS } from '../src/core/analytics/settings';
 
 // События модуля аналитики (design.md блока 11): корзина по разнице состояния ядра, формат нашего сборщика, пачки,
 // счётчики мерчанта по номеру. jsdom выполняет встроенные скрипты счётчиков — проверяем вставленный код, а не сеть.

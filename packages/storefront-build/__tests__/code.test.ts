@@ -1,31 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import type { CodeNotice } from '../src/bundle';
 import { sha256 } from '../src/canonical';
-import { NO_ASSETS, codeFiles, codeHead, placedSections, shellDir } from '../src/code';
+import { NO_ASSETS, checkCodeAssets, codeHead, pageBundle, placedSections } from '../src/code';
 import { parseBuildInputs } from '../src/inputs';
+import { NO_SECTIONS, type PageRender } from '../src/sections-render';
 import { changedInputs, errorOf, rawInputs, standInputs } from './support';
-import { ASSETS, BADGE, CODE, MODULES, NO_SCRIPT, SHELL, SHELL_BUILD, SRC, codeInputs } from './support-code';
+import { ASSETS, BADGE, CODE, MODULES, NO_SCRIPT, RENDERS, SHELL, SHELL_BUILD, codeInputs } from './support-code';
 
-// Код секций в странице и в сборке (design.md блока 7, п. 12, 16, 19).
-const DIR = shellDir(SHELL.hash);
-// База обёртки — в base.css словаря (блок 4 «Секций и SDK», Р4-13); в стилях секций её больше нет.
-const BASE_CSS = '';
-const HEAD_ORDER = [
-  '<style id="merfy-sections">',
-  'id="merfy-modules"',
-  '<script type="importmap">',
-  '<link rel="modulepreload"',
-  '<script type="module"',
-];
-
-// JSON списка модулей из <head>.
-function modulesOf(head: string): unknown {
-  const json = head.split('id="merfy-modules">')[1]?.split('</script>')[0] ?? '';
-  const parsed: unknown = JSON.parse(json);
-  return parsed;
-}
-
+// Код секций в странице и в сборке (design.md блока 7, п. 12, 16, 19; блок 5 «Секций и SDK», раздел 3.10).
 const withCode = (code: unknown, shell: unknown = SHELL): unknown =>
   rawInputs((raw) => Object.assign(raw, { shell, code }));
+const hexOf = (hash: string | null): string => (hash ?? '').slice('sha256:'.length);
 
 // Код, который сам с собой не сходится, → путь первой ошибки. Код ошибки у всех — code-invalid.
 const instance = (id: string, section: string, settings: Record<string, string> = {}) => ({ id, section, settings });
@@ -53,104 +38,139 @@ const INVALID_CODE: [string, unknown, string][] = [
   ],
 ];
 
+const livePage = (notices: CodeNotice[] = []): PageRender => ({
+  sections: { ...NO_SECTIONS, modules: RENDERS },
+  mode: 'live',
+  code: ASSETS,
+  notice: (_pageId, notice) => notices.push(notice),
+});
+
 describe('код секций в <head>', () => {
-  it('порядок: стили секций, список модулей, import map, подсказки, ядро; входы с кодом проходят схему', () => {
+  it('стили секций, потом тег бандла; входы с ядром { version, hash, parts } проходят схему', () => {
     const inputs = codeInputs();
     expect(parseBuildInputs(inputs)).toEqual(inputs);
-    const head = codeHead(inputs, 'home', '.flex{display:flex}', 'live');
-    const at = HEAD_ORDER.map((marker) => head.indexOf(marker));
-    expect(at.every((index) => index >= 0)).toBe(true);
-    expect([...at].sort((left, right) => left - right)).toEqual(at);
-    expect(head.startsWith(`<style id="merfy-sections">${BASE_CSS}.flex{display:flex}</style>`)).toBe(true);
+    const tag = '<script type="module" src="/_merfy/b/a.js"></script>';
+    expect(codeHead(inputs, 'home', '.flex{display:flex}', tag)).toBe(
+      `<style id="merfy-sections">.flex{display:flex}</style>${tag}`,
+    );
   });
 
-  it('список модулей: секции страницы со скриптом и глобальные — по одному разу, адрес — по отпечатку', () => {
-    expect(modulesOf(codeHead(codeInputs(), 'home', '', 'live'))).toEqual({
-      v: 1,
-      modules: [
-        { kind: 'section', name: 'shop:cart-badge', src: SRC.badge },
-        { kind: 'section', name: 'reviews:list', src: SRC.reviews },
-        { kind: 'global', name: 'geo:locate', src: SRC.geo },
-      ],
-    });
-    expect(SRC.badge).toMatch(/^\/_merfy\/m\/[0-9a-f]{64}\.js$/);
-  });
-
-  it('import map — одно имя @merfy/shell; modulepreload — файлы ядра из preload и модули страницы; ядро — в конце', () => {
-    const head = codeHead(codeInputs(), 'home', '', 'live');
-    expect(DIR).toMatch(/^_merfy\/shell\/[0-9a-f]{16}$/);
-    expect(head).toContain(`<script type="importmap">{"imports":{"@merfy/shell":"/${DIR}/shell.js"}}</script>`);
-    const preloads = [...head.matchAll(/<link rel="modulepreload" href="([^"]+)">/g)].map(([, href]) => href);
-    expect(preloads).toEqual([`/${DIR}/shell.js`, `/${DIR}/part-AB12CD34.js`, SRC.badge, SRC.reviews, SRC.geo]);
-    expect(head.endsWith(`<script type="module" src="/${DIR}/shell.js"></script>`)).toBe(true);
-    expect(head.split('<script type="module"')).toHaveLength(2);
-  });
-
-  it('без кода — пусто; без скриптов — только стили; на странице без мест — только глобальные скрипты', () => {
-    expect(codeHead(standInputs, 'home', '', 'live')).toBe('');
+  it('без секций на странице — только тег бандла; без тега — только стили; ни списка модулей, ни карты импортов', () => {
+    expect(codeHead(standInputs, 'home', '', '<script type="module">x</script>')).toBe(
+      '<script type="module">x</script>',
+    );
     const styled = changedInputs((inputs) => (inputs.code = structuredClone(NO_SCRIPT)));
-    expect(codeHead(styled, 'home', '', 'live')).toBe(`<style id="merfy-sections">${BASE_CSS}</style>`);
-    expect(modulesOf(codeHead(codeInputs(), 'about', '', 'live'))).toEqual({
-      v: 1,
-      modules: [{ kind: 'global', name: 'geo:locate', src: SRC.geo }],
-    });
+    expect(codeHead(styled, 'home', '')).toBe('<style id="merfy-sections"></style>');
+    const head = codeHead(codeInputs(), 'home', '');
+    expect(head).not.toContain('merfy-modules');
+    expect(head).not.toContain('importmap');
+    expect(head).not.toContain('modulepreload');
   });
 
   it('</style> в CSS секций не закрывает тег', () => {
-    const head = codeHead(codeInputs(), 'home', 'a::after{content:"</style><script>"}', 'live');
+    const head = codeHead(codeInputs(), 'home', 'a::after{content:"</style><script>"}');
     expect(head.split('</style>')).toHaveLength(2);
     expect(head).toContain('content:"<\\/style><script>"');
+  });
+
+  it('старое ядро во входах (preload) и чужое имя части — inputs-invalid', () => {
+    const old = withCode(CODE, { version: '0.1.0', hash: SHELL.hash, preload: ['shell.js'] });
+    expect(errorOf(() => parseBuildInputs(old))).toMatchObject({ code: 'inputs-invalid' });
+    const strange = withCode(CODE, { ...SHELL, parts: ['cart; alert(1)'] });
+    expect(errorOf(() => parseBuildInputs(strange))).toMatchObject({ code: 'inputs-invalid', path: 'shell.parts.0' });
   });
 });
 
 describe('экземпляры секций страницы', () => {
-  it('в порядке мерчанта, повтор — второй экземпляр; глобальному скрипту места нет; нет мест — нет экземпляров', () => {
+  it('в порядке мерчанта, повтор — второй экземпляр; script: true — у секций со скриптом; нет мест — нет экземпляров', () => {
     const renders = new Map(
       codeInputs().code.sections.map((section): [string, string] => [section.name, section.render ?? '']),
     );
     expect(placedSections(codeInputs(), 'home')).toEqual([
-      { id: 'cart-badge-1', name: 'shop:cart-badge', hash: renders.get('shop:cart-badge'), settings: {} },
+      { id: 'cart-badge-1', name: 'shop:cart-badge', hash: renders.get('shop:cart-badge'), settings: {}, script: true },
       {
         id: 'hero-1',
         name: 'shop:hero',
         hash: renders.get('shop:hero'),
         settings: { heading: 'Шарфы к первым холодам' },
       },
-      { id: 'list-1', name: 'reviews:list', hash: renders.get('reviews:list'), settings: {} },
-      { id: 'list-2', name: 'reviews:list', hash: renders.get('reviews:list'), settings: {} },
+      { id: 'list-1', name: 'reviews:list', hash: renders.get('reviews:list'), settings: {}, script: true },
+      { id: 'list-2', name: 'reviews:list', hash: renders.get('reviews:list'), settings: {}, script: true },
     ]);
     expect(placedSections(codeInputs(), 'about')).toEqual([]);
     expect(placedSections(standInputs, 'home')).toEqual([]);
   });
 });
 
-describe('файлы кода', () => {
-  it('ядро — в _merfy/shell/<16 знаков>/, скрипт — _merfy/m/<sha256>.js, один файл на отпечаток', () => {
-    const files = codeFiles(codeInputs(), ASSETS);
-    expect(files.map((file) => file.path)).toEqual([
-      `${DIR}/part-AB12CD34.js`,
-      `${DIR}/shell.js`,
-      SRC.geo.slice(1),
-      SRC.badge.slice(1),
-      SRC.reviews.slice(1),
-    ]);
-    const badge = files.find((file) => file.path === SRC.badge.slice(1));
-    expect(badge === undefined ? '' : sha256(badge.content)).toBe(BADGE.script);
-    expect(codeFiles(standInputs, NO_ASSETS)).toEqual([]);
-  });
-
-  it('нет сборки ядра, не та сборка, нет файла скрипта или не те байты — ошибка', () => {
+describe('байты кода до рендера', () => {
+  it('всё на месте — без ошибки; нет сборки ядра, не та сборка, нет файла скрипта или не те байты — ошибка', () => {
     const inputs = codeInputs();
-    expect(errorOf(() => codeFiles(inputs, NO_ASSETS))).toMatchObject({ code: 'shell-missing', path: 'shell' });
+    expect(() => checkCodeAssets(inputs, ASSETS)).not.toThrow();
+    expect(() => checkCodeAssets(standInputs, NO_ASSETS)).not.toThrow();
+    expect(errorOf(() => checkCodeAssets(inputs, NO_ASSETS))).toMatchObject({ code: 'shell-missing', path: 'shell' });
     const otherShell = { ...SHELL_BUILD, hash: sha256('другое ядро') };
-    expect(errorOf(() => codeFiles(inputs, { ...ASSETS, shell: otherShell }))).toMatchObject({
+    expect(errorOf(() => checkCodeAssets(inputs, { ...ASSETS, shell: otherShell }))).toMatchObject({
       code: 'shell-mismatch',
       path: 'shell.hash',
     });
     const lost = new Map([...MODULES].slice(1));
-    expect(errorOf(() => codeFiles(inputs, { ...ASSETS, modules: lost }))).toMatchObject({ code: 'code-missing' });
+    expect(errorOf(() => checkCodeAssets(inputs, { ...ASSETS, modules: lost }))).toMatchObject({
+      code: 'code-missing',
+    });
     const forged = new Map([...MODULES].map(([hash]): [string, Uint8Array] => [hash, Buffer.from('чужой код')]));
-    expect(errorOf(() => codeFiles(inputs, { ...ASSETS, modules: forged }))).toMatchObject({ code: 'code-missing' });
+    expect(errorOf(() => checkCodeAssets(inputs, { ...ASSETS, modules: forged }))).toMatchObject({
+      code: 'code-missing',
+    });
+  });
+});
+
+describe('бандл страницы', () => {
+  it('секции страницы со скриптом по одному разу, потом глобальные; части — из ядра и аналитика; uses — части ядра', async () => {
+    const bundle = await pageBundle(codeInputs(), 'home', livePage());
+    const text = new TextDecoder().decode(bundle?.file?.content);
+    const scripts = [BADGE.script, CODE.sections[3]?.script ?? null, CODE.sections[0]?.script ?? null].map(hexOf);
+    const at = scripts.map((hex) => text.indexOf(`script:"${hex}",uses:["auth","cart","favorites"]`));
+    expect(at.every((index) => index >= 0)).toBe(true);
+    expect([...at].sort((left, right) => left - right)).toEqual(at);
+    expect(text.split(`script:"${scripts[1]}"`)).toHaveLength(2);
+    expect(text).toContain('name:"analytics"');
+    expect(bundle?.tag).toBe(`<script type="module" src="/${bundle?.file?.path}"></script>`);
+  });
+
+  it('страница без мест — бандл с глобальным скриптом; страница без кода — бандл только с ядром и частями', async () => {
+    const about = await pageBundle(codeInputs(), 'about', livePage());
+    expect(new TextDecoder().decode(about?.file?.content)).toContain('geo-mounted');
+    const plain = await pageBundle(
+      changedInputs((inputs) => (inputs.shell = structuredClone(SHELL))),
+      'home',
+      livePage(),
+    );
+    const text = new TextDecoder().decode(plain?.file?.content);
+    expect(text).toContain('name:"analytics"');
+    expect(text).toContain('sections:[]');
+  });
+
+  it('превью, рендер без кода и входы без ядра — без бандла', async () => {
+    expect(await pageBundle(codeInputs(), 'home', { ...livePage(), mode: 'preview' })).toBeNull();
+    expect(await pageBundle(codeInputs(), 'home', { sections: NO_SECTIONS, mode: 'live' })).toBeNull();
+    expect(await pageBundle(standInputs, 'home', livePage())).toBeNull();
+  });
+
+  it('предупреждения сборки бандла — в page.notice с id страницы', async () => {
+    const notices: CodeNotice[] = [];
+    const broken = new Map([...MODULES].map(([hash, content]): [string, Uint8Array] => [hash, content]));
+    const old = Buffer.from('import{part as p}from"@merfy/shell";export default {mount(){p("cart")}};');
+    const inputs = codeInputs((changed) => {
+      changed.code.sections = changed.code.sections.map((section) =>
+        section.name === 'reviews:list' ? { ...section, script: sha256(old) } : section,
+      );
+    });
+    broken.set(sha256(old), old);
+    const page: PageRender = { ...livePage(notices), code: { ...ASSETS, modules: broken } };
+    await pageBundle(inputs, 'home', page);
+    expect(notices.map((notice) => [notice.code, notice.section])).toEqual([
+      ['section-script-skipped', 'reviews:list'],
+    ]);
   });
 });
 

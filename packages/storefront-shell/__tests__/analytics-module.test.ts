@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createCart } from '../src/parts/cart';
-import type { CartPart } from '../src/parts/types';
-import { BATCH_MS, createAnalytics, type Analytics } from '../sections/analytics/analytics';
-import { CONSENT_KEY } from '../sections/analytics/consent';
-import { VISIT_KEY } from '../sections/analytics/identity';
-import { OWNER_KEY } from '../sections/analytics/traffic';
+import { BATCH_MS, createAnalytics, type Analytics } from '../src/core/analytics/analytics';
+import { CONSENT_KEY } from '../src/core/analytics/consent';
+import { VISIT_KEY } from '../src/core/analytics/identity';
+import { OWNER_KEY } from '../src/core/analytics/traffic';
+import { fakeCart, type FakeCart } from './analytics-support';
 
-// Модуль аналитики целиком в jsdom (design.md блока 11, раздел 5): настоящая корзина ядра (блок 7), настоящие
+// Модуль аналитики целиком в jsdom (design.md блока 11, раздел 5): корзина в памяти (analytics-support.ts), настоящие
 // document.cookie, localStorage и sessionStorage; отправка — подмена sendBeacon; время поддельное — только setInterval и
 // Date, микрозадачи корзины настоящие. Каждый openPage() — новая загрузка страницы: новый модуль. Слушатели модулей
 // прошлых тестов остаются на window, поэтому отправленное каждый модуль кладёт в sent своего теста.
@@ -35,7 +34,7 @@ const isBatch = (value: unknown): value is Batch =>
   typeof value === 'object' && value !== null && Array.isArray(Reflect.get(value, 'events'));
 
 let sent: { url: string; batch: Batch }[] = [];
-let cart: CartPart = createCart();
+let cart: FakeCart = fakeCart();
 let ids = 0;
 let readyState: DocumentReadyState = 'complete';
 let visibility: DocumentVisibilityState = 'visible';
@@ -86,7 +85,7 @@ const metrika = (): number =>
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'], now: NOW });
   sent = [];
-  cart = createCart();
+  cart = fakeCart();
   ids = 0;
   readyState = 'complete';
   visibility = 'visible';

@@ -104,11 +104,11 @@ FROM builder AS storefront-renderer
 RUN pnpm --filter @merfy/storefront-builder renderer
 RUN test -f /app/themes/nova/dist-renderer/server/entry.mjs \
     || (echo "FATAL: storefront-builder renderer did not produce themes/nova/dist-renderer" && exit 1)
-# Ядро витрины @merfy/shell (блок 7, С-1 А): собирается один раз на версию платформы, копия идёт в каждую сборку
-# магазина. Состав ядра — packages/storefront-shell/core-parts.json.
+# Ядро секций @merfy/shell (блок 5 «Секций и SDK», часть 5б): собирается один раз на версию платформы; сборка магазина
+# собирает из dist/core.js бандл каждой страницы. Части страницы — packages/storefront-shell/core-parts.json.
 RUN pnpm --filter @merfy/shell build
-RUN test -f /app/packages/storefront-shell/dist/shell.json \
-    || (echo "FATAL: @merfy/shell build did not produce packages/storefront-shell/dist/shell.json" && exit 1)
+RUN test -f /app/packages/storefront-shell/dist/core.json && test -f /app/packages/storefront-shell/dist/core.js \
+    || (echo "FATAL: @merfy/shell build did not produce packages/storefront-shell/dist/core.json and core.js" && exit 1)
 # Процессы проверки и рендера секций (блок 2 «Секций и SDK»): собранные файлы dist-render — их запускает Node под
 # --permission, без tsx.
 RUN pnpm --filter @merfy/storefront-sections build:workers

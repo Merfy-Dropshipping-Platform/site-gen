@@ -1,28 +1,40 @@
 import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildShell } from '../../build/build';
 
-// Модуль аналитики в настоящем Chromium (design.md блока 11, раздел 5): страница магазина с ядром @merfy/shell и
-// глобальным скриптом platform:analytics. Сборщик аналитики — этот же сервер (POST /a/collect → 204), счётчик Метрики —
-// подмена Playwright, остальное наружу обрывается: в сеть ничего не уходит. Chromium под Playwright — робот
-// (navigator.webdriver), поэтому traffic = bot.
+// Часть SDK «аналитика» в настоящем Chromium (design.md блока 11, раздел 5; блок 5 «Секций и SDK», часть 5б): страница
+// магазина с бандлом страницы — ядро секций, части auth, cart, favorites и analytics, как его собирает сборка магазина.
+// Сборщик аналитики и шлюз корзины — этот же сервер (POST /a/collect → 204; POST /api/store/carts и …/items — ответы
+// шлюза), счётчик Метрики — подмена Playwright, остальное наружу обрывается: в сеть ничего не уходит. Chromium под
+// Playwright — робот (navigator.webdriver), поэтому traffic = bot.
 const PACKAGE_DIR = fileURLToPath(new URL('../..', import.meta.url));
 const PAGE_FILE = fileURLToPath(new URL('../../fixtures/browser/analytics/index.html', import.meta.url));
-const MODULE_ENTRY = fileURLToPath(new URL('../../sections/analytics/script.ts', import.meta.url));
-const DIST_DIR = fileURLToPath(new URL('../../dist-test/analytics', import.meta.url));
+const CORE_ENTRY = fileURLToPath(new URL('../../src/core/index.ts', import.meta.url));
 const SHOP = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
 const CONSENT_KEY = 'merfy:cookie-consent:v1';
 const VISIT_KEY = 'merfy:analytics:visit';
 const METRIKA = 'https://mc.yandex.ru/metrika/tag.js';
 const COLLECT_PATH = '/a/collect';
-const SHELL_PREFIX = '/_merfy/shell/';
 const BATCH_WAIT_MS = 15_000;
 const TYPES = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8' } as const;
+// Ответы шлюза корзины (store.controller.ts): новая корзина и строка, которую добавили.
+const GATEWAY: Record<string, unknown> = {
+  '/api/store/carts': { cart: { id: 'c-1', shopId: SHOP, status: 'cart' } },
+  '/api/store/carts/c-1/items': {
+    item: {
+      id: 'l-1',
+      orderId: 'c-1',
+      productId: 'scarf-1',
+      variantCombinationId: null,
+      quantity: 2,
+      unitPriceCents: 249000,
+      name: 'Шарф',
+    },
+  },
+};
 
 interface Batch {
   shop_id: string;
@@ -60,26 +72,52 @@ const readBody = (request: IncomingMessage): Promise<string> =>
     request.on('error', reject);
   });
 
-// Файлы страницы: страница с адресом сервера, модуль аналитики, файлы сборки ядра; остальное — 404.
-async function fileFor(pathname: string, page: string, moduleCode: string): Promise<[string, string | Buffer] | null> {
-  if (pathname === '/catalog') return [TYPES.html, page];
-  if (pathname === '/m/analytics.js') return [TYPES.js, moduleCode];
-  if (!pathname.startsWith(SHELL_PREFIX)) return null;
-  return [TYPES.js, await readFile(join(DIST_DIR, 'shell', pathname.slice(SHELL_PREFIX.length)))];
+// Бандл страницы — ядро секций, четыре части и секция «Купить» без своего кода (только mount), как его собирает сборка
+// магазина (часть 5б). Кнопка «В корзину» в ней — действие разметки части cart.
+async function pageBundle(): Promise<string> {
+  const buy = `{ name: 'shop:buy', kind: 'section', script: '${'a'.repeat(64)}', uses: ['auth', 'cart', 'favorites'], definition: defineSection({ mount() {} }) }`;
+  const contents = [
+    `import { start, defineSection, auth, cart, favorites, analytics } from ${JSON.stringify(CORE_ENTRY)};`,
+    `start({ parts: [auth, cart, favorites, analytics], sections: [${buy}] });`,
+  ].join('\n');
+  const result = await build({
+    stdin: { contents, resolveDir: PACKAGE_DIR, loader: 'js' },
+    bundle: true,
+    format: 'esm',
+    platform: 'browser',
+    target: 'es2022',
+    minify: true,
+    write: false,
+    logLevel: 'silent',
+  });
+  return result.outputFiles.map((file) => file.text).join('');
 }
 
-async function startServer(moduleCode: string): Promise<AnalyticsServer> {
+// POST: сборщик аналитики — пачка в batches; шлюз корзины — ответ из GATEWAY. Остальное — 404.
+async function answerPost(request: IncomingMessage, response: ServerResponse, path: string, batches: unknown[]) {
+  const body = await readBody(request);
+  if (path === COLLECT_PATH) {
+    batches.push(JSON.parse(body));
+    return void response.writeHead(204).end();
+  }
+  const reply = GATEWAY[path];
+  if (reply === undefined) return void response.writeHead(404).end();
+  response.writeHead(201, { 'content-type': 'application/json' }).end(JSON.stringify(reply));
+}
+
+async function startServer(bundle: string): Promise<AnalyticsServer> {
   const template = await readFile(PAGE_FILE, 'utf8');
   const batches: unknown[] = [];
   let origin = '';
   const handle = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
     const url = new URL(request.url ?? '/', origin);
-    if (request.method === 'POST' && url.pathname === COLLECT_PATH) {
-      batches.push(JSON.parse(await readBody(request)));
-      return void response.writeHead(204).end();
-    }
-    const file = await fileFor(url.pathname, template.replaceAll('__ORIGIN__', origin), moduleCode);
-    if (file === null) return void response.writeHead(404).end();
+    if (request.method === 'POST') return answerPost(request, response, url.pathname, batches);
+    const files: Record<string, [string, string]> = {
+      '/catalog': [TYPES.html, template.replaceAll('__ORIGIN__', origin)],
+      '/b/page.js': [TYPES.js, bundle],
+    };
+    const file = files[url.pathname];
+    if (file === undefined) return void response.writeHead(404).end();
     response.writeHead(200, { 'content-type': file[0], 'cache-control': 'no-store' }).end(file[1]);
   };
   const server = createServer((request, response) => {
@@ -118,9 +156,7 @@ async function openShop(consent: string | null): Promise<Visit> {
   server.batches.length = 0;
   await page.goto(`${server.origin}/catalog?utm_source=vk`);
   await page.waitForFunction(
-    () =>
-      document.documentElement.dataset.ready === 'yes' &&
-      document.querySelector('merfy-section[data-section="platform:analytics"][data-merfy-state="mounted"]') !== null,
+    () => document.querySelector('merfy-section[data-section-id="buy-1"][data-merfy-state="mounted"]') !== null,
   );
   return { context, page, counters, outside };
 }
@@ -129,25 +165,7 @@ const cookieNames = async (visit: Visit): Promise<string[]> =>
   (await visit.context.cookies()).map((cookie) => cookie.name);
 
 beforeAll(async () => {
-  await buildShell({
-    packageDir: PACKAGE_DIR,
-    outDir: DIST_DIR,
-    core: ['auth', 'cart', 'favorites'],
-    version: '0.0.0-test',
-  });
-  const bundled = await build({
-    entryPoints: [MODULE_ENTRY],
-    outfile: 'analytics.js',
-    bundle: true,
-    format: 'esm',
-    platform: 'browser',
-    target: 'es2022',
-    minify: true,
-    write: false,
-    external: ['@merfy/shell'],
-    logLevel: 'silent',
-  });
-  server = await startServer(bundled.outputFiles.map((file) => file.text).join(''));
+  server = await startServer(await pageBundle());
   browser = await chromium.launch();
 });
 
@@ -156,7 +174,7 @@ afterAll(async () => {
   await server?.close();
 });
 
-describe('модуль аналитики в Chromium', () => {
+describe('часть «аналитика» в Chromium', () => {
   it('до ответа на баннер: визит и просмотр пачкой через 5 с; номер визита — и посетитель; cookie и счётчиков нет', async () => {
     const visit = await openShop(null);
     await expect.poll(() => collected().length, { timeout: BATCH_WAIT_MS }).toBe(2);

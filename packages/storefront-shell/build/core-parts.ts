@@ -1,10 +1,13 @@
+import type { ModuleName } from '../src/core/types';
 import { ShellError } from '../src/errors';
-import { PART_NAMES, type PartName } from '../src/parts/types';
 
-// Состав ядра — один список (design.md блока 7, С7-3 Б). Владелец 10.10: «тут надо гибко я в любой момент могу поменять
-// состав начальных скриптов и это должно работать удобно и гидко». Список — core-parts.json пакета: правка списка и
-// версии пакета меняет ядро, секции не меняются. Незнакомая часть и повтор — ошибка сборки, а не тихий пропуск.
+// Состав ядра секций — один список (design.md блока 7, С7-3 Б; блок 5 «Секций и SDK», раздел 3.10). Владелец 10.10:
+// «тут надо гибко я в любой момент могу поменять состав начальных скриптов и это должно работать удобно и гидко».
+// Список — core-parts.json пакета: части из него — в бандле каждой страницы магазина, их получает каждая секция (до
+// части 5в). Незнакомая часть и повтор — ошибка сборки, а не тихий пропуск.
 const FILE = 'core-parts.json';
+export const PART_NAMES = ['auth', 'cart', 'favorites'] as const satisfies readonly ModuleName[];
+type PartName = (typeof PART_NAMES)[number];
 const isPartName = (value: unknown): value is PartName => PART_NAMES.some((name) => name === value);
 
 export function parseCoreParts(value: unknown): PartName[] {

@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./src/core/index.ts",
+  "types": "./src/core/index.ts",
   "exports": {
-    ".": "./src/index.ts",
+    ".": "./src/core/index.ts",
     "./core": "./src/core/index.ts",
     "./behaviors": "./src/core/behaviors/index.ts",
     "./behaviors/catalog": "./src/core/behaviors/catalog.ts",

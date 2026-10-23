@@ -1,19 +1,9 @@
-import { defineSection, part } from '@merfy/shell';
+import { defineSection } from '@merfy/shell';
 
-// Значок корзины (design.md блока 7, С7-18 Б): секция платформы, путь тот же, что у секции любого автора. Число строк
-// корзины ядра; подписка снимается в unmount.
-const stops = new WeakMap<HTMLElement, () => void>();
-
+// Значок корзины (design.md блока 5, раздел 3.13): число штук в корзине — ctx.watch(ctx.cart.$count); подписку
+// снимает ядро, когда элемент ушёл из документа.
 export default defineSection({
-  async mount(element) {
-    const cart = await part('cart');
-    const count = element.querySelector('[data-count]');
-    const show = (): void => {
-      if (count !== null) count.textContent = String(cart.count());
-    };
-    stops.set(element, cart.subscribe(show));
-  },
-  unmount(element) {
-    stops.get(element)?.();
+  mount(_el, ctx) {
+    ctx.watch(ctx.cart.$count, (count) => ctx.ref('count')?.text(count));
   },
 });

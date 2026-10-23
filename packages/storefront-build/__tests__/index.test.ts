@@ -3,6 +3,10 @@ import * as api from '../src/index';
 
 // Публичный API пакета (README, раздел «API»): значения, которые видит потребитель. Типы TypeScript сюда не попадают.
 const API = [
+  'BUNDLE_DIR',
+  'BUNDLE_INLINE_MAX_BYTES',
+  'PAGE_SCRIPT_WARN_BYTES',
+  'SECTION_INPUT_MAX_BYTES',
   'DATA_KEY_VERSION',
   'EMPTY_PAGE_CONTENT',
   'ENTITY_TYPES',
@@ -50,7 +54,6 @@ const API = [
   'htmlClasses',
   'lookTokensBetween',
   'manifestSchema',
-  'modulePath',
   'pagePropsOf',
   'pageSectionTheme',
   'parseBuildInputs',
@@ -72,7 +75,6 @@ const API = [
   'sectionCss',
   'seoProblems',
   'sha256',
-  'shellDir',
   'shopFonts',
   'shopSectionTokensCss',
   'standLocals',

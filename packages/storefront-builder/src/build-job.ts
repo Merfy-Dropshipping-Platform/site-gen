@@ -4,6 +4,7 @@ import {
   buildStorefront,
   parseBuildInputs,
   type Changelog,
+  type CodeNoticed,
   type SectionFailure,
   type ThemeBuild,
 } from '@merfy/storefront-build';
@@ -121,6 +122,20 @@ function failureLog(deps: BuilderDeps, job: ClaimedJob, failures: SectionFailure
   };
 }
 
+// Предупреждения бандла страницы (блок 5 «Секций и SDK», часть 5б): section-script-skipped, page-script-heavy — строкой
+// журнала; сборка идёт дальше.
+function codeNotice(deps: BuilderDeps, job: ClaimedJob): CodeNoticed {
+  return (page, notice) =>
+    deps.log(notice.code, {
+      shopId: job.siteId,
+      buildId: job.build,
+      page,
+      section: notice.section,
+      bytes: notice.bytes,
+      error: notice.message,
+    });
+}
+
 // Классы без CSS в готовом HTML секции (блок 4 «Секций и SDK», Р4-14): предупреждение — сборка идёт дальше.
 function classLog(deps: BuilderDeps, job: ClaimedJob) {
   return (section: string, classes: readonly string[]): void => {
@@ -154,6 +169,7 @@ async function buildWithSections(deps: BuilderDeps, job: ClaimedJob, snapshot: S
         snapshot.assets,
         render,
         failureLog(deps, job, failures),
+        codeNotice(deps, job),
         classLog(deps, job),
       ),
     );

@@ -6,22 +6,13 @@
     <script type="application/json" id="merfy-config">
       {"v":1,"mode":"live","shop":{"id":"7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70","name":"Шарфы","url":"https://scarves.example"},"currency":"RUB","locale":"ru-RU","api":{"url":"__ORIGIN__/api"},"theme":{"id":"nova","version":"0.1.0"},"page":{"id":"catalog","path":"/catalog"},"analytics":{"url":"__ORIGIN__/a","counters":[{"kind":"metrika","number":"12345678"}]}}
     </script>
-    <script type="application/json" id="merfy-modules">
-      {"v":1,"modules":[{"kind":"global","name":"platform:analytics","src":"/m/analytics.js"}]}
-    </script>
-    <script type="importmap">{"imports":{"@merfy/shell":"/_merfy/shell/shell.js"}}</script>
-    <link rel="modulepreload" href="/_merfy/shell/shell.js" />
-    <script type="module" src="/_merfy/shell/shell.js"></script>
-    <!-- Кнопка «В корзину» — как у секции темы: правка корзины ядра. -->
-    <script type="module">
-      import { part } from '@merfy/shell';
-      const cart = await part('cart');
-      document.querySelector('[data-buy]').addEventListener('click', () => cart.add('scarf-1', 2));
-      document.documentElement.dataset.ready = 'yes';
-    </script>
+    <!-- Бандл страницы (часть 5б): ядро секций, части auth, cart, favorites, analytics и секция «Купить». -->
+    <script type="module" src="/b/page.js"></script>
   </head>
   <body>
     <h1>Каталог</h1>
-    <button type="button" data-buy>В корзину</button>
+    <merfy-section data-section="shop:buy" data-section-id="buy-1">
+      <button type="button" data-buy data-action="cart.add" data-product-id="scarf-1" data-quantity="2">В корзину</button>
+    </merfy-section>
   </body>
 </html>

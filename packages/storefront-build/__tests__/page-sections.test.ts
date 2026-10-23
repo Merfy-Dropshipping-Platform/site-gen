@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CodeInstance } from '../src/inputs';
 import { renderShopPage, type ShopTheme } from '../src/page';
 import { NO_SECTIONS, type PageRender, type SectionRenderRequest } from '../src/sections-render';
-import { NO_SCRIPT, RENDERS, SRC, codeInputs } from './support-code';
+import { ASSETS, NO_SCRIPT, RENDERS, codeInputs } from './support-code';
 import { fakeRender, novaTokens } from './support-theme';
 
 // Страница с секциями SDK 1 (блок 1 «Секций и SDK»): секции рисует функция рендера, CSS — классы Tailwind их разметки.
@@ -12,7 +12,12 @@ const text = (content: Uint8Array): string => Buffer.from(content).toString('utf
 // Подставной рендер: имя секции, заголовок из настроек и класс из словаря.
 const render = (request: SectionRenderRequest): Promise<string> =>
   Promise.resolve(`<h2 class="flex">${request.section} ${String(request.settings.heading ?? '')}</h2>`);
-const pageOf = (mode: PageRender['mode']): PageRender => ({ sections: { modules: RENDERS, render }, mode });
+const pageOf = (mode: PageRender['mode']): PageRender => ({
+  sections: { modules: RENDERS, render },
+  mode,
+  code: ASSETS,
+});
+const BUNDLE_TAG = /<script type="module" src="\/_merfy\/b\/[0-9a-f]{64}\.js"><\/script>/;
 
 describe('страница с секциями', () => {
   it('секции — по порядку мерчанта в обёртках; CSS их классов — в <style id="merfy-sections">', async () => {
@@ -20,16 +25,20 @@ describe('страница с секциями', () => {
     const order = [...html.matchAll(/data-section-id="([^"]+)"/g)].map((match) => match[1]);
     expect(order).toEqual(['cart-badge-1', 'hero-1', 'list-1', 'list-2']);
     expect(html).toContain('shop:hero Шарфы к первым холодам');
-    // База обёртки — в base.css словаря (блок 4 «Секций и SDK», Р4-13); в стилях секций её больше нет.
+    // База обёртки (merfy-section{display:block}) — в base.css темы (4а блока 4), тег несёт только CSS классов секций.
     expect(html).toMatch(/<style id="merfy-sections">[^<]*\.flex/);
-    expect(html).toContain('id="merfy-modules"');
+    // Бандл страницы (часть 5б) — один тег после стилей секций; тег входных данных — у трёх экземпляров со скриптом.
+    expect(html).toMatch(BUNDLE_TAG);
+    expect(html.indexOf('<style id="merfy-sections">')).toBeLessThan(html.search(BUNDLE_TAG));
+    expect(html.match(/data-merfy-input/g)).toHaveLength(3);
+    expect(html).not.toContain('id="merfy-modules"');
   });
 
-  it('превью: только стили секций — без списка модулей, карты импортов и ядра; без аналитики', async () => {
+  it('превью: стили секций и теги входных данных, без бандла страницы и без аналитики', async () => {
     const html = text((await renderShopPage(codeInputs(), '/', theme, pageOf('preview'))).file.content);
     expect(html).toContain('<style id="merfy-sections">');
-    expect(html).not.toContain('id="merfy-modules"');
-    expect(html).not.toContain('type="importmap"');
+    expect(html).toContain('data-merfy-input');
+    expect(html).not.toContain('<script type="module"');
     expect(html).not.toContain('"analytics":{');
   });
 
@@ -52,14 +61,16 @@ describe('страница с секциями', () => {
         (instance): CodeInstance => (hide.has(instance.id) ? { ...instance, hidden: true } : instance),
       );
     });
-    const live = text((await renderShopPage(inputs, '/', theme, pageOf('live'))).file.content);
+    const rendered = await renderShopPage(inputs, '/', theme, pageOf('live'));
+    const live = text(rendered.file.content);
     const preview = text((await renderShopPage(inputs, '/', theme, pageOf('preview'))).file.content);
     for (const html of [live, preview]) {
       expect([...html.matchAll(/data-section-id="([^"]+)"/g)].map((match) => match[1])).toEqual(['hero-1', 'list-2']);
       expect(html).not.toContain('data-section="shop:cart-badge"');
     }
-    // Модуль скрытого «Значка корзины» в список модулей страницы не попадает; отзывы видимы — их модуль на месте.
-    expect(live).not.toContain(SRC.badge);
-    expect(live).toContain(SRC.reviews);
+    // Модуль скрытого «Значка корзины» в бандл страницы не попадает; отзывы видимы — их модуль на месте.
+    const bundle = text(rendered.bundle?.content ?? new Uint8Array());
+    expect(bundle).not.toContain('badge-mounted');
+    expect(bundle).toContain('reviews-mounted');
   });
 });

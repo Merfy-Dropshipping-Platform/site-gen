@@ -10,7 +10,7 @@ const page = (version: string, tokens = ':root{--radius-button:12px}'): string =
     config(version),
     `<style id="merfy-tokens">${tokens}</style>`,
     '<link rel="stylesheet" href="/_astro/shop.css">',
-    '<script type="importmap">{"imports":{"@merfy/shell":"/_merfy/shell/abc/shell.js"}}</script>',
+    `<script type="module" src="/_merfy/b/${'a'.repeat(64)}.js"></script>`,
     '<script type="module" src="/_astro/page.js"></script>',
     '<link rel="preconnect" href="https://cdn.example.com">',
     '</head><body></body></html>',
@@ -29,7 +29,7 @@ function fakeFetch(answers: Record<string, Answer[]>): PageCheckDeps['fetch'] {
 
 const files = (status: number): Record<string, Answer[]> => ({
   [`${SHOP}/_astro/shop.css`]: [{ status }],
-  [`${SHOP}/_merfy/shell/abc/shell.js`]: [{ status: 200 }],
+  [`${SHOP}/_merfy/b/${'a'.repeat(64)}.js`]: [{ status: 200 }],
   [`${SHOP}/_astro/page.js`]: [{ status: 200 }],
 });
 

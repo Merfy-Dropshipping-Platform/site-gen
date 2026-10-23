@@ -127,8 +127,8 @@ function headOf(
     canonical: new URL(route.path, inputs.site.publicUrl).href,
     configHtml: configTag(config),
     ...pageStyles(inputs, theme, migrations),
-    // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены.
-    codeHtml: codeHead(inputs, route.id, content.sectionsCss, content.mode),
+    // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены: стили секций и тег бандла (часть 5б).
+    codeHtml: codeHead(inputs, route.id, content.sectionsCss, content.bundleTag),
     social: socialOf(name, config.locale, inputs.site.logoUrl),
   };
 }

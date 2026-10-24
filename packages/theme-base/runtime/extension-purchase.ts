@@ -43,6 +43,7 @@ import { CONTACT_KEYS } from "./forms-vendor/types-v2";
 import type { FieldType } from "./forms-vendor/types";
 import {
   hasErrors,
+  MESSAGES_V2,
   validateV2,
   visibleItems,
   type ContactValuesV2,
@@ -164,6 +165,7 @@ const TEXTS = {
   optional: "необязательно",
   choose: "Выберите",
   consent: "Даю согласие на обработку персональных данных и файлов",
+  phoneShort: "Проверьте номер: нужно не меньше 10 цифр",
   failure: "Не удалось отправить. Попробуйте ещё раз.",
   filesFailure: "Не все файлы загрузились — проверьте отмеченные поля.",
 } as const;
@@ -851,11 +853,36 @@ function showFailure(session: Session, outcome: SubmitOutcome): void {
   paint(session);
 }
 
+/**
+ * Пакет форм отвечает на пустой и на неполный телефон одним текстом («Нужен
+ * телефон»). Неполный номер — не пустое поле: ему свой текст, пустому — прежний.
+ */
+function withShortPhoneText(
+  form: FormV2,
+  contacts: ContactValuesV2,
+  errors: ValidationErrorsV2,
+): ValidationErrorsV2 {
+  if (textOf(contacts.phone).trim() === "") return errors;
+  const items = { ...errors.items };
+  for (const item of form.items) {
+    const flagged =
+      item.kind === "contact" &&
+      item.key === "phone" &&
+      items[item.id] === MESSAGES_V2.phoneRequired;
+    if (flagged) items[item.id] = TEXTS.phoneShort;
+  }
+  return { ...errors, items };
+}
+
 /** Проверка формы пакетом форм; файлы считаются все выбранные, даже не догрузившиеся. */
 function checkAnswers(session: Session): boolean {
   const { state, view, container } = session;
   const counts = fileCounts(state.files);
-  state.errors = validateV2(view.form, state.values, state.contacts, counts);
+  state.errors = withShortPhoneText(
+    view.form,
+    state.contacts,
+    validateV2(view.form, state.values, state.contacts, counts),
+  );
   state.notice = "";
   if (!hasErrors(state.errors)) return true;
   paint(session);

@@ -8,6 +8,7 @@ import { Logger } from "nestjs-pino";
 import * as path from "node:path";
 import { scanBlockRegistry, validateRegistry } from "../packages/theme-contract/registry";
 import { RegistryStore } from "./registry/registry.store";
+import { useSitesBodyParser } from "./storefront-preview/body-limit";
 
 async function bootstrap() {
   // Registry init + validation BEFORE Nest app creation.
@@ -45,6 +46,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
+  // Файлы секций от шлюза (блок 14 «Секций и SDK»): тело JSON до 512 КБ.
+  useSitesBodyParser(app);
 
   // Serve theme-base/public/* as static for preview iframe (spec 092 + 091).
   // Preview iframe HTML рендерит `<img src="/placeholders/X.png">` —

@@ -6,7 +6,7 @@ import { ShellError } from '../src/errors';
 // Список — core-parts.json пакета: части из него — в бандле каждой страницы магазина, их получает каждая секция (до
 // части 5в). Незнакомая часть и повтор — ошибка сборки, а не тихий пропуск.
 const FILE = 'core-parts.json';
-export const PART_NAMES = ['auth', 'cart', 'favorites'] as const satisfies readonly ModuleName[];
+export const PART_NAMES = ['auth', 'cart', 'consent', 'favorites'] as const satisfies readonly ModuleName[];
 type PartName = (typeof PART_NAMES)[number];
 const isPartName = (value: unknown): value is PartName => PART_NAMES.some((name) => name === value);
 

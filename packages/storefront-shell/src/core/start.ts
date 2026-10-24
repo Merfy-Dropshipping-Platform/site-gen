@@ -107,7 +107,8 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
 
 const MODULE_NAMES: readonly string[] = ['cart', 'favorites', 'auth', 'newsletter'];
 
-const isModuleName = (name: string): name is ModuleName => MODULE_NAMES.includes(name);
+// Согласие (блок 13 «Секций и SDK») — тоже модуль ctx секций.
+const isModuleName = (name: string): name is ModuleName => MODULE_NAMES.includes(name) || name === 'consent';
 
 function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts: CoreParts): InstanceRuntime {
   const attachAll = (host: InstanceHost): void => {

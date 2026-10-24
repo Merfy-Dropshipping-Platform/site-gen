@@ -26,6 +26,18 @@ export const ACTIONS = {
     about: 'отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added }',
     markup: { 'product-id': 'text' },
   },
+  // Блок 13: кнопки баннера cookie. Ответ — один на все страницы магазина, событие merfy:consent:change.
+  'consent.accept': {
+    module: 'consent',
+    about:
+      'покупатель принял cookie: счётчики мерчанта и «свой код» с ожиданием согласия запускаются; ответ — "accepted"',
+    markup: {},
+  },
+  'consent.decline': {
+    module: 'consent',
+    about: 'покупатель отклонил cookie: аналитика ничего не отправляет, счётчиков нет; ответ — "declined"',
+    markup: {},
+  },
   'newsletter.subscribe': {
     module: 'newsletter',
     about: 'подписать на рассылку магазина; аргументы { email }, ответ — { alreadySubscribed }; e-mail — из поля формы',

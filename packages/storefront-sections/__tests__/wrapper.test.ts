@@ -52,13 +52,25 @@ describe('wrapperView', () => {
     expect(isDefaultWrapperView(wrapperView([], {}))).toBe(false);
   });
 
-  it('в 5а закрепление ничего не добавляет: все три значения — пустые строки таблицы (классы — часть 7б)', () => {
+  it('закрепление (часть 7б блока 7): таблица заполнена, none ничего не добавляет', () => {
     expect(STICKY_VIEW).toEqual({
       none: { classes: [], attributes: {} },
-      'scroll-up': { classes: [], attributes: {} },
-      always: { classes: [], attributes: {} },
+      always: { classes: ['sticky', 'top-0', 'z-50'], attributes: {} },
+      'scroll-up': {
+        classes: [
+          'sticky',
+          'top-0',
+          'z-50',
+          'transition-transform',
+          'duration-300',
+          'motion-reduce:transition-none',
+          'data-[hidden]:-translate-y-full',
+        ],
+        attributes: { 'data-behavior': 'sticky-header', 'data-mode': 'scroll-up' },
+      },
     });
-    for (const sticky of ['none', 'scroll-up', 'always'] as const) {
+    // always и scroll-up в виде обёртки проверяет wrapper-sticky.test.ts; здесь остаётся none.
+    for (const sticky of ['none'] as const) {
       expect(wrapperView(['scheme', 'padding', 'sticky'], { sticky })).toEqual({
         classes: ['py-section'],
         attributes: {},

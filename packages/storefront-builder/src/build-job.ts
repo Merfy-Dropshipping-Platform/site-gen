@@ -3,6 +3,7 @@ import {
   buildKey,
   buildStorefront,
   parseBuildInputs,
+  routeDuplicates,
   type Changelog,
   type CodeNoticed,
   type SectionFailure,
@@ -28,6 +29,7 @@ import {
 } from './shop-state';
 import { recordRenderErrors } from './section-error-store';
 import { minuteOf } from './section-errors';
+import { logRouteDuplicates } from './route-duplicates';
 import { readSnapshot, type Snapshot, type SnapshotDeps } from './snapshot';
 import { pinShop, type ThemeCatalog } from './theme-catalog';
 import { recordBuild, type BuildOutcome, type Steps } from './build-record';
@@ -190,9 +192,13 @@ async function attempt(deps: BuilderDeps, job: ClaimedJob, steps: Steps): Promis
   const time = stepTimer(deps, job, steps);
   await pin(deps, job.siteId);
   const snapshot = await time('snapshot', () => readSnapshot(deps.snapshot, job.siteId));
-  const key = buildKey(parseBuildInputs(snapshot.inputs));
+  const inputs = parseBuildInputs(snapshot.inputs);
+  const key = buildKey(inputs);
   const live = await time('compare', () => liveManifest(deps.store, snapshot.address.label));
   if (live?.key === key) return { outcome: 'skipped', error: null, code: null };
+  // Совпавшие адреса записей (блок 8, часть 8б) — строкой журнала; сборка идёт.
+  logRouteDuplicates(deps.log, { shopId: job.siteId, buildId: job.build }, routeDuplicates(inputs));
+  // Совпавшие адреса записей (блок 8, часть 8б) — строкой журнала; сборка идёт.
   const theme = await themeFor(deps, snapshot);
   const result = await time('build', () => publish(deps, job, snapshot, theme));
   if (result.status === 'live' && deps.indexable && shouldAnnounce(deps.changelogs, live, snapshot.inputs))

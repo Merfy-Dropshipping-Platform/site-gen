@@ -133,6 +133,8 @@ export interface PlacedSection {
   uses?: readonly PropsUse[];
   // true — у секции есть скрипт: в обёртке последним элементом — тег входных данных (часть 5б, input-tag.ts).
   script?: boolean;
+  // Классы, которые ставит скрипт секции (часть 5в блока 5, script_meta.classes): CSS для них — в стилях страницы.
+  classes?: readonly string[];
   // Часть 5 блока 1: вид обёртки (общие настройки секции); нет — WRAPPER_CLASS.
   wrapper?: WrapperView;
 }
@@ -296,6 +298,9 @@ async function reportUnknownClasses(
   }
 }
 
+// Классы скриптов секций страницы (часть 5в блока 5) — к классам разметки: скрипт ставит их уже в браузере.
+const scriptClassesOf = (placed: readonly PlacedSection[]): string[] => placed.flatMap((entry) => entry.classes ?? []);
+
 // Секции страницы по порядку и CSS их классов. Секций нет — процесс рендера не нужен, Tailwind не собирается. Секции
 // рендерятся по одной: процесс рендера держит в работе один запрос, предел страницы считается по порядку.
 export async function renderPlacedSections(
@@ -312,7 +317,7 @@ export async function renderPlacedSections(
     left -= Buffer.byteLength(html);
     sections.push(html);
   }
-  const sectionsCss = await sectionCss(sections.join(''), dictionary, sectionTheme);
+  const sectionsCss = await sectionCss(sections.join(''), dictionary, sectionTheme, scriptClassesOf(placed));
   if (page.classUnknown !== undefined) {
     await reportUnknownClasses(placed, sections, dictionary, sectionTheme, page.classUnknown);
   }

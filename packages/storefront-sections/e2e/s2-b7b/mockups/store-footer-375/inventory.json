@@ -1,0 +1,21 @@
+{
+  "screen": "store-footer-375",
+  "title": "Витрина → подвал, 375 px: столбиком",
+  "surface": "phone",
+  "widths": [375],
+  "protoRoot": "body",
+  "protoOpen": [],
+  "open": [{ "wait": 800 }],
+  "items": [
+    { "id": "nl-heading", "what": "заголовок рассылки", "text": "Подпишитесь на нашу рассылку", "role": "heading", "exact": true },
+    { "id": "nl-text", "what": "текст рассылки под заголовком", "text": "Скидки и новинки раз в неделю", "below": "nl-heading" },
+    { "id": "nl-email", "what": "поле почты рассылки", "text": "Email", "role": "textbox", "below": "nl-text" },
+    { "id": "nl-submit", "what": "кнопка отправки рассылки (неактивна до блока 9)", "text": "Подписаться", "role": "button", "below": "nl-text" },
+    { "id": "nav-title", "what": "заголовок колонки «Навигация»", "text": "Навигация", "role": "heading", "exact": true, "below": "nl-email" },
+    { "id": "nav-catalog", "what": "ссылка «Каталог»", "text": "Каталог", "role": "link", "exact": true, "below": "nav-title" },
+    { "id": "nav-about", "what": "ссылка «О нас»", "text": "О нас", "role": "link", "exact": true, "below": "nav-catalog" },
+    { "id": "nav-contacts", "what": "ссылка «Контакты»", "text": "Контакты", "role": "link", "exact": true, "below": "nav-about" },
+    { "id": "powered", "what": "нижняя строка «Разработано на Merfy» — ссылка", "text": "Разработано на Merfy", "role": "link", "below": "nav-contacts" }
+  ],
+  "notes": "Эталон — flux, магазин без политик, контактов и соцсетей: колонок «Информация» и «Социальные сети» нет (скрыты, как на проде); их проверяют тесты shop-footer. Стрелка на кнопке рассылки у flux — значок, у нас текст/значок по эталону."
+}

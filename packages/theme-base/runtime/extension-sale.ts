@@ -54,8 +54,12 @@ export interface ExtensionSale {
   known(productId: string): boolean | undefined;
   /** Есть кого спросить: конфиг магазина на странице и id товара. Нет — ждать ответа нечего. */
   canAsk(productId: string): boolean;
-  /** Спросить расширение (один раз на товар); сбой — `false` без запоминания. */
-  check(productId: string): Promise<boolean>;
+  /**
+   * Спросить расширение (один раз на товар); сбой — `false` без запоминания.
+   * `fresh: true` — мимо кэша сессии (чекаут, Б16): свежий ответ пишется в кэш
+   * как обычно, поэтому следующий вызов без `fresh` уже видит его.
+   */
+  check(productId: string, options?: { fresh?: boolean }): Promise<boolean>;
 }
 
 interface SessionCache {
@@ -174,9 +178,11 @@ export function createExtensionSale(win: Window): ExtensionSale {
     return value;
   }
 
-  const check = (productId: string): Promise<boolean> => {
-    const hit = known(productId);
-    if (hit !== undefined) return Promise.resolve(hit);
+  const check = (productId: string, options?: { fresh?: boolean }): Promise<boolean> => {
+    if (options?.fresh !== true) {
+      const hit = known(productId);
+      if (hit !== undefined) return Promise.resolve(hit);
+    }
     const channel = channelOf(win);
     if (channel === null || productId === "") return Promise.resolve(false);
     const pending = asked.get(productId);

@@ -1,6 +1,9 @@
 import {
+  NOT_FOUND_PAGE_ID,
+  NOT_FOUND_ROUTE,
   PREVIEW_AGENT,
   PREVIEW_SECTIONS_AGENT,
+  pageInfoById,
   pagePropsOf,
   parseBuildInputs,
   renderPlacedSections,
@@ -57,8 +60,8 @@ export interface ShopPreviewDeps {
 const HOME_PAGES: ReadonlySet<string> = new Set(['', '/', 'home']);
 const FONTS_STYLE = /<style id="merfy-fonts">([\s\S]*?)<\/style>/;
 const TEXT = {
-  page: 'в превью есть главная (page=home), свои страницы (page=<id страницы>) и стенд темы (page=stand)',
-  block: 'нужно тело JSON { instance: { id, section, settings }, menus?, theme? }',
+  page: 'в превью есть главная (page=home), страница 404 (page=not-found), свои страницы (page=<id страницы>) и стенд темы (page=stand)',
+  block: 'нужно тело JSON { instance: { id, section, settings }, menus?, theme?, page? }',
   section: (name: string) => `секции ${name} у магазина нет`,
   extensions: 'сервис расширений не ответил',
 } as const;
@@ -67,6 +70,8 @@ const blockSchema = z.object({
   instance: instanceSchema,
   menus: revisionMenusSchema.optional(),
   theme: z.record(z.string(), z.unknown()).optional(),
+  // Часть 7а блока 7: id страницы, на которой стоит блок; нет или неизвестный — главная.
+  page: z.string().optional(),
 });
 
 const isPreviewAnswer = (value: PreviewShop | DrawAnswer): value is DrawAnswer => 'status' in value;
@@ -133,6 +138,13 @@ function withoutFontPreloads(html: string): string {
   return html.replace(LINK_TAG, (tag) => (isFontPreload(tag) ? '' : tag));
 }
 
+// Адрес страницы превью: главная, страница 404 (часть 7а; всегда темой — это поверхность правки) или своя страница.
+function previewPathOf(inputs: BuildInputs, page: string): string | undefined {
+  if (HOME_PAGES.has(page)) return '/';
+  if (page === NOT_FOUND_PAGE_ID) return NOT_FOUND_ROUTE.path;
+  return inputs.revision.pages?.find((candidate) => candidate.id === page)?.slug;
+}
+
 export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<DrawAnswer> {
   const rawShop = url.searchParams.get('shop');
   const page = url.searchParams.get('page') ?? '';
@@ -141,7 +153,7 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   if (isPreviewAnswer(found)) return found;
   const { inputs, renders } = await deps.inputs(found.shopId);
   // Главная или своя страница по id (часть 4, Р1-4-9): адрес — из ревизии; другой страницы в превью нет.
-  const path = HOME_PAGES.has(page) ? '/' : inputs.revision.pages?.find((candidate) => candidate.id === page)?.slug;
+  const path = previewPathOf(inputs, page);
   if (path === undefined) return answer(404, TEXT.page);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
   const rendered = await renderShopPage(inputs, path, theme, previewPage(deps, found.shopId, renders));
@@ -164,7 +176,7 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   if (isPreviewAnswer(found)) return found;
   const parsed = blockSchema.safeParse(jsonOf(body));
   if (!parsed.success) return jsonAnswer(400, { problems: [TEXT.block] });
-  const { instance, menus, theme } = parsed.data;
+  const { instance, menus, theme, page } = parsed.data;
   const sections = await deps.sections(found.shopId);
   if (sections === null) return jsonAnswer(502, { problems: [TEXT.extensions] });
   const current = sections.get(instance.section);
@@ -178,7 +190,9 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
       : { blocks: resolveSectionBlocks(current.manifest, instance.blocks).blocks };
   // Часть 4 (Р1-4-11): деревья меню по значениям настроек; uses — только если объявлен.
   const placed = previewPlaced(instance, current, settings, blocks, menus ?? [], current.renderHash);
-  const props = (current.manifest.uses ?? []).length > 0 ? await previewProps(deps, found.shopId, theme) : undefined;
+  // page — у каждой секции (часть 7а): без page и без uses пропсы не читаются, страница — главная.
+  const needsProps = (current.manifest.uses ?? []).length > 0 || page !== undefined;
+  const props = needsProps ? await previewProps(deps, found.shopId, theme, page) : undefined;
   const modules = new Map([[current.renderHash, current.render]]);
   const content = await renderPlacedSections([placed], found.dictionary, {
     ...previewPage(deps, found.shopId, modules),
@@ -210,10 +224,16 @@ function previewPlaced(
 }
 
 // Настройки темы и данные магазина для превью одного блока (часть 4, Р1-4-11): themeEdits нет — правки из ревизии.
-async function previewProps(deps: ShopPreviewDeps, shopId: string, themeEdits: unknown): Promise<PageProps> {
+async function previewProps(
+  deps: ShopPreviewDeps,
+  shopId: string,
+  themeEdits: unknown,
+  pageId = 'home',
+): Promise<PageProps> {
   const { inputs } = await deps.inputs(shopId);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
-  return pagePropsOf(inputs, theme, themeEdits ?? inputs.revision.settings ?? {});
+  const props = pagePropsOf(inputs, theme, themeEdits ?? inputs.revision.settings ?? {});
+  return { ...props, page: pageInfoById(inputs, pageId) };
 }
 
 export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null): Promise<DrawAnswer> {

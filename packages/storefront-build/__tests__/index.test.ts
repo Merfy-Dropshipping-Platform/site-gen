@@ -30,6 +30,8 @@ const API = [
   'SHOP_ROUTES',
   'HOME_PAGE',
   'NOT_FOUND_PAGE_ID',
+  'NOT_FOUND_ROUTE',
+  'pageInfoById',
   'SPECIAL_PAGES',
   'SPECIAL_PAGE_IDS',
   'SPECIAL_PAGE_SLUGS',

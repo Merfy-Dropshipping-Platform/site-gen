@@ -18,7 +18,7 @@ export { DATA_KEY_VERSION, KEY_VERSION, buildKey, dataKey } from './key';
 export { entityHashes, entityKey } from './entities';
 export { buildStorefront, type BuildReferences, type StorefrontBuild, type ThemeBuild } from './build';
 export { pagePropsOf, renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
-export { SHOP_ROUTES, routeOf, type ShopRoute } from './routes';
+export { NOT_FOUND_ROUTE, SHOP_ROUTES, pageInfoById, routeOf, type ShopRoute } from './routes';
 export {
   HOME_PAGE,
   NOT_FOUND_PAGE_ID,

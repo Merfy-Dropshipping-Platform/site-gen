@@ -1,0 +1,23 @@
+{
+  "sdk": 1,
+  "name": "scarf-match",
+  "kind": "section",
+  "title": "Подбор шарфа",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Подберите шарф к пальто" } }
+  ],
+  "blocks": {
+    "scarf": {
+      "title": "Шарф",
+      "limit": 12,
+      "settings": [
+        { "id": "label", "label": "Название", "setting": { "kind": "string", "default": "Кашемир" } },
+        { "id": "caption", "label": "К какому пальто", "setting": { "kind": "string", "default": "grey black" } }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "scarf", "settings": { "label": "Кэмел", "caption": "grey black" } },
+    { "type": "scarf", "settings": { "label": "Графит", "caption": "grey" } }
+  ]
+}

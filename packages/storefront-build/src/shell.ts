@@ -25,6 +25,7 @@ export interface ShellBuild {
   parts: string[];
   code: string; // текст dist/core.js
   kit?: ShellKit; // нет — страница без поведений и анимаций (подставные сборки тестов)
+  preview?: string; // текст dist/preview.js (блок 5, часть 5г): в hash не входит; нет — превью без кода
 }
 
 const coreJsonSchema = z.object({
@@ -105,5 +106,17 @@ export async function readShellBuild(root: string): Promise<ShellBuild> {
   const manifest = parseWith(coreJsonSchema, parseCoreJson(await readDist(dist, 'core.json')), 'shell-missing');
   const code = await readDist(dist, 'core.js');
   const kit = await readKit(dist);
-  return { version: manifest.version, hash: buildHash(code, kit), parts: manifest.parts, code, kit };
+  const build = { version: manifest.version, hash: buildHash(code, kit), parts: manifest.parts, code, kit };
+  const preview = await readPreview(dist);
+  return preview === null ? build : { ...build, preview };
+}
+
+// Скрипт превью конструктора (блок 5, часть 5г) — dist/preview.js. Нет файла — null: сборка ядра до 5г, превью без
+// кода (Р5г-11).
+async function readPreview(dist: string): Promise<string | null> {
+  try {
+    return await readFile(join(dist, 'preview.js'), 'utf8');
+  } catch {
+    return null;
+  }
 }

@@ -12,6 +12,9 @@ export interface CurrentSection {
   // Что нужно скрипту (часть 5в блока 5, script_meta). Нет — строка до 5в или значение не той формы: сборка даёт
   // секции все части ядра, как в 5б.
   scriptMeta?: ScriptMeta;
+  // Код секции (часть 5г блока 5): модуль без импортов и его хеш sha256:<hex> — для превью одного блока. Нет — у строки
+  // нет скрипта.
+  script?: { hash: string; code: string };
 }
 
 export function currentSection(row: SectionRow): CurrentSection | null {
@@ -25,5 +28,6 @@ export function currentSection(row: SectionRow): CurrentSection | null {
     render: row.render,
     renderHash: row.renderHash,
     ...(meta.success ? { scriptMeta: meta.data } : {}),
+    ...(row.script === null || row.scriptHash === null ? {} : { script: { hash: row.scriptHash, code: row.script } }),
   };
 }

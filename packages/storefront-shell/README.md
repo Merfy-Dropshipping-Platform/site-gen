@@ -25,10 +25,20 @@
 ## Аналитика магазина
 
 `src/core/analytics/` — часть SDK `analytics` (блок 11; с части 5б — не секция): визит, просмотр страницы по
-`merfy:page:view`, «в корзину» и «из корзины» по прочитанным состояниям корзины ядра — в сборщик аналитики
-(`analytics.url` конфига) по таблице согласия `consent.ts`; счётчики мерчанта — после «принять». API для секций у неё
-нет. Сборка магазина добавляет её в бандл каждой страницы опубликованного сайта (`LIVE_PARTS` в `storefront-build`).
-Вес — до 3 КБ brotli (`__tests__/analytics-budget.test.ts`).
+`merfy:page:view`, «в корзину» и «из корзины» по событиям `merfy:cart:*` (`sdk-events.ts`) — в сборщик аналитики
+(`analytics.url` конфига) по таблице согласия `consent.ts`; счётчики мерчанта — после загрузки страницы и «Принять».
+«Свой код» мерчанта (`analytics.custom`, `custom-code.ts`): из текста — только `<script>`, разбор в `<template>`;
+«ждать согласия» — после «Принять», «сразу» — после `merfy:page:ready`; один раз, в превью — никогда. API для секций у
+части нет; сборка магазина добавляет её в бандл каждой страницы (`LIVE_PARTS`). Вес — до 3 КБ brotli, «свой код» — до
+512 Б (`__tests__/analytics-budget.test.ts`).
+
+## Согласие и события страницы (блок 13 «Секций и SDK», часть 13а)
+
+- Часть `consent` (в ядре): `ctx.consent.$consent` — `'unknown' | 'accepted' | 'declined'`, `accept()`, `decline()`;
+  разметка — `consent.accept`, `consent.decline`. Ответ — `localStorage['merfy:cookie-consent:v1']`, как у баннера пяти
+  тем; превью и недоступное хранилище — память страницы; `merfy:consent:change` — при смене ответа, и из другой вкладки.
+- События страницы (`src/core/page-events.ts`): `merfy:page:hidden`, `merfy:page:visible`, `merfy:page:leave`,
+  `merfy:page:restore` («Назад» из кеша браузера, без второго просмотра).
 
 ## Наши секции
 

@@ -74,3 +74,15 @@ export { nameIssue } from './name-check';
 export { namesMarkdown } from './generate/names-markdown';
 export { SETTINGS_LIMITS } from './limits';
 export type { SettingValueOf } from './setting-value';
+
+// Документация SDK и инструменты ИИ (блок 14 «Секций и SDK»): справка по кодам, ответ проверки, файлы для ИИ, данные
+// для страниц документации.
+export { PROBLEM_INFO, problemDoc, type ProblemInfo } from './problem-info';
+export { sectionAnswer, type AnswerProblem, type SectionAnswer } from './answer';
+export { AI_FILES, isAiFile, withoutAiFiles } from './ai-files';
+export { PROBLEM_CODES, isWarning } from './problems';
+export { SECTION_ID, SECTION_USES, SOURCE_LIMITS, sectionManifestSchema } from './format';
+export { SCRIPT_LIMITS } from './script';
+export { MAX_TEMPLATE_DEPTH } from './depth';
+export { FORBIDDEN_TAGS } from './template';
+export { SDK_KINDS } from './names';

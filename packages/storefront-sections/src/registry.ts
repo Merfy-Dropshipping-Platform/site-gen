@@ -245,3 +245,30 @@ function releaseColumns(visibility: Visibility): [string[], string[], string[]] 
 export async function visibleSections(db: Queryable, visibility: Visibility): Promise<SectionRow[]> {
   return select(db, VISIBLE_SQL, [...releaseColumns(visibility), visibility.shopId]);
 }
+
+// Секции, которые видит конструктор магазина (блок 14 «Секций и SDK», Р14-14): расширения — как у сборки, свои — текущие
+// правки (draft), а не опубликованные. Сборка и дорисовка читают visibleSections.
+const EDITABLE_SQL = `SELECT ${COLUMNS} FROM storefront_section
+  WHERE (author, owner, release) IN (SELECT * FROM unnest($1::text[], $2::text[], $3::text[]))
+     OR (author = 'shop' AND owner = $4 AND draft)
+  ORDER BY name COLLATE "C"`;
+
+export async function editableSections(db: Queryable, visibility: Visibility): Promise<SectionRow[]> {
+  return select(db, EDITABLE_SQL, [...releaseColumns(visibility), visibility.shopId]);
+}
+
+const SOURCE_SQL = `SELECT id, source FROM storefront_section
+  WHERE author = 'shop' AND owner = $1 AND name = $2 AND draft`;
+const sourceRow = z.object({ id: z.string(), source: z.record(z.string(), z.string()) });
+
+export interface DraftSource {
+  id: string;
+  files: SectionFiles;
+}
+
+// Файлы текущей правки своей секции магазина — чтобы ИИ дорабатывал её (блок 14, 14.7). Нет такой секции — null.
+export async function draftSource(db: Queryable, shopId: string, name: string): Promise<DraftSource | null> {
+  const { rows } = await db.query(SOURCE_SQL, [shopId, name]);
+  const row = rows.map((item) => sourceRow.parse(item)).at(0);
+  return row === undefined ? null : { id: row.id, files: row.source };
+}

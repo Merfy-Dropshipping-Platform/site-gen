@@ -6718,13 +6718,17 @@
       "const": false
     },
     "uses": {
-      "maxItems": 2,
+      "maxItems": 6,
       "type": "array",
       "items": {
         "type": "string",
         "enum": [
           "theme",
-          "shop"
+          "shop",
+          "cart",
+          "favorites",
+          "auth",
+          "newsletter"
         ]
       }
     },

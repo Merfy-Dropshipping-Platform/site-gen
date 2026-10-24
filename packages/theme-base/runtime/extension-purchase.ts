@@ -58,7 +58,10 @@ import {
   isRecord,
   isSuccessStatus,
   safeLink,
+  sitePath,
 } from "./extension-call";
+import { POLICY_URLS_GLOBAL } from "./legal-links";
+import { guardPreviewClicks } from "./preview-click-guard";
 import {
   canPreview,
   uploadFile,
@@ -165,6 +168,8 @@ const TEXTS = {
   optional: "необязательно",
   choose: "Выберите",
   consent: "Даю согласие на обработку персональных данных и файлов",
+  /** Часть согласия, которая становится ссылкой на политику магазина. */
+  consentLink: "обработку персональных данных",
   phoneShort: "Проверьте номер: нужно не меньше 10 цифр",
   failure: "Не удалось отправить. Попробуйте ещё раз.",
   filesFailure: "Не все файлы загрузились — проверьте отмеченные поля.",
@@ -563,10 +568,28 @@ function rowHtml(row: FormItem[], state: FormState): string {
   return row.length === 2 ? `<div class="sf-num">${cells}</div>` : cells;
 }
 
+/** Адрес политики конфиденциальности магазина из глобала сборки/превью; только путь своего сайта. */
+function privacyPolicyPath(): string | null {
+  if (typeof window === "undefined") return null;
+  const urls = (window as unknown as Record<string, unknown>)[POLICY_URLS_GLOBAL];
+  return isRecord(urls) ? sitePath(urls.privacy) : null;
+}
+
+/** Текст согласия; фраза «обработку персональных данных» — ссылка на политику, если она есть. */
+function consentTextHtml(): string {
+  const path = privacyPolicyPath();
+  if (path === null) return TEXTS.consent;
+  const [head, tail] = TEXTS.consent.split(TEXTS.consentLink);
+  const link =
+    `<a${attribute("href", path)} target="_blank" rel="noopener" data-xp-policy` +
+    ` style="color:inherit;text-decoration:underline">${TEXTS.consentLink}</a>`;
+  return `${head}${link}${tail}`;
+}
+
 function consentHtml(state: FormState): string {
   const checked = state.contacts.consent === true ? " checked" : "";
   const box = `<input type="checkbox" data-xp-consent${checked}>`;
-  return `<label class="sf-cb">${box}<span>${TEXTS.consent}</span></label>${errorHtml(state.errors.consent)}`;
+  return `<label class="sf-cb">${box}<span>${consentTextHtml()}</span></label>${errorHtml(state.errors.consent)}`;
 }
 
 /** Вся форма: заголовок, пункты по порядку, согласие, кнопка, текст у кнопки, подсказка. */
@@ -639,7 +662,21 @@ function revealForm(
   container.hidden = false;
 }
 
-const isConditionSource = (form: FormV2, id: string): boolean =>
+const POLICY_GUARD_FLAG = "__merfyXpPolicyGuard";
+
+/**
+ * В превью конструктора (iframe) переход по ссылке на политику гасится: навигация
+ * конструктора по неизвестному адресу автосоздаёт страницу. Как у баннера cookie
+ * и юридической строки чекаута; на витрине — обычный переход. Один раз на окно.
+ */
+function guardPolicyLink(): void {
+  const flags = window as unknown as Record<string, unknown>;
+  if (flags[POLICY_GUARD_FLAG] === true) return;
+  flags[POLICY_GUARD_FLAG] = true;
+  guardPreviewClicks(window, "[data-xp-policy]");
+}
+
+const isConditionSource =(form: FormV2, id: string): boolean =>
   form.items.some(
     (item) => item.kind === "field" && item.condition?.field === id,
   );
@@ -990,6 +1027,7 @@ export async function mountExtensionPurchase(
     uploads: 0,
   };
   revealForm(root, container, loaded.view);
+  guardPolicyLink();
   paint(session);
   container.addEventListener("input", (event) => onInput(session, event));
   container.addEventListener("change", (event) => onChange(session, event));

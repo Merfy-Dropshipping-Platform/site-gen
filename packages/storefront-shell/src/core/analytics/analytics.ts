@@ -1,4 +1,3 @@
-import { cartChanges, type CartFeed, type CartState } from './cart.ts';
 import { collectorDestination, type Beacon, type Destination } from './collector.ts';
 import { consentRule } from './consent.ts';
 import { loadCounters } from './counters.ts';
@@ -6,14 +5,14 @@ import { pageContext, type EventType, type PageContext, type ProductLine, type S
 import { idsFor, type IdentityEnv } from './identity.ts';
 import { readSettings, type AnalyticsSettings } from './settings.ts';
 import { storageOf, type KeyValue } from './storage.ts';
+import type { CartChange } from './sdk-events.ts';
 import { applyOwnerParam, trafficOf, type TrafficEnv } from './traffic.ts';
 
 // Модуль аналитики магазина (design.md блока 11) — часть SDK analytics ядра секций (блок 5 «Секций и SDK», часть 5б,
-// part.ts): сборка магазина добавляет её в бандл каждой страницы опубликованного сайта. Просмотр страницы — по
-// merfy:page:view ядра; корзину ядра модуль слушает с первого просмотра — «в корзину» и «из корзины». Каждое событие
-// заново читает ответ о согласии (С11-2 В, таблица consent.ts). Пачки — раз в 5 с и когда страница уходит в фон (решил
-// сам 5); счётчики мерчанта — после загрузки страницы и только с разрешения (решил сам 13). Превью конструктора и
-// магазин без analytics в конфиге ничего не отправляют (решил сам 8).
+// part.ts). Просмотр страницы — по merfy:page:view ядра; «в корзину» и «из корзины» — по событиям корзины SDK (блок 13,
+// перевод — sdk-events.ts). Каждое событие заново читает ответ о согласии (С11-2 В, таблица consent.ts). Пачки — раз в
+// 5 с и когда страница уходит в фон (решил сам 5); счётчики мерчанта — после загрузки страницы и только с разрешения
+// (решил сам 13), после «Принять» — сразу. Превью конструктора и магазин без analytics в конфиге ничего не отправляют.
 export const BATCH_MS = 5_000;
 const COMPLETE: DocumentReadyState = 'complete';
 const HIDDEN: DocumentVisibilityState = 'hidden';
@@ -21,13 +20,16 @@ const HIDDEN: DocumentVisibilityState = 'hidden';
 export interface AnalyticsDeps {
   win: Window;
   beacon: Beacon;
-  cart: () => Promise<CartFeed>;
   newId: () => string;
 }
 
 export interface Analytics {
   // Новая страница: просмотр; первый вызов на загрузку страницы ещё и запускает модуль.
   page: () => void;
+  // «В корзину» или «из корзины» — переведённое событие SDK (sdk-events.ts); до запуска модуля — ничего.
+  cart: (change: CartChange) => void;
+  // Ответ на баннер сменился: счётчики мерчанта — сразу, если теперь можно.
+  consent: () => void;
   // Отправить накопленное сейчас (снятие секции).
   flush: () => void;
 }
@@ -43,7 +45,6 @@ interface Runtime {
   destinations: Destination[];
   // Метка владельца из адреса страницы этой загрузки (traffic.ts).
   owner: boolean | null;
-  cart: CartState | null;
   running: boolean;
   countersLoaded: boolean;
 }
@@ -102,19 +103,11 @@ function record(rt: Runtime, type: EventType, product: ProductLine | null): void
   maybeLoadCounters(rt);
 }
 
-// Корзина ядра: первое состояние — точка отсчёта, дальше — разница с прошлым.
-function onCart(rt: Runtime, state: CartState): void {
-  const before = rt.cart;
-  rt.cart = state;
-  if (before === null) return;
-  cartChanges(before, state).forEach((change) => record(rt, change.type, change.product));
-}
-
 function flush(rt: Runtime): void {
   rt.destinations.forEach((destination) => destination.flush());
 }
 
-// Запуск — один раз на загрузку страницы: адресаты, таймер пачек, уход в фон, загрузка страницы, корзина ядра.
+// Запуск — один раз на загрузку страницы: адресаты, таймер пачек, уход в фон, загрузка страницы.
 function start(rt: Runtime, settings: AnalyticsSettings): void {
   rt.running = true;
   rt.destinations = [collectorDestination(settings.url, settings.shopId, rt.deps.beacon)];
@@ -123,10 +116,6 @@ function start(rt: Runtime, settings: AnalyticsSettings): void {
     if (rt.doc.visibilityState === HIDDEN) flush(rt);
   });
   if (rt.doc.readyState !== COMPLETE) rt.win.addEventListener('load', () => maybeLoadCounters(rt), { once: true });
-  rt.deps
-    .cart()
-    .then((cart) => void cart.subscribe((state) => onCart(rt, state)))
-    .catch((error: unknown) => console.error('Аналитика: нет корзины ядра', error));
 }
 
 function page(rt: Runtime): void {
@@ -150,9 +139,17 @@ export function createAnalytics(deps: AnalyticsDeps): Analytics {
     context: null,
     destinations: [],
     owner: null,
-    cart: null,
     running: false,
     countersLoaded: false,
   };
-  return { page: () => page(rt), flush: () => flush(rt) };
+  return {
+    page: () => page(rt),
+    cart: (change: CartChange): void => {
+      if (rt.running) record(rt, change.type, change.product);
+    },
+    consent: (): void => {
+      if (rt.running) maybeLoadCounters(rt);
+    },
+    flush: () => flush(rt),
+  };
 }

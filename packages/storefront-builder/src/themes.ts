@@ -11,13 +11,14 @@ import {
   type ThemeState,
   type ThemeVersions,
 } from '@merfy/storefront-build';
-import { panelForTheme, parsePanel, parseTheme, parseTokenMigrations } from '@merfy/tokens';
+import { parseTheme, parseTokenMigrations } from '@merfy/tokens';
 import type { RendererFiles } from './renderer-archive';
 import { z } from 'zod';
 import type { LoadedTheme } from './build-job';
 import { StorefrontBuilderError } from './errors';
 import type { Assets } from './inline-assets';
 import type { PreviewTheme } from './stand-preview';
+import { themePanels } from './theme-panels';
 
 // Темы новой архитектуры (design.md блока 6, раздел 4, «Старые пути»): те, что записаны в theme-versions.json пакета
 // блока 4. Для каждой — серверная сборка рисовальщика в themes/<тема>/dist-renderer (собирает `pnpm renderer` этого
@@ -69,11 +70,16 @@ export async function loadThemeFrom(root: string, files: RendererFiles, state: T
   const themeJson = themeFileSchema.parse(await readJson(files.themeJson));
   const tokens = parseTheme(themeJson.tokens);
   const migrations = parseTokenMigrations(await readJson(files.migrationsJson));
-  const panel = panelForTheme(parsePanel(await readJson(join(root, PANEL_FILE)), tokens.dictionary), themeJson.panel);
+  const { panel, platformPanel } = themePanels(
+    await readJson(join(root, PANEL_FILE)),
+    tokens.dictionary,
+    themeJson.panel,
+  );
   const clientFiles = await readClientFiles(files.clientDir);
   const stand = options.standPage ? { stand: { tokens, panel, renderStand: renderer.renderStand } } : {};
-  // Схема панели — и у сборки (часть 4 блока 1 «Секций и SDK»): по ней настройки темы для секций с "uses": ["theme"].
-  const build = { tokens, render: renderer.render, clientFiles, migrations, panel, ...stand };
+  // Обе панели — и у сборки (часть 4 блока 1 и часть 3в блока 3 «Секций и SDK»): правки настроек темы для секций с
+  // "uses": ["theme"] читаются по panel, значения считаются по полной platformPanel.
+  const build = { tokens, render: renderer.render, clientFiles, migrations, panel, platformPanel, ...stand };
   const theme: LoadedTheme = { ...state, build };
   const preview: PreviewTheme = {
     version: state.version,

@@ -21,6 +21,7 @@ import { eq } from "drizzle-orm";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { getThemeManifest } from "../themes/theme-manifest-loader";
+import { isNewThemeId } from "../content/new-theme-pages";
 
 /** Единственное место, где объявлена тема магазина по умолчанию (И1). */
 export const DEFAULT_THEME_ID = "rose";
@@ -59,6 +60,8 @@ export const THEME_CATALOG = Symbol("THEME_CATALOG");
 
 /** Есть ли у темы пакет витрины с главной страницей. */
 export function hasStorefrontPackage(themeId: string): boolean {
+  // Новая тема (блок 7, часть 7а): главную ей даёт стартовая ревизия платформы.
+  if (isNewThemeId(themeId)) return true;
   const manifest = getThemeManifest(themeId) as {
     pages?: Array<{ isHome?: boolean }>;
   } | null;

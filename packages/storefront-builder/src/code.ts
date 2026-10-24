@@ -8,6 +8,7 @@ import {
 } from '@merfy/storefront-build';
 import {
   currentSection,
+  propsUsesOf,
   resolveSectionBlocks,
   resolveSectionSettings,
   revisionMenusSchema,
@@ -164,7 +165,8 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   script: row.scriptHash,
   // Часть 4: флаги section.json — только если объявлены, иначе входы и ключ прежние.
   ...(current.manifest.removable === undefined ? {} : { removable: current.manifest.removable }),
-  ...(current.manifest.uses === undefined ? {} : { uses: current.manifest.uses }),
+  // uses с модулями SDK (часть 5в блока 5): во входы сборки — только theme и shop, модули идут через script_meta.
+  ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),
   // Свои токены секции (блок 4, Р4-10) — только если объявлены в section.json.
   ...(current.manifest.tokens === undefined ? {} : { tokens: current.manifest.tokens }),
 });

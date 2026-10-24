@@ -14,6 +14,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { getPageResolver } from "../themes/page-resolver-instance";
 import { getThemeManifest } from "../themes/theme-manifest-loader";
+import { isNewThemeId, newThemeStarterRevision } from "./new-theme-pages";
 
 const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== "false";
 
@@ -66,6 +67,8 @@ export function legacySeed(theme?: string): Record<string, unknown> | null {
 export async function buildThemeCanon(
   themeId: string,
 ): Promise<Record<string, unknown> | null> {
+  // Новая тема (блок 7 «Секций и SDK», часть 7а): особые страницы платформы без секций, не сид пяти тем.
+  if (isNewThemeId(themeId)) return newThemeStarterRevision();
   if (!USE_PAGE_RESOLVER) return legacySeed(themeId);
 
   const manifest = getThemeManifest(themeId) as {

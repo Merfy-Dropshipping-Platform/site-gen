@@ -2,5 +2,6 @@
   "sdk": 1,
   "name": "cart-badge",
   "kind": "section",
-  "title": "Значок корзины"
+  "title": "Значок корзины",
+  "uses": ["cart"]
 }

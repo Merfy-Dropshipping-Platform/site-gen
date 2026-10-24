@@ -396,8 +396,12 @@ const cartImage = view.gallery.hero?.src ?? '';
                 variant={visual.gallery.variant === 'inline-small' ? 'spaced' : 'compact'}
               />
               {/* Слот примечания к цене: рантайм формы расширения кладёт сюда
-                  `priceNote`, пока пусто — скрыт (спека 120, задача 5.1). */}
-              {extensionPurchaseEnabled && <span data-extension-purchase-note data-look={extensionLook} hidden></span>}
+                  `priceNote`, пока пусто — скрыт (спека 120, задача 5.1).
+                  Цвет подписи — всегда цвет текста схемы секции (data-look="theme"),
+                  а не по флагу темы: у flux флага extensionThemeLook нет, и подпись
+                  стояла серым #8A8A8A (Б15). Форма ниже по-прежнему включается
+                  только extensionLook. */}
+              {extensionPurchaseEnabled && <span data-extension-purchase-note data-look="theme" hidden></span>}
             </div>
           ))}
         </div>

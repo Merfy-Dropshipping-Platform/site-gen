@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ASTRO_RUNTIME } from './astro-runtime';
 import { behaviorProblems } from './behavior-check';
 import { MAX_TEMPLATE_DEPTH, templateDepth } from './depth';
-import { TEMPLATE_FILE, type SectionManifest, type SectionUse } from './format';
+import { TEMPLATE_FILE, propsUsesOf, type SectionManifest, type SectionUse } from './format';
 import { blockSelectProblems, markBlocks } from './marks';
 import { isWarning, problem, type SectionProblem } from './problems';
 import { NO_RICHTEXT, richtextIdsOf, type RichtextIds } from './set-html';
@@ -77,7 +77,7 @@ export const NO_TEMPLATE_OPTIONS: TemplateOptions = { richtext: NO_RICHTEXT, blo
 export const templateOptionsOf = (manifest: SectionManifest): TemplateOptions => ({
   richtext: richtextIdsOf(manifest),
   blocks: manifest.blocks !== undefined,
-  uses: manifest.uses ?? [],
+  uses: propsUsesOf(manifest),
 });
 
 // Глубже предела — сразу отказ, до разбора: компилятор такой шаблон не переварит (depth.ts). Дальше запреты и

@@ -11,7 +11,7 @@ import {
   type TokenEdits,
   type TokenMigrations,
 } from '@merfy/tokens';
-import { codeHead } from './code';
+import { codeHead, pageExtensions } from './code';
 import { shopSectionTokensCss } from './section-tokens';
 import { themeFonts, themeTokensCss } from './fonts';
 import { countersOf } from './counters';
@@ -148,6 +148,7 @@ function headOf(
     page: { id: route.id, path: route.path },
     mode: content.mode,
     analytics: ANALYTICS_BY_MODE[content.mode](inputs),
+    extensions: pageExtensions(inputs, route.id),
   });
   return {
     lang: config.locale,

@@ -6,6 +6,7 @@ import {
   type CodeSection,
   type ShellBuild,
 } from '@merfy/storefront-build';
+import { EXT_USE_PREFIX, extensionStorefrontSchema, type ExtensionStorefront } from '@merfy/storefront-config';
 import {
   currentSection,
   propsUsesOf,
@@ -77,7 +78,10 @@ export interface Extension {
 
 const extensionsAnswer = z.object({
   success: z.boolean(),
-  data: z.array(z.object({ id: z.string().min(1), version: z.string().min(1) })).optional(),
+  // storefront — раздел манифеста как есть (блок 9 «Секций и SDK», часть 9в): сторы и методы для ctx.ext.
+  data: z
+    .array(z.object({ id: z.string().min(1), version: z.string().min(1), storefront: z.unknown().optional() }))
+    .optional(),
 });
 const placementRow = z.object({ sections: z.unknown(), menus: z.unknown().optional() });
 // Экземпляр секции в ревизии: id — kebab до 40 знаков, один раз на странице; settings — правки мерчанта; hidden —
@@ -110,20 +114,62 @@ export type SectionInstance = z.infer<typeof instanceSchema>;
 const placementSchema = z.record(z.string().regex(/^[a-z0-9-]+$/), z.array(instanceSchema));
 export type Placement = z.infer<typeof placementSchema>;
 
-// Включённые у магазина расширения — id и версия. null — не получены, причина — в журнале.
-export async function enabledExtensions(
+// Включённое расширение и его раздел storefront манифеста как есть — его разбирает extensionStorefrontOf.
+export interface EnabledExtension extends Extension {
+  storefront: unknown;
+}
+
+// Включённые у магазина расширения — id, версия и раздел storefront. null — не получены, причина — в журнале.
+export async function enabledForShop(
   request: Pick<CodeDeps, 'call' | 'timeoutMs' | 'log'>,
   shopId: string,
-): Promise<Extension[] | null> {
+): Promise<EnabledExtension[] | null> {
   try {
     const raw = await request.call(EXTENSIONS_QUEUE, ENABLED_FOR_SHOP, { shopId }, request.timeoutMs);
     const answer = extensionsAnswer.parse(raw);
     if (!answer.success) throw new StorefrontBuilderError('rpc-failed', `${ENABLED_FOR_SHOP}: success = false`);
-    return (answer.data ?? []).map(({ id, version }) => ({ id, version }));
+    return (answer.data ?? []).map(({ id, version, storefront }) => ({ id, version, storefront }));
   } catch (error) {
     request.log('extensions-failed', { shopId, error: errorText(error) });
     return null;
   }
+}
+
+// Включённые у магазина расширения — id и версия.
+export async function enabledExtensions(
+  request: Pick<CodeDeps, 'call' | 'timeoutMs' | 'log'>,
+  shopId: string,
+): Promise<Extension[] | null> {
+  const enabled = await enabledForShop(request, shopId);
+  return enabled === null ? null : enabled.map(({ id, version }) => ({ id, version }));
+}
+
+// { stores, methods } из storefront манифеста (нет — пустые); не той формы — null.
+export function extensionStorefrontOf(storefront: unknown): ExtensionStorefront | null {
+  if (storefront === undefined) return { stores: {}, methods: {} };
+  if (typeof storefront !== 'object' || storefront === null) return null;
+  const picked = {
+    stores: 'stores' in storefront ? storefront.stores : {},
+    methods: 'methods' in storefront ? storefront.methods : {},
+  };
+  const parsed = extensionStorefrontSchema.safeParse(picked);
+  return parsed.success ? parsed.data : null;
+}
+
+// Карта описаний включённых расширений по id. Описание не той формы — расширения в карте нет, строка журнала
+// extension-storefront-invalid; сборка идёт (Р9в-8).
+export function storefrontsOf(
+  list: readonly EnabledExtension[],
+  context: Pick<CodeContext, 'log' | 'shopId'>,
+): Map<string, ExtensionStorefront> {
+  const storefronts = new Map<string, ExtensionStorefront>();
+  for (const extension of list) {
+    const storefront = extensionStorefrontOf(extension.storefront);
+    if (storefront === null)
+      context.log('extension-storefront-invalid', { shopId: context.shopId, extension: extension.id });
+    else storefronts.set(extension.id, storefront);
+  }
+  return storefronts;
 }
 
 interface ShopPlacement {
@@ -155,6 +201,8 @@ export interface CodeContext {
   shell: ShellBuild;
   log: Log;
   shopId: string;
+  // Сторы и методы включённых расширений по id (блок 9 «Секций и SDK», часть 9в): из них codeOf пишет code.extensions.
+  extensions?: ReadonlyMap<string, ExtensionStorefront>;
 }
 
 const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
@@ -172,6 +220,29 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   // Что нужно скрипту (часть 5в блока 5) — script_meta строки; у строки до 5в его нет, и во входах ключа нет.
   ...(current.scriptMeta === undefined ? {} : { meta: current.scriptMeta }),
 });
+
+// Описания расширений для кода магазина (Р9в-21): id — из "ext:<id>" в script_meta.uses секций, стоящих на страницах,
+// и глобальных скриптов — не из manifest.uses: строка без script_meta (до 5в) описаний не получает, строки журнала
+// тоже. Включённого расширения нет — строка журнала section-extension-missing на каждую пару «секция, расширение»,
+// сборка идёт (Р9в-8). По одному разу, по алфавиту id; пусто — ключа extensions нет.
+function usedExtensions(
+  used: readonly VisibleRow[],
+  context: CodeContext,
+): NonNullable<BuildInputs['code']['extensions']> {
+  const pairs = used.flatMap(([row, current]): [string, string][] =>
+    (current.scriptMeta?.uses ?? [])
+      .filter((use) => use.startsWith(EXT_USE_PREFIX))
+      .map((use) => [row.name, use.slice(EXT_USE_PREFIX.length)]),
+  );
+  const descriptions = new Map<string, ExtensionStorefront>();
+  for (const [section, extension] of pairs) {
+    const description = context.extensions?.get(extension);
+    if (description !== undefined) descriptions.set(extension, description);
+    else context.log('section-extension-missing', { shopId: context.shopId, section, extension });
+  }
+  const byId = [...descriptions.entries()].sort(([left], [right]) => (left < right ? -1 : 1));
+  return Object.fromEntries(byId);
+}
 
 // Файл скрипта — текст готового модуля из строки реестра: те же байты хранятся в storefront/blobs (приём, задача 10).
 const moduleOf = ([row]: VisibleRow): [string, Uint8Array][] =>
@@ -281,17 +352,25 @@ export function codeOf(
   const renders = new Map(used.flatMap(renderOf));
   const { shell } = context;
   const input = { version: shell.version, hash: shell.hash, parts: shell.parts };
-  const code = { sections: used.map(sectionOf), pages, globals };
+  const extensions = usedExtensions(used, context);
+  const code = {
+    sections: used.map(sectionOf),
+    pages,
+    globals,
+    ...(Object.keys(extensions).length === 0 ? {} : { extensions }),
+  };
   return { shell: input, code, assets: { shell, modules, renders } };
 }
 
 // Код магазина целиком. null — не получен: расширения не ответили или места не той формы.
 export async function readShopCode(deps: CodeDeps, shopId: string): Promise<ShopCode | null> {
-  const [extensions, read] = await Promise.all([enabledExtensions(deps, shopId), readPlacement(deps, shopId)]);
-  if (extensions === null || read === null) return null;
+  const [enabled, read] = await Promise.all([enabledForShop(deps, shopId), readPlacement(deps, shopId)]);
+  if (enabled === null || read === null) return null;
+  const extensions = enabled.map(({ id, version }) => ({ id, version }));
   const visibility = { shopId, extensions };
   const rows = await visibleSections(deps.db, visibility);
-  const context = { shell: deps.shell, log: deps.log, shopId };
+  const storefronts = storefrontsOf(enabled, { log: deps.log, shopId });
+  const context = { shell: deps.shell, log: deps.log, shopId, extensions: storefronts };
   return { ...codeOf(rows, read.placement, context, read.menus), extensions };
 }
 

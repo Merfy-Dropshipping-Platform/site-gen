@@ -73,7 +73,7 @@ describe('страницы записей в списке страниц', () =>
     expect(routeOf('/product/sharf', inputs).record?.id).toBe(P1);
     expect(errorOf(() => routeOf(`/product/${P1}`, inputs))).toMatchObject({ code: 'page-unknown' });
     expect(routeOf('/404', inputs).id).toBe('not-found');
-    expect(routeOf('/', inputs).id).toBe('home');
+    expect(routeOf('/').id).toBe('home');
   });
 });
 

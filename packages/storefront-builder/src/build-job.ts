@@ -193,10 +193,11 @@ async function attempt(deps: BuilderDeps, job: ClaimedJob, steps: Steps): Promis
   await pin(deps, job.siteId);
   const snapshot = await time('snapshot', () => readSnapshot(deps.snapshot, job.siteId));
   const inputs = parseBuildInputs(snapshot.inputs);
-  logRouteDuplicates(deps.log, { shopId: job.siteId, buildId: job.build }, routeDuplicates(inputs));
   const key = buildKey(inputs);
   const live = await time('compare', () => liveManifest(deps.store, snapshot.address.label));
   if (live?.key === key) return { outcome: 'skipped', error: null, code: null };
+  // Совпавшие адреса записей (блок 8, часть 8б) — строкой журнала; сборка идёт.
+  logRouteDuplicates(deps.log, { shopId: job.siteId, buildId: job.build }, routeDuplicates(inputs));
   // Совпавшие адреса записей (блок 8, часть 8б) — строкой журнала; сборка идёт.
   const theme = await themeFor(deps, snapshot);
   const result = await time('build', () => publish(deps, job, snapshot, theme));

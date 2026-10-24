@@ -117,3 +117,12 @@
   действия SDK разметки) и классы скрипта.
 - Проверка руками: `pnpm merfy section check fixtures/scripts/scarf-match` (проходит),
   `fixtures/broken/script-sdk-only` и `fixtures/broken/script-names` (отказы с местом).
+
+### `script_meta` в базе и бандл страницы (часть 5в, план 3)
+
+- Приём пишет `scriptMeta` в столбец `storefront_section.script_meta` (`drizzle/0032`); `currentSection` отдаёт его,
+  если значение той формы (`scriptMetaSchema`). У строк до части 5в — `null`: сборка даёт их секциям все части ядра.
+- Сборщик кладёт его во входы сборки как `meta` секции (`storefront-builder`, `sectionOf`). Сборка (`storefront-build`):
+  модули в `ctx` секции — `meta.uses`; части бандла — части ядра из `core.json`, `meta.parts` секций страницы и
+  аналитика (`pageParts`); CSS страницы — и для `meta.classes`.
+- Выкатка: сначала sites (миграция при старте контейнера), потом сборщик — реестр читает столбец `script_meta`.

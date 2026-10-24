@@ -14,6 +14,8 @@ export default defineConfig({
         'src/core/index.ts',
         'src/core/behaviors/index.ts',
         'src/core/behaviors/{accordion,dialog,carousel,tabs,nav-menu,quantity,card-photos,sticky-header,video,reveal,motion}.ts',
+        // Вход скрипта превью (часть 5г): blob: и import() — тест в браузере preview-replace.browser.test.ts.
+        'src/preview/entry.ts',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },

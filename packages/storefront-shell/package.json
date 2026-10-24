@@ -11,6 +11,7 @@
     "./behaviors": "./src/core/behaviors/index.ts",
     "./behaviors/catalog": "./src/core/behaviors/catalog.ts",
     "./behaviors/motion-css": "./src/core/behaviors/motion-css.ts",
+    "./preview": "./src/core/preview-protocol.ts",
     "./events": "./src/core/event-catalog.ts",
     "./actions": "./src/core/action-catalog.ts",
     "./core-parts.json": "./core-parts.json"

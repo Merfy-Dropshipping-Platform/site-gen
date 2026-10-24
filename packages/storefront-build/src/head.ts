@@ -15,6 +15,7 @@ import { codeHead } from './code';
 import { shopSectionTokensCss } from './section-tokens';
 import { themeFonts, themeTokensCss } from './fonts';
 import { countersOf } from './counters';
+import { customCodesOf } from './custom-codes';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { ShopPageHead, ShopPageLocals, ShopSocial } from './locals';
@@ -128,7 +129,11 @@ type ConfigAnalytics = Parameters<typeof buildStorefrontConfig>[0]['analytics'];
 
 // Аналитика — только на опубликованном сайте: превью конструктора событий не шлёт (Р1).
 const ANALYTICS_BY_MODE: Record<PageMode, (inputs: BuildInputs) => ConfigAnalytics> = {
-  live: (inputs) => ({ url: inputs.env.analyticsUrl, counters: countersOf(inputs.data.entities) }),
+  live: (inputs) => ({
+    url: inputs.env.analyticsUrl,
+    counters: countersOf(inputs.data.entities),
+    custom: customCodesOf(inputs.data.entities),
+  }),
   preview: () => null,
 };
 

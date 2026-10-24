@@ -125,5 +125,6 @@ export function buildRoutesTable(request: RoutesTableRequest): RoutesTable {
     unavailable: fileHexOf(manifest, UNAVAILABLE_FILE),
     files,
     ...redirects(request, files),
+    ...(manifest.csp === undefined ? {} : { csp: manifest.csp }),
   };
 }

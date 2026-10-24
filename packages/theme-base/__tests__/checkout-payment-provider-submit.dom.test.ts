@@ -1,19 +1,17 @@
 /**
  * @jest-environment jsdom
  *
- * CheckoutPayment + CheckoutSubmit вместе — сквозной сабмит под активную
- * платёжку магазина (спец 3а.2). checkout-payment-provider-view.dom.test.ts
- * проверяет только ВИД (поля карты/SDK); этот файл проверяет РЕАЛЬНУЮ отправку
- * заказа: CheckoutSubmit читает `window.__checkoutTokenizeCard`, который
- * объявляет CheckoutPayment, — здесь оба инлайн-скрипта исполняются вместе,
- * как на живой странице (мега-блок CheckoutForm рендерит их друг за другом).
+ * CheckoutPayment + CheckoutSubmit вместе — сквозной сабмит: форма карты убрана,
+ * покупатель выбирает способ, а данные вводит на странице платёжки.
  *
- * Инвариант спец 3а.1/3а.2 для tochka/robokassa/prodamus:
- *   - `paymentToken` НЕ попадает в тело POST /create-payment (SDK ЮKassa не
- *     грузился, `__checkoutTokenizeCard` возвращает '');
- *   - покупатель всё равно уходит на `confirmationUrl` из ответа — платёжка
- *     сама решает, что показать (страница оплаты Точки/Робокассы/Prodamus).
- * Контрольный кейс yookassa — paymentToken ПРИСУТСТВУЕТ (поведение не менялось).
+ * Инвариант, при любой платёжке магазина (yookassa, tochka, robokassa, prodamus):
+ *   - `paymentToken` НЕ попадает в тело POST /create-payment (токенизации на
+ *     витрине нет, SDK ЮKassa не грузится);
+ *   - выбранный способ (`paymentMethod`) попадает в тело как есть;
+ *   - покупатель уходит на `confirmationUrl` из ответа — платёжка сама решает,
+ *     что показать (страница ЮKassa, Точки, Робокассы, Prodamus).
+ * Оба инлайн-скрипта исполняются вместе, как на живой странице (мега-блок
+ * CheckoutForm рендерит их друг за другом).
  */
 import { join } from 'path';
 import { astroInlineRunners } from './helpers/astro-inline-script';
@@ -30,13 +28,18 @@ function mountDom(): { paymentSection: HTMLElement; submitSection: HTMLElement }
           <input type="radio" name="paymentMethod" value="bank_card" checked data-payment-radio />
           <span data-payment-radio-dot></span>
         </label>
-        <div data-card-form-wrapper data-checkout-card-form>
-          <input data-card-field="number" value="4111111111111111" />
-          <input data-card-field="expiry" value="12/30" />
-          <input data-card-field="cvc" value="123" />
-          <input data-card-field="nameOnCard" />
-          <p data-payment-sdk-status hidden></p>
-        </div>
+        <label data-payment-key="sbp" data-payment-method="sbp" data-payment-selected="false">
+          <input type="radio" name="paymentMethod" value="sbp" data-payment-radio />
+          <span data-payment-radio-dot></span>
+        </label>
+        <label data-payment-key="sberbank" data-payment-method="sberbank" data-payment-selected="false">
+          <input type="radio" name="paymentMethod" value="sberbank" data-payment-radio />
+          <span data-payment-radio-dot></span>
+        </label>
+        <label data-payment-key="tinkoff_bank" data-payment-method="tinkoff_bank" data-payment-selected="false">
+          <input type="radio" name="paymentMethod" value="tinkoff_bank" data-payment-radio />
+          <span data-payment-radio-dot></span>
+        </label>
       </div>
     </section>
     <section data-block="checkout-submit" data-puck-component-id="cs-1">
@@ -112,7 +115,51 @@ function cleanup() {
   document.head.querySelectorAll('script[src^="https://yookassa.ru"]').forEach((el) => el.remove());
 }
 
-describe('CheckoutPayment + CheckoutSubmit — сквозной сабмит под активную платёжку', () => {
+/** Смонтировать оба блока, выбрать способ, нажать «Оформить», вернуть мок fetch. */
+async function submitWithMethod(
+  provider: string,
+  method: string,
+): Promise<{ fetchMock: jest.Mock; paymentBody: any }> {
+  (window as any).__MERFY_CONFIG__ = { shopId: 'shop1', apiUrl: 'https://gateway.test/api' };
+  const fetchMock = combinedFetchMock({
+    yookassaEnabled: provider === 'yookassa',
+    yookassaShopId: provider === 'yookassa' ? 'yk_1' : null,
+    activeProvider: provider,
+  });
+  (window as any).fetch = fetchMock;
+  // Даже если на странице остался старый SDK ЮKassa (кеш/прошлая сессия), токен не берётся.
+  (window as any).YooMoneyCheckout = function YooMoneyCheckout() {
+    return { tokenize: async () => ({ data: { response: { paymentToken: 'tok_leak' } } }) };
+  };
+
+  const { paymentSection, submitSection } = mountDom();
+
+  (window as any).__merfyRoot = () => paymentSection;
+  astroInlineRunners(PAYMENT_ASTRO)[0].run({ blockId: 'cp-1' });
+  await flush();
+
+  (window as any).__merfyRoot = () => submitSection;
+  astroInlineRunners(SUBMIT_ASTRO)[0].run({
+    buttonText: 'Оформить — {total}',
+    loadingText: 'Оформляем…',
+    successRedirectUrl: '/checkout/result',
+    blockId: 'cs-1',
+  });
+  selectDelivery(SELF_PICKUP);
+
+  const radio = paymentSection.querySelector(`input[value="${method}"]`) as HTMLInputElement;
+  radio.checked = true;
+  radio.dispatchEvent(new Event('change'));
+
+  const btn = submitSection.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+  expect(btn.disabled).toBe(false);
+  btn.click();
+  await flush();
+
+  return { fetchMock, paymentBody: bodyOf(fetchMock, /\/create-payment$/) };
+}
+
+describe('CheckoutPayment + CheckoutSubmit — сквозной сабмит без формы карты', () => {
   beforeEach(() => {
     sessionStorage.clear();
     localStorage.clear();
@@ -122,80 +169,27 @@ describe('CheckoutPayment + CheckoutSubmit — сквозной сабмит п�
   });
   afterEach(cleanup);
 
-  it.each(['tochka', 'robokassa', 'prodamus'])(
-    'activeProvider=%s → paymentToken НЕ в теле create-payment, редирект на confirmationUrl',
+  it.each(['yookassa', 'tochka', 'robokassa', 'prodamus'])(
+    'платёжка %s → paymentToken НЕ в теле create-payment, редирект на confirmationUrl',
     async (provider) => {
-      (window as any).__MERFY_CONFIG__ = { shopId: 'shop1', apiUrl: 'https://gateway.test/api' };
-      // Жёсткий сценарий (как в checkout-payment-provider-view): ответ ВСЁ ЖЕ несёт
-      // yookassaShopId (billing не успел обновиться), да ещё и SDK ЮKassa уже
-      // доступен в window (кеш/предыдущая сессия на этой вкладке). Гейт по
-      // activeProvider обязан держать и это — иначе токен утёк бы в заказ.
-      const fetchMock = combinedFetchMock({ yookassaEnabled: true, yookassaShopId: 'yk_leak', activeProvider: provider });
-      (window as any).fetch = fetchMock;
-      (window as any).YooMoneyCheckout = function YooMoneyCheckout() {
-        return { tokenize: async () => ({ data: { response: { paymentToken: 'tok_leak' } } }) };
-      };
+      const { paymentBody } = await submitWithMethod(provider, 'bank_card');
 
-      const { paymentSection, submitSection } = mountDom();
-
-      // CheckoutPayment объявляет window.__checkoutTokenizeCard и решает вид
-      // (здесь нас интересует именно поведение токенизации, не вид).
-      (window as any).__merfyRoot = () => paymentSection;
-      astroInlineRunners(PAYMENT_ASTRO)[0].run({ blockId: 'cp-1' });
-      await flush();
-
-      (window as any).__merfyRoot = () => submitSection;
-      astroInlineRunners(SUBMIT_ASTRO)[0].run({
-        buttonText: 'Оформить — {total}',
-        loadingText: 'Оформляем…',
-        successRedirectUrl: '/checkout/result',
-        blockId: 'cs-1',
-      });
-      selectDelivery(SELF_PICKUP);
-
-      const btn = submitSection.querySelector('[data-checkout-submit]') as HTMLButtonElement;
-      expect(btn.disabled).toBe(false);
-      btn.click();
-      await flush();
-
-      const paymentBody = bodyOf(fetchMock, /\/create-payment$/);
       expect(paymentBody).not.toBeNull();
       expect('paymentToken' in paymentBody).toBe(false);
+      expect(paymentBody.paymentMethod).toBe('bank_card');
       expect((window as any).location.href).toBe(CONFIRMATION_URL);
     },
   );
 
-  it('activeProvider=yookassa (контроль) → paymentToken ЕСТЬ в теле create-payment, тот же редирект', async () => {
-    (window as any).__MERFY_CONFIG__ = { shopId: 'shop1', apiUrl: 'https://gateway.test/api' };
-    const fetchMock = combinedFetchMock({ yookassaEnabled: true, yookassaShopId: 'yk_1', activeProvider: 'yookassa' });
-    (window as any).fetch = fetchMock;
-    // SDK ЮKassa — мок конструктора, как его грузит настоящий <script> (см. ensureYookassaSdk).
-    (window as any).YooMoneyCheckout = function YooMoneyCheckout() {
-      return { tokenize: async () => ({ data: { response: { paymentToken: 'tok_123' } } }) };
-    };
+  it.each(['bank_card', 'sbp', 'sberbank', 'tinkoff_bank'])(
+    'выбран способ «%s» → он уходит в create-payment как paymentMethod, SDK ЮKassa не грузится',
+    async (method) => {
+      const { paymentBody } = await submitWithMethod('yookassa', method);
 
-    const { paymentSection, submitSection } = mountDom();
-
-    (window as any).__merfyRoot = () => paymentSection;
-    astroInlineRunners(PAYMENT_ASTRO)[0].run({ blockId: 'cp-1' });
-    await flush();
-
-    (window as any).__merfyRoot = () => submitSection;
-    astroInlineRunners(SUBMIT_ASTRO)[0].run({
-      buttonText: 'Оформить — {total}',
-      loadingText: 'Оформляем…',
-      successRedirectUrl: '/checkout/result',
-      blockId: 'cs-1',
-    });
-    selectDelivery(SELF_PICKUP);
-
-    const btn = submitSection.querySelector('[data-checkout-submit]') as HTMLButtonElement;
-    btn.click();
-    await flush();
-
-    const paymentBody = bodyOf(fetchMock, /\/create-payment$/);
-    expect(paymentBody).not.toBeNull();
-    expect(paymentBody.paymentToken).toBe('tok_123');
-    expect((window as any).location.href).toBe(CONFIRMATION_URL);
-  });
+      expect(paymentBody.paymentMethod).toBe(method);
+      expect('paymentToken' in paymentBody).toBe(false);
+      expect(document.head.querySelector('script[src^="https://yookassa.ru"]')).toBeNull();
+      expect((window as any).location.href).toBe(CONFIRMATION_URL);
+    },
+  );
 });

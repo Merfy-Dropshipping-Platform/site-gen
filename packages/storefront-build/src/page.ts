@@ -24,6 +24,7 @@ import {
   type PlacedSection,
 } from './sections-render';
 import { checkSeo } from './seo';
+import { policyTextHtml } from './policy-text';
 import { shopPropsOf } from './shop-props';
 import { HOME_PAGE, NOT_FOUND_PAGE_ID } from './special-pages';
 
@@ -55,8 +56,20 @@ export interface RenderedPage {
   bundle?: BuildFile;
 }
 
-// Чья страница и от чего она зависит. Главная и свои страницы — страницы сайта.
-const pageEntity = (inputs: BuildInputs, route: ShopRoute) => ({ type: route.entity, id: inputs.site.id });
+// Чья страница и от чего она зависит. Главная и свои страницы — страницы сайта; страница записи (блок 8, часть 8б) —
+// сущности записи: по ней раздача отвечает 301 и 410.
+const pageEntity = (inputs: BuildInputs, route: ShopRoute) =>
+  route.record?.entity ?? { type: route.entity, id: inputs.site.id };
+
+// Зависимости: записи страницы (сама запись — первой) и сайт — шапка и подвал есть на каждой странице.
+const pageDeps = (inputs: BuildInputs, route: ShopRoute): string[] => [
+  ...(route.record?.deps ?? []),
+  entityKey('site', inputs.site.id),
+];
+
+// Второй адрес записи (часть 8б) — поле строки только у страницы записи, у которой он есть.
+const aliasesOf = (route: ShopRoute): { aliases?: string[] } =>
+  route.record === undefined || route.record.aliases.length === 0 ? {} : { aliases: route.record.aliases };
 
 type Update = [key: string, updatedAt: string];
 
@@ -101,6 +114,22 @@ function splitContent(content: PageContent, [header = 0, own = 0]: readonly numb
   };
 }
 
+// Разметка трёх списков страницы. Страница политики, пока в шаблоне «Политика» нет видимых секций (блок 8, В8-1 А): в
+// <main> — текст от платформы. Исключение — только у политик: пустой шаблон другой записи страниц не даёт (routes.ts,
+// templateShown). Отдельной функцией: renderShopPage с бандлом 5б остаётся в пределе 30 строк.
+function pageContentOf(
+  rendered: PageContent,
+  lists: readonly (readonly PlacedSection[])[],
+  route: ShopRoute,
+): PageContent {
+  const content = splitContent(
+    rendered,
+    lists.map((list) => list.length),
+  );
+  if (route.record?.type !== 'policy' || (lists[1] ?? []).length > 0) return content;
+  return { ...content, sections: [policyTextHtml(route.record.record)] };
+}
+
 // Разметка страницы с бандлом (часть 5б): бандл — по тем же видимым экземплярам, его тег — в <head> после стилей
 // секций. Возврат — HTML и файл бандла (нет — null: бандл встроен в HTML или его нет).
 async function renderWithBundle(
@@ -131,7 +160,7 @@ const sectionThemeOf = (inputs: BuildInputs, placed: readonly PlacedSection[]): 
 // Строка манифеста страницы: путь, файл, сущность и её зависимости, время обновления данных.
 function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer): PageRow {
   const entity = pageEntity(inputs, route);
-  const deps = [entityKey(entity.type, entity.id)];
+  const deps = pageDeps(inputs, route);
   return checkPageRow({
     path: route.path,
     file: route.file,
@@ -139,6 +168,7 @@ function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer): Page
     entity,
     deps,
     dataUpdatedAt: dataUpdatedAt(inputs, deps),
+    ...aliasesOf(route),
   });
 }
 
@@ -161,10 +191,7 @@ export async function renderShopPage(
     { ...page, props },
     sectionThemeOf(inputs, placed),
   );
-  const pageContent = splitContent(
-    rendered,
-    lists.map((list) => list.length),
-  );
+  const pageContent = pageContentOf(rendered, lists, route);
   const { html, bundle } = await renderWithBundle(shown, route, theme, page, pageContent);
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');

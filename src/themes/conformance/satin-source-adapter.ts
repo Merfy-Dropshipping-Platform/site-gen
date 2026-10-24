@@ -119,3 +119,5 @@ export const SATIN_SOURCE_ADAPTER: ThemeSourceAdapter<'satin'> = {
   sharedDigestInputs: SHARED_DIGEST_INPUTS,
   externalAudits: SATIN_EXTERNAL_AUDITS,
 };
+
+// digest-isolation churn

@@ -101,12 +101,18 @@ function settle(moved: Map<string, string>, gone: Map<string, string>, files: Fi
   };
 }
 
+// Второй адрес записи (блок 8 «Секций и SDK», часть 8б): адрес по id из строки страницы — переезд на её основной адрес,
+// и у первой выкладки. Поверх переездов прошлой таблицы: адрес по id ведёт на нынешний адрес записи.
+const aliasMoves = (manifest: StorefrontManifest): (readonly [string, string])[] =>
+  manifest.pages.flatMap((page) => (page.aliases ?? []).map((alias) => [alias, page.path] as const));
+
 function redirects(request: RoutesTableRequest, files: Files): Pick<RoutesTable, 'moved' | 'gone'> {
   const { previous, manifest, now } = request;
-  if (previous === null) return { moved: {}, gone: {} };
+  const aliases = aliasMoves(manifest);
+  if (previous === null) return settle(new Map(aliases), new Map(), files);
   const departed = departures(previous.manifest, manifest, goneUntil(now));
   const stillGone = Object.entries(previous.table.gone).filter(([, until]) => Date.parse(until) > Date.parse(now));
-  const moved = new Map([...Object.entries(previous.table.moved), ...departed.moved]);
+  const moved = new Map([...Object.entries(previous.table.moved), ...departed.moved, ...aliases]);
   return settle(moved, new Map([...stillGone, ...departed.gone]), files);
 }
 

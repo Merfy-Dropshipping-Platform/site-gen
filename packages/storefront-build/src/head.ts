@@ -22,6 +22,7 @@ import type { RecordEntry, RecordType } from './records';
 import type { ShopRoute } from './routes';
 import { EMPTY_PAGE_CONTENT, type PageContent, type PageMode } from './sections-render';
 import { NOT_FOUND_PAGE_ID, NOT_FOUND_TEXT, platformPageTitle } from './special-pages';
+import { productStructuredData } from './structured-data';
 
 // Данные страницы для рисовальщика (design.md блока 4, В4-4 Б и SEO). Всё индексируемое — язык, заголовок, описание,
 // ключевые слова, канонический адрес — считает сборка. Конфиг магазина (блок 3) и CSS токенов с правками мерчанта (блок 1) приходят
@@ -147,7 +148,13 @@ const ANALYTICS_BY_MODE: Record<PageMode, (inputs: BuildInputs) => ConfigAnalyti
   preview: () => null,
 };
 
-// <head> страницы: язык, SEO, канонический адрес, конфиг, стили, код секций и теги соцсетей.
+// Разметка для поиска (design.md блока 8, 8.6) — только у страницы товара; у остальных страниц поля нет.
+function structuredDataOf(route: ShopRoute, canonical: string): { structuredData?: string } {
+  const data = productStructuredData(route.record, canonical);
+  return data === '' ? {} : { structuredData: data };
+}
+
+// <head> страницы: язык, SEO, канонический адрес, конфиг, стили, код секций, теги соцсетей и разметка для поиска.
 function headOf(
   inputs: BuildInputs,
   route: ShopRoute,
@@ -164,15 +171,17 @@ function headOf(
     mode: content.mode,
     analytics: ANALYTICS_BY_MODE[content.mode](inputs),
   });
+  const canonical = new URL(route.path, inputs.site.publicUrl).href;
   return {
     lang: config.locale,
     ...seoOf(inputs, route, name),
-    canonical: new URL(route.path, inputs.site.publicUrl).href,
+    canonical,
     configHtml: configTag(config),
     ...pageStyles(inputs, theme, migrations),
     // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены: стили секций и тег бандла (часть 5б).
     codeHtml: codeHead(inputs, route.id, content.sectionsCss, content.bundleTag),
     social: socialOf(name, config.locale, inputs.site.logoUrl, route.record),
+    ...structuredDataOf(route, canonical),
   };
 }
 

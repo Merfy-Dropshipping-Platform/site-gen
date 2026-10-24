@@ -142,3 +142,9 @@
   `action-unknown`. Есть ли такой метод у расширения, при сохранении не проверяется.
 - Проверка руками: `pnpm merfy section check fixtures/scripts/ext-reviews` (проходит),
   `fixtures/broken/ext-undeclared` (отказ `action-unknown` с местом).
+
+## Документация SDK (блок 14 «Секций и SDK»)
+
+Формат секции, словарь, коды ошибок и примеры для людей и ИИ — пакет `packages/sdk-docs`: `generated/llms.txt` и
+страницы рядом; их раздаёт шлюз по `/api/storefront/sdk/llms.txt`. Описание формата выше — до блока 1, сверяй с
+документацией. Поменял данные проверки (код, имя словаря, событие) — `pnpm --dir packages/sdk-docs generate`.

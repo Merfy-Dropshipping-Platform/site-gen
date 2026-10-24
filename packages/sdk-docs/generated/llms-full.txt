@@ -1,0 +1,1158 @@
+# Merfy · SDK секций витрины
+
+> Как написать секцию магазина Merfy: section.json, template.astro, script.ts.
+> SDK 1 · документация 1.0.0 · 2026-10-24. Читай эту документацию, а не память: SDK новый.
+
+## Начать
+- [Как сделать секцию](start.md): порядок работы, адреса проверки и сохранения, разобранный пример
+- [Шаблон секции](template/AGENTS.md): правила для ИИ и файлы, с которых начинать
+
+## Справочник
+- [section.json](section-json.md): ключи, виды полей, блоки, группы
+- [Имена полей](names.md): словарь имён и что вместо имён не из словаря
+- [template.astro](template.md): frontmatter, выражения, что нельзя
+- [Классы и токены](styles.md): словарь классов, токены секции
+- [script.ts](script.md): defineSection, ctx, El
+- [Модули SDK](modules.md): uses и действия по модулям
+- [События](events.md): события витрины и их данные
+- [Действия](actions.md): data-action и ответы действий
+- [Поведения и анимации](behaviors.md): data-behavior, части, параметры, data-animate
+- [Настройки темы](theme-settings.md): сквозные настройки и как их читать
+- [Страницы](pages.md): группы, особые страницы, заголовки
+- [Данные магазина](data.md): uses, Astro.props.theme и shop
+
+## Ошибки проверки
+- [Коды ошибок](errors.md): когда бывает код, как исправить, пример
+
+## Справочник
+- [Лимиты](limits.md): пределы файлов, полей, скрипта, проверки
+- [Что нового](changelog.md): изменения по версиям
+
+## Всё одним файлом
+- [llms-full.txt](llms-full.txt): все страницы подряд
+
+---
+
+# Как сделать секцию
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Секция — папка с файлами: `section.json` (поля), `template.astro` (разметка) и `script.ts` — только если на странице
+что-то меняется после загрузки. Секцию проверяют и сохраняют в магазин через шлюз Merfy с входом мерчанта; на витрину
+она выходит, когда мерчант нажимает «Сохранить» в конструкторе.
+
+## Порядок работы
+
+1. Начни с [шаблона секции](template/AGENTS.md): `section.json`, `template.astro`, `AGENTS.md`, `CLAUDE.md`. Поменяй
+   `name` — латиница и цифры через дефис — и `title` — название секции в конструкторе.
+2. Поля — в `section.json`. Имена — только из [словаря имён](names.md), вид поля — из его столбца «Виды». Ключи
+   файла и формы полей — [section.json](section-json.md).
+3. Разметка — в `template.astro`: [что можно](template.md), классы — только из [словаря классов](styles.md).
+4. Скрипт — [script.ts](script.md), только если он нужен. Готовые поведения — [data-behavior](behaviors.md).
+5. Проверь секцию — адрес «проверить» (ниже). Ответ: `ok`, `problems`, `warnings`; у проблемы — файл, строка,
+   колонка, код и `doc` — ссылка на [справку по коду](errors.md). Исправь место и проверь снова — до трёх попыток.
+6. Сохрани — адрес «сохранить» с теми же файлами. `status: "accepted"` — секция в «Добавить секцию» конструктора;
+   `"unchanged"` — такие файлы уже сохранены.
+
+## Адреса
+
+Адреса — того же шлюза, что у этой документации, с входом мерчанта (cookie сессии или токен MCP). `<магазин>` — id
+магазина, `<name>` — `name` из `section.json`. Тело запросов с файлами — `{ "files": { "<путь>": "<текст>" } }`, до
+512 КБ; `AGENTS.md` и `CLAUDE.md` в теле не нужны — проверка их пропускает.
+
+| Что | Запрос | Ответ |
+|---|---|---|
+| проверить, ничего не записывая | `POST https://gateway.merfy.ru/api/sites/<магазин>/sections/check` | `{ ok, name, problems, warnings }` |
+| сохранить черновиком | `POST https://gateway.merfy.ru/api/sites/<магазин>/sections` | то же и `status`, `id`; не прошла — 422 |
+| файлы текущей правки | `GET https://gateway.merfy.ru/api/sites/<магазин>/sections/<name>/source` | `{ name, id, files }` |
+| правки секции | `GET https://gateway.merfy.ru/api/sites/<магазин>/sections/<name>/history` | `{ name, edits: [{ id, createdAt, draft, published }] }` |
+| вернуть прежнюю правку | `POST https://gateway.merfy.ru/api/sites/<магазин>/sections/<name>/rollback` с `{ "id": "<id правки>" }` | `{ name, id, draft, published }` |
+
+Проверок и сохранений — до 30 в минуту на магазин; больше — ответ 429, подожди минуту.
+
+## Пример: «Подбор шарфа по цвету пальто»
+
+Покупательница выбирает цвет пальто — в списке остаются шарфы, которые к нему подходят. Поля: заголовок и блоки
+«Шарф» — название и подпись с цветами пальто. Скрипт — одно действие `pick` на кнопках пальто.
+
+scarf-match/
+
+```ts
+import { defineSection } from '@merfy/shell';
+
+type State = { coat: string | null };
+
+// Кнопка пальто — действие pick: отмечает кнопку и оставляет шарфы, у которых в подписи этот цвет пальто.
+export default defineSection<State>({
+  actions: {
+    pick(button, ctx) {
+      const coat = button.attr('data-coat');
+      ctx.state.coat = coat;
+      for (const item of ctx.refs('coat')) item.attr('aria-pressed', String(item.attr('data-coat') === coat));
+      for (const scarf of ctx.refs('scarf')) scarf.toggle(coat === null || (scarf.attr('data-coats') ?? '').includes(coat));
+    },
+  },
+});
+
+```
+
+```json
+{
+  "sdk": 1,
+  "name": "scarf-match",
+  "kind": "section",
+  "title": "Подбор шарфа по цвету пальто",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Подберите шарф к пальто" } }
+  ],
+  "blocks": {
+    "scarf": {
+      "title": "Шарф",
+      "limit": 12,
+      "settings": [
+        { "id": "label", "label": "Название", "setting": { "kind": "string", "default": "Кашемировый шарф" } },
+        { "id": "caption", "label": "К каким пальто", "setting": { "kind": "string", "default": "серое, чёрное" } }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "scarf", "settings": { "label": "Шарф цвета кэмел", "caption": "серое, чёрное" } },
+    { "type": "scarf", "settings": { "label": "Графитовый шарф", "caption": "бежевое" } },
+    { "type": "scarf", "settings": { "label": "Молочный шарф", "caption": "чёрное, бежевое" } }
+  ]
+}
+
+```
+
+```astro
+---
+const { settings, blocks } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
+  {settings.heading && <h2 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h2>}
+  <div class="flex gap-4">
+    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="серое" data-action="pick">Серое пальто</button>
+    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="чёрное" data-action="pick">Чёрное пальто</button>
+    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="бежевое" data-action="pick">Бежевое пальто</button>
+  </div>
+  <div class="flex flex-col gap-4">
+    {blocks.map((block) => (
+      <div class="rounded-button bg-card p-4 text-card-foreground" data-ref="scarf" data-coats={block.settings.caption}>
+        <p class="m-0 text-lg">{block.settings.label}</p>
+        <p class="m-0 mt-2">К пальто: {block.settings.caption}</p>
+      </div>
+    ))}
+  </div>
+</div>
+
+```
+
+## Пример ошибки
+
+Поле `title` — не из словаря. Проверка отвечает `section.json:… — поле «title»: имени нет в словаре; ближе всего —
+heading [setting-name-unknown]`; исправление — `"id": "heading"` и `{settings.heading}` в шаблоне.
+
+bad-setting-name-unknown/
+
+```json
+{
+  "sdk": 1,
+  "name": "reviews-wall",
+  "kind": "section",
+  "title": "Стена отзывов",
+  "settings": [{ "id": "title", "label": "Заголовок", "setting": { "kind": "string", "default": "Отзывы" } }]
+}
+
+```
+
+```astro
+---
+const { settings } = Astro.props;
+---
+<div class="mx-auto max-w-page px-4 font-body"><h2 class="m-0 text-3xl text-heading">{settings.title}</h2></div>
+
+```
+
+
+
+---
+
+# Шаблон секции
+
+
+
+```
+# Секция витрины Merfy
+
+SDK 1. Документация — https://gateway.merfy.ru/api/storefront/sdk/llms.txt
+Читай её, а не память: SDK новый. Версия и дата документации — в её шапке.
+
+1. Новая секция — начни с этого шаблона. Меняешь секцию магазина — сначала прочитай её файлы
+   (GET …/sections/<name>/source).
+2. section.json — поля и блоки. Имена полей — только из names.md. Нужного имени нет — возьми то,
+   что назвала проверка; своё не придумывай.
+3. template.astro — разметка. Классы — только из словаря (styles.md). style, <style> и <script> нельзя.
+4. script.ts — только если на странице что-то меняется после загрузки. В нём — defineSection и ctx;
+   window, document, fetch, setTimeout нельзя (script.md).
+5. Корзина, избранное, вход, данные магазина — модули SDK по uses (modules.md). Других запросов у секции нет.
+6. Готовое поведение data-behavior — по умолчанию. Нужно другое — напиши своё в script.ts.
+7. Проверь секцию. Ошибка называет файл, строку, код и правильное значение: исправь это место
+   и проверь снова. Три попытки; не вышло — покажи мерчанту ответ проверки целиком.
+8. <h1> — по правилу pages.md.
+9. Корзина, вход, поиск — секции с ролью, в магазине по одной: меняй саму секцию или её поля, копию не делай.
+10. Чужие секции не трогай.
+11. Форма «Контакты» пока не отправляет сообщения — скажи об этом мерчанту и предложи контакты ссылками.
+
+```
+
+```
+@AGENTS.md
+
+```
+
+```json
+{
+  "$schema": "https://gateway.merfy.ru/api/storefront/sdk/section.schema.json",
+  "sdk": 1,
+  "name": "new-section",
+  "kind": "section",
+  "title": "Новая секция",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Заголовок секции" } }
+  ]
+}
+
+```
+
+```astro
+---
+const { settings } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
+  {settings.heading && <h2 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h2>}
+</div>
+
+```
+
+---
+
+# section.json
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Ключи файла `section.json` и формы полей каждого вида. Формат хранит та же схема, по которой работает проверка при сохранении.
+
+## Ключи
+
+| Ключ | Что значит |
+|---|---|
+| `$schema` | адрес JSON Schema для подсказок редактора; проверка ключ не читает |
+| `sdk` | версия SDK: 1 |
+| `name` | имя секции: строчные латинские буквы и цифры через одиночный дефис |
+| `kind` | вид: section или global |
+| `title` | название секции в конструкторе, до 80 знаков |
+| `settings` | поля секции; имя каждого — из словаря имён (names.md) |
+| `blocks` | типы блоков: свои поля у каждого типа |
+| `defaultBlocks` | блоки, с которыми секция появляется в конструкторе |
+| `groups` | куда можно ставить секцию: header, page, footer; нет ключа — только page |
+| `limit` | сколько экземпляров секции в одном списке, от 1 до 50 |
+| `removable` | false — секцию нельзя удалить |
+| `uses` | открывает данные: theme, shop |
+| `newPage` | id поля вида string: имя новой страницы, куда ставится секция |
+| `tokens` | свои токены секции; имя с меткой custom |
+| `wrapper` | общие настройки секции; нет ключа — scheme и padding |
+
+## Виды полей
+
+Поле настройки — `{ "id", "label", "setting" }`; у `setting` — вид и его ключи.
+
+| Вид | Обязательные ключи | Необязательные ключи |
+|---|---|---|
+| `image` | `default`, `maxBytes` | — |
+| `url` | `default` | `placeholder` |
+| `string` | `default` | `ai` |
+| `text` | `default` | `ai` |
+| `select` | `default`, `options` | — |
+| `toggle` | `default`, `labels` | — |
+| `richtext` | `default` | — |
+| `menu` | `default` | — |
+| `image-pair` | `default`, `maxBytes` | — |
+| `radio` | `default`, `options` | — |
+| `range` | `default`, `min`, `max`, `step` | `unit` |
+| `alignment` | `default` | — |
+| `color-scheme` | `default` | — |
+| `padding` | `default` | `max`, `step` |
+
+
+---
+
+# Имена полей
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+# Имена полей секций
+
+Поле настройки секции — в `settings` файла `section.json` и у типов блоков — называется именем из этого списка, вид поля — из столбца «Виды». Имя не из списка проверка при сохранении не пропускает и выводит ближайшее; для имён из раздела «Нет в словаре» — что вместо них. Тот же текст выводит `pnpm merfy section names`.
+
+## Содержимое
+
+| Имя | Виды | Подпись | О чём |
+|---|---|---|---|
+| `heading` | `string` | Заголовок | Заголовок секции или блока; у «Страницы» — `<h1>` |
+| `subheading` | `string` | Подзаголовок | Строка над или под заголовком |
+| `text` | `text`, `richtext` | Текст | Основной текст секции или блока |
+| `button-label` | `string` | Текст кнопки | Надпись на кнопке |
+| `button-link` | `url` | Ссылка кнопки | Куда ведёт кнопка: страница магазина или свой адрес |
+| `image` | `image` | Картинка | Картинка секции или блока |
+| `images` | `image-pair` | Картинки | Две картинки: для компьютера и для телефона |
+| `label` | `string` | Подпись | Подпись пункта, ссылки или значка |
+| `link` | `url` | Ссылка | Куда ведёт пункт, карточка или картинка |
+| `question` | `string` | Вопрос | Вопрос в блоке вопросов и ответов |
+| `answer` | `richtext` | Ответ | Ответ на вопрос, текст с форматированием |
+| `author` | `string` | Имя | Кто написал отзыв или цитату |
+| `caption` | `string` | Подпись | Город, должность или товар под именем или картинкой |
+| `rating` | `range` | Оценка | Звёзды отзыва, 0 — без звёзд |
+| `video` | `url` | Видео | Адрес видео |
+| `logo` | `image` | Логотип | Своя картинка логотипа в секции. Логотип магазина — настройка темы `logo-image` |
+| `newsletter` | `toggle` | Рассылка | Показать форму подписки на рассылку |
+| `menu` | `menu` | Меню | Меню магазина: в ревизии — id меню, в шаблоне — дерево `{ title, items }` |
+
+## Вид
+
+| Имя | Виды | Подпись | О чём |
+|---|---|---|---|
+| `heading-size` | `select`, `radio` | Размер заголовка | Размер заголовка: варианты задаёт секция |
+| `text-size` | `select`, `radio` | Размер текста | Размер основного текста: варианты задаёт секция |
+| `align` | `alignment` | Выравнивание | Выравнивание текста: слева, по центру или справа |
+| `content-position` | `select` | Где текст | Где текст поверх картинки: девять мест |
+| `image-position` | `radio` | Картинка | Картинка слева или справа от текста |
+| `height` | `radio`, `select` | Высота | Высота секции |
+| `overlay` | `range` | Затемнение | Затемнение картинки под текстом, в процентах |
+| `space` | `padding` | Отступы | Отступы секции сверху и снизу, в пикселях |
+| `columns` | `range` | Колонки | Сколько карточек в ряд на компьютере |
+| `aspect-ratio` | `select` | Пропорции | Пропорции картинок в сетке |
+| `color-scheme` | `color-scheme` | Цветовая схема | Цветовая схема части секции: меню, карточек, плашки с текстом. Схема всей секции — общая настройка |
+| `logo-position` | `select` | Положение логотипа | Где логотип в шапке: сверху слева, сверху в центре, слева или по центру |
+| `menu-type` | `select` | Тип меню | Боковое, выпадающее или расширенное меню |
+
+## Поведение
+
+| Имя | Виды | Подпись | О чём |
+|---|---|---|---|
+| `open-first` | `toggle` | Первый открыт | Первый вопрос раскрыт при загрузке |
+| `autoplay` | `toggle` | Листать сами | Слайды меняются без нажатия |
+| `interval` | `range` | Интервал | Секунд между слайдами; поле показано при `autoplay` |
+
+## Нет в словаре
+
+| Имена | Что вместо |
+|---|---|
+| `layout`, `variant`, `mode`, `view`, `design`, `style` | Секция другого вида — новая секция: её делает ИИ или автор. Мелкие отличия — поля `image-position`, `columns`, `height` |
+| `color`, `colour`, `background`, `background-color`, `text-color` | Своего цвета у поля нет: цвет секции — общая настройка «Цветовая схема», цвет части секции — поле `color-scheme` |
+| `font`, `font-family`, `font-size`, `font-weight`, `typography` | Шрифт и насыщенность — токены темы `font-heading` и `font-body`; размер — поля `heading-size` и `text-size` |
+| `margin`, `padding-top`, `padding-bottom`, `gap`, `spacing` | Отступы секции — общая настройка «Отступы» в `wrapper`; внутри секции — классы словаря |
+| `width`, `container`, `full-width` | Ширина секции будет общей настройкой секции; своего поля ширины у секции нет |
+| `show-*`, `hide-*`, `visible`, `hidden` | Показать или скрыть часть секции — блок с `limit: 1`: его скрывают в конструкторе |
+| `scheme`, `padding`, `sticky` | Общая настройка секции: в `settings` её не объявляют, секция перечисляет её в `wrapper` |
+| `products`, `product`, `collection`, `posts` | Полей выбора товаров, товара, коллекции и публикаций у секций пока нет: они появятся вместе с данными магазина в секциях |
+| `logo-image` | Это настройка «Настроек темы» «Логотип → Картинка»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['logo-image']` |
+| `social-telegram` | Это настройка «Настроек темы» «Социальные сети → Telegram»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-telegram']` |
+| `social-vk` | Это настройка «Настроек темы» «Социальные сети → Вконтакте»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-vk']` |
+| `social-dzen` | Это настройка «Настроек темы» «Социальные сети → Дзен»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-dzen']` |
+| `social-youtube` | Это настройка «Настроек темы» «Социальные сети → Youtube»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-youtube']` |
+| `social-tiktok` | Это настройка «Настроек темы» «Социальные сети → TikTok»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-tiktok']` |
+| `social-max` | Это настройка «Настроек темы» «Социальные сети → MAX»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-max']` |
+| `cart-type` | Это настройка «Настроек темы» «Корзина → Вид корзины»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['cart-type']` |
+| `cookie-banner-enabled` | Это настройка «Настроек темы» «Баннер → Баннер cookie»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['cookie-banner-enabled']` |
+
+
+
+---
+
+# template.astro
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+`template.astro` — разметка секции на Astro. Сборка рендерит её на сервере со значениями полей мерчанта.
+
+## Frontmatter
+
+Одна строка или ни одной: `const { settings } = Astro.props;`. Имена в скобках — `settings`, `blocks` (если в
+`section.json` есть `blocks`), `theme` и `shop` (только с `"uses": ["theme"]` и `"uses": ["shop"]`), каждое один раз.
+Других операторов во frontmatter нет: `import`, функции и переменные — нельзя.
+
+```astro
+---
+const { settings, blocks } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
+  {settings.heading && <h2 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h2>}
+  {blocks.map((block) => <p class="m-0">{block.settings.text}</p>)}
+</div>
+```
+
+## Что можно
+
+- Выражения `{…}`: поля (`settings.heading`, `settings['heading-size']`), сравнения, `&&`, `?:`, `blocks.map`.
+- `class:list` — классы по условию: `class:list={['m-0', { 'text-5xl': settings['heading-size'] === 'large' }]}`.
+- `set:html` — только у поля вида `richtext`: `<div set:html={block.settings.answer}></div>`.
+- Атрибуты `data-*` — для скрипта (`data-ref`, `data-action`) и поведений (`data-behavior`, `data-part`,
+  `data-animate`).
+- Пустое значение: мерчант может стереть любое поле — `{settings.heading && <h2>…</h2>}`.
+
+## Что нельзя
+
+- Теги: `<script>`, `<style>`, `<link>`, `<meta>`, `<base>`, `<html>`, `<head>`, `<body>`, `<title>`, `<iframe>`, `<frame>`, `<object>`, `<embed>`, `<merfy-section>`.
+- Компоненты (имя с большой буквы), кроме `<Fragment>`.
+- Обработчики `on…`, адреса `javascript:`, `{...}` в атрибутах, директивы `set:text`, `is:inline`, `is:raw`,
+  `define:vars`, `client:*`, `server:*`, `transition:*`; `set:html` у поля не вида `richtext`.
+- Атрибут `style` и свой CSS: только [классы словаря](styles.md).
+- Имена с префиксом `__merfy` — служебные.
+
+Отступы сверху и снизу секции задаёт обёртка `<merfy-section>` — в шаблоне их нет.
+
+
+
+---
+
+# Классы и токены
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Своего CSS у секции нет. Только классы Tailwind из словаря магазина — так секция выглядит в цветах и шрифтах любой
+темы и меняется вместе с «Настройками темы».
+
+- Цвета, шрифты, радиусы — классы токенов (таблица ниже): `bg-primary`, `text-heading`, `font-body`,
+  `rounded-button`.
+- Отступы и сетка — обычные классы Tailwind: `flex`, `gap-4`, `px-4`, `mx-auto`, `max-w-page`.
+- Нельзя: `style`, `<style>`, произвольные значения `bg-[#c9a227]` (`class-arbitrary`), `dark:` (`class-dark`), токены
+  одной темы (`class-theme-token`), класс, собранный из строки (`class-dynamic`).
+- Нужен свой цвет или размер — токен секции: ключ `tokens` в `section.json`, имя с меткой `custom`
+  (`custom-swatch`); мерчант меняет его в «Настройках темы».
+
+
+Сгенерировано из словаря командой generate — руками не править.
+
+| Токен | Вид | Для чего | Если не задан | Класс | Читается на |
+|---|---|---|---|---|---|
+| `background` | цвет | Фон страницы и секции | задаёт тема | `bg-background` `text-background` `border-background` | — |
+| `foreground` | цвет | Основной текст | задаёт тема | `bg-foreground` `text-foreground` `border-foreground` | `background` |
+| `card` | цвет | Карточка: товар, отзыв, блок | как `background` | `bg-card` `text-card` `border-card` | — |
+| `card-foreground` | цвет | Текст на карточке | как `foreground` | `bg-card-foreground` `text-card-foreground` `border-card-foreground` | `card` |
+| `popover` | цвет | Всплывающее: меню, подсказки поиска, шторка корзины | как `background` | `bg-popover` `text-popover` `border-popover` | — |
+| `popover-foreground` | цвет | Текст во всплывающем | как `foreground` | `bg-popover-foreground` `text-popover-foreground` `border-popover-foreground` | `popover` |
+| `primary` | цвет | Главная кнопка: «В корзину», «Оформить» | задаёт тема | `bg-primary` `text-primary` `border-primary` | — |
+| `primary-foreground` | цвет | Текст на главной кнопке | белый или чёрный к `primary` | `bg-primary-foreground` `text-primary-foreground` `border-primary-foreground` | `primary` |
+| `primary-hover` | цвет | Главная кнопка под курсором | наведение от `primary` | `bg-primary-hover` `text-primary-hover` `border-primary-hover` | — |
+| `primary-hover-foreground` | цвет | Текст главной кнопки под курсором | как `primary-foreground` | `bg-primary-hover-foreground` `text-primary-hover-foreground` `border-primary-hover-foreground` | `primary-hover` |
+| `primary-border` | цвет | Обводка главной кнопки | как `primary` | `bg-primary-border` `text-primary-border` `border-primary-border` | — |
+| `secondary` | цвет | Второстепенная кнопка | смесь: 6 % `foreground` в `background` | `bg-secondary` `text-secondary` `border-secondary` | — |
+| `secondary-foreground` | цвет | Текст на второстепенной кнопке | как `foreground` | `bg-secondary-foreground` `text-secondary-foreground` `border-secondary-foreground` | `secondary` |
+| `secondary-hover` | цвет | Второстепенная кнопка под курсором | наведение от `secondary` | `bg-secondary-hover` `text-secondary-hover` `border-secondary-hover` | — |
+| `secondary-hover-foreground` | цвет | Текст второстепенной кнопки под курсором | как `secondary-foreground` | `bg-secondary-hover-foreground` `text-secondary-hover-foreground` `border-secondary-hover-foreground` | `secondary-hover` |
+| `secondary-border` | цвет | Обводка второстепенной кнопки | как `secondary` | `bg-secondary-border` `text-secondary-border` `border-secondary-border` | — |
+| `muted` | цвет | Приглушённая подложка: полоса, место под фото | смесь: 4 % `foreground` в `background` | `bg-muted` `text-muted` `border-muted` | — |
+| `muted-foreground` | цвет | Второстепенный текст: подписи, описание | смесь: 70 % `foreground` в `background` | `bg-muted-foreground` `text-muted-foreground` `border-muted-foreground` | `background`, `muted` |
+| `accent` | цвет | Подсветка пункта меню и строки под курсором | смесь: 6 % `foreground` в `background` | `bg-accent` `text-accent` `border-accent` | — |
+| `accent-foreground` | цвет | Текст на подсветке | как `foreground` | `bg-accent-foreground` `text-accent-foreground` `border-accent-foreground` | `accent` |
+| `destructive` | цвет | Ошибка и удаление | задаёт тема | `bg-destructive` `text-destructive` `border-destructive` | — |
+| `destructive-foreground` | цвет | Текст на цвете ошибки | белый или чёрный к `destructive` | `bg-destructive-foreground` `text-destructive-foreground` `border-destructive-foreground` | `destructive` |
+| `border` | цвет | Рамки и разделители | смесь: 12 % `foreground` в `background` | `bg-border` `text-border` `border-border` | — |
+| `input` | цвет | Рамка поля ввода | как `border` | `bg-input` `text-input` `border-input` | — |
+| `ring` | цвет | Обводка фокуса с клавиатуры | как `primary` | `bg-ring` `text-ring` `border-ring` | — |
+| `heading` | цвет | Заголовки | как `foreground` | `bg-heading` `text-heading` `border-heading` | `background` |
+| `price` | цвет | Цена | как `foreground` | `bg-price` `text-price` `border-price` | `background` |
+| `price-old` | цвет | Старая, зачёркнутая цена | как `muted-foreground` | `bg-price-old` `text-price-old` `border-price-old` | `background` |
+| `sale` | цвет | Скидка: плашка «−20 %» и цена со скидкой | как `destructive` | `bg-sale` `text-sale` `border-sale` | `background` |
+| `sale-foreground` | цвет | Текст на плашке скидки | белый или чёрный к `sale` | `bg-sale-foreground` `text-sale-foreground` `border-sale-foreground` | `sale` |
+| `badge` | цвет | Бейдж «Новинка», «Хит» | как `primary` | `bg-badge` `text-badge` `border-badge` | — |
+| `badge-foreground` | цвет | Текст на бейдже | белый или чёрный к `badge` | `bg-badge-foreground` `text-badge-foreground` `border-badge-foreground` | `badge` |
+| `font-body` | шрифт | Шрифт текста | задаёт тема | `font-body` | — |
+| `font-heading` | шрифт | Шрифт заголовков | как `font-body` | `font-heading` | — |
+| `weight-body` | насыщенность | Насыщенность шрифта текста: толщина букв | задаёт тема | `weight-body` | — |
+| `weight-heading` | насыщенность | Насыщенность шрифта заголовков: толщина букв | задаёт тема | `weight-heading` | — |
+| `text-xs` | размер | Самый мелкий: сноски, счётчик на значке | задаёт тема | `text-xs` | — |
+| `text-sm` | размер | Подписи, кнопки, поля | задаёт тема | `text-sm` | — |
+| `text-base` | размер | Основной текст | задаёт тема | `text-base` | — |
+| `text-lg` | размер | Вводный абзац | задаёт тема | `text-lg` | — |
+| `text-xl` | размер | Название товара в карточке | задаёт тема | `text-xl` | — |
+| `text-2xl` | размер | Заголовок блока | задаёт тема | `text-2xl` | — |
+| `text-3xl` | размер | Заголовок секции | задаёт тема | `text-3xl` | — |
+| `text-4xl` | размер | Заголовок страницы | задаёт тема | `text-4xl` | — |
+| `text-5xl` | размер | Главный заголовок первого экрана | задаёт тема | `text-5xl` | — |
+| `tracking-body` | межбуквенное | Межбуквенное расстояние текста, em | `0 em` | `tracking-body` | — |
+| `tracking-heading` | межбуквенное | Межбуквенное расстояние заголовков, em | `0 em` | `tracking-heading` | — |
+| `radius-button` | скругление | Скругление кнопок | задаёт тема | `rounded-button` | — |
+| `radius-input` | скругление | Скругление полей ввода | как `radius-button` | `rounded-input` | — |
+| `radius-card` | скругление | Скругление карточек | задаёт тема | `rounded-card` | — |
+| `radius-media` | скругление | Скругление фото и видео | как `radius-card` | `rounded-media` | — |
+| `radius-popover` | скругление | Скругление всплывающего и шторки | как `radius-card` | `rounded-popover` | — |
+| `radius-badge` | скругление | Скругление бейджа и плашки скидки | как `radius-button` | `rounded-badge` | — |
+| `border-width-button` | толщина рамки | Толщина обводки кнопок | `0 px` | `border-width-button` | — |
+| `border-width-input` | толщина рамки | Толщина рамки поля ввода | `1 px` | `border-width-input` | — |
+| `border-width-card` | толщина рамки | Толщина обводки карточки товара | `0 px` | `border-width-card` | — |
+| `border-width-media` | толщина рамки | Толщина рамки фото и видео | `0 px` | `border-width-media` | — |
+| `border-width-popover` | толщина рамки | Толщина рамки всплывающего | `1 px` | `border-width-popover` | — |
+| `shadow-button` | тень | Тень кнопок | `без тени` | `shadow-button` | — |
+| `shadow-input` | тень | Тень полей ввода | `без тени` | `shadow-input` | — |
+| `shadow-card` | тень | Тень карточки товара | `без тени` | `shadow-card` | — |
+| `shadow-media` | тень | Тень фото и видео | `без тени` | `shadow-media` | — |
+| `shadow-popover` | тень | Тень всплывающего | `0 8 24 0, 12 %` | `shadow-popover` | — |
+| `shadow-drawer` | тень | Тень шторки | `0 0 32 0, 16 %` | `shadow-drawer` | — |
+| `spacing-section` | отступ | Отступ сверху и снизу секции | задаёт тема | `p-section` `gap-section` | — |
+| `spacing-section-gap` | отступ | Отступ между секциями | `0 px` | `p-section-gap` `gap-section-gap` | — |
+| `spacing-card` | отступ | Внутренний отступ карточки товара | `0 px` | `p-card` `gap-card` | — |
+| `spacing-grid-column` | отступ | Расстояние между колонками сетки товаров | `16 px` | `p-grid-column` `gap-grid-column` | — |
+| `spacing-grid-row` | отступ | Расстояние между рядами сетки товаров | `24 px` | `p-grid-row` `gap-grid-row` | — |
+| `width-page` | ширина | Ширина содержимого страницы | задаёт тема | `max-w-page` `w-page` | — |
+| `width-logo` | ширина | Ширина логотипа | `120 px` | `max-w-logo` `w-logo` | — |
+| `choice-card-style` | выбор | Вид карточки товара: стандарт или карточка | `standard` | `card-style-standard:` `card-style-card:` | — |
+| `choice-card-align` | выбор | Выравнивание в карточке товара | `left` | `card-align-left:` `card-align-center:` `card-align-right:` | — |
+| `choice-motion-reveal` | выбор | Появление секций при прокрутке | `off` | `motion-reveal-off:` `motion-reveal-on:` | — |
+| `choice-motion-hover` | выбор | Отклик карточки товара на курсор: нет или подъём | `none` | `motion-hover-none:` `motion-hover-lift:` | — |
+| `scheme-card` | схема детали | Цветовая схема карточки товара | не задана — как у родителя | `scheme-card` | — |
+| `scheme-cart-drawer` | схема детали | Цветовая схема шторки корзины | не задана — как у родителя | `scheme-cart-drawer` | — |
+| `scheme-cookie-banner` | схема детали | Цветовая схема баннера cookie | не задана — как у родителя | `scheme-cookie-banner` | — |
+
+
+
+---
+
+# script.ts
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+`script.ts` — поведение секции в браузере. Нужен, только если на странице что-то меняется после загрузки: выбор,
+фильтр, счётчик. Открыть, переключить, прокрутить — готовые [поведения](behaviors.md) без скрипта.
+
+## Определение секции
+
+```ts
+import { defineSection } from '@merfy/shell';
+
+type State = { coat: string | null };
+
+export default defineSection<State>({
+  mount(el, ctx) {
+    ctx.ref('count')?.text(ctx.refs('item').length);
+  },
+  actions: {
+    pick(button, ctx) {
+      ctx.state.coat = button.attr('data-coat');
+    },
+  },
+});
+```
+
+- `mount(el, ctx)` — секция появилась на странице; `unmount(el, ctx)` — убрана.
+- `actions` — действия по `data-action="<имя>"` элемента: клик по кнопке или ссылке, отправка формы. Аргументы — элемент
+  `El` и `ctx`. Действия SDK (`cart.add` и другие) — [actions.md](actions.md), их можно вызывать без скрипта.
+- Импорт — только `@merfy/shell` и свои файлы `.ts`/`.js` секции.
+- `window`, `document`, `fetch`, `setTimeout`, `localStorage` — нельзя: всё через `ctx`.
+
+## ctx
+
+| Член | Что делает |
+|---|---|
+| `ctx.state` | состояние экземпляра секции; переживает замену секции в превью |
+| `ctx.ref(name)` | элемент `data-ref="<name>"` внутри секции или `null` |
+| `ctx.refs(name)` | все элементы `data-ref="<name>"` |
+| `ctx.on(target, type, fn)` | событие `window` или `document` (прокрутка, клавиши); снимается само |
+| `ctx.every(ms, fn)` | повтор раз в `ms` (не чаще 100 мс); снимается сам |
+| `ctx.after(ms, fn)` | один раз через `ms` |
+| `ctx.watch(store, fn)` | подписка на стор модуля SDK: сразу текущее значение, потом каждое новое |
+| `ctx.listen(name, fn)` | событие витрины `merfy:…` ([events.md](events.md)) |
+| `ctx.emit(name, detail)` | своё событие секции, уходит как `<имя секции>:<name>` |
+| `ctx.log(...values)` | в превью — в консоль с именем секции; на витрине — ничего |
+| `ctx.animate(el, keyframes, options)` | анимация элемента |
+| `ctx.storage` | хранилище секции в браузере: `get`, `set` (до 4 КБ), `remove` |
+
+## El
+
+| Член | Что делает |
+|---|---|
+| `text()` / `text(value)` | текст элемента |
+| `attr(name)` / `attr(name, value)` | атрибут; `null` — убрать |
+| `hasClass(name)` / `toggleClass(name, on)` | класс словаря |
+| `show()` / `hide()` / `toggle(on)` / `visible()` | показать и скрыть |
+| `value()` / `checked()` / `form()` | поля формы |
+| `cssVar(name, value)` | переменная CSS элемента |
+| `ref(name)` / `refs(name)` / `closest(name)` | элементы `data-ref` внутри и снаружи |
+| `list(items, fill)` | список по шаблону первого ребёнка |
+| `focus()` | фокус |
+
+Модули SDK по `uses` — корзина, избранное, вход — [modules.md](modules.md).
+
+
+
+---
+
+# Модули SDK
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Ключ `uses` в `section.json` открывает секции данные и модули SDK. Значения:
+
+- `"theme"` — значения сквозных настроек темы в Astro.props.theme.
+- `"shop"` — публичные данные магазина в Astro.props.shop.
+
+## Действия по модулям
+
+## cart
+
+Действия: `cart.add`.
+## favorites
+
+Действия: `favorites.toggle`.
+## consent
+
+Действия: `consent.accept`, `consent.decline`.
+## newsletter
+
+Действия: `newsletter.subscribe`.
+
+
+---
+
+# События
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+События витрины отправляет ядро SDK; секция слушает их через `ctx.listen`, свой код мерчанта — на `document`.
+
+| Событие | Что случилось | Поля события |
+|---|---|---|
+| `merfy:page:ready` | все секции страницы запущены | — |
+| `merfy:page:view` | просмотр страницы | path — строка |
+| `merfy:page:hidden` | вкладку скрыли | — |
+| `merfy:page:visible` | вкладку вернули | — |
+| `merfy:page:restore` | «Назад»: браузер достал страницу из кеша | — |
+| `merfy:page:leave` | уход со страницы | — |
+| `merfy:cart:add` | товар добавлен в корзину — после ответа сервера; quantity — сколько добавилось, price — за штуку | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0; price — { amount, currency } |
+| `merfy:cart:remove` | строка убрана из корзины | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0 |
+| `merfy:cart:change` | покупатель поменял количество в корзине | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0; previousQuantity — целое от 0 |
+| `merfy:variant:change` | выбран вариант товара | productId — строка; variantId — строка |
+| `merfy:favorites:add` | товар отмечен в избранном | productId — строка |
+| `merfy:favorites:remove` | отметка избранного снята | productId — строка |
+| `merfy:auth:signin` | покупатель вошёл | — |
+| `merfy:auth:signout` | покупатель вышел | — |
+| `merfy:search:submit` | отправлен поиск | query — строка |
+| `merfy:catalog:page` | каталог показал следующую страницу | page — целое от 0 |
+| `merfy:section:mount` | секция запущена | section — строка |
+| `merfy:section:error` | сбой секции | section — строка; id — строка; script — строка; stage — одно из: mount, runtime, unmount; message — строка |
+| `merfy:notice:show` | показать уведомление покупателю — его выводит секция «Уведомления» | level — одно из: error, warning; message — строка; code — одно из: out-of-stock, limit, unauthorized, network, server, invalid, refused, может не быть |
+| `merfy:consent:change` | выбор в баннере cookie | state — одно из: accepted, declined |
+
+## Коды ошибок
+
+В данных событий `merfy:notice:show` и `merfy:section:error` поле code — одно из: out-of-stock, limit, unauthorized, network, server, invalid, refused.
+
+## Свой код мерчанта
+
+Свой код на странице магазина (раздел «Свой код» в настройках) слушает те же события на `document`:
+
+```js
+document.addEventListener('merfy:cart:add', (event) => {
+  const { productId, quantity } = event.detail;
+  console.log('в корзине', productId, quantity);
+});
+```
+
+В секции — `ctx.listen('merfy:cart:add', fn)`: подписка снимается вместе с секцией.
+
+
+
+---
+
+# Действия
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Действия SDK вызывает ядро по `data-action="<имя>"` в разметке секции — без скрипта. Ответ каждого действия — в его описании; при сбое секция получает ошибку, покупатель — уведомление.
+
+| Действие | Модуль | Что делает и что отвечает | Параметры разметки |
+|---|---|---|---|
+| `cart.add` | cart | добавить товар в корзину; аргументы { productId, variantId?, quantity? = 1 }, ответ — CartState | `data-product-id`, `data-variant-id`, `data-quantity` |
+| `favorites.toggle` | favorites | отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added } | `data-product-id` |
+| `consent.accept` | consent | покупатель принял cookie: счётчики мерчанта и «свой код» с ожиданием согласия запускаются; ответ — "accepted" | — |
+| `consent.decline` | consent | покупатель отклонил cookie: аналитика ничего не отправляет, счётчиков нет; ответ — "declined" | — |
+| `newsletter.subscribe` | newsletter | подписать на рассылку магазина; аргументы { email }, ответ — { alreadySubscribed }; e-mail — из поля формы | только из script.ts |
+
+Свои действия секция описывает в `script.ts` ([script.md](script.md)).
+
+
+---
+
+# Поведения и анимации
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Готовое поведение вешается на элемент атрибутом `data-behavior="<имя>"` — без скрипта. Части поведения отмечаются `data-part`, параметры — своими `data-…` на том же элементе.
+
+## accordion
+
+Части: `data-part="content"`.
+
+Параметры: —.
+## dialog
+
+Части: `data-part="open"`, `data-part="content"`, `data-part="close"`.
+
+Параметры: `data-transition` — одно из: fade, drawer, drawer-back, drop; по умолчанию `fade`; `data-side` — одно из: right, left; по умолчанию `right`; `data-modal` — да или нет; по умолчанию `true`.
+## carousel
+
+Части: `data-part="viewport"`, `data-part="container"`, `data-part="slide"`, `data-part="prev"`, `data-part="next"`, `data-part="dot"`, `data-part="thumb"`, `data-part="counter"`, `data-part="copy"`, `data-part="play"`.
+
+Параметры: `data-effect` — одно из: slide, fade; по умолчанию `slide`; `data-change` — одно из: 500, 700; по умолчанию `700`; `data-autoplay` — целое от 0 до 60; по умолчанию `0`; `data-loop` — да или нет; по умолчанию `true`; `data-drag` — да или нет; по умолчанию `true`.
+## tabs
+
+Части: `data-part="list"`, `data-part="trigger"`, `data-part="content"`.
+
+Параметры: `data-value` — строка; `data-orientation` — одно из: horizontal, vertical; по умолчанию `horizontal`.
+## nav-menu
+
+Части: `data-part="list"`, `data-part="item"`, `data-part="trigger"`, `data-part="content"`, `data-part="link"`.
+
+Параметры: `data-open-on` — одно из: click, hover; по умолчанию `click`.
+## quantity
+
+Части: `data-part="input"`, `data-part="minus"`, `data-part="plus"`.
+
+Параметры: —.
+## card-photos
+
+Части: `data-part="image"`.
+
+Параметры: `data-photos` — список через запятую; по умолчанию ``; `data-hover-next` — да или нет; по умолчанию `true`.
+## sticky-header
+
+Части: —.
+
+Параметры: `data-mode` — одно из: scroll-up, always, none; по умолчанию `scroll-up`.
+## video
+
+Части: `data-part="video"`, `data-part="play"`.
+
+Параметры: —.
+
+## Пресеты data-animate
+
+Пресет указывается в `data-animate="<имя>"`: `appear`, `appear-group`, `appear-side`, `fade-up`, `slide-down`, `load-1`, `load-2`, `load-3`, `letters`.
+
+Параметры пресета: `data-delay` — целое от 0 до 5000; по умолчанию `0`.
+
+
+---
+
+# Настройки темы
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Сквозные настройки общие у всех секций: их задаёт мерчант в «Настройках темы», секция читает значения. Список — из общих настроек платформы.
+
+## Логотип
+
+| id | Подпись |
+|---|---|
+| `logo-image` | Картинка |
+## Социальные сети
+
+| id | Подпись |
+|---|---|
+| `social-telegram` | Telegram |
+| `social-vk` | Вконтакте |
+| `social-dzen` | Дзен |
+| `social-youtube` | Youtube |
+| `social-tiktok` | TikTok |
+| `social-max` | MAX |
+## Корзина
+
+| id | Подпись |
+|---|---|
+| `cart-type` | Вид корзины |
+## Баннер
+
+| id | Подпись |
+|---|---|
+| `cookie-banner-enabled` | Баннер cookie |
+
+## Как читать
+
+Объяви `"uses": ["theme"]` в `section.json` и читай значение в шаблоне:
+
+```astro
+---
+const { settings, theme } = Astro.props;
+---
+<p class="m-0">{theme['logo-image']}</p>
+```
+
+
+---
+
+# Страницы
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+## Группы страницы
+
+Страница магазина — три списка секций: шапка, сама страница и подвал. Куда секцию можно поставить — ключ `groups`
+в `section.json`: `["header"]`, `["page"]`, `["footer"]` или несколько. Нет ключа — только на страницу.
+
+- `limit` — сколько экземпляров секции в одном списке.
+- `"removable": false` — секцию нельзя удалить, её ошибка рендера — ошибка сборки магазина.
+- `newPage` — id поля вида `string`: секция ставится на новую страницу, в поле пишется имя страницы.
+
+## Особые страницы
+
+Главная, каталог, товар, корзина и другие страницы платформы — особые: у них постоянные id, мерчант их не удаляет.
+Своих страниц у магазина сколько угодно. Поля «тип страницы» нет: секция не знает, на какой странице стоит, и
+одинаково работает на любой.
+
+## Заголовки
+
+На странице один `<h1>` — главный заголовок страницы. Секция, которая открывает страницу, ставит его у своего
+заголовка; в остальных секциях заголовки — `<h2>` и ниже. Не уверен, первая ли секция на странице, — `<h2>`.
+
+
+
+---
+
+# Данные магазина
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
+
+| `uses` | Что в `Astro.props` | Что в нём |
+|---|---|---|
+| `"theme"` | `theme` | значения [сквозных настроек темы](theme-settings.md) |
+| `"shop"` | `shop` | публичные данные магазина: название, контакты, адрес |
+
+```astro
+---
+const { settings, shop } = Astro.props;
+---
+<p class="m-0">{shop.name}</p>
+```
+
+Корзина, избранное и вход — модули SDK в браузере, тот же ключ `uses` ([modules.md](modules.md)).
+
+
+
+---
+
+# Коды ошибок
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Справка по кодам проверки секции: когда бывает код и как исправить.
+
+
+
+## manifest-missing
+
+Когда: В папке секции нет файла section.json.
+
+Как исправить: Создай section.json с ключами sdk, name, kind, title — начни с шаблона секции..
+
+## manifest-invalid
+
+Когда: `section.json` — не JSON, в нём лишний или пропущенный ключ, не тот вид значения или ключ старого формата.
+
+Как исправить: Исправь ключ, названный в ответе; ключи и их виды — на странице section-json.md..
+Пример: было `"fields": [...]` → стало `"settings": [...]`.
+
+
+## sdk-unsupported
+
+Когда: В section.json версия SDK, которой проверка не знает.
+
+Как исправить: Поставь "sdk": 1..
+Пример: было `"sdk": 2` → стало `"sdk": 1`.
+
+
+## setting-invalid
+
+Когда: Поле настройки собрано неверно: значение по умолчанию не своего вида, повторён id, у списка нет вариантов.
+
+Как исправить: Исправь поле, названное в ответе; формы полей по видам — на странице section-json.md..
+
+## file-unknown
+
+Когда: В секции файл, которого нет в формате: формат — section.json, template.astro и файлы скрипта .ts/.js.
+
+Как исправить: Убери файл; стили — классами словаря, разметка — только в template.astro..
+Пример: было `styles.css` → стало `классы в template.astro`.
+
+
+## file-too-large
+
+Когда: Один файл секции больше предела на файл.
+
+Как исправить: Сократи файл или вынеси часть скрипта в свой файл .ts; пределы — на странице limits.md..
+
+## source-too-large
+
+Когда: Файлов в секции больше предела или все вместе больше предела по объёму.
+
+Как исправить: Убери лишние файлы и повторы; пределы — на странице limits.md..
+
+## kind-mismatch
+
+Когда: Файлы не подходят виду: у секции нет template.astro, у глобального скрипта он есть или нет скрипта.
+
+Как исправить: У "kind": "section" нужен template.astro; у "kind": "global" — только script.ts..
+
+## template-forbidden
+
+Когда: В template.astro запрещённое: тег, компонент, обработчик on…, директива, {...} в атрибутах или адрес javascript:.
+
+Как исправить: Убери запрещённое; события и поведение — в script.ts или data-behavior; что можно — на странице template.md..
+Пример: было `<button onclick="open()">` → стало `<button data-action="open">`.
+
+
+## template-too-deep
+
+Когда: Шаблон вложен глубже предела: теги и скобки считаются вместе.
+
+Как исправить: Сделай разметку площе: меньше вложенных обёрток и выражений..
+
+## template-compile
+
+Когда: Компилятор Astro не разобрал template.astro: незакрытый тег, ошибка в выражении, импорт в модуле шаблона.
+
+Как исправить: Исправь место из ответа: строка и колонка — в template.astro..
+
+## class-unknown
+
+Когда: Класса нет в словаре классов магазина.
+
+Как исправить: Возьми класс из подсказки или из страницы styles.md..
+Пример: было `text-6xl` → стало `text-5xl`.
+
+
+## class-arbitrary
+
+Когда: Класс с произвольным значением: […], (…) или !.
+
+Как исправить: Возьми класс словаря; нужен свой цвет или размер — токен секции в ключе tokens..
+Пример: было `bg-[#c9a227]` → стало `bg-primary`.
+
+
+## class-dark
+
+Когда: Класс с вариантом dark:.
+
+Как исправить: Убери dark:: тёмный вид магазина задаёт схема цвета (поле color-scheme)..
+Пример: было `dark:bg-black` → стало `поле color-scheme`.
+
+
+## class-theme-token
+
+Когда: Класс токена, который есть только у одной темы.
+
+Как исправить: Возьми токен словаря платформы — он есть у всех тем..
+
+## class-dynamic
+
+Когда: Класс собирается из поля без конечного набора значений, например из строки.
+
+Как исправить: Выбирай класс полем select или toggle и пиши все классы целиком в class:list..
+Пример: было `class={`text-${settings.heading}`}` → стало `class:list={{ 'text-3xl': settings['heading-size'] === 'medium' }}`.
+
+
+## token-invalid
+
+Когда: Токен секции в ключе tokens записан неверно: имя без метки custom, чужой вид, больше предела.
+
+Как исправить: Исправь токен, названный в ответе; правила — на странице styles.md..
+
+## render-failed
+
+Когда: Шаблон упал при пробном рендере со значениями полей по умолчанию.
+
+Как исправить: Проверь выражения шаблона: поле, которого нет в settings, или метод у пустого значения..
+Пример: было `{settings.missing.deep}` → стало `{settings.heading}`.
+
+
+## script-invalid
+
+Когда: Скрипт секции не собрался или у него нет export default — определения секции.
+
+Как исправить: Исправь место из ответа; в конце script.ts — export default defineSection({ … })..
+
+## import-forbidden
+
+Когда: Скрипт импортирует что-то кроме @merfy/shell и своих файлов .ts/.js.
+
+Как исправить: Убери импорт: корзина, избранное, вход и данные — модули SDK по uses (modules.md)..
+Пример: было `import axios from 'axios'` → стало `import { defineSection } from '@merfy/shell'`.
+
+
+## sdk-only
+
+Когда: В скрипте имя вне списка SDK, this, class, delete, import() или код вне defineSection.
+
+Как исправить: Весь код секции — внутри defineSection; имена и вызовы — только из SDK..
+
+## event-unknown
+
+Когда: `ctx.listen` подписан на событие, которого нет в каталоге событий.
+
+Как исправить: Возьми имя события из каталога: events.md..
+
+## action-unknown
+
+Когда: `data-action` в шаблоне называет действие, которого нет ни у секции, ни у SDK.
+
+Как исправить: Объяви действие в defineSection или возьми имя из каталога: actions.md..
+
+## script-heavy
+
+Когда: Скрипт после сжатия больше порога предупреждения; секция сохраняется.
+
+Как исправить: Сократи скрипт: готовое поведение data-behavior вместо своего кода, без повторов..
+
+## script-too-heavy
+
+Когда: Скрипт после сжатия больше предела.
+
+Как исправить: Сократи скрипт; предел — на странице limits.md..
+
+## build-timeout
+
+Когда: Проверка секции не уложилась в отведённое время.
+
+Как исправить: Упрости шаблон и скрипт и проверь снова; повторяется — покажи ответ мерчанту..
+
+## build-crashed
+
+Когда: Процесс проверки упал — ошибка платформы, а не секции.
+
+Как исправить: Проверь ещё раз; повторяется — покажи ответ мерчанту целиком..
+
+## release-changed
+
+Когда: Выпуск расширения с этой версией уже сохранён с другими файлами.
+
+Как исправить: Новая версия файлов — новый номер выпуска..
+
+## setting-name-unknown
+
+Когда: Имени поля нет в словаре имён.
+
+Как исправить: Возьми имя из подсказки «ближе всего» или из names.md; своё имя не придумывай..
+Пример: было `"id": "title"` → стало `"id": "heading"`.
+
+
+## setting-name-kind
+
+Когда: Имя из словаря, но вид поля не из его столбца «Виды».
+
+Как исправить: Поставь вид из names.md или возьми другое имя..
+Пример: было `"id": "heading", "kind": "text"` → стало `"id": "heading", "kind": "string"`.
+
+
+## settings-limit
+
+Когда: Полей, типов блоков, блоков или вариантов больше предела, или подпись длиннее предела.
+
+Как исправить: Сократи список или подпись; пределы — на странице limits.md..
+
+## visible-when-invalid
+
+Когда: Условие показа поля ссылается на поле, которого нет, или на значение не того вида.
+
+Как исправить: Сошлись на поле той же секции или блока и значение его вида..
+
+## render-empty-failed
+
+Когда: Шаблон упал при рендере с пустыми значениями полей: мерчант может стереть любое поле.
+
+Как исправить: Покажи элемент только при непустом значении: {settings.heading && <h2>…</h2>}..
+
+## block-select-unavailable
+
+Когда: У блока в blocks.map нет одного корневого элемента; секция сохраняется.
+
+Как исправить: Оберни разметку блока одним элементом — тогда блок выбирается кликом в превью..
+
+## behavior-unknown
+
+Когда: Имени в data-behavior нет в каталоге поведений SDK.
+
+Как исправить: Возьми поведение из подсказки ответа или со страницы behaviors.md..
+Пример: было `data-behavior="acordeon"` → стало `data-behavior="accordion"`.
+
+
+## behavior-part-unknown
+
+Когда: У поведения нет части с именем из data-part.
+
+Как исправить: Возьми часть из подсказки ответа; части поведения — на странице behaviors.md..
+
+## behavior-part-orphan
+
+Когда: Атрибут data-part задан вне элемента с data-behavior: часть относится к поведению.
+
+Как исправить: Перенеси data-part внутрь элемента с data-behavior..
+Пример: было `<span data-part="title">` → стало `<div data-behavior="accordion" data-part="title">`.
+
+
+## behavior-param-invalid
+
+Когда: Параметр data-… у поведения не того вида или вне своего диапазона.
+
+Как исправить: Поставь значение из подсказки ответа; параметры поведения — на странице behaviors.md..
+
+## animate-preset-unknown
+
+Когда: Пресета в data-animate нет в каталоге пресетов SDK.
+
+Как исправить: Возьми пресет из подсказки ответа или со страницы behaviors.md..
+
+
+---
+
+# Лимиты
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+Пределы, которые проверка секции применяет при сохранении. Числа — из констант проверки.
+
+## Файлы
+
+- Файлов в секции — не больше 50.
+- Один файл — не больше 64 КБ.
+- Все файлы вместе — не больше 256 КБ.
+
+## Поля и блоки
+
+- Полей секции — не больше 20.
+- Полей типа блока — не больше 10.
+- Типов блоков — не больше 6, блоков — не больше 50.
+- Вариантов списка — от 2 до 10.
+- Подпись — не длиннее 32 знаков, подпишись — 120.
+
+## Шаблон и скрипт
+
+- Вложенность шаблона — не глубже 256.
+- Скрипт после сжатия: предупреждение — от 10 КБ, предел — 50 КБ.
+
+## Проверка
+
+- Время проверки секции — до 10 с.
+- Память процесса проверки — до 256 МБ.
+
+
+---
+
+# Что нового
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+## 1.0.0 — 2026-10-24
+
+- Первая версия документации SDK 1: руководство, справочники, коды ошибок, шаблон секции с `AGENTS.md`.
+

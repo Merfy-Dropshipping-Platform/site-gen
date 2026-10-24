@@ -146,6 +146,9 @@ export const EXTENSION_PURCHASE_STYLES = `
 :is(.xp[data-look="theme"], [data-look="theme"] .xp) .sf-btn { border: 1px solid var(--xp-btn-border); }
 :is(.xp[data-look="theme"], [data-look="theme"] .xp) .sf-btn:not(.light):hover { background: var(--xp-btn-bg-hover); color: var(--xp-btn-text-hover); }
 :is(.xp[data-look="theme"], [data-look="theme"] .xp) .sf-btn.light:hover { background: var(--xp-btn2-bg-hover); color: var(--xp-btn2-text-hover); border-color: var(--xp-btn2-border); }
+/* Подпись у цены стоит в блоке цены, вне .xp: атрибут data-look ей ставит блок «Товар».
+   Цвет текста схемы секции в 75% — как у старой цены, читается на любом фоне схемы. */
+[data-extension-purchase-note][data-look="theme"] { color: rgb(var(--color-text) / .75); }
 /* Заголовок формы и заголовок экрана «отправлена» — heading-токены темы. */
 :is(.xp[data-look="theme"], [data-look="theme"] .xp) .sf-h b,
 :is(.xp[data-look="theme"], [data-look="theme"] .xp) .okbox b { color: rgb(var(--color-heading)); font-family: var(--font-heading); font-weight: var(--weight-heading); }

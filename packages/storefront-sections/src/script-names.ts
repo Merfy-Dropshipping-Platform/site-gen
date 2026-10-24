@@ -1,6 +1,6 @@
 import { ACTIONS, ACTION_EVENTS, ACTION_NAMES, isActionName } from '@merfy/shell/actions';
 import { EVENT_NAMES } from '@merfy/shell/events';
-import { TEMPLATE_FILE, type SectionManifest } from './format';
+import { EXT_USE_PREFIX, TEMPLATE_FILE, type SectionManifest } from './format';
 import { levenshteinOf } from './name-check';
 import { problem, type SectionProblem } from './problems';
 import type { ScriptFacts } from './script-facts';
@@ -74,6 +74,20 @@ function ownActionText(name: string, input: NameInput): string | null {
   return `действия «${name}» нет в actions ${entry}. ${known}${nearText(name, actions)}`;
 }
 
+// Метод расширения в разметке (блок 9 «Секций и SDK», часть 9в; Р9в-22): ext.<id>.<метод>, id — из "ext:<id>" в uses
+// секции. Есть ли метод у расширения, при сохранении не известно: методы приходят из манифеста расширения при сборке.
+const EXT_ACTION_PREFIX = 'ext.';
+const EXT_ACTION = /^ext\.([a-z][a-z0-9-]{2,31})\.[a-z][a-zA-Z0-9]{0,31}$/;
+
+function extActionText(name: string, input: NameInput): string | null {
+  const id = EXT_ACTION.exec(name)?.[1];
+  if (id === undefined)
+    return `data-action «${name}»: метод расширения — ext.<id>.<метод>, id — из "ext:<id>" в uses, метод — из storefront.methods манифеста`;
+  const use = `${EXT_USE_PREFIX}${id}`;
+  if ((input.manifest.uses ?? []).some((item) => item === use)) return null;
+  return `действие ${name}: расширения ${id} нет в uses — добавьте "${use}" в section.json`;
+}
+
 // «[событие:]имя»: форма, событие из списка, потом имя — SDK (с точкой) или своё.
 function actionText(token: MarkupName, input: NameInput): string | null {
   const parts = token.name.split(':');
@@ -83,6 +97,7 @@ function actionText(token: MarkupName, input: NameInput): string | null {
     return `data-action «${token.name}»: действие — [событие:]имя, например click:pick`;
   if (event !== null && !ACTION_EVENTS.includes(event))
     return `событие «${event}» в data-action не из списка: ${ACTION_EVENTS.join(', ')}${nearText(event, ACTION_EVENTS)}`;
+  if (name.startsWith(EXT_ACTION_PREFIX)) return extActionText(name, input);
   return name.includes('.') ? sdkActionText(name) : ownActionText(name, input);
 }
 

@@ -1,3 +1,4 @@
+import { extUseSchema, storefrontExtensionsSchema } from '@merfy/storefront-config';
 import { z } from 'zod';
 import { hashSchema } from './canonical';
 import { entityKey } from './entities';
@@ -78,7 +79,8 @@ const codeSectionSchema = z.strictObject({
   // страницы и классы, которые скрипт ставит строкой. Нет — строка до 5в: секция получает все части ядра, как в 5б.
   meta: z
     .strictObject({
-      uses: z.array(partNameSchema),
+      // "ext:<id>" (блок 9 «Секций и SDK», часть 9в; Р9в-20) — модуль расширения ctx.ext.<id>; его часть — ext в parts.
+      uses: z.array(z.union([partNameSchema, extUseSchema])),
       parts: z.array(partNameSchema),
       classes: z.array(z.string().regex(SCRIPT_CLASS, { error: 'нужно имя класса утилиты: opacity-40' })),
     })
@@ -131,6 +133,8 @@ const codeSchema = z.strictObject({
   sections: z.array(codeSectionSchema),
   pages: z.record(kebabIdSchema, z.array(instanceSchema)),
   globals: z.array(sectionNameSchema),
+  // Сторы и методы включённых расширений из uses секций магазина (блок 9 «Секций и SDK», часть 9в); нет — ключа нет.
+  extensions: storefrontExtensionsSchema.optional(),
 });
 
 const entitySchema = z.strictObject({

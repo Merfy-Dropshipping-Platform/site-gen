@@ -1,3 +1,4 @@
+import { MODULE_NAMES } from '@merfy/shell/actions';
 import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
 import { sectionFieldShape, settingFieldsOf, settingsEntryShape } from './fields';
@@ -55,6 +56,13 @@ export const SECTION_GROUPS = ['header', 'page', 'footer'] as const;
 export type SectionGroup = (typeof SECTION_GROUPS)[number];
 export const SECTION_USES = ['theme', 'shop'] as const;
 export type SectionUse = (typeof SECTION_USES)[number];
+// uses с модулями SDK (блок 5 «Секций и SDK», раздел 3.8; часть 5в): cart, favorites, auth, newsletter — модули ctx
+// скрипта секции (MODULE_NAMES ядра). В шаблон, превью и входы сборки идут только theme и shop — propsUsesOf.
+export const MANIFEST_USES = [...SECTION_USES, ...MODULE_NAMES] as const;
+export type ManifestUse = (typeof MANIFEST_USES)[number];
+const isSectionUse = (value: ManifestUse): value is SectionUse => SECTION_USES.some((use) => use === value);
+export const propsUsesOf = (manifest: Pick<SectionManifest, 'uses'>): SectionUse[] =>
+  (manifest.uses ?? []).filter(isSectionUse);
 const unique = (list: readonly string[]): boolean => new Set(list).size === list.length;
 
 export const sectionManifestSchema = z.strictObject({
@@ -70,7 +78,11 @@ export const sectionManifestSchema = z.strictObject({
   groups: z.array(z.enum(SECTION_GROUPS)).min(1).max(3).refine(unique, { error: 'группа дважды' }).optional(),
   limit: z.int().min(1).max(50).optional(),
   removable: z.literal(false).optional(),
-  uses: z.array(z.enum(SECTION_USES)).max(2).refine(unique, { error: 'значение дважды' }).optional(),
+  uses: z
+    .array(z.enum(MANIFEST_USES))
+    .max(MANIFEST_USES.length)
+    .refine(unique, { error: 'значение дважды' })
+    .optional(),
   newPage: z.string().min(1).optional(),
   // Свои токены секции (блок 4 «Секций и SDK», Р4-9): запись словаря; проверяет token-rules.ts.
   tokens: z.record(z.string(), z.unknown()).optional(),
@@ -278,13 +290,16 @@ function newPageProblems(manifest: SectionManifest): string[] {
   return sectionGroupsOf(manifest).includes('page') ? [] : ['newPage: секция ставится на страницу — нужна группа page'];
 }
 
-// У глобального скрипта места на странице нет — ключи места ему не нужны.
+// У глобального скрипта места на странице нет — ключи места ему не нужны; uses — только модули SDK: шаблона у него нет,
+// theme и shop читать негде (часть 5в).
 function placeProblems(manifest: SectionManifest): string[] {
-  if (manifest.kind === 'global')
-    return PLACE_KEYS.filter((key) => manifest[key] !== undefined).map(
+  if (manifest.kind !== 'global') return newPageProblems(manifest);
+  return [
+    ...PLACE_KEYS.filter((key) => key !== 'uses' && manifest[key] !== undefined).map(
       (key) => `${key}: у глобального скрипта нет места на странице`,
-    );
-  return newPageProblems(manifest);
+    ),
+    ...propsUsesOf(manifest).map((use) => `uses: ${use} — данные шаблона, у глобального скрипта шаблона нет`),
+  ];
 }
 
 // Вид menu — только у настроек секции: меню блока конструктор не правит (окно меню — у поля секции).

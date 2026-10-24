@@ -32,12 +32,7 @@ const kindOf = (option: Record<string, unknown>): string | undefined => {
 };
 
 // Вариант поля на имя словаря: то же поле, но id — const имени с описанием, setting — только виды имени.
-function variantOf(
-  field: Record<string, unknown>,
-  name: string,
-  about: string,
-  kinds: readonly SdkKind[],
-): Record<string, unknown> {
+function variantOf(field: Record<string, unknown>, name: string, about: string, kinds: readonly SdkKind[]): Record<string, unknown> {
   const properties = isRecord(field.properties) ? field.properties : {};
   const kindSet = new Set<string>(kinds);
   const options = settingOptions(properties).filter((option) => {

@@ -116,10 +116,7 @@ const UNKNOWN = 'такого имени нет в словаре';
 
 // Шаги проверки имени для неизвестного словарю (Р3.5): первая непустая подсказка побеждает.
 const HINT_STEPS: readonly ((id: string, kebab: string, kind: string) => string | undefined)[] = [
-  (id, kebab) =>
-    kebab !== id && entryOf(kebab) !== undefined
-      ? `поле \`${id}\`: имена — kebab-case, в словаре — \`${kebab}\``
-      : undefined,
+  (id, kebab) => (kebab !== id && entryOf(kebab) !== undefined ? `поле \`${id}\`: имена — kebab-case, в словаре — \`${kebab}\`` : undefined),
   (id, kebab) => {
     const refusal = refusalOf(kebab);
     return refusal === undefined ? undefined : `поле \`${id}\`: ${UNKNOWN}. ${refusal}`;

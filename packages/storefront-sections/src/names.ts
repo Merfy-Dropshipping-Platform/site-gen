@@ -7,46 +7,14 @@ import { z } from 'zod';
 // сквозных настроек — generated/shared-settings.json, его пишет pnpm generate из панели темы (Р3.4). Форму и смысл
 // данных проверяет parseNames при загрузке модуля: сломанный словарь — исключение со списком проблем.
 
-export const SDK_KINDS = [
-  'string',
-  'text',
-  'richtext',
-  'url',
-  'image',
-  'image-pair',
-  'select',
-  'radio',
-  'toggle',
-  'range',
-  'alignment',
-  'color-scheme',
-  'padding',
-  'menu',
-] as const;
+export const SDK_KINDS = ['string', 'text', 'richtext', 'url', 'image', 'image-pair', 'select', 'radio', 'toggle',
+  'range', 'alignment', 'color-scheme', 'padding', 'menu'] as const;
 export type SdkKind = (typeof SDK_KINDS)[number];
 
-export interface NameGroup {
-  id: string;
-  title: string;
-}
-export interface NameEntry {
-  name: string;
-  kinds: readonly SdkKind[];
-  label: string;
-  group: string;
-  about: string;
-  asks: readonly string[];
-}
-export interface Refusal {
-  id: string;
-  names: readonly string[];
-  refusal: string;
-}
-export interface SharedSettingName {
-  id: string;
-  label: string;
-  group: string;
-}
+export interface NameGroup { id: string; title: string }
+export interface NameEntry { name: string; kinds: readonly SdkKind[]; label: string; group: string; about: string; asks: readonly string[] }
+export interface Refusal { id: string; names: readonly string[]; refusal: string }
+export interface SharedSettingName { id: string; label: string; group: string }
 export interface NamesDictionary {
   groups: readonly NameGroup[];
   names: readonly NameEntry[]; // порядок — как в names.json
@@ -122,16 +90,10 @@ const dictionaryNamesProblems = (refusals: readonly Refusal[], dictionary: Reado
 const doubleRefusalProblems = (refusals: readonly Refusal[]): string[] => {
   const counts = new Map<string, number>();
   for (const name of refusals.flatMap((refusal) => refusal.names)) counts.set(name, (counts.get(name) ?? 0) + 1);
-  return [...counts.entries()]
-    .filter(([, count]) => count > 1)
-    .map(([name]) => `not-names.json: ${name} — в отказах дважды`);
+  return [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => `not-names.json: ${name} — в отказах дважды`);
 };
 
-const sharedNameProblems = (
-  shared: readonly SharedSettingName[],
-  dictionary: ReadonlySet<string>,
-  refusals: readonly Refusal[],
-): string[] => {
+const sharedNameProblems = (shared: readonly SharedSettingName[], dictionary: ReadonlySet<string>, refusals: readonly Refusal[]): string[] => {
   const refused = new Set(refusals.flatMap((refusal) => refusal.names));
   const problemOf = (item: SharedSettingName): string | null => {
     if (dictionary.has(item.id)) return `shared-settings.json: ${item.id} — уже имя словаря`;

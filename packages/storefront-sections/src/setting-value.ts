@@ -4,7 +4,4 @@ import type { SectionManifest } from './format';
 // тип ctx.settings. Элементы settings без ключа setting (ссылки на общие настройки частей 4–5 блока 1) отсеиваются.
 type SettingFieldOf = Extract<SectionManifest['settings'][number], { setting: unknown }>;
 
-export type SettingValueOf<K extends SettingFieldOf['setting']['kind']> = Extract<
-  SettingFieldOf['setting'],
-  { kind: K }
->['default'];
+export type SettingValueOf<K extends SettingFieldOf['setting']['kind']> = Extract<SettingFieldOf['setting'], { kind: K }>['default'];

@@ -94,18 +94,15 @@ type CodeStep = 'same' | 'changed' | 'stopped';
 
 // Код секции по строке списка бандла: null — строку убрать; тот же hash — uses из ответа; другой — load() и новая
 // строка. Отказ загрузки и «не определение» — reply и 'stopped': строка не меняется, hash не запоминается.
-async function codeStep(deps: ReplaceDeps, name: string, detail: PreviewReplaceDetail): Promise<CodeStep> {
-  const entry = deps.byName.get(name);
-  if (detail.script === null) {
-    if (entry === undefined) return 'same';
-    deps.byName.delete(name);
-    return 'changed';
-  }
-  const { hash, uses } = detail.script;
-  if (entry !== undefined && entry.script === hash) {
-    deps.byName.set(name, { ...entry, uses: usesOf(uses) });
-    return 'same';
-  }
+// Загруженный код — новая строка списка; отказ загрузки и «не определение» — reply и 'stopped': строка не меняется,
+// hash не запоминается.
+async function loadStep(
+  deps: ReplaceDeps,
+  name: string,
+  entry: SectionEntry | undefined,
+  script: PreviewCodeRef,
+  detail: PreviewReplaceDetail,
+): Promise<CodeStep> {
   let definition: unknown;
   try {
     definition = await detail.load();
@@ -120,11 +117,26 @@ async function codeStep(deps: ReplaceDeps, name: string, detail: PreviewReplaceD
   deps.byName.set(name, {
     name,
     kind: entry?.kind ?? 'section',
-    script: hash,
-    uses: usesOf(uses),
+    script: script.hash,
+    uses: usesOf(script.uses),
     definition,
   });
   return 'changed';
+}
+
+async function codeStep(deps: ReplaceDeps, name: string, detail: PreviewReplaceDetail): Promise<CodeStep> {
+  const entry = deps.byName.get(name);
+  if (detail.script === null) {
+    if (entry === undefined) return 'same';
+    deps.byName.delete(name);
+    return 'changed';
+  }
+  const { hash, uses } = detail.script;
+  if (entry !== undefined && entry.script === hash) {
+    deps.byName.set(name, { ...entry, uses: usesOf(uses) });
+    return 'same';
+  }
+  return loadStep(deps, name, entry, detail.script, detail);
 }
 
 // Копия состояния через JSON: цикл или не объект — без состояния (Р5г-4).

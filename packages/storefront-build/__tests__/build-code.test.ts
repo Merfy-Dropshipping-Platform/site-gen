@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildStorefront, type ThemeBuild } from '../src/build';
 import type { CodeNotice } from '../src/bundle';
+import { checkManifest } from '../src/manifest';
 import type { RenderPage } from '../src/page';
 import { ASSETS, codeInputs } from './support-code';
 import { fakeRender, novaTokens } from './support-theme';
@@ -27,7 +28,11 @@ describe('buildStorefront с кодом секций', () => {
     expect(Object.keys(manifest.files)).toEqual([...paths, ...fontPaths]);
     expect(manifest.shell).toEqual({ version: '0.1.0' });
     const home = new TextDecoder().decode(files.find((file) => file.path === 'index.html')?.content);
-    expect(home).toContain(`<script type="module" src="/${bundles[0]}"></script>`);
+    const integrity = `sha256-${Buffer.from(bundles[0]?.slice('_merfy/b/'.length, -3) ?? '', 'hex').toString('base64')}`;
+    expect(home).toContain(`<script type="module" src="/${bundles[0]}" integrity="${integrity}"></script>`);
+    // Политика CSP (часть 13б): «своего кода» во входах нет — обычная; длиннее 12 288 знаков манифест не проходит.
+    expect(manifest.csp?.startsWith("default-src 'self'; script-src 'self' 'sha256-")).toBe(true);
+    expect(() => checkManifest({ ...manifest, csp: 'a'.repeat(12_289) })).toThrow();
     expect(home.split('<script type="module"')).toHaveLength(2);
     expect(home).toContain('<merfy-section data-section="reviews:list" data-section-id="list-1"');
     expect(home).toContain('data-merfy-input');

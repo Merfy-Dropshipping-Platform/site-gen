@@ -20,6 +20,8 @@ const isSitePath = (path: string): boolean => !path.startsWith('/') && !path.spl
 
 const entityKeySchema = z.string().regex(ENTITY_KEY, { error: 'ключ сущности — тип:id' });
 const filePathSchema = z.string().min(1).refine(isSitePath, { error: 'путь файла — от корня сайта, без «/» и «..»' });
+// Политика CSP (блок 13 «Секций и SDK», часть 13б): печатные знаки ASCII без переводов строки — значение заголовка.
+const CSP_TEXT = /^[\x20-\x7e]{1,12288}$/;
 
 const pageRowSchema = z.strictObject({
   path: z.string().startsWith('/'),
@@ -51,6 +53,9 @@ const manifestShape = z.strictObject({
   entities: z.record(entityKeySchema, hashSchema),
   files: z.record(filePathSchema, hashSchema),
   pages: z.array(pageRowSchema),
+  // Политика CSP магазина (часть 13б) — заголовок раздачи у HTML. Нет поля — у сборки нет политики: сборки до 13б и
+  // политика длиннее предела (csp.ts).
+  csp: z.string().regex(CSP_TEXT, { error: 'CSP — печатные знаки ASCII, от 1 до 12 288' }).optional(),
 });
 
 type ManifestShape = z.infer<typeof manifestShape>;

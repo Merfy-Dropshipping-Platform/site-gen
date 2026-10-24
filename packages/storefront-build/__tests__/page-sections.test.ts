@@ -19,7 +19,8 @@ const pageOf = (mode: PageRender['mode']): PageRender => ({
   mode,
   code: ASSETS,
 });
-const BUNDLE_TAG = /<script type="module" src="\/_merfy\/b\/[0-9a-f]{64}\.js"><\/script>/;
+const BUNDLE_TAG =
+  /<script type="module" src="\/_merfy\/b\/[0-9a-f]{64}\.js" integrity="sha256-[A-Za-z0-9+/]{43}="><\/script>/;
 
 describe('страница с секциями', () => {
   it('секции — по порядку мерчанта в обёртках; CSS их классов — в <style id="merfy-sections">', async () => {

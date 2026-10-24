@@ -148,6 +148,7 @@ export type { FontFileEntry, FontRegistry } from '@merfy/tokens';
 export { shopFonts } from './head';
 export { PREVIEW_AGENT } from './preview-agent';
 export { PREVIEW_SECTIONS_AGENT } from './preview-sections-agent';
+export { previewCode, type PreviewCode } from './preview-bundle';
 
 // Отпечатки, версии тем, сторожа
 export { PLATFORM_RENDER_FILES, THEME_FILES, platformRenderHash, themeRenderFiles } from './render-files';

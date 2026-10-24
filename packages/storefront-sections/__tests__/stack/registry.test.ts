@@ -53,6 +53,7 @@ function newSection(door: Door, name: string, source: string, kind: 'section' | 
     renderHash: null,
     scriptHash: null,
     source: { 'template.astro': template },
+    tokenOrder: null,
   };
 }
 

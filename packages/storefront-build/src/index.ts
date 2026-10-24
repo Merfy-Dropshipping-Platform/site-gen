@@ -29,6 +29,35 @@ export {
   type SpecialPage,
 } from './special-pages';
 export { REBUILD_EVENT_INPUTS } from './event-inputs';
+// Записи магазина (блок 8 «Секций и SDK», часть 8а)
+export {
+  BLOG_ARTICLES_MAX,
+  COLLECTION_PRODUCTS_MAX,
+  POLICY_PAGES,
+  RECORD_FIELDS,
+  RECORD_TYPES,
+  money,
+  policyTextToHtml,
+  recordIndexOf,
+  recordPath,
+  recordSlug,
+  type ArticleCard,
+  type ArticleRecord,
+  type BlogData,
+  type BlogRecord,
+  type CollectionData,
+  type CollectionRecord,
+  type Money,
+  type PolicyRecord,
+  type ProductCard,
+  type ProductData,
+  type ProductRecord,
+  type PublicationData,
+  type RecordEntry,
+  type RecordIndex,
+  type RecordSeo,
+  type RecordType,
+} from './records';
 
 // Код секций (блок 7) и бандл страницы (блок 5 «Секций и SDK», часть 5б)
 export { NO_ASSETS, type CodeAssets } from './code';

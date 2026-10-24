@@ -27,3 +27,25 @@ const OPTIONS: sanitizeHtml.IOptions = {
 };
 
 export const cleanRichtext = (html: string): string => sanitizeHtml(html, OPTIONS);
+
+// Текст статьи блога (блок 8 «Секций и SDK», часть 8а, Р8а-13) — HTML из редактора кабинета. Список — как у «Записи
+// блога» пяти тем на проде (packages/theme-base/blocks/BlogPostSection/BlogPostSection.sanitize.ts): сверх richtext —
+// h4, картинки (только http и https, атрибуты src и alt), figure и figcaption. Очищает сборщик до входов сборки.
+const ARTICLE_OPTIONS: sanitizeHtml.IOptions = {
+  ...OPTIONS,
+  allowedTags: [...ALLOWED_TAGS, 'h4', 'img', 'figure', 'figcaption'],
+  allowedAttributes: { a: ['href', 'target', 'rel'], img: ['src', 'alt'] },
+  allowedSchemesByTag: { img: ['http', 'https'] },
+  transformTags: {
+    ...OPTIONS.transformTags,
+    img: (_tagName, attribs) => ({
+      tagName: 'img',
+      attribs: {
+        ...(typeof attribs.src === 'string' ? { src: attribs.src } : {}),
+        alt: typeof attribs.alt === 'string' ? attribs.alt : '',
+      },
+    }),
+  },
+};
+
+export const cleanArticleHtml = (html: string): string => sanitizeHtml(html, ARTICLE_OPTIONS);

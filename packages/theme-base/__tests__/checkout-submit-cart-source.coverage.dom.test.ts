@@ -205,10 +205,14 @@ describe("CheckoutSubmit — разрешение корня секции (Spec 
   // а не случай «хелпера нет вовсе».
   it("window.__merfyRoot есть, но не находит секцию (вернул null) → резерв document.querySelector", () => {
     (window as any).__merfyRoot = () => null;
+    (window as any).cartStore = {
+      getItems: () => [{ id: "i1", productId: "p1", quantity: 1, unitPriceCents: 50000 }],
+    };
     mountSubmitDom();
     runScript();
     // refresh() отработал через резервный поиск: плейсхолдер «—» заменился суммой.
-    expect(btn().textContent).toContain("0₽");
+    // (С пустой корзиной в кнопке прочерк, поэтому в корзине один товар.)
+    expect(btn().textContent).toContain("500₽");
   });
 
   it('секции [data-block="checkout-submit"] нет вообще в DOM (резерв тоже не находит) → скрипт тихо завершается', () => {

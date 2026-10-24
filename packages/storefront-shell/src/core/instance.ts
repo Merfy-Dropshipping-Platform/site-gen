@@ -39,6 +39,9 @@ export interface Instance {
   readonly id: string;
   readonly script: string;
   readonly owner: object; // владелец подписок шины: тем же объектом ядро доставляет события страницы новому экземпляру
+  // Запуск закончился (часть 5г, замена в превью): null — mount выполнился; текст — сбой при запуске или снятие до него.
+  readonly settled: Promise<string | null>;
+  currentState(): unknown; // ctx.state экземпляра: замена в превью переносит его копию в новый экземпляр
   teardown(): void; // элемент ушёл из документа или ядро остановлено: abort и unmount через предохранитель
 }
 
@@ -52,6 +55,9 @@ interface InstanceState {
   readonly runtime: InstanceRuntime;
   readonly failed: { value: boolean };
   readonly finished: { value: boolean };
+  readonly initial: Readonly<Record<string, unknown>> | undefined; // начальный ctx.state (замена в превью, часть 5г)
+  readonly settle: (message: string | null) => void; // решает settled; решает первый вызов, остальные ничего не меняют
+  readonly settled: Promise<string | null>;
   ctx: BaseCtx<Record<string, unknown>> | null;
   run: Guard;
 }
@@ -71,8 +77,9 @@ function reportFailure(
 ): void {
   if (state.failed.value) return;
   state.failed.value = true;
-  teardown(false);
   const message = messageOf(error);
+  state.settle(message); // до снятия: снятие решило бы settled текстом «снят до запуска»
+  teardown(false);
   const detail: SectionFailureDetail = {
     section: state.name,
     id: state.id,
@@ -88,9 +95,13 @@ function reportFailure(
   console.error(`Сбой секции ${state.name}#${state.id} (${stage}): ${message}`);
 }
 
+// Снят до конца mount — settled с этим текстом (часть 5г): замена в превью не ждёт запуска, которого не будет.
+const SETTLED_BEFORE_MOUNT = 'экземпляр снят до запуска';
+
 function teardownOf(state: InstanceState, withUnmount: boolean): void {
   if (state.finished.value) return;
   state.finished.value = true;
+  state.settle(SETTLED_BEFORE_MOUNT); // mount выполнился раньше — settled уже решён, вызов ничего не меняет
   state.controller.abort();
   const definition = state.entry?.definition;
   const ctx = state.ctx;
@@ -103,6 +114,7 @@ const markMounted = (state: InstanceState): void => {
   if (state.finished.value || state.failed.value) return;
   state.element.setAttribute('data-merfy-state', 'mounted');
   state.runtime.bus.emit('merfy:section:mount', { section: state.name });
+  state.settle(null);
 };
 
 // mount через предохранитель; закончившееся обещание — событие секции:mount, когда выполнилось (раздел 3.6, шаг 3).
@@ -136,9 +148,15 @@ function modulesOf(state: InstanceState): Record<string, unknown> | null {
   return modules;
 }
 
-function stateOf(runtime: InstanceRuntime, element: HTMLElement, entry: SectionEntry | null): InstanceState {
+function stateOf(
+  runtime: InstanceRuntime,
+  element: HTMLElement,
+  entry: SectionEntry | null,
+  initial: Readonly<Record<string, unknown>> | undefined,
+): InstanceState {
   const name = element.getAttribute('data-section') ?? '';
   const controller = new AbortController();
+  const settling = settlingOf();
   return {
     element,
     name,
@@ -149,9 +167,21 @@ function stateOf(runtime: InstanceRuntime, element: HTMLElement, entry: SectionE
     runtime,
     failed: { value: false },
     finished: { value: false },
+    initial,
+    settle: settling.settle,
+    settled: settling.settled,
     ctx: null,
     run: () => undefined,
   };
+}
+
+// Обещание итога запуска и функция, которая его решает.
+function settlingOf(): { settle: (message: string | null) => void; settled: Promise<string | null> } {
+  let settle: (message: string | null) => void = () => undefined;
+  const settled = new Promise<string | null>((resolve) => {
+    settle = resolve;
+  });
+  return { settle, settled };
 }
 
 // Слушатели действий разметки (раздел 3.4): на тип события — один слушатель на корне секции.
@@ -189,6 +219,7 @@ const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: Sectio
   mode: runtime.mode,
   input,
   animate: animateOfPart(runtime),
+  state: state.initial,
 });
 
 // ctx, attach частей до mount и сам mount (раздел 3.6, шаг 4).
@@ -211,8 +242,14 @@ function launchOf(
   runMount(state);
 }
 
-export function startInstance(runtime: InstanceRuntime, element: HTMLElement, entry: SectionEntry | null): Instance {
-  const state = stateOf(runtime, element, entry);
+// initial — начальный ctx.state: копия состояния прежнего экземпляра при замене в превью (часть 5г).
+export function startInstance(
+  runtime: InstanceRuntime,
+  element: HTMLElement,
+  entry: SectionEntry | null,
+  initial?: Readonly<Record<string, unknown>>,
+): Instance {
+  const state = stateOf(runtime, element, entry, initial);
   const teardown = (withUnmount: boolean): void => teardownOf(state, withUnmount);
   state.run = createGuard((stage, error) => reportFailure(state, teardown, stage, error));
 
@@ -235,5 +272,7 @@ const finishOf = (state: InstanceState, teardown: (withUnmount: boolean) => void
   id: state.id,
   script: state.entry?.script ?? '',
   owner: state,
+  settled: state.settled,
+  currentState: () => state.ctx?.state ?? null,
   teardown: () => teardown(true),
 });

@@ -40,8 +40,12 @@ export interface ShopTheme {
   render: RenderPage;
   // Шаги перевода правок этой версии темы (migrations.json пакета темы, блок 10). Нет — правки читаются как есть.
   migrations?: TokenMigrations;
-  // Схема панели темы (часть 4, Р1-4-4): по ней — настройки темы для секций с "uses": ["theme"]. Нет — настроек нет.
+  // Схема панели, которую тема показывает мерчанту (часть 4, Р1-4-4): поля из theme.json → panel.hidden убраны. По ней
+  // читаются правки настроек темы для секций с "uses": ["theme"]. Нет — настроек для секций нет.
   panel?: PanelSchema;
+  // Полная панель платформы со словарём этой темы, скрытые темой поля на месте (часть 3в блока 3, design.md блока 3,
+  // 3.7): по ней считаются значения настроек. Нет — значения по panel.
+  platformPanel?: PanelSchema;
 }
 
 export interface RenderedPage {
@@ -77,8 +81,12 @@ export function pagePropsOf(
   theme: ShopTheme,
   settingsEdits: unknown = inputs.revision.settings ?? {},
 ): PageProps {
+  // Правки читаются по полям, которые тема показывает мерчанту; значения — по полной панели платформы (часть 3в блока 3,
+  // 3.7): поле, скрытое темой, приходит с умолчанием, правка по нему не действует.
   const settings =
-    theme.panel === undefined ? {} : resolveSettings(theme.panel, readSettingsEdits(theme.panel, settingsEdits).edits);
+    theme.panel === undefined
+      ? {}
+      : resolveSettings(theme.platformPanel ?? theme.panel, readSettingsEdits(theme.panel, settingsEdits).edits);
   return { theme: settings, shop: shopPropsOf(shopName(inputs.site), inputs.data.entities), page: HOME_PAGE };
 }
 

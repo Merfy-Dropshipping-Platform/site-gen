@@ -50,6 +50,7 @@ describe('компиляция шаблона', () => {
         },
       ],
       render: null,
+      markup: { actions: [] },
     });
   });
 });

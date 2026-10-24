@@ -258,10 +258,23 @@ describe("CheckoutSubmit — getServerCart отсутствует/не функ�
     expect(btnOf(section).textContent).toBe(expectedButtonText(170000));
   });
 
-  it("нет window.cartStore вовсе — корзина пуста (0₽), скидка локальная по умолчанию (0)", async () => {
+  it("нет window.cartStore вовсе — корзина пуста: кнопка недоступна и без суммы (прочерк), не «0₽»", async () => {
     const section = mountSubmitDom();
     runScript(section);
-    expect(btnOf(section).textContent).toBe(expectedButtonText(0));
+    expect(btnOf(section).textContent).toBe("Оформить — —");
+    expect(btnOf(section).disabled).toBe(true);
+  });
+
+  it("корзину очистила проверка товаров расширения — то же состояние, не «0₽»", async () => {
+    let items: Array<Record<string, unknown>> = [ONE_ITEM];
+    (window as any).cartStore = { getItems: () => items, getServerCart: () => null };
+    const section = mountSubmitDom();
+    runScript(section);
+    expect(btnOf(section).textContent).toBe(expectedButtonText(200000));
+    items = [];
+    document.dispatchEvent(new CustomEvent("cart:updated"));
+    expect(btnOf(section).textContent).toBe("Оформить — —");
+    expect(btnOf(section).disabled).toBe(true);
   });
 });
 

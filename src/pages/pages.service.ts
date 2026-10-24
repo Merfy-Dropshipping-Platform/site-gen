@@ -38,6 +38,11 @@ import {
 import { toStoreContentSite } from "../content/store-content.port";
 import type { StoreContent } from "../content/store-content.port";
 import { rewriteCurrent } from "../content/rewrite-current";
+import {
+  SPECIAL_PAGE_IDS,
+  SPECIAL_PAGE_SLUGS,
+  withSpecialPages,
+} from "../content/new-theme-pages";
 import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 import { StorefrontBuilderClient } from "../storefront-preview/storefront-builder.client";
 
@@ -370,7 +375,8 @@ export class PagesService {
   ) {
     if (!NEW_PAGE_SLUG.test(params.slug))
       throw new BadRequestException("slug_invalid");
-    if (params.slug === STAND_SLUG)
+    // Стенд темы и особые страницы платформы (блок 7, часть 7а): их адреса заняты.
+    if (params.slug === STAND_SLUG || SPECIAL_PAGE_SLUGS.has(params.slug))
       throw new BadRequestException("slug_collides_with_system_page");
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     if (pages.some((p: any) => p.slug === params.slug))
@@ -412,8 +418,9 @@ export class PagesService {
   ) {
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const target = pages.find((p: any) => p.id === params.pageId);
+    // Особую страницу (блок 7, часть 7а) удалить нельзя, и когда её строки в ревизии ещё нет.
     if (
-      params.pageId === "home" ||
+      SPECIAL_PAGE_IDS.has(params.pageId) ||
       target?.slug === "/" ||
       target?.role === "system"
     )
@@ -638,12 +645,19 @@ export class PagesService {
     if (!loaded) return { pages: [] };
 
     const revData = loaded.document as Record<string, any>;
-    let pages: any[] = Array.isArray(revData.pages) ? revData.pages : [];
+    // Новая тема (блок 7, часть 7а): особые страницы платформы — в списке всегда, и у ревизии, созданной до 7а;
+    // нормализация пяти тем ей не нужна.
+    const newTheme = await this.isNewTheme(site.id);
+    let pages: any[] = newTheme
+      ? (withSpecialPages(revData).pages as any[])
+      : Array.isArray(revData.pages)
+        ? revData.pages
+        : [];
 
     // Нормализуем тем же resolver-путём, что deletePage — гарантирует
     // role/isCustom/slug на каждой странице (legacy-ревизии без `role`).
     // pagesData из нормализованного результата НЕ используем.
-    if (site.themeId) {
+    if (site.themeId && !newTheme) {
       try {
         const resolver = getPageResolver(site.themeId);
         pages = resolver.normalizeRevision(revData).pages;

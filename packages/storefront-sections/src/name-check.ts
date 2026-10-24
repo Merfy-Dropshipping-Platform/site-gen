@@ -61,7 +61,7 @@ const kindProblem = (entry: NameEntry, id: string, kind: string): NameProblem =>
 };
 
 // Расстояние Левенштейна (Р3.6): без новых зависимостей.
-function levenshteinOf(left: string, right: string): number {
+export function levenshteinOf(left: string, right: string): number {
   const row = Array.from({ length: right.length + 1 }, (_, index) => index);
   for (let i = 1; i <= left.length; i += 1) {
     let previous = row[0];

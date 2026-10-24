@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { ASTRO_RUNTIME } from './astro-runtime';
 import { behaviorProblems } from './behavior-check';
 import { MAX_TEMPLATE_DEPTH, templateDepth } from './depth';
-import { TEMPLATE_FILE, type SectionManifest, type SectionUse } from './format';
+import { TEMPLATE_FILE, propsUsesOf, type SectionManifest, type SectionUse } from './format';
 import { blockSelectProblems, markBlocks } from './marks';
 import { isWarning, problem, type SectionProblem } from './problems';
 import { NO_RICHTEXT, richtextIdsOf, type RichtextIds } from './set-html';
-import { templateProblems } from './template';
+import { templateScan } from './template';
+import { NO_MARKUP, type TemplateMarkup } from './template-markup';
 
 // Компиляция шаблона секции (блок 1 «Секций и SDK»): template.astro → модуль JS, который рисует HTML через рантайм Astro.
 // Модуль идёт в процесс рендера сборщика (1а-8), поэтому импорт в нём один — статический импорт рантайма; остальное —
@@ -20,6 +21,8 @@ export interface TemplateCheck {
   problems: SectionProblem[];
   // Модуль рендера; null — шаблон с проблемами.
   render: string | null;
+  // Имена разметки для сверки имён (template-markup.ts; часть 5в блока 5).
+  markup: TemplateMarkup;
 }
 
 const diagnosticSchema = z.object({
@@ -77,7 +80,7 @@ export const NO_TEMPLATE_OPTIONS: TemplateOptions = { richtext: NO_RICHTEXT, blo
 export const templateOptionsOf = (manifest: SectionManifest): TemplateOptions => ({
   richtext: richtextIdsOf(manifest),
   blocks: manifest.blocks !== undefined,
-  uses: manifest.uses ?? [],
+  uses: propsUsesOf(manifest),
 });
 
 // Глубже предела — сразу отказ, до разбора: компилятор такой шаблон не переварит (depth.ts). Дальше запреты и
@@ -89,23 +92,24 @@ export async function checkTemplate(
   const depth = templateDepth(text);
   if (depth > MAX_TEMPLATE_DEPTH) {
     const message = `шаблон вложен на ${depth} уровней (теги и скобки), предел — ${MAX_TEMPLATE_DEPTH}`;
-    return { problems: [problem('template-too-deep', TEMPLATE_FILE, message)], render: null };
+    return { problems: [problem('template-too-deep', TEMPLATE_FILE, message)], render: null, markup: NO_MARKUP };
   }
-  const [templateFound, compiled, marked, behaviorFound] = await Promise.all([
-    templateProblems(text, options.richtext, options.uses ?? []),
+  const [scan, compiled, marked, behaviorFound] = await Promise.all([
+    templateScan(text, options.richtext, options.uses ?? []),
     compileTemplate(text),
     markBlocks(text),
     behaviorProblems(text),
   ]);
-  const forbidden = [...templateFound, ...behaviorFound];
-  if (!compiled.ok) return { problems: [...forbidden, ...compiled.problems], render: null };
+  const { markup } = scan;
+  const forbidden = [...scan.problems, ...behaviorFound];
+  if (!compiled.ok) return { problems: [...forbidden, ...compiled.problems], render: null, markup };
   // Модуль рендера — из шаблона с метками блоков (Р57); запреты и места ошибок — по исходному тексту.
   const module = marked.marks > 0 ? await compileTemplate(marked.text) : compiled;
-  if (!module.ok) return { problems: [...forbidden, ...module.problems], render: null };
+  if (!module.ok) return { problems: [...forbidden, ...module.problems], render: null, markup };
   const problems = [
     ...forbidden,
     ...blockSelectProblems(text, marked, options.blocks),
     ...(await moduleImportProblems(module.code)),
   ];
-  return { problems, render: problems.some((item) => !isWarning(item)) ? null : module.code };
+  return { problems, render: problems.some((item) => !isWarning(item)) ? null : module.code, markup };
 }

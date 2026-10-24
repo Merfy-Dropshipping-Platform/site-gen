@@ -13,7 +13,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: [
-        'src/{errors,parse,log,events,settings,slots,themes,indexnow,preview,inline-assets,preview-policy}.ts',
+        'src/{errors,parse,log,events,settings,slots,themes,theme-panels,indexnow,preview,inline-assets,preview-policy}.ts',
         'src/release/{waves,kinds,checks,page-check,dry-run,report}.ts',
       ],
       reporter: ['text', 'json-summary'],

@@ -66,6 +66,25 @@
 - Атрибуты, которые код секции пишет через `El.attr` и `El.cssVar`, — по списку `src/core/attributes.ts`; остальное —
   ошибка `attr-forbidden`.
 
+## Превью: замена экземпляра и код через `blob:` (блок 5 «Секций и SDK», часть 5г)
+
+- Скрипт превью (`src/preview/`) — обычный скрипт: план 2 части 5г собирает его в `dist/preview.js`, сборщик
+  вставляет текстом в HTML превью после JSON-тега `#merfy-preview-bundle` со строкой бандла страницы. Бандл и код новой
+  версии секции скрипт превью загружает модулем из `blob:`-адреса (`src/preview/entry.ts`, единственное место с
+  `import()`): рамка превью — без `allow-same-origin` (блок 2).
+- Протокол — `src/core/preview-protocol.ts`, вход `@merfy/shell/preview`: `merfy:preview:update { html, script,
+  codeOnly }` (скрипт секций превью → скрипт превью), `merfy:preview:replace` (скрипт превью → ядро),
+  `merfy:preview:updated` странице и `section-updated { id, outcome, message }` конструктору; `SECTION_ERROR_EVENT` —
+  имя сбоя экземпляра для скрипта секций превью. Итоги: `kept-state`, `fresh`, `failed`, `reloaded`, `superseded`,
+  `absent`.
+- Ядро — `watchPreviewReplace` (`src/core/replace.ts`): бандл превью передаёт её в `start({ preview })`, ядро зовёт её
+  только в режиме `preview`. Тот же `<merfy-section>`: снятие прежнего экземпляра, атрибуты и содержимое из HTML ответа,
+  запуск с копией `ctx.state` (JSON); ошибка — ещё раз без состояния, снова ошибка — сбой. Другой `hash` — `load()` кода,
+  его получают и следующие экземпляры секции. Код не загрузился или это двадцатая загрузка (`REPLACE_LIMIT`) — превью
+  перезагружается.
+- Тесты: `core-replace.test.ts`, `preview-script.test.ts` (unit) и `browser/preview-replace.browser.test.ts` — рамка с
+  песочницей; браузеры — `MERFY_BROWSERS` (по умолчанию `chromium`).
+
 ## Поведения и анимации (блок 6 «Секций и SDK»)
 
 - Вход — `@merfy/shell/behaviors`: часть `behaviors({ list, reveal, animate })`, девять поведений, появления

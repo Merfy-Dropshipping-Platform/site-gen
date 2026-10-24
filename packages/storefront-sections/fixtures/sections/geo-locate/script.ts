@@ -1,7 +1,8 @@
 import { defineSection } from '@merfy/shell';
 
+// Город покупателя (глобальный скрипт расширения geo): до блока 13 только отметка в консоли превью.
 export default defineSection({
-  mount() {
-    document.documentElement.dataset.geo = 'ok';
+  mount(_el, ctx) {
+    ctx.log('город покупателя');
   },
 });

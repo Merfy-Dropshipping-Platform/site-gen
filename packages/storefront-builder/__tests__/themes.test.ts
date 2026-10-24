@@ -57,6 +57,16 @@ describe('темы новой архитектуры', () => {
     await Promise.all([plain.close(), standed.close()]);
   });
 
+  // Две панели у сборки (блок 3 «Секций и SDK», часть 3в): показанная мерчанту и полная панель платформы. Nova ничего не
+  // скрывает в theme.json, поэтому групп поровну.
+  it('nova: у сборки две панели — показанная мерчанту и полная платформы, по 11 групп', async () => {
+    const loaded = await loadThemes(ROOT);
+    const build = loaded.themes.get('nova')?.build;
+    expect(build?.panel?.groups).toHaveLength(11);
+    expect(build?.platformPanel?.groups).toHaveLength(11);
+    await loaded.close();
+  });
+
   it('нет серверной сборки — renderer-missing с подсказкой команды', async () => {
     // Корень с одной темой demo: theme.json и запись версии есть, сборки рисовальщика нет.
     const root = await mkdtemp(join(tmpdir(), 'builder-themes-'));

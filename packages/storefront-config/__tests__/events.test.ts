@@ -67,9 +67,9 @@ describe('события пересборки (design.md блока 3, 5.7)', ()
       ['policy-change', 'new', 'store', 'works'],
       ['contacts-change', 'new', 'store', 'works'],
       ['publication-change', 'new', 'dependent-pages', 'works'],
-      ['collection-change', 'new', 'dependent-pages', 'with-sections'],
+      ['collection-change', 'new', 'dependent-pages', 'works'],
       ['payment-settings-change', 'new', 'store', 'with-sections'],
-      ['stock-change', 'new', 'dependent-pages', 'with-sections'],
+      ['stock-change', 'new', 'dependent-pages', 'works'],
       ['analytics-counters-change', 'new', 'store', 'works'],
     ]);
   });
@@ -82,7 +82,7 @@ describe('события пересборки (design.md блока 3, 5.7)', ()
     expect(inOtherServices).toEqual([
       ['collection-change', 'product'],
       ['payment-settings-change', 'billing'],
-      ['stock-change', 'inventory'],
+      ['stock-change', 'product'],
       ['analytics-counters-change', 'analytics-collector'],
     ]);
   });

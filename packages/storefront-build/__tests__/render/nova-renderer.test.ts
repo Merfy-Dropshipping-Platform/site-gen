@@ -62,6 +62,26 @@ describe('рисовальщик темы nova', () => {
     await expect(renderer.render('/dostavka', { ...probeLocals, head })).rejects.toMatchObject({ code: 'page-unknown' });
   });
 
+  // Страницы записей (блок 8 «Секций и SDK», часть 8б): адрес из двух и трёх частей; кириллица в каноническом адресе
+  // закодирована, в адресе запроса — нет.
+  it('страница записи — по вложенному адресу, и с кириллицей; другой адрес — page-unknown', async () => {
+    const at = (path: string) => ({
+      ...probeLocals,
+      head: { ...probeLocals.head, canonical: new URL(path, 'https://nova-stand.example').href },
+    });
+    await expect(renderer.render('/product/sharf', at('/product/sharf'))).resolves.toContain('<main>');
+    await expect(renderer.render('/blogs/novosti/linen', at('/blogs/novosti/linen'))).resolves.toContain('<main>');
+    await expect(renderer.render('/product/шарф', at('/product/шарф'))).resolves.toContain('<main>');
+    await expect(renderer.render('/product/pled', at('/product/sharf'))).rejects.toMatchObject({ code: 'page-unknown' });
+  });
+
+  it('разметка для поиска — в <head> как есть; нет поля — разметки нет', async () => {
+    const data = '<script type="application/ld+json">{"@type":"Product","name":"Шарф"}</script>';
+    const page = await renderer.render('/', { ...probeLocals, head: { ...probeLocals.head, structuredData: data } });
+    expect(page.slice(page.indexOf('<head>'), page.indexOf('</head>'))).toContain(data);
+    expect(html).not.toContain('application/ld+json');
+  });
+
   it('конфиг и CSS токенов встают в <head> как есть', () => {
     const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
     expect(head).toContain(probeLocals.head.configHtml);

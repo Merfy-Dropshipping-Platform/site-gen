@@ -150,6 +150,13 @@
 Счёт для автостопа выпуска (блок 10) — `sectionErrorSummary(db, since)`: строка на выпуск секции — `shops` (магазинов) и
 `errors` (ошибок) с минуты `since`.
 
+## Каталог во входах (блок 8 «Секций и SDK», часть 8а-2)
+
+- Товары (`product.list`) и коллекции (`product.collections.storefront`) — у сервиса product; во входы — только
+  публичные поля (`src/catalog.ts`), цены в копейках. Не ответил любой из двух — снимок «не получен», сборки нет.
+  Элемент не по форме — без него, строки журнала `product-invalid`, `collection-invalid`.
+- Статьи — с SEO, обложкой и датой публикации, текст очищен (`cleanArticleHtml`); блоги — сущностью `blog`.
+
 ## Журнал и p95
 
 Одна строка JSON на событие: `event-accepted`, `job-queued`, `build-start`, `step` (`buildId`, `shopId`, `step`, `ms`,

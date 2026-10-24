@@ -190,6 +190,8 @@ function runCore(
   const instances = new Map<HTMLElement, Instance>();
   const state = { done: false };
   useSectionElement(win.customElements, hooksOf(win, runtime, byName, instances, state));
+  // Замена экземпляра в превью (часть 5г): preview передаёт только бандл превью; на опубликованном сайте слушателя нет.
+  if (runtime.mode === 'preview') options.preview?.({ runtime, byName, instances, signal: controller.signal });
   [...win.document.querySelectorAll(SECTION_TAG)].forEach((node) => {
     if (node instanceof HTMLElement) startFor(runtime, byName, instances, node);
   });

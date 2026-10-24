@@ -26,6 +26,11 @@ export const PROBLEM_CODES = [
   'render-failed',
   'script-invalid',
   'import-forbidden',
+  // Проверка скрипта при сохранении (блок 5 «Секций и SDK», часть 5в; design.md 3.9): имя вне списка разрешённого,
+  // ctx.listen с событием не из каталога, data-action не из actions секции и не из действий SDK.
+  'sdk-only',
+  'event-unknown',
+  'action-unknown',
   'script-heavy',
   'script-too-heavy',
   'build-timeout',

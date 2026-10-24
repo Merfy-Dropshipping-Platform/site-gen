@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Entity } from './inputs';
+import { POLICY_PAGES, recordPath } from './records';
 
 // Данные магазина для секций (блок 1 «Секций и SDK», часть 4, design.md 3.22, Р1-4-6): Astro.props.shop у секции с
 // "uses": ["shop"]. Только публичное — то, что магазин и так показывает покупателю: имя, контакты из админки, политики
@@ -30,14 +31,8 @@ export const EMPTY_SHOP: ShopProps = {
   payments: { online: false },
 };
 
-// Тип политики, адрес страницы и название — как у подвала пяти тем.
-const POLICIES: readonly (readonly [type: string, slug: string, title: string])[] = [
-  ['refund', 'refund', 'Политика возврата'],
-  ['privacy', 'privacy', 'Политика конфиденциальности'],
-  ['tos', 'terms', 'Условия обслуживания'],
-  ['shipping', 'shipping-policy', 'Политика доставки'],
-];
-const POLICY_BASE = '/legal';
+// Тип политики, адрес страницы и название — POLICY_PAGES (records.ts, блок 8 «Секций и SDK», часть 8а): тот же список,
+// что у страниц политик.
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^[+\d][\d\s()-]{4,}$/;
 const EMAIL_LABEL = /e-?mail|почт/i;
@@ -60,9 +55,9 @@ function contactFieldsOf(entities: readonly Entity[]): ShopContactField[] {
 }
 
 function policiesOf(entities: readonly Entity[]): ShopPolicy[] {
-  return POLICIES.flatMap(([type, slug, title]) => {
+  return POLICY_PAGES.flatMap(({ type, slug, title }) => {
     const content = entities.find((entity) => entity.type === 'policy' && entity.id === type)?.data.content;
-    return typeof content === 'string' && content.trim() !== '' ? [{ type, title, url: `${POLICY_BASE}/${slug}` }] : [];
+    return typeof content === 'string' && content.trim() !== '' ? [{ type, title, url: recordPath.policy(slug) }] : [];
   });
 }
 

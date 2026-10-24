@@ -24,6 +24,7 @@
 import { createCartAddedModal } from "./cart-added-modal";
 import { ORDER_STATUS_EVENT, settlePaidOrder } from "./paid-order-cart";
 import { extensionSaleOf, watchExtensionSaleButtons } from "./extension-sale";
+import { installCheckoutRequestItems, rememberRequestItem, requestItemHref } from "./checkout-request-items";
 // Тот же разбор «название → цвет», что рисует образцы на странице товара
 // (ProductVariants.astro). Модуль без зависимостей.
 import { resolveVariantColor } from "../blocks/Product/variantColor";
@@ -652,8 +653,27 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 
 	/** Убрать из корзины все строки товара, который продаётся формой. */
 	const dropFormProduct = (productId: string) => {
-		const kept = getCart().filter((line) => line.productId !== productId);
-		if (kept.length !== getCart().length) saveCart(kept);
+		const lines = getCart();
+		const kept = lines.filter((line) => line.productId !== productId);
+		if (kept.length === lines.length) return;
+		// Покупатель не должен гадать, куда делся товар: название и адрес ждут
+		// страницу оформления, она объяснит (Б16).
+		const dropped = lines.find((line) => line.productId === productId);
+		if (typeof window !== "undefined") {
+			rememberRequestItem(window, {
+				productId,
+				name: dropped?.name || "Товар",
+				href: requestItemHref(productPathPrefix, productId),
+			});
+		}
+		saveCart(kept);
+	};
+
+	/** Убрать из локальной корзины все строки перечисленных товаров. */
+	const removeProducts = (productIds: ReadonlySet<string>) => {
+		const lines = getCart();
+		const kept = lines.filter((line) => !productIds.has(line.productId));
+		if (kept.length !== lines.length) saveCart(kept);
 	};
 
 	/**
@@ -1000,6 +1020,14 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		const checkFormProducts = () => {
 			watchExtensionSaleButtons(document, extensionSaleOf(window));
 			new Set(getCart().map((line) => line.productId)).forEach(verifyNotForm);
+			// Страница оформления: строки спрашиваются заново, мимо кэша (Б16).
+			installCheckoutRequestItems(window, document, {
+				sale: extensionSaleOf(window),
+				themeKey,
+				productPathPrefix,
+				getLines: getCart,
+				removeProducts,
+			});
 		};
 
 		document.addEventListener("astro:page-load", () => {

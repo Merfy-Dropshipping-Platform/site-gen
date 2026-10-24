@@ -112,11 +112,14 @@
     {
       "id": "collection-change",
       "title": "Коллекция: создание, имя, slug, описание, порядок товаров, удаление",
-      "trigger": { "service": "product", "description": "CollectionsService: create, update, remove, reorderProducts" },
+      "trigger": {
+        "service": "product",
+        "description": "CollectionsService: create, update, remove, reorderProducts — событие collection.updated"
+      },
       "themes": "new",
       "scope": "dependent-pages",
       "delayMs": 0,
-      "status": "with-sections"
+      "status": "works"
     },
     {
       "id": "payment-settings-change",
@@ -130,11 +133,14 @@
     {
       "id": "stock-change",
       "title": "Остаток товара: только переход «в наличии ↔ нет»",
-      "trigger": { "service": "inventory", "description": "издателя событий остатка в inventory сейчас нет" },
+      "trigger": {
+        "service": "product",
+        "description": "InventoryService.adjustInventory — событие product.availability_changed на переходе «в наличии ↔ нет»"
+      },
       "themes": "new",
       "scope": "dependent-pages",
       "delayMs": 0,
-      "status": "with-sections"
+      "status": "works"
     },
     {
       "id": "analytics-counters-change",

@@ -49,6 +49,7 @@ export class StorefrontBuilderClient {
     path: string,
     query: Record<string, string>,
     body?: string,
+    timeoutMs = TIMEOUT_MS,
   ): Promise<BuilderAnswer> {
     if (this.baseUrl === "") return NO_BUILDER;
     const url = `${this.baseUrl}${path}?${new URLSearchParams(query).toString()}`;
@@ -57,7 +58,7 @@ export class StorefrontBuilderClient {
       body,
       headers:
         body === undefined ? undefined : { "content-type": "application/json" },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     };
     try {
       const response = await fetch(url, init);

@@ -18,6 +18,7 @@ import {
   type CurrentSection,
   type Queryable,
   type RevisionMenu,
+  type Visibility,
   type SectionGroup,
   type SectionRow,
   isDefaultWrapperView,
@@ -68,6 +69,9 @@ export interface CodeDeps {
   call: Call;
   timeoutMs: number;
   log: Log;
+  // Какие строки таблицы секций видны (блок 14 «Секций и SDK», Р14-14): нет — опубликованные (сборка, дорисовка);
+  // превью конструктора передаёт editableSections — текущие правки своих секций.
+  rows?: (db: Queryable, visibility: Visibility) => Promise<SectionRow[]>;
 }
 
 export interface Extension {
@@ -290,7 +294,7 @@ export async function readShopCode(deps: CodeDeps, shopId: string): Promise<Shop
   const [extensions, read] = await Promise.all([enabledExtensions(deps, shopId), readPlacement(deps, shopId)]);
   if (extensions === null || read === null) return null;
   const visibility = { shopId, extensions };
-  const rows = await visibleSections(deps.db, visibility);
+  const rows = await (deps.rows ?? visibleSections)(deps.db, visibility);
   const context = { shell: deps.shell, log: deps.log, shopId };
   return { ...codeOf(rows, read.placement, context, read.menus), extensions };
 }
@@ -300,7 +304,7 @@ export async function readShopCode(deps: CodeDeps, shopId: string): Promise<Shop
 export async function readVisibleSections(deps: CodeDeps, shopId: string): Promise<Map<string, CurrentSection> | null> {
   const extensions = await enabledExtensions(deps, shopId);
   if (extensions === null) return null;
-  const rows = await visibleSections(deps.db, { shopId, extensions });
+  const rows = await (deps.rows ?? visibleSections)(deps.db, { shopId, extensions });
   return new Map(
     rows.flatMap((row): [string, CurrentSection][] => {
       const current = currentSection(row);

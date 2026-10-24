@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseChangelog, platformRenderHash, readShellBuild } from '@merfy/storefront-build';
-import { sandboxReport } from '@merfy/storefront-sections';
+import { editableSections, sandboxReport } from '@merfy/storefront-sections';
 import { createS3Store } from '@merfy/storefront-storage';
 import { Pool } from 'pg';
 import { raiseAlert } from './alert';
@@ -20,6 +20,8 @@ import { errorText } from './errors';
 import { createIndexNow } from './indexnow';
 import { jsonLog } from './log';
 import { previewVia } from './preview';
+import { loadSdkDocs } from './sdk-docs';
+import { sectionToolsDeps, sectionUploadsOpen } from './section-tools';
 import { createPreviewRenderers } from './preview-renderers';
 import { openRpc } from './rpc';
 import { enqueueVia, startRuntime, type RuntimeDeps } from './runtime';
@@ -43,9 +45,17 @@ const settings = readSettings(process.env);
 // Бинарник Node и пользователи ОС — из SECTION_RENDER_NODE, SECTION_RENDER_UID_FIRST, SECTION_RENDER_UID_COUNT,
 // SECTION_RENDER_GID (Dockerfile). Проба сборщик не останавливает: строку сверяют после выкатки, секции мерчантов
 // включают только при всём closed.
-await sandboxReport().then(
-  (report) => log('render-sandbox', report),
-  (error: unknown) => log('render-sandbox-failed', { error: errorText(error) }),
+// Тот же отчёт включает загрузку секций мерчантом и ИИ (блок 14, Р14-13): адреса «проверить» и «сохранить» — только
+// при закрытом всём.
+const sandbox = await sandboxReport().then(
+  (report) => {
+    log('render-sandbox', report);
+    return report;
+  },
+  (error: unknown) => {
+    log('render-sandbox-failed', { error: errorText(error) });
+    return null;
+  },
 );
 const db = new Pool({ connectionString: settings.databaseUrl });
 const store = createS3Store(settings.s3);
@@ -181,7 +191,8 @@ const preview = {
   apiUrl: settings.apiUrl,
   fonts,
   log,
-  snapshot: pinnedSnapshot,
+  // Превью и список секций конструктора — текущие правки своих секций (блок 14, Р14-14); сборка — опубликованные.
+  snapshot: { ...pinnedSnapshot, code: { ...code, rows: editableSections } },
   catalog,
   renderers: previewRenderers,
 };
@@ -193,6 +204,9 @@ const drawDeps = {
   renderHash: platform.renderHash,
   log,
   preview,
+  // Инструменты секций и документация SDK (блок 14 «Секций и SDK»).
+  sections: sectionToolsDeps({ db, store, themeIds: deps.themeIds, open: sectionUploadsOpen(sandbox), log }),
+  docs: await loadSdkDocs(ROOT, settings.apiUrl, log),
 };
 const slots = createSlots(settings.drawSlots);
 const server = await startDrawServer({ ...drawDeps, slots, timeoutMs: settings.drawTimeoutMs }, settings.port);

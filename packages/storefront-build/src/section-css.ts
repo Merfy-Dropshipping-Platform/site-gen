@@ -42,8 +42,15 @@ export const htmlClasses = (html: string): string[] =>
     .sort();
 
 // sectionTheme — строки @theme токенов секций страницы (Р4-10): дописываются к источнику компилятора.
-export async function sectionCss(html: string, dictionary: Dictionary, sectionTheme = ''): Promise<string> {
-  const classes = htmlClasses(html);
+// scriptClasses — классы, которые ставят скрипты секций страницы (часть 5в блока 5): их нет в разметке, CSS — тот
+// же.
+export async function sectionCss(
+  html: string,
+  dictionary: Dictionary,
+  sectionTheme = '',
+  scriptClasses: readonly string[] = [],
+): Promise<string> {
+  const classes = [...new Set([...htmlClasses(html), ...scriptClasses])].sort();
   if (classes.length === 0) return '';
   return (await compilerOf(dictionary, sectionTheme)).build(classes);
 }

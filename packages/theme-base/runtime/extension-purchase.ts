@@ -52,6 +52,7 @@ import {
   attribute,
   callFunction,
   escapeHtml,
+  fetchAccountEmail,
   fetchStorefrontMap,
   isRecord,
   isSuccessStatus,
@@ -137,6 +138,11 @@ export interface FormState {
   submitId: string;
   /** Выбранные файлы по id пункта: загружаются сразу, в отправку — id готовых. */
   files: FileEntries;
+  /**
+   * Почта аккаунта вошедшего покупателя. Не пустая — поле «Почта» заполнено ею и
+   * только для чтения, в отправку уходит она. Пусто или нет — гость, вводит сам.
+   */
+  accountEmail?: string;
 }
 
 /** Всё, что нужно от `crypto` для ключа повтора; в тестах подменяется. */
@@ -351,7 +357,7 @@ export function createSubmitId(source: RandomSource | undefined): string {
 export function collectSubmitInput(
   productId: string,
   form: FormV2,
-  state: Pick<FormState, "values" | "contacts" | "submitId">,
+  state: Pick<FormState, "values" | "contacts" | "submitId" | "accountEmail">,
   fileIds: Record<string, string[]> = {},
 ): ProductSubmitInput {
   const shown = visibleItems(form, state.values);
@@ -360,7 +366,12 @@ export function collectSubmitInput(
   const files: Record<string, string[]> = {};
   for (const item of shown) {
     if (item.kind === "contact") {
-      const text = textOf(state.contacts[item.key]).trim();
+      const typed = textOf(state.contacts[item.key]).trim();
+      // Вошедший покупатель: почта аккаунта, что бы ни лежало в поле.
+      const text =
+        item.key === "email" && state.accountEmail
+          ? state.accountEmail
+          : typed;
       if (text !== "") contacts[item.key] = text;
       continue;
     }
@@ -524,9 +535,12 @@ function contactHtml(item: ContactItem, state: FormState): string {
   const bad = hasOwn(state.errors.items, item.id);
   const placeholder =
     input.placeholder === "" ? "" : attribute("placeholder", input.placeholder);
+  // Вошедшему покупателю почту ставит аккаунт, менять её нельзя.
+  const locked = item.key === "email" && Boolean(state.accountEmail);
+  const readonly = locked ? " readonly" : "";
   const control =
     `<input class="${bad ? "sf-in bad" : "sf-in"}" type="${input.type}"` +
-    `${attribute("data-xp-contact", item.key)}${ariaLabel(contactName(item.title, input.placeholder))}${attribute("value", textOf(state.contacts[item.key]))}${placeholder} autocomplete="off">`;
+    `${attribute("data-xp-contact", item.key)}${ariaLabel(contactName(item.title, input.placeholder))}${attribute("value", textOf(state.contacts[item.key]))}${placeholder}${readonly} autocomplete="off">`;
   return `<div class="sf-f">${labelHtml(item.title, item.required)}${control}${errorHtml(error)}</div>`;
 }
 
@@ -927,9 +941,11 @@ export async function mountExtensionPurchase(
   container.setAttribute(MOUNTED_ATTRIBUTE, "");
   const loaded = await loadForm(options);
   if (loaded === null) return;
+  const accountEmail = await fetchAccountEmail(options);
   const state: FormState = {
     values: {},
-    contacts: {},
+    contacts: accountEmail === "" ? {} : { email: accountEmail },
+    accountEmail,
     errors: { items: {} },
     notice: "",
     busy: false,

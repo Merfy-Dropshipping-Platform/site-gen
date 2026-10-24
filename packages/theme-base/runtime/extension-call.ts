@@ -86,6 +86,36 @@ function functionHeaders(): Record<string, string> {
   return token === "" ? json : { ...json, Authorization: `Bearer ${token}` };
 }
 
+/** Почта из профиля: ответ шлюза — `{data: {customer: {email}}}` или `{data: {email}}`. */
+function emailOfProfile(body: unknown): string {
+  const data = isRecord(body) ? body.data : undefined;
+  if (!isRecord(data)) return "";
+  const profile = isRecord(data.customer) ? data.customer : data;
+  return typeof profile.email === "string" ? profile.email.trim() : "";
+}
+
+/**
+ * Почта аккаунта вошедшего покупателя (`GET /store/auth/me` с его токеном).
+ * Гость, недействительный токен, сбой сети — пустая строка: форма работает как
+ * у гостя. Форма расширения подставляет её в «Почту» и не даёт менять, чтобы
+ * письма, «Мои заказы» и кабинет магазина шли по одному адресу.
+ */
+export async function fetchAccountEmail(
+  channel: ExtensionChannel,
+): Promise<string> {
+  const token = readCustomerToken();
+  if (token === "") return "";
+  try {
+    const response = await fetch(`${channel.apiBase}/store/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.ok ? emailOfProfile(await readJson(response)) : "";
+  } catch {
+    // Сеть недоступна: почту вводят вручную.
+    return "";
+  }
+}
+
 /** Карта расширений: публичная, без кук. Сбой сети или не 2xx — `null`. */
 export async function fetchStorefrontMap(
   channel: ExtensionChannel,

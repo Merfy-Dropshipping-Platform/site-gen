@@ -13,7 +13,7 @@ import { pageLocals, shopName } from './head';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
-import { pageListsOf, routeOf, type ShopRoute } from './routes';
+import { pageInfoOf, pageListsOf, routeOf, type ShopRoute } from './routes';
 import { pageSectionTheme } from './section-tokens';
 import {
   LIVE_PAGE,
@@ -25,6 +25,7 @@ import {
 } from './sections-render';
 import { checkSeo } from './seo';
 import { shopPropsOf } from './shop-props';
+import { HOME_PAGE, NOT_FOUND_PAGE_ID } from './special-pages';
 
 // Одна страница магазина (design.md блока 4, Св-1 В): рендерится по запросу без полной сборки и отдаётся строкой в
 // формате манифеста и файлом. Полная сборка рендерит каждую страницу так же, поэтому строки совпадают. Шапка, свой
@@ -78,7 +79,7 @@ export function pagePropsOf(
 ): PageProps {
   const settings =
     theme.panel === undefined ? {} : resolveSettings(theme.panel, readSettingsEdits(theme.panel, settingsEdits).edits);
-  return { theme: settings, shop: shopPropsOf(shopName(inputs.site), inputs.data.entities) };
+  return { theme: settings, shop: shopPropsOf(shopName(inputs.site), inputs.data.entities), page: HOME_PAGE };
 }
 
 // Разметка трёх списков одного прохода — обратно по спискам: шапка, страница, подвал.
@@ -103,7 +104,10 @@ async function renderWithBundle(
 ): Promise<{ html: string; bundle: Awaited<ReturnType<typeof pageBundle>> }> {
   const bundle = await pageBundle(shown, route.id, page, pageContent);
   const withBundle = { ...pageContent, bundleTag: bundle?.tag ?? '' };
-  const html = await theme.render(route.path, pageLocals(shown, route, theme.tokens, theme.migrations, withBundle));
+  // Страницу 404 (часть 7а) тема рисует маршрутом главной: адрес /404 Astro держит за своей страницей ошибки и маршрут
+  // [slug].astro не вызывает. Канонический адрес в head — /404: его считает pageLocals по route.
+  const drawPath = route.id === NOT_FOUND_PAGE_ID ? '/' : route.path;
+  const html = await theme.render(drawPath, pageLocals(shown, route, theme.tokens, theme.migrations, withBundle));
   return { html, bundle };
 }
 
@@ -140,7 +144,8 @@ export async function renderShopPage(
   // Скрытые экземпляры убираются здесь, до рендера (п. 22): разметка, CSS секций и список модулей — по видимым.
   const shown = withoutHidden(inputs);
   const lists = pageListsOf(route.id).map((list) => placedSections(shown, list));
-  const props = pagePropsOf(shown, theme);
+  // Страница секций (часть 7а): id и адрес этой страницы.
+  const props = { ...pagePropsOf(shown, theme), page: pageInfoOf(route) };
   const placed = lists.flat();
   const rendered = await renderPlacedSections(
     placed,

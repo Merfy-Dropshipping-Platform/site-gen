@@ -123,3 +123,26 @@ describe('переезды (301) и удалённое (410)', () => {
     expect(publish([HOME], 2, looped).table.moved).toEqual({});
   });
 });
+
+describe('страницы 404 и 502 платформы (блок 7 «Секций и SDK», часть 7а)', () => {
+  it('502.html — хеш в unavailable; 404.html и 502.html по своему адресу не отдаются', () => {
+    const { manifest } = buildOf([HOME], {
+      '404.html': '<h1>Страница не найдена</h1>',
+      '502.html': '<h1>Сайт временно недоступен</h1>',
+    });
+    const table = buildRoutesTable({ manifest, build: 1, previous: null, now: NOW });
+    expect(table.unavailable).toBe(hexOf(manifest.files['502.html']));
+    expect(table.notFound).toBe(hexOf(manifest.files['404.html']));
+    expect(Object.keys(table.files)).not.toContain('/404.html');
+    expect(Object.keys(table.files)).not.toContain('/502.html');
+    expect(parseRoutesTable(table, 'routes/x/1.json')).toEqual(table);
+  });
+
+  it('сборка без 502.html — unavailable: null; таблица до части 7а, без ключа, читается', () => {
+    const { table } = publish([HOME], 3);
+    expect(table.unavailable).toBeNull();
+    const old: Record<string, unknown> = { ...table };
+    delete old.unavailable;
+    expect(parseRoutesTable(old, 'routes/x/3.json')).toEqual(old);
+  });
+});

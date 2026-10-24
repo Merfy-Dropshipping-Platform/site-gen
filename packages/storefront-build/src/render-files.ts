@@ -23,6 +23,8 @@ export const themeRenderFiles = (themeId: string): string[] => [
 export const PLATFORM_RENDER_FILES = [
   'packages/storefront-build/package.json',
   'packages/storefront-build/src/**',
+  // Особые страницы платформы (блок 7, часть 7а): новая строка — новый код платформы, его разносит выпуск волнами.
+  'packages/storefront-build/special-pages.json',
   'packages/storefront-config/package.json',
   'packages/storefront-config/src/**',
   'packages/storefront-config/rebuild-events.json',

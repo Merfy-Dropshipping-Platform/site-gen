@@ -52,3 +52,20 @@ describe('свои страницы ревизии', () => {
     expect(invalid.map((fields) => fields.id)).toEqual(['page-custom-2', 'page-custom-3', 'footer', 'page-custom-4']);
   });
 });
+
+describe('особые страницы заняты (блок 7 «Секций и SDK», часть 7а)', () => {
+  it('своя страница с id not-found или адресом /404 — без неё и строка журнала; строка особой страницы — не своя', () => {
+    const invalid: LogFields[] = [];
+    const pages = revisionPagesOf(
+      [
+        { id: 'not-found', name: 'Страница 404', slug: '/404', role: 'system', isCustom: false },
+        custom('not-found', '/stranica'),
+        custom('page-custom-1', '/404'),
+        custom('page-custom-2', '/o-nas'),
+      ],
+      (fields) => invalid.push(fields),
+    );
+    expect(pages.map((page) => page.id)).toEqual(['page-custom-2']);
+    expect(invalid.map((fields) => fields.id)).toEqual(['not-found', 'page-custom-1']);
+  });
+});

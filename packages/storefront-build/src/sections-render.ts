@@ -6,6 +6,7 @@ import { StorefrontBuildError } from './errors';
 import { sectionInputTag } from './input-tag';
 import { htmlClasses, sectionCss } from './section-css';
 import { EMPTY_SHOP, type ShopProps } from './shop-props';
+import { HOME_PAGE, type PageInfo } from './special-pages';
 import { classSystem } from './tailwind-system';
 
 // Рендер секций страницы (блок 1 «Секций и SDK», Р1, Р2): модуль шаблона по отпечатку и значения настроек → HTML
@@ -50,9 +51,11 @@ export type PropsUse = 'theme' | 'shop';
 export interface PageProps {
   theme: SettingValues;
   shop: ShopProps;
+  // Блок 7, часть 7а: страница — получает каждая секция, без "uses".
+  page: PageInfo;
 }
 
-export const NO_PAGE_PROPS: PageProps = { theme: {}, shop: EMPTY_SHOP };
+export const NO_PAGE_PROPS: PageProps = { theme: {}, shop: EMPTY_SHOP, page: HOME_PAGE };
 
 export interface SectionRenderRequest {
   section: string;
@@ -66,6 +69,8 @@ export interface SectionRenderRequest {
   menus?: Readonly<Record<string, MenuTree>>;
   theme?: SettingValues;
   shop?: ShopProps;
+  // Блок 7, часть 7а: страница, на которой стоит секция, — у каждой секции.
+  page?: PageInfo;
 }
 
 export type RenderSection = (request: SectionRenderRequest) => Promise<string>;
@@ -216,7 +221,12 @@ function failedHtml(placed: PlacedSection, mode: PageMode, error: unknown, faile
 
 // Сверх settings и blocks (часть 4, Р1-4-5): меню — у секции с настройками вида menu; theme и shop — только тем, кто их
 // объявил в "uses": данные магазина не уходят в модуль секции без спроса.
-const propsOf = (placed: PlacedSection, props: PageProps): Pick<SectionRenderRequest, 'menus' | 'theme' | 'shop'> => ({
+// page — у каждой секции (блок 7, часть 7а).
+const propsOf = (
+  placed: PlacedSection,
+  props: PageProps,
+): Pick<SectionRenderRequest, 'menus' | 'theme' | 'shop' | 'page'> => ({
+  page: props.page,
   ...(placed.menus === undefined ? {} : { menus: placed.menus }),
   ...(placed.uses?.includes('theme') === true ? { theme: props.theme } : {}),
   ...(placed.uses?.includes('shop') === true ? { shop: props.shop } : {}),

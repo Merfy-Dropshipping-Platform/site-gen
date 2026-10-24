@@ -404,3 +404,49 @@ describe('общие настройки секции в превью (часть
     expect(parsed.sections[0]?.wrapper).toEqual(['scheme', 'padding']);
   });
 });
+
+describe('превью: страница 404 и страница блока (блок 7 «Секций и SDK», часть 7а)', () => {
+  const NOT_FOUND_INPUTS = parseBuildInputs({
+    ...standInputsJson,
+    code: {
+      sections: [{ name: 'shop:hero', kind: 'section', hash: sha256('правка'), render: HASH, script: null }],
+      pages: { 'not-found': [{ id: 'hero-404', section: 'shop:hero', settings: { heading: 'Такой страницы нет' } }] },
+      globals: [],
+    },
+  });
+
+  it('page=not-found — страница 404 темой, её секции знают страницу', async () => {
+    const { deps, rendered } = depsOf();
+    deps.inputs = () => Promise.resolve({ inputs: NOT_FOUND_INPUTS, renders: new Map([[HASH, MODULE]]) });
+    const answer = await shopPreview(deps, url(`shop=${SHOP}&page=not-found`));
+    expect(answer.status).toBe(200);
+    expect(answer.body).toContain('data-section-id="hero-404"');
+    expect(answer.body).toContain('<title>Страница не найдена · Стенд Nova</title>');
+    expect(rendered.map(([, request]) => request.page)).toEqual([{ id: 'not-found', path: null }]);
+  });
+
+  it('page=not-found без секций — пустая страница темы, не простая 404 платформы', async () => {
+    const answer = await shopPreview(depsOf().deps, url(`shop=${SHOP}&page=not-found`));
+    expect(answer.status).toBe(200);
+    expect(answer.body).toContain('<title>Страница не найдена · Стенд Nova</title>');
+    expect(answer.body).not.toContain('merfy-platform');
+  });
+
+  it('один блок: page — id страницы, адрес из ревизии; нет page или неизвестный id — главная', async () => {
+    const { deps, rendered } = depsOf();
+    const withPage = structuredClone(INPUTS);
+    withPage.revision.pages = [
+      { id: 'page-custom-1', slug: '/o-nas', name: 'О нас', seo: { title: '', description: '', keywords: '' } },
+    ];
+    deps.inputs = () => Promise.resolve({ inputs: withPage, renders: new Map([[HASH, MODULE]]) });
+    const instance = { id: 'hero-1', section: 'shop:hero', settings: {} };
+    for (const page of ['page-custom-1', 'not-found', undefined, 'page-unknown'])
+      expect((await sectionPreview(deps, SHOP, JSON.stringify({ instance, page }))).status).toBe(200);
+    expect(rendered.map(([, request]) => request.page)).toEqual([
+      { id: 'page-custom-1', path: '/o-nas' },
+      { id: 'not-found', path: null },
+      { id: 'home', path: '/' },
+      { id: 'home', path: '/' },
+    ]);
+  });
+});

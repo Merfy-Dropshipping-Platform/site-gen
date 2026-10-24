@@ -20,6 +20,7 @@ import type { BuildInputs } from './inputs';
 import type { ShopPageHead, ShopPageLocals, ShopSocial } from './locals';
 import type { ShopRoute } from './routes';
 import { EMPTY_PAGE_CONTENT, type PageContent, type PageMode } from './sections-render';
+import { NOT_FOUND_PAGE_ID, NOT_FOUND_TEXT, platformPageTitle } from './special-pages';
 
 // Данные страницы для рисовальщика (design.md блока 4, В4-4 Б и SEO). Всё индексируемое — язык, заголовок, описание,
 // ключевые слова, канонический адрес — считает сборка. Конфиг магазина (блок 3) и CSS токенов с правками мерчанта (блок 1) приходят
@@ -44,6 +45,13 @@ export const shopName = (site: BuildInputs['site']): string => site.name.trim() 
 // 4, Р1-4-8) — её SEO из ревизии: без заголовка — имя страницы, нет и его — имя магазина. Пусто — мерчант не заполнил:
 // тема тег не рендерит (договор SEO, seo.ts).
 function seoOf(inputs: BuildInputs, route: ShopRoute, name: string) {
+  // Страница 404 (часть 7а): заголовок платформы с именем магазина, описание — магазина, ключевых слов нет.
+  if (route.id === NOT_FOUND_PAGE_ID)
+    return {
+      title: platformPageTitle(NOT_FOUND_TEXT.heading, name),
+      description: inputs.site.description.trim(),
+      keywords: '',
+    };
   const page = (inputs.revision.pages ?? []).find((candidate) => candidate.id === route.id);
   if (page === undefined)
     return {
@@ -104,6 +112,16 @@ function pageStyles(inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMi
     // секций не запускаются.
     attributes: choiceAttributes(theme.dictionary, resolveTokens(theme.dictionary, theme.tokens, edits)),
   };
+}
+
+// CSS простых страниц платформы 404 и 502 (часть 7а): шрифты и токены по тем же правкам мерчанта, что у его страниц.
+export function platformPageStyles(
+  inputs: BuildInputs,
+  theme: ParsedTheme,
+  migrations: TokenMigrations = NO_MIGRATIONS,
+): { fontsCss: string; tokensCss: string } {
+  const { fontsCss, tokensCss } = pageStyles(inputs, theme, migrations);
+  return { fontsCss, tokensCss };
 }
 
 type ConfigAnalytics = Parameters<typeof buildStorefrontConfig>[0]['analytics'];

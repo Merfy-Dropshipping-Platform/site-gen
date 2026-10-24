@@ -15,7 +15,7 @@ const SOURCES = [
 // analytics — ещё и поле аналитики страницы (storefront-build/src/head.ts: ConfigAnalytics), не только имя секции:
 // сторож на него не смотрит.
 const NAMES =
-  /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|heading-size|button-label|button-link|faq|open-first|logo-position|menu-type|text-size|newsletter)$/;
+  /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|heading-size|button-label|button-link|faq|open-first|logo-position|menu-type|text-size|newsletter|error-404)$/;
 // Сервис sites (часть 4): страницы магазина и меню новой темы — тоже без имён секций; тесты (*.spec.ts) — нет.
 const SITES_SOURCES = ['../src/pages'];
 const LITERAL = /'([^'\\\n]*)'|"([^"\\\n]*)"|`([^`\\]*)`/g;

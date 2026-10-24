@@ -36,6 +36,7 @@ import { seedContentPagesFromTheme } from "../themes/content-page-seed";
 import { resolveAssetUrls } from "../themes/asset-resolver";
 import { filterSeededPagesOnWrite } from "../utils/revision-write-filter";
 import { parityOn } from "../themes/parity-switch";
+import { isNewThemeId, withSpecialPages } from "./new-theme-pages";
 import { makeDocumentWriteModel } from "./write-model";
 import type { WriteModel } from "./write-model";
 import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
@@ -88,6 +89,8 @@ type StepContext = {
    * assembleChrome/pagePropsPreparer, шага load() не касается вовсе.
    */
   unifyFooter: boolean;
+  /** Новая тема (блок 7 «Секций и SDK», часть 7а): шаги чтения пяти тем к её ревизии не применяются. */
+  newTheme: boolean;
 };
 
 type LoadStep = {
@@ -144,12 +147,21 @@ const LOAD_STEPS: LoadStep[] = [
   { name: "resolve", apply: resolveStep },
 ];
 
+/**
+ * Ревизия новой темы (часть 7а): особые страницы платформы, потом адреса файлов. migrate, normalize и seed пяти тем
+ * ей не нужны: seed дописал бы ей страницы пяти тем («Профиль», «Избранное», …).
+ */
+const NEW_THEME_LOAD_STEPS: LoadStep[] = [
+  { name: "special-pages", apply: (data) => withSpecialPages(data) },
+  { name: "resolve", apply: resolveStep },
+];
+
 async function runLoadSteps(
   raw: Record<string, unknown> | undefined,
   ctx: StepContext,
 ): Promise<Record<string, unknown>> {
   let data: Record<string, unknown> = raw ?? {};
-  for (const step of LOAD_STEPS) {
+  for (const step of ctx.newTheme ? NEW_THEME_LOAD_STEPS : LOAD_STEPS) {
     data = await step.apply(data, ctx);
   }
   return data;
@@ -167,6 +179,7 @@ function stepContextFor(
     siteName: site.name ?? null,
     logger,
     unifyFooter: parityOn("FOOTER", siteId),
+    newTheme: isNewThemeId(site.themeId),
   };
 }
 

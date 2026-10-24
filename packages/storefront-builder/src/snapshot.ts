@@ -1,13 +1,17 @@
 import {
   FONT_LIBRARY_HASH,
+  type BlogData,
   type BuildInputs,
   type CodeAssets,
   type Entity,
+  type PublicationData,
   type RevisionPage,
   type ThemeState,
 } from '@merfy/storefront-build';
+import { cleanArticleHtml } from '@merfy/storefront-sections';
 import { z } from 'zod';
 import { fetchBilling } from './billing';
+import { COLLECTIONS_PATTERN, collectionEntityOf, productEntityOf } from './catalog';
 import { NO_CODE, readShopCode, type CodeDeps } from './code';
 import { fetchCounters, type CounterRequest } from './counters';
 import { StorefrontBuilderError, errorText } from './errors';
@@ -20,15 +24,13 @@ import type { ThemePins } from './theme-catalog';
 // Снимок входов сборки (design.md блока 6, раздел 4, «Нет данных — нет выкладки»; входы — блок 4, src/inputs.ts).
 // Сайт, политики, контакты и публикации — из базы sites; товары — у сервиса product (product.list, как у нынешней
 // сборки, data-fetcher.ts). Сервис не ответил или ответил ошибкой — снимок «не получен» (data.status: failed), и сборка
-// блока 4 падает до рендера: живой сайт не трогаем. Коллекции и касса — с секциями (раздел 4, «Свежесть»). Код секций
+// блока 4 падает до рендера: выложенную сборку не трогаем. Коллекции — у того же сервиса (блок 8 «Секций и SDK», часть
+// 8а, product.collections.storefront), касса — у billing; во входы — только публичные поля каталога (catalog.ts). Код секций
 // (блок 7, code.ts) — из реестра storefront_section и сервиса extensions; не получен — снимок тоже «не получен».
 // Счётчики мерчанта (блок 11, counters.ts) — у сборщика аналитики; не ответил — снимок тоже «не получен».
 
 export const PRODUCT_QUEUE = 'product-service_queue';
 const PRODUCT_LIST = 'product.list';
-// product.list не отдаёт дату правки товара. Дата нужна только карте сайта страниц товаров — их нет до секций; пока
-// она одна для всех товаров, и ключ сборки меняет только правка самих данных.
-export const PRODUCT_UPDATED_AT = '1970-01-01T00:00:00.000Z';
 // Дата в формате входов: UTC с миллисекундами (блок 4). Колонки site, site_policy, site_contacts — без пояса (пишутся в
 // UTC), publications — с поясом.
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
@@ -113,10 +115,13 @@ export function shopAddress(shop: Pick<Shop, 'id' | 'publicUrl'>): ShopAddress {
 const POLICIES_SQL = `SELECT DISTINCT ON (type) type::text AS id, content, ${plain('updated_at')} AS updated_at
   FROM site_policy WHERE site_id = $1 ORDER BY type, updated_at DESC`;
 const CONTACTS_SQL = `SELECT fields, ${plain('updated_at')} AS updated_at FROM site_contacts WHERE site_id = $1`;
-// Блог записи вместо прежней категории (site-gen, миграция 0027): id и адрес блога.
+// Блог записи вместо прежней категории (site-gen, миграция 0027): id и адрес блога. Блок 8 «Секций и SDK», часть 8а:
+// SEO, обложка и дата публикации статьи; блоги магазина — своей сущностью.
 const PUBLICATIONS_SQL = `SELECT p.id, p.title, p.slug, p.blog_id, b.handle AS blog_handle, p.excerpt, p.content,
+  p.seo_title, p.seo_description, p.cover_image_url, ${zoned('p.published_at')} AS published_at,
   ${zoned('p.updated_at')} AS updated_at FROM publications p JOIN blogs b ON b.id = p.blog_id
   WHERE p.site_id = $1 AND p.status = 'published'`;
+const BLOGS_SQL = `SELECT id, title, handle, ${zoned('updated_at')} AS updated_at FROM blogs WHERE site_id = $1`;
 
 const policyRow = z.object({ id: z.string(), content: z.string().nullable(), updated_at: z.string() });
 const contactsRow = z.object({ fields: z.json(), updated_at: z.string() });
@@ -128,8 +133,13 @@ const publicationRow = z.object({
   blog_handle: z.string(),
   excerpt: z.string().nullable(),
   content: z.string(),
+  seo_title: z.string().nullable(),
+  seo_description: z.string().nullable(),
+  cover_image_url: z.string().nullable(),
+  published_at: z.string().nullable(),
   updated_at: z.string(),
 });
+const blogRow = z.object({ id: z.string(), title: z.string(), handle: z.string(), updated_at: z.string() });
 
 const policyEntity = (row: z.infer<typeof policyRow>): Entity => ({
   type: 'policy',
@@ -145,14 +155,26 @@ const contactsEntity = (row: z.infer<typeof contactsRow>): Entity => ({
   data: { fields: row.fields },
 });
 
+// Текст статьи — очищенный списком «Записи блога» пяти тем (Р8а-13): сырой HTML во входы сборки не попадает.
 function publicationEntity(row: z.infer<typeof publicationRow>): Entity {
-  const { id, title, slug, excerpt, content } = row;
-  return {
-    type: 'publication',
-    id,
-    updatedAt: row.updated_at,
-    data: { title, slug, blogId: row.blog_id, blogHandle: row.blog_handle, excerpt, content },
+  const { id, title, slug, excerpt } = row;
+  const data: PublicationData = {
+    title,
+    slug,
+    blogId: row.blog_id,
+    blogHandle: row.blog_handle,
+    excerpt,
+    content: cleanArticleHtml(row.content),
+    publishedAt: row.published_at,
+    cover: row.cover_image_url || null,
+    seo: { title: row.seo_title ?? '', description: row.seo_description ?? '' },
   };
+  return { type: 'publication', id, updatedAt: row.updated_at, data };
+}
+
+function blogEntity(row: z.infer<typeof blogRow>): Entity {
+  const data: BlogData = { title: row.title, handle: row.handle };
+  return { type: 'blog', id: row.id, updatedAt: row.updated_at, data };
 }
 
 async function rowsOf<T>(db: Queryable, sql: string, siteId: string, schema: z.ZodType<T>): Promise<T[]> {
@@ -190,23 +212,22 @@ export async function readRevision(db: Queryable, siteId: string, log: Log): Pro
 
 // Сущности магазина из базы sites: политики, контакты, опубликованные статьи блога.
 export async function readSiteEntities(db: Queryable, siteId: string): Promise<Entity[]> {
-  const [policies, contacts, publications] = await Promise.all([
+  const [policies, contacts, publications, blogs] = await Promise.all([
     rowsOf(db, POLICIES_SQL, siteId, policyRow),
     rowsOf(db, CONTACTS_SQL, siteId, contactsRow),
     rowsOf(db, PUBLICATIONS_SQL, siteId, publicationRow),
+    rowsOf(db, BLOGS_SQL, siteId, blogRow),
   ]);
-  return [...policies.map(policyEntity), ...contacts.map(contactsEntity), ...publications.map(publicationEntity)];
+  return [
+    ...policies.map(policyEntity),
+    ...contacts.map(contactsEntity),
+    ...publications.map(publicationEntity),
+    ...blogs.map(blogEntity),
+  ];
 }
 
-const productSchema = z.record(z.string(), z.json()).and(z.object({ id: z.string().min(1) }));
-const productListSchema = z.object({ success: z.boolean(), data: z.array(productSchema).optional() });
-
-const productEntity = (product: z.infer<typeof productSchema>): Entity => ({
-  type: 'product',
-  id: product.id,
-  updatedAt: PRODUCT_UPDATED_AT,
-  data: product,
-});
+const listSchema = z.object({ success: z.boolean(), data: z.array(z.unknown()).optional() });
+const itemIdSchema = z.object({ id: z.string() });
 
 export interface ProductRequest {
   call: Call;
@@ -214,18 +235,53 @@ export interface ProductRequest {
   log: Log;
 }
 
-// Товары магазина. null — не получены: сервис молчит, ответил ошибкой или неуспехом; причина — в журнале.
-export async function fetchProducts(request: ProductRequest, shop: Shop): Promise<Entity[] | null> {
+// Список каталога у сервиса product (блок 8 «Секций и SDK», часть 8а): шаблон RPC, строки журнала, разбор элемента.
+interface CatalogList {
+  pattern: string;
+  failed: string;
+  invalid: string;
+  entityOf: (raw: unknown) => Entity | null;
+}
+const PRODUCTS: CatalogList = {
+  pattern: PRODUCT_LIST,
+  failed: 'products-failed',
+  invalid: 'product-invalid',
+  entityOf: productEntityOf,
+};
+const COLLECTIONS: CatalogList = {
+  pattern: COLLECTIONS_PATTERN,
+  failed: 'collections-failed',
+  invalid: 'collection-invalid',
+  entityOf: collectionEntityOf,
+};
+
+function idOf(raw: unknown): string {
+  const parsed = itemIdSchema.safeParse(raw);
+  return parsed.success ? parsed.data.id : '';
+}
+
+// Список магазина. null — не получен: сервис молчит, ответил ошибкой, неуспехом или не по форме; причина — в журнале.
+// Элемент не по форме — без него и строка журнала (product-invalid, collection-invalid) с его id (Р8а-15).
+async function fetchList(list: CatalogList, request: ProductRequest, shop: Shop): Promise<Entity[] | null> {
   const data = { tenantId: shop.tenantId, siteId: shop.id };
   try {
-    const answer = productListSchema.parse(await request.call(PRODUCT_QUEUE, PRODUCT_LIST, data, request.timeoutMs));
-    if (!answer.success) throw new StorefrontBuilderError('rpc-failed', 'product.list: success = false');
-    return (answer.data ?? []).map(productEntity);
+    const answer = listSchema.parse(await request.call(PRODUCT_QUEUE, list.pattern, data, request.timeoutMs));
+    if (!answer.success) throw new StorefrontBuilderError('rpc-failed', `${list.pattern}: success = false`);
+    return (answer.data ?? []).flatMap((raw) => {
+      const entity = list.entityOf(raw);
+      if (entity === null) request.log(list.invalid, { shopId: shop.id, id: idOf(raw) });
+      return entity === null ? [] : [entity];
+    });
   } catch (error) {
-    request.log('products-failed', { shopId: shop.id, error: errorText(error) });
+    request.log(list.failed, { shopId: shop.id, error: errorText(error) });
     return null;
   }
 }
+
+export const fetchProducts = (request: ProductRequest, shop: Shop): Promise<Entity[] | null> =>
+  fetchList(PRODUCTS, request, shop);
+export const fetchCollections = (request: ProductRequest, shop: Shop): Promise<Entity[] | null> =>
+  fetchList(COLLECTIONS, request, shop);
 
 export interface Platform {
   renderHash: string;
@@ -292,17 +348,19 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<
   const theme = await themeOf(deps, shop);
   const address = shopAddress(shop);
   // Оплата онлайн (часть 4, Р1-4-6) — тем же RPC-клиентом, что товары; billing не ответил — оплаты нет, данные получены.
-  const [siteEntities, products, revision, shopCode, counters, billing] = await Promise.all([
+  const [siteEntities, products, collections, revision, shopCode, counters, billing] = await Promise.all([
     readSiteEntities(deps.db, siteId),
     fetchProducts(deps.products, shop),
+    // Коллекции (блок 8 «Секций и SDK», часть 8а) — тем же RPC-клиентом; не ответил — снимок не получен.
+    fetchCollections(deps.products, shop),
     readRevision(deps.db, siteId, deps.products.log),
     readShopCode(deps.code, siteId),
     fetchCounters(deps.counters, shop),
     fetchBilling(deps.products, siteId),
   ]);
-  const entities = [...siteEntities, ...(products ?? []), ...(counters ?? []), billing];
+  const entities = [...siteEntities, ...(products ?? []), ...(collections ?? []), ...(counters ?? []), billing];
   const year = deps.clock().getUTCFullYear();
-  const received = products !== null && shopCode !== null && counters !== null;
+  const received = products !== null && collections !== null && shopCode !== null && counters !== null;
   const { shell, code, assets, extensions } = shopCode ?? NO_CODE;
   const parts = { platform: deps.platform, theme, shop, address, year, entities, received, revision, shell, code };
   return { shop, address, inputs: buildInputsOf(parts), assets, extensions };

@@ -78,6 +78,11 @@
 - `pnpm merfy section names` — словарь текстом `NAMES.md`.
 - Секция с ошибкой на каждое правило — `fixtures/broken/fields-broken`.
 
+## Текст статьи блога (блок 8 «Секций и SDK», часть 8а-2)
+
+`cleanArticleHtml` (`src/richtext.ts`) — очистка HTML статьи списком «Записи блога» пяти тем: сверх richtext — `h4`,
+картинки http(s) с `alt`, `figure`, `figcaption`. Её вызывает сборщик витрин до входов сборки.
+
 ## Стили секции (блок 4 «Секций и SDK»)
 
 Своего CSS у секции нет: только классы Tailwind из словаря `@merfy/tokens` и свои токены секции.

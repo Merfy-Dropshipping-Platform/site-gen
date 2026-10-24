@@ -1,4 +1,4 @@
-import { buildStorefrontConfig, configTag } from '@merfy/storefront-config';
+import { buildStorefrontConfig, configTag, type StorefrontConfigInput } from '@merfy/storefront-config';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import {
@@ -142,6 +142,13 @@ export function platformPageStyles(
 
 type ConfigAnalytics = Parameters<typeof buildStorefrontConfig>[0]['analytics'];
 
+// Страница для конфига витрины: id и адрес; у страницы записи — вид и id записи (часть 8б-2; блоки 13 и 12в).
+const configPageOf = (route: ShopRoute): StorefrontConfigInput['page'] => ({
+  id: route.id,
+  path: route.path,
+  ...(route.record === undefined ? {} : { record: { type: route.record.type, id: route.record.id } }),
+});
+
 // Аналитика — только на опубликованном сайте: превью конструктора событий не шлёт (Р1).
 const ANALYTICS_BY_MODE: Record<PageMode, (inputs: BuildInputs) => ConfigAnalytics> = {
   live: (inputs) => ({ url: inputs.env.analyticsUrl, counters: countersOf(inputs.data.entities) }),
@@ -167,7 +174,7 @@ function headOf(
     site: { ...inputs.site, name },
     theme: inputs.theme,
     env: inputs.env,
-    page: { id: route.id, path: route.path },
+    page: configPageOf(route),
     mode: content.mode,
     analytics: ANALYTICS_BY_MODE[content.mode](inputs),
   });

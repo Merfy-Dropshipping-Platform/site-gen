@@ -13,6 +13,9 @@ export interface SpecialPage {
 export interface PageInfo {
   id: string;
   path: string | null;
+  // Блок 8, часть 8б: запись страницы шаблона — публичные поля (records.ts). Нет ключа — страница без записи; null так
+  // видят секции процесса рендера.
+  record?: object | null;
 }
 
 // Id — kebab; адрес — «/» или «/kebab».

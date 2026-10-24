@@ -55,8 +55,20 @@ export interface RenderedPage {
   bundle?: BuildFile;
 }
 
-// Чья страница и от чего она зависит. Главная и свои страницы — страницы сайта.
-const pageEntity = (inputs: BuildInputs, route: ShopRoute) => ({ type: route.entity, id: inputs.site.id });
+// Чья страница и от чего она зависит. Главная и свои страницы — страницы сайта; страница записи (блок 8, часть 8б) —
+// сущности записи: по ней раздача отвечает 301 и 410.
+const pageEntity = (inputs: BuildInputs, route: ShopRoute) =>
+  route.record?.entity ?? { type: route.entity, id: inputs.site.id };
+
+// Зависимости: записи страницы (сама запись — первой) и сайт — шапка и подвал есть на каждой странице.
+const pageDeps = (inputs: BuildInputs, route: ShopRoute): string[] => [
+  ...(route.record?.deps ?? []),
+  entityKey('site', inputs.site.id),
+];
+
+// Второй адрес записи (часть 8б) — поле строки только у страницы записи, у которой он есть.
+const aliasesOf = (route: ShopRoute): { aliases?: string[] } =>
+  route.record === undefined || route.record.aliases.length === 0 ? {} : { aliases: route.record.aliases };
 
 type Update = [key: string, updatedAt: string];
 
@@ -131,7 +143,7 @@ const sectionThemeOf = (inputs: BuildInputs, placed: readonly PlacedSection[]): 
 // Строка манифеста страницы: путь, файл, сущность и её зависимости, время обновления данных.
 function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer): PageRow {
   const entity = pageEntity(inputs, route);
-  const deps = [entityKey(entity.type, entity.id)];
+  const deps = pageDeps(inputs, route);
   return checkPageRow({
     path: route.path,
     file: route.file,
@@ -139,6 +151,7 @@ function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer): Page
     entity,
     deps,
     dataUpdatedAt: dataUpdatedAt(inputs, deps),
+    ...aliasesOf(route),
   });
 }
 

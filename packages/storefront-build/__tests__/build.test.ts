@@ -76,7 +76,13 @@ describe('buildStorefront: страница стенда', () => {
 describe('buildStorefront', () => {
   it('стенд: файлы клиента и главная по пути, манифест сходится с ними', async () => {
     const { manifest, files } = await buildStorefront(standInputsJson, REFERENCES, theme);
-    expect(files.map((file) => file.path)).toEqual(['_astro/index.css', '_astro/manrope.woff2', 'index.html']);
+    expect(files.map((file) => file.path)).toEqual([
+      '404.html',
+      '502.html',
+      '_astro/index.css',
+      '_astro/manrope.woff2',
+      'index.html',
+    ]);
     const fonts = shopFonts(standInputs, novaTokens).files.map((file) => [file.path, file.hash]);
     expect(manifest.files).toEqual(
       Object.fromEntries([...files.map((file) => [file.path, sha256(file.content)]), ...fonts]),

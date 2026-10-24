@@ -93,7 +93,11 @@ describe('menus, theme и shop в запросе рендера', () => {
         },
       },
       mode: 'live',
-      props: { theme: { 'social-telegram': 'https://t.me/scarves' }, shop: { ...EMPTY_SHOP, name: 'Шарфы' } },
+      props: {
+        theme: { 'social-telegram': 'https://t.me/scarves' },
+        shop: { ...EMPTY_SHOP, name: 'Шарфы' },
+        page: { id: 'home', path: '/' },
+      },
     };
   }
 
@@ -117,5 +121,22 @@ describe('menus, theme и shop в запросе рендера', () => {
     const page = { ...pageOf(requests), props: undefined };
     await renderPlacedSections([placed('footer', { uses: ['theme', 'shop'] })], platformDictionary, page);
     expect([requests[0]?.theme, requests[0]?.shop]).toEqual([{}, EMPTY_SHOP]);
+  });
+});
+
+describe('особые страницы заняты (блок 7 «Секций и SDK», часть 7а)', () => {
+  it('своя страница с id not-found или адресом /404 — inputs-invalid', () => {
+    const withPage = (page: typeof PAGE) => () =>
+      parseBuildInputs(
+        changedInputs((inputs) => {
+          part4(inputs);
+          inputs.revision.pages = [page];
+        }),
+      );
+    expect(errorOf(withPage({ ...PAGE, id: 'not-found', slug: '/stranica' }))).toMatchObject({
+      code: 'inputs-invalid',
+      path: 'revision.pages.0.id',
+    });
+    expect(errorOf(withPage({ ...PAGE, slug: '/404' }))).toMatchObject({ path: 'revision.pages.0.slug' });
   });
 });

@@ -39,12 +39,21 @@ const SCAN_DELAY_MS = 50;
 const WINDOW_KEY = "__merfyExtensionSale";
 const CHECKED_ATTRIBUTE = "data-extension-sale-checked";
 const WATCHED_ATTRIBUTE = "data-extension-sale-watched";
-const BUTTON_SELECTOR = "[data-add-to-cart][data-product-id]";
+/**
+ * «В корзину» на карточке: `[data-add-to-cart]` (satin, секции, страница товара)
+ * или `[data-quick-add-id]` (блок «Каталог» flux, rose, bloom, vanilla — у них
+ * свой обработчик клика, id товара лежит в самой кнопке).
+ */
+const BUTTON_SELECTOR = "[data-add-to-cart][data-product-id], [data-quick-add-id]";
 const STEPPER_SELECTOR = "[data-qa-stepper]";
+/** Сколько клик ждёт ответа расширения: дольше — товар считается обычным. */
+const ANSWER_WAIT_MS = 3000;
 
 export interface ExtensionSale {
   /** Ответ уже известен: `true` — товар продаётся формой; `undefined` — ещё не спрашивали. */
   known(productId: string): boolean | undefined;
+  /** Есть кого спросить: конфиг магазина на странице и id товара. Нет — ждать ответа нечего. */
+  canAsk(productId: string): boolean;
   /** Спросить расширение (один раз на товар); сбой — `false` без запоминания. */
   check(productId: string): Promise<boolean>;
 }
@@ -179,7 +188,10 @@ export function createExtensionSale(win: Window): ExtensionSale {
     return started;
   };
 
-  return { known, check };
+  const canAsk = (productId: string): boolean =>
+    productId !== "" && channelOf(win) !== null;
+
+  return { known, canAsk, check };
 }
 
 /** Один объект на окно: кэш и карта общие для каталога и корзины. */
@@ -210,19 +222,91 @@ function buttonsOf(doc: Document): HTMLElement[] {
   return Array.from(doc.querySelectorAll<HTMLElement>(BUTTON_SELECTOR));
 }
 
+/** Товар кнопки: `data-product-id`, а у кнопки блока «Каталог» — `data-quick-add-id`. */
+const productIdOf = (button: HTMLElement): string =>
+  button.dataset.productId || button.dataset.quickAddId || "";
+
+/** Ответ расширения, но не дольше `ms`: тишина — как «товар обычный». */
+function answerWithin(answer: Promise<boolean>, ms: number): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    const timer = setTimeout(() => resolve(false), ms);
+    const settle = (value: boolean): void => {
+      clearTimeout(timer);
+      resolve(value);
+    };
+    answer.then(settle, () => settle(false));
+  });
+}
+
+/** Страница → объект, который отвечает за её кнопки: один обработчик клика на страницу. */
+const gates = new WeakMap<Document, ExtensionSale>();
+/** Идёт повтор клика, который мы задержали: его пропускаем без проверки. */
+let replaying = false;
+
+/**
+ * Клик по «В корзину» товара, о котором расширение ещё не ответило, ждёт
+ * ответа (короткий запрос) и только потом доходит до обработчика темы: обычный
+ * товар — повтором клика, товар расширения — не доходит вовсе, кнопка прячется.
+ * Обработчик стоит на document в фазе перехвата, поэтому он раньше любого
+ * обработчика темы — и корзины ядра, и инлайн-скрипта блока «Каталог».
+ * Ответ известен или спросить некого (нет конфига магазина) — клик не задерживается.
+ */
+function installClickGate(doc: Document, sale: ExtensionSale, hideFor: (id: string) => void): void {
+  const installed = gates.has(doc);
+  gates.set(doc, sale);
+  if (installed) return;
+  doc.addEventListener(
+    "click",
+    (event) => {
+      if (replaying) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest<HTMLElement>(BUTTON_SELECTOR);
+      const current = gates.get(doc);
+      if (button === null || current === undefined) return;
+      const productId = productIdOf(button);
+      const hit = current.known(productId);
+      if (hit === false || (hit === undefined && !current.canAsk(productId))) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (hit === true) {
+        hideFor(productId);
+        return;
+      }
+      void answerWithin(current.check(productId), ANSWER_WAIT_MS).then((found) => {
+        if (found) {
+          hideFor(productId);
+          return;
+        }
+        // Кнопку могли убрать (перерисовка списка): повторять клик некуда.
+        if (!button.isConnected) return;
+        replaying = true;
+        try {
+          button.click();
+        } finally {
+          replaying = false;
+        }
+      });
+    },
+    true,
+  );
+}
+
 /**
  * Прячет «В корзину» у товаров расширения на всей странице и следит за новыми
- * карточками (каталог дорисовывается гидрацией, список — «Показать ещё»).
+ * карточками (каталог дорисовывается гидрацией, список — «Смотреть ещё»), а клик
+ * по кнопке непроверенного товара задерживает до ответа расширения.
  */
 export function watchExtensionSaleButtons(doc: Document, sale: ExtensionSale): void {
   const hideFor = (productId: string): void => {
     buttonsOf(doc)
-      .filter((button) => button.dataset.productId === productId)
+      .filter((button) => productIdOf(button) === productId)
       .forEach(hideButton);
   };
+  installClickGate(doc, sale, hideFor);
   const scan = (): void => {
     for (const button of buttonsOf(doc)) {
-      const productId = button.dataset.productId ?? "";
+      const productId = productIdOf(button);
       const hit = sale.known(productId);
       if (hit === true) {
         hideButton(button);

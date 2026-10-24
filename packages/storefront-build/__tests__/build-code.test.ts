@@ -21,7 +21,7 @@ describe('buildStorefront с кодом секций', () => {
     const bundles = paths.filter((path) => path.startsWith('_merfy/'));
     expect(bundles).toHaveLength(1);
     expect(bundles[0]).toMatch(/^_merfy\/b\/[0-9a-f]{64}\.js$/);
-    expect(paths).toEqual(['_astro/index.css', bundles[0], 'index.html'].sort());
+    expect(paths).toEqual(['404.html', '502.html', '_astro/index.css', bundles[0], 'index.html'].sort());
     // Файлы шрифтов (блок 12) — только в манифесте, без байтов.
     const fontPaths = Object.keys(manifest.files).filter((path) => path.startsWith('_fonts/'));
     expect(Object.keys(manifest.files)).toEqual([...paths, ...fontPaths]);

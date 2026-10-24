@@ -10,6 +10,7 @@ export const SERVICE_PREFIX = '__merfy';
 export const EXPRESSION_GLOBALS: ReadonlySet<string> = new Set([
   'settings',
   'blocks',
+  'page',
   'undefined',
   'NaN',
   'Infinity',
@@ -65,7 +66,7 @@ const LABELS: Partial<Record<string, string>> = {
 
 const TEXT = {
   name: (name: string) =>
-    `имя ${name}: в выражениях шаблона — только settings, blocks, параметры функций и Math, Number, String, Boolean, JSON, Array`,
+    `имя ${name}: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array`,
   property: (name: string) => `свойство ${name}: в шаблоне секции нельзя`,
   computed: 'ключ в [ ]: в шаблоне секции — только строка или число',
   node: (label: string) => `${label}: в шаблоне секции нельзя — выражение только читает данные секции`,

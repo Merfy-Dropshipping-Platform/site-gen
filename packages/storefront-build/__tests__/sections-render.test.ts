@@ -34,7 +34,15 @@ describe('рендер секции', () => {
       '<merfy-section data-section="shop:hero" data-section-id="hero-1" class="py-section"><h2 class="text-5xl">Шарфы к первым холодам</h2></merfy-section>',
     );
     expect(seen).toEqual([
-      { section: 'shop:hero', hash: HASH, module: MODULE, settings: PLACED.settings, blocks: [], preview: false },
+      {
+        section: 'shop:hero',
+        hash: HASH,
+        module: MODULE,
+        settings: PLACED.settings,
+        blocks: [],
+        preview: false,
+        page: { id: 'home', path: '/' },
+      },
     ]);
   });
 

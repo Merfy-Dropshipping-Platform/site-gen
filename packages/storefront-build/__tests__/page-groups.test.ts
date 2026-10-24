@@ -157,3 +157,16 @@ describe('страница: шапка, свой список, подвал', ()
     ]);
   });
 });
+
+describe('page в запросе каждой секции (блок 7 «Секций и SDK», часть 7а)', () => {
+  it('главная и своя страница — id и адрес; без "uses" тоже', async () => {
+    const home: SectionRenderRequest[] = [];
+    const own: SectionRenderRequest[] = [];
+    await renderShopPage(shopInputs(), '/', themeOf([]), pageOf(home));
+    await renderShopPage(shopInputs(), '/o-nas', themeOf([]), pageOf(own));
+    const homeInfo = { id: 'home', path: '/' };
+    const ownInfo = { id: PAGE.id, path: '/o-nas' };
+    expect(home.map((request) => request.page)).toEqual([homeInfo, homeInfo, homeInfo]);
+    expect(own.map((request) => request.page)).toEqual([ownInfo, ownInfo, ownInfo]);
+  });
+});

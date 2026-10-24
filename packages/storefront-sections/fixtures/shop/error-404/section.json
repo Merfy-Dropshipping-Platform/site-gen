@@ -1,0 +1,11 @@
+{
+  "sdk": 1,
+  "name": "error-404",
+  "kind": "section",
+  "title": "Страница не найдена",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Страница не найдена" } },
+    { "id": "label", "label": "Текст кнопки", "setting": { "kind": "string", "default": "На главную" } },
+    { "id": "link", "label": "Ссылка кнопки", "setting": { "kind": "url", "default": "/" } }
+  ]
+}

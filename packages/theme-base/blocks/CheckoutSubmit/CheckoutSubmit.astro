@@ -295,7 +295,10 @@ const schemeClass = schemeClassOf(colorScheme);
     // DOM-атрибута disabled — покупатель на живом сайте не может отправить
     // пустой заказ, даже если бы кто-то снял disabled в devtools.
     function refresh() {
-      var label = buttonText.replace('{total}', fmtRub(getTotalCents()));
+      // Пустая корзина (покупатель ушёл со всем, либо проверка товаров расширения
+      // убрала строки): суммы нет — прочерк, как до загрузки корзины, а не «0₽».
+      var emptyCart = !offerMode() && getCartItems().length === 0;
+      var label = buttonText.replace('{total}', emptyCart ? '—' : fmtRub(getTotalCents()));
       button.textContent = state.submitting ? loadingText : label;
       var inIframe = window.parent && window.parent !== window;
       button.disabled = inIframe ? false : !canSubmit();

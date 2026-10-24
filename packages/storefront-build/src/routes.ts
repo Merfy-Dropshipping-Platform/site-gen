@@ -1,6 +1,7 @@
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { PageEntityType } from './manifest';
+import { HOME_PAGE, NOT_FOUND_PAGE_ID, type PageInfo } from './special-pages';
 
 // Страницы магазина новой темы (design.md блока 4, Св-1): главная и свои страницы мерчанта (блок 1 «Секций и SDK»,
 // часть 4, Р1-4-8). Страница рендерит три списка секций ревизии: шапку, свой список и подвал. Страницы товаров,
@@ -16,9 +17,18 @@ export interface ShopRoute {
 export const HEADER_LIST = 'header';
 export const FOOTER_LIST = 'footer';
 export const SHOP_ROUTES: readonly ShopRoute[] = [{ id: 'home', path: '/', file: 'index.html', entity: 'site' }];
+// Страница 404 (блок 7, часть 7а): адрес у сборки есть, строки в манифесте и карте сайта нет — раздача отдаёт её файл на
+// любой неизвестный адрес.
+export const NOT_FOUND_ROUTE: ShopRoute = { id: 'not-found', path: '/404', file: '404.html', entity: 'site' };
 
 // Списки секций страницы по порядку: шапка, страница, подвал.
 export const pageListsOf = (pageId: string): readonly string[] => [HEADER_LIST, pageId, FOOTER_LIST];
+
+// Страница для секций (блок 7, часть 7а): id и адрес; у страницы 404 адреса нет — она отвечает на любой адрес.
+export const pageInfoOf = (route: ShopRoute): PageInfo => ({
+  id: route.id,
+  path: route.id === NOT_FOUND_PAGE_ID ? null : route.path,
+});
 
 // Главная и свои страницы ревизии: /o-nas → o-nas/index.html. Своя страница, как главная, — страница сайта.
 export const shopRoutes = (inputs: BuildInputs): ShopRoute[] => [
@@ -30,8 +40,14 @@ export const shopRoutes = (inputs: BuildInputs): ShopRoute[] => [
 
 // Без входов — только главная (стенд и тесты рисовальщика); со входами — и свои страницы.
 export function routeOf(path: string, inputs?: BuildInputs): ShopRoute {
-  const routes = inputs === undefined ? SHOP_ROUTES : shopRoutes(inputs);
+  const routes = inputs === undefined ? SHOP_ROUTES : [...shopRoutes(inputs), NOT_FOUND_ROUTE];
   const route = routes.find((candidate) => candidate.path === path);
   if (route !== undefined) return route;
   throw new StorefrontBuildError('page-unknown', 'такой страницы у магазина нет', { path });
+}
+
+// Страница по id для превью одного блока (часть 7а): главная, своя страница ревизии или 404; другой id — главная.
+export function pageInfoById(inputs: BuildInputs, id: string): PageInfo {
+  const route = [...shopRoutes(inputs), NOT_FOUND_ROUTE].find((candidate) => candidate.id === id);
+  return route === undefined ? HOME_PAGE : pageInfoOf(route);
 }

@@ -37,6 +37,12 @@ export const PROBLEM_CODES = [
   'visible-when-invalid',
   'render-empty-failed',
   'block-select-unavailable',
+  // Поведения и появления в шаблоне (блок 6 «Секций и SDK», часть 6б): data-behavior, data-part, data-animate.
+  'behavior-unknown',
+  'behavior-part-unknown',
+  'behavior-part-orphan',
+  'behavior-param-invalid',
+  'animate-preset-unknown',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];
 

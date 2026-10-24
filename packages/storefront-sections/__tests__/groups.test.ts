@@ -51,7 +51,7 @@ describe('groups, limit, removable, uses, newPage в section.json', () => {
     expect(problemsOf({ ...HEADER, removable: true })).toEqual([
       expect.stringMatching(/^manifest-invalid removable: /),
     ]);
-    expect(problemsOf({ ...HEADER, uses: ['cart'] })).toEqual([expect.stringMatching(/^manifest-invalid uses\.0: /)]);
+    expect(problemsOf({ ...HEADER, uses: ['basket'] })).toEqual([expect.stringMatching(/^manifest-invalid uses\.0: /)]);
     expect(problemsOf({ ...HEADER, uses: ['shop', 'shop'] })).toEqual(['manifest-invalid uses: значение дважды']);
   });
 
@@ -59,7 +59,7 @@ describe('groups, limit, removable, uses, newPage в section.json', () => {
     const global = { sdk: 1, name: 'locate', kind: 'global', title: 'Город', settings: [] };
     expect(problemsOf({ ...global, groups: ['page'], uses: ['shop'] })).toEqual([
       'manifest-invalid groups: у глобального скрипта нет места на странице',
-      'manifest-invalid uses: у глобального скрипта нет места на странице',
+      'manifest-invalid uses: shop — данные шаблона, у глобального скрипта шаблона нет',
     ]);
   });
 

@@ -131,3 +131,12 @@ describe('страница не найдена тест-магазина (бло
     });
   }, 30_000);
 });
+
+describe('«Баннер cookie» (блок 13 «Секций и SDK», часть 13б)', () => {
+  it('fixtures/shop/cookie-banner проходит без предупреждений', async () => {
+    expect(await merfy('section', 'check', 'fixtures/shop/cookie-banner')).toEqual({
+      code: 0,
+      stdout: 'shop:cookie-banner: проверка прошла\n',
+    });
+  }, 60_000);
+});

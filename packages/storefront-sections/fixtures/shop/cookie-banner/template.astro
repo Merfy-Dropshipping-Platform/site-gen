@@ -1,0 +1,25 @@
+---
+// Баннер cookie (блок 13 «Секций и SDK», часть 13б): тексты, расположения и вид — как у баннера пяти тем на проде,
+// цвета и скругления — токенами темы. Ссылка на политику — только если она есть у магазина. Скрыт, пока ядро не
+// покажет его (script.ts).
+const { settings, shop } = Astro.props;
+---
+<div data-ref="banner" hidden role="region" aria-label="Согласие на cookie" class:list={['fixed z-50 font-body', { 'inset-x-4 bottom-4 md:right-auto md:bottom-6 md:left-6 md:w-110': settings['content-position'] === 'bottom-left', 'inset-x-4 bottom-4 md:bottom-6 md:mx-auto md:w-110': settings['content-position'] === 'bottom-center', 'inset-x-4 bottom-4 md:bottom-6 md:left-auto md:right-6 md:w-110': settings['content-position'] === 'bottom-right', 'inset-x-0 bottom-0': settings['content-position'] === 'bar' }]}>
+  <div class:list={['flex flex-col gap-4 border border-border bg-background p-5 text-foreground shadow-popover', { 'rounded-card': settings['content-position'] !== 'bar', 'md:flex-row md:items-center md:justify-between': settings['content-position'] === 'bar' }]}>
+    <div class="flex flex-col gap-2">
+      {settings.heading && <p class="m-0 font-heading weight-heading text-base text-heading">{settings.heading}</p>}
+      <p class="m-0 text-sm">
+        {settings.text}
+        {shop.policies.filter((policy) => policy.type === 'privacy').map((policy) => (
+          <span> Подробнее — в <a class="text-foreground underline" href={policy.url}>Политике конфиденциальности</a>.</span>
+        ))}
+      </p>
+    </div>
+    <div class="flex flex-col gap-2 md:flex-row md:self-start">
+      <button type="button" data-action="consent.accept" class="inline-flex h-11 w-full items-center justify-center rounded-button border border-primary-border bg-primary px-6 text-sm text-primary-foreground md:w-auto">{settings['button-label']}</button>
+      {settings.label && (
+        <button type="button" data-action="consent.decline" class="inline-flex h-11 w-full items-center justify-center rounded-button border border-border bg-transparent px-6 text-sm text-foreground md:w-auto">{settings.label}</button>
+      )}
+    </div>
+  </div>
+</div>

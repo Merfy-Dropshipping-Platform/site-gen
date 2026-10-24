@@ -24,8 +24,8 @@ import { buildScript, type BuiltScript } from './script';
 import { NO_FACTS, type ScriptFacts } from './script-facts';
 import { scriptMetaOf, scriptMetaSchema } from './script-meta';
 import { nameProblems } from './script-names';
-import { sectionTokensOf, tokenProblems } from './token-rules';
 import { NO_MARKUP } from './template-markup';
+import { sectionTokensOf, tokenProblems } from './token-rules';
 import { NO_TEMPLATE_OPTIONS, checkTemplate, templateOptionsOf, type TemplateCheck } from './compile';
 
 // Одна функция приёма (design.md блока 7, С7-11 А, п. 21): разбор section.json, проверка, сборка — одинаково для

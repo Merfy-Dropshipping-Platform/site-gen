@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { ShopPageLocals } from '../src/locals';
 import { checkPageRow } from '../src/manifest';
+import { policyTextHtml } from '../src/policy-text';
 import { renderShopPage, type ShopTheme } from '../src/page';
 import { RECORD_FIELDS, RECORD_TYPES, money } from '../src/records';
 import { routeOf, shopRoutes, templateShown } from '../src/routes';
@@ -132,5 +134,45 @@ describe('запись страницы — секциям и в строке м
     expect(errorOf(() => checkPageRow({ ...row, aliases: ['product/sharf'] }))).toMatchObject({
       code: 'manifest-invalid',
     });
+  });
+});
+
+describe('политика без секций шаблона — текст от платформы (В8-1 А)', () => {
+  const PRIVACY = { type: 'privacy', title: 'Политика конфиденциальности', url: '/legal/privacy' };
+
+  async function policyLocals(pages: Parameters<typeof recordInputs>[1]): Promise<ShopPageLocals | undefined> {
+    const seen: ShopPageLocals[] = [];
+    const capture: ShopTheme = {
+      tokens: novaTokens,
+      render: (path, locals) => {
+        seen.push(locals);
+        return fakeRender(path, locals);
+      },
+    };
+    const inputs = recordInputs([policy('privacy', 'Мы бережём данные\n\nПишите нам')], pages);
+    await renderShopPage(inputs, '/legal/privacy', capture, recordPage());
+    return seen[0];
+  }
+
+  it('в <main> — заголовок и текст политики от платформы; шапка — секции магазина', async () => {
+    const locals = await policyLocals({ header: [placed('header-1')], policy: [placed('policy-1', true)] });
+    expect(locals?.header).toHaveLength(1);
+    expect(locals?.sections).toEqual([
+      policyTextHtml({ ...PRIVACY, html: '<p>Мы бережём данные</p><p>Пишите нам</p>' }),
+    ]);
+  });
+
+  it('в шаблоне «Политика» видимая секция — страница из секций, текста платформы нет', async () => {
+    const locals = await policyLocals({ policy: [placed('policy-1')] });
+    expect(locals?.sections).toHaveLength(1);
+    expect(locals?.sections.join('')).not.toContain('data-merfy-policy');
+  });
+
+  it('разметка: заголовок экранирован, стили — на переменных токенов', () => {
+    const html = policyTextHtml({ ...PRIVACY, title: 'A & <B>', html: '<p>t</p>' });
+    expect(html.startsWith('<div data-merfy-policy style="')).toBe(true);
+    expect(html).toContain('>A &amp; &lt;B&gt;</h1>');
+    expect(html).toContain('max-width:var(--width-page)');
+    expect(html).toContain('<p>t</p></div></div>');
   });
 });

@@ -24,6 +24,7 @@ import {
   type PlacedSection,
 } from './sections-render';
 import { checkSeo } from './seo';
+import { policyTextHtml } from './policy-text';
 import { shopPropsOf } from './shop-props';
 import { HOME_PAGE, NOT_FOUND_PAGE_ID } from './special-pages';
 
@@ -113,6 +114,22 @@ function splitContent(content: PageContent, [header = 0, own = 0]: readonly numb
   };
 }
 
+// Разметка трёх списков страницы. Страница политики, пока в шаблоне «Политика» нет видимых секций (блок 8, В8-1 А): в
+// <main> — текст от платформы. Исключение — только у политик: пустой шаблон другой записи страниц не даёт (routes.ts,
+// templateShown). Отдельной функцией: renderShopPage с бандлом 5б остаётся в пределе 30 строк.
+function pageContentOf(
+  rendered: PageContent,
+  lists: readonly (readonly PlacedSection[])[],
+  route: ShopRoute,
+): PageContent {
+  const content = splitContent(
+    rendered,
+    lists.map((list) => list.length),
+  );
+  if (route.record?.type !== 'policy' || (lists[1] ?? []).length > 0) return content;
+  return { ...content, sections: [policyTextHtml(route.record.record)] };
+}
+
 // Разметка страницы с бандлом (часть 5б): бандл — по тем же видимым экземплярам, его тег — в <head> после стилей
 // секций. Возврат — HTML и файл бандла (нет — null: бандл встроен в HTML или его нет).
 async function renderWithBundle(
@@ -174,10 +191,7 @@ export async function renderShopPage(
     { ...page, props },
     sectionThemeOf(inputs, placed),
   );
-  const pageContent = splitContent(
-    rendered,
-    lists.map((list) => list.length),
-  );
+  const pageContent = pageContentOf(rendered, lists, route);
   const { html, bundle } = await renderWithBundle(shown, route, theme, page, pageContent);
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');

@@ -55,10 +55,12 @@ import {
   escapeHtml,
   fetchAccountEmail,
   fetchStorefrontMap,
+  findProductPoint,
   isRecord,
   isSuccessStatus,
   safeLink,
   sitePath,
+  type PurchasePoint,
 } from "./extension-call";
 import { POLICY_URLS_GLOBAL } from "./legal-links";
 import { guardPreviewClicks } from "./preview-click-guard";
@@ -118,11 +120,9 @@ export interface ProductSubmitResult {
   buttons?: ProductSubmitButton[];
 }
 
-export interface PurchasePoint {
-  extensionId: string;
-  form: string;
-  submit: string;
-}
+/** Точка «товар» из карты витрины живёт в extension-call.ts: её читает и рантайм каталога (extension-sale.ts). */
+export { findProductPoint };
+export type { PurchasePoint };
 
 export interface MountExtensionPurchaseOptions {
   productId: string;
@@ -208,27 +208,6 @@ const textOf = (value: unknown): string => {
   if (typeof value === "string") return value;
   return typeof value === "number" ? String(value) : "";
 };
-
-/* ── Точка расширения из карты ── */
-
-function pointOf(extensionId: string, entry: unknown): PurchasePoint | null {
-  const product = isRecord(entry) ? entry.product : undefined;
-  if (!isRecord(product)) return null;
-  const { form, submit } = product;
-  const named =
-    typeof form === "string" &&
-    form !== "" &&
-    typeof submit === "string" &&
-    submit !== "";
-  return named ? { extensionId, form, submit } : null;
-}
-
-/** Первое расширение карты, у которого точка `product` называет функции формы и отправки. */
-export function findProductPoint(map: unknown): PurchasePoint | null {
-  if (!isRecord(map)) return null;
-  const points = Object.entries(map).map(([id, entry]) => pointOf(id, entry));
-  return points.find((point) => point !== null) ?? null;
-}
 
 /* ── Проверка ответа расширения (внешние данные — unknown, сразу сужаем) ── */
 

@@ -57,6 +57,32 @@ export function safeLink(url: unknown): string | null {
   return sitePath(url) ?? (url.startsWith("https://") ? url : null);
 }
 
+/** Точка `product` расширения в карте витрины: функции формы товара и её отправки. */
+export interface PurchasePoint {
+  extensionId: string;
+  form: string;
+  submit: string;
+}
+
+function pointOf(extensionId: string, entry: unknown): PurchasePoint | null {
+  const product = isRecord(entry) ? entry.product : undefined;
+  if (!isRecord(product)) return null;
+  const { form, submit } = product;
+  const named =
+    typeof form === "string" &&
+    form !== "" &&
+    typeof submit === "string" &&
+    submit !== "";
+  return named ? { extensionId, form, submit } : null;
+}
+
+/** Первое расширение карты, у которого точка `product` называет функции формы и отправки. */
+export function findProductPoint(map: unknown): PurchasePoint | null {
+  if (!isRecord(map)) return null;
+  const points = Object.entries(map).map(([id, entry]) => pointOf(id, entry));
+  return points.find((point) => point !== null) ?? null;
+}
+
 /** Успех — любой 2xx: шлюз отвечает на POST статусом 201, а не 200. */
 export const isSuccessStatus = (status: number): boolean =>
   status >= 200 && status < 300;

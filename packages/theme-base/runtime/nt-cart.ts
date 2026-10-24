@@ -23,6 +23,7 @@
 
 import { createCartAddedModal } from "./cart-added-modal";
 import { ORDER_STATUS_EVENT, settlePaidOrder } from "./paid-order-cart";
+import { extensionSaleOf, watchExtensionSaleButtons } from "./extension-sale";
 // Тот же разбор «название → цвет», что рисует образцы на странице товара
 // (ProductVariants.astro). Модуль без зависимостей.
 import { resolveVariantColor } from "../blocks/Product/variantColor";
@@ -645,7 +646,33 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		if (result.changed) saveCart(result.lines);
 	};
 
+	/** Товар продаётся через форму расширения, а не корзиной (runtime/extension-sale.ts). */
+	const soldByForm = (productId: string): boolean =>
+		typeof window !== "undefined" && extensionSaleOf(window).known(productId) === true;
+
+	/** Убрать из корзины все строки товара, который продаётся формой. */
+	const dropFormProduct = (productId: string) => {
+		const kept = getCart().filter((line) => line.productId !== productId);
+		if (kept.length !== getCart().length) saveCart(kept);
+	};
+
+	/**
+	 * Корзина не принимает товар, который продаётся формой (баги тестировщика
+	 * 24.10, Б1/Б2). Известный — отказ сразу; о неизвестном расширение ещё не
+	 * спрашивали — строка принимается и убирается, как только оно ответит.
+	 * Нет конфига магазина, нет точки у расширения, сеть — товар обычный.
+	 */
+	const verifyNotForm = (productId: string) => {
+		if (typeof window === "undefined" || !productId) return;
+		void extensionSaleOf(window)
+			.check(productId)
+			.then((isForm) => {
+				if (isForm) dropFormProduct(productId);
+			});
+	};
+
 	const addToCart = (options: NtAddToCartOptions) => {
+		if (soldByForm(options.productId)) return;
 		const lines = getCart();
 		const id = makeLineId(options.productId, options.variant);
 		const quantity = Math.max(1, options.quantity ?? 1);
@@ -673,6 +700,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			});
 		}
 		saveCart(lines);
+		verifyNotForm(options.productId);
 		// Подпись варианта — сразу, а не с перезагрузкой страницы: кнопка могла
 		// не передать название (только номер комбинации).
 		void labelCart();
@@ -848,6 +876,10 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 				const item = itemFromButton(addBtn);
 				const { productId, variant } = item;
 
+				// Товар продаётся формой расширения: кнопка спрятана, но если клик
+				// дошёл (кэш обновился позже разметки) — ни корзины, ни окна.
+				if (soldByForm(productId)) return;
+
 				// Toggle-кнопки карточек (перенесено из bloom): повторный клик по товару,
 				// который уже в корзине, удаляет его — и окно тогда не показываем.
 				// Кнопки без data-cart-toggle (PDP, гидрация) всегда добавляют.
@@ -963,11 +995,19 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			settleOrder((event as CustomEvent<{ orderId?: string; paymentStatus?: string }>).detail),
 		);
 
+		// Карточки товаров, которые продаются формой расширения, и строки таких
+		// товаров, оставшиеся в корзине с прошлых заходов (Б1/Б2, 24.10).
+		const checkFormProducts = () => {
+			watchExtensionSaleButtons(document, extensionSaleOf(window));
+			new Set(getCart().map((line) => line.productId)).forEach(verifyNotForm);
+		};
+
 		document.addEventListener("astro:page-load", () => {
 			renderBadges();
 			renderDrawer();
 			syncProductCards();
 			settleOrder();
+			checkFormProducts();
 			// Само-лечение при client-side навигации (VT не перезапускает init-модуль).
 			if (catalogUrl) void reconcileCart(catalogUrl);
 			else void labelCart();
@@ -977,6 +1017,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		renderDrawer();
 		syncProductCards();
 		settleOrder();
+		checkFormProducts();
 		// Само-лечение цен/наличия из каталога → корзина всегда актуальна (= оформлению).
 		// Без catalogUrl — только подпись вариантов (строки и цены не трогаем).
 		if (catalogUrl) void reconcileCart(catalogUrl);

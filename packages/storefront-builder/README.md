@@ -80,6 +80,15 @@
 - В сборку идут HTML страниц и файлы бандлов страниц (`_merfy/b/<sha256>.js`); раздача отдаёт `_merfy/` с кэшем
   навсегда. Предупреждения бандла — строки журнала `section-script-skipped` и `page-script-heavy`.
 
+### Код секций в превью (блок 5 «Секций и SDK», часть 5г)
+
+- `GET /preview` — после двух скриптов превью JSON-тег бандла превью и `dist/preview.js` (`previewTags`,
+  `src/preview-code.ts`); байты кода — из снимка магазина (`assets`), как у сборки.
+- `POST /preview/section` — `{ html, css, script }`: `script` — `{ hash, code, uses }` (hash — 64 знака hex) или
+  `null`; у секции с кодом в HTML — тег входных данных, в CSS — классы её скрипта (`script_meta.classes`).
+- `GET /sections` — `scriptHash` у секции с кодом: конструктор перечитывает список при возврате на вкладку и шлёт
+  `update-block` экземплярам секции с другим хешем.
+
 ## Выпуск волнами (блок 10)
 
 - Ведущий волн живёт в сборщике (`src/release/conductor.ts`), состояние — в таблицах `storefront_release` и

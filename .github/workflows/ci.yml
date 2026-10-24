@@ -86,7 +86,7 @@ jobs:
 
       - name: Тесты пакетов этапа
         run: |
-          for package in tokens storefront-config storefront-build storefront-storage storefront-builder stand-check storefront-shell storefront-sections; do
+          for package in tokens storefront-config storefront-build storefront-storage storefront-builder stand-check storefront-shell storefront-sections sdk-docs; do
             echo "### $package"
             pnpm --dir "packages/$package" test
           done

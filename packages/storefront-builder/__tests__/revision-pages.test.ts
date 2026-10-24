@@ -69,3 +69,20 @@ describe('особые страницы заняты (блок 7 «Секций 
     expect(invalid.map((fields) => fields.id)).toEqual(['not-found', 'page-custom-1']);
   });
 });
+
+describe('адреса шаблонов записей заняты (блок 8 «Секций и SDK», часть 8б)', () => {
+  it('своя страница /product или /legal — без неё и строка журнала; строка шаблона — не своя страница', () => {
+    const invalid: LogFields[] = [];
+    const pages = revisionPagesOf(
+      [
+        { id: 'product', name: 'Товар', slug: '/product/:slug', role: 'system', isCustom: false },
+        custom('page-custom-1', '/product'),
+        custom('page-custom-2', '/legal'),
+        custom('page-custom-3', '/produkty'),
+      ],
+      (fields) => invalid.push(fields),
+    );
+    expect(pages.map((page) => page.id)).toEqual(['page-custom-3']);
+    expect(invalid.map((fields) => fields.id)).toEqual(['page-custom-1', 'page-custom-2']);
+  });
+});

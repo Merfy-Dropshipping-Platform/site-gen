@@ -140,3 +140,18 @@ describe('особые страницы заняты (блок 7 «Секций 
     expect(errorOf(withPage({ ...PAGE, slug: '/404' }))).toMatchObject({ path: 'revision.pages.0.slug' });
   });
 });
+
+describe('адреса шаблонов записей заняты (блок 8 «Секций и SDK», часть 8б)', () => {
+  it('своя страница /product, /collections, /blogs или /legal — inputs-invalid', () => {
+    for (const slug of ['/product', '/collections', '/blogs', '/legal']) {
+      const inputs = changedInputs((changed) => {
+        part4(changed);
+        changed.revision.pages = [{ ...PAGE, slug }];
+      });
+      expect(errorOf(() => parseBuildInputs(inputs))).toMatchObject({
+        code: 'inputs-invalid',
+        path: 'revision.pages.0.slug',
+      });
+    }
+  });
+});

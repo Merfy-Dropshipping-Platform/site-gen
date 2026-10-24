@@ -47,6 +47,8 @@ describe('sectionAnswer', () => {
         template: '<div></div>',
         render: 'export default 1;',
         script: null,
+        // После вливания dev с блоком 5в поле scriptMeta обязательно в типе PrepareResult; у секции без скрипта — пустое.
+        scriptMeta: { uses: [], parts: [], classes: [] },
         warnings: [HEAVY],
       },
     };

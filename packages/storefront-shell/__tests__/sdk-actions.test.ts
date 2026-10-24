@@ -4,6 +4,7 @@ import { defineSection } from '../src/core/define';
 import { NOTICE_TEXT } from '../src/core/failures';
 import { auth } from '../src/core/parts/auth';
 import { cart } from '../src/core/parts/cart';
+import { consent } from '../src/core/parts/consent';
 import { favorites } from '../src/core/parts/favorites';
 import { newsletter } from '../src/core/parts/newsletter';
 import { start, type StartedCore } from '../src/core/start';
@@ -12,7 +13,7 @@ import { configTag, entry, placeSection, watchFailures } from './core-support';
 import { API_URL, SHOP_ID, fakeCore, fakeGateway } from './sdk-support';
 
 // Таблица действий SDK (блок 9, «Решил сам» п. 18) и подписка на рассылку (раздел 3.22 блока 1, таблица «Действия»).
-const PARTS: readonly SdkPart<string, unknown>[] = [auth, cart, favorites, newsletter];
+const PARTS: readonly SdkPart<string, unknown>[] = [auth, cart, consent, favorites, newsletter];
 let core: StartedCore | undefined;
 
 afterEach(() => {
@@ -25,8 +26,14 @@ afterEach(() => {
 });
 
 describe('таблица действий', () => {
-  it('cart.add, favorites.toggle, newsletter.subscribe; имя — «модуль.функция»', () => {
-    expect([...ACTION_NAMES].sort()).toEqual(['cart.add', 'favorites.toggle', 'newsletter.subscribe']);
+  it('cart.add, consent.accept, consent.decline, favorites.toggle, newsletter.subscribe; имя — «модуль.функция»', () => {
+    expect([...ACTION_NAMES].sort()).toEqual([
+      'cart.add',
+      'consent.accept',
+      'consent.decline',
+      'favorites.toggle',
+      'newsletter.subscribe',
+    ]);
     expect(isActionName('cart.add')).toBe(true);
     expect(isActionName('cart.ad')).toBe(false);
     expect(isActionName('cart.remove')).toBe(false);

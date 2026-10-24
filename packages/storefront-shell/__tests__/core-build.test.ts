@@ -12,7 +12,7 @@ import { buildCore } from '../build/core';
 // там package.json с "type": "module", и Node загружает core.js как модуль.
 const PACKAGE_DIR = fileURLToPath(new URL('..', import.meta.url));
 const OUT_ROOT = fileURLToPath(new URL('../dist-test/core-build', import.meta.url));
-const ALL_PARTS = ['auth', 'cart', 'favorites'] as const;
+const ALL_PARTS = ['auth', 'cart', 'consent', 'favorites'] as const;
 
 beforeAll(async () => {
   await rm(OUT_ROOT, { recursive: true, force: true });
@@ -29,7 +29,7 @@ describe('сборка ядра секций', () => {
     expect(manifest.version).toBe('0.1.0');
     expect(manifest.brotliBytes).toBeGreaterThan(0);
     // Части страницы — в core.json: их читает сборка магазина (storefront-build/src/shell.ts).
-    expect(manifest.parts).toEqual(['auth', 'cart', 'favorites']);
+    expect(manifest.parts).toEqual(['auth', 'cart', 'consent', 'favorites']);
     expect(manifest.brotliBytes).toBeLessThanOrEqual(CORE_BUDGET_BYTES);
     expect((await readdir(outDir)).sort()).toEqual(['core.js', 'core.json']);
     const written: unknown = JSON.parse(await readFile(join(outDir, 'core.json'), 'utf8'));

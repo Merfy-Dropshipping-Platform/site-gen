@@ -1,2 +1,4 @@
 import confetti from 'canvas-confetti';
-export default { mount() { confetti(); } };
+import { defineSection } from '@merfy/shell';
+
+export default defineSection({ mount() { confetti(); } });

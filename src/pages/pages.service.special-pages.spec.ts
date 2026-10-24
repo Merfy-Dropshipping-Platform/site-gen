@@ -89,7 +89,42 @@ describe("PagesService: особые страницы новой темы", () =
       pages.map((page: any) => [page.id, page.role, page.isCustom, page.path]),
     ).toEqual([
       ["home", "system", false, "/"],
+      ["product", "system", false, "/product/:slug"],
+      ["collection", "system", false, "/collections/:slug"],
+      ["blog", "system", false, "/blogs/:slug"],
+      ["article", "system", false, "/blogs/:blog/:slug"],
+      ["policy", "system", false, "/legal/:slug"],
       ["not-found", "system", false, "/404"],
     ]);
+  });
+});
+
+describe("PagesService: шаблоны записей новой темы (блок 8 «Секций и SDK», часть 8б)", () => {
+  it("адреса /product, /collections, /blogs и /legal заняты — slug_collides_with_system_page", async () => {
+    for (const slug of ["/product", "/collections", "/blogs", "/legal"]) {
+      const { svc, storeContent } = serviceOf({
+        pages: [HOME],
+        pagesData: {},
+        sections: {},
+      });
+      await expect(
+        svc.createPage({ tenantId: "t1", siteId: "s1", name: "Своя", slug }),
+      ).rejects.toThrow(
+        new BadRequestException("slug_collides_with_system_page"),
+      );
+      expect(storeContent.save).not.toHaveBeenCalled();
+    }
+  });
+
+  it("шаблон записи удалить нельзя — и когда его строки в ревизии ещё нет", async () => {
+    const { svc, storeContent } = serviceOf({
+      pages: [HOME],
+      pagesData: {},
+      sections: {},
+    });
+    await expect(
+      svc.deletePage({ tenantId: "t1", siteId: "s1", pageId: "product" }),
+    ).rejects.toThrow(new ForbiddenException("cannot_delete_system_page"));
+    expect(storeContent.save).not.toHaveBeenCalled();
   });
 });

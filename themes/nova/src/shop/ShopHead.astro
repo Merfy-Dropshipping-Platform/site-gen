@@ -30,6 +30,7 @@ const { head } = Astro.props;
 <meta property="og:locale" content={head.social.locale} />
 {head.social.image && <meta property="og:image" content={head.social.image} />}
 <meta name="twitter:card" content={head.social.card} />
+{head.structuredData && <Fragment set:html={head.structuredData} />}
 {head.fontPreload && <link rel="preload" href={head.fontPreload} as="font" type="font/woff2" crossorigin />}
 <style id="merfy-base" is:inline set:html={head.baseCss}></style>
 <style id="merfy-fonts" is:inline set:html={head.fontsCss}></style>

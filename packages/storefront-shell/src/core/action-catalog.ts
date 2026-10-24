@@ -26,6 +26,18 @@ export const ACTIONS = {
     about: 'отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added }',
     markup: { 'product-id': 'text' },
   },
+  // Блок 13: кнопки баннера cookie. Ответ — один на все страницы магазина, событие merfy:consent:change.
+  'consent.accept': {
+    module: 'consent',
+    about:
+      'покупатель принял cookie: счётчики мерчанта и «свой код» с ожиданием согласия запускаются; ответ — "accepted"',
+    markup: {},
+  },
+  'consent.decline': {
+    module: 'consent',
+    about: 'покупатель отклонил cookie: аналитика ничего не отправляет, счётчиков нет; ответ — "declined"',
+    markup: {},
+  },
   'newsletter.subscribe': {
     module: 'newsletter',
     about: 'подписать на рассылку магазина; аргументы { email }, ответ — { alreadySubscribed }; e-mail — из поля формы',
@@ -47,7 +59,7 @@ export function markupParams(name: ActionName): readonly string[] {
 
 // Модули SDK для "uses" в section.json (design.md блока 5, раздел 3.8): по этому списку проверка при сохранении (часть 5в)
 // сверяет uses, сборка выбирает части бандла страницы. Новый модуль в ModuleName без строки здесь — ошибка типов.
-export const MODULE_NAMES = ['cart', 'favorites', 'auth', 'newsletter'] as const satisfies readonly ModuleName[];
+export const MODULE_NAMES = ['cart', 'favorites', 'auth', 'newsletter', 'consent'] as const satisfies readonly ModuleName[];
 type MissingModule = Exclude<ModuleName, (typeof MODULE_NAMES)[number]>;
 export const MODULE_NAMES_COMPLETE: [MissingModule] extends [never] ? true : never = true;
 

@@ -2,6 +2,9 @@ import { CONFIG_VERSION, CURRENCY, LOCALE, checkStorefrontConfig, type Counter, 
 
 // Писатель конфига (design.md блока 3, 5.3): чистая функция — тот же вход, тот же конфиг; ни сети, ни файлов, ни часов.
 
+// «Свой код» мерчанта во входе — тот же вид, что в конфиге (блок 13 «Секций и SDK»).
+type CustomCodes = NonNullable<StorefrontConfig['analytics']>['custom'];
+
 export interface StorefrontConfigInput {
   // Строка сайта. В конфиг идут id, имя и публичный адрес; остальные поля строки допустимы и наружу не уходят.
   site: { id: string; name: string; publicUrl: string | null };
@@ -14,14 +17,16 @@ export interface StorefrontConfigInput {
   mode: StorefrontConfig['mode'];
   // Сборщик аналитики и счётчики мерчанта (блок 11): адрес — из ANALYTICS_COLLECTOR_URL сборщика витрин, счётчики — у
   // сборщика аналитики. Нет поля или null — магазин ничего не отправляет (превью, стенд); live без него не соберётся.
-  analytics?: { url: string; counters: readonly Counter[] } | null;
+  analytics?: { url: string; counters: readonly Counter[]; custom?: CustomCodes } | null;
 }
 
-// Поле за полем: лишнее из входа (строка счётчика у сборщика аналитики) в конфиг не уходит.
+// Поле за полем: лишнее из входа (строка счётчика у сборщика аналитики) в конфиг не уходит. «Свой код» — только
+// непустым списком: у магазина без него конфиг прежний.
 function analyticsOf(analytics: StorefrontConfigInput['analytics']): StorefrontConfig['analytics'] {
   if (analytics === undefined || analytics === null) return null;
   const counters = analytics.counters.map((counter) => ({ kind: counter.kind, number: counter.number }));
-  return { url: analytics.url, counters };
+  const custom = (analytics.custom ?? []).map((item) => ({ code: item.code, consent: item.consent }));
+  return custom.length === 0 ? { url: analytics.url, counters } : { url: analytics.url, counters, custom };
 }
 
 // Пустой адрес — магазин ещё не публиковали: в preview это null, в live схема потребует адрес.

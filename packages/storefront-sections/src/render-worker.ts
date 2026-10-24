@@ -40,8 +40,13 @@ const EMPTY_SHOP = {
   payments: { online: false },
 };
 // Блок 7, часть 7а: страница, на которой стоит секция; у страницы 404 адреса нет. Нет ключа — главная.
-const pageSchema = z.strictObject({ id: z.string(), path: z.string().nullable() });
-const HOME_PAGE = { id: 'home', path: '/' };
+// Блок 8, часть 8б: запись страницы шаблона — публичные поля записи; у страницы без записи — null.
+const pageSchema = z.strictObject({
+  id: z.string(),
+  path: z.string().nullable(),
+  record: z.record(z.string(), z.json()).nullable().default(null),
+});
+const HOME_PAGE = { id: 'home', path: '/', record: null };
 const requestSchema = z.strictObject({
   id: z.number().int().positive(),
   hash: z.string().min(1),

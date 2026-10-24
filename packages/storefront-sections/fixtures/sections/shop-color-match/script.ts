@@ -1,11 +1,11 @@
 import { defineSection } from '@merfy/shell';
 
+// Подбор шарфа по цвету пальто (своя секция магазина): совет — в элементе data-ref="advice".
 export default defineSection({
-  mount(element: HTMLElement) {
-    const advice = element.querySelector('[data-advice]');
-    element.addEventListener('click', (event) => {
-      const coat = event.target instanceof HTMLElement ? event.target.dataset.coat : undefined;
-      if (coat !== undefined && advice !== null) advice.textContent = `К пальто «${coat}» — шарф кэмел`;
-    });
+  actions: {
+    pick(button, ctx) {
+      const coat = button.attr('data-coat') ?? '';
+      ctx.ref('advice')?.text(`К пальто «${coat}» — шарф кэмел`);
+    },
   },
 });

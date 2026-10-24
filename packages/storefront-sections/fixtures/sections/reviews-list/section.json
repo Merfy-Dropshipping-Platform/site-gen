@@ -2,5 +2,6 @@
   "sdk": 1,
   "name": "list",
   "kind": "section",
-  "title": "Отзывы"
+  "title": "Отзывы",
+  "uses": ["cart"]
 }

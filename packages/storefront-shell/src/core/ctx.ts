@@ -26,6 +26,7 @@ export interface CtxDeps {
   readonly mode: Mode;
   readonly input: SectionInput;
   readonly animate: AnimateProvider | null; // провайдер части behaviors (блок 6); нет — ctx.animate бросает part-unknown
+  readonly state?: Readonly<Record<string, unknown>>; // начальный ctx.state — копия при замене в превью (часть 5г)
 }
 
 const DOM_EVENTS: ReadonlySet<string> = new Set(['keydown', 'keyup', 'scroll', 'resize', 'pointerdown']);
@@ -144,7 +145,7 @@ function animateOf(deps: CtxDeps): BaseCtx<Record<string, unknown>>['animate'] {
 }
 
 export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknown>>): BaseCtx<Record<string, unknown>> {
-  let state: Partial<Record<string, unknown>> = {};
+  let state: Partial<Record<string, unknown>> = { ...deps.state }; // свой объект экземпляра, начало — копия при замене
   const ctx: BaseCtx<Record<string, unknown>> & Record<string, unknown> = {
     name: deps.name,
     id: deps.id,

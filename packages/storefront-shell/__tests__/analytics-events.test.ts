@@ -1,13 +1,13 @@
 import { COUNTER_KINDS as CONFIG_KINDS, COUNTER_NUMBERS as CONFIG_NUMBERS } from '@merfy/storefront-config';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cartChanges } from '../src/core/analytics/cart';
+import { CART_EVENTS, cartChangeOf, type CartChange } from '../src/core/analytics/sdk-events';
 import { BATCH_MAX, collectorDestination, collectorEvent } from '../src/core/analytics/collector';
 import { CONSENT_RULES } from '../src/core/analytics/consent';
 import { COUNTER_NUMBERS, loadCounters } from '../src/core/analytics/counters';
 import { pageContext, type ShopEvent } from '../src/core/analytics/events';
 import { COUNTER_KINDS } from '../src/core/analytics/settings';
 
-// События модуля аналитики (design.md блока 11): корзина по разнице состояния ядра, формат нашего сборщика, пачки,
+// События модуля аналитики (design.md блока 11): корзина — перевод событий SDK (блок 13), формат нашего сборщика, пачки,
 // счётчики мерчанта по номеру. jsdom выполняет встроенные скрипты счётчиков — проверяем вставленный код, а не сеть.
 const SHOP = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
 const COLLECTOR = 'https://analytics.dev.merfy.ru';
@@ -35,33 +35,41 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('корзина по разнице состояния ядра', () => {
-  it('больше — «в корзину» на разницу, меньше или строка ушла — «из корзины»; порядок — строки после, потом ушедшие', () => {
-    const before = {
-      lines: [
-        { productId: 'scarf-1', quantity: 1 },
-        { productId: 'coat-7', quantity: 2 },
-        { productId: 'hat-2', quantity: 3 },
-      ],
-    };
-    const after = {
-      lines: [
-        { productId: 'scarf-1', quantity: 3 },
-        { productId: 'hat-2', quantity: 1 },
-        { productId: 'bag-4', quantity: 1 },
-      ],
-    };
-    expect(cartChanges(before, after)).toEqual([
-      { type: 'add_to_cart', product: { id: 'scarf-1', quantity: 2 } },
-      { type: 'remove_from_cart', product: { id: 'hat-2', quantity: 2 } },
-      { type: 'add_to_cart', product: { id: 'bag-4', quantity: 1 } },
-      { type: 'remove_from_cart', product: { id: 'coat-7', quantity: 2 } },
-    ]);
+describe('корзина — события SDK → типы сборщика (блок 13, «Решил сам» 16)', () => {
+  it('три события корзины каталога SDK', () => {
+    expect(CART_EVENTS).toEqual(['merfy:cart:add', 'merfy:cart:remove', 'merfy:cart:change']);
   });
 
-  it('без перемен — событий нет', () => {
-    const state = { lines: [{ productId: 'scarf-1', quantity: 1 }] };
-    expect(cartChanges(state, { lines: [...state.lines] })).toEqual([]);
+  it.each<[string, (typeof CART_EVENTS)[number], unknown, CartChange | null]>([
+    [
+      '«в корзину» — на добавленное число, цена не уходит',
+      'merfy:cart:add',
+      { productId: 'scarf-1', quantity: 2, price: { amount: 249000, currency: 'RUB' } },
+      { type: 'add_to_cart', product: { id: 'scarf-1', quantity: 2 } },
+    ],
+    [
+      '«из корзины»',
+      'merfy:cart:remove',
+      { productId: 'coat-7', quantity: 1 },
+      { type: 'remove_from_cart', product: { id: 'coat-7', quantity: 1 } },
+    ],
+    [
+      'штук больше — «в корзину» на разницу',
+      'merfy:cart:change',
+      { productId: 'hat-2', quantity: 5, previousQuantity: 3 },
+      { type: 'add_to_cart', product: { id: 'hat-2', quantity: 2 } },
+    ],
+    [
+      'штук меньше — «из корзины» на разницу',
+      'merfy:cart:change',
+      { productId: 'hat-2', quantity: 1, previousQuantity: 3 },
+      { type: 'remove_from_cart', product: { id: 'hat-2', quantity: 2 } },
+    ],
+    ['без перемен — ничего', 'merfy:cart:change', { productId: 'hat-2', quantity: 3, previousQuantity: 3 }, null],
+    ['без товара — ничего', 'merfy:cart:add', { quantity: 1 }, null],
+    ['не объект — ничего', 'merfy:cart:add', null, null],
+  ])('%s', (_title, name, detail, change) => {
+    expect(cartChangeOf(name, detail)).toEqual(change);
   });
 });
 

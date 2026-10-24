@@ -15,6 +15,9 @@
 ## favorites
 
 Действия: `favorites.toggle`.
+## consent
+
+Действия: `consent.accept`, `consent.decline`.
 ## newsletter
 
 Действия: `newsletter.subscribe`.

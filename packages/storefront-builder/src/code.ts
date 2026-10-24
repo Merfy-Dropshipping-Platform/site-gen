@@ -173,6 +173,8 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),
   // Свои токены секции (блок 4, Р4-10) — только если объявлены в section.json.
   ...(current.manifest.tokens === undefined ? {} : { tokens: current.manifest.tokens }),
+  // Что нужно скрипту (часть 5в блока 5) — script_meta строки; у строки до 5в его нет, и во входах ключа нет.
+  ...(current.scriptMeta === undefined ? {} : { meta: current.scriptMeta }),
 });
 
 // Файл скрипта — текст готового модуля из строки реестра: те же байты хранятся в storefront/blobs (приём, задача 10).

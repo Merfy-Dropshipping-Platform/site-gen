@@ -1,18 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cartFeed, createAnalyticsPart } from '../src/core/analytics/part';
-import { cart } from '../src/core/parts/cart';
+import { CONSENT_KEY } from '../src/core/analytics/consent';
+import { createAnalyticsPart } from '../src/core/analytics/part';
+import { consent } from '../src/core/parts/consent';
 import { start, type StartedCore } from '../src/core/start';
-import { atom, readable } from '../src/core/stores';
-import type { CartLine, CartState, Mode } from '../src/core/types';
-import { tick } from './core-support';
+import type { Mode, SdkPart } from '../src/core/types';
+import { corePart, tick } from './core-support';
 
-// Часть SDK «аналитика» в ядре секций (блок 5 «Секций и SDK», часть 5б, раздел 3.13): просмотр — по merfy:page:view
-// ядра, пачка — по pagehide; корзина — только прочитанные состояния $cart. Модуль аналитики целиком проверяют
-// analytics-*.test.ts, здесь — только связь с ядром. У каждой страницы свой список отправленного: слушатели страниц
-// прошлых тестов остаются на document и window.
+// Часть SDK «аналитика» в ядре секций (части 5б и 13а): просмотр — по merfy:page:view ядра, корзина — по событиям
+// merfy:cart:* (перевод — sdk-events.ts), ответ на баннер — merfy:consent:change, пачка — по pagehide; «свой код»
+// мерчанта — после merfy:page:ready, по таблице согласия. Модуль аналитики целиком проверяют analytics-*.test.ts, здесь
+// — связь с ядром. Слушатели страниц прошлых тестов остаются на document и window: у каждой страницы свой список
+// отправленного, у каждого теста свои метки «своего кода».
 const SHOP = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
 const COLLECTOR = 'https://analytics.dev.merfy.ru';
-const ANALYTICS = { url: COLLECTOR, counters: [] };
+const PRICE = { amount: 249000, currency: 'RUB' };
+
+interface Custom {
+  code: string;
+  consent: 'required' | 'none';
+}
 
 interface Sent {
   url: string;
@@ -21,7 +27,9 @@ interface Sent {
 
 let core: StartedCore | undefined;
 
-function setConfig(mode: Mode): void {
+// Конфиг — элементом, а не строкой HTML: «свой код» с </script> не рвёт тег.
+function setConfig(mode: Mode, custom: readonly Custom[] = []): void {
+  const analytics = { url: COLLECTOR, counters: [], ...(custom.length > 0 ? { custom } : {}) };
   const config = {
     v: 1,
     mode,
@@ -31,9 +39,13 @@ function setConfig(mode: Mode): void {
     api: { url: 'https://gateway.dev.merfy.ru/api' },
     theme: { id: 'nova', version: '0.1.0' },
     page: { id: 'catalog', path: '/catalog' },
-    analytics: mode === 'live' ? ANALYTICS : null,
+    analytics: mode === 'live' ? analytics : null,
   };
-  document.head.innerHTML = `<script type="application/json" id="merfy-config">${JSON.stringify(config)}</script>`;
+  const tag = document.createElement('script');
+  tag.type = 'application/json';
+  tag.id = 'merfy-config';
+  tag.textContent = JSON.stringify(config);
+  document.head.replaceChildren(tag);
 }
 
 const typesOf = (body: string): string[] => {
@@ -43,7 +55,7 @@ const typesOf = (body: string): string[] => {
 };
 
 // Страница с ядром: части по списку и аналитика со своим списком отправленного.
-async function openPage(withCart = true): Promise<Sent[]> {
+async function openPage(parts: readonly SdkPart<string, unknown>[] = []): Promise<Sent[]> {
   const sent: Sent[] = [];
   let ids = 0;
   const analytics = createAnalyticsPart({
@@ -51,23 +63,17 @@ async function openPage(withCart = true): Promise<Sent[]> {
     beacon: (url, body) => sent.push({ url, types: typesOf(body) }) > 0,
     newId: () => `id-${(ids += 1)}`,
   });
-  core = start({ parts: withCart ? [cart, analytics] : [analytics], sections: [] }, { window });
+  core = start({ parts: [...parts, analytics], sections: [] }, { window });
   await tick();
   return sent;
 }
 
-const line = (productId: string, quantity: number): CartLine => ({
-  id: `l-${productId}`,
-  productId,
-  variantId: null,
-  quantity,
-  price: { amount: 249000, currency: 'RUB' },
-});
+// Метка выполнения «своего кода» — атрибут <html>: окно vitest jsdom не делегирует в тест новые свойства window из
+// vm-контекста скрипта (разрешённая правка теста от 24.10).
+const mark = (name: string): string | null => document.documentElement.getAttribute(name);
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-  // Сети в тесте нет: номера корзины нет, корзина ядра запросов не шлёт; запрос всё же ушёл — он падает здесь.
-  vi.stubGlobal('fetch', () => Promise.reject(new TypeError('Failed to fetch')));
   localStorage.clear();
   sessionStorage.clear();
 });
@@ -76,7 +82,6 @@ afterEach(() => {
   core?.stop();
   core = undefined;
   vi.useRealTimers();
-  vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.head.replaceChildren();
   document.body.replaceChildren();
@@ -98,39 +103,44 @@ describe('часть «аналитика»', () => {
     expect(sent).toEqual([]);
   });
 
-  it('части cart на странице нет — просмотр уходит, в консоли строка про корзину', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  it('корзина: merfy:cart:add и merfy:cart:change ядра — «в корзину» и «из корзины» в пачке', async () => {
     setConfig('live');
-    const sent = await openPage(false);
+    const spy = corePart();
+    const sent = await openPage([spy.part]);
+    const line = { lineId: 'l-1', productId: 'scarf-1', variantId: null };
+    spy.box.core?.emit('merfy:cart:add', { ...line, quantity: 2, price: PRICE });
+    spy.box.core?.emit('merfy:cart:change', { ...line, quantity: 1, previousQuantity: 2 });
     window.dispatchEvent(new Event('pagehide'));
-    // Визит уже начат страницей первого теста (её слушатели остались) — здесь только просмотр.
-    expect(sent.flatMap((item) => item.types)).toContain('page_view');
-    expect(consoleError.mock.calls.map(([text]) => String(text))).toEqual(['Аналитика: нет корзины ядра']);
-  });
-});
-
-describe('корзина ядра для аналитики', () => {
-  it('только прочитанные состояния: заготовка до чтения и повторное чтение не доходят', () => {
-    const $cart = atom<CartState>({ ready: false, lines: [] });
-    const seen: number[] = [];
-    cartFeed(readable($cart)).subscribe((state) => seen.push(state.lines.length));
-    $cart.set({ ready: true, lines: [] });
-    $cart.set({ ready: true, lines: [line('scarf-1', 2)] });
-    $cart.set({ ready: false, lines: [] });
-    expect(seen).toEqual([0, 1]);
+    // Визит уже начат страницей первого теста файла (её слушатели остались на document) — здесь только просмотр.
+    expect(sent.flatMap((item) => item.types)).toEqual(['page_view', 'add_to_cart', 'remove_from_cart']);
   });
 
-  it('уже прочитанная корзина — сразу текущее состояние; отписка — больше ничего', () => {
-    const $cart = atom<CartState>({ ready: true, lines: [line('coat-7', 1)] });
-    const seen: number[] = [];
-    const stop = cartFeed(readable($cart)).subscribe((state) => seen.push(state.lines.length));
-    stop();
-    $cart.set({ ready: true, lines: [] });
-    expect(seen).toEqual([1]);
+  it('«свой код»: «сразу» — после merfy:page:ready, «ждать согласия» — после «Принять», каждый один раз', async () => {
+    const bump = (name: string): string =>
+      `<script>document.documentElement.setAttribute("${name}", String(Number(document.documentElement.getAttribute("${name}")) + 1))</script>`;
+    setConfig('live', [
+      { code: bump('data-b13a-waits'), consent: 'required' },
+      { code: bump('data-b13a-now'), consent: 'none' },
+    ]);
+    const spy = corePart();
+    await openPage([consent, spy.part]);
+    expect([mark('data-b13a-waits'), mark('data-b13a-now')]).toEqual([null, '1']);
+    await spy.box.core?.part('consent').accept();
+    await spy.box.core?.part('consent').accept();
+    expect([mark('data-b13a-waits'), mark('data-b13a-now')]).toEqual(['1', '1']);
+    expect(localStorage.getItem(CONSENT_KEY)).not.toBeNull();
   });
 
-  it('стор не из ядра (без подписки) — ошибка', () => {
-    const foreign = { get: (): CartState => ({ ready: true, lines: [] }) };
-    expect(() => cartFeed(foreign).subscribe(() => undefined)).toThrow('у корзины ядра нет подписки');
+  it('«свой код» с ожиданием и «Отклонить» — не запускается', async () => {
+    setConfig('live', [
+      {
+        code: '<script>document.documentElement.setAttribute("data-b13a-declined", "1")</script>',
+        consent: 'required',
+      },
+    ]);
+    const spy = corePart();
+    await openPage([consent, spy.part]);
+    await spy.box.core?.part('consent').decline();
+    expect(mark('data-b13a-declined')).toBeNull();
   });
 });

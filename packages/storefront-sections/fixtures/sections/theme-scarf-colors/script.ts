@@ -1,19 +1,12 @@
 import { defineSection } from '@merfy/shell';
 import { label } from './lib/label.ts';
 
-const stops = new WeakMap<HTMLElement, () => void>();
-
+// Цвета шарфа (секция выпуска): выбранный цвет — в элементе data-ref="picked", текст — из своего файла секции.
 export default defineSection({
-  mount(element: HTMLElement) {
-    const picked = element.querySelector('[data-picked]');
-    const onClick = (event: Event): void => {
-      const color = event.target instanceof HTMLElement ? event.target.dataset.color : undefined;
-      if (color !== undefined && picked !== null) picked.textContent = label(color);
-    };
-    element.addEventListener('click', onClick);
-    stops.set(element, () => element.removeEventListener('click', onClick));
-  },
-  unmount(element: HTMLElement) {
-    stops.get(element)?.();
+  actions: {
+    pick(button, ctx) {
+      const color = button.attr('data-color');
+      if (color !== null) ctx.ref('picked')?.text(label(color));
+    },
   },
 });

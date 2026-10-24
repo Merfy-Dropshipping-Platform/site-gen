@@ -42,6 +42,25 @@ const NOT_FOUND = {
   isCustom: false,
   seo: null,
 };
+// Шаблоны записей (блок 8 «Секций и SDK», часть 8б): адрес — образец, заняты id и первая часть адреса.
+const system = (id: string, name: string, slug: string) => ({
+  id,
+  name,
+  slug,
+  role: "system",
+  isCustom: false,
+  seo: null,
+});
+const TEMPLATES = [
+  system("product", "Товар", "/product/:slug"),
+  system("collection", "Коллекция", "/collections/:slug"),
+  system("blog", "Блог", "/blogs/:slug"),
+  system("article", "Запись блога", "/blogs/:blog/:slug"),
+  system("policy", "Политика", "/legal/:slug"),
+];
+const TEMPLATE_TREES = Object.fromEntries(
+  TEMPLATES.map((page) => [page.id, tree(page.name)]),
+);
 
 function adapterWith(data: unknown) {
   const db: any = {
@@ -55,8 +74,19 @@ function adapterWith(data: unknown) {
 describe("особые страницы новой темы", () => {
   it("список — из special-pages.json сборки витрин; новая тема — по theme-versions.json", () => {
     expect(SPECIAL_PAGES).toEqual(LIST);
-    expect([...SPECIAL_PAGE_IDS]).toEqual(["home", "not-found"]);
-    expect([...SPECIAL_PAGE_SLUGS]).toEqual(["/", "/404"]);
+    expect([...SPECIAL_PAGE_IDS]).toEqual([
+      "home",
+      ...TEMPLATES.map((page) => page.id),
+      "not-found",
+    ]);
+    expect([...SPECIAL_PAGE_SLUGS]).toEqual([
+      "/",
+      "/product",
+      "/collections",
+      "/blogs",
+      "/legal",
+      "/404",
+    ]);
     expect([
       isNewThemeId("nova"),
       isNewThemeId("rose"),
@@ -66,8 +96,12 @@ describe("особые страницы новой темы", () => {
 
   it("стартовая ревизия: особые страницы, пустые деревья, секций нет", () => {
     expect(newThemeStarterRevision()).toEqual({
-      pages: [HOME, NOT_FOUND],
-      pagesData: { home: tree("Главная"), "not-found": tree("Страница 404") },
+      pages: [HOME, ...TEMPLATES, NOT_FOUND],
+      pagesData: {
+        home: tree("Главная"),
+        ...TEMPLATE_TREES,
+        "not-found": tree("Страница 404"),
+      },
       currentPageId: "home",
       sections: {},
     });
@@ -97,10 +131,12 @@ describe("особые страницы новой темы", () => {
     expect(once.pages).toEqual([
       { ...HOME, name: "Моя главная" },
       custom,
+      ...TEMPLATES,
       NOT_FOUND,
     ]);
     expect(once.pagesData).toEqual({
       ...doc.pagesData,
+      ...TEMPLATE_TREES,
       "not-found": tree("Страница 404"),
     });
     expect(once.currentPageId).toBe("page-custom-1");
@@ -121,7 +157,7 @@ describe("особые страницы новой темы", () => {
     const site = { themeId: "nova", publicUrl: null, currentRevisionId: "r1" };
     const { document } = await adapterWith(stored).load("s1", { site });
     expect((document.pages as { id: string }[]).map((page) => page.id)).toEqual(
-      ["home", "not-found"],
+      ["home", ...TEMPLATES.map((page) => page.id), "not-found"],
     );
     expect(document.sections).toEqual({ home: [] });
     const raw = await adapterWith(stored).load("s1", { site, asStored: true });

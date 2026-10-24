@@ -18,6 +18,7 @@ import { countersOf } from './counters';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { ShopPageHead, ShopPageLocals, ShopSocial } from './locals';
+import type { RecordEntry, RecordType } from './records';
 import type { ShopRoute } from './routes';
 import { EMPTY_PAGE_CONTENT, type PageContent, type PageMode } from './sections-render';
 import { NOT_FOUND_PAGE_ID, NOT_FOUND_TEXT, platformPageTitle } from './special-pages';
@@ -45,6 +46,10 @@ export const shopName = (site: BuildInputs['site']): string => site.name.trim() 
 // 4, Р1-4-8) — её SEO из ревизии: без заголовка — имя страницы, нет и его — имя магазина. Пусто — мерчант не заполнил:
 // тема тег не рендерит (договор SEO, seo.ts).
 function seoOf(inputs: BuildInputs, route: ShopRoute, name: string) {
+  // Страница записи (блок 8, часть 8б-2; design.md 8.6): SEO записи (records.ts) — заголовок мерчанта или название,
+  // описание мерчанта или описание без HTML; ключевых слов нет.
+  if (route.record !== undefined)
+    return { title: route.record.seo.title.trim() || name, description: route.record.seo.description, keywords: '' };
   // Страница 404 (часть 7а): заголовок платформы с именем магазина, описание — магазина, ключевых слов нет.
   if (route.id === NOT_FOUND_PAGE_ID)
     return {
@@ -75,11 +80,21 @@ function shareImage(logoUrl: string): string {
   return url !== null && url.protocol === 'https:' && SHARE_IMAGE.test(url.pathname) ? url.href : '';
 }
 
-const socialOf = (name: string, locale: string, logoUrl: string): ShopSocial => ({
-  type: 'website',
+// og:type страницы записи (design.md блока 8, 8.6): товар — product, статья — article, остальные — website, как главная.
+const OG_TYPES: Readonly<Record<RecordType, string>> = {
+  product: 'product',
+  collection: 'website',
+  blog: 'website',
+  article: 'article',
+  policy: 'website',
+};
+
+// Картинка страницы записи — её картинка (records.ts, seo.image); нет или не подходит соцсетям — логотип магазина.
+const socialOf = (name: string, locale: string, logoUrl: string, record?: RecordEntry): ShopSocial => ({
+  type: record === undefined ? 'website' : OG_TYPES[record.type],
   siteName: name,
   locale: locale.replace('-', '_'),
-  image: shareImage(logoUrl),
+  image: shareImage(record?.seo.image ?? '') || shareImage(logoUrl),
   card: 'summary',
 });
 
@@ -157,7 +172,7 @@ function headOf(
     ...pageStyles(inputs, theme, migrations),
     // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены: стили секций и тег бандла (часть 5б).
     codeHtml: codeHead(inputs, route.id, content.sectionsCss, content.bundleTag),
-    social: socialOf(name, config.locale, inputs.site.logoUrl),
+    social: socialOf(name, config.locale, inputs.site.logoUrl, route.record),
   };
 }
 

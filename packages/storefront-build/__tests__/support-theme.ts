@@ -25,7 +25,9 @@ const socialTags = ({ title, description, canonical, social }: ShopPageHead): st
 // Подставной рисовальщик: печатает данные страницы так же, как ShopHead и главная темы nova, только без Astro.
 export const fakeRender: RenderPage = (path, locals) => {
   const { head } = locals;
-  const meta = `<meta name="description" content="${head.description}"><link rel="canonical" href="${head.canonical}">`;
+  // Пустое описание — тега нет, как у ShopHead nova (договор SEO, seo.ts): у блога и политики описания нет (часть 8б-2).
+  const description = head.description === '' ? '' : `<meta name="description" content="${head.description}">`;
+  const meta = `${description}<link rel="canonical" href="${head.canonical}">`;
   const tokens = `<style id="merfy-tokens">${head.tokensCss}</style>`;
   const headHtml = `${head.configHtml}<title>${head.title}</title>${meta}${socialTags(head)}${tokens}${head.codeHtml}`;
   const body = `<h1>${locals.shop.name}</h1>${locals.sections.join('')}<p>© ${locals.year} ${locals.shop.name}</p>`;

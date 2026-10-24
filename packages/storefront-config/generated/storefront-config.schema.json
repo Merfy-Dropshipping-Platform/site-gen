@@ -96,6 +96,30 @@
         "path": {
           "type": "string",
           "pattern": "^\\/.*"
+        },
+        "record": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "product",
+                "collection",
+                "blog",
+                "article",
+                "policy"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

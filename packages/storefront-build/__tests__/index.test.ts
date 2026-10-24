@@ -92,6 +92,8 @@ const API = [
   'shopRoutes',
   'templateShown',
   'routeDuplicates',
+  'isRecordType',
+  'previewRecordPath',
   'searchFlaggedBetween',
   'sectionCss',
   'seoProblems',

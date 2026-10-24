@@ -13,7 +13,8 @@ export interface StorefrontConfigInput {
   // Адрес API — из окружения сборки: тот же, что PUBLIC_MERFY_API_URL у сборки тем (resolveApiUrl в site-gen).
   env: { apiUrl: string };
   // id из реестра страниц платформы или своей страницы темы (theme-stand) и адрес страницы.
-  page: { id: string; path: string };
+  // record — запись страницы шаблона (блок 8, часть 8б-2): вид и id; у страниц сайта нет.
+  page: { id: string; path: string; record?: StorefrontConfig['page']['record'] };
   mode: StorefrontConfig['mode'];
   // Сборщик аналитики и счётчики мерчанта (блок 11): адрес — из ANALYTICS_COLLECTOR_URL сборщика витрин, счётчики — у
   // сборщика аналитики. Нет поля или null — магазин ничего не отправляет (превью, стенд); live без него не соберётся.
@@ -32,6 +33,12 @@ function analyticsOf(analytics: StorefrontConfigInput['analytics']): StorefrontC
 // Пустой адрес — магазин ещё не публиковали: в preview это null, в live схема потребует адрес.
 const shopUrlOf = (publicUrl: string | null): string | null => (publicUrl === '' ? null : publicUrl);
 
+// Страница для конфига: id и адрес; у страницы записи — вид и id записи, лишние поля записи не идут (часть 8б-2).
+function pageOf(page: StorefrontConfigInput['page']): StorefrontConfig['page'] {
+  if (page.record === undefined) return { id: page.id, path: page.path };
+  return { id: page.id, path: page.path, record: { type: page.record.type, id: page.record.id } };
+}
+
 // Объект собирается поле за полем, вход целиком не раскладывается: tenantId, uuid Coolify и settings из строки сайта
 // наружу не уходят. Выход проходит схему; не прошёл — StorefrontConfigError с путём поля.
 export function buildStorefrontConfig(input: StorefrontConfigInput): StorefrontConfig {
@@ -44,7 +51,7 @@ export function buildStorefrontConfig(input: StorefrontConfigInput): StorefrontC
     locale: LOCALE,
     api: { url: env.apiUrl },
     theme: { id: theme.id, version: theme.version },
-    page: { id: page.id, path: page.path },
+    page: pageOf(page),
     analytics: analyticsOf(input.analytics),
   });
 }

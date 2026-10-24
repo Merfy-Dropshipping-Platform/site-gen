@@ -32,7 +32,12 @@ const kindOf = (option: Record<string, unknown>): string | undefined => {
 };
 
 // Вариант поля на имя словаря: то же поле, но id — const имени с описанием, setting — только виды имени.
-function variantOf(field: Record<string, unknown>, name: string, about: string, kinds: readonly SdkKind[]): Record<string, unknown> {
+function variantOf(
+  field: Record<string, unknown>,
+  name: string,
+  about: string,
+  kinds: readonly SdkKind[],
+): Record<string, unknown> {
   const properties = isRecord(field.properties) ? field.properties : {};
   const kindSet = new Set<string>(kinds);
   const options = settingOptions(properties).filter((option) => {
@@ -58,18 +63,28 @@ function variantsOf(field: Record<string, unknown>, names: NamesDictionary): Rec
     .map((entry) => variantOf(field, entry.name, entry.about, entry.kinds));
 }
 
+// anyOf без других ключей внутри anyOf равен одному списку: члены вложенного встают на его место. Так поле внутри
+// объединения «поле или ссылка на общую настройку» раскрывается в варианты по именам без лишней вложенности.
+const isOnlyAnyOf = (value: unknown): value is { anyOf: unknown[] } =>
+  isRecord(value) && Object.keys(value).length === 1 && Array.isArray(value.anyOf);
+const unwrapAnyOf = (member: unknown): unknown[] => (isOnlyAnyOf(member) ? member.anyOf : [member]);
+
 // Заменяет каждое поле на anyOf вариантов по именам — во всём дереве схемы, включая поля типов блоков.
 function withNameVariants(value: unknown, names: NamesDictionary): unknown {
   if (Array.isArray(value)) return value.map((item) => withNameVariants(item, names));
   if (!isRecord(value)) return value;
   const replaced = new Map(Object.entries(value).map(([key, child]) => [key, withNameVariants(child, names)]));
   const replacedObject = Object.fromEntries(replaced);
-  if (!isFieldObject(replacedObject)) return replacedObject;
-  return { anyOf: variantsOf(replacedObject, names) };
+  if (isFieldObject(replacedObject)) return { anyOf: variantsOf(replacedObject, names) };
+  const members = replacedObject.anyOf;
+  return Array.isArray(members) ? { ...replacedObject, anyOf: members.flatMap(unwrapAnyOf) } : replacedObject;
 }
 
-export function sectionJsonSchema(names: NamesDictionary = NAMES): JsonSchema {
-  const schema: unknown = z.toJSONSchema(sectionManifestSchema, { io: 'input' });
+export function sectionJsonSchema(
+  names: NamesDictionary = NAMES,
+  manifest: z.ZodType = sectionManifestSchema,
+): JsonSchema {
+  const schema: unknown = z.toJSONSchema(manifest, { io: 'input' });
   const withVariants: unknown = withNameVariants(schema, names);
   return isRecord(withVariants) ? withVariants : {};
 }

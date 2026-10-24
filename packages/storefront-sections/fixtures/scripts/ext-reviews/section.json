@@ -1,0 +1,7 @@
+{
+  "sdk": 1,
+  "name": "ext-reviews",
+  "kind": "section",
+  "title": "Отзывы",
+  "uses": ["ext:test-ext"]
+}

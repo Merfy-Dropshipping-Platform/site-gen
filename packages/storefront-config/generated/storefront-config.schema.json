@@ -173,6 +173,91 @@
           "type": "null"
         }
       ]
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{2,31}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "stores": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[a-z][a-zA-Z0-9]{0,31}$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "fn": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+                },
+                "by": {
+                  "type": "string",
+                  "const": "product"
+                },
+                "customer": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "refreshOn": {
+                  "maxItems": 10,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^merfy:[a-z]+(?:-[a-z]+)*:[a-z]+(?:-[a-z]+)*$"
+                  }
+                }
+              },
+              "required": [
+                "fn"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "methods": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[a-z][a-zA-Z0-9]{0,31}$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "fn": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+                },
+                "customer": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "params": {
+                  "maxItems": 10,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                }
+              },
+              "required": [
+                "fn"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "stores",
+          "methods"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [

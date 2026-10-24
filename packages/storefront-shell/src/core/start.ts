@@ -5,6 +5,7 @@ import { CORE_ERRORS, watchSectionErrors } from '../error-log';
 import { ShellError } from '../errors';
 import { messageOf } from '../report';
 import { createEventBus, type EventBus } from './events';
+import { EXT_PART_NAME, EXT_USE_PREFIX, extModuleOf } from './ext-registry';
 import { SDK_MARKUP_SELECTOR, startInstance, type Instance, type InstanceRuntime, type MarkupCall } from './instance';
 import { navigationType, watchPage } from './page-events';
 import { pageStorage, type KeyValue } from './storage';
@@ -107,6 +108,15 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
 
 const MODULE_NAMES: readonly string[] = ['cart', 'favorites', 'auth', 'newsletter'];
 
+// Модуль расширения по uses: ["ext:<id>"] (блок 9, часть 9в) — у части ext на странице, по id из конфига. Нет части или
+// id нет в конфиге страницы — ShellError part-unknown, как у незнакомой части.
+function extPartApi(parts: CoreParts, id: string): unknown {
+  const api = parts.started.find(({ part }) => part.name === EXT_PART_NAME)?.api;
+  const module = extModuleOf(api, id);
+  if (module === null) throw new ShellError('part-unknown', `расширения ${id} на странице нет`);
+  return module;
+}
+
 // Согласие (блок 13 «Секций и SDK») — тоже модуль ctx секций.
 const isModuleName = (name: string): name is ModuleName => MODULE_NAMES.includes(name) || name === 'consent';
 
@@ -124,11 +134,13 @@ function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts
   const markup = (name: string): MarkupCall | null => {
     const at = name.indexOf('.');
     const found = parts.started.find(({ part }) => part.name === name.slice(0, at));
-    const action = found?.part.markup?.[name.slice(at + 1)];
+    const local = name.slice(at + 1);
+    const action = found?.part.markup?.[local] ?? found?.part.markupOf?.(found.api, local) ?? undefined;
     if (found === undefined || action === undefined) return null;
     return { params: action.params, call: (values) => action.call(found.api, values) };
   };
   const partApi = (name: string): unknown => {
+    if (name.startsWith(EXT_USE_PREFIX)) return extPartApi(parts, name.slice(EXT_USE_PREFIX.length));
     if (!isModuleName(name)) throw new ShellError('part-unknown', `части ${name} на странице нет`);
     return parts.apiOf(name);
   };

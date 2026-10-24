@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { classSystem } from '@merfy/storefront-build/tailwind-system';
 import { platformDictionary, sectionTailwindTheme } from '@merfy/tokens';
 import { classProblems, type ClassField, type ClassFields } from './classes';
+import { settingFieldsOf } from './fields';
 import { fieldRuleProblems } from './field-rules';
 import type { SectionField } from './fields';
 import {
@@ -63,18 +64,22 @@ function problemsOf(checked: Checked<{ warnings: SectionProblem[] }> | null): Se
   return checked.ok ? checked.value.warnings : checked.problems;
 }
 
-// Поля для подстановки значений в классах (Р4-6): настройки секции и поля всех типов блоков подряд.
+// Поля для подстановки значений в классах (Р4-6, Р1-5-10): настройки секции и поля всех типов блоков подряд.
+// select и radio несут варианты, range — min, max и step: конечные наборы значений для подстановки.
 function classFieldsOf(manifest: SectionManifest): ClassFields {
-  const toClassField = (field: SectionField): ClassField => ({
-    id: field.id,
-    label: field.label,
-    setting:
-      field.setting.kind === 'select'
-        ? { kind: field.setting.kind, options: field.setting.options }
-        : { kind: field.setting.kind },
-  });
+  const toClassField = (field: SectionField): ClassField => {
+    const base = { id: field.id, label: field.label };
+    if (field.setting.kind === 'select' || field.setting.kind === 'radio')
+      return { ...base, setting: { kind: field.setting.kind, options: field.setting.options } };
+    if (field.setting.kind === 'range')
+      return {
+        ...base,
+        setting: { kind: field.setting.kind, min: field.setting.min, max: field.setting.max, step: field.setting.step },
+      };
+    return { ...base, setting: { kind: field.setting.kind } };
+  };
   const blockFields = Object.values(manifest.blocks ?? {}).flatMap((type) => type.settings.map(toClassField));
-  return { settings: manifest.settings.map(toClassField), blocks: blockFields };
+  return { settings: settingFieldsOf(manifest.settings).map(toClassField), blocks: blockFields };
 }
 
 // Шаг «Классы» и токены секции (блок 4 «Секций и SDK», Р4-2): когда section.json прочитан и шаблон есть.

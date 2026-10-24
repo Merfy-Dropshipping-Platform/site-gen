@@ -3,8 +3,10 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import {
   NO_MIGRATIONS,
+  choiceAttributes,
   migrateTokenEdits,
   parseTokenEdits,
+  resolveTokens,
   type ParsedTheme,
   type TokenEdits,
   type TokenMigrations,
@@ -101,7 +103,15 @@ function pageStyles(inputs: BuildInputs, theme: ParsedTheme, migrations: TokenMi
   const tokens = themeTokensCss(theme, edits);
   const sectionTokens = shopSectionTokensCss(inputs.code.sections, inputs.revision.tokens);
   const tokensCss = [tokens, sectionTokens.css].filter((part) => part !== '').join('\n');
-  return { baseCss: pageBaseCss(), fontsCss: fonts.css, fontPreload: fonts.preload ?? '', tokensCss };
+  return {
+    baseCss: pageBaseCss(),
+    fontsCss: fonts.css,
+    fontPreload: fonts.preload ?? '',
+    tokensCss,
+    // Выборы словаря с правками мерчанта — атрибуты у <html> (блок 6, часть 6б): без data-motion-reveal="on" появления
+    // секций не запускаются.
+    attributes: choiceAttributes(theme.dictionary, resolveTokens(theme.dictionary, theme.tokens, edits)),
+  };
 }
 
 // CSS простых страниц платформы 404 и 502 (часть 7а): шрифты и токены по тем же правкам мерчанта, что у его страниц.

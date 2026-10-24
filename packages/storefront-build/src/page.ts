@@ -102,7 +102,7 @@ async function renderWithBundle(
   page: PageRender,
   pageContent: PageContent,
 ): Promise<{ html: string; bundle: Awaited<ReturnType<typeof pageBundle>> }> {
-  const bundle = await pageBundle(shown, route.id, page);
+  const bundle = await pageBundle(shown, route.id, page, pageContent);
   const withBundle = { ...pageContent, bundleTag: bundle?.tag ?? '' };
   // Страницу 404 (часть 7а) тема рисует маршрутом главной: адрес /404 Astro держит за своей страницей ошибки и маршрут
   // [slug].astro не вызывает. Канонический адрес в head — /404: его считает pageLocals по route.

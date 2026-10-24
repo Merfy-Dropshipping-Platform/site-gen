@@ -397,11 +397,6 @@ const schemeClass = schemeClassOf(colorScheme);
           }
         }
 
-        var paymentToken = null;
-        if (state.paymentMethod === 'bank_card' && typeof window.__checkoutTokenizeCard === 'function') {
-          paymentToken = await window.__checkoutTokenizeCard();
-        }
-
         var nameMode = getCustomerNameMode();
         var contactMethod = getContactMethod();
         var addressRequired = getAddressRequired();
@@ -557,11 +552,12 @@ const schemeClass = schemeClassOf(colorScheme);
           throw new Error((checkoutJson && (checkoutJson.error || checkoutJson.message)) || 'Не удалось оформить заказ');
         }
 
+        // Данные карты на витрине не вводятся: покупатель вводит их на странице
+        // платёжки, куда уходит по confirmationUrl. Токена карты в теле нет.
         var paymentBody = {
           returnUrl: window.location.origin + successRedirectUrl + '?orderId=' + orderId,
           paymentMethod: state.paymentMethod, // 'bank_card' | 'sbp' | ...
         };
-        if (paymentToken) paymentBody.paymentToken = paymentToken;
 
         var paymentHeaders = { 'Content-Type': 'application/json' };
         if (authToken) paymentHeaders['Authorization'] = 'Bearer ' + authToken;

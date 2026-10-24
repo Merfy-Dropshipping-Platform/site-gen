@@ -168,6 +168,8 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   function instanceOf(id, type, props) {
     var instance = { id: id, section: type, settings: (props && props.settings) || {} };
     if (props && Array.isArray(props.blocks)) instance.blocks = props.blocks;
+    // Часть 5 блока 1: общие настройки секции — объект, как в ревизии.
+    if (props && props.wrapper && typeof props.wrapper === 'object') instance.wrapper = props.wrapper;
     return instance;
   }
   function failed(error) {

@@ -28,7 +28,8 @@ describe('страница магазина на рисовальщике nova',
 
   it('главная по договору SEO: язык, заголовок, описание, канонический адрес', async () => {
     const html = text((await renderShopPage(standInputs, '/', theme)).file.content);
-    expect(html).toContain('<html lang="ru-RU">');
+    expect(html).toContain('<html lang="ru-RU"');
+    expect(html).toMatch(/<html lang="ru-RU"[^>]* data-motion-reveal="off"/);
     expect(html).toContain('<title>Стенд Nova</title>');
     expect(html).toContain('<meta name="description" content="Магазин-стенд новой темы">');
     expect(html).toContain('<link rel="canonical" href="https://nova-stand.example/">');
@@ -90,6 +91,13 @@ describe('страница магазина на рисовальщике nova',
     ]);
     expect(Buffer.from(second.file.content).equals(first.file.content)).toBe(true);
     expect(second.row).toEqual(first.row);
+  });
+
+  // Блок 6, часть 6б: выбор «Появление секций при прокрутке» из токенов ревизии — атрибут у <html> страницы.
+  it('мерчант включил появление секций — <html data-motion-reveal="on">', async () => {
+    const on = changedInputs((inputs) => (inputs.revision.tokens = { root: { 'choice-motion-reveal': 'on' } }));
+    const html = text((await renderShopPage(on, '/', theme)).file.content);
+    expect(html).toMatch(/<html lang="ru-RU"[^>]* data-motion-reveal="on"/);
   });
 
   it('правка имени магазина — другая главная', async () => {

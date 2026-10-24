@@ -1040,9 +1040,9 @@ Per `specs/080-checkout-redesign/spec.md`. Each block emits `data-checkout-slot=
 - **Hydration:** Island fetches CDEK tariffs + ПВЗ on city change.
 
 ### CheckoutPayment (new 080)
-- **Purpose:** payment method radio + inline card form (YooKassa Tokenization SDK).
-- **Sidebar:** heading, subheading, methods[] (bank_card/sbp/sberbank/tinkoff_bank), cardForm {cvvHelpEnabled, nameOnCardEnabled, warningText}, padding.
-- **Hydration:** Island loads YooKassa SDK lazy + tokenizes card on submit. **Никаких card data в наш backend.**
+- **Purpose:** payment method radio; карту/СБП/Sber Pay/T-Pay покупатель вводит на странице платёжки (формы карты на витрине нет).
+- **Sidebar:** heading, subheading, methods[] (bank_card/sbp/sberbank/tinkoff_bank), padding. Поле `cardForm` из старых ревизий игнорируется.
+- **Hydration:** Island только отмечает выбранный способ и прячет неподключённые (enabledMethods); CheckoutSubmit шлёт его в create-payment как `paymentMethod`. **Никаких card data на витрине и в нашем backend.**
 
 ### CheckoutOrderSummary (new 080)
 - **Purpose:** items list + promo code field.

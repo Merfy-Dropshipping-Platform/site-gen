@@ -7,6 +7,7 @@
   "limit": 1,
   "removable": false,
   "uses": ["theme", "shop"],
+  "wrapper": ["scheme", "padding", "sticky"],
   "settings": [
     {
       "id": "logo-position",
@@ -15,11 +16,40 @@
         "kind": "select",
         "default": "top-left",
         "options": [
-          { "value": "top-left", "label": "Сверху слева" },
-          { "value": "top-center", "label": "Сверху в центре" },
-          { "value": "center-left", "label": "Слева" },
-          { "value": "center-absolute", "label": "По центру" }
+          {
+            "value": "top-left",
+            "label": "Сверху слева"
+          },
+          {
+            "value": "top-center",
+            "label": "Сверху в центре"
+          },
+          {
+            "value": "center-left",
+            "label": "Слева"
+          },
+          {
+            "value": "center-absolute",
+            "label": "По центру"
+          }
         ]
+      }
+    },
+    {
+      "wrapper": "sticky"
+    },
+    {
+      "wrapper": "scheme"
+    },
+    {
+      "wrapper": "padding"
+    },
+    {
+      "id": "color-scheme",
+      "label": "Цветовая схема меню",
+      "setting": {
+        "kind": "color-scheme",
+        "default": ""
       }
     },
     {
@@ -29,24 +59,68 @@
         "kind": "select",
         "default": "dropdown",
         "options": [
-          { "value": "sidebar", "label": "Боковое" },
-          { "value": "dropdown", "label": "Выпадающее" },
-          { "value": "mega-menu", "label": "Расширенное" }
+          {
+            "value": "sidebar",
+            "label": "Боковое"
+          },
+          {
+            "value": "dropdown",
+            "label": "Выпадающее"
+          },
+          {
+            "value": "mega-menu",
+            "label": "Расширенное"
+          }
         ]
       }
     },
-    { "id": "menu", "label": "Изменить пункты меню", "setting": { "kind": "menu", "default": "main" } }
+    {
+      "id": "menu",
+      "label": "Изменить пункты меню",
+      "setting": {
+        "kind": "menu",
+        "default": "main"
+      }
+    }
   ],
   "blocks": {
-    "search": { "title": "Поиск", "limit": 1, "settings": [] },
-    "wishlist": { "title": "Избранное", "limit": 1, "settings": [] },
-    "cart": { "title": "Корзина", "limit": 1, "settings": [] },
-    "profile": { "title": "Профиль", "limit": 1, "settings": [] }
+    "search": {
+      "title": "Поиск",
+      "limit": 1,
+      "settings": []
+    },
+    "wishlist": {
+      "title": "Избранное",
+      "limit": 1,
+      "settings": []
+    },
+    "cart": {
+      "title": "Корзина",
+      "limit": 1,
+      "settings": []
+    },
+    "profile": {
+      "title": "Профиль",
+      "limit": 1,
+      "settings": []
+    }
   },
   "defaultBlocks": [
-    { "type": "search", "settings": {} },
-    { "type": "wishlist", "settings": {} },
-    { "type": "cart", "settings": {} },
-    { "type": "profile", "settings": {} }
+    {
+      "type": "search",
+      "settings": {}
+    },
+    {
+      "type": "wishlist",
+      "settings": {}
+    },
+    {
+      "type": "cart",
+      "settings": {}
+    },
+    {
+      "type": "profile",
+      "settings": {}
+    }
   ]
 }

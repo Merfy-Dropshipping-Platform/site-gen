@@ -5,7 +5,7 @@ import {
   sha256,
   type ShopTheme,
 } from '@merfy/storefront-build';
-import type { CurrentSection, SectionRenderRequest } from '@merfy/storefront-sections';
+import { WRAPPER_FIELDS, type CurrentSection, type SectionRenderRequest } from '@merfy/storefront-sections';
 import { panelForTheme, parsePanel, parseTheme, platformDictionary } from '@merfy/tokens';
 import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
@@ -84,7 +84,8 @@ function depsOf(
     sections: () => Promise.resolve(sections),
     render: (shopId, request) => {
       rendered.push([shopId, request]);
-      return Promise.resolve(`<h2 class="flex">${String(request.settings.heading)}</h2>`);
+      const heading = request.settings.heading;
+      return Promise.resolve(`<h2 class="flex">${typeof heading === 'string' ? heading : ''}</h2>`);
     },
     fonts: (css) => Promise.resolve(css),
   };
@@ -162,7 +163,10 @@ describe('список секций магазина', () => {
   it('только секции вида section: имя, название и поля', async () => {
     const answer = await shopSections(depsOf().deps, SHOP);
     expect(JSON.parse(answer.body)).toEqual({
-      sections: [{ name: 'shop:hero', title: 'Первый экран', settings: [HEADING], tokens: {} }],
+      sections: [
+        { name: 'shop:hero', title: 'Первый экран', settings: [HEADING], tokens: {}, wrapper: ['scheme', 'padding'] },
+      ],
+      wrapper: WRAPPER_FIELDS,
     });
   });
 });
@@ -228,7 +232,7 @@ describe('блоки секции (часть 3)', () => {
     );
     expect(JSON.parse(answer.body)).toEqual({
       sections: [
-        { name: 'shop:hero', title: 'Первый экран', settings: [HEADING], tokens: {} },
+        { name: 'shop:hero', title: 'Первый экран', settings: [HEADING], tokens: {}, wrapper: ['scheme', 'padding'] },
         {
           name: 'shop:faq',
           title: 'Вопросы и ответы',
@@ -236,8 +240,10 @@ describe('блоки секции (часть 3)', () => {
           tokens: {},
           blocks: FAQ.manifest.blocks,
           defaultBlocks: FAQ.manifest.defaultBlocks,
+          wrapper: ['scheme', 'padding'],
         },
       ],
+      wrapper: WRAPPER_FIELDS,
     });
   });
 });
@@ -347,8 +353,54 @@ describe('свои страницы, шапка и подвал в превью 
         limit: 1,
         removable: false,
         uses: ['theme', 'shop'],
+        wrapper: ['scheme', 'padding'],
       },
-      { name: 'shop:hero', title: 'Первый экран', settings: [HEADING], tokens: {} },
+      { name: 'shop:hero', title: 'Первый экран', settings: [HEADING], tokens: {}, wrapper: ['scheme', 'padding'] },
     ]);
+  });
+});
+
+describe('общие настройки секции в превью (часть 5 блока 1)', () => {
+  const WRAPPED: CurrentSection = {
+    ...HERO,
+    manifest: { ...HERO.manifest, wrapper: ['scheme', 'padding', 'sticky'] },
+  };
+
+  it('блок: wrapper экземпляра — классы на обёртке в ответе', async () => {
+    const { deps } = depsOf(new Map([[WRAPPED.name, WRAPPED]]));
+    const body = block({
+      id: 'hero-1',
+      section: 'shop:hero',
+      settings: {},
+      wrapper: { scheme: 'scheme-2', padding: { top: 40, bottom: 80 } },
+    });
+    const answer = await sectionPreview(deps, SHOP, body);
+    expect(answer.status).toBe(200);
+    expect(blockAnswerSchema.parse(JSON.parse(answer.body)).html).toContain('class="color-scheme-2 pt-10 pb-20"');
+  });
+
+  it('блок без wrapper — class="py-section", как раньше', async () => {
+    const { deps } = depsOf(new Map([[WRAPPED.name, WRAPPED]]));
+    const answer = await sectionPreview(deps, SHOP, block({ id: 'hero-1', section: 'shop:hero', settings: {} }));
+    expect(blockAnswerSchema.parse(JSON.parse(answer.body)).html).toContain('class="py-section"');
+  });
+
+  it('список секций: wrapper у каждой секции и объявления общих настроек в ответе', async () => {
+    const { deps } = depsOf(new Map([[WRAPPED.name, WRAPPED]]));
+    const parsed = z
+      .object({
+        sections: z.array(z.object({ wrapper: z.array(z.string()) }).passthrough()),
+        wrapper: z.array(z.object({ id: z.string() }).passthrough()),
+      })
+      .parse(JSON.parse((await shopSections(deps, SHOP)).body));
+    expect(parsed.sections[0]?.wrapper).toEqual(['scheme', 'padding', 'sticky']);
+    expect(parsed.wrapper.map((field) => field.id)).toEqual(['scheme', 'padding', 'sticky']);
+  });
+
+  it('секция без ключа wrapper в section.json — список по умолчанию из двух', async () => {
+    const parsed = z
+      .object({ sections: z.array(z.object({ wrapper: z.array(z.string()) }).passthrough()) })
+      .parse(JSON.parse((await shopSections(depsOf().deps, SHOP)).body));
+    expect(parsed.sections[0]?.wrapper).toEqual(['scheme', 'padding']);
   });
 });

@@ -16,7 +16,7 @@ const PAUSE = new Int32Array(new SharedArrayBuffer(4));
 
 // Значения настроек: секции и каждого блока. blocks и preview — часть 3; в запросе старой формы их нет: блоков нет,
 // режим — витрина.
-const valuesSchema = z.record(z.string(), z.union([z.string(), z.boolean()]));
+const valuesSchema = z.record(z.string(), z.json());
 // Часть 4 (Р1-4-3, Р1-4-4, Р1-4-6): деревья меню по id настройки, настройки темы, данные магазина. Схемы — здесь же:
 // процесс рендера собран в один файл и пакеты сборки во время работы не загружает. Нет ключа — пусто.
 const menuLeafSchema = z.strictObject({ label: z.string(), url: z.string(), items: z.tuple([]) });

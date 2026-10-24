@@ -1,12 +1,11 @@
-import { defineSection, part } from '@merfy/shell';
+import { defineSection } from '@merfy/shell';
 
-// Отзывы (секция расширения reviews): «Купить такой же» кладёт товар в корзину ядра — значок корзины платформы это видит.
+// Отзывы (секция расширения reviews): «Купить такой же» кладёт товар в корзину — значок корзины это видит.
 export default defineSection({
-  async mount(element: HTMLElement) {
-    const cart = await part('cart');
-    element.addEventListener('click', (event) => {
-      const id = event.target instanceof HTMLElement ? event.target.dataset.buy : undefined;
-      if (id !== undefined) cart.add(id);
-    });
+  actions: {
+    async buy(button, ctx) {
+      const productId = button.attr('data-buy');
+      if (productId !== null) await ctx.cart.add({ productId });
+    },
   },
 });

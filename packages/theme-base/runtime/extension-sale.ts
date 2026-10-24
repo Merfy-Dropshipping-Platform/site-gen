@@ -93,7 +93,11 @@ function writeSession(win: Window, storeId: string, ids: Record<string, boolean>
   }
 }
 
-/** Не больше `limit` задач разом; остальные ждут своей очереди. */
+/**
+ * Не больше `limit` задач разом; остальные ждут своей очереди. Обобщённая
+ * стрелка `<T>(…) =>` здесь нельзя: сборка секций читает .ts с разметкой JSX и
+ * принимает `<T>` за тег — поэтому именованная функция.
+ */
 function createLimiter(limit: number): <T>(task: () => Promise<T>) => Promise<T> {
   let active = 0;
   const waiting: (() => void)[] = [];
@@ -101,7 +105,7 @@ function createLimiter(limit: number): <T>(task: () => Promise<T>) => Promise<T>
     active -= 1;
     waiting.shift()?.();
   };
-  return async <T>(task: () => Promise<T>): Promise<T> => {
+  return async function run<T>(task: () => Promise<T>): Promise<T> {
     if (active >= limit) await new Promise<void>((resolve) => waiting.push(resolve));
     active += 1;
     try {

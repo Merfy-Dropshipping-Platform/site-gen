@@ -22,6 +22,32 @@ import { insertRevision, insertSite, resetBuilder, type SiteFields } from './sta
 const HERO = fileURLToPath(new URL('../../../storefront-sections/fixtures/shop/hero', import.meta.url));
 const WRAPPER = { scheme: 'scheme-2', padding: { top: 40, bottom: 80 } };
 
+interface SectionsAnswer {
+  sections: { name: string; wrapper: string[] }[];
+  wrapper: { id: string }[];
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+
+function htmlOf(answer: unknown): string {
+  return isRecord(answer) && typeof answer.html === 'string' ? answer.html : '';
+}
+
+function sectionsAnswer(answer: unknown): SectionsAnswer | undefined {
+  if (!isRecord(answer) || !Array.isArray(answer.sections) || !Array.isArray(answer.wrapper)) return undefined;
+  const sections = answer.sections.filter(
+    (item): item is { name: string; wrapper: string[] } =>
+      isRecord(item) &&
+      typeof item.name === 'string' &&
+      Array.isArray(item.wrapper) &&
+      item.wrapper.every((entry) => typeof entry === 'string'),
+  );
+  const wrapper = answer.wrapper.filter(
+    (item): item is { id: string } => isRecord(item) && typeof item.id === 'string',
+  );
+  return { sections, wrapper };
+}
+
 let harness: Harness;
 let products: FakeProducts;
 let server: Server;
@@ -122,21 +148,22 @@ describe('общие настройки секции на стеке (часть
         instance: { id: 'hero-1', section: 'shop:hero', settings: {}, wrapper: WRAPPER },
       }),
     });
-    expect(((await withWrapper.json()) as { html: string }).html).toContain('class="color-scheme-2 pt-10 pb-20"');
+    const withWrapperAnswer: unknown = await withWrapper.json();
+    expect(htmlOf(withWrapperAnswer)).toContain('class="color-scheme-2 pt-10 pb-20"');
     const plain = await fetch(`${base}/preview/section?shop=${site.id}`, {
       method: 'POST',
       body: JSON.stringify({ instance: { id: 'hero-1', section: 'shop:hero', settings: {} } }),
     });
-    expect(((await plain.json()) as { html: string }).html).toContain('class="py-section"');
+    const plainAnswer: unknown = await plain.json();
+    expect(htmlOf(plainAnswer)).toContain('class="py-section"');
   });
 
   it('GET /sections: wrapper у секции и объявления трёх общих настроек', async () => {
     const site = await builtShop();
     await serve();
     const answer: unknown = await (await fetch(`${base}/sections?shop=${site.id}`)).json();
-    const sections = (answer as { sections: { name: string; wrapper: string[] }[] }).sections;
-    expect(sections.find((section) => section.name === 'shop:hero')?.wrapper).toEqual(['scheme', 'padding']);
-    const declared = (answer as { wrapper: { id: string }[] }).wrapper;
-    expect(declared.map((field) => field.id)).toEqual(['scheme', 'padding', 'sticky']);
+    const sections = sectionsAnswer(answer);
+    expect(sections?.sections.find((section) => section.name === 'shop:hero')?.wrapper).toEqual(['scheme', 'padding']);
+    expect(sections?.wrapper.map((field) => field.id)).toEqual(['scheme', 'padding', 'sticky']);
   });
 });

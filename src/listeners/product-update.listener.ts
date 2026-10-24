@@ -55,6 +55,11 @@ const SITES_PRODUCT_EVENTS_QUEUE = "sites_product_events";
 const DEBOUNCE_MS = 45_000; // 45s — debounce window for the SEO FULL rebuild (batches rapid edits)
 const FRAGMENT_PATCH_DEBOUNCE_MS = 5_000; // 5 seconds — fast fragment patching
 const REBUILD_PRIORITY = 5;
+// С части 8а блока 8 «Секций и SDK» сервис product шлёт и их; читает только сборщик витрин новой темы.
+const NEW_THEME_ONLY_EVENTS: ReadonlySet<string> = new Set([
+  "collection.updated",
+  "product.availability_changed",
+]);
 
 /** Accumulated changes during debounce window */
 interface DebouncedEntry {
@@ -200,6 +205,13 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
 
       // Only handle product change events
       if (!event || !tenantId) {
+        channel.ack(msg);
+        return;
+      }
+
+      // Правка коллекции и смена наличия (блок 8 «Секций и SDK», часть 8а) — только для витрин новой темы: пять тем
+      // по ним не пересобираются, как до этой части.
+      if (NEW_THEME_ONLY_EVENTS.has(event)) {
         channel.ack(msg);
         return;
       }

@@ -80,6 +80,18 @@ describe('POST /api/sites/:id/preview/block — флаги темы у секц�
     expect(renderedProps().extensionLook).toBe('theme');
   });
 
+  it('тема с суффиксом версии (rose-1.0, satin@2) читается как rose и satin', async () => {
+    themeId = 'rose-1.0';
+    await post('Product', { id: 'Product-1' });
+    expect(renderedProps().extensionPurchaseEnabled).toBe(true);
+    expect(renderedProps().extensionLook).toBe('theme');
+    renderBlock.mockClear();
+    call = 0;
+    themeId = 'satin@2';
+    await post('Product', { id: 'Product-1' });
+    expect(renderedProps().extensionPurchaseEnabled).toBe(true);
+  });
+
   it('flux: форма включена, вида «как тема» нет', async () => {
     themeId = 'flux';
     await post('Product', { id: 'Product-1' });

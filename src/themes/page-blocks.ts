@@ -227,7 +227,13 @@ export function applyProductThemeFeatures(
   props: Record<string, unknown>,
   themeId: string | null | undefined,
 ): void {
-  const features = themeId != null ? getThemeManifest(themeId)?.features : undefined;
+  // Идентификатор темы сайта может нести версию (`rose-1.0`, `satin@2`): манифест
+  // лежит по голому ключу, как у PreviewService.bareThemeKey.
+  const manifest =
+    themeId == null
+      ? null
+      : (getThemeManifest(themeId) ?? getThemeManifest(themeId.replace(/[-@].*$/, '')));
+  const features = manifest?.features;
   if (features?.requests === true || props.requestsEnabled === true) {
     props.requestsEnabled = true;
   }

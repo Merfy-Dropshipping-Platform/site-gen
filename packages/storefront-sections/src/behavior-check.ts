@@ -115,6 +115,18 @@ function partFound(attribute: Attribute, outer: string | null): Found | null {
 
 const ORPHAN_TEXT = 'стоит вне элемента с data-behavior: часть принадлежит поведению';
 
+const unknownFound = (attribute: Attribute): Found => ({
+  code: 'behavior-unknown',
+  at: attribute.start,
+  message: `поведения ${attribute.value} нет в каталоге SDK; есть: ${knownBehaviors()}`,
+});
+
+const presetUnknownFound = (attribute: Attribute): Found => ({
+  code: 'animate-preset-unknown',
+  at: attribute.start,
+  message: `пресета ${attribute.value} нет в каталоге SDK; есть: ${knownPresets()}`,
+});
+
 // Один атрибут элемента: имя поведения, пресет появления, часть (внешнего поведения), параметр (собственного).
 function attributeFound(
   attribute: Attribute,
@@ -123,21 +135,9 @@ function attributeFound(
   outer: string | null,
 ): Found[] {
   if (attribute.name === 'data-behavior' && attribute.value !== null && specOf(attribute.value) === undefined)
-    return [
-      {
-        code: 'behavior-unknown',
-        at: attribute.start,
-        message: `поведения ${attribute.value} нет в каталоге SDK; есть: ${knownBehaviors()}`,
-      },
-    ];
+    return [unknownFound(attribute)];
   if (attribute.name === 'data-animate' && attribute.value !== null && !(attribute.value in PRESETS))
-    return [
-      {
-        code: 'animate-preset-unknown',
-        at: attribute.start,
-        message: `пресета ${attribute.value} нет в каталоге SDK; есть: ${knownPresets()}`,
-      },
-    ];
+    return [presetUnknownFound(attribute)];
   if (attribute.name === 'data-part' && attribute.value !== null && outer === null)
     return [
       { code: 'behavior-part-orphan', at: attribute.start, message: `data-part="${attribute.value}" ${ORPHAN_TEXT}` },

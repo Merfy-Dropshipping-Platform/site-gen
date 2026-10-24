@@ -51,7 +51,8 @@ function section(name: string, script: string | null): CodeSection {
   return { name, kind: 'section', hash: sha256(`${name}${script ?? ''}`), render, script: script === null ? null : sha256(script) };
 }
 
-async function answer(request: IncomingMessage, response: ServerResponse, current: Shop): Promise<void> {
+// Ответ стенда — синхронная функция без await: ошибки ловит try/catch у createServer.
+function answer(request: IncomingMessage, response: ServerResponse, current: Shop): void {
   const path = new URL(request.url ?? '/', current.origin).pathname;
   if (request.method === 'POST') return void response.writeHead(204).end();
   const file = current.pages.get(path);
@@ -63,7 +64,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, curren
 async function startShop(): Promise<Shop> {
   const current: Shop = { origin: '', pages: new Map(), close: () => Promise.resolve() };
   const server = createServer((request, response) => {
-    answer(request, response, current).catch(() => response.writeHead(500).end());
+    try {
+      answer(request, response, current);
+    } catch {
+      response.writeHead(500).end();
+    }
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
@@ -95,7 +100,7 @@ async function renderHome(core: ShellBuild, origin: string, names: string[]): Pr
 }
 
 // Страница открыта с включённым выбором «Появление секций» (data-motion-reveal="on" у <html>, как его ставит тема) или
-// без него; Element.prototype.animate записывает id элементов, у которых запускалась анимация.
+// без него; какие элементы анимировались — читаем через document.getAnimations() (анимации ядра и motion/mini — WAAPI).
 async function openHome(reveal: boolean): Promise<{ page: Page; errors: string[] }> {
   const page = await browser.newPage();
   const errors: string[] = [];
@@ -104,13 +109,6 @@ async function openHome(reveal: boolean): Promise<{ page: Page; errors: string[]
     if (message.type() === 'error' && !message.location().url.endsWith('/favicon.ico')) errors.push(message.text());
   });
   await page.addInitScript((on: boolean) => {
-    const animated: string[] = [];
-    Reflect.set(window, '__animated', animated);
-    const original = Element.prototype.animate;
-    Element.prototype.animate = function (this: Element, ...args: Parameters<Element['animate']>) {
-      animated.push(this.id);
-      return original.apply(this, args);
-    };
     if (on) document.addEventListener('readystatechange', () => document.documentElement.setAttribute('data-motion-reveal', 'on'), { once: true });
   }, reveal);
   await page.goto(`${shop.origin}/`);
@@ -159,7 +157,7 @@ describe('страница с поведениями', () => {
     await page.waitForFunction(() => document.querySelector('#counter')?.textContent === '3', undefined, { timeout: 6000 });
     await page.click('#s1');
     expect(await page.getAttribute('#d1', 'open')).not.toBeNull();
-    expect(await page.evaluate(() => Reflect.get(window, 'glowDone'))).toBe(true);
+    expect(await page.evaluate(() => Reflect.get(window, 'glowDone') === true)).toBe(true);
     expect(errors).toEqual([]);
     await page.close();
   });
@@ -167,13 +165,29 @@ describe('страница с поведениями', () => {
   it('появление: при data-motion-reveal="on" заголовок анимируется и флаг движения снят; без выбора — заголовок без анимации', async () => {
     const on = await openHome(true);
     await on.page.waitForFunction(() => !document.documentElement.hasAttribute('data-merfy-motion'));
-    const animatedOn = await on.page.evaluate(() => Reflect.get(window, '__animated'));
+    const animatedOn = await on.page.evaluate(() =>
+      JSON.stringify(
+        document.getAnimations().flatMap((animation) => {
+          const effect = animation.effect;
+          return effect instanceof KeyframeEffect && effect.target instanceof Element ? [effect.target.id] : [];
+        }),
+      ),
+    );
     expect(animatedOn).toContain('slides-title');
     expect(on.errors).toEqual([]);
     await on.page.close();
     const off = await openHome(false);
     await off.page.waitForFunction(() => !document.documentElement.hasAttribute('data-merfy-motion'));
-    expect(await off.page.evaluate(() => Reflect.get(window, '__animated'))).not.toContain('slides-title');
+    expect(
+      await off.page.evaluate(() =>
+        JSON.stringify(
+          document.getAnimations().flatMap((animation) => {
+            const effect = animation.effect;
+            return effect instanceof KeyframeEffect && effect.target instanceof Element ? [effect.target.id] : [];
+          }),
+        ),
+      ),
+    ).not.toContain('slides-title');
     expect(
       await off.page.evaluate(() => {
         const element = document.getElementById('slides-title');

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { sectionFieldShape } from '../src/fields';
 import { sectionManifestSchema } from '../src/format';
 import { packageFiles } from '../src/generate/files';
 import { namesMarkdown } from '../src/generate/names-markdown';
@@ -26,51 +27,41 @@ const variantShape = z.object({
     setting: z.object({ oneOf: optionsShape }),
   }),
 });
-// Часть 5 (Р1-5-5): элемент settings — поле или ссылка; варианты имён — внутри ветки поля.
-const namedShape = z.object({
-  properties: z.object({
-    settings: z.object({
-      items: z.object({
-        anyOf: z.array(z.union([z.object({ anyOf: z.array(variantShape) }), z.object({ properties: z.unknown() })])),
-      }),
-    }),
-  }),
+const fieldShape = z.object({
+  properties: z.object({ setting: z.union([z.object({ oneOf: optionsShape }), z.object({ anyOf: optionsShape })]) }),
 });
-// Часть 5 (Р1-5-5): элемент settings — поле или ссылка, поэтому items — объединение anyOf; setting — у ветки поля.
-const formatShape = z.object({
-  properties: z.object({
-    settings: z.object({
-      items: z.object({
-        anyOf: z.array(
-          z.union([
-            z.object({
-              properties: z.object({
-                setting: z.union([z.object({ oneOf: optionsShape }), z.object({ anyOf: optionsShape })]),
-              }),
-            }),
-            z.object({ properties: z.object({ wrapper: z.unknown() }) }),
-          ]),
-        ),
-      }),
-    }),
-  }),
-});
+const itemsShape = z.object({ properties: z.object({ settings: z.object({ items: z.unknown() }) }) });
+const unionShape = z.object({ anyOf: z.array(z.unknown()) });
+const referenceShape = z.object({ properties: z.object({ wrapper: z.unknown() }) });
 
-const namedVariants = namedShape.parse(sectionJsonSchema()).properties.settings.items.anyOf;
-const variants = namedVariants
-  .filter((branch): branch is { anyOf: z.infer<typeof variantShape>[] } => 'anyOf' in branch)
-  .flatMap((branch) => branch.anyOf)
-  .map(({ properties }) => ({
-    id: properties.id.const,
-    about: properties.id.description,
-    kinds: properties.setting.oneOf.map((option) => option.properties.kind.const),
-  }));
-const formatItems = formatShape.parse(z.toJSONSchema(sectionManifestSchema, { io: 'input' })).properties.settings.items;
-const formatKinds = formatItems.anyOf.flatMap((variant) => {
-  if (!('setting' in variant.properties)) return [];
-  const setting = variant.properties.setting;
-  return ('oneOf' in setting ? setting.oneOf : setting.anyOf).map((option) => option.properties.kind.const);
-});
+// Члены списка settings.items: у формата без ссылок на общие настройки — сам элемент (поле) или варианты по именам
+// словаря в anyOf; у формата с ссылками — варианты (или поле) и ссылки в одном списке anyOf, без вложенного.
+const settingsMembers = (schema: unknown): unknown[] => {
+  const { items } = itemsShape.parse(schema).properties.settings;
+  const union = unionShape.safeParse(items);
+  return union.success ? union.data.anyOf : [items];
+};
+const namedVariants = (schema: unknown) =>
+  settingsMembers(schema).flatMap((member) => {
+    const parsed = variantShape.safeParse(member);
+    return parsed.success ? [parsed.data] : [];
+  });
+const otherMembers = (schema: unknown): unknown[] =>
+  settingsMembers(schema).filter((member) => !variantShape.safeParse(member).success);
+const kindsOfSchema = (schema: unknown): string[] =>
+  settingsMembers(schema).flatMap((member) => {
+    const parsed = fieldShape.safeParse(member);
+    if (!parsed.success) return [];
+    const { setting } = parsed.data.properties;
+    return ('oneOf' in setting ? setting.oneOf : setting.anyOf).map((option) => option.properties.kind.const);
+  });
+
+const variants = namedVariants(sectionJsonSchema()).map(({ properties }) => ({
+  id: properties.id.const,
+  about: properties.id.description,
+  kinds: properties.setting.oneOf.map((option) => option.properties.kind.const),
+}));
+const formatKinds = kindsOfSchema(z.toJSONSchema(sectionManifestSchema, { io: 'input' }));
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -159,5 +150,37 @@ describe('что внутри', () => {
     ]);
     expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(51);
     expect(markdown.endsWith(' |\n')).toBe(true);
+  });
+});
+
+// Формат со ссылками на общие настройки в settings (часть 5 блока 1): поле — один из членов union вместе со ссылкой.
+describe('settings: поле или ссылка на общую настройку', () => {
+  const reference = z.strictObject({ wrapper: z.enum(['scheme', 'padding']) });
+  const withReferences = sectionManifestSchema.extend({
+    settings: z.array(z.union([sectionFieldShape, reference])).default([]),
+  });
+  const schema = sectionJsonSchema(NAMES, withReferences);
+
+  it('варианты по именам и ссылка — в одном списке anyOf, вложенного anyOf нет', () => {
+    expect(namedVariants(schema).map(({ properties }) => properties.id.const)).toEqual(variants.map(({ id }) => id));
+    const [only, ...rest] = otherMembers(schema);
+    expect(rest).toEqual([]);
+    expect(only).toMatchObject({ properties: { wrapper: { enum: ['scheme', 'padding'] } } });
+  });
+
+  it('виды каждого варианта те же, что в формате без ссылок', () => {
+    const kinds = namedVariants(schema).map(({ properties }) =>
+      properties.setting.oneOf.map((option) => option.properties.kind.const),
+    );
+    expect(kinds).toEqual(variants.map((variant) => variant.kinds));
+  });
+
+  it('полей без имени из словаря нет и в формате со ссылками', () => {
+    expect(unnamedFields(schema)).toBe(0);
+  });
+
+  it('в схеме формата, кроме вариантов по именам, только ссылки на общие настройки', () => {
+    const foreign = otherMembers(sectionJsonSchema()).filter((member) => !referenceShape.safeParse(member).success);
+    expect(foreign).toEqual([]);
   });
 });

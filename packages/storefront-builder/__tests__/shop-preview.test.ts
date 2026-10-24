@@ -450,3 +450,83 @@ describe('превью: страница 404 и страница блока (б�
     ]);
   });
 });
+
+describe('превью шаблонов записей (блок 8 «Секций и SDK», часть 8б-2)', () => {
+  const AT = '2026-10-20T10:00:00.000Z';
+  const [P1, P2] = ['00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000102'];
+  const productOf = (id: string, title: string, handle: string) => ({
+    type: 'product',
+    id,
+    updatedAt: AT,
+    data: {
+      title,
+      handle,
+      description: 'Тёплый и мягкий',
+      price: 190000,
+      compareAtPrice: null,
+      images: ['https://s3.merfy.ru/p/1.jpg'],
+      available: true,
+      options: [],
+      variants: [],
+      collectionIds: [],
+      seo: { title: '', description: '' },
+    },
+  });
+  const RECORD_INPUTS = parseBuildInputs({
+    ...standInputsJson,
+    code: {
+      sections: [{ name: 'shop:hero', kind: 'section', hash: sha256('правка'), render: HASH, script: null }],
+      pages: { product: [{ id: 'hero-p', section: 'shop:hero', settings: { heading: 'Карточка товара' } }] },
+      globals: [],
+    },
+    data: { status: 'received', entities: [productOf(P1, 'Шарф', 'sharf'), productOf(P2, 'Плед', 'pled')] },
+  });
+  const recordDeps = () => {
+    const made = depsOf();
+    made.deps.inputs = () => Promise.resolve({ inputs: RECORD_INPUTS, renders: new Map([[HASH, MODULE]]) });
+    return made;
+  };
+
+  it('page=product&record=<id> — шаблон «Товар» с этим товаром: запись у секций, адрес — основной', async () => {
+    const { deps, rendered } = recordDeps();
+    const answer = await shopPreview(deps, url(`shop=${SHOP}&page=product&record=${P2}`));
+    expect(answer.status).toBe(200);
+    expect(answer.body).toContain('data-section-id="hero-p"');
+    expect(answer.body).toContain('<link rel="canonical" href="https://nova-stand.example/product/pled">');
+    expect(rendered[0]?.[1].page).toMatchObject({ id: 'product', path: '/product/pled', record: { id: P2 } });
+  });
+
+  it('без record, пустой или неизвестный — первый товар; record — адрес ссылки; товаров нет — пример', async () => {
+    const { deps, rendered } = recordDeps();
+    for (const query of ['', '&record=', '&record=missing', '&record=/product/pled'])
+      expect((await shopPreview(deps, url(`shop=${SHOP}&page=product${query}`))).status).toBe(200);
+    expect(rendered.map(([, request]) => request.page?.path)).toEqual([
+      '/product/sharf',
+      '/product/sharf',
+      '/product/sharf',
+      '/product/pled',
+    ]);
+    const example = await shopPreview(depsOf().deps, url(`shop=${SHOP}&page=product`));
+    expect(example.status).toBe(200);
+    expect(example.body).toContain('<title>Пример товара</title>');
+  });
+
+  it('page=policy без секций и без политик — текст примера от платформы', async () => {
+    const answer = await shopPreview(depsOf().deps, url(`shop=${SHOP}&page=policy`));
+    expect(answer.status).toBe(200);
+    expect(answer.body).toContain('data-merfy-policy');
+    expect(answer.body).toContain('<title>Политика конфиденциальности</title>');
+  });
+
+  it('один блок на шаблоне: page и record из тела — запись страницы; record не строкой — 400', async () => {
+    const { deps, rendered } = recordDeps();
+    const instance = { id: 'hero-p', section: 'shop:hero', settings: {} };
+    for (const record of [P2, undefined])
+      expect((await sectionPreview(deps, SHOP, JSON.stringify({ instance, page: 'product', record }))).status).toBe(
+        200,
+      );
+    expect(rendered.map(([, request]) => request.page?.path)).toEqual(['/product/pled', '/product/sharf']);
+    const wrong = JSON.stringify({ instance, page: 'product', record: 7 });
+    expect((await sectionPreview(deps, SHOP, wrong)).status).toBe(400);
+  });
+});

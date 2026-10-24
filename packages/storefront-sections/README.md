@@ -98,3 +98,22 @@
 - **Значения на странице** — `@layer base { merfy-section[data-section="<имя>"] { --<токен>: … } }` в CSS токенов
   магазина; правка мерчанта — `revision.tokens.sections`, одно значение на магазин.
 - **База страницы** — `@merfy/tokens/base.css` (preflight и база словаря в `@layer base`), первым стилем головы.
+
+## Скрипт секции при сохранении (блок 5 «Секций и SDK», часть 5в)
+
+- **Только SDK** (`src/script-check.ts`, списки — `src/script-sdk.ts`): каждый файл `.ts`/`.js` разбирает
+  `@babel/parser`, области видимости — `@babel/traverse`. Свободное имя вне списка, `this`, `super`, `class`, `delete`,
+  `import()`, служебные поля JS (`constructor`, `__proto__` …), исполняемый код вне `defineSection` — `sdk-only` с
+  местом и подсказкой. Из `@merfy/shell` — только `defineSection` и типы.
+- **Модуль без импортов** (`src/script-rewrite.ts`): esbuild склеивает свои файлы, `import` из `@merfy/shell` и
+  `defineSection(…)` снимаются, `a[k]` — через помощник (только собственные поля; запись служебного поля — исключение),
+  потом сжатие.
+- **Сверка имён** (`src/script-names.ts`, таблица `NAME_RULES`): `event-unknown` — `ctx.listen('…')` по каталогу событий
+  ядра; `action-unknown` — `data-action` по `actions` секции, действиям SDK и событиям ядра; `class-arbitrary` — класс
+  `toggleClass('…')` не вида утилиты. Новый код — строка таблицы и код в `PROBLEM_CODES`.
+- **`uses`** — `theme`, `shop` (данные шаблона) и модули SDK `cart`, `favorites`, `auth`, `newsletter`; в шаблон и входы
+  сборки — только `theme` и `shop` (`propsUsesOf`).
+- **`scriptMeta`** в ответе проверки — `{ uses, parts, classes }`: модули для `ctx`, части бандла страницы (`uses` и
+  действия SDK разметки) и классы скрипта.
+- Проверка руками: `pnpm merfy section check fixtures/scripts/scarf-match` (проходит),
+  `fixtures/broken/script-sdk-only` и `fixtures/broken/script-names` (отказы с местом).

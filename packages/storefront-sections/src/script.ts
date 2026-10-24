@@ -6,12 +6,18 @@ import type * as EsbuildApi from 'esbuild-wasm';
 import type { Message, OnResolveArgs, OnResolveResult, Plugin } from 'esbuild-wasm';
 import type { SectionFiles } from './format';
 import { isWarning, problem, when, type Checked, type SectionProblem } from './problems';
+import { checkScriptSource } from './script-check';
+import type { ScriptFacts } from './script-facts';
+import { rewriteModule } from './script-rewrite';
+import { SHELL_MODULE } from './script-tree';
 
-// Скрипт секции (design.md блока 7, С7-11 А, п. 12, 18, 20) — одна сборка esbuild для всех авторов. Импорт — только
-// @merfy/shell (внешний: копия SDK на странице одна, её подставляет import map) и свои файлы .ts/.js, в том числе через
-// import(); любой другой пакет и require — отказ import-forbidden. Нужен export default — определение секции для ядра.
-// Вес — brotli: больше 10 КБ — предупреждение (п. 18), больше 50 КБ — отказ (жёсткий предел — допущение плана).
-export const SHELL_MODULE = '@merfy/shell';
+// Скрипт секции (design.md блока 7, С7-11 А, п. 12, 18, 20; блок 5 «Секций и SDK», раздел 3.9) — одна сборка для всех
+// авторов. Сначала проверка исходника (script-check.ts): «только SDK», вид defineSection, факты для сверки имён и
+// script_meta. Потом esbuild склеивает свои файлы секции и убирает типы: импорт — только @merfy/shell (внешний) и свои
+// файлы .ts/.js, любой другой пакет и require — import-forbidden. script-rewrite.ts снимает import и defineSection и
+// переписывает a[k], esbuild сжимает: в модуле секции импортов нет. Нужен export default. Вес — brotli: больше 10 КБ —
+// предупреждение (п. 18), больше 50 КБ — отказ (жёсткий предел — допущение плана).
+export { SHELL_MODULE };
 export const SCRIPT_LIMITS = { warnBytes: 10 * 1024, maxBytes: 50 * 1024 } as const;
 const NAMESPACE = 'merfy-section';
 const FORBIDDEN_MARK = 'import-forbidden: ';
@@ -20,12 +26,11 @@ const RELATIVE = /^\.\.?\//;
 // esbuild — сборка для браузера из esbuild-wasm (блок 2 «Секций и SDK», «Решил сам» п. 5): обычный esbuild и основной
 // модуль esbuild-wasm запускают дочерний процесс, а у процесса проверки дочерних процессов нет. Сборке для браузера нужен
 // глобальный self; модуль WebAssembly компилируется один раз на процесс, worker: false — без потоков.
-type Esbuild = Pick<typeof EsbuildApi, 'build' | 'initialize'>;
+type Esbuild = Pick<typeof EsbuildApi, 'build' | 'initialize' | 'transform'>;
 let esbuild: Promise<Esbuild> | null = null;
 
 const isEsbuild = (value: unknown): value is Esbuild =>
-  typeof Reflect.get(Object(value), 'build') === 'function' &&
-  typeof Reflect.get(Object(value), 'initialize') === 'function';
+  ['build', 'initialize', 'transform'].every((name) => typeof Reflect.get(Object(value), name) === 'function');
 
 async function startEsbuild(): Promise<Esbuild> {
   const requireHere = createRequire(import.meta.url);
@@ -43,6 +48,8 @@ export interface BuiltScript {
   code: string;
   brotliBytes: number;
   warnings: SectionProblem[];
+  // Факты исходника (script-facts.ts): ключи actions, ctx.listen, чтения ctx, классы из toggleClass.
+  facts: ScriptFacts;
 }
 
 interface Bundled {
@@ -84,6 +91,7 @@ function messageProblem(message: Message): SectionProblem {
 const isBuildFailure = (error: unknown): error is Error & { errors: Message[] } =>
   error instanceof Error && Array.isArray(Reflect.get(error, 'errors'));
 
+// Склейка своих файлов без сжатия: текст идёт в script-rewrite.ts, сжатие — после него.
 async function bundle(files: SectionFiles, entry: string): Promise<Checked<Bundled>> {
   try {
     const result = await (
@@ -96,9 +104,11 @@ async function bundle(files: SectionFiles, entry: string): Promise<Checked<Bundl
       format: 'esm',
       platform: 'browser',
       target: 'es2022',
-      minify: true,
+      minify: false,
       write: false,
       metafile: true,
+      // Без комментариев: script-rewrite.ts ищет «[» и «=» по тексту между узлами.
+      legalComments: 'none',
       logLevel: 'silent',
     });
     const exports = Object.values(result.metafile.outputs).flatMap((output) => output.exports);
@@ -109,13 +119,21 @@ async function bundle(files: SectionFiles, entry: string): Promise<Checked<Bundl
   }
 }
 
-export async function buildScript(files: SectionFiles, entry: string): Promise<Checked<BuiltScript>> {
-  const bundled = await bundle(files, entry);
-  if (!bundled.ok) return bundled;
-  const { code, exports } = bundled.value;
-  const brotliBytes = brotliCompressSync(code).length;
+async function finish(code: string): Promise<string> {
+  const options = {
+    loader: 'js',
+    format: 'esm',
+    target: 'es2022',
+    minify: true,
+    legalComments: 'none',
+    logLevel: 'silent',
+  } as const;
+  return (await (await esbuildOf()).transform(rewriteModule(code), options)).code;
+}
+
+function weightProblems(entry: string, exports: readonly string[], brotliBytes: number): SectionProblem[] {
   const { warnBytes, maxBytes } = SCRIPT_LIMITS;
-  const problems = [
+  return [
     ...when(!exports.includes('default'), () =>
       problem('script-invalid', entry, 'нет export default: секции нужен export default defineSection({ mount })'),
     ),
@@ -126,6 +144,18 @@ export async function buildScript(files: SectionFiles, entry: string): Promise<C
       problem('script-heavy', entry, `скрипт весит ${brotliBytes} Б brotli — больше ${warnBytes} Б, страница тяжелее`),
     ),
   ];
+}
+
+// Проверка исходника и сборка: не разобрался файл — только его ошибка; остальные проблемы — разом.
+export async function buildScript(files: SectionFiles, entry: string): Promise<Checked<BuiltScript>> {
+  const source = checkScriptSource(files, entry);
+  if (!source.parsed) return { ok: false, problems: source.problems };
+  const bundled = await bundle(files, entry);
+  const early = [...source.problems, ...(bundled.ok ? [] : bundled.problems)];
+  if (!bundled.ok || early.length > 0) return { ok: false, problems: early };
+  const code = await finish(bundled.value.code);
+  const brotliBytes = brotliCompressSync(code).length;
+  const problems = weightProblems(entry, bundled.value.exports, brotliBytes);
   if (problems.some((item) => !isWarning(item))) return { ok: false, problems };
-  return { ok: true, value: { code, brotliBytes, warnings: problems } };
+  return { ok: true, value: { code, brotliBytes, warnings: problems, facts: source.facts } };
 }

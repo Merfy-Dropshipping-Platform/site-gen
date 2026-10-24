@@ -6,6 +6,7 @@ import { ShellError } from '../errors';
 import { messageOf } from '../report';
 import { createEventBus, type EventBus } from './events';
 import { SDK_MARKUP_SELECTOR, startInstance, type Instance, type InstanceRuntime, type MarkupCall } from './instance';
+import { navigationType, watchPage } from './page-events';
 import { pageStorage, type KeyValue } from './storage';
 import type {
   CoreHandle,
@@ -194,6 +195,7 @@ function runCore(
   state.done = true;
   runtime.bus.emit('merfy:page:ready', {}); // после синхронной части всех mount (13б Г)
   runtime.bus.emit('merfy:page:view', { path: win.location.pathname });
+  watchPage(win, runtime.bus, controller.signal, navigationType(win)); // события страницы (блок 13 «Секций и SDK»)
   return {
     config: read.config,
     mode: read.mode,

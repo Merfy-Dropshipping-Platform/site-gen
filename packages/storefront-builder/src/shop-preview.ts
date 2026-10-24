@@ -32,6 +32,14 @@ import { z } from 'zod';
 import { instanceSchema, readVisibleSections, wrapperOf, type SectionInstance } from './code';
 import type { DrawAnswer } from './draw';
 import { inlineAssets } from './inline-assets';
+import {
+  previewScriptOf,
+  previewTags,
+  scriptHashOf,
+  scriptPlacedOf,
+  type PreviewInputs,
+  type PreviewShell,
+} from './preview-code';
 import { inlineFonts } from './preview-fonts';
 import { withPreviewPolicy } from './preview-policy';
 import { readSnapshot } from './snapshot';
@@ -51,11 +59,13 @@ export interface PreviewShop {
 export interface ShopPreviewDeps {
   shop: (rawShop: string | null) => Promise<PreviewShop | DrawAnswer>;
   stand: (rawShop: string | null) => Promise<DrawAnswer>;
-  inputs: (shopId: string) => Promise<{ inputs: BuildInputs; renders: ReadonlyMap<string, string> }>;
+  inputs: (shopId: string) => Promise<PreviewInputs>;
   theme: (id: string, version: string) => Promise<ShopTheme>;
   sections: (shopId: string) => Promise<ReadonlyMap<string, CurrentSection> | null>;
   render: (shopId: string, request: SectionRenderRequest) => Promise<string>;
   fonts: (css: string) => Promise<string>;
+  // Сборка ядра сервиса (блок 5, часть 5г): её части — uses кода секции до части 5в; нет — uses пустой.
+  shell?: PreviewShell;
 }
 
 const HOME_PAGES: ReadonlySet<string> = new Set(['', '/', 'home']);
@@ -91,12 +101,13 @@ export const shopPreviewDeps = (preview: PreviewDeps): ShopPreviewDeps => ({
   stand: (rawShop) => standPreview(preview, rawShop),
   inputs: async (shopId) => {
     const snapshot = await readSnapshot(preview.snapshot, shopId);
-    return { inputs: parseBuildInputs(snapshot.inputs), renders: snapshot.assets.renders };
+    return { inputs: parseBuildInputs(snapshot.inputs), renders: snapshot.assets.renders, assets: snapshot.assets };
   },
   theme: async (id, version) => (await preview.catalog.themeAt(id, version)).build,
   sections: (shopId) => readVisibleSections(preview.snapshot.code, shopId),
   render: (shopId, request) => preview.renderers.render(shopId, request),
   fonts: (css) => inlineFonts(css, preview.fonts),
+  shell: preview.snapshot.code.shell,
 });
 
 const previewPage = (deps: ShopPreviewDeps, shopId: string, modules: ReadonlyMap<string, string>): PageRender => ({
@@ -152,15 +163,17 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   if (page === 'stand') return deps.stand(rawShop);
   const found = await deps.shop(rawShop);
   if (isPreviewAnswer(found)) return found;
-  const { inputs, renders } = await deps.inputs(found.shopId);
+  const { inputs, renders, assets } = await deps.inputs(found.shopId);
   // Главная или своя страница по id (часть 4, Р1-4-9): адрес — из ревизии; другой страницы в превью нет.
   const path = previewPathOf(inputs, page);
   if (path === undefined) return answer(404, TEXT.page);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
   const rendered = await renderShopPage(inputs, path, theme, previewPage(deps, found.shopId, renders));
-  // Оба скрипта превью (1а-13): слушатель токенов и скрипт секций — select-block, update-block, reconcile.
+  // Оба скрипта превью (1а-13): слушатель токенов и скрипт секций — select-block, update-block, reconcile. За ними —
+  // код страницы (блок 5, часть 5г): JSON-тег бандла превью и скрипт превью; нет снимка кода — без них.
   const agents = `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script>`;
-  const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), agents);
+  const code = await previewTags(inputs, assets);
+  const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), `${agents}${code}`);
   return answer(200, withPreviewPolicy(found.inline(withoutFontPreloads(await inlinePageFonts(html, deps)))));
 }
 
@@ -199,7 +212,9 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
     ...previewPage(deps, found.shopId, modules),
     props,
   });
-  return jsonAnswer(200, { html: content.sections[0] ?? '', css: content.sectionsCss });
+  // Код секции (блок 5, часть 5г): скрипт секций превью передаёт его скрипту превью; нет кода — null.
+  const script = previewScriptOf(current, deps.shell ?? null);
+  return jsonAnswer(200, { html: content.sections[0] ?? '', css: content.sectionsCss, script });
 }
 
 // Экземпляр превью: блоки, деревья меню и uses — только те ключи, что у секции есть.
@@ -221,6 +236,7 @@ function previewPlaced(
     ...blocks,
     ...(Object.keys(trees).length === 0 ? {} : { menus: trees }),
     ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),
+    ...scriptPlacedOf(current),
   };
 }
 
@@ -257,6 +273,8 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
         ? {}
         : { blocks: section.manifest.blocks, defaultBlocks: section.manifest.defaultBlocks ?? [] }),
       ...placeKeys(section.manifest),
+      // Хеш кода секции (блок 5, часть 5г): по нему конструктор видит новую версию кода.
+      ...scriptHashOf(section),
     }));
   return jsonAnswer(200, { sections: list, wrapper: WRAPPER_FIELDS });
 }

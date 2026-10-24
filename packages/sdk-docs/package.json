@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@merfy/shell": "workspace:*",
-    "@merfy/storefront-sections": "workspace:*"
+    "@merfy/storefront-sections": "workspace:*",
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",

@@ -28,4 +28,9 @@ export default tseslint.config(
       'max-lines-per-function': ['error', { max: 30, skipBlankLines: true, skipComments: true }],
     },
   },
+  {
+    // Тесты сверки документации (блок 14) идут вложенными циклами по страницам, ссылкам и якорям — глубже двух уровней.
+    files: ['__tests__/**/*.ts'],
+    rules: { 'max-depth': 'off' },
+  },
 );

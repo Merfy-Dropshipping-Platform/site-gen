@@ -1,5 +1,7 @@
 import { publishDrafts } from '@merfy/storefront-sections';
+import { addEntityPaths, removeEntityPaths, type ObjectStore } from '@merfy/storefront-storage';
 import { z } from 'zod';
+import { errorText } from './errors';
 import { PRIORITY, priorityOf, type IncomingEvent } from './events';
 import type { Log } from './log';
 import { previewSignal, type Preview } from './preview';
@@ -39,6 +41,8 @@ export interface AcceptDeps {
   log: Log;
   enqueue: (job: StartedJob) => Promise<void>;
   preview?: Preview;
+  // Хранилище сборок: список адресов магазина (блок 8 «Секций и SDK», часть 8б-2). Нет — список не ведём.
+  store?: ObjectStore;
 }
 
 // Выпуск темы ждёт места (held), остальные события — как всегда: свободен — сборка сразу, занят — склейка.
@@ -61,7 +65,24 @@ async function shopsOf(deps: AcceptDeps, event: IncomingEvent): Promise<string[]
   return buildable.map((shop) => shop.id);
 }
 
+// Адрес нового и удалённого товара (Р8б-16) — до сборки: раздача сразу отправляет новый адрес на рендер по запросу.
+// Сбой записи списка — строка журнала, событие всё равно принято.
+export async function applyEntityPaths(
+  deps: Pick<AcceptDeps, 'store' | 'log'>,
+  event: IncomingEvent,
+  siteId: string,
+): Promise<void> {
+  if (event.owner !== 'tenant' || event.paths === undefined || deps.store === undefined) return;
+  try {
+    if (event.paths.add.length > 0) await addEntityPaths(deps.store, siteId, event.paths.add);
+    if (event.paths.remove.length > 0) await removeEntityPaths(deps.store, siteId, event.paths.remove);
+  } catch (error) {
+    deps.log('entity-paths-failed', { shopId: siteId, error: errorText(error) });
+  }
+}
+
 async function acceptForShop(deps: AcceptDeps, event: IncomingEvent, siteId: string): Promise<Accepted> {
+  await applyEntityPaths(deps, event, siteId);
   await BEFORE_BUILD[event.type]?.(deps, siteId);
   const shopEvent = { siteId, priority: priorityOf(event.type), eventAt: event.eventAt };
   const accepted = await acceptByPriority(shopEvent.priority)(deps.db, shopEvent, deps.shopState);

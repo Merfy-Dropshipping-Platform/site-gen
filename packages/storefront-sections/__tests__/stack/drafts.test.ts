@@ -39,6 +39,7 @@ function edit(shopId: string, name: string, text: string): NewSection {
       render: null,
       script: null,
       warnings: [],
+      scriptMeta: { uses: [], parts: [], classes: [] },
     },
     sourceHash: sha256(`source:${text}`),
     contentHash: sha256(`content:${text}`),

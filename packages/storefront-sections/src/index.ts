@@ -89,3 +89,6 @@ export { SCRIPT_LIMITS } from './script';
 export { MAX_TEMPLATE_DEPTH } from './depth';
 export { FORBIDDEN_TAGS } from './template';
 export { SDK_KINDS } from './names';
+
+// Инструменты секций (блок 14, часть 14б): что видит конструктор и файлы текущей правки.
+export { draftSource, editableSections, type DraftSource } from './registry';

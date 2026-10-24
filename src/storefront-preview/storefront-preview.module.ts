@@ -12,6 +12,7 @@ import {
   StandPreviewMiddleware,
   ThemePanelMiddleware,
 } from "./storefront-preview.middleware";
+import { SdkDocsController } from "./sdk-docs.controller";
 import { StorefrontSectionsController } from "./storefront-sections.controller";
 
 // Превью и «Настройки темы» магазинов новой темы (design.md блока 8): развилка
@@ -19,7 +20,11 @@ import { StorefrontSectionsController } from "./storefront-sections.controller";
 // не меняется. StorefrontHandoff — из глобального модуля блока 6.
 @Module({
   imports: [ConfigModule],
-  controllers: [StorefrontPreviewController, StorefrontSectionsController],
+  controllers: [
+    StorefrontPreviewController,
+    StorefrontSectionsController,
+    SdkDocsController,
+  ],
   providers: [StorefrontBuilderClient],
 })
 export class StorefrontPreviewModule implements NestModule {

@@ -64,3 +64,6 @@ export type {
   StartOptions,
   Stop,
 } from './types';
+// Часть 5г: замена экземпляра секции в превью — бандл превью передаёт её в start({ preview }); протокол превью — вход
+// @merfy/shell/preview (src/core/preview-protocol.ts).
+export { watchPreviewReplace, type ReplaceDeps } from './replace';

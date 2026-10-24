@@ -36,6 +36,20 @@ export interface StorefrontBuild {
 // Пути файлов разные: страницы — *.html, файлы клиента — то, что собрал Astro.
 const byPath = (left: BuildFile, right: BuildFile): number => (left.path < right.path ? -1 : 1);
 
+// Страниц у магазина — тысячи (блок 8 «Секций и SDK», часть 8б: страница на каждую запись), а процесс рендера темы —
+// один на сборку: страницы рендерятся по PAGE_CONCURRENCY за раз, как файлы льёт выкладка (UPLOAD_CONCURRENCY).
+export const PAGE_CONCURRENCY = 8;
+
+// Порядок результата — порядок items; следующая восьмёрка — после конца предыдущей.
+async function inBatches<T, R>(items: readonly T[], size: number, work: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = [];
+  for (let start = 0; start < items.length; start += size) {
+    const batch = items.slice(start, start + size);
+    results.push(...(await Promise.all(batch.map(work))));
+  }
+  return results;
+}
+
 // Сборка магазина новой темы (design.md блока 4, раздел 1) — функция «входы → файлы + манифест». Каждая страница
 // рисуется так же, как по запросу (renderShopPage); файлы клиента темы идут как есть. Ядро и скрипты секций (блок 7) —
 // из assets: входы называют их отпечатками. Ни часов, ни случайного: одинаковые входы — одинаковые файлы, ключ и
@@ -65,6 +79,10 @@ const bundleFiles = (pages: readonly RenderedPage[]): BuildFile[] => [
   ).values(),
 ];
 
+// Страницы магазина (часть 8б): все маршруты сборки, по PAGE_CONCURRENCY за раз.
+const shopPagesOf = (inputs: BuildInputs, theme: ThemeBuild, page: PageRender): Promise<readonly RenderedPage[]> =>
+  inBatches(shopRoutes(inputs), PAGE_CONCURRENCY, (route) => renderShopPage(inputs, route.path, theme, page));
+
 export async function buildStorefront(
   raw: unknown,
   references: BuildReferences,
@@ -81,9 +99,8 @@ export async function buildStorefront(
   // Секции рендерит процесс рендера сборщика. Упавшей секции на странице нет, сборка идёт дальше (блок 2, В2-1 А); упала
   // секция с removable: false или сам процесс рендера — ошибка сборки, сборку не выкладываем.
   const page = livePageOf(assets, render, failed, notice, classUnknown);
-  // Главная и свои страницы (часть 4 блока 1 «Секций и SDK»).
-  const routes = shopRoutes(inputs);
-  const shopPages = await Promise.all(routes.map((route) => renderShopPage(inputs, route.path, theme, page)));
+  // Главная и свои страницы (часть 4 блока 1 «Секций и SDK») и страницы записей (часть 8б).
+  const shopPages = await shopPagesOf(inputs, theme, page);
   const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
   const pages = [...shopPages, ...standPages];
   // Страницы 404 и 502 (блок 7, часть 7а): файлы есть в сборке, строк страниц в манифесте нет.

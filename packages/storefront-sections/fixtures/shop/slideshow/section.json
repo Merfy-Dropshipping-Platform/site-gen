@@ -1,0 +1,29 @@
+{
+  "sdk": 1,
+  "name": "slideshow",
+  "kind": "section",
+  "title": "Слайд-шоу",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Новинки сезона" } },
+    {
+      "id": "autoplay",
+      "label": "Листать сами",
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Листать", "off": "Не листать" } }
+    }
+  ],
+  "blocks": {
+    "slide": {
+      "title": "Слайд",
+      "limit": 6,
+      "settings": [
+        { "id": "subheading", "label": "Заголовок слайда", "setting": { "kind": "string", "default": "Новый слайд" } },
+        { "id": "text", "label": "Текст слайда", "setting": { "kind": "text", "default": "Коротко о слайде" } }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "slide", "settings": { "subheading": "Кашемировые шарфы", "text": "Мягкие и тёплые, из шерсти мериноса." } },
+    { "type": "slide", "settings": { "subheading": "Льняные шарфы", "text": "Лёгкие, для прохладного лета." } },
+    { "type": "slide", "settings": { "subheading": "Доставка за два дня", "text": "По Москве — два дня, по России — до недели." } }
+  ]
+}

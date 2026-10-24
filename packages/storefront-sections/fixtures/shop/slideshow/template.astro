@@ -1,0 +1,23 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body" data-behavior="carousel" data-effect="fade" data-change="700" data-autoplay={settings.autoplay ? 3 : 0}>
+  <h2 class="m-0 font-heading weight-heading text-3xl text-heading" data-animate="appear">{settings.heading}</h2>
+  <div data-part="viewport" class="overflow-hidden rounded-button">
+    <div data-part="container" class="flex">
+      {blocks.map((block) => (
+        <div data-part="slide" class="shrink-0 grow-0 basis-full bg-card p-8 text-card-foreground">
+          <div data-part="copy" class="flex flex-col gap-2">
+            <h3 class="m-0 font-heading weight-heading text-2xl">{block.settings.subheading}</h3>
+            <p class="m-0 text-lg">{block.settings.text}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+  <div class="flex items-center gap-4">
+    <button type="button" data-part="prev" class="rounded-button bg-primary px-4 py-2 text-primary-foreground">Назад</button>
+    <span data-part="counter" class="text-lg"></span>
+    <button type="button" data-part="next" class="rounded-button bg-primary px-4 py-2 text-primary-foreground">Вперёд</button>
+  </div>
+</div>

@@ -1,7 +1,7 @@
 import { hashOf, sha256 } from '@merfy/storefront-build';
 import { blobKey, contentTypeOf, type ObjectStore } from '@merfy/storefront-storage';
 import { doorFields, type Door, type DoorFields } from './doors';
-import { readManifest, type SectionFiles } from './format';
+import { MANIFEST_FILE, readManifest, type SectionFiles } from './format';
 import type { PreparedSection } from './prepare';
 import { problem, type SectionProblem } from './problems';
 import {
@@ -86,6 +86,23 @@ async function uploadScript(store: ObjectStore, script: string | null): Promise<
   return hash;
 }
 
+// Порядок ключей tokens из section.json (блок 4а): jsonb хранит ключи объекта отсортированными, поэтому порядок
+// имён сохраняется рядом со строкой (колонка token_order). Берётся из исходного файла, а не из разобранного
+// манифеста: путь через воркер и схемы не должен влиять на порядок. Нет ключа tokens — null.
+function tokenOrderOf(files: SectionFiles): string[] | null {
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+  try {
+    const manifest: unknown = JSON.parse(files[MANIFEST_FILE] ?? '');
+    if (!isRecord(manifest)) return null;
+    const tokens: unknown = manifest.tokens;
+    if (!isRecord(tokens)) return null;
+    return Object.keys(tokens);
+  } catch {
+    return null;
+  }
+}
+
 export function newRow(
   door: DoorFields,
   section: PreparedSection,
@@ -96,7 +113,16 @@ export function newRow(
   const contentHash = hashOf({ name, manifest, template, script: scriptHash });
   // Отпечаток модуля рендера — sha256 его байтов; у глобального скрипта модуля нет — null.
   const renderHash = section.render === null ? null : sha256(Buffer.from(section.render, 'utf8'));
-  return { door, section, sourceHash: hashOf(files), contentHash, renderHash, scriptHash, source: files };
+  return {
+    door,
+    section,
+    sourceHash: hashOf(files),
+    contentHash,
+    renderHash,
+    scriptHash,
+    source: files,
+    tokenOrder: tokenOrderOf(files),
+  };
 }
 
 export async function acceptSection(deps: AcceptDeps, door: Door, files: SectionFiles): Promise<AcceptResult> {

@@ -9,7 +9,7 @@ const page = Astro.locals.merfy;
 if (page === undefined) throw new Error("Страницу магазина рендерит только сборщик: нет Astro.locals.merfy");
 ---
 
-<html lang={page.head.lang}>
+<html lang={page.head.lang} {...page.head.attributes}>
 	<head>
 		<ShopHead head={page.head} />
 	</head>

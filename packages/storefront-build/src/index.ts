@@ -62,7 +62,7 @@ export {
 } from './sections-render';
 export { htmlClasses, sectionCss } from './section-css';
 export { type ShopProps } from './shop-props';
-export { SHELL_DIST, readShellBuild, type ShellBuild } from './shell';
+export { SHELL_DIST, readShellBuild, type ShellBuild, type ShellKit } from './shell';
 
 // Манифест, граф, build.json
 export {

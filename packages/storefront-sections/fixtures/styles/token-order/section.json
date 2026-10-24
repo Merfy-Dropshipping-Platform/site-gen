@@ -1,0 +1,16 @@
+{
+  "sdk": 1,
+  "name": "token-order",
+  "kind": "section",
+  "title": "Подбор шарфа",
+  "settings": [],
+  "tokens": {
+    "custom-swatch": { "kind": "color", "about": "Обводка образца ткани", "derive": { "rule": "alias", "from": "primary" } },
+    "radius-custom-swatch": { "kind": "radius", "about": "Скругление образца", "derive": { "rule": "alias", "from": "radius-card" } },
+    "weight-custom-label": { "kind": "weight", "about": "Насыщенность подписи", "default": 500 },
+    "border-width-custom-swatch": { "kind": "border-width", "about": "Толщина обводки", "default": 2 },
+    "width-custom-card": { "kind": "width", "about": "Ширина подписи", "derive": { "rule": "alias", "from": "width-page" } },
+    "spacing-custom-gap": { "kind": "spacing", "about": "Расстояние между образцами", "derive": { "rule": "alias", "from": "spacing-section" } },
+    "text-custom-note": { "kind": "text", "about": "Размер примечания", "derive": { "rule": "alias", "from": "text-sm" } }
+  }
+}

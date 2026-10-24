@@ -54,20 +54,51 @@ describe('новые темы', () => {
 
 // Импорты в исходниках: import … from '…', export … from '…', import '…'.
 const IMPORT = /(?:from|import)\s*['"]([^'"]+)['"]/g;
-const packageMain = z.object({ main: z.string() });
+const MERFY_SCOPE = '@merfy/';
+const packageName = z.object({ name: z.string().optional() });
+const packageEntries = z.object({
+  main: z.string().optional(),
+  exports: z.record(z.string(), z.string()).optional(),
+});
 
 const candidates = (path: string): string[] => [path, `${path}.ts`, join(path, 'index.ts')];
 const firstFile = (path: string): string | undefined =>
   candidates(path).find((candidate) => existsSync(candidate) && statSync(candidate).isFile());
 
-// Файл импорта. Относительный путь — от файла; @merfy/<пакет> — вход пакета из его package.json. Остальные пакеты
-// (zod, node:*) — вне счёта: их версии закреплены в package.json, а он в списке.
+const packageJsonOf = (dir: string): unknown => JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+
+// Пакеты репозитория по имени из package.json: каталог не всегда совпадает с именем (@merfy/shell — в
+// packages/storefront-shell).
+const PACKAGE_DIRS = new Map(
+  readdirSync(join(ROOT, 'packages'))
+    .map((entry) => join(ROOT, 'packages', entry))
+    .filter((dir) => existsSync(join(dir, 'package.json')))
+    .flatMap((dir): [string, string][] => {
+      const { name } = packageName.parse(packageJsonOf(dir));
+      return name === undefined ? [] : [[name, dir]];
+    }),
+);
+
+// Имя пакета и подпуть в виде ключа exports: @merfy/shell/behaviors/catalog → @merfy/shell и ./behaviors/catalog.
+function splitSpecifier(specifier: string): { name: string; subpath: string } {
+  const parts = specifier.split('/');
+  const rest = parts.slice(2);
+  return { name: parts.slice(0, 2).join('/'), subpath: rest.length === 0 ? '.' : `./${rest.join('/')}` };
+}
+
+// Файл импорта. Относительный путь — от файла; @merfy/<пакет>[/<подпуть>] — пакет репозитория по name, файл — по
+// exports его package.json (корень без exports — main). Пакета или входа нет — ошибка: иначе импорт ушёл бы из счёта
+// молча. Остальные пакеты (zod, node:*) — вне счёта: их версии закреплены в package.json, а он в списке.
 function resolveImport(from: string, specifier: string): string | undefined {
   if (specifier.startsWith('.')) return firstFile(resolve(dirname(from), specifier));
-  if (!specifier.startsWith('@merfy/')) return undefined;
-  const packageDir = join(ROOT, 'packages', specifier.slice('@merfy/'.length));
-  const { main } = packageMain.parse(JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')));
-  return firstFile(join(packageDir, main));
+  if (!specifier.startsWith(MERFY_SCOPE)) return undefined;
+  const { name, subpath } = splitSpecifier(specifier);
+  const dir = PACKAGE_DIRS.get(name);
+  if (dir === undefined) throw new Error(`пакета ${name} нет в packages/`);
+  const { main, exports } = packageEntries.parse(packageJsonOf(dir));
+  const target = exports?.[subpath] ?? (subpath === '.' ? main : undefined);
+  if (target === undefined) throw new Error(`у ${name} нет входа ${subpath} в exports`);
+  return firstFile(join(dir, target));
 }
 
 function importedFiles(file: string, seen: Set<string>): Set<string> {
@@ -94,5 +125,38 @@ describe('код платформы', () => {
 
   it('отпечаток платформы — по списку, в формате sha256', async () => {
     await expect(platformRenderHash(ROOT)).resolves.toMatch(/^sha256:[0-9a-f]{64}$/);
+  });
+});
+
+// Резолвер сторожа (блок 6 «Секций и SDK», часть 6б): пакет — по name из package.json (каталог может называться
+// иначе), подпуть — по exports. Пакета или входа нет — ошибка: импорт не уходит из счёта молча.
+describe('резолвер импортов сторожа', () => {
+  const FROM = join(PACKAGE_SRC, 'code.ts');
+  const at = (path: string): string => join(ROOT, path);
+
+  it('@merfy/<пакет> — по name из package.json', () => {
+    expect(resolveImport(FROM, '@merfy/tokens')).toBe(at('packages/tokens/src/index.ts'));
+    expect(resolveImport(FROM, '@merfy/shell')).toBe(at('packages/storefront-shell/src/core/index.ts'));
+  });
+
+  it('подпуть — по exports пакета', () => {
+    expect(resolveImport(FROM, '@merfy/shell/core')).toBe(at('packages/storefront-shell/src/core/index.ts'));
+    expect(resolveImport(FROM, '@merfy/shell/behaviors/catalog')).toBe(
+      at('packages/storefront-shell/src/core/behaviors/catalog.ts'),
+    );
+    expect(resolveImport(FROM, '@merfy/shell/behaviors/motion-css')).toBe(
+      at('packages/storefront-shell/src/core/behaviors/motion-css.ts'),
+    );
+    expect(resolveImport(FROM, '@merfy/storefront-config/read')).toBe(at('packages/storefront-config/src/read.ts'));
+  });
+
+  it('входа или пакета нет — ошибка с именем', () => {
+    expect(() => resolveImport(FROM, '@merfy/shell/no-such-entry')).toThrow('у @merfy/shell нет входа ./no-such-entry');
+    expect(() => resolveImport(FROM, '@merfy/no-such-package')).toThrow('пакета @merfy/no-such-package нет');
+  });
+
+  it('чужие пакеты и node:* — вне счёта', () => {
+    expect(resolveImport(FROM, 'zod')).toBeUndefined();
+    expect(resolveImport(FROM, 'node:fs')).toBeUndefined();
   });
 });

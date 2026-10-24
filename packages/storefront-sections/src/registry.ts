@@ -21,7 +21,7 @@ export const SECTION_AUTHORS = ['platform', 'theme', 'shop', 'extension'] as con
 
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 const COLUMNS = `id, name, kind, author, owner, release, source_hash AS "sourceHash", content_hash AS "contentHash",
-  manifest, template, style, render, render_hash AS "renderHash", script, script_hash AS "scriptHash", warnings,
+  manifest, token_order AS "tokenOrder", template, style, render, render_hash AS "renderHash", script, script_hash AS "scriptHash", warnings,
   draft, published,
   to_char(created_at AT TIME ZONE 'UTC', ${ISO}) AS "createdAt"`;
 
@@ -36,6 +36,8 @@ const sectionRowSchema = z.object({
   contentHash: z.string(),
   // Манифест — как записан при приёме: у строк до SDK 1 он старого формата, поэтому здесь без схемы.
   manifest: z.unknown(),
+  // Порядок ключей tokens из section.json (drizzle/0031): у строк, принятых раньше, — null, их tokens как раньше.
+  tokenOrder: z.array(z.string()).nullish(),
   template: z.string(),
   style: z.string(),
   render: z.string().nullable(),
@@ -60,6 +62,8 @@ export interface NewSection {
   renderHash: string | null;
   scriptHash: string | null;
   source: SectionFiles;
+  // Порядок ключей tokens из section.json (блок 4а): сохраняется при приёме, при чтении по нему собирается tokens.
+  tokenOrder: readonly string[] | null;
 }
 
 // Что видно магазину: его опубликованные секции и секции включённых у него расширений — в версиях, с которыми он
@@ -75,8 +79,8 @@ export interface SavedDraft {
 }
 
 const INSERT_SQL = `INSERT INTO storefront_section (id, name, kind, author, owner, release, source_hash, content_hash,
-  manifest, source, template, style, script, script_hash, warnings, draft, render, render_hash)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`;
+  manifest, token_order, source, template, style, script, script_hash, warnings, draft, render, render_hash)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`;
 const RELEASE_INSERT_SQL = `${INSERT_SQL}
   ON CONFLICT (author, owner, name, release) WHERE release IS NOT NULL DO NOTHING RETURNING ${COLUMNS}`;
 const DRAFT_INSERT_SQL = `${INSERT_SQL} RETURNING ${COLUMNS}`;
@@ -105,7 +109,24 @@ const VISIBLE_SQL = `SELECT ${COLUMNS} FROM storefront_section
 const nameRow = z.object({ name: z.string() });
 
 async function select(db: Queryable, sql: string, params: unknown[]): Promise<SectionRow[]> {
-  return (await db.query(sql, params)).rows.map((row) => sectionRowSchema.parse(row));
+  return (await db.query(sql, params)).rows.map((row) => withTokenOrder(sectionRowSchema.parse(row)));
+}
+
+// Свои токены секции — в порядке section.json (блок 4а): jsonb сортирует ключи объекта, порядок имён хранится в
+// token_order. Нет порядка (строки, принятые раньше) или нет tokens — манифест не меняется; имена без места в
+// порядке (не должно случаться) — в конце.
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+function withTokenOrder(row: SectionRow): SectionRow {
+  const { tokenOrder, manifest } = row;
+  if (tokenOrder == null || !isRecord(manifest)) return row;
+  const tokens: unknown = manifest.tokens;
+  if (!isRecord(tokens)) return row;
+  const ordered: Record<string, unknown> = {};
+  for (const name of tokenOrder) if (Object.hasOwn(tokens, name)) ordered[name] = tokens[name];
+  for (const name of Object.keys(tokens)) if (!Object.hasOwn(ordered, name)) ordered[name] = tokens[name];
+  return { ...row, manifest: { ...manifest, tokens: ordered } };
 }
 
 const first = (rows: readonly SectionRow[]): SectionRow | null => rows.at(0) ?? null;
@@ -122,6 +143,7 @@ function insertParams(row: NewSection, draft: boolean): unknown[] {
     row.sourceHash,
     row.contentHash,
     JSON.stringify(section.manifest),
+    row.tokenOrder === null ? null : JSON.stringify(row.tokenOrder),
     JSON.stringify(row.source),
     section.template,
     // Своего CSS у секции SDK 1 нет: колонка style остаётся для строк до SDK 1.

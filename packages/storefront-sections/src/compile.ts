@@ -1,6 +1,7 @@
 import { init, parse as lexImports } from 'es-module-lexer';
 import { z } from 'zod';
 import { ASTRO_RUNTIME } from './astro-runtime';
+import { behaviorProblems } from './behavior-check';
 import { MAX_TEMPLATE_DEPTH, templateDepth } from './depth';
 import { TEMPLATE_FILE, type SectionManifest, type SectionUse } from './format';
 import { blockSelectProblems, markBlocks } from './marks';
@@ -90,11 +91,13 @@ export async function checkTemplate(
     const message = `шаблон вложен на ${depth} уровней (теги и скобки), предел — ${MAX_TEMPLATE_DEPTH}`;
     return { problems: [problem('template-too-deep', TEMPLATE_FILE, message)], render: null };
   }
-  const [forbidden, compiled, marked] = await Promise.all([
+  const [templateFound, compiled, marked, behaviorFound] = await Promise.all([
     templateProblems(text, options.richtext, options.uses ?? []),
     compileTemplate(text),
     markBlocks(text),
+    behaviorProblems(text),
   ]);
+  const forbidden = [...templateFound, ...behaviorFound];
   if (!compiled.ok) return { problems: [...forbidden, ...compiled.problems], render: null };
   // Модуль рендера — из шаблона с метками блоков (Р57); запреты и места ошибок — по исходному тексту.
   const module = marked.marks > 0 ? await compileTemplate(marked.text) : compiled;

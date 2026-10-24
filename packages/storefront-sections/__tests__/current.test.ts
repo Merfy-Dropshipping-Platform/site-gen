@@ -74,3 +74,20 @@ describe('script_meta строки реестра', () => {
     expect(current !== null && 'scriptMeta' in current).toBe(false);
   });
 });
+
+// Часть 5г блока 5: код секции — в CurrentSection.script для превью одного блока; у строки без скрипта ключа нет.
+describe('код секции строки реестра', () => {
+  it('script и script_hash — script { hash, code }', () => {
+    const current = currentSection(row({ script: 'export default {};', scriptHash: 'sha256:d' }));
+    expect(current?.script).toEqual({ hash: 'sha256:d', code: 'export default {};' });
+  });
+
+  it.each([
+    ['нет скрипта', { script: null, scriptHash: null }],
+    ['нет хеша скрипта', { script: 'export default {};', scriptHash: null }],
+  ])('%s — без script', (_name, fields) => {
+    const current = currentSection(row(fields));
+    expect(current).not.toBeNull();
+    expect(current !== null && 'script' in current).toBe(false);
+  });
+});

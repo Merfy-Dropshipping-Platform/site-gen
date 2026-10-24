@@ -200,7 +200,9 @@ const dadataToken = "";
     // Сводка должна появиться СРАЗУ из flux:cart:v1. Не зовём cartStore.init()/clear():
     // в превью shopId пустой → addItem падает → «Ничего не выбрано».
     (function hydrateCheckoutFromNtCart() {
-      try { sessionStorage.removeItem("flux:buynow"); } catch (e) {}
+      // Оплата предложения (?offer=<токен>) корзину покупателя не трогает —
+      // «Купить сейчас» остаётся на месте.
+      if (!window.__merfyOffer) { try { sessionStorage.removeItem("flux:buynow"); } catch (e) {} }
       function lines() {
         try {
           var raw = JSON.parse(localStorage.getItem("flux:cart:v1") || "[]");

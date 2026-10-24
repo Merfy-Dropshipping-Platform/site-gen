@@ -70,6 +70,13 @@ const schemeClass = schemeClassOf(colorScheme);
     function getShopId() {
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
     }
+    // Оплата предложения расширения (`/checkout?offer=<токен>`, spec 120 Б10):
+    // позиции — из предложения (только чтение), оформление — на /pay/<токен>/offer/*,
+    // корзина покупателя не нужна и не трогается. Состояние ведёт
+    // runtime/checkout-offer.ts (window.__merfyOffer); вне режима — null.
+    function offerMode() {
+      return window.__merfyOffer || null;
+    }
     // Настройки чекаута инжектятся в __MERFY_CONFIG__.checkout ПОСЛЕ блоков
     // (producer в checkout.astro диспатчит checkout:config-ready). Читаем лениво
     // при КАЖДОМ вызове — дефолты при отсутствии = текущее поведение (нулевая
@@ -111,6 +118,8 @@ const schemeClass = schemeClassOf(colorScheme);
     function getCartItems() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
       if (items && items.length) return items;
+      // Предложение: позиции только его — локальная корзина покупателя не подмешивается.
+      if (offerMode()) return [];
       var prefixes = ['flux', 'rose', 'vanilla', 'bloom', 'satin'];
       for (var i = 0; i < prefixes.length; i++) {
         try {
@@ -216,15 +225,23 @@ const schemeClass = schemeClassOf(colorScheme);
       if (items.length === 0) return false;
       if (!getShopId()) return false;
 
+      var offer = offerMode();
+      // Предложение ещё не загрузилось (или не загрузилось вовсе) — оформлять нечего.
+      if (offer && !offer.loaded) return false;
+
       // Блок 1 backstop: на магазине с requireCustomerAuth гость (нет токена) не
       // может оформить — кнопка disabled. Основной барьер — Gate A на загрузке
       // /checkout + серверный 403; это дублирующий клиентский гейт (напр. токен
       // потерян посреди сессии). Fail-open: без флага условие не срабатывает.
-      if (getRequireCustomerAuth() && !getAuthToken()) return false;
+      // Предложение регистрацию не требует: доступ даёт токен ссылки.
+      if (!offer && getRequireCustomerAuth() && !getAuthToken()) return false;
 
       // Контакт: email обязателен всегда; телефон — только когда режим не 'email'.
+      // Предложение: телефон обязателен, пока нужна физическая доставка (перевозчику
+      // нужен получатель с телефоном), почту выставляет заказ.
       if (!getField('email')) return false;
-      if (getContactMethod() !== 'email' && !getField('phone')) return false;
+      var phoneRequired = offer ? getAddressRequired() : getContactMethod() !== 'email';
+      if (phoneRequired && !getField('phone')) return false;
 
       // Имя: требуем заполненности ВИДИМЫХ полей согласно customerNameMode.
       // CheckoutDeliveryForm рендерит ЛИБО split-поля (firstName+lastName), ЛИБО одно
@@ -286,7 +303,7 @@ const schemeClass = schemeClassOf(colorScheme);
       // (магазин с requireCustomerAuth, у гостя нет токена). Пишем только этот
       // кейс, чтобы не затирать реальную ошибку сабмита (гость до неё не доходит —
       // Gate A/B разворачивают на /login). Вход — по ссылке ИЛИ коду из письма.
-      if (!state.submitting && getRequireCustomerAuth() && !getAuthToken()) {
+      if (!state.submitting && !offerMode() && getRequireCustomerAuth() && !getAuthToken()) {
         showError('Войдите в аккаунт по ссылке или коду из письма, чтобы оформить заказ.');
       }
     }
@@ -296,6 +313,15 @@ const schemeClass = schemeClassOf(colorScheme);
     // Настройки чекаута прилетают ПОСЛЕ init — пере-оцениваем гейт по событию.
     // (getContactMethod/getCustomerNameMode/getAddressRequired читают конфиг лениво.)
     document.addEventListener('checkout:config-ready', refresh);
+    // Предложение загрузилось — кнопка может стать активной; не загрузилось —
+    // называем причину (ссылка недействительна, сеть) и оставляем кнопку выключенной.
+    document.addEventListener('checkout:offer-ready', refresh);
+    document.addEventListener('checkout:offer-error', function (e) {
+      var offer = offerMode();
+      var code = e && e.detail && e.detail.code;
+      showError(offer ? offer.message(code) : 'Не удалось загрузить заказ');
+      refresh();
+    });
     document.addEventListener('checkout:discount-applied', function (e) {
       // Кнопка «Оформить — {total}» должна показывать сумму со скидкой.
       state.discountCents = (e && e.detail && e.detail.discountCents) || 0;
@@ -352,13 +378,72 @@ const schemeClass = schemeClassOf(colorScheme);
       if (errorEl) { errorEl.hidden = true; errorEl.textContent = ''; }
     }
 
+    // Оплата предложения расширения: одна заявка на /pay/<токен>/offer/checkout.
+    // Серверу уходят версия предложения, имя, телефон, адрес и ВЫБОР доставки
+    // (идентификаторы варианта и пункт выдачи); цен и итогов в запросе нет —
+    // доставку и итог считает сервер. Корзину и localStorage не трогаем.
+    async function submitOffer() {
+      var offer = offerMode();
+      var body = {
+        version: offer.data.version,
+        customer: { name: buildCustomerName(getCustomerNameMode()), phone: getField('phone') || null },
+        paymentMethod: state.paymentMethod,
+      };
+      if (getAddressRequired()) {
+        var parts = getAddressParts();
+        body.address = {
+          city: getField('city'),
+          street: parts.street,
+          house: parts.building,
+          apartment: parts.apartment,
+          postalCode: getField('postalCode'),
+          fiasId: getFiasId(),
+        };
+        var dm = state.deliveryMethod;
+        body.delivery = {
+          carrier: dm.carrier || null,
+          mode: dm.mode || null,
+          tariffCode: dm.tariffCode != null ? String(dm.tariffCode) : null,
+          customTariffId: dm.customTariffId || null,
+          pickupPointId: dm.pickupPointId || null,
+          pickupPointCode: dm.pickupPointCode || null,
+          pickupPointAddress: dm.pickupPointAddress || null,
+        };
+      }
+      var url = getApiBase() + '/pay/' + encodeURIComponent(offer.token)
+        + '/offer/checkout?store_id=' + encodeURIComponent(getShopId());
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var json = await res.json().catch(function () { return null; });
+      var redirectUrl = json && json.data && json.data.redirectUrl;
+      if (res.ok && json && json.success && redirectUrl) {
+        window.location.href = redirectUrl;
+        return;
+      }
+      var code = (json && json.code) || '';
+      // Заказ уже оформлен/оплачен или ссылка закрыта — страница ссылки шлюза
+      // покажет состояние (и даст перейти к оплате оформленного заказа).
+      if (code === 'already_paid' || code === 'pay_link_invalid') {
+        window.location.href = getApiBase() + '/pay/' + encodeURIComponent(offer.token);
+        return;
+      }
+      // Расширение сохранило новую версию: свежие позиции и цены — после перезагрузки.
+      if (code === 'offer_changed') {
+        setTimeout(function () { window.location.reload(); }, 1500);
+      }
+      throw new Error(offer.message(code, json));
+    }
+
     button.addEventListener('click', async function (e) {
       e.preventDefault();
       // Gate B (backstop): гость на магазине с requireCustomerAuth → на вход.
       // Первой строкой, ДО canSubmit. Достижимо, когда кнопка была активна (был
       // токен) и токен потерян посреди сессии; в стабильном состоянии кнопку
       // гасит canSubmit + Gate A на загрузке. Fail-open: без флага не срабатывает.
-      if (getRequireCustomerAuth() && !getAuthToken()) {
+      if (!offerMode() && getRequireCustomerAuth() && !getAuthToken()) {
         location.href = '/login?redirect=' + encodeURIComponent('/checkout');
         return;
       }
@@ -368,6 +453,7 @@ const schemeClass = schemeClassOf(colorScheme);
       refresh();
 
       try {
+        if (offerMode()) { await submitOffer(); return; }
         var apiBase = getApiBase();
         // Bearer покупателя (если вошёл) — прикрепляем к checkout и create-payment.
         // Gateway soft-резолвит Bearer→customerId и привязывает заказ к клиенту;

@@ -134,6 +134,17 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     function getShopId() {
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
     }
+    // Оплата предложения расширения (`/checkout?offer=<токен>`, spec 120 Б10,
+    // runtime/checkout-offer.ts): расчёт и пункты выдачи — маршруты
+    // /pay/<токен>/offer/* по позициям предложения, корзина покупателя не нужна.
+    // Вне режима — null, всё остальное работает как раньше.
+    function offerMode() {
+      return window.__merfyOffer || null;
+    }
+    function offerReady() {
+      var offer = offerMode();
+      return !!(offer && offer.loaded);
+    }
     // Настройки чекаута инжектятся в __MERFY_CONFIG__.checkout ПОСЛЕ блоков
     // (producer в checkout.astro диспатчит checkout:config-ready). Читаем лениво.
     // addressRequired=false → цифровой товар, физ-доставки нет.
@@ -297,11 +308,14 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     // Перевозчики без кодов ФИАС (ПЭК) ищут по городу/региону/координатам —
     // передаём их, когда есть (section.data-last-*, см. recalculate()).
     async function fetchPickupPoints(fias, carrier, kind) {
-      var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+      var offer = offerMode();
+      var cartId = offer ? '' : ((typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '');
       var shopId = getShopId();
-      if ((!fias && !section.getAttribute('data-last-city')) || !cartId || !shopId || !carrier) return [];
-      var url = getApiBase() + '/store/carts/' + encodeURIComponent(cartId)
-        + '/delivery/pickup-points?store_id=' + encodeURIComponent(shopId)
+      if ((!fias && !section.getAttribute('data-last-city')) || (!offer && !cartId) || !shopId || !carrier) return [];
+      var url = (offer
+          ? getApiBase() + '/pay/' + encodeURIComponent(offer.token) + '/offer/pickup-points'
+          : getApiBase() + '/store/carts/' + encodeURIComponent(cartId) + '/delivery/pickup-points')
+        + '?store_id=' + encodeURIComponent(shopId)
         + '&carrier=' + encodeURIComponent(carrier);
       if (kind) url += '&kind=' + encodeURIComponent(kind);
       if (fias) url += '&cityFiasId=' + encodeURIComponent(fias);
@@ -492,7 +506,9 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     function buildOptions(data, addressKnown) {
       var options = [];
       var subtotal = cartTotalCents();
-      var freeShipping = freeShippingThreshold != null && subtotal >= freeShippingThreshold;
+      // Предложение: цену доставки считает сервер, клиентского порога бесплатной
+      // доставки нет — иначе показанная цена разошлась бы с ценой заказа.
+      var freeShipping = !offerMode() && freeShippingThreshold != null && subtotal >= freeShippingThreshold;
 
       var deliveryOptions = (data && Array.isArray(data.deliveryOptions)) ? data.deliveryOptions : [];
       var pickupPoints = (data && Array.isArray(data.pickupPoints)) ? data.pickupPoints : [];
@@ -862,7 +878,8 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var region = (addr && addr.region) || '';
       var lat = addr && addr.lat != null ? addr.lat : null;
       var lon = addr && addr.lon != null ? addr.lon : null;
-      var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+      var offer = offerMode();
+      var cartId = offer ? '' : ((typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '');
       var shopId = getShopId();
       var apiBase = getApiBase();
 
@@ -870,7 +887,10 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         showEmpty('Магазин не определён');
         return;
       }
-      if (!cartId) {
+      // Предложение: корзина не нужна, но расчёт возможен только по загруженному
+      // предложению (токен принят, позиции известны).
+      if (offer && !offer.loaded) return;
+      if (!offer && !cartId) {
         showEmpty('Добавьте товар в корзину чтобы рассчитать доставку');
         return;
       }
@@ -895,7 +915,9 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       }
 
       showLoading();
-      var url = apiBase + '/store/carts/' + encodeURIComponent(cartId) + '/delivery/calculate?store_id=' + encodeURIComponent(shopId);
+      var url = offer
+        ? apiBase + '/pay/' + encodeURIComponent(offer.token) + '/offer/delivery?store_id=' + encodeURIComponent(shopId)
+        : apiBase + '/store/carts/' + encodeURIComponent(cartId) + '/delivery/calculate?store_id=' + encodeURIComponent(shopId);
       // Без адреса шлём пустой body — gateway DTO принимает запрос без
       // cityFiasId/postalCode (оба @IsOptional) и logistic вернёт OWN-варианты.
       var body = {};
@@ -951,7 +973,10 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
             }
           } else {
             // не-success — сразу показываем error без retry
-            showError((lastJson && (lastJson.error || lastJson.message)) || 'Не удалось рассчитать доставку');
+            // (предложение: message ответа — машинный код, текст даёт offer.message)
+            showError(offer
+              ? offer.message(lastJson && lastJson.code)
+              : ((lastJson && (lastJson.error || lastJson.message)) || 'Не удалось рассчитать доставку'));
             return;
           }
         } catch (e) {
@@ -1016,7 +1041,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           lat: section.getAttribute('data-last-lat') ? parseFloat(section.getAttribute('data-last-lat')) : null,
           lon: section.getAttribute('data-last-lon') ? parseFloat(section.getAttribute('data-last-lon')) : null,
         });
-      } else if (getShopId() && (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId'))) {
+      } else if (getShopId() && (offerReady() || (!offerMode() && typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')))) {
         // Адрес ещё не вводили, но корзина готова → показываем адрес-независимые
         // опции (OWN + самовывоз) сразу, не дожидаясь ввода города.
         recalculate(null);
@@ -1047,12 +1072,19 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     var initialRenderStarted = false;
     function initialDeliveryRender() {
       if (initialRenderStarted) return;
+      // Предложение: ждём, пока оно загрузится (настройка доставки магазина и
+      // позиции приходят вместе с ним); дальше стартует checkout:offer-ready.
+      if (offerMode() && !offerReady()) return;
       initialRenderStarted = true;
       if (!getAddressRequired()) { neutralizeForDigital(); return; }
       if (!getShopId()) return;
-      var cid = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
-      if (cid) recalculate(null);
+      var cid = offerMode() ? '' : ((typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '');
+      if (cid || offerReady()) recalculate(null);
     }
+    document.addEventListener('checkout:offer-ready', function () {
+      if (_initSafetyTimer) { clearTimeout(_initSafetyTimer); _initSafetyTimer = null; }
+      initialDeliveryRender();
+    });
 
     // На чекауте НЕ запускаем первичный рендер (и запрос в логистику), пока не
     // известен конфиг: иначе цифровой товар успеет сходить в логистику и мигнуть

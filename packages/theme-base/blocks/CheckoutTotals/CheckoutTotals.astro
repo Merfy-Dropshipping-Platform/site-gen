@@ -102,9 +102,12 @@ const paddingStyle = padding
       }
       return [];
     }
+    // Оплата предложения расширения (`?offer=<токен>`, runtime/checkout-offer.ts):
+    // итог считается по позициям предложения, корзина покупателя не подмешивается.
     function checkoutItems() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
       if (items && items.length) return items;
+      if (window.__merfyOffer) return [];
       return readNtCartItems();
     }
     function checkoutTotal() {
@@ -218,6 +221,9 @@ const paddingStyle = padding
     if (!section) return;
     var point = section.querySelector('[data-ext-point="checkout"]');
     if (!point || typeof window.mountExtensionPoint !== 'function') return;
+    // Предложение расширения: точек расширений в чекауте нет (скидки и позиции
+    // выставил продавец, корзины для них нет).
+    if (window.__merfyOffer) return;
     var storeId = (window.__MERFY_CONFIG__ && (window.__MERFY_CONFIG__.shopId || window.__MERFY_CONFIG__.storeId)) || '';
     var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
     window.mountExtensionPoint(point, { point: 'checkout', storeId: storeId, cartId: cartId });

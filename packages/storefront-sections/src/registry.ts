@@ -22,7 +22,7 @@ export const SECTION_AUTHORS = ['platform', 'theme', 'shop', 'extension'] as con
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 const COLUMNS = `id, name, kind, author, owner, release, source_hash AS "sourceHash", content_hash AS "contentHash",
   manifest, token_order AS "tokenOrder", template, style, render, render_hash AS "renderHash", script, script_hash AS "scriptHash", warnings,
-  draft, published,
+  script_meta AS "scriptMeta", draft, published,
   to_char(created_at AT TIME ZONE 'UTC', ${ISO}) AS "createdAt"`;
 
 const sectionRowSchema = z.object({
@@ -44,6 +44,9 @@ const sectionRowSchema = z.object({
   renderHash: z.string().nullable(),
   script: z.string().nullable(),
   scriptHash: z.string().nullable(),
+  // Часть 5в блока 5 (drizzle/0032): что нужно скрипту — как записал приём; у строк до 5в — null. Форму сверяет
+  // currentSection: значение не той формы сборка считает строкой до 5в.
+  scriptMeta: z.unknown().optional(),
   warnings: z.array(sectionProblemSchema),
   draft: z.boolean(),
   published: z.boolean(),
@@ -79,8 +82,8 @@ export interface SavedDraft {
 }
 
 const INSERT_SQL = `INSERT INTO storefront_section (id, name, kind, author, owner, release, source_hash, content_hash,
-  manifest, token_order, source, template, style, script, script_hash, warnings, draft, render, render_hash)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`;
+  manifest, token_order, source, template, style, script, script_hash, warnings, draft, render, render_hash, script_meta)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`;
 const RELEASE_INSERT_SQL = `${INSERT_SQL}
   ON CONFLICT (author, owner, name, release) WHERE release IS NOT NULL DO NOTHING RETURNING ${COLUMNS}`;
 const DRAFT_INSERT_SQL = `${INSERT_SQL} RETURNING ${COLUMNS}`;
@@ -154,6 +157,7 @@ function insertParams(row: NewSection, draft: boolean): unknown[] {
     draft,
     section.render,
     row.renderHash,
+    JSON.stringify(section.scriptMeta),
   ];
 }
 

@@ -53,3 +53,24 @@ describe('строка реестра в формате SDK 1', () => {
     expect(currentSection(global)?.renderHash).toBeNull();
   });
 });
+
+// Часть 5в блока 5: script_meta строки — в CurrentSection.scriptMeta; у строк до 5в (null) и у значения не той формы
+// ключа нет — сборка даёт секции все части ядра, как в 5б.
+describe('script_meta строки реестра', () => {
+  const META = { uses: ['cart'], parts: ['cart'], classes: ['opacity-40'] };
+
+  it('значение той формы — scriptMeta', () => {
+    expect(currentSection(row({ scriptMeta: META }))?.scriptMeta).toEqual(META);
+  });
+
+  it.each([
+    ['строка до 5в', null],
+    ['модуль не из SDK', { ...META, uses: ['basket'] }],
+    ['класс со скобками', { ...META, classes: ['bg-[red]'] }],
+    ['лишнее поле', { ...META, part: 'cart' }],
+  ])('%s — без scriptMeta', (_name, scriptMeta) => {
+    const current = currentSection(row({ scriptMeta }));
+    expect(current).not.toBeNull();
+    expect(current !== null && 'scriptMeta' in current).toBe(false);
+  });
+});

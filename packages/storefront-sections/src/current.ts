@@ -1,5 +1,6 @@
 import { sectionManifestSchema, type SectionManifest } from './format';
 import type { SectionRow } from './registry';
+import { scriptMetaSchema, type ScriptMeta } from './script-meta';
 
 // Строка реестра в формате SDK 1 (блок 1 «Секций и SDK»): манифест распознан и у секции есть модуль рендера. Строки
 // до SDK 1 и секции без модуля сборка не использует — null. У глобального скрипта модуля рендера не бывает — годится.
@@ -8,11 +9,21 @@ export interface CurrentSection {
   manifest: SectionManifest;
   render: string | null;
   renderHash: string | null;
+  // Что нужно скрипту (часть 5в блока 5, script_meta). Нет — строка до 5в или значение не той формы: сборка даёт
+  // секции все части ядра, как в 5б.
+  scriptMeta?: ScriptMeta;
 }
 
 export function currentSection(row: SectionRow): CurrentSection | null {
   const manifest = sectionManifestSchema.safeParse(row.manifest);
   if (!manifest.success) return null;
   if (manifest.data.kind === 'section' && (row.render === null || row.renderHash === null)) return null;
-  return { name: row.name, manifest: manifest.data, render: row.render, renderHash: row.renderHash };
+  const meta = scriptMetaSchema.safeParse(row.scriptMeta);
+  return {
+    name: row.name,
+    manifest: manifest.data,
+    render: row.render,
+    renderHash: row.renderHash,
+    ...(meta.success ? { scriptMeta: meta.data } : {}),
+  };
 }

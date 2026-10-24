@@ -77,6 +77,7 @@ const API = [
   'parseChangelog',
   'parseThemeVersions',
   'platformRenderHash',
+  'previewCode',
   'previewTokens',
   'readClientFiles',
   'readShellBuild',

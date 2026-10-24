@@ -15,6 +15,8 @@ export default defineConfig({
       include: [
         'src/{errors,parse,log,events,settings,slots,themes,theme-panels,indexnow,preview,inline-assets,preview-policy}.ts',
         'src/release/{waves,kinds,checks,page-check,dry-run,report}.ts',
+        // Код секций в ответах превью (блок 5, часть 5г).
+        'src/preview-code.ts',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },

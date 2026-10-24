@@ -105,6 +105,19 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     fix: 'Убери импорт: корзина, избранное, вход и данные — модули SDK по uses (modules.md).',
     example: { before: "import axios from 'axios'", after: "import { defineSection } from '@merfy/shell'" },
   },
+  // Проверка скрипта (блок 5, часть 5в): справки добавлены после вливания dev с новыми кодами (блок 14).
+  'sdk-only': {
+    when: 'В скрипте имя вне списка SDK, this, class, delete, import() или код вне defineSection.',
+    fix: 'Весь код секции — внутри defineSection; имена и вызовы — только из SDK.',
+  },
+  'event-unknown': {
+    when: '`ctx.listen` подписан на событие, которого нет в каталоге событий.',
+    fix: 'Возьми имя события из каталога: events.md.',
+  },
+  'action-unknown': {
+    when: '`data-action` в шаблоне называет действие, которого нет ни у секции, ни у SDK.',
+    fix: 'Объяви действие в defineSection или возьми имя из каталога: actions.md.',
+  },
   'script-heavy': {
     when: 'Скрипт после сжатия больше порога предупреждения; секция сохраняется.',
     fix: 'Сократи скрипт: готовое поведение data-behavior вместо своего кода, без повторов.',

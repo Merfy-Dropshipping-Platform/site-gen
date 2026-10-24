@@ -146,6 +146,24 @@
 Пример: было `import axios from 'axios'` → стало `import { defineSection } from '@merfy/shell'`.
 
 
+## sdk-only
+
+Когда: В скрипте имя вне списка SDK, this, class, delete, import() или код вне defineSection.
+
+Как исправить: Весь код секции — внутри defineSection; имена и вызовы — только из SDK..
+
+## event-unknown
+
+Когда: `ctx.listen` подписан на событие, которого нет в каталоге событий.
+
+Как исправить: Возьми имя события из каталога: events.md..
+
+## action-unknown
+
+Когда: `data-action` в шаблоне называет действие, которого нет ни у секции, ни у SDK.
+
+Как исправить: Объяви действие в defineSection или возьми имя из каталога: actions.md..
+
 ## script-heavy
 
 Когда: Скрипт после сжатия больше порога предупреждения; секция сохраняется.

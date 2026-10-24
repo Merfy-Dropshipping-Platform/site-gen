@@ -1,0 +1,19 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
+  {settings.heading && <h2 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h2>}
+  <div class="flex gap-4">
+    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="серое" data-action="pick">Серое пальто</button>
+    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="чёрное" data-action="pick">Чёрное пальто</button>
+    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="бежевое" data-action="pick">Бежевое пальто</button>
+  </div>
+  <div class="flex flex-col gap-4">
+    {blocks.map((block) => (
+      <div class="rounded-button bg-card p-4 text-card-foreground" data-ref="scarf" data-coats={block.settings.caption}>
+        <p class="m-0 text-lg">{block.settings.label}</p>
+        <p class="m-0 mt-2">К пальто: {block.settings.caption}</p>
+      </div>
+    ))}
+  </div>
+</div>

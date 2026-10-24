@@ -1,0 +1,7 @@
+{
+  "sdk": 1,
+  "name": "reviews-wall",
+  "kind": "section",
+  "title": "Стена отзывов",
+  "settings": [{ "id": "title", "label": "Заголовок", "setting": { "kind": "string", "default": "Отзывы" } }]
+}

@@ -48,12 +48,24 @@ export interface WrapperValues {
 
 export const DEFAULT_WRAPPER_VIEW: WrapperView = { classes: ['py-section'], attributes: {} };
 
-// Закрепление (Р1-5-7). В части 5а блока 1 все три строки пустые: классы и атрибуты добавляет часть 7б блока 7 —
-// «всегда» — классы закрепления; «при прокрутке вверх» — те же и переход, сдвиг и атрибуты поведения.
+// Закрепление (Р1-5-7; часть 7б блока 7, Р7б-1). Классы стоят на самой <merfy-section>: закрепляется обёртка, а не элемент
+// внутри неё. none ничего не добавляет; always закрепляет; scroll-up закрепляет и добавляет переход, сдвиг по data-hidden и
+// поведение sticky-header (оно ставит и снимает data-hidden, режим читает из data-mode).
+const PINNED = ['sticky', 'top-0', 'z-50'];
+
 export const STICKY_VIEW: Readonly<Record<StickyValue, WrapperView>> = {
   none: { classes: [], attributes: {} },
-  'scroll-up': { classes: [], attributes: {} },
-  always: { classes: [], attributes: {} },
+  'scroll-up': {
+    classes: [
+      ...PINNED,
+      'transition-transform',
+      'duration-300',
+      'motion-reduce:transition-none',
+      'data-[hidden]:-translate-y-full',
+    ],
+    attributes: { 'data-behavior': 'sticky-header', 'data-mode': 'scroll-up' },
+  },
+  always: { classes: [...PINNED], attributes: {} },
 };
 
 // Объявление общей настройки по id — для проверки значения правки.

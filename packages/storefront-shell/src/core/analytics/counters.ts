@@ -10,7 +10,7 @@ export const COUNTER_NUMBERS: Readonly<Record<CounterKind, RegExp>> = {
   google: /^G-[A-Z0-9]{4,20}$/,
 };
 
-interface CounterScript {
+export interface CounterScript {
   // null — встроенный код.
   src: string | null;
   code: string;
@@ -39,6 +39,9 @@ const TEMPLATES: Readonly<Record<CounterKind, (number: string) => CounterScript[
 };
 
 const fits = (counter: Counter): boolean => COUNTER_NUMBERS[counter.kind].test(counter.number);
+// Скрипты счётчика по шаблону вида; номер не по правилу — ни одного. Сборка магазина считает по ним хеши встроенного кода для CSP (блок 13 «Секций и SDK», часть 13б).
+export const counterScripts = (counter: Counter): CounterScript[] =>
+  fits(counter) ? TEMPLATES[counter.kind](counter.number) : [];
 
 function addScript(doc: Document, script: CounterScript): void {
   const element = doc.createElement('script');
@@ -52,8 +55,5 @@ export function loadCounters(doc: Document, counters: readonly Counter[]): void 
   counters
     .filter((counter) => !fits(counter))
     .forEach((counter) => console.error(`Аналитика: счётчик ${counter.kind} — номер не по правилу`));
-  counters
-    .filter(fits)
-    .flatMap((counter) => TEMPLATES[counter.kind](counter.number))
-    .forEach((script) => addScript(doc, script));
+  counters.flatMap(counterScripts).forEach((script) => addScript(doc, script));
 }

@@ -13,6 +13,7 @@
     "./behaviors/motion-css": "./src/core/behaviors/motion-css.ts",
     "./events": "./src/core/event-catalog.ts",
     "./actions": "./src/core/action-catalog.ts",
+    "./counters": "./src/core/analytics/counters.ts",
     "./core-parts.json": "./core-parts.json"
   },
   "scripts": {

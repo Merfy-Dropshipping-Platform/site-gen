@@ -124,6 +124,36 @@ describe('переезды (301) и удалённое (410)', () => {
   });
 });
 
+describe('второй адрес записи (блок 8 «Секций и SDK», часть 8б)', () => {
+  const ID = '00000000-0000-4000-8000-000000000101';
+  const SHARF = { path: '/product/sharf', entity: `product:${ID}`, aliases: [`/product/${ID}`] };
+
+  it('адрес по id — 301 на основной адрес, и у первой выкладки; файла по нему нет', () => {
+    const { table } = publish([HOME, SHARF], 1);
+    expect(table.moved).toEqual({ [`/product/${ID}`]: '/product/sharf' });
+    expect(table.files[`/product/${ID}`]).toBeUndefined();
+    expect(table.gone).toEqual({});
+  });
+
+  it('прошлая сборка без aliases (до части 8б) — адрес по id ведёт на основной адрес', () => {
+    const before = { path: SHARF.path, entity: SHARF.entity };
+    const { table } = publish([HOME, SHARF], 2, publish([HOME, before], 1));
+    expect(table.moved).toEqual({ [`/product/${ID}`]: '/product/sharf' });
+  });
+
+  it('сменили адрес товара — старый адрес и адрес по id ведут на новый', () => {
+    const renamed = { ...SHARF, path: '/product/sharf-nova' };
+    const { table } = publish([HOME, renamed], 2, publish([HOME, SHARF], 1));
+    expect(table.moved).toEqual({ '/product/sharf': '/product/sharf-nova', [`/product/${ID}`]: '/product/sharf-nova' });
+  });
+
+  it('удалили товар — оба адреса отвечают 410', () => {
+    const { table } = publish([HOME], 2, publish([HOME, SHARF], 1));
+    expect(table.moved).toEqual({});
+    expect(Object.keys(table.gone).sort()).toEqual([`/product/${ID}`, '/product/sharf']);
+  });
+});
+
 describe('страницы 404 и 502 платформы (блок 7 «Секций и SDK», часть 7а)', () => {
   it('502.html — хеш в unavailable; 404.html и 502.html по своему адресу не отдаются', () => {
     const { manifest } = buildOf([HOME], {

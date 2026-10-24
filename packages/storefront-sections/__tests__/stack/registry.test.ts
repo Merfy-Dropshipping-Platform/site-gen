@@ -47,6 +47,7 @@ function newSection(door: Door, name: string, source: string, kind: 'section' | 
       render: null,
       script: null,
       warnings: [],
+      scriptMeta: { uses: [], parts: [], classes: [] },
     },
     sourceHash: sha256(`source:${source}`),
     contentHash: sha256(`content:${source}`),

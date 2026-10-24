@@ -3,7 +3,8 @@ import { animateNode } from './motion';
 import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
 
 // Окно и выезжающая панель (design.md блока 6, раздел 5; факты 10, 12; дополнения блока 7, п. 15): <dialog> и
-// showModal/show — браузер, переходы и запрет прокрутки — поведение. Немодальные окна секции — по одному.
+// showModal/show — браузер, переходы и запрет прокрутки — поведение. Немодальные окна секции — по одному; открытие
+// модального окна закрывает немодальные окна своей секции (блок 7, часть 7б).
 
 const CLOSE_OTHERS_EVENT = 'merfy-dialog-close-others';
 
@@ -151,7 +152,6 @@ function placeUnderSection(box: Box): void {
 }
 
 function announceOpen(box: Box): void {
-  if (box.modal) return;
   box.host.root.dispatchEvent(new Event(CLOSE_OTHERS_EVENT, { bubbles: true }));
 }
 
@@ -164,8 +164,8 @@ function doOpen(box: Box): void {
   } else {
     placeUnderSection(box);
     box.dialog.show();
-    announceOpen(box);
   }
+  announceOpen(box);
   if (isInstant(box.host)) {
     box.state = 'open';
     return;
@@ -297,7 +297,7 @@ function listenSectionEvents(box: Box): void {
   box.host.section.addEventListener(
     CLOSE_OTHERS_EVENT,
     (event) => {
-      if (event.target !== box.host.root) doCloseAnimated(box);
+      if (!box.modal && event.target !== box.host.root) doCloseAnimated(box);
     },
     { signal },
   );

@@ -24,6 +24,9 @@ export interface ShopPageHead {
   // строка — на странице нет ни секций, ни бандла.
   codeHtml: string;
   social: ShopSocial;
+  // Разметка для поиска страницы записи (блок 8 «Секций и SDK», часть 8б-2): готовая строка
+  // <script type="application/ld+json">…</script>, её пишет платформа (head.ts); тема печатает как есть. Нет — разметки нет.
+  structuredData?: string;
 }
 
 // Теги для соцсетей (блок 9): og: и twitter:card. Заголовок, описание и адрес у них те же, что у страницы (title,

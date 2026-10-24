@@ -105,7 +105,7 @@ describe('код магазина', () => {
     expect(buildKey(without)).not.toBe(buildKey(all));
   });
 
-  it('публикация: черновик своей секции — на витрину; бандл страницы — в HTML главной; модуль старого вида пропущен', async () => {
+  it('публикация: черновик своей секции — на витрину; бандл страницы — в HTML главной; модули секций — по их uses', async () => {
     const site = await insertSite(harness.db);
     await insertRevision(harness.db, site.id, { sections: PLACEMENT });
     await saveOurSections(site.id);
@@ -124,11 +124,10 @@ describe('код магазина', () => {
     expect(home).not.toContain('id="merfy-modules"');
     expect(home).toContain('<merfy-section data-section="shop:cart-badge" data-section-id="cart-badge-1"');
     expect(home).toContain('data-merfy-input');
-    // Отзывы — модуль старого вида (part): секция на странице без скрипта, строка журнала сборщика.
-    expect(logged(harness.lines, 'section-script-skipped').at(-1)).toMatchObject({
-      shopId: site.id,
-      section: 'reviews:list',
-    });
+    // Часть 5в блока 5: модули секции в ctx — по её script_meta.uses. «Значок корзины» и «Отзывы» объявили
+    // uses: ["cart"] — у обоих в бандле только cart; модуль «Отзывов» нового вида — пропусков нет.
+    expect(home.split('uses:["cart"]')).toHaveLength(3);
+    expect(logged(harness.lines, 'section-script-skipped').filter((line) => line.shopId === site.id)).toEqual([]);
   });
 
   it('extensions не ответил — снимок не получен: сборка failed, строка extensions-failed, живой сайт не тронут', async () => {

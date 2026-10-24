@@ -15,6 +15,7 @@ import {
   type ShopTheme,
 } from '@merfy/storefront-build';
 import {
+  propsUsesOf,
   resolveSectionBlocks,
   resolveSectionSettings,
   revisionMenusSchema,
@@ -191,7 +192,7 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   // Часть 4 (Р1-4-11): деревья меню по значениям настроек; uses — только если объявлен.
   const placed = previewPlaced(instance, current, settings, blocks, menus ?? [], current.renderHash);
   // page — у каждой секции (часть 7а): без page и без uses пропсы не читаются, страница — главная.
-  const needsProps = (current.manifest.uses ?? []).length > 0 || page !== undefined;
+  const needsProps = propsUsesOf(current.manifest).length > 0 || page !== undefined;
   const props = needsProps ? await previewProps(deps, found.shopId, theme, page) : undefined;
   const modules = new Map([[current.renderHash, current.render]]);
   const content = await renderPlacedSections([placed], found.dictionary, {
@@ -219,7 +220,7 @@ function previewPlaced(
     ...wrapperOf(instance, current),
     ...blocks,
     ...(Object.keys(trees).length === 0 ? {} : { menus: trees }),
-    ...(current.manifest.uses === undefined ? {} : { uses: current.manifest.uses }),
+    ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),
   };
 }
 

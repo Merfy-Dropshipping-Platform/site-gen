@@ -24,6 +24,8 @@
   "dependencies": {
     "@astrojs/compiler-binding-wasm32-wasi": "0.5.2",
     "@astrojs/compiler-rs": "0.5.2",
+    "@babel/parser": "7.29.2",
+    "@babel/traverse": "7.29.0",
     "@merfy/shell": "workspace:*",
     "@merfy/storefront-build": "workspace:*",
     "@merfy/storefront-storage": "workspace:*",
@@ -40,7 +42,9 @@
     "zod": "4.3.6"
   },
   "devDependencies": {
+    "@babel/types": "7.29.0",
     "@eslint/js": "9.39.2",
+    "@types/babel__traverse": "7.28.0",
     "@types/node": "22.20.1",
     "@types/pg": "8.16.0",
     "@types/sanitize-html": "2.16.1",

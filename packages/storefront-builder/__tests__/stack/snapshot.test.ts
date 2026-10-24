@@ -89,6 +89,8 @@ describe('снимок входов', () => {
       'policy:refund',
       'contacts:main',
       'publication:' + inputs.data.entities[2].id,
+      // Блок 8 «Секций и SDK», часть 8а: блог статьи — своей сущностью.
+      'blog:' + inputs.data.entities[3].id,
       'product:p-1',
       // Оплата онлайн (часть 4, Р1-4-6): подставной billing — не подключена, сущность всё равно есть.
       'billing:main',
@@ -156,5 +158,58 @@ describe('снимок входов', () => {
 
   it('очередь сервиса товаров — product-service_queue, как у нынешней сборки', () => {
     expect(PRODUCT_QUEUE).toBe('product-service_queue');
+  });
+});
+
+describe('снимок входов: коллекции и блоги (блок 8 «Секций и SDK», часть 8а)', () => {
+  it.each(['fail', 'error', 'silent'] as const)(
+    'коллекции: %s — снимок не получен, сборки не будет',
+    async (answer) => {
+      const site = await insertSite(db);
+      products.collectionAnswers.set(site.id, answer);
+      const snapshot = await readSnapshot(deps(), site.id);
+      expect(snapshot.inputs.data.status).toBe('failed');
+      expect(lines.at(-1)).toMatch(/^collections-failed /);
+    },
+  );
+
+  it('коллекция, блог и товар во входах — только публичные поля, цена в копейках', async () => {
+    const site = await insertSite(db);
+    await seedContent(site.id);
+    products.products.set(site.id, [{ id: 'p-1', name: 'Шарф', price: 2500, costPrice: 900, available: true }]);
+    products.collections.set(site.id, [
+      {
+        id: 'c-1',
+        name: 'Кашемир',
+        slug: 'kashemir',
+        description: null,
+        images: [],
+        metaTitle: null,
+        metaDescription: null,
+        updatedAt: '2026-10-20T10:00:00.000Z',
+        productIds: ['p-1'],
+      },
+    ]);
+    const inputs = parseBuildInputs((await readSnapshot(deps(), site.id)).inputs);
+    const ofType = (type: string) => inputs.data.entities.filter((entity) => entity.type === type);
+    expect(ofType('collection')).toEqual([
+      {
+        type: 'collection',
+        id: 'c-1',
+        updatedAt: '2026-10-20T10:00:00.000Z',
+        data: {
+          title: 'Кашемир',
+          handle: 'kashemir',
+          description: '',
+          images: [],
+          productIds: ['p-1'],
+          seo: { title: '', description: '' },
+        },
+      },
+    ]);
+    expect(ofType('blog').map((entity) => entity.data)).toEqual([{ title: 'Новости', handle: 'novosti' }]);
+    expect(ofType('publication')[0].data).toMatchObject({ slug: 'linen', publishedAt: null, cover: null });
+    expect(ofType('product')[0].data).toMatchObject({ title: 'Шарф', price: 250000 });
+    expect(ofType('product')[0].data).not.toHaveProperty('costPrice');
   });
 });

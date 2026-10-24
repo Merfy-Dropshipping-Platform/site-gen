@@ -132,3 +132,22 @@ describe('приём секции целиком', () => {
     ]);
   });
 });
+
+// Часть 5в блока 5: приём пишет script_meta — модули SDK для ctx, части бандла (uses и действия SDK разметки) и классы
+// скрипта; строка реестра отдаёт его в scriptMeta.
+describe('script_meta при приёме', () => {
+  const SCARF = { uses: [], parts: ['cart'], classes: ['bg-primary', 'text-primary-foreground'] };
+  const REVIEWS = { uses: ['cart'], parts: ['cart'], classes: [] };
+
+  it('«Подбор шарфа» и «Отзывы»: script_meta — в строке реестра и в базе', async () => {
+    const scarf = await acceptSection(deps(), DOORS.shop, await readSectionFolder(fixture('scripts/scarf-match')));
+    const reviews = await acceptSection(deps(), DOORS.extension, await files('reviews-list'));
+    const metas = [scarf, reviews].map((result) => (result.status === 'accepted' ? result.row.scriptMeta : null));
+    expect(metas).toEqual([SCARF, REVIEWS]);
+    const stored = await db.query('SELECT name, script_meta FROM storefront_section ORDER BY name COLLATE "C"');
+    expect(stored.rows).toEqual([
+      { name: 'reviews:list', script_meta: REVIEWS },
+      { name: 'shop:scarf-match', script_meta: SCARF },
+    ]);
+  });
+});

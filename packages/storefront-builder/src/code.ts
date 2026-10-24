@@ -8,6 +8,7 @@ import {
 } from '@merfy/storefront-build';
 import {
   currentSection,
+  propsUsesOf,
   resolveSectionBlocks,
   resolveSectionSettings,
   revisionMenusSchema,
@@ -164,9 +165,12 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   script: row.scriptHash,
   // Часть 4: флаги section.json — только если объявлены, иначе входы и ключ прежние.
   ...(current.manifest.removable === undefined ? {} : { removable: current.manifest.removable }),
-  ...(current.manifest.uses === undefined ? {} : { uses: current.manifest.uses }),
+  // uses с модулями SDK (часть 5в блока 5): во входы сборки — только theme и shop, модули идут через script_meta.
+  ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),
   // Свои токены секции (блок 4, Р4-10) — только если объявлены в section.json.
   ...(current.manifest.tokens === undefined ? {} : { tokens: current.manifest.tokens }),
+  // Что нужно скрипту (часть 5в блока 5) — script_meta строки; у строки до 5в его нет, и во входах ключа нет.
+  ...(current.scriptMeta === undefined ? {} : { meta: current.scriptMeta }),
 });
 
 // Файл скрипта — текст готового модуля из строки реестра: те же байты хранятся в storefront/blobs (приём, задача 10).

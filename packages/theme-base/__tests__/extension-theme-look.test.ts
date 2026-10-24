@@ -124,13 +124,19 @@ describe('стили формы покупки: режим «как тема»',
     );
   });
 
-  it('блок «Товар» ставит data-look и на подпись у цены', () => {
+  it('блок «Товар» ставит data-look="theme" на подпись у цены у любой темы, и у flux тоже', () => {
+    // Б15: у flux флага extensionThemeLook нет (форма остаётся на палитре PM),
+    // а подпись при этом красилась фиксированным #8A8A8A. Подпись берёт цвет
+    // схемы всегда; форма — по-прежнему только с extensionLook.
     const product = readFileSync(
       resolve(__dirname, '../blocks/Product/Product.astro'),
       'utf8',
     );
     expect(product).toContain(
-      '<span data-extension-purchase-note data-look={extensionLook} hidden></span>',
+      '<span data-extension-purchase-note data-look="theme" hidden></span>',
+    );
+    expect(product).toContain(
+      '<div class="xp" data-extension-purchase data-look={extensionLook} hidden></div>',
     );
   });
 

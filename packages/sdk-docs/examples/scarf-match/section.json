@@ -1,0 +1,24 @@
+{
+  "sdk": 1,
+  "name": "scarf-match",
+  "kind": "section",
+  "title": "Подбор шарфа по цвету пальто",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Подберите шарф к пальто" } }
+  ],
+  "blocks": {
+    "scarf": {
+      "title": "Шарф",
+      "limit": 12,
+      "settings": [
+        { "id": "label", "label": "Название", "setting": { "kind": "string", "default": "Кашемировый шарф" } },
+        { "id": "caption", "label": "К каким пальто", "setting": { "kind": "string", "default": "серое, чёрное" } }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "scarf", "settings": { "label": "Шарф цвета кэмел", "caption": "серое, чёрное" } },
+    { "type": "scarf", "settings": { "label": "Графитовый шарф", "caption": "бежевое" } },
+    { "type": "scarf", "settings": { "label": "Молочный шарф", "caption": "чёрное, бежевое" } }
+  ]
+}

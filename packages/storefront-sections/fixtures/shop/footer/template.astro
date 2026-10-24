@@ -1,49 +1,61 @@
 ---
 const { settings, theme, shop } = Astro.props;
 ---
-<div class="mx-auto flex max-w-page flex-col gap-8 px-4 py-8 font-body text-foreground">
+<div data-footer class="mx-auto flex max-w-page flex-col gap-8 px-4 font-body text-foreground">
   {settings.newsletter && (
-    <div class="flex flex-col gap-2">
+    <section class="flex flex-col gap-2">
       <h2 class:list={['m-0 font-heading weight-heading text-heading', { 'text-xl': settings['heading-size'] === 'small', 'text-2xl': settings['heading-size'] === 'medium', 'text-3xl': settings['heading-size'] === 'large' }]}>{settings.heading || 'Подпишитесь на рассылку'}</h2>
-      <p class:list={['m-0', { 'text-sm': settings['text-size'] === 'small', 'text-base': settings['text-size'] === 'medium', 'text-lg': settings['text-size'] === 'large' }]}>{settings.text || 'Будьте в курсе новых поступлений и акций'}</p>
-      <div class="flex gap-2">
-        <input class="rounded-input px-4 py-2" type="email" placeholder="Ваш email" />
-        <button class="rounded-button bg-primary px-4 py-2 text-primary-foreground" type="button">Подписаться</button>
+      {settings.text && <p class:list={['m-0', { 'text-sm': settings['text-size'] === 'small', 'text-base': settings['text-size'] === 'medium', 'text-lg': settings['text-size'] === 'large' }]}>{settings.text}</p>}
+      <form class="flex gap-2">
+        <input
+          aria-label="Email"
+          class="rounded-input px-4 py-2"
+          name="email"
+          required
+          type="email"
+        />
+        <button aria-label="Подписаться" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" disabled type="submit">Подписаться</button>
+      </form>
+      <p class:list={['m-0', { 'text-sm': settings['text-size'] === 'small', 'text-base': settings['text-size'] === 'medium', 'text-lg': settings['text-size'] === 'large' }, 'text-foreground']} role="status"></p>
+    </section>
+  )}
+  <div class="grid gap-8 sm:grid-cols-2 md:grid-cols-3">
+    <div class="flex flex-col gap-2">
+      {settings.logo && <img alt={shop.name} class="h-10 w-auto" src={settings.logo} />}
+      <h3 class="m-0 font-heading">Навигация</h3>
+      <ul class="m-0 list-none p-0">
+        <li><a class="no-underline hover:text-heading" href="/catalog">Каталог</a></li>
+        <li><a class="no-underline hover:text-heading" href="/about">О нас</a></li>
+        <li><a class="no-underline hover:text-heading" href="/contacts">Контакты</a></li>
+      </ul>
+    </div>
+    {shop.policies.length > 0 && (
+      <div class="flex flex-col gap-2">
+        <h3 class="m-0 font-heading">Информация</h3>
+        <ul class="m-0 list-none p-0">
+          {shop.policies.map((policy) => (
+            <li><a class="no-underline hover:text-heading" href={policy.url}>{policy.title}</a></li>
+          ))}
+        </ul>
       </div>
-    </div>
-  )}
-  {settings.logo && <img class="h-10 w-auto" src={settings.logo} alt={shop.name} />}
-  <div class="grid gap-8 md:grid-cols-3">
-    <div>
-      <p class="m-0 font-heading">Навигация</p>
-      <ul class="m-0 list-none p-0">
-        <li><a class="text-foreground no-underline" href="/catalog">Каталог</a></li>
-        <li><a class="text-foreground no-underline" href="/about">О нас</a></li>
-        <li><a class="text-foreground no-underline" href="/contacts">Контакты</a></li>
-      </ul>
-    </div>
-    <div>
-      <p class="m-0 font-heading">Контакты</p>
-      <ul class="m-0 list-none p-0">
-        {shop.contacts.phone && <li><a class="text-foreground no-underline" href={`tel:${shop.contacts.phone}`}>{shop.contacts.phone}</a></li>}
-        {shop.contacts.email && <li><a class="text-foreground no-underline" href={`mailto:${shop.contacts.email}`}>{shop.contacts.email}</a></li>}
-        {shop.contacts.fields.map((field) => <li>{field.label}: {field.value}</li>)}
-      </ul>
-    </div>
-    <div>
-      <p class="m-0 font-heading">Социальные сети</p>
-      <ul class="m-0 list-none p-0">
-        {theme['social-telegram'] && <li><a class="text-foreground no-underline" href={theme['social-telegram']}>Telegram</a></li>}
-        {theme['social-vk'] && <li><a class="text-foreground no-underline" href={theme['social-vk']}>ВКонтакте</a></li>}
-        {theme['social-dzen'] && <li><a class="text-foreground no-underline" href={theme['social-dzen']}>Дзен</a></li>}
-        {theme['social-youtube'] && <li><a class="text-foreground no-underline" href={theme['social-youtube']}>YouTube</a></li>}
-        {theme['social-tiktok'] && <li><a class="text-foreground no-underline" href={theme['social-tiktok']}>TikTok</a></li>}
-        {theme['social-max'] && <li><a class="text-foreground no-underline" href={theme['social-max']}>MAX</a></li>}
-      </ul>
-    </div>
+    )}
+    {(shop.contacts.phone || shop.contacts.email || shop.contacts.fields.length > 0 || shop.payments.online || theme['social-telegram'] || theme['social-vk'] || theme['social-dzen'] || theme['social-youtube'] || theme['social-tiktok'] || theme['social-max']) && (
+      <div class="flex flex-col gap-2 md:items-end md:text-right">
+        <h3 class="m-0 font-heading">Социальные сети</h3>
+        <ul class="m-0 list-none p-0">
+          {shop.contacts.phone && <li><a class="no-underline hover:text-heading" href={`tel:${shop.contacts.phone}`}>{shop.contacts.phone}</a></li>}
+          {shop.contacts.email && <li><a class="no-underline hover:text-heading" href={`mailto:${shop.contacts.email}`}>{shop.contacts.email}</a></li>}
+          {shop.contacts.fields.map((field) => <li>{field.label}: {field.value}</li>)}
+          {theme['social-telegram'] && <li><a class="no-underline hover:text-heading" href={theme['social-telegram']} rel="noopener noreferrer" target="_blank">Telegram</a></li>}
+          {theme['social-vk'] && <li><a class="no-underline hover:text-heading" href={theme['social-vk']} rel="noopener noreferrer" target="_blank">ВКонтакте</a></li>}
+          {theme['social-dzen'] && <li><a class="no-underline hover:text-heading" href={theme['social-dzen']} rel="noopener noreferrer" target="_blank">Дзен</a></li>}
+          {theme['social-youtube'] && <li><a class="no-underline hover:text-heading" href={theme['social-youtube']} rel="noopener noreferrer" target="_blank">YouTube</a></li>}
+          {theme['social-tiktok'] && <li><a class="no-underline hover:text-heading" href={theme['social-tiktok']} rel="noopener noreferrer" target="_blank">TikTok</a></li>}
+          {theme['social-max'] && <li><a class="no-underline hover:text-heading" href={theme['social-max']} rel="noopener noreferrer" target="_blank">MAX</a></li>}
+        </ul>
+        {shop.payments.online && <p class="m-0 flex gap-2 text-sm"><span>Mastercard</span><span>Visa</span><span>МИР</span></p>}
+      </div>
+    )}
   </div>
-  {shop.payments.online && (
-    <p class="m-0 flex gap-2 text-sm"><span>Mastercard</span><span>Visa</span><span>МИР</span></p>
-  )}
-  <p class="m-0 text-sm">© {shop.name}. <a class="text-foreground" href="https://merfy.ru/">Разработано на Merfy</a></p>
+  <p class="m-0 text-sm">© {shop.name}. <a class="no-underline hover:text-heading" href="https://merfy.ru/" rel="noopener noreferrer" target="_blank">Разработано на Merfy</a></p>
 </div>

@@ -56,3 +56,28 @@ describe('page в шаблоне и в процессе рендера', () => {
     expect(home).toContain('<span>home|/</span>');
   });
 });
+
+// Запись страницы (блок 8 «Секций и SDK», часть 8б): у страницы записи — её поля, у других страниц — null.
+const RECORD = `---
+const { settings, page } = Astro.props;
+---
+<p>{settings.label}: {page.record === null ? 'нет записи' : page.record.title}</p>`;
+
+describe('page.record в процессе рендера', () => {
+  it('страница записи — поля записи; страница без записи и запрос без page — null', async () => {
+    const checked = await checkTemplate(RECORD, OPTIONS);
+    if (checked.render === null) throw new Error(JSON.stringify(checked.problems));
+    const request = {
+      section: 'shop:record',
+      hash: sha256(Buffer.from(checked.render, 'utf8')),
+      module: checked.render,
+      settings: { label: 'Запись' },
+    };
+    const record = { type: 'privacy', title: 'Политика конфиденциальности', url: '/legal/privacy', html: '<p>Текст</p>' };
+    const renderer = rendererOf();
+    const withRecord = await renderer.render({ ...request, page: { id: 'policy', path: '/legal/privacy', record } });
+    expect(withRecord).toContain('<p>Запись: Политика конфиденциальности</p>');
+    expect(await renderer.render({ ...request, page: { id: 'home', path: '/' } })).toContain('<p>Запись: нет записи</p>');
+    expect(await renderer.render(request)).toContain('<p>Запись: нет записи</p>');
+  });
+});

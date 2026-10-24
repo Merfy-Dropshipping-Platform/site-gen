@@ -1,6 +1,7 @@
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
 import { SERVICE_PREFIX, USE_NAMES, expressionProblems, usesText, type Found } from './expressions';
 import { TEMPLATE_FILE, type SectionUse } from './format';
+import { templateMarkup, type TemplateMarkup } from './template-markup';
 import { positionAt } from './position';
 import { problem, type SectionProblem } from './problems';
 import { NO_RICHTEXT, setHtmlFound, type RichtextIds } from './set-html';
@@ -113,19 +114,35 @@ const NODE_RULES: Partial<Record<string, NodeRule>> = {
 const rulesOf = (node: AstNode, text: string, uses: ReadonlySet<string>): Found[] =>
   node.type.includes('Frontmatter') ? frontmatterFound(node, text, uses) : (NODE_RULES[node.type]?.(node, text) ?? []);
 
-export async function templateProblems(
+// Запреты шаблона и имена его разметки — по одному разбору (design.md блока 5, раздел 3.9: дерево шаблона уже есть,
+// второй раз его не разбираем).
+export interface TemplateScan {
+  problems: SectionProblem[];
+  markup: TemplateMarkup;
+}
+
+export async function templateScan(
   text: string,
   richtext: RichtextIds = NO_RICHTEXT,
   uses: readonly SectionUse[] = [],
-): Promise<SectionProblem[]> {
+): Promise<TemplateScan> {
   const declared = new Set(uses);
   const { parse } = await import('@astrojs/compiler-rs');
   const { ast } = await Promise.resolve(parse(text));
-  return [
+  const problems = [
     ...nodesOf(ast).flatMap((node) => rulesOf(node, text, declared)),
     ...expressionProblems(ast, declared),
     ...setHtmlFound(ast, richtext),
   ]
     .sort((left, right) => left.at - right.at)
     .map((found) => problem('template-forbidden', TEMPLATE_FILE, found.message, positionAt(text, found.at)));
+  return { problems, markup: templateMarkup(ast, text) };
+}
+
+export async function templateProblems(
+  text: string,
+  richtext: RichtextIds = NO_RICHTEXT,
+  uses: readonly SectionUse[] = [],
+): Promise<SectionProblem[]> {
+  return (await templateScan(text, richtext, uses)).problems;
 }

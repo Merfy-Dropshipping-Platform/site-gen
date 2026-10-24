@@ -23,6 +23,7 @@ const SITEMAP_GROUPS: Record<PageEntityType, SitemapGroup | null> = {
   product: 'products',
   collection: 'collections',
   publication: 'blog',
+  blog: 'blog',
   billing: null,
   counter: null,
   'custom-code': null,

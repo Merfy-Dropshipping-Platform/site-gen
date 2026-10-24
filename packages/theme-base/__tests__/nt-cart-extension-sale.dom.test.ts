@@ -97,6 +97,22 @@ describe("Б1/Б2: корзина и товары, которые продают
     expect(ids(cart)).toEqual([]);
   });
 
+  it("клик по кнопке товара, о котором расширение ещё не ответило: строка не появляется до ответа", async () => {
+    document.body.innerHTML = card("p-cart") + card("p-form");
+    const cart = createCart();
+    const seen: string[][] = [];
+    window.addEventListener("test:cart:updated", () => seen.push(ids(cart)));
+    cart.initCartUI();
+    (document.querySelector('[data-product-id="p-form"]') as HTMLElement).hidden = false;
+    (document.querySelector('[data-product-id="p-cart"]') as HTMLElement).click();
+    (document.querySelector('[data-product-id="p-form"]') as HTMLElement).click();
+    expect(ids(cart)).toEqual([]);
+    await flush();
+    // обычный товар лёг после ответа; товар расширения не появлялся в корзине ни на миг
+    expect(ids(cart)).toEqual(["p-cart"]);
+    expect(seen.flat()).not.toContain("p-form");
+  });
+
   it("addToCart известного товара — отказ, обычного — принимает", async () => {
     document.body.innerHTML = card("p-form");
     const cart = createCart();

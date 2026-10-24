@@ -1,4 +1,5 @@
 import type { StorefrontConfig } from '@merfy/storefront-config';
+import type { ReplaceDeps } from './replace';
 
 // Договор ядра секций (design.md блока 5, разделы 3.1–3.8): что видит код секции и что дают части SDK. Только типы.
 // Блоки 6, 8, 9, 10 дописывают сюда свои поля и имена внутри "sdk": 1 — добавить можно, менять нельзя.
@@ -317,4 +318,6 @@ export interface SectionEntry {
 export interface StartOptions {
   readonly parts: readonly SdkPart<string, unknown>[];
   readonly sections: readonly SectionEntry[];
+  // Бандл превью (часть 5г): замена экземпляра — watchPreviewReplace; ядро зовёт её только в режиме preview.
+  readonly preview?: (deps: ReplaceDeps) => void;
 }

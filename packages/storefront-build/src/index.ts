@@ -19,6 +19,8 @@ export { entityHashes, entityKey } from './entities';
 export { buildStorefront, type BuildReferences, type StorefrontBuild, type ThemeBuild } from './build';
 export { pagePropsOf, renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
 export { NOT_FOUND_ROUTE, SHOP_ROUTES, pageInfoById, routeOf, type ShopRoute } from './routes';
+// Страницы записей (блок 8 «Секций и SDK», часть 8б)
+export { recordIndex, routeDuplicates, shopRoutes, templateShown, type RouteDuplicate } from './routes';
 export {
   HOME_PAGE,
   NOT_FOUND_PAGE_ID,
@@ -29,6 +31,35 @@ export {
   type SpecialPage,
 } from './special-pages';
 export { REBUILD_EVENT_INPUTS } from './event-inputs';
+// Записи магазина (блок 8 «Секций и SDK», часть 8а)
+export {
+  BLOG_ARTICLES_MAX,
+  COLLECTION_PRODUCTS_MAX,
+  POLICY_PAGES,
+  RECORD_FIELDS,
+  RECORD_TYPES,
+  money,
+  policyTextToHtml,
+  recordIndexOf,
+  recordPath,
+  recordSlug,
+  type ArticleCard,
+  type ArticleRecord,
+  type BlogData,
+  type BlogRecord,
+  type CollectionData,
+  type CollectionRecord,
+  type Money,
+  type PolicyRecord,
+  type ProductCard,
+  type ProductData,
+  type ProductRecord,
+  type PublicationData,
+  type RecordEntry,
+  type RecordIndex,
+  type RecordSeo,
+  type RecordType,
+} from './records';
 
 // Код секций (блок 7) и бандл страницы (блок 5 «Секций и SDK», часть 5б)
 export { NO_ASSETS, type CodeAssets } from './code';

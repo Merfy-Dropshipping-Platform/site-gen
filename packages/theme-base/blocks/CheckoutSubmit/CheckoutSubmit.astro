@@ -141,6 +141,20 @@ const schemeClass = schemeClassOf(colorScheme);
       }
       return [];
     }
+    // Проверка «товар продаётся по заявке» (runtime/checkout-request-items.ts, Б16):
+    // пока она идёт (не дольше 3 с), оплата не нажимается; найденные товары уже
+    // убраны из корзины, а сообщение о них стоит над составом заказа.
+    function requestLines() {
+      return window.__merfyCheckoutLines || null;
+    }
+    function checkingLines() {
+      var l = requestLines();
+      return !!(l && l.checking);
+    }
+    function hasRequestNotices() {
+      var l = requestLines();
+      return !!(l && l.notices && l.notices.length);
+    }
     function getSubtotalCents() {
       var items = getCartItems();
       return items.reduce(function (sum, it) { return sum + (it.unitPriceCents || it.priceCents || 0) * (it.quantity || 1); }, 0);
@@ -221,6 +235,7 @@ const schemeClass = schemeClassOf(colorScheme);
 
     function canSubmit() {
       if (state.submitting) return false;
+      if (checkingLines()) return false;
       var items = getCartItems();
       if (items.length === 0) return false;
       if (!getShopId()) return false;
@@ -295,7 +310,13 @@ const schemeClass = schemeClassOf(colorScheme);
     // DOM-атрибута disabled — покупатель на живом сайте не может отправить
     // пустой заказ, даже если бы кто-то снял disabled в devtools.
     function refresh() {
-      var label = buttonText.replace('{total}', fmtRub(getTotalCents()));
+      // Пустая корзина (покупатель ушёл со всем, либо проверка товаров расширения
+      // убрала строки): суммы нет — прочерк, как до загрузки корзины, а не «0₽».
+      var emptyCart = !offerMode() && getCartItems().length === 0;
+      // В корзине остались только товары «по заявке»: вместо «Оплатить —» кнопки нет,
+      // объяснение со ссылкой на товар стоит над составом заказа.
+      button.style.display = emptyCart && hasRequestNotices() ? 'none' : '';
+      var label = buttonText.replace('{total}', emptyCart ? '—' : fmtRub(getTotalCents()));
       button.textContent = state.submitting ? loadingText : label;
       var inIframe = window.parent && window.parent !== window;
       button.disabled = inIframe ? false : !canSubmit();
@@ -309,6 +330,8 @@ const schemeClass = schemeClassOf(colorScheme);
     }
 
     document.addEventListener('cart:updated', refresh);
+    // Проверка товаров «по заявке» началась, закончилась или нашла такой товар.
+    document.addEventListener('checkout:lines-changed', refresh);
     document.addEventListener('checkout:address-changed', refresh);
     // Настройки чекаута прилетают ПОСЛЕ init — пере-оцениваем гейт по событию.
     // (getContactMethod/getCustomerNameMode/getAddressRequired читают конфиг лениво.)
@@ -619,6 +642,23 @@ const schemeClass = schemeClassOf(colorScheme);
           body: JSON.stringify(checkoutBody),
         });
         var checkoutJson = await checkoutRes.json();
+        // Сервер отказал: товар продаётся по заявке (code PRODUCT_REQUIRES_REQUEST)
+        // либо шлюз потерял code и отдал общую 4xx. Спрашиваем расширение заново по
+        // всем строкам; нашёлся такой товар — он убран из заказа, сообщение стоит над
+        // составом, общая ошибка не нужна. 403 — вход покупателя, его разбирает ниже.
+        var refusedByRequest = !!(checkoutJson && checkoutJson.code === 'PRODUCT_REQUIRES_REQUEST');
+        if (refusedByRequest || (checkoutRes.status >= 400 && checkoutRes.status < 500 && checkoutRes.status !== 403)) {
+          var guardLines = requestLines();
+          var removedNow = false;
+          if (guardLines && typeof guardLines.recheck === 'function') {
+            try { removedNow = await guardLines.recheck(); } catch (e) { removedNow = false; }
+          }
+          if (removedNow) {
+            state.submitting = false;
+            refresh();
+            return;
+          }
+        }
         // Cart not found (404) → cart устарел (paid/cancelled). Сбрасываем cartId
         // чтобы next add-to-cart создал новый, и просим юзера пересобрать заказ.
         if (checkoutRes.status === 404) {

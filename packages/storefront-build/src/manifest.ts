@@ -32,6 +32,9 @@ const pageRowSchema = z.strictObject({
   deps: z.array(entityKeySchema),
   // Последняя правка данных страницы — из неё lastmod карты сайта (блок 5). Время сборки сюда не попадает (В4-5).
   dataUpdatedAt: instantSchema,
+  // Второй адрес записи (блок 8 «Секций и SDK», часть 8б): адрес по id — 301 на path. Нет поля — второго адреса нет;
+  // строки страниц сайта и манифесты до части 8б — без него.
+  aliases: z.array(z.string().startsWith('/')).optional(),
 });
 
 const manifestShape = z.strictObject({

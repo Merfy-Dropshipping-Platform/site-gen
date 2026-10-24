@@ -109,7 +109,8 @@ RUN test -f /app/themes/nova/dist-renderer/server/entry.mjs \
 RUN pnpm --filter @merfy/shell build
 RUN test -f /app/packages/storefront-shell/dist/core.json && test -f /app/packages/storefront-shell/dist/core.js \
     && test -f /app/packages/storefront-shell/dist/behaviors/behaviors.json \
-    || (echo "FATAL: @merfy/shell build did not produce dist/core.json, core.js and behaviors/behaviors.json" && exit 1)
+    && test -f /app/packages/storefront-shell/dist/preview.js \
+    || (echo "FATAL: @merfy/shell build did not produce dist/core.json, core.js, behaviors/behaviors.json and preview.js" && exit 1)
 # Процессы проверки и рендера секций (блок 2 «Секций и SDK»): собранные файлы dist-render — их запускает Node под
 # --permission, без tsx.
 RUN pnpm --filter @merfy/storefront-sections build:workers

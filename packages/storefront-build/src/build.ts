@@ -8,6 +8,7 @@ import { shopFonts } from './head';
 import { buildKey, dataKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
 import { renderShopPage, type RenderedPage, type ShopTheme } from './page';
+import { specialFiles } from './platform-pages';
 import { shopRoutes } from './routes';
 import { NO_SECTIONS, type PageRender, type RenderSection, type SectionFailed } from './sections-render';
 import { renderStandPage, type StandBuild } from './stand';
@@ -85,7 +86,14 @@ export async function buildStorefront(
   const shopPages = await Promise.all(routes.map((route) => renderShopPage(inputs, route.path, theme, page)));
   const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
   const pages = [...shopPages, ...standPages];
-  const files = [...theme.clientFiles, ...bundleFiles(pages), ...pages.map((page) => page.file)].sort(byPath);
+  // Страницы 404 и 502 (блок 7, часть 7а): файлы есть в сборке, строк страниц в манифесте нет.
+  const special = await specialFiles(inputs, theme, page);
+  const files = [
+    ...theme.clientFiles,
+    ...bundleFiles([...pages, ...special.rendered]),
+    ...pages.map((page) => page.file),
+    ...special.files,
+  ].sort(byPath);
   // Файлы шрифтов (блок 12) — только в манифесте: байты уже в хранилище по отпечатку, их не льём.
   const fontFiles = shopFonts(inputs, theme.tokens, theme.migrations).files.map(
     (file) => [file.path, file.hash] as const,

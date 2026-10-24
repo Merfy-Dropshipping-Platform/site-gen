@@ -202,37 +202,47 @@ export async function extractPageBlocks(
         b.type === "Product" &&
         (page === "page-product" || page === "product")
       ) {
-        const featureOn =
-          themeId != null &&
-          getThemeManifest(themeId)?.features?.requests === true;
-        if (featureOn || finalProps.requestsEnabled === true) {
-          finalProps.requestsEnabled = true;
-        }
-        // Спека 120, задача 5.1: тумблер features.extensionPurchase → проп
-        // extensionPurchaseEnabled (форма расширения вместо «В корзину»). Тот же
-        // приём, но без включения пропом ревизии: значение решает один манифест
-        // темы (flux и vanilla, этап 5). Какая из двух форм монтируется, решает
-        // секция «Товар» (новая вытесняет requestsEnabled).
-        if (
-          themeId != null &&
-          getThemeManifest(themeId)?.features?.extensionPurchase === true
-        ) {
-          finalProps.extensionPurchaseEnabled = true;
-        }
-        // Спека 120, этап 5 на vanilla: тумблер features.extensionThemeLook
-        // → проп extensionLook: 'theme'. Блок «Товар» ставит его атрибутом
-        // data-look на контейнер формы — стили формы берут цвета и скругления
-        // из токенов темы (runtime/extension-purchase.styles.ts). Пока только
-        // vanilla; у темы без тумблера пропа нет.
-        if (
-          themeId != null &&
-          getThemeManifest(themeId)?.features?.extensionThemeLook === true
-        ) {
-          finalProps.extensionLook = 'theme';
-        }
+        applyProductThemeFeatures(finalProps, themeId);
       }
       return { type: b.type, props: finalProps };
     });
+}
+
+/**
+ * Флаги манифеста темы → props секции «Товар» (спека 118 §5, спека 120 этап 5).
+ * Мутирует `props`. Зовут ДВА места: extractPageBlocks (целая страница) и
+ * точечная перерисовка секции (POST /preview/block, ею идёт любая правка в
+ * панели) — без второго формы заявки пропадала после первой же правки (баг
+ * тестировщика 24.10, Б3/Б4: появлялись кнопки корзины и количество).
+ *
+ * - features.requests → requestsEnabled (прежняя форма заявки); проп ревизии
+ *   может включить форму и без флага;
+ * - features.extensionPurchase → extensionPurchaseEnabled (форма расширения
+ *   вместо «В корзину»; новая вытесняет requestsEnabled — решает секция);
+ * - features.extensionThemeLook → extensionLook: 'theme' (data-look на
+ *   контейнере формы: цвета и скругления из токенов темы,
+ *   runtime/extension-purchase.styles.ts). У темы без тумблера пропа нет.
+ */
+export function applyProductThemeFeatures(
+  props: Record<string, unknown>,
+  themeId: string | null | undefined,
+): void {
+  // Идентификатор темы сайта может нести версию (`rose-1.0`, `satin@2`): манифест
+  // лежит по голому ключу, как у PreviewService.bareThemeKey.
+  const manifest =
+    themeId == null
+      ? null
+      : (getThemeManifest(themeId) ?? getThemeManifest(themeId.replace(/[-@].*$/, '')));
+  const features = manifest?.features;
+  if (features?.requests === true || props.requestsEnabled === true) {
+    props.requestsEnabled = true;
+  }
+  if (features?.extensionPurchase === true) {
+    props.extensionPurchaseEnabled = true;
+  }
+  if (features?.extensionThemeLook === true) {
+    props.extensionLook = 'theme';
+  }
 }
 
 /**

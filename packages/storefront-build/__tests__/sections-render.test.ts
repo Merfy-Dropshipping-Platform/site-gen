@@ -122,7 +122,10 @@ describe('секции страницы', () => {
 
   it('секции по порядку и CSS их классов', async () => {
     const page: PageRender = {
-      sections: sectionsWith((request) => Promise.resolve(`<p class="flex">${String(request.settings.heading)}</p>`)),
+      sections: sectionsWith((request) => {
+        const heading = request.settings.heading;
+        return Promise.resolve(`<p class="flex">${typeof heading === 'string' ? heading : ''}</p>`);
+      }),
       mode: 'preview',
     };
     const second = { ...PLACED, id: 'hero-2', settings: { heading: 'Второй' } };

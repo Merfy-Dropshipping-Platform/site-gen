@@ -57,6 +57,32 @@ export function safeLink(url: unknown): string | null {
   return sitePath(url) ?? (url.startsWith("https://") ? url : null);
 }
 
+/** Точка `product` расширения в карте витрины: функции формы товара и её отправки. */
+export interface PurchasePoint {
+  extensionId: string;
+  form: string;
+  submit: string;
+}
+
+function pointOf(extensionId: string, entry: unknown): PurchasePoint | null {
+  const product = isRecord(entry) ? entry.product : undefined;
+  if (!isRecord(product)) return null;
+  const { form, submit } = product;
+  const named =
+    typeof form === "string" &&
+    form !== "" &&
+    typeof submit === "string" &&
+    submit !== "";
+  return named ? { extensionId, form, submit } : null;
+}
+
+/** Первое расширение карты, у которого точка `product` называет функции формы и отправки. */
+export function findProductPoint(map: unknown): PurchasePoint | null {
+  if (!isRecord(map)) return null;
+  const points = Object.entries(map).map(([id, entry]) => pointOf(id, entry));
+  return points.find((point) => point !== null) ?? null;
+}
+
 /** Успех — любой 2xx: шлюз отвечает на POST статусом 201, а не 200. */
 export const isSuccessStatus = (status: number): boolean =>
   status >= 200 && status < 300;
@@ -84,6 +110,36 @@ function functionHeaders(): Record<string, string> {
   const token = readCustomerToken();
   const json = { "Content-Type": "application/json" };
   return token === "" ? json : { ...json, Authorization: `Bearer ${token}` };
+}
+
+/** Почта из профиля: ответ шлюза — `{data: {customer: {email}}}` или `{data: {email}}`. */
+function emailOfProfile(body: unknown): string {
+  const data = isRecord(body) ? body.data : undefined;
+  if (!isRecord(data)) return "";
+  const profile = isRecord(data.customer) ? data.customer : data;
+  return typeof profile.email === "string" ? profile.email.trim() : "";
+}
+
+/**
+ * Почта аккаунта вошедшего покупателя (`GET /store/auth/me` с его токеном).
+ * Гость, недействительный токен, сбой сети — пустая строка: форма работает как
+ * у гостя. Форма расширения подставляет её в «Почту» и не даёт менять, чтобы
+ * письма, «Мои заказы» и кабинет магазина шли по одному адресу.
+ */
+export async function fetchAccountEmail(
+  channel: ExtensionChannel,
+): Promise<string> {
+  const token = readCustomerToken();
+  if (token === "") return "";
+  try {
+    const response = await fetch(`${channel.apiBase}/store/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.ok ? emailOfProfile(await readJson(response)) : "";
+  } catch {
+    // Сеть недоступна: почту вводят вручную.
+    return "";
+  }
 }
 
 /** Карта расширений: публичная, без кук. Сбой сети или не 2xx — `null`. */

@@ -19,6 +19,9 @@ import {
   type RevisionMenu,
   type SectionGroup,
   type SectionRow,
+  isDefaultWrapperView,
+  resolveWrapperView,
+  settingFieldsOf,
 } from '@merfy/storefront-sections';
 import { z } from 'zod';
 import { StorefrontBuilderError, errorText } from './errors';
@@ -99,6 +102,8 @@ export const instanceSchema = z.strictObject({
   hidden: z.boolean().optional(),
   name: z.string().optional(),
   blocks: z.array(revisionBlockSchema).optional(),
+  // Часть 5 блока 1 (Р1-5-6): изменённые общие настройки секции — значения проверяет resolveWrapper при сборке.
+  wrapper: z.record(z.string(), z.unknown()).optional(),
 });
 export type SectionInstance = z.infer<typeof instanceSchema>;
 const placementSchema = z.record(z.string().regex(/^[a-z0-9-]+$/), z.array(instanceSchema));
@@ -191,7 +196,7 @@ function placedOf(
   context: CodeContext,
   menus: readonly RevisionMenu[],
 ): CodeInstance {
-  const resolved = resolveSectionSettings(current.manifest.settings, instance.settings);
+  const resolved = resolveSectionSettings(settingFieldsOf(current.manifest.settings), instance.settings);
   if (resolved.invalid.length > 0)
     context.log('section-settings-invalid', {
       shopId: context.shopId,
@@ -205,8 +210,28 @@ function placedOf(
     settings: resolved.values,
     ...blocksOf(instance, current, context),
     ...menusOf(current, resolved.values, menus),
+    ...wrapperOf(instance, current, context),
   };
   return instance.hidden === true ? { ...placed, hidden: true } : placed;
+}
+
+// Вид обёртки экземпляра (часть 5 блока 1, Р1-5-6…Р1-5-8): правки общих настроек поверх умолчаний → классы и атрибуты.
+// Вид по умолчанию (py-section, без атрибутов) во входы не пишется; неверная правка — строка журнала
+// section-wrapper-invalid, сборка идёт. Зовёт и превью блока (shop-preview.ts) — без журнала.
+export function wrapperOf(
+  instance: SectionInstance,
+  current: CurrentSection,
+  context?: Pick<CodeContext, 'log' | 'shopId'>,
+): Pick<CodeInstance, 'wrapper'> {
+  const resolved = resolveWrapperView(current.manifest, instance.wrapper);
+  if (resolved.invalid.length > 0 && context !== undefined)
+    context.log('section-wrapper-invalid', {
+      shopId: context.shopId,
+      section: instance.section,
+      id: instance.id,
+      problems: resolved.invalid.join('; '),
+    });
+  return isDefaultWrapperView(resolved.view) ? {} : { wrapper: resolved.view };
 }
 
 // Блоки экземпляра (часть 3, Р55, Р56): показанные, со значениями. У секции без blocks в section.json ключа нет; пустой
@@ -315,9 +340,9 @@ function allowedOn(
 // Деревья меню экземпляра (часть 4, Р1-4-3): только у секций с настройками вида menu.
 function menusOf(
   current: CurrentSection,
-  values: Readonly<Record<string, string | boolean>>,
+  values: Readonly<Record<string, unknown>>,
   menus: readonly RevisionMenu[],
 ): Pick<CodeInstance, 'menus'> {
-  const trees = sectionMenus(current.manifest.settings, values, menus);
+  const trees = sectionMenus(settingFieldsOf(current.manifest.settings), values, menus);
   return Object.keys(trees).length === 0 ? {} : { menus: trees };
 }

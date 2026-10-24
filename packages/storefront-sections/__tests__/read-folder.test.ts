@@ -17,6 +17,7 @@ describe('папки секций', () => {
       'bad-import',
       'geo-locate',
       'hero',
+      'kinds',
       'reviews-list',
       'shop-broken',
       'shop-color-match',

@@ -397,7 +397,7 @@ const cartImage = view.gallery.hero?.src ?? '';
               />
               {/* Слот примечания к цене: рантайм формы расширения кладёт сюда
                   `priceNote`, пока пусто — скрыт (спека 120, задача 5.1). */}
-              {extensionPurchaseEnabled && <span data-extension-purchase-note hidden></span>}
+              {extensionPurchaseEnabled && <span data-extension-purchase-note data-look={extensionLook} hidden></span>}
             </div>
           ))}
         </div>

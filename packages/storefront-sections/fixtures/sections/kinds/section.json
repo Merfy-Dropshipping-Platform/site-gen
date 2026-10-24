@@ -1,0 +1,225 @@
+{
+  "$schema": "../../generated/section.schema.json",
+  "sdk": 1,
+  "name": "kinds",
+  "kind": "section",
+  "title": "Все виды полей",
+  "settings": [
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "setting": {
+        "kind": "string",
+        "default": "Все виды полей",
+        "ai": "title"
+      }
+    },
+    {
+      "id": "text",
+      "label": "Текст",
+      "setting": {
+        "kind": "text",
+        "default": "Секция для стенда конструктора: в ней каждое поле панели.",
+        "ai": "description"
+      }
+    },
+    {
+      "id": "answer",
+      "label": "Ответ",
+      "setting": {
+        "kind": "richtext",
+        "default": "<p>Текст с форматированием</p>"
+      }
+    },
+    {
+      "wrapper": "scheme"
+    },
+    {
+      "wrapper": "padding"
+    },
+    {
+      "wrapper": "sticky"
+    },
+    {
+      "id": "button-link",
+      "label": "Ссылка кнопки",
+      "setting": {
+        "kind": "url",
+        "default": "/catalog"
+      }
+    },
+    {
+      "id": "image",
+      "label": "Картинка",
+      "setting": {
+        "kind": "image",
+        "default": "",
+        "maxBytes": 512000
+      }
+    },
+    {
+      "id": "images",
+      "label": "Картинки",
+      "setting": {
+        "kind": "image-pair",
+        "default": {
+          "url1": "",
+          "url2": ""
+        },
+        "maxBytes": 2097152
+      }
+    },
+    {
+      "id": "height",
+      "label": "Высота",
+      "section": "Оформление",
+      "setting": {
+        "kind": "radio",
+        "default": "large",
+        "options": [
+          {
+            "value": "small",
+            "label": "Маленькая"
+          },
+          {
+            "value": "medium",
+            "label": "Средняя"
+          },
+          {
+            "value": "large",
+            "label": "Большая"
+          }
+        ]
+      }
+    },
+    {
+      "id": "overlay",
+      "label": "Затемнение",
+      "section": "Оформление",
+      "setting": {
+        "kind": "range",
+        "default": 30,
+        "min": 0,
+        "max": 100,
+        "step": 5
+      }
+    },
+    {
+      "id": "align",
+      "label": "Выравнивание",
+      "section": "Оформление",
+      "setting": {
+        "kind": "alignment",
+        "default": "center"
+      }
+    },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "section": "Оформление",
+      "setting": {
+        "kind": "select",
+        "default": "large",
+        "options": [
+          {
+            "value": "small",
+            "label": "Маленький"
+          },
+          {
+            "value": "medium",
+            "label": "Средний"
+          },
+          {
+            "value": "large",
+            "label": "Большой"
+          }
+        ]
+      }
+    },
+    {
+      "id": "newsletter",
+      "label": "Рассылка",
+      "setting": {
+        "kind": "toggle",
+        "default": true,
+        "labels": {
+          "on": "Показать",
+          "off": "Скрыть"
+        }
+      }
+    },
+    {
+      "id": "open-first",
+      "label": "Первый открыт",
+      "setting": {
+        "kind": "toggle",
+        "default": false,
+        "labels": {
+          "on": "Да",
+          "off": "Нет"
+        }
+      },
+      "visibleWhen": {
+        "setting": "newsletter",
+        "equals": true
+      }
+    },
+    {
+      "id": "color-scheme",
+      "label": "Цветовая схема части",
+      "section": "Оформление",
+      "setting": {
+        "kind": "color-scheme",
+        "default": ""
+      }
+    },
+    {
+      "id": "space",
+      "label": "Отступы",
+      "section": "Оформление",
+      "setting": {
+        "kind": "padding",
+        "default": null,
+        "max": 120,
+        "step": 8
+      }
+    }
+  ],
+  "blocks": {
+    "item": {
+      "title": "Пункт",
+      "limit": 5,
+      "settings": [
+        {
+          "id": "label",
+          "label": "Подпись",
+          "setting": {
+            "kind": "string",
+            "default": "Пункт списка"
+          }
+        },
+        {
+          "id": "link",
+          "label": "Ссылка",
+          "setting": {
+            "kind": "url",
+            "default": ""
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    {
+      "type": "item",
+      "settings": {}
+    },
+    {
+      "type": "item",
+      "settings": {
+        "label": "Ещё пункт"
+      }
+    }
+  ],
+  "wrapper": ["scheme", "padding", "sticky"]
+}

@@ -56,7 +56,9 @@ export {
   type SectionFailure,
   type SectionRenderRequest,
   type SectionsRender,
+  type SectionValue,
   type SettingValues,
+  type WrapperView,
 } from './sections-render';
 export { htmlClasses, sectionCss } from './section-css';
 export { type ShopProps } from './shop-props';

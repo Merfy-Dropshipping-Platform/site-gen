@@ -1,5 +1,6 @@
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
 import { bindingNames, type Found } from './expressions';
+import { settingFieldsOf } from './fields';
 import type { SectionManifest } from './format';
 
 // set:html в шаблоне секции (блок 1 «Секций и SDK», часть 3, Р58): Astro вставляет значение как HTML, без
@@ -18,7 +19,9 @@ export const SET_HTML_TEXT = 'set:html можно только с настрой
 type Fields = SectionManifest['settings'];
 
 const richtextOf = (fields: Fields): string[] =>
-  fields.filter((field) => field.setting.kind === 'richtext').map((field) => field.id);
+  settingFieldsOf(fields)
+    .filter((field) => field.setting.kind === 'richtext')
+    .map((field) => field.id);
 
 // id richtext: у секции; у блоков — id, который во всех типах блока, где он есть, вида richtext.
 export function richtextIdsOf(manifest: Pick<SectionManifest, 'settings' | 'blocks'>): RichtextIds {

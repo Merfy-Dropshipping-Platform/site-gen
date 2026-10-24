@@ -10,8 +10,10 @@ const theme: ShopTheme = { tokens: novaTokens, render: fakeRender };
 const text = (content: Uint8Array): string => Buffer.from(content).toString('utf8');
 
 // Подставной рендер: имя секции, заголовок из настроек и класс из словаря.
-const render = (request: SectionRenderRequest): Promise<string> =>
-  Promise.resolve(`<h2 class="flex">${request.section} ${String(request.settings.heading ?? '')}</h2>`);
+const render = (request: SectionRenderRequest): Promise<string> => {
+  const heading = request.settings.heading;
+  return Promise.resolve(`<h2 class="flex">${request.section} ${typeof heading === 'string' ? heading : ''}</h2>`);
+};
 const pageOf = (mode: PageRender['mode']): PageRender => ({
   sections: { modules: RENDERS, render },
   mode,

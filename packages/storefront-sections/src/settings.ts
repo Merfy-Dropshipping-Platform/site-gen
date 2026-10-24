@@ -1,5 +1,4 @@
-import type { SettingValue } from '@merfy/tokens';
-import { sectionSettingProblem, type SectionField, type SectionSettingSpec } from './fields';
+import { sectionSettingProblem, type SectionField, type SectionSettingSpec, type SectionValue } from './fields';
 import { cleanRichtext } from './richtext';
 
 // Поля настроек секции (блок 1 «Секций и SDK»; design.md блока 7, п. 23): поле настройки панели темы (блок 8) или
@@ -24,35 +23,36 @@ const SETTING_CHECKS: readonly SettingCheck[] = [
 export const settingsTexts = (settings: readonly SectionField[]): string[] =>
   settings.flatMap((field, index) => SETTING_CHECKS.flatMap((check) => check(field, index, settings)));
 
-export const defaultSettings = (settings: readonly SectionField[]): Record<string, SettingValue> =>
-  Object.fromEntries(settings.map((field): [string, SettingValue] => [field.id, field.setting.default]));
+export const defaultSettings = (settings: readonly SectionField[]): Record<string, SectionValue> =>
+  Object.fromEntries(settings.map((field): [string, SectionValue] => [field.id, field.setting.default]));
 
 // Пустое значение по виду (блок 3 «Секций и SDK», Р3.11): мерчант может стереть заголовок. У строк, текстов,
 // richtext, адресов и картинок пустого значения нет — пустая строка; у выборов, переключателей, ползунков,
-// выравнивания, схемы и отступов — умолчание. menu и image-pair добавят части 4 и 5 блока 1.
-const EMPTY_VALUES: Readonly<Partial<Record<SectionSettingSpec['kind'], SettingValue>>> = {
+// выравнивания, схемы и отступов — умолчание. image-pair — две пустые строки (часть 5 блока 1).
+const EMPTY_VALUES: Readonly<Partial<Record<SectionSettingSpec['kind'], SectionValue>>> = {
   string: '',
   text: '',
   richtext: '',
   url: '',
   image: '',
+  'image-pair': { url1: '', url2: '' },
 };
 
-export const emptySettings = (settings: readonly SectionField[]): Record<string, SettingValue> =>
+export const emptySettings = (settings: readonly SectionField[]): Record<string, SectionValue> =>
   Object.fromEntries(
-    settings.map((field): [string, SettingValue] => [
+    settings.map((field): [string, SectionValue] => [
       field.id,
       EMPTY_VALUES[field.setting.kind] ?? field.setting.default,
     ]),
   );
 
 export interface ResolvedSettings {
-  values: Record<string, SettingValue>;
+  values: Record<string, SectionValue>;
   invalid: string[];
 }
 
-const isSettingValue = (value: unknown): value is SettingValue =>
-  typeof value === 'string' || typeof value === 'boolean';
+// Значение уже прошло sectionSettingProblem: годится любое значение JSON (Р1-5-2).
+const isSectionValue = (value: unknown): value is SectionValue => value !== undefined && typeof value !== 'function';
 
 // Значения экземпляра: правки поверх умолчаний. Сначала неизвестные ключи, потом поля с неверным значением — в invalid;
 // у такого поля остаётся умолчание. Значения richtext — очищенные: и умолчание, и правка.
@@ -69,8 +69,8 @@ export function resolveSectionSettings(
   for (const [key, value] of Object.entries(edits)) {
     const field = fields.get(key);
     const text = field === undefined ? undefined : sectionSettingProblem(key, field.setting, value);
-    if (field !== undefined && text === undefined && isSettingValue(value)) values[key] = value;
-    else if (field !== undefined) wrong.push(text ?? `${key}: нужна строка или true/false`);
+    if (field !== undefined && text === undefined && isSectionValue(value)) values[key] = value;
+    else if (field !== undefined) wrong.push(text ?? `${key}: нужно значение JSON`);
   }
   for (const field of settings) {
     const value = values[field.id];

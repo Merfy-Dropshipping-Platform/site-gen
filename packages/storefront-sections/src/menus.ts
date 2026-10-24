@@ -51,7 +51,7 @@ export function menuTreeOf(menus: readonly RevisionMenu[], id: string): MenuTree
 // Деревья меню для настроек вида menu секции: id настройки → дерево меню по её значению.
 export function sectionMenus(
   fields: readonly { id: string; setting: { kind: string } }[],
-  values: Readonly<Record<string, string | boolean>>,
+  values: Readonly<Record<string, unknown>>,
   menus: readonly RevisionMenu[],
 ): Record<string, MenuTree> {
   const trees = fields

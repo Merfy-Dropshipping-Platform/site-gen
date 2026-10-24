@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
-import { sectionFieldShape } from './fields';
+import { sectionFieldShape, settingFieldsOf, settingsEntryShape } from './fields';
 import { problem, when, type Checked, type SectionProblem } from './problems';
 import { settingsTexts } from './settings';
+import { WRAPPER_IDS, wrapperProblems } from './wrapper';
 
 // Формат секции SDK 1 (блок 1 «Секций и SDK»; design.md блока 7, п. 20) — один у всех авторов (С7-11 А): папка с
 // section.json, template.astro и скриптом, если он есть (п. 16), — script.ts или script.js и его файлы .ts/.js. Своего
@@ -63,7 +64,7 @@ export const sectionManifestSchema = z.strictObject({
   name: sectionIdSchema,
   kind: z.enum(SECTION_KINDS),
   title: z.string().min(1).max(80),
-  settings: z.array(sectionFieldShape).default([]),
+  settings: z.array(settingsEntryShape).default([]),
   blocks: z.record(z.string(), blockTypeSchema).optional(),
   defaultBlocks: z.array(defaultBlockSchema).max(50).optional(),
   groups: z.array(z.enum(SECTION_GROUPS)).min(1).max(3).refine(unique, { error: 'группа дважды' }).optional(),
@@ -73,6 +74,8 @@ export const sectionManifestSchema = z.strictObject({
   newPage: z.string().min(1).optional(),
   // Свои токены секции (блок 4 «Секций и SDK», Р4-9): запись словаря; проверяет token-rules.ts.
   tokens: z.record(z.string(), z.unknown()).optional(),
+  // Общие настройки секции (часть 5, Р1-5-5): id из WRAPPER_IDS без повторов; нет ключа — ['scheme', 'padding'].
+  wrapper: z.array(z.enum(WRAPPER_IDS)).max(3).refine(unique, { error: 'id дважды' }).optional(),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;
@@ -142,6 +145,48 @@ function parseJson(text: string): Checked<unknown> {
 const issueProblem = (issue: z.core.$ZodIssue): SectionProblem =>
   problem('manifest-invalid', MANIFEST_FILE, `${issue.path.map(String).join('.') || '(весь файл)'}: ${issue.message}`);
 
+// Разворот объединения «поле или ссылка» (settingsEntryShape, часть 5, Р1-5-5): zod даёт одну проблему invalid_union
+// «Invalid input» на весь элемент. Ошибки берутся у подходящей ветки — у элемента с ключом wrapper ветка ссылки, у
+// остальных ветка поля, — и печатаются с путём settings.<n>.<внутренний путь>.
+type BranchIssue = { path: PropertyKey[]; message: string };
+
+const isBranchIssue = (value: unknown): value is BranchIssue => {
+  if (typeof value !== 'object' || value === null) return false;
+  const path: unknown = Reflect.get(value, 'path');
+  const message: unknown = Reflect.get(value, 'message');
+  return Array.isArray(path) && typeof message === 'string';
+};
+
+const branchesOf = (issue: z.core.$ZodIssue): readonly (readonly BranchIssue[])[] => {
+  const errors: unknown = Reflect.get(issue, 'errors');
+  return Array.isArray(errors)
+    ? errors.filter((branch): branch is readonly BranchIssue[] => Array.isArray(branch) && branch.every(isBranchIssue))
+    : [];
+};
+
+const unionIssueProblems = (issue: z.core.$ZodIssue, doc: unknown): SectionProblem[] => {
+  const prefix = `${issue.path.map(String).join('.')}.`;
+  const index = Number(issue.path[1]);
+  const settings: readonly unknown[] = isRecord(doc) && Array.isArray(doc.settings) ? doc.settings : [];
+  const entry = settings[index];
+  const branches = branchesOf(issue);
+  const branch = isRecord(entry) && Object.hasOwn(entry, 'wrapper') ? (branches[1] ?? []) : (branches[0] ?? []);
+  return branch.map((inner) =>
+    problem(
+      'manifest-invalid',
+      MANIFEST_FILE,
+      `${prefix}${inner.path.map(String).join('.') || '(весь файл)'}: ${inner.message}`,
+    ),
+  );
+};
+
+const manifestIssues = (issues: readonly z.core.$ZodIssue[], doc: unknown): SectionProblem[] =>
+  issues.flatMap((issue) =>
+    issue.code === 'invalid_union' && issue.path[0] === 'settings'
+      ? unionIssueProblems(issue, doc)
+      : [issueProblem(issue)],
+  );
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -173,14 +218,17 @@ export function readManifest(files: SectionFiles): Checked<SectionManifest> {
   const early = [...oldKeyProblems(json.value), ...sdkProblems(json.value)];
   if (early.length > 0) return { ok: false, problems: early };
   const parsed = sectionManifestSchema.safeParse(json.value, RUSSIAN_ERRORS);
-  if (!parsed.success) return { ok: false, problems: parsed.error.issues.map(issueProblem) };
+  if (!parsed.success) return { ok: false, problems: manifestIssues(parsed.error.issues, json.value) };
   const blocks = blockFormatProblems(parsed.data);
   const problems = [
-    ...settingsTexts(parsed.data.settings).map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
+    ...settingsTexts(settingFieldsOf(parsed.data.settings)).map((message) =>
+      problem('setting-invalid', MANIFEST_FILE, message),
+    ),
     ...blocks.structure.map((message) => problem('manifest-invalid', MANIFEST_FILE, message)),
     ...blocks.settings.map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
     ...placeProblems(parsed.data).map((message) => problem('manifest-invalid', MANIFEST_FILE, message)),
     ...blockMenuProblems(parsed.data).map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
+    ...wrapperProblems(parsed.data).map((message) => problem('manifest-invalid', MANIFEST_FILE, message)),
   ];
   return problems.length > 0 ? { ok: false, problems } : { ok: true, value: parsed.data };
 }
@@ -218,13 +266,13 @@ export const kindProblems = (manifest: SectionManifest, files: SectionFiles): Se
 // Группы секции (часть 4, Р1-4-2): нет ключа groups — только страницы.
 export const sectionGroupsOf = (manifest: SectionManifest): readonly SectionGroup[] => manifest.groups ?? ['page'];
 
-const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage'] as const;
+const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage', 'wrapper'] as const;
 
 // newPage — настройка вида string секции, которую ставят на страницу.
 function newPageProblems(manifest: SectionManifest): string[] {
   const id = manifest.newPage;
   if (id === undefined) return [];
-  const field = manifest.settings.find((item) => item.id === id);
+  const field = settingFieldsOf(manifest.settings).find((item) => item.id === id);
   if (field === undefined || field.setting.kind !== 'string')
     return [`newPage: нужна настройка вида string, ${id} — не она`];
   return sectionGroupsOf(manifest).includes('page') ? [] : ['newPage: секция ставится на страницу — нужна группа page'];

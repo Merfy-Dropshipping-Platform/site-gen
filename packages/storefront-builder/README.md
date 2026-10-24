@@ -162,6 +162,15 @@
 Строка журнала `route-duplicate` — `{ shopId, buildId, type, id, path, page }`: адрес по handle (`path`) занят другой
 записью; `page` — адрес, который получила запись (по id), `null` — страницы у записи нет. Сборка идёт.
 
+## Превью шаблонов и адрес нового товара (блок 8 «Секций и SDK», часть 8б-2)
+
+- `GET /preview?shop&page=<product|collection|blog|article|policy>&record=<id или адрес>` — шаблон записи с этой
+  записью; нет `record` — запись по умолчанию, записей вида нет — пример платформы. Тело превью одного блока —
+  `{ instance, menus?, theme?, page?, record? }`.
+- `product.created` с `handle` дописывает `/product/<адрес>` в список адресов магазина
+  (`storefront/entities/<магазин>.json`), `product.deleted` убирает адрес и адрес по id: nginx раздачи сразу
+  отправляет новый адрес на рендер по запросу. Сбой хранилища — строка журнала `entity-paths-failed`, событие принято.
+
 ## Журнал и p95
 
 Одна строка JSON на событие: `event-accepted`, `job-queued`, `build-start`, `step` (`buildId`, `shopId`, `step`, `ms`,

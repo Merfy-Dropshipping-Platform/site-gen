@@ -302,3 +302,21 @@ describe('codeOf: группы, limit, меню, флаги (часть 4)', () 
     expect(plain.code.sections[0]).not.toHaveProperty('uses');
   });
 });
+
+describe('codeOf: что нужно скрипту (часть 5в блока 5)', () => {
+  const META = { uses: ['cart'], parts: ['cart'], classes: ['opacity-40'] };
+
+  it('script_meta строки — meta секции во входах; строка до 5в и значение не той формы — без meta', () => {
+    const { context } = contextOf();
+    const placement = { home: [instance('cart-badge-1', 'shop:cart-badge'), instance('hero-1', 'shop:hero')] };
+    const badge = { ...BADGE, scriptMeta: META };
+    const hero = { ...HERO, scriptMeta: { ...META, parts: ['basket'] } };
+    const shop = codeOf([GEO, hero, badge], placement, context);
+    expect(shop.code.sections.map((section) => [section.name, section.meta])).toEqual([
+      ['geo:locate', undefined],
+      ['shop:hero', undefined],
+      ['shop:cart-badge', META],
+    ]);
+    expect(shop.code.sections.filter((section) => 'meta' in section)).toHaveLength(1);
+  });
+});

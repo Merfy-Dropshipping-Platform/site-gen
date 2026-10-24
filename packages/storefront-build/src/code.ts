@@ -88,11 +88,15 @@ export function placedSections(inputs: BuildInputs, pageId: string): PlacedSecti
   });
 }
 
-function placeFlags(inputs: BuildInputs, name: string): Pick<PlacedSection, 'removable' | 'uses'> {
+// removable и uses секции (часть 4 блока 1) и классы её скрипта (часть 5в блока 5) — из кода магазина по имени: у
+// секции без них ключей нет.
+function placeFlags(inputs: BuildInputs, name: string): Pick<PlacedSection, 'removable' | 'uses' | 'classes'> {
   const section = inputs.code.sections.find((candidate) => candidate.name === name);
+  const classes = section?.meta?.classes ?? [];
   return {
     ...(section?.removable === undefined ? {} : { removable: section.removable }),
     ...(section?.uses === undefined ? {} : { uses: section.uses }),
+    ...(classes.length === 0 ? {} : { classes }),
   };
 }
 
@@ -130,8 +134,18 @@ function withScript(section: CodeSection): ScriptSection[] {
   return section.script === null ? [] : [{ section, hash: section.script }];
 }
 
+// Части бандла страницы (design.md блока 5, раздел 3.8): части ядра из core.json — всегда (С7-3 Б), потом части из
+// script_meta секций страницы, которых в ядре нет, по алфавиту, последними — части без API для секций (LIVE_PARTS).
+export function pageParts(core: readonly string[], sections: readonly CodeSection[]): string[] {
+  const known = new Set([...core, ...LIVE_PARTS]);
+  const wanted = new Set(sections.flatMap((section) => section.meta?.parts ?? []));
+  const extra = [...wanted].filter((part) => !known.has(part)).sort();
+  return [...core, ...extra, ...LIVE_PARTS];
+}
+
 // Бандл страницы опубликованного сайта (раздел 3.10). Превью, рендер без кода (page.code нет) и входы без ядра — без
-// бандла. Каждой секции — все части ядра из core.json (до части 5в, где их выберет uses). Предупреждения — page.notice.
+// бандла. Секция получает в ctx модули из своего script_meta.uses; у строки до части 5в (meta нет) — все части ядра из
+// core.json, как в 5б. Предупреждения — page.notice.
 export async function pageBundle(
   inputs: BuildInputs,
   pageId: string,
@@ -143,18 +157,19 @@ export async function pageBundle(
   if (page.mode !== 'live' || assets === undefined || shell === null) return null;
   const built = checkedShell(shell, assets.shell);
   const core = built.code;
-  const scripts = pageCode(inputs, pageId).flatMap(withScript);
+  const code = pageCode(inputs, pageId);
+  const scripts = code.flatMap(withScript);
   const sections = scripts.map(
     ({ section, hash }): BundleSection => ({
       name: section.name,
       kind: section.kind,
       script: hexOf(hash),
-      uses: shell.parts,
+      uses: section.meta?.uses ?? shell.parts,
     }),
   );
   const modules = new Map(scripts.map(({ hash }): [string, string] => [hexOf(hash), moduleText(hash, assets.modules)]));
   const kit = kitOf(built.kit, content, [...modules.values()]);
-  const source = { core, parts: [...shell.parts, ...LIVE_PARTS], sections, modules };
+  const source = { core, parts: pageParts(shell.parts, code), sections, modules };
   const bundle = await bundlePage(kit === undefined ? source : { ...source, kit });
   bundle.notices.forEach((notice) => page.notice?.(pageId, notice));
   return kit?.plan.reveal === true ? { ...bundle, tag: `${MOTION_HEAD}${bundle.tag}` } : bundle;

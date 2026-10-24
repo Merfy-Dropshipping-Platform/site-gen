@@ -8,7 +8,18 @@ import type { SectionInput } from './input';
 import { sectionLog } from './log';
 import { createSectionStorage, type KeyValue } from './storage';
 import { watchSource } from './stores';
-import type { BaseCtx, El, EventDetail, EventName, Json, Mode, ReadableStore, SectionEvent, Stop } from './types';
+import type {
+  BaseCtx,
+  El,
+  EventDetail,
+  EventName,
+  ExtModule,
+  Json,
+  Mode,
+  ReadableStore,
+  SectionEvent,
+  Stop,
+} from './types';
 
 // ctx экземпляра (design.md блока 5, раздел 3.2): имя, id, режим, входные данные, адрес страницы, своё хранилище,
 // таймеры и подписки на одном сигнале экземпляра. Объект заморожен; state — свойство-аксессор, свой у каждого экземпляра.
@@ -30,6 +41,8 @@ export interface CtxDeps {
 }
 
 const DOM_EVENTS: ReadonlySet<string> = new Set(['keydown', 'keyup', 'scroll', 'resize', 'pointerdown']);
+// ctx.ext без модулей расширений (блок 9, часть 9в): модули по uses ставит instance.ts поверх.
+const NO_EXT: Readonly<Record<string, ExtModule>> = Object.freeze({});
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -156,6 +169,7 @@ export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknow
     page: pageOf(deps.win),
     signal: deps.signal,
     storage: createSectionStorage(deps.name, deps.page),
+    ext: NO_EXT,
     ...methodsOf(deps, deps.signal),
     get state(): Partial<Record<string, unknown>> {
       return state; // свой объект экземпляра; ctx заморожен, а аксессор — работает

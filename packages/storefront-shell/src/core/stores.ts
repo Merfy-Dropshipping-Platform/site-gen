@@ -38,6 +38,12 @@ export function readable<T>(source: WatchSource<T>): ReadableStore<T> {
   return facade;
 }
 
+// Фасад, который построил код части (стор расширения — функция с get, блок 9, часть 9в): тот же договор, что у readable,
+// — подписка источника хранится по фасаду. Заморозить фасад — дело вызывающего.
+export function registerFacade<T>(facade: ReadableStore<T>, source: WatchSource<T>): void {
+  sources.set(facade, { listen: (fn) => source.listen(() => fn()) });
+}
+
 // Источник фасада: только для фасадов из readable — ядро подписывает их в ctx.watch. Чужой объект — null.
 export function watchSource<T>(store: ReadableStore<T>): WatchSource<T> | null {
   const erased = sources.get(store);

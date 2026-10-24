@@ -211,6 +211,22 @@ export interface Modules {
 }
 export type ModuleName = keyof Modules;
 
+// Модули расширений (блок 9, часть 9в; 12в А, «Решил сам» п. 17): секция с uses: ["ext:<id>"] получает ctx.ext.<id>.
+// Имя со $ — стор: значение — ответ функции расширения или null (до ответа, у гостя при customer: true, пока чтение не
+// удалось); тот же стор, вызванный с id товара, — стор этого товара (у стора by: "product"). Имя без $ — метод: аргументы
+// — объект JSON, ответ — Result, как у действий SDK. Что объявлено, решает манифест расширения (storefront.stores,
+// storefront.methods); у стора и у метода разные шаблоны имени — TypeScript различает их без сужения типов.
+type CharsOf<S extends string> = S extends `${infer Head}${infer Rest}` ? Head | CharsOf<Rest> : never;
+type LowerLetter = CharsOf<'abcdefghijklmnopqrstuvwxyz'>;
+export type ExtValue = Json;
+export type ExtStore = ReadableStore<ExtValue> & ((productId: string) => ReadableStore<ExtValue>);
+export type ExtMethod = (input?: { readonly [key: string]: Json }, options?: ActionOptions) => Promise<Result<Json>>;
+export interface ExtModule {
+  readonly [store: `$${string}`]: ExtStore;
+  readonly [method: `${LowerLetter}${string}`]: ExtMethod;
+}
+export type ExtUse = `ext:${string}`;
+
 // Анимация кода секции — ctx.animate (блок 6, design.md раздел 10): Motion внутри SDK, код секции его не импортирует.
 // Кривая — по имени (значения — EASINGS в behaviors/catalog.ts) или массивом Безье; свойства — из списка keyframes.ts.
 export type EasingName =
@@ -260,6 +276,8 @@ export interface BaseCtx<State extends object> {
   log(...values: unknown[]): void; // превью — в консоль браузера с именем и id; витрина — ничего
   // Блок 6: элемент только своей секции; превью и «уменьшить движение» — сразу последний кадр; снятие — остановка.
   animate(el: El, keyframes: Keyframes, options?: AnimateOptions): Animation;
+  // Блок 9, часть 9в: модули расширений из uses: ["ext:<id>"]; без таких uses — пустой объект.
+  readonly ext: Readonly<Record<string, ExtModule>>;
 }
 
 export type Ctx<State extends object = Record<string, unknown>, Uses extends ModuleName = ModuleName> = BaseCtx<State> &
@@ -304,6 +322,9 @@ export interface SdkPart<Name extends string, Api> {
   create(core: CoreHandle): Api;
   readonly markup?: Readonly<Record<string, MarkupAction<Api>>>;
   attach?(api: Api, host: InstanceHost): void;
+  // Действие разметки, имя которого известно только на странице (блок 9, часть 9в: ext.<id>.<метод>); ядро зовёт, когда
+  // в markup такого имени нет. Нет действия — null.
+  markupOf?(api: Api, action: string): MarkupAction<Api> | null;
 }
 
 // Строка списка секций бандла страницы (раздел 3.10) — договор со сборкой части 5б.
@@ -311,7 +332,7 @@ export interface SectionEntry {
   readonly name: string;
   readonly kind: 'section' | 'global';
   readonly script: string; // sha256 модуля секции, 64 знака
-  readonly uses: readonly ModuleName[];
+  readonly uses: readonly (ModuleName | ExtUse)[];
   readonly definition: SectionDef<object, never>;
 }
 

@@ -5,6 +5,7 @@ import { createElScope, type ElScope } from './el';
 import { SECTION_FAILURE_EVENT, type EventBus } from './events';
 import { createGuard, type Guard } from './guard';
 import { createCtx, type CtxDeps } from './ctx';
+import { EXT_USE_PREFIX } from './ext-registry';
 import { readSectionInput, type SectionInput } from './input';
 import type { KeyValue } from './storage';
 import type { BaseCtx, FailureStage, InstanceHost, Mode, Result, SectionEntry, SectionFailureDetail } from './types';
@@ -133,19 +134,30 @@ function runMount(state: InstanceState): void {
   else markMounted(state);
 }
 
-// Модули по uses (11г А): части нет — сбой стадии mount, код секции не вызывается.
-function modulesOf(state: InstanceState): Record<string, unknown> | null {
-  const uses = state.entry?.uses ?? [];
-  const modules: Record<string, unknown> = {};
-  for (const use of uses) {
-    try {
-      modules[use] = state.runtime.partApi(use);
-    } catch (error) {
-      reportFailure(state, (withUnmount) => teardownOf(state, withUnmount), 'mount', error);
-      return null;
-    }
+const NO_PART = Symbol('no-part');
+
+// API части по имени из uses; части нет — сбой стадии mount.
+function partOf(state: InstanceState, use: string): unknown {
+  try {
+    return state.runtime.partApi(use);
+  } catch (error) {
+    reportFailure(state, (withUnmount) => teardownOf(state, withUnmount), 'mount', error);
+    return NO_PART;
   }
-  return modules;
+}
+
+// Модули по uses (11г А): части нет — сбой стадии mount, код секции не вызывается. "ext:<id>" — в ctx.ext.<id> (блок 9,
+// часть 9в); ctx.ext есть у каждой секции, без таких uses — пустой.
+function modulesOf(state: InstanceState): Record<string, unknown> | null {
+  const modules: Record<string, unknown> = {};
+  const ext: Record<string, unknown> = {};
+  for (const use of state.entry?.uses ?? []) {
+    const api = partOf(state, use);
+    if (api === NO_PART) return null;
+    if (use.startsWith(EXT_USE_PREFIX)) ext[use.slice(EXT_USE_PREFIX.length)] = api;
+    else modules[use] = api;
+  }
+  return { ...modules, ext: Object.freeze(ext) };
 }
 
 function stateOf(

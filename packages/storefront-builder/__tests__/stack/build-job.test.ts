@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import amqplib from 'amqplib';
 import { readPointer } from '@merfy/storefront-storage';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -5,7 +6,7 @@ import { acceptIncoming } from '../../src/accept';
 import { ACTIVITY_EXCHANGE } from '../../src/broker';
 import { runBuildJob } from '../../src/build-job';
 import { startDueRetries, type StartedJob } from '../../src/shop-state';
-import { liveHome, logged, openHarness, render, type Harness } from './builder';
+import { liveFiles, liveHome, logged, openHarness, render, type Harness } from './builder';
 import { startFakeProducts, type FakeProducts } from './fake-product';
 import { STACK, insertSite, shopRow, wait, type SiteFields } from './stack';
 
@@ -172,5 +173,17 @@ describe('сбой: живой сайт не тронут, повторы, тр�
     });
     expect(await liveHome(harness.store, labelOf(site))).not.toContain('Не дойдёт');
     await raw.close();
+  });
+});
+
+describe('страница политики (блок 8 «Секций и SDK», часть 8б)', () => {
+  it('политика с текстом — страница /legal/privacy в живой сборке; шаблон пустой — текст от платформы', async () => {
+    const site = await insertSite(harness.db, { name: 'Политики' });
+    const sql = `INSERT INTO site_policy (id, site_id, type, content, created_at, updated_at)
+      VALUES ($1, $2, 'privacy', $3, now(), now())`;
+    await harness.db.query(sql, [randomUUID(), site.id, 'Мы бережём данные покупателей']);
+    await event(site.id, 'policy-change');
+    await runNext(site.id);
+    expect(await liveFiles(harness.store, labelOf(site))).toContain('legal/privacy/index.html');
   });
 });

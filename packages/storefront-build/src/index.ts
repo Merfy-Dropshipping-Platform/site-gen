@@ -20,7 +20,7 @@ export { buildStorefront, type BuildReferences, type StorefrontBuild, type Theme
 export { pagePropsOf, renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
 export { NOT_FOUND_ROUTE, SHOP_ROUTES, pageInfoById, routeOf, type ShopRoute } from './routes';
 // Страницы записей (блок 8 «Секций и SDK», часть 8б)
-export { recordIndex, shopRoutes, templateShown } from './routes';
+export { recordIndex, routeDuplicates, shopRoutes, templateShown, type RouteDuplicate } from './routes';
 export {
   HOME_PAGE,
   NOT_FOUND_PAGE_ID,

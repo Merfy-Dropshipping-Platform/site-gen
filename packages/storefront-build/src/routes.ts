@@ -1,7 +1,8 @@
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { PageEntityType } from './manifest';
-import { recordIndexOf, type RecordEntry, type RecordIndex, type RecordType } from './records';
+import { entityKey } from './entities';
+import { recordIndexOf, recordPath, recordSlug, type RecordEntry, type RecordIndex, type RecordType } from './records';
 import { HOME_PAGE, NOT_FOUND_PAGE_ID, type PageInfo } from './special-pages';
 
 // Страницы магазина новой темы (design.md блока 4, Св-1): главная и свои страницы мерчанта (блок 1 «Секций и SDK»,
@@ -101,4 +102,33 @@ export function routeOf(path: string, inputs?: BuildInputs): ShopRoute {
 export function pageInfoById(inputs: BuildInputs, id: string): PageInfo {
   const route = [...shopRoutes(inputs), NOT_FOUND_ROUTE].find((candidate) => candidate.id === id);
   return route === undefined ? HOME_PAGE : pageInfoOf(route);
+}
+
+// Совпавшие адреса записей (design.md блока 8, 8.2; Р8а-10): у товара или коллекции адрес по handle заняла запись
+// раньше по id — запись получила адрес по id (page) или, если занят и он, страницы у неё нет (page: null). Строки
+// журнала route-duplicate сборщика.
+export interface RouteDuplicate {
+  type: RecordType;
+  id: string;
+  // Адрес по handle, который заняла другая запись.
+  path: string;
+  page: string | null;
+}
+
+function movedFromHandle(entry: RecordEntry, handle: unknown): RouteDuplicate[] {
+  if (entry.type !== 'product' && entry.type !== 'collection') return [];
+  if (typeof handle !== 'string' || handle === entry.id || recordSlug(handle, entry.id) !== handle) return [];
+  const path = recordPath[entry.type](handle);
+  return entry.path === path ? [] : [{ type: entry.type, id: entry.id, path, page: entry.path }];
+}
+
+export function routeDuplicates(inputs: BuildInputs): RouteDuplicate[] {
+  const index = recordIndex(inputs);
+  const handles = new Map(
+    inputs.data.entities.map((entity): [string, unknown] => [entityKey(entity.type, entity.id), entity.data.handle]),
+  );
+  const moved = index.entries.flatMap((entry) =>
+    movedFromHandle(entry, handles.get(entityKey(entry.entity.type, entry.entity.id))),
+  );
+  return [...moved, ...index.duplicates.map((duplicate) => ({ ...duplicate, page: null }))];
 }

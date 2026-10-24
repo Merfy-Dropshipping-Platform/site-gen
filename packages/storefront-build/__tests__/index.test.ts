@@ -91,6 +91,7 @@ const API = [
   'recordIndex',
   'shopRoutes',
   'templateShown',
+  'routeDuplicates',
   'searchFlaggedBetween',
   'sectionCss',
   'seoProblems',

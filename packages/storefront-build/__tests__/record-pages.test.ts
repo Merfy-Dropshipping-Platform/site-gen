@@ -4,7 +4,7 @@ import { checkPageRow } from '../src/manifest';
 import { policyTextHtml } from '../src/policy-text';
 import { renderShopPage, type ShopTheme } from '../src/page';
 import { RECORD_FIELDS, RECORD_TYPES, money } from '../src/records';
-import { routeOf, shopRoutes, templateShown } from '../src/routes';
+import { routeDuplicates, routeOf, shopRoutes, templateShown } from '../src/routes';
 import type { SectionRenderRequest } from '../src/sections-render';
 import { errorOf } from './support';
 import {
@@ -14,6 +14,8 @@ import {
   C1,
   LATER,
   P1,
+  P2,
+  P3,
   SITE_KEY,
   article,
   blog,
@@ -174,5 +176,17 @@ describe('политика без секций шаблона — текст о�
     expect(html).toContain('>A &amp; &lt;B&gt;</h1>');
     expect(html).toContain('max-width:var(--width-page)');
     expect(html).toContain('<p>t</p></div></div>');
+  });
+});
+
+describe('совпавшие адреса записей', () => {
+  it('адрес по handle занят — запись по id и строка; заняты оба — страницы нет; неверный handle — не совпадение', () => {
+    const moved = recordInputs([product(P1), product(P2), product(P3, { handle: 'a b' })], TEMPLATES);
+    expect(routeDuplicates(moved)).toEqual([
+      { type: 'product', id: P2, path: '/product/sharf', page: `/product/${P2}` },
+    ]);
+    const lost = recordInputs([product(P1), product(P2, { handle: P3 }), product(P3)], TEMPLATES);
+    expect(routeDuplicates(lost)).toEqual([{ type: 'product', id: P3, path: '/product/sharf', page: null }]);
+    expect(routeDuplicates(recordInputs(ALL, TEMPLATES))).toEqual([]);
   });
 });

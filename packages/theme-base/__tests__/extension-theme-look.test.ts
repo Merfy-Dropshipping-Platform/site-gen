@@ -47,6 +47,8 @@ export function bareCss(css: string, prefix: '--xp' | '--xo'): string {
   return withoutDeclarations.replace(/\s+/g, ' ').trim();
 }
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { EXTENSION_PURCHASE_STYLES } from '../runtime/extension-purchase.styles';
 import { EXTENSION_ORDERS_STYLES } from '../runtime/extension-orders.styles';
 
@@ -112,6 +114,24 @@ describe('стили формы покупки: режим «как тема»',
   it('шрифт и вес — из токенов темы', () => {
     expect(theme).toContain('--xp-weight: var(--weight-body)');
     expect(theme).toContain('font-family: var(--font-body);');
+  });
+
+  it('подпись у цены (вне .xp, в блоке цены) — цвет текста схемы секции, не серый литерал', () => {
+    // Баг тестировщика 24.10, Б5: у bloom подпись «точную цену назовём после
+    // заявки» стояла фиксированным #8A8A8A (контраст 1,1:1 на светлой схеме).
+    expect(theme).toContain(
+      '[data-extension-purchase-note][data-look="theme"] { color: rgb(var(--color-text) / .75); }',
+    );
+  });
+
+  it('блок «Товар» ставит data-look и на подпись у цены', () => {
+    const product = readFileSync(
+      resolve(__dirname, '../blocks/Product/Product.astro'),
+      'utf8',
+    );
+    expect(product).toContain(
+      '<span data-extension-purchase-note data-look={extensionLook} hidden></span>',
+    );
   });
 
   it('заголовки формы и экрана «отправлена» — heading-токены', () => {

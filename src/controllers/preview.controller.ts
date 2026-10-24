@@ -45,6 +45,7 @@ import { resolveCartDrawerSchemeId } from '../themes/cart-drawer-contract';
 import {
   adaptLegacyProps,
   prepareBlockProps,
+  applyProductThemeFeatures,
   themeBlocksFor,
   extractPageBlocks,
   pagePropsPreparer,
@@ -1017,6 +1018,13 @@ export class PreviewController {
           : null;
       if (previewProductId && /^product$/i.test(body.blockType)) {
         propsWithContext.productId = previewProductId;
+      }
+      // Флаги манифеста темы (форма заявки вместо «В корзину») ставит целая
+      // страница в extractPageBlocks; сырые props конструктора их не несут, и
+      // после любой правки секции «Товар» форма пропадала, а кнопки корзины
+      // и количество возвращались (баг тестировщика 24.10, Б3/Б4).
+      if (/^product$/i.test(body.blockType)) {
+        applyProductThemeFeatures(propsWithContext, loaded.themeId);
       }
       // Блоки ХРОМА: точечный рендер обязан обогатить пропсы ревизией ровно
       // так же, как это делает первичный рендер страницы (assembleChrome).

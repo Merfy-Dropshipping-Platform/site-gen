@@ -43,6 +43,7 @@ import { CONTACT_KEYS } from "./forms-vendor/types-v2";
 import type { FieldType } from "./forms-vendor/types";
 import {
   hasErrors,
+  MESSAGES_V2,
   validateV2,
   visibleItems,
   type ContactValuesV2,
@@ -52,11 +53,17 @@ import {
   attribute,
   callFunction,
   escapeHtml,
+  fetchAccountEmail,
   fetchStorefrontMap,
+  findProductPoint,
   isRecord,
   isSuccessStatus,
   safeLink,
+  sitePath,
+  type PurchasePoint,
 } from "./extension-call";
+import { POLICY_URLS_GLOBAL } from "./legal-links";
+import { guardPreviewClicks } from "./preview-click-guard";
 import {
   canPreview,
   uploadFile,
@@ -113,11 +120,9 @@ export interface ProductSubmitResult {
   buttons?: ProductSubmitButton[];
 }
 
-export interface PurchasePoint {
-  extensionId: string;
-  form: string;
-  submit: string;
-}
+/** Точка «товар» из карты витрины живёт в extension-call.ts: её читает и рантайм каталога (extension-sale.ts). */
+export { findProductPoint };
+export type { PurchasePoint };
 
 export interface MountExtensionPurchaseOptions {
   productId: string;
@@ -137,6 +142,11 @@ export interface FormState {
   submitId: string;
   /** Выбранные файлы по id пункта: загружаются сразу, в отправку — id готовых. */
   files: FileEntries;
+  /**
+   * Почта аккаунта вошедшего покупателя. Не пустая — поле «Почта» заполнено ею и
+   * только для чтения, в отправку уходит она. Пусто или нет — гость, вводит сам.
+   */
+  accountEmail?: string;
 }
 
 /** Всё, что нужно от `crypto` для ключа повтора; в тестах подменяется. */
@@ -158,6 +168,9 @@ const TEXTS = {
   optional: "необязательно",
   choose: "Выберите",
   consent: "Даю согласие на обработку персональных данных и файлов",
+  /** Часть согласия, которая становится ссылкой на политику магазина. */
+  consentLink: "обработку персональных данных",
+  phoneShort: "Проверьте номер: нужно не меньше 10 цифр",
   failure: "Не удалось отправить. Попробуйте ещё раз.",
   filesFailure: "Не все файлы загрузились — проверьте отмеченные поля.",
 } as const;
@@ -195,27 +208,6 @@ const textOf = (value: unknown): string => {
   if (typeof value === "string") return value;
   return typeof value === "number" ? String(value) : "";
 };
-
-/* ── Точка расширения из карты ── */
-
-function pointOf(extensionId: string, entry: unknown): PurchasePoint | null {
-  const product = isRecord(entry) ? entry.product : undefined;
-  if (!isRecord(product)) return null;
-  const { form, submit } = product;
-  const named =
-    typeof form === "string" &&
-    form !== "" &&
-    typeof submit === "string" &&
-    submit !== "";
-  return named ? { extensionId, form, submit } : null;
-}
-
-/** Первое расширение карты, у которого точка `product` называет функции формы и отправки. */
-export function findProductPoint(map: unknown): PurchasePoint | null {
-  if (!isRecord(map)) return null;
-  const points = Object.entries(map).map(([id, entry]) => pointOf(id, entry));
-  return points.find((point) => point !== null) ?? null;
-}
 
 /* ── Проверка ответа расширения (внешние данные — unknown, сразу сужаем) ── */
 
@@ -351,7 +343,7 @@ export function createSubmitId(source: RandomSource | undefined): string {
 export function collectSubmitInput(
   productId: string,
   form: FormV2,
-  state: Pick<FormState, "values" | "contacts" | "submitId">,
+  state: Pick<FormState, "values" | "contacts" | "submitId" | "accountEmail">,
   fileIds: Record<string, string[]> = {},
 ): ProductSubmitInput {
   const shown = visibleItems(form, state.values);
@@ -360,7 +352,12 @@ export function collectSubmitInput(
   const files: Record<string, string[]> = {};
   for (const item of shown) {
     if (item.kind === "contact") {
-      const text = textOf(state.contacts[item.key]).trim();
+      const typed = textOf(state.contacts[item.key]).trim();
+      // Вошедший покупатель: почта аккаунта, что бы ни лежало в поле.
+      const text =
+        item.key === "email" && state.accountEmail
+          ? state.accountEmail
+          : typed;
       if (text !== "") contacts[item.key] = text;
       continue;
     }
@@ -524,9 +521,12 @@ function contactHtml(item: ContactItem, state: FormState): string {
   const bad = hasOwn(state.errors.items, item.id);
   const placeholder =
     input.placeholder === "" ? "" : attribute("placeholder", input.placeholder);
+  // Вошедшему покупателю почту ставит аккаунт, менять её нельзя.
+  const locked = item.key === "email" && Boolean(state.accountEmail);
+  const readonly = locked ? " readonly" : "";
   const control =
     `<input class="${bad ? "sf-in bad" : "sf-in"}" type="${input.type}"` +
-    `${attribute("data-xp-contact", item.key)}${ariaLabel(contactName(item.title, input.placeholder))}${attribute("value", textOf(state.contacts[item.key]))}${placeholder} autocomplete="off">`;
+    `${attribute("data-xp-contact", item.key)}${ariaLabel(contactName(item.title, input.placeholder))}${attribute("value", textOf(state.contacts[item.key]))}${placeholder}${readonly} autocomplete="off">`;
   return `<div class="sf-f">${labelHtml(item.title, item.required)}${control}${errorHtml(error)}</div>`;
 }
 
@@ -547,10 +547,28 @@ function rowHtml(row: FormItem[], state: FormState): string {
   return row.length === 2 ? `<div class="sf-num">${cells}</div>` : cells;
 }
 
+/** Адрес политики конфиденциальности магазина из глобала сборки/превью; только путь своего сайта. */
+function privacyPolicyPath(): string | null {
+  if (typeof window === "undefined") return null;
+  const urls = (window as unknown as Record<string, unknown>)[POLICY_URLS_GLOBAL];
+  return isRecord(urls) ? sitePath(urls.privacy) : null;
+}
+
+/** Текст согласия; фраза «обработку персональных данных» — ссылка на политику, если она есть. */
+function consentTextHtml(): string {
+  const path = privacyPolicyPath();
+  if (path === null) return TEXTS.consent;
+  const [head, tail] = TEXTS.consent.split(TEXTS.consentLink);
+  const link =
+    `<a${attribute("href", path)} target="_blank" rel="noopener" data-xp-policy` +
+    ` style="color:inherit;text-decoration:underline">${TEXTS.consentLink}</a>`;
+  return `${head}${link}${tail}`;
+}
+
 function consentHtml(state: FormState): string {
   const checked = state.contacts.consent === true ? " checked" : "";
   const box = `<input type="checkbox" data-xp-consent${checked}>`;
-  return `<label class="sf-cb">${box}<span>${TEXTS.consent}</span></label>${errorHtml(state.errors.consent)}`;
+  return `<label class="sf-cb">${box}<span>${consentTextHtml()}</span></label>${errorHtml(state.errors.consent)}`;
 }
 
 /** Вся форма: заголовок, пункты по порядку, согласие, кнопка, текст у кнопки, подсказка. */
@@ -623,7 +641,21 @@ function revealForm(
   container.hidden = false;
 }
 
-const isConditionSource = (form: FormV2, id: string): boolean =>
+const POLICY_GUARD_FLAG = "__merfyXpPolicyGuard";
+
+/**
+ * В превью конструктора (iframe) переход по ссылке на политику гасится: навигация
+ * конструктора по неизвестному адресу автосоздаёт страницу. Как у баннера cookie
+ * и юридической строки чекаута; на витрине — обычный переход. Один раз на окно.
+ */
+function guardPolicyLink(): void {
+  const flags = window as unknown as Record<string, unknown>;
+  if (flags[POLICY_GUARD_FLAG] === true) return;
+  flags[POLICY_GUARD_FLAG] = true;
+  guardPreviewClicks(window, "[data-xp-policy]");
+}
+
+const isConditionSource =(form: FormV2, id: string): boolean =>
   form.items.some(
     (item) => item.kind === "field" && item.condition?.field === id,
   );
@@ -837,11 +869,36 @@ function showFailure(session: Session, outcome: SubmitOutcome): void {
   paint(session);
 }
 
+/**
+ * Пакет форм отвечает на пустой и на неполный телефон одним текстом («Нужен
+ * телефон»). Неполный номер — не пустое поле: ему свой текст, пустому — прежний.
+ */
+function withShortPhoneText(
+  form: FormV2,
+  contacts: ContactValuesV2,
+  errors: ValidationErrorsV2,
+): ValidationErrorsV2 {
+  if (textOf(contacts.phone).trim() === "") return errors;
+  const items = { ...errors.items };
+  for (const item of form.items) {
+    const flagged =
+      item.kind === "contact" &&
+      item.key === "phone" &&
+      items[item.id] === MESSAGES_V2.phoneRequired;
+    if (flagged) items[item.id] = TEXTS.phoneShort;
+  }
+  return { ...errors, items };
+}
+
 /** Проверка формы пакетом форм; файлы считаются все выбранные, даже не догрузившиеся. */
 function checkAnswers(session: Session): boolean {
   const { state, view, container } = session;
   const counts = fileCounts(state.files);
-  state.errors = validateV2(view.form, state.values, state.contacts, counts);
+  state.errors = withShortPhoneText(
+    view.form,
+    state.contacts,
+    validateV2(view.form, state.values, state.contacts, counts),
+  );
   state.notice = "";
   if (!hasErrors(state.errors)) return true;
   paint(session);
@@ -927,9 +984,11 @@ export async function mountExtensionPurchase(
   container.setAttribute(MOUNTED_ATTRIBUTE, "");
   const loaded = await loadForm(options);
   if (loaded === null) return;
+  const accountEmail = await fetchAccountEmail(options);
   const state: FormState = {
     values: {},
-    contacts: {},
+    contacts: accountEmail === "" ? {} : { email: accountEmail },
+    accountEmail,
     errors: { items: {} },
     notice: "",
     busy: false,
@@ -947,6 +1006,7 @@ export async function mountExtensionPurchase(
     uploads: 0,
   };
   revealForm(root, container, loaded.view);
+  guardPolicyLink();
   paint(session);
   container.addEventListener("input", (event) => onInput(session, event));
   container.addEventListener("change", (event) => onChange(session, event));

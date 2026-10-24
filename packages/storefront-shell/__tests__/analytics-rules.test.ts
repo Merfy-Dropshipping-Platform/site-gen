@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONSENT_KEY, CONSENT_RULES, readConsent } from '../src/core/analytics/consent';
+import { CONSENT_KEY, CONSENT_RULES, readConsent, storedConsent } from '../src/core/analytics/consent';
 import {
   SESSION_COOKIE,
   VISITOR_COOKIE,
@@ -108,12 +108,21 @@ describe('хранилища браузера', () => {
 });
 
 describe('согласие — одна таблица (С11-2 В)', () => {
-  it('до ответа — визит без метки на год, принял — метки и счётчики, отклонил — ничего', () => {
+  it('до ответа — визит без метки на год, принял — метки, счётчики и «свой код», отклонил — ничего', () => {
     expect(CONSENT_RULES).toEqual({
-      unknown: { identity: 'visit', counters: false },
-      accepted: { identity: 'visitor', counters: true },
-      declined: { identity: 'none', counters: false },
+      unknown: { identity: 'visit', counters: false, custom: false },
+      accepted: { identity: 'visitor', counters: true, custom: true },
+      declined: { identity: 'none', counters: false, custom: false },
     });
+  });
+
+  it('ответ в ключ — как у баннера пяти тем: дата или «declined:<дата>»; читается обратно тем же ответом', () => {
+    const at = new Date(ANSWERED_AT);
+    expect([storedConsent('accepted', at), storedConsent('declined', at)]).toEqual([
+      ANSWERED_AT,
+      `declined:${ANSWERED_AT}`,
+    ]);
+    expect(readConsent(memory({ [CONSENT_KEY]: storedConsent('declined', at) }))).toBe('declined');
   });
 
   it.each<[string | null, string]>([

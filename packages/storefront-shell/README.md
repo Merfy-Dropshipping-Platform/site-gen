@@ -25,10 +25,20 @@
 ## Аналитика магазина
 
 `src/core/analytics/` — часть SDK `analytics` (блок 11; с части 5б — не секция): визит, просмотр страницы по
-`merfy:page:view`, «в корзину» и «из корзины» по прочитанным состояниям корзины ядра — в сборщик аналитики
-(`analytics.url` конфига) по таблице согласия `consent.ts`; счётчики мерчанта — после «принять». API для секций у неё
-нет. Сборка магазина добавляет её в бандл каждой страницы опубликованного сайта (`LIVE_PARTS` в `storefront-build`).
-Вес — до 3 КБ brotli (`__tests__/analytics-budget.test.ts`).
+`merfy:page:view`, «в корзину» и «из корзины» по событиям `merfy:cart:*` (`sdk-events.ts`) — в сборщик аналитики
+(`analytics.url` конфига) по таблице согласия `consent.ts`; счётчики мерчанта — после загрузки страницы и «Принять».
+«Свой код» мерчанта (`analytics.custom`, `custom-code.ts`): из текста — только `<script>`, разбор в `<template>`;
+«ждать согласия» — после «Принять», «сразу» — после `merfy:page:ready`; один раз, в превью — никогда. API для секций у
+части нет; сборка магазина добавляет её в бандл каждой страницы (`LIVE_PARTS`). Вес — до 3 КБ brotli, «свой код» — до
+512 Б (`__tests__/analytics-budget.test.ts`).
+
+## Согласие и события страницы (блок 13 «Секций и SDK», часть 13а)
+
+- Часть `consent` (в ядре): `ctx.consent.$consent` — `'unknown' | 'accepted' | 'declined'`, `accept()`, `decline()`;
+  разметка — `consent.accept`, `consent.decline`. Ответ — `localStorage['merfy:cookie-consent:v1']`, как у баннера пяти
+  тем; превью и недоступное хранилище — память страницы; `merfy:consent:change` — при смене ответа, и из другой вкладки.
+- События страницы (`src/core/page-events.ts`): `merfy:page:hidden`, `merfy:page:visible`, `merfy:page:leave`,
+  `merfy:page:restore` («Назад» из кеша браузера, без второго просмотра).
 
 ## Наши секции
 
@@ -82,7 +92,7 @@
 - Разметка секции: `data-behavior="<имя>"` на корне, части — `data-part`, параметры — `data-<имя>` (вид, умолчание и
   границы — `BEHAVIORS`). Девять поведений: `accordion` (`<details>` + Motion: плавное раскрытие значений satin,
   общий `name` — открыт один), `dialog` (`<dialog>` + Motion: `fade`, `drawer`, `drawer-back`, `drop`; модальные и
-  немодальные, запрет прокрутки, Escape/фон/ссылка), `carousel` (Embla с Autoplay и Fade: стрелки, точки, миниатюры,
+  немодальные, запрет прокрутки, Escape/фон/ссылка; открытие модального окна закрывает немодальные окна своей секции), `carousel` (Embla с Autoplay и Fade: стрелки, точки, миниатюры,
   счётчик, текст слайда, кнопка паузы, ←/→), `tabs` и `nav-menu` (свой код по W3C APG), `quantity` (браузерные
   `stepUp`/`stepDown`), `card-photos` (наведение и свайп фото карточки), `sticky-header` (ставит и снимает
   `data-hidden`), `video` (кнопка «Смотреть»). Что делает браузер, что — SDK — `BEHAVIORS` в каталоге.

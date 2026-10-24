@@ -96,3 +96,13 @@ describe('robots.txt и карта сайта', () => {
     );
   });
 });
+
+describe('страницы записей в карте (блок 8 «Секций и SDK», часть 8б)', () => {
+  it('основной адрес записи — в карте, адрес по id из aliases — нет', () => {
+    const id = '00000000-0000-4000-8000-000000000101';
+    const sharf = { path: '/product/sharf', entity: `product:${id}`, aliases: [`/product/${id}`] };
+    const files = seoFiles({ manifest: buildOf([HOME, sharf]).manifest, publicUrl: PUBLIC_URL, indexable: true });
+    expect(textOf(files, '/sitemap-products.xml')).toContain('<loc>https://scarf.merfy.ru/product/sharf</loc>');
+    expect(files.map((file) => file.text).join('')).not.toContain(`/product/${id}`);
+  });
+});

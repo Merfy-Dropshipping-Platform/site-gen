@@ -13,6 +13,8 @@ export interface PageSpec {
   path: string;
   entity: string;
   updatedAt?: string;
+  // Второй адрес записи (блок 8 «Секций и SDK», часть 8б) — поле aliases строки страницы.
+  aliases?: string[];
 }
 
 export interface TestFile {
@@ -39,6 +41,7 @@ function pageRow(spec: PageSpec): Record<string, unknown> {
     entity: { type, id },
     deps: [spec.entity],
     dataUpdatedAt: spec.updatedAt ?? UPDATED_AT,
+    ...(spec.aliases === undefined ? {} : { aliases: spec.aliases }),
   };
 }
 

@@ -49,8 +49,11 @@ export const SPECIAL_PAGES: readonly SpecialPage[] = readSpecialPages(
 export const SPECIAL_PAGE_IDS: ReadonlySet<string> = new Set(
   SPECIAL_PAGES.map((page) => page.id),
 );
+// Занятые адреса — как SPECIAL_PAGE_SLUGS сборки (packages/storefront-build/src/special-pages.ts): у образца шаблона —
+// первая часть до «/:».
+const takenSlug = (slug: string): string => slug.split("/:")[0];
 export const SPECIAL_PAGE_SLUGS: ReadonlySet<string> = new Set(
-  SPECIAL_PAGES.map((page) => page.slug),
+  SPECIAL_PAGES.map((page) => takenSlug(page.slug)),
 );
 
 const NEW_THEME_IDS = readNewThemeIds(process.cwd());

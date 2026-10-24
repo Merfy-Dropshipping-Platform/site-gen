@@ -36,6 +36,11 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
 >
   {heading && <h3 class={C.heading}>{heading}</h3>}
 
+  {/* Сообщение «Товар … продаётся по заявке» + ссылка на страницу товара. Наполняет
+      runtime/checkout-request-items.ts (проверка строк корзины заново, Б16); пока
+      сообщений нет — скрыт. */}
+  <div data-checkout-request-notice hidden></div>
+
   {/* Loader — виден до первого cart:updated (мгновенный рендер из локальной корзины). */}
   <div data-checkout-loading class="flex items-center justify-center py-10">
     <svg class="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" opacity="0.9"/></svg>
@@ -286,7 +291,10 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
       var items = checkoutItems();
 
       if (items.length === 0) {
-        if (emptyEl) emptyEl.hidden = false;
+        // Корзину опустошила проверка «товар продаётся по заявке» (Б16): вместо
+        // «Ничего не выбрано» над списком стоит её сообщение со ссылкой.
+        var lines = window.__merfyCheckoutLines;
+        if (emptyEl) emptyEl.hidden = !!(lines && lines.notices && lines.notices.length);
         if (itemsEl) { itemsEl.hidden = true; itemsEl.innerHTML = ''; }
         if (promoWrap) promoWrap.hidden = true;
         return;
@@ -462,6 +470,8 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
       }
       render();
     });
+    // Проверка строк нашла товар «по заявке» или закончилась — перерисовать состав.
+    document.addEventListener('checkout:lines-changed', render);
     document.addEventListener('DOMContentLoaded', function () { setTimeout(render, 150); });
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       setTimeout(render, 150);

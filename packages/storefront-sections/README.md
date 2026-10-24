@@ -103,3 +103,37 @@
 - **Значения на странице** — `@layer base { merfy-section[data-section="<имя>"] { --<токен>: … } }` в CSS токенов
   магазина; правка мерчанта — `revision.tokens.sections`, одно значение на магазин.
 - **База страницы** — `@merfy/tokens/base.css` (preflight и база словаря в `@layer base`), первым стилем головы.
+
+## Скрипт секции при сохранении (блок 5 «Секций и SDK», часть 5в)
+
+- **Только SDK** (`src/script-check.ts`, списки — `src/script-sdk.ts`): каждый файл `.ts`/`.js` разбирает
+  `@babel/parser`, области видимости — `@babel/traverse`. Свободное имя вне списка, `this`, `super`, `class`, `delete`,
+  `import()`, служебные поля JS (`constructor`, `__proto__` …), исполняемый код вне `defineSection` — `sdk-only` с
+  местом и подсказкой. Из `@merfy/shell` — только `defineSection` и типы.
+- **Модуль без импортов** (`src/script-rewrite.ts`): esbuild склеивает свои файлы, `import` из `@merfy/shell` и
+  `defineSection(…)` снимаются, `a[k]` — через помощник (только собственные поля; запись служебного поля — исключение),
+  потом сжатие.
+- **Сверка имён** (`src/script-names.ts`, таблица `NAME_RULES`): `event-unknown` — `ctx.listen('…')` по каталогу событий
+  ядра; `action-unknown` — `data-action` по `actions` секции, действиям SDK и событиям ядра; `class-arbitrary` — класс
+  `toggleClass('…')` не вида утилиты. Новый код — строка таблицы и код в `PROBLEM_CODES`.
+- **`uses`** — `theme`, `shop` (данные шаблона) и модули SDK `cart`, `favorites`, `auth`, `newsletter`; в шаблон и входы
+  сборки — только `theme` и `shop` (`propsUsesOf`).
+- **`scriptMeta`** в ответе проверки — `{ uses, parts, classes }`: модули для `ctx`, части бандла страницы (`uses` и
+  действия SDK разметки) и классы скрипта.
+- Проверка руками: `pnpm merfy section check fixtures/scripts/scarf-match` (проходит),
+  `fixtures/broken/script-sdk-only` и `fixtures/broken/script-names` (отказы с местом).
+
+### `script_meta` в базе и бандл страницы (часть 5в, план 3)
+
+- Приём пишет `scriptMeta` в столбец `storefront_section.script_meta` (`drizzle/0032`); `currentSection` отдаёт его,
+  если значение той формы (`scriptMetaSchema`). У строк до части 5в — `null`: сборка даёт их секциям все части ядра.
+- Сборщик кладёт его во входы сборки как `meta` секции (`storefront-builder`, `sectionOf`). Сборка (`storefront-build`):
+  модули в `ctx` секции — `meta.uses`; части бандла — части ядра из `core.json`, `meta.parts` секций страницы и
+  аналитика (`pageParts`); CSS страницы — и для `meta.classes`.
+- Выкатка: сначала sites (миграция при старте контейнера), потом сборщик — реестр читает столбец `script_meta`.
+
+## Документация SDK (блок 14 «Секций и SDK»)
+
+Формат секции, словарь, коды ошибок и примеры для людей и ИИ — пакет `packages/sdk-docs`: `generated/llms.txt` и
+страницы рядом; их раздаёт шлюз по `/api/storefront/sdk/llms.txt`. Описание формата выше — до блока 1, сверяй с
+документацией. Поменял данные проверки (код, имя словаря, событие) — `pnpm --dir packages/sdk-docs generate`.

@@ -49,6 +49,9 @@ const PART_NAME = /^[a-z][a-z0-9]*$/;
 const CODE_KINDS = ['section', 'global'] as const;
 const sectionNameSchema = z.string().regex(SECTION_NAME, { error: 'нужно полное имя секции: nova:scarf-colors' });
 export const partNameSchema = z.string().regex(PART_NAME, { error: 'нужно имя части ядра: cart' });
+// Класс, который ставит скрипт секции (часть 5в блока 5): имя утилиты без скобок, кавычек и пробелов — то же правило,
+// что SCRIPT_CLASS пакета секций.
+const SCRIPT_CLASS = /^[A-Za-z0-9_:/.-]{1,100}$/;
 
 // Ядро секций @merfy/shell (блок 5 «Секций и SDK», часть 5б): версия — для людей и манифеста; hash — sha256
 // dist/core.js, он в ключе сборки; parts — части из core.json, их получает каждая секция бандла страницы.
@@ -71,6 +74,15 @@ const codeSectionSchema = z.strictObject({
   uses: z.array(z.enum(['theme', 'shop'])).optional(),
   // Свои токены секции из section.json (блок 4, Р4-10) — только если объявлены.
   tokens: z.record(z.string(), z.unknown()).optional(),
+  // Часть 5в блока 5: что нужно скрипту секции (storefront_section.script_meta) — модули SDK для ctx, части бандла
+  // страницы и классы, которые скрипт ставит строкой. Нет — строка до 5в: секция получает все части ядра, как в 5б.
+  meta: z
+    .strictObject({
+      uses: z.array(partNameSchema),
+      parts: z.array(partNameSchema),
+      classes: z.array(z.string().regex(SCRIPT_CLASS, { error: 'нужно имя класса утилиты: opacity-40' })),
+    })
+    .optional(),
 });
 
 // Экземпляр секции на странице (блок 1 «Секций и SDK», В1-1 А): id на странице, имя секции и значения всех настроек —

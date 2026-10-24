@@ -7,6 +7,8 @@ export { start, type CoreEnv, type StartedCore } from './start';
 export { auth } from './parts/auth';
 export { cart } from './parts/cart';
 export { favorites } from './parts/favorites';
+// Блок 13: согласие на cookie — ctx.consent и действия consent.accept, consent.decline.
+export { consent } from './parts/consent';
 // Блок 6: типы ctx.animate. Поведения и анимации — @merfy/shell/behaviors.
 export type { AnimateOptions, Animation, Bezier, EasingName, KeyframeValue, Keyframes } from './types';
 // Блок 9: подписка на рассылку, типы событий и денег. Каталоги событий и действий — @merfy/shell/events и
@@ -14,7 +16,7 @@ export type { AnimateOptions, Animation, Bezier, EasingName, KeyframeValue, Keyf
 export { newsletter } from './parts/newsletter';
 // Часть 5б: аналитика магазина — часть SDK без API для секций (src/core/analytics/).
 export { analytics } from './analytics/part';
-export type { ConsentState, Money, NewsletterModule, NoticeLevel } from './types';
+export type { ConsentAnswer, ConsentModule, ConsentState, Money, NewsletterModule, NoticeLevel } from './types';
 export {
   EMPTY_INPUT,
   INPUT_PARSE_FAILED,
@@ -64,3 +66,6 @@ export type {
   StartOptions,
   Stop,
 } from './types';
+// Часть 5г: замена экземпляра секции в превью — бандл превью передаёт её в start({ preview }); протокол превью — вход
+// @merfy/shell/preview (src/core/preview-protocol.ts).
+export { watchPreviewReplace, type ReplaceDeps } from './replace';

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://gateway.merfy.ru/api/storefront/sdk/section.schema.json",
+  "sdk": 1,
+  "name": "new-section",
+  "kind": "section",
+  "title": "Новая секция",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Заголовок секции" } }
+  ]
+}

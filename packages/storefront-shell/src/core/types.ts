@@ -1,4 +1,5 @@
 import type { StorefrontConfig } from '@merfy/storefront-config';
+import type { ReplaceDeps } from './replace';
 
 // Договор ядра секций (design.md блока 5, разделы 3.1–3.8): что видит код секции и что дают части SDK. Только типы.
 // Блоки 6, 8, 9, 10 дописывают сюда свои поля и имена внутри "sdk": 1 — добавить можно, менять нельзя.
@@ -86,6 +87,8 @@ export interface Money {
 }
 export type NoticeLevel = 'error' | 'warning';
 export type ConsentState = 'accepted' | 'declined';
+// Ответ покупателя на баннер cookie (блок 13 «Секций и SDK», 13.2): unknown — ещё не ответил.
+export type ConsentAnswer = 'unknown' | ConsentState;
 type NoDetail = Readonly<Record<string, never>>;
 
 // Закрытый каталог событий витрины (13а А; блок 9, «Решил сам» п. 11) — публичный интерфейс для секций мерчантов и
@@ -192,8 +195,16 @@ export interface NewsletterModule {
     options?: ActionOptions,
   ): Promise<Result<{ readonly alreadySubscribed: boolean }>>;
 }
+// Согласие на cookie (блок 13 «Секций и SDK», 13.2): ответ покупателя и два действия баннера. Ответ — один на все
+// страницы магазина; что можно при каждом ответе — таблица согласия ядра.
+export interface ConsentModule {
+  readonly $consent: ReadableStore<ConsentAnswer>;
+  accept(): Promise<Result<ConsentAnswer>>;
+  decline(): Promise<Result<ConsentAnswer>>;
+}
 export interface Modules {
   readonly cart: CartModule;
+  readonly consent: ConsentModule;
   readonly favorites: FavoritesModule;
   readonly auth: AuthModule;
   readonly newsletter: NewsletterModule;
@@ -307,4 +318,6 @@ export interface SectionEntry {
 export interface StartOptions {
   readonly parts: readonly SdkPart<string, unknown>[];
   readonly sections: readonly SectionEntry[];
+  // Бандл превью (часть 5г): замена экземпляра — watchPreviewReplace; ядро зовёт её только в режиме preview.
+  readonly preview?: (deps: ReplaceDeps) => void;
 }

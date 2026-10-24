@@ -16,7 +16,7 @@ describe('одна функция приёма', () => {
     const section = result.ok ? result.section : null;
     expect(section?.name).toBe('shop:color-match');
     expect(section?.template).toBe(COLOR_MATCH['template.astro']);
-    expect(section?.script).toContain('from"@merfy/shell"');
+    expect(section?.script).not.toContain('@merfy/shell');
     expect(section?.warnings).toEqual([]);
     expect(section?.manifest.settings).toEqual([]);
   });
@@ -31,7 +31,8 @@ describe('одна функция приёма', () => {
       prefix: 'geo',
       files: {
         'section.json': manifest('locate', 'global', 'Город покупателя'),
-        'script.ts': "export default { mount() { document.documentElement.dataset.geo = 'ok'; } };",
+        'script.ts':
+          "import { defineSection } from '@merfy/shell';\nexport default defineSection({ mount(_el, ctx) { ctx.log('город'); } });",
       },
     });
     expect(geo.ok && [geo.section.name, geo.section.template]).toEqual(['geo:locate', '']);
@@ -43,7 +44,8 @@ describe('одна функция приёма', () => {
       files: {
         'section.json': manifest('list', 'section', 'Отзывы'),
         'template.astro': '<script>x()</script>',
-        'script.ts': "import confetti from 'canvas-confetti';\nexport default { mount() { confetti(); } };",
+        'script.ts':
+          "import confetti from 'canvas-confetti';\nimport { defineSection } from '@merfy/shell';\nexport default defineSection({ mount() { confetti(); } });",
       },
     });
     expect(result.ok ? [] : result.problems.map((item) => item.code)).toEqual([

@@ -38,12 +38,19 @@ const counterSchema = z
     error: 'номер не по правилу своего вида счётчика',
   });
 
+// «Свой код» мерчанта (блок 13 «Секций и SDK», 13.4; В13-1 В): текст из кабинета как есть — ядро витрины выполняет из
+// него только <script> (@merfy/shell, custom-code.ts). consent: required — после «Принять» в баннере cookie, none —
+// сразу. Предел на магазин держит сборщик витрин. Нет кодов — поля нет.
+const CUSTOM_CODE_CONSENTS = ['required', 'none'] as const;
+const customCodeSchema = z.strictObject({ code: z.string().min(1), consent: z.enum(CUSTOM_CODE_CONSENTS) });
+
 // Сборщик аналитики (блок 11, «решил сам» 4): события уходят на <url>/collect, поэтому адрес — без косой черты в конце.
 const analyticsSchema = z.strictObject({
   url: z
     .url({ protocol: /^https?$/, error: 'нужен адрес http:// или https://' })
     .refine((url) => !url.endsWith('/'), { error: 'адрес сборщика — без косой черты в конце' }),
   counters: z.array(counterSchema),
+  custom: z.array(customCodeSchema).min(1).optional(),
 });
 
 // Виды записей страницы (блок 8 «Секций и SDK», часть 8б-2) — как RECORD_TYPES сборки (storefront-build,
@@ -98,6 +105,7 @@ export const storefrontConfigSchema = configShape
 export type StorefrontConfig = z.infer<typeof storefrontConfigSchema>;
 export type Counter = z.infer<typeof counterSchema>;
 export type AnalyticsConfig = z.infer<typeof analyticsSchema>;
+export type CustomCode = z.infer<typeof customCodeSchema>;
 
 // Тексты zod — по-русски, без глобальной настройки: пакет не меняет zod для соседей.
 const RUSSIAN_ERRORS = { error: z.locales.ru().localeError };

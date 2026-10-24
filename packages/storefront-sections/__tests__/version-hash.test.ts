@@ -21,6 +21,7 @@ const prepared = (change: { template?: string; render?: string } = {}): Prepared
   render: change.render ?? 'export default 1; // Astro 7.4.0',
   script: null,
   warnings: [],
+  scriptMeta: { uses: [], parts: [], classes: [] },
 });
 
 describe('хеш версии секции', () => {

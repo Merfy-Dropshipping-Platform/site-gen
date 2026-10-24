@@ -1,0 +1,65 @@
+# script.ts
+
+> SDK 1 · документация 1.0.0 · 2026-10-24
+
+`script.ts` — поведение секции в браузере. Нужен, только если на странице что-то меняется после загрузки: выбор,
+фильтр, счётчик. Открыть, переключить, прокрутить — готовые [поведения](behaviors.md) без скрипта.
+
+## Определение секции
+
+```ts
+import { defineSection } from '@merfy/shell';
+
+type State = { coat: string | null };
+
+export default defineSection<State>({
+  mount(el, ctx) {
+    ctx.ref('count')?.text(ctx.refs('item').length);
+  },
+  actions: {
+    pick(button, ctx) {
+      ctx.state.coat = button.attr('data-coat');
+    },
+  },
+});
+```
+
+- `mount(el, ctx)` — секция появилась на странице; `unmount(el, ctx)` — убрана.
+- `actions` — действия по `data-action="<имя>"` элемента: клик по кнопке или ссылке, отправка формы. Аргументы — элемент
+  `El` и `ctx`. Действия SDK (`cart.add` и другие) — [actions.md](actions.md), их можно вызывать без скрипта.
+- Импорт — только `@merfy/shell` и свои файлы `.ts`/`.js` секции.
+- `window`, `document`, `fetch`, `setTimeout`, `localStorage` — нельзя: всё через `ctx`.
+
+## ctx
+
+| Член | Что делает |
+|---|---|
+| `ctx.state` | состояние экземпляра секции; переживает замену секции в превью |
+| `ctx.ref(name)` | элемент `data-ref="<name>"` внутри секции или `null` |
+| `ctx.refs(name)` | все элементы `data-ref="<name>"` |
+| `ctx.on(target, type, fn)` | событие `window` или `document` (прокрутка, клавиши); снимается само |
+| `ctx.every(ms, fn)` | повтор раз в `ms` (не чаще 100 мс); снимается сам |
+| `ctx.after(ms, fn)` | один раз через `ms` |
+| `ctx.watch(store, fn)` | подписка на стор модуля SDK: сразу текущее значение, потом каждое новое |
+| `ctx.listen(name, fn)` | событие витрины `merfy:…` ([events.md](events.md)) |
+| `ctx.emit(name, detail)` | своё событие секции, уходит как `<имя секции>:<name>` |
+| `ctx.log(...values)` | в превью — в консоль с именем секции; на витрине — ничего |
+| `ctx.animate(el, keyframes, options)` | анимация элемента |
+| `ctx.storage` | хранилище секции в браузере: `get`, `set` (до 4 КБ), `remove` |
+
+## El
+
+| Член | Что делает |
+|---|---|
+| `text()` / `text(value)` | текст элемента |
+| `attr(name)` / `attr(name, value)` | атрибут; `null` — убрать |
+| `hasClass(name)` / `toggleClass(name, on)` | класс словаря |
+| `show()` / `hide()` / `toggle(on)` / `visible()` | показать и скрыть |
+| `value()` / `checked()` / `form()` | поля формы |
+| `cssVar(name, value)` | переменная CSS элемента |
+| `ref(name)` / `refs(name)` / `closest(name)` | элементы `data-ref` внутри и снаружи |
+| `list(items, fill)` | список по шаблону первого ребёнка |
+| `focus()` | фокус |
+
+Модули SDK по `uses` — корзина, избранное, вход — [modules.md](modules.md).
+

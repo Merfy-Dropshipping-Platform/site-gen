@@ -1,0 +1,31 @@
+{
+  "sdk": 1,
+  "version": "1.0.0",
+  "date": "2026-10-24",
+  "api": "https://gateway.merfy.ru/api/",
+  "files": [
+    "actions.md",
+    "behaviors.md",
+    "changelog.md",
+    "data.md",
+    "errors.md",
+    "events.md",
+    "limits.md",
+    "llms-full.txt",
+    "llms.txt",
+    "modules.md",
+    "names.md",
+    "pages.md",
+    "script.md",
+    "section-json.md",
+    "section.schema.json",
+    "start.md",
+    "styles.md",
+    "template.md",
+    "template/AGENTS.md",
+    "template/CLAUDE.md",
+    "template/section.json",
+    "template/template.astro",
+    "theme-settings.md"
+  ]
+}

@@ -20,9 +20,13 @@ import {
   type SectionManifest,
 } from './format';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
-import { buildScript } from './script';
+import { buildScript, type BuiltScript } from './script';
+import { NO_FACTS, type ScriptFacts } from './script-facts';
+import { scriptMetaOf, scriptMetaSchema } from './script-meta';
+import { nameProblems } from './script-names';
+import { NO_MARKUP } from './template-markup';
 import { sectionTokensOf, tokenProblems } from './token-rules';
-import { NO_TEMPLATE_OPTIONS, checkTemplate, templateOptionsOf } from './compile';
+import { NO_TEMPLATE_OPTIONS, checkTemplate, templateOptionsOf, type TemplateCheck } from './compile';
 
 // Одна функция приёма (design.md блока 7, С7-11 А, п. 21): разбор section.json, проверка, сборка — одинаково для
 // платформы, темы, своей секции и расширения. Автора функция не знает: приставку имени даёт дверь (п. 22), запись в
@@ -42,6 +46,9 @@ export const preparedSectionSchema = z.strictObject({
   render: z.string().nullable(),
   script: z.string().nullable(),
   warnings: z.array(sectionProblemSchema),
+  // Что нужно скрипту секции (часть 5в блока 5, Р5в-7): модули SDK, части бандла, классы скрипта. План 2 пишет его
+  // в storefront_section.script_meta.
+  scriptMeta: scriptMetaSchema,
 });
 export type PreparedSection = z.infer<typeof preparedSectionSchema>;
 
@@ -57,6 +64,46 @@ const refuse = (problems: SectionProblem[]): PrepareResult => ({ ok: false, prob
 function manifestProblems(manifest: Checked<SectionManifest>, files: SectionFiles): SectionProblem[] {
   if (!manifest.ok) return manifest.problems;
   return [...kindProblems(manifest.value, files), ...fieldRuleProblems(manifest.value, files[MANIFEST_FILE] ?? '')];
+}
+
+// Факты скрипта для сверки имён: секции без скрипта — null; скрипт не собрался — ключи actions не известны (NO_FACTS),
+// свои действия шаблона не сверяются: отказ скрипта уже в списке.
+function factsOf(script: Checked<BuiltScript> | null): ScriptFacts | null {
+  if (script === null) return null;
+  return script.ok ? script.value.facts : NO_FACTS;
+}
+
+// Сверка имён (часть 5в блока 5) — когда section.json прочитан.
+function namesOf(
+  manifest: Checked<SectionManifest>,
+  checked: TemplateCheck | null,
+  script: Checked<BuiltScript> | null,
+  scriptEntry: string | null,
+): SectionProblem[] {
+  if (!manifest.ok) return [];
+  const markup = checked?.markup ?? NO_MARKUP;
+  return nameProblems({ manifest: manifest.value, markup, facts: factsOf(script), scriptEntry });
+}
+
+interface Checks {
+  template: string | undefined;
+  checked: TemplateCheck | null;
+  script: Checked<BuiltScript> | null;
+  warnings: SectionProblem[];
+}
+
+// Принятая секция: шаблон как есть, модули рендера и скрипта, предупреждения и script_meta (часть 5в блока 5).
+function preparedOf(name: string, manifest: SectionManifest, checks: Checks): PreparedSection {
+  const { template, checked, script, warnings } = checks;
+  return {
+    name,
+    manifest,
+    template: template ?? '',
+    render: checked?.render ?? null,
+    script: script !== null && script.ok ? script.value.code : null,
+    warnings,
+    scriptMeta: scriptMetaOf(manifest, checked?.markup ?? NO_MARKUP, factsOf(script)),
+  };
 }
 
 function problemsOf(checked: Checked<{ warnings: SectionProblem[] }> | null): SectionProblem[] {
@@ -114,14 +161,10 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
     ...manifestProblems(manifest, files),
     ...(checked?.problems ?? []),
     ...problemsOf(script),
+    ...namesOf(manifest, checked, script, entry),
     ...styles,
   ];
   if (!manifest.ok || problems.some((item) => !isWarning(item))) return refuse(problems);
   const name = `${input.prefix}:${manifest.value.name}`;
-  const code = script !== null && script.ok ? script.value.code : null;
-  const render = checked?.render ?? null;
-  return {
-    ok: true,
-    section: { name, manifest: manifest.value, template: template ?? '', render, script: code, warnings: problems },
-  };
+  return { ok: true, section: preparedOf(name, manifest.value, { template, checked, script, warnings: problems }) };
 }

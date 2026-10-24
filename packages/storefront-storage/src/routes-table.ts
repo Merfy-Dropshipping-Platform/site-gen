@@ -8,6 +8,9 @@ import { hexOf } from './layout';
 
 // Страница 404 темы — файл 404.html в корне сборки. У nova в этапе её нет: notFound — null, раздача отвечает своей.
 export const NOT_FOUND_FILE = '404.html';
+// Страница 502 сборки (блок 7, часть 7а). 404.html и 502.html раздача отдаёт на промахе и при сбое — по своему адресу нет.
+const UNAVAILABLE_FILE = '502.html';
+const NOT_SERVED_FILES: ReadonlySet<string> = new Set([NOT_FOUND_FILE, UNAVAILABLE_FILE]);
 // Удалённые товар, коллекция и публикация отвечают 410 полгода, остальные страницы — обычной 404.
 export const GONE_ENTITY_TYPES: ReadonlySet<PageEntityType> = new Set(['product', 'collection', 'publication']);
 export const GONE_DAYS = 183;
@@ -40,9 +43,9 @@ function servedFiles(manifest: StorefrontManifest): Files {
     const page = pageByFile.get(filePath);
     return page === undefined ? row : { ...row, m: page.dataUpdatedAt };
   };
-  const files = Object.entries(manifest.files).map(
-    ([filePath, hash]) => [`/${filePath}`, rowOf(filePath, hash)] as const,
-  );
+  const files = Object.entries(manifest.files)
+    .filter(([filePath]) => !NOT_SERVED_FILES.has(filePath))
+    .map(([filePath, hash]) => [`/${filePath}`, rowOf(filePath, hash)] as const);
   const pages = manifest.pages.map((page) => [page.path, rowOf(page.file, page.hash)] as const);
   return Object.fromEntries([...files, ...pages]);
 }
@@ -107,8 +110,8 @@ function redirects(request: RoutesTableRequest, files: Files): Pick<RoutesTable,
   return settle(moved, new Map([...stillGone, ...departed.gone]), files);
 }
 
-const notFoundOf = (manifest: StorefrontManifest): string | null =>
-  NOT_FOUND_FILE in manifest.files ? hexOf(manifest.files[NOT_FOUND_FILE]) : null;
+const fileHexOf = (manifest: StorefrontManifest, file: string): string | null =>
+  file in manifest.files ? hexOf(manifest.files[file]) : null;
 
 export function buildRoutesTable(request: RoutesTableRequest): RoutesTable {
   const { manifest, build } = request;
@@ -118,7 +121,8 @@ export function buildRoutesTable(request: RoutesTableRequest): RoutesTable {
     shop: manifest.shop.id,
     build,
     versions: { render: manifest.platform.renderHash, theme: `${manifest.theme.id}@${manifest.theme.version}` },
-    notFound: notFoundOf(manifest),
+    notFound: fileHexOf(manifest, NOT_FOUND_FILE),
+    unavailable: fileHexOf(manifest, UNAVAILABLE_FILE),
     files,
     ...redirects(request, files),
   };

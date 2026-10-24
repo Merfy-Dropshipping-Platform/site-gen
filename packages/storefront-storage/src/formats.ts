@@ -46,6 +46,8 @@ const routesTableSchema = z.strictObject({
   build: numberSchema,
   versions: z.strictObject({ render: z.string().regex(/^sha256:[0-9a-f]{64}$/), theme: z.string().min(1) }),
   notFound: hexSchema.nullable(),
+  // Хеш 502.html (блок 7 «Секций и SDK», часть 7а): раздача держит копию и отдаёт её при сбое. В таблицах до 7а ключа нет.
+  unavailable: hexSchema.nullable().optional(),
   files: z.record(routePathSchema, fileRowSchema),
   moved: z.record(routePathSchema, routePathSchema),
   gone: z.record(routePathSchema, instantSchema),

@@ -11,3 +11,4 @@ packages:
   - packages/theme-bloom
   - packages/theme-satin
   - packages/tokens
+  - packages/sdk-docs

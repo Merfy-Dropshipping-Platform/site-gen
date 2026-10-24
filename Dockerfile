@@ -32,6 +32,7 @@ COPY packages/storefront-config/package.json ./packages/storefront-config/packag
 COPY packages/theme-bloom/package.json ./packages/theme-bloom/package.json
 COPY packages/theme-satin/package.json ./packages/theme-satin/package.json
 COPY packages/tokens/package.json ./packages/tokens/package.json
+COPY packages/sdk-docs/package.json ./packages/sdk-docs/package.json
 RUN pnpm install --frozen-lockfile
 
 COPY . .
@@ -201,6 +202,7 @@ COPY packages/storefront-config/package.json ./packages/storefront-config/packag
 COPY packages/theme-bloom/package.json ./packages/theme-bloom/package.json
 COPY packages/theme-satin/package.json ./packages/theme-satin/package.json
 COPY packages/tokens/package.json ./packages/tokens/package.json
+COPY packages/sdk-docs/package.json ./packages/sdk-docs/package.json
 RUN pnpm install --frozen-lockfile --filter "@merfy/storefront-builder..."
 COPY packages/stand-check ./packages/stand-check
 COPY packages/storefront-build ./packages/storefront-build

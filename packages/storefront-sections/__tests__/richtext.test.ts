@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RICHTEXT_MAX, sectionFieldShape, sectionSettingProblem } from '../src/fields';
-import { cleanRichtext } from '../src/richtext';
+import { cleanArticleHtml, cleanRichtext } from '../src/richtext';
 import { resolveSectionSettings, settingsTexts } from '../src/settings';
 
 // Вид richtext (блок 1 «Секций и SDK», часть 3, п. 4, Р52): HTML с форматированием, только у секций. Значение — строка
@@ -71,5 +71,32 @@ describe('значения экземпляра', () => {
       values: { answer: '<p>Ответ</p>', question: 'Новый вопрос' },
       invalid: [TOO_LONG],
     });
+  });
+});
+
+
+// Текст статьи блога (блок 8 «Секций и SDK», часть 8а): список «Записи блога» пяти тем — шире richtext.
+describe('очистка текста статьи', () => {
+  it('h4, картинка http(s) с alt, figure и подпись остаются; обработчики уходят', () => {
+    const html =
+      '<h4>Уход</h4><figure><img src="https://s3.merfy.ru/a.jpg" alt="Лён" onerror="x()"><figcaption>Лён</figcaption></figure>';
+    expect(cleanArticleHtml(html)).toBe(
+      '<h4>Уход</h4><figure><img src="https://s3.merfy.ru/a.jpg" alt="Лён" /><figcaption>Лён</figcaption></figure>',
+    );
+  });
+
+  it('картинка javascript:, data: и без схемы — без адреса; script, style, iframe и h1 — нет', () => {
+    const dangerous =
+      '<img src="javascript:alert(1)"><img src="data:image/png;base64,AAA"><script>alert(1)</script><p style="color:red">Текст</p>';
+    expect(cleanArticleHtml(dangerous)).toBe('<img alt="" /><img alt="" /><p>Текст</p>');
+    expect(cleanArticleHtml('<img src="//evil.example/x.png" alt="x">')).toBe('<img alt="x" />');
+    expect(cleanArticleHtml('<h1>Заголовок</h1><iframe src="https://x"></iframe><a href="https://merfy.ru" target="_blank">M</a>')).toBe(
+      'Заголовок<a href="https://merfy.ru" target="_blank" rel="noopener noreferrer">M</a>',
+    );
+    expect(cleanArticleHtml('')).toBe('');
+  });
+
+  it('richtext прежний: картинки и h4 в нём нет', () => {
+    expect(cleanRichtext('<img src="https://s3.merfy.ru/a.jpg"><h4>Уход</h4>')).toBe('Уход');
   });
 });

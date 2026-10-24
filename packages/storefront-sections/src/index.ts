@@ -53,6 +53,8 @@ export {
 } from './wrapper';
 export { MAIN_MENU, menuTreeOf, revisionMenusSchema, sectionMenus, type RevisionMenu } from './menus';
 export { defaultSettings, resolveSectionSettings, settingsTexts, type ResolvedSettings } from './settings';
+// Текст статьи блога (блок 8 «Секций и SDK», часть 8а): очищает сборщик витрин до входов сборки.
+export { cleanArticleHtml } from './richtext';
 export { DEFAULT_SANDBOX, prepareInWorker, type SandboxOptions } from './sandbox';
 export {
   RENDER_LIMITS,

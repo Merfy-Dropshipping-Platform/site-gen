@@ -103,6 +103,22 @@ describe('buildStorefrontConfig: analytics (design.md блока 11)', () => {
     expect(JSON.stringify(config)).not.toContain('row-1');
   });
 
+  it('«свой код» (блок 13): код и отметка — поле в поле; пустой список — поля custom нет', () => {
+    const live = { ...standInput, site, mode: 'live' as const };
+    const custom = [{ code: '<script>window.chat = 1</script>', consent: 'none' as const, pixelRowId: 'row-2' }];
+    const config = buildStorefrontConfig({ ...live, analytics: { url: ANALYTICS_URL, counters: [], custom } });
+    expect(config.analytics?.custom).toEqual([{ code: '<script>window.chat = 1</script>', consent: 'none' }]);
+    expect(JSON.stringify(config)).not.toContain('row-2');
+    const none = buildStorefrontConfig({ ...live, analytics: { url: ANALYTICS_URL, counters: [], custom: [] } });
+    expect(none.analytics).toEqual({ url: ANALYTICS_URL, counters: [] });
+  });
+
+  it('«свой код» без текста — ошибка с путём поля', () => {
+    const analytics = { url: ANALYTICS_URL, counters: [], custom: [{ code: '', consent: 'required' as const }] };
+    const error = buildError({ ...standInput, site, mode: 'live', analytics });
+    expect([error.code, error.path]).toEqual(['config-invalid', 'analytics.custom.0.code']);
+  });
+
   it('опубликованный магазин без адреса сборщика — ошибка analytics', () => {
     const error = buildError({ ...standInput, site, mode: 'live' });
     expect([error.code, error.path]).toEqual(['config-invalid', 'analytics']);

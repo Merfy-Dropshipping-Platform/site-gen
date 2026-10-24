@@ -2,17 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BATCH_MS, createAnalytics, type Analytics } from '../src/core/analytics/analytics';
 import { CONSENT_KEY } from '../src/core/analytics/consent';
 import { VISIT_KEY } from '../src/core/analytics/identity';
+import type { CartChange } from '../src/core/analytics/sdk-events';
 import { OWNER_KEY } from '../src/core/analytics/traffic';
-import { fakeCart, type FakeCart } from './analytics-support';
 
-// Модуль аналитики целиком в jsdom (design.md блока 11, раздел 5): корзина в памяти (analytics-support.ts), настоящие
-// document.cookie, localStorage и sessionStorage; отправка — подмена sendBeacon; время поддельное — только setInterval и
-// Date, микрозадачи корзины настоящие. Каждый openPage() — новая загрузка страницы: новый модуль. Слушатели модулей
-// прошлых тестов остаются на window, поэтому отправленное каждый модуль кладёт в sent своего теста.
+// Модуль аналитики целиком в jsdom (design.md блока 11, раздел 5): корзина — вызовы cart() с событиями SDK, уже
+// переведёнными (блок 13, sdk-events.ts); настоящие document.cookie, localStorage и sessionStorage; отправка — подмена
+// sendBeacon; время поддельное — setInterval и Date. Каждый openPage() — новая загрузка страницы: новый модуль.
+// Слушатели модулей прошлых тестов остаются на window, поэтому отправленное каждый модуль записывает в sent своего теста.
 const SHOP = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
 const COLLECTOR = 'https://analytics.dev.merfy.ru';
 const NOW = new Date('2026-10-10T08:00:00.000Z');
 const TITLE = 'Каталог — Шарфы';
+const SCARF: CartChange = { type: 'add_to_cart', product: { id: 'scarf-1', quantity: 1 } };
 const CONFIG = {
   v: 1,
   mode: 'live',
@@ -34,14 +35,12 @@ const isBatch = (value: unknown): value is Batch =>
   typeof value === 'object' && value !== null && Array.isArray(Reflect.get(value, 'events'));
 
 let sent: { url: string; batch: Batch }[] = [];
-let cart: FakeCart = fakeCart();
 let ids = 0;
 let readyState: DocumentReadyState = 'complete';
 let visibility: DocumentVisibilityState = 'visible';
 
 function openPage(): Analytics {
   const batches = sent;
-  const pageCart = cart;
   return createAnalytics({
     win: window,
     beacon: (url, body) => {
@@ -49,7 +48,6 @@ function openPage(): Analytics {
       if (isBatch(batch)) batches.push({ url, batch });
       return true;
     },
-    cart: () => Promise.resolve(pageCart),
     newId: () => `id-${(ids += 1)}`,
   });
 }
@@ -64,7 +62,7 @@ function setConfig(config: object): void {
 }
 
 const events = (): Record<string, string>[] => sent.flatMap((item) => item.batch.events);
-const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+// Микрозадач у модуля больше нет: корзина приходит вызовом cart(), без подписки на стор.
 
 function cookies(): Record<string, string> {
   const pairs = document.cookie.split('; ').filter((pair) => pair !== '');
@@ -85,7 +83,6 @@ const metrika = (): number =>
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'], now: NOW });
   sent = [];
-  cart = fakeCart();
   ids = 0;
   readyState = 'complete';
   visibility = 'visible';
@@ -109,14 +106,15 @@ afterEach(() => {
 });
 
 describe('модуль аналитики на странице', () => {
-  it('превью конструктора и конфиг без analytics: ничего не уходит, меток нет', async () => {
+  it('превью конструктора и конфиг без analytics: ничего не уходит, меток нет', () => {
     setConfig({ ...CONFIG, mode: 'preview' });
-    openPage().page();
+    const preview = openPage();
+    preview.page();
+    preview.cart(SCARF);
     setConfig({ ...CONFIG, analytics: null });
-    openPage().page();
-    await settle();
-    cart.add('scarf-1');
-    await settle();
+    const empty = openPage();
+    empty.page();
+    empty.cart(SCARF);
     vi.advanceTimersByTime(BATCH_MS);
     expect(sent).toEqual([]);
     expect([cookies(), sessionStorage.getItem(VISIT_KEY)]).toEqual([{}, null]);
@@ -162,12 +160,11 @@ describe('модуль аналитики на странице', () => {
     expect(cookies()).toEqual({ _mfy_vid: 'id-1', _mfy_sid: 'id-1' });
   });
 
-  it('принял посреди визита: тот же номер визита становится посетителем, счётчик грузится сразу', async () => {
-    openPage().page();
-    await settle();
+  it('принял посреди визита: тот же номер визита становится посетителем, счётчик грузится сразу', () => {
+    const page = openPage();
+    page.page();
     localStorage.setItem(CONSENT_KEY, NOW.toISOString());
-    cart.add('scarf-1', 2);
-    await settle();
+    page.cart({ type: 'add_to_cart', product: { id: 'scarf-1', quantity: 2 } });
     vi.advanceTimersByTime(BATCH_MS);
     expect(events().map((event) => [event.type, event.session_id, event.visitor_id])).toEqual([
       ['session_start', 'id-1', 'id-1'],
@@ -177,33 +174,40 @@ describe('модуль аналитики на странице', () => {
     expect([cookies(), metrika()]).toEqual([{ _mfy_vid: 'id-1', _mfy_sid: 'id-1' }, 1]);
   });
 
-  it('отклонил: ничего не уходит — ни событий, ни меток, ни визита, ни счётчиков', async () => {
+  it('отклонил: ничего не уходит — ни событий, ни меток, ни визита, ни счётчиков', () => {
     localStorage.setItem(CONSENT_KEY, `declined:${NOW.toISOString()}`);
-    openPage().page();
-    await settle();
-    cart.add('scarf-1');
-    await settle();
+    const page = openPage();
+    page.page();
+    page.cart(SCARF);
     vi.advanceTimersByTime(BATCH_MS);
     expect(sent).toEqual([]);
     expect([cookies(), sessionStorage.getItem(VISIT_KEY), metrika()]).toEqual([{}, null, 0]);
   });
 
-  it('корзина: начальное состояние — не событие; «в корзину» и «из корзины» по разнице, без цены', async () => {
-    cart.add('coat-7');
-    await settle();
-    openPage().page();
-    await settle();
-    cart.add('scarf-1', 2);
-    cart.add('scarf-1');
-    cart.remove('coat-7');
-    await settle();
+  it('корзина — переведённые события SDK: тип и товар, без цены; до первого просмотра — ничего', () => {
+    const page = openPage();
+    page.cart(SCARF);
+    page.page();
+    page.cart({ type: 'add_to_cart', product: { id: 'scarf-1', quantity: 2 } });
+    page.cart({ type: 'remove_from_cart', product: { id: 'coat-7', quantity: 1 } });
     vi.advanceTimersByTime(BATCH_MS);
     const lines = events().filter((event) => event.type === 'add_to_cart' || event.type === 'remove_from_cart');
     expect(lines.map((event) => [event.type, event.product_id, 'product_price' in event])).toEqual([
       ['add_to_cart', 'scarf-1', false],
-      ['add_to_cart', 'scarf-1', false],
       ['remove_from_cart', 'coat-7', false],
     ]);
+  });
+
+  it('ответ сменился на «принял» — счётчик Метрики сразу, без нового события; модуль без просмотра — ничего', () => {
+    const idle = openPage();
+    const page = openPage();
+    page.page();
+    expect(metrika()).toBe(0);
+    localStorage.setItem(CONSENT_KEY, NOW.toISOString());
+    idle.consent();
+    expect(metrika()).toBe(0);
+    page.consent();
+    expect(metrika()).toBe(1);
   });
 
   it('?mfy_owner=1: параметр убран из адреса, события помечены internal, метки рекламы на месте', () => {

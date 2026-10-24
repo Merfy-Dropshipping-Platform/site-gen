@@ -10,6 +10,7 @@ export {
   type AnalyticsConfig,
   type Counter,
   type CounterKind,
+  type CustomCode,
   type StorefrontConfig,
 } from './schema';
 export { buildStorefrontConfig, type StorefrontConfigInput } from './build';

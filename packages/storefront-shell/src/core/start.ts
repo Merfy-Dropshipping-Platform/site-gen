@@ -6,6 +6,7 @@ import { ShellError } from '../errors';
 import { messageOf } from '../report';
 import { createEventBus, type EventBus } from './events';
 import { SDK_MARKUP_SELECTOR, startInstance, type Instance, type InstanceRuntime, type MarkupCall } from './instance';
+import { navigationType, watchPage } from './page-events';
 import { pageStorage, type KeyValue } from './storage';
 import type {
   CoreHandle,
@@ -106,7 +107,8 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
 
 const MODULE_NAMES: readonly string[] = ['cart', 'favorites', 'auth', 'newsletter'];
 
-const isModuleName = (name: string): name is ModuleName => MODULE_NAMES.includes(name);
+// Согласие (блок 13 «Секций и SDK») — тоже модуль ctx секций.
+const isModuleName = (name: string): name is ModuleName => MODULE_NAMES.includes(name) || name === 'consent';
 
 function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts: CoreParts): InstanceRuntime {
   const attachAll = (host: InstanceHost): void => {
@@ -196,6 +198,7 @@ function runCore(
   state.done = true;
   runtime.bus.emit('merfy:page:ready', {}); // после синхронной части всех mount (13б Г)
   runtime.bus.emit('merfy:page:view', { path: win.location.pathname });
+  watchPage(win, runtime.bus, controller.signal, navigationType(win)); // события страницы (блок 13 «Секций и SDK»)
   return {
     config: read.config,
     mode: read.mode,

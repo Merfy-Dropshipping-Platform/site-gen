@@ -6718,7 +6718,7 @@
       "const": false
     },
     "uses": {
-      "maxItems": 6,
+      "maxItems": 7,
       "type": "array",
       "items": {
         "type": "string",
@@ -6728,7 +6728,8 @@
           "cart",
           "favorites",
           "auth",
-          "newsletter"
+          "newsletter",
+          "consent"
         ]
       }
     },

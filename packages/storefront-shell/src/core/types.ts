@@ -87,6 +87,8 @@ export interface Money {
 }
 export type NoticeLevel = 'error' | 'warning';
 export type ConsentState = 'accepted' | 'declined';
+// Ответ покупателя на баннер cookie (блок 13 «Секций и SDK», 13.2): unknown — ещё не ответил.
+export type ConsentAnswer = 'unknown' | ConsentState;
 type NoDetail = Readonly<Record<string, never>>;
 
 // Закрытый каталог событий витрины (13а А; блок 9, «Решил сам» п. 11) — публичный интерфейс для секций мерчантов и
@@ -193,8 +195,16 @@ export interface NewsletterModule {
     options?: ActionOptions,
   ): Promise<Result<{ readonly alreadySubscribed: boolean }>>;
 }
+// Согласие на cookie (блок 13 «Секций и SDK», 13.2): ответ покупателя и два действия баннера. Ответ — один на все
+// страницы магазина; что можно при каждом ответе — таблица согласия ядра.
+export interface ConsentModule {
+  readonly $consent: ReadableStore<ConsentAnswer>;
+  accept(): Promise<Result<ConsentAnswer>>;
+  decline(): Promise<Result<ConsentAnswer>>;
+}
 export interface Modules {
   readonly cart: CartModule;
+  readonly consent: ConsentModule;
   readonly favorites: FavoritesModule;
   readonly auth: AuthModule;
   readonly newsletter: NewsletterModule;

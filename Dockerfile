@@ -181,7 +181,7 @@ CMD ["node_modules/.bin/tsx", "src/main.ts"]
 # зависимости ставятся здесь заново: node_modules стадии builder собраны под musl.
 # В Coolify: отдельное приложение, Docker Build Stage Target = storefront-checker, предел памяти — в его настройках.
 # ========================
-FROM mcr.microsoft.com/playwright:v1.59.1-noble AS storefront-checker
+FROM mcr.microsoft.com/playwright:v1.64.1-noble AS storefront-checker
 
 WORKDIR /app
 RUN npm install -g pnpm@10.14.0

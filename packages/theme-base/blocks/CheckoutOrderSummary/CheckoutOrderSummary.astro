@@ -231,8 +231,12 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
       }
       return [];
     }
+    // Оплата предложения расширения (`?offer=<токен>`, runtime/checkout-offer.ts):
+    // показываем позиции предложения как есть. Корзина покупателя не подмешивается,
+    // промокода нет — скидку и цены выставил продавец.
     function checkoutItems() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      if (window.__merfyOffer) return items || [];
       if (items && items.length) return withCompareAt(items);
       return readNtCartItems();
     }
@@ -296,7 +300,7 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
         var html = items.map(renderItem).join('');
         if (html !== itemsEl.innerHTML) itemsEl.innerHTML = html;
       }
-      if (promoWrap) promoWrap.hidden = false;
+      if (promoWrap) promoWrap.hidden = !!window.__merfyOffer;
     }
 
     function getApiBase() {

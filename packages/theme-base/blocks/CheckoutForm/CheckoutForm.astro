@@ -19,6 +19,7 @@ import CheckoutPayment from '../CheckoutPayment/CheckoutPayment.astro';
 import CheckoutSubmit from '../CheckoutSubmit/CheckoutSubmit.astro';
 import CheckoutTerms from '../CheckoutTerms/CheckoutTerms.astro';
 import { CHECKOUT_START_ANALYTICS_SOURCE } from '../../runtime/checkout-start-analytics';
+import { CHECKOUT_OFFER_SOURCE } from '../../runtime/checkout-offer';
 import { DEFAULT_LEGAL_TEXT } from '../../runtime/legal-links';
 
 interface Props extends CheckoutFormProps {
@@ -49,6 +50,14 @@ const paddingStyle = padding
 // нормализация ревизии) — нормализует `schemeClassOf` уже в CheckoutSubmit,
 // которому это значение и передаётся ниже.
 ---
+{/*
+  Оплата предложения расширения (`/checkout?offer=<токен>`, spec 120 Б10).
+  ПЕРВЫМ на странице: блоки ниже и скрипты страницы читают window.__merfyOffer
+  при запуске. Без `?offer=` скрипт ничего не делает. Исходник и описание режима —
+  runtime/checkout-offer.ts.
+*/}
+<script is:inline set:html={CHECKOUT_OFFER_SOURCE}></script>
+
 <section
   class={C.root}
   data-puck-component-id={id}

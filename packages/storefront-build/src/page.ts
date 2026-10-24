@@ -101,7 +101,7 @@ async function renderWithBundle(
   page: PageRender,
   pageContent: PageContent,
 ): Promise<{ html: string; bundle: Awaited<ReturnType<typeof pageBundle>> }> {
-  const bundle = await pageBundle(shown, route.id, page);
+  const bundle = await pageBundle(shown, route.id, page, pageContent);
   const withBundle = { ...pageContent, bundleTag: bundle?.tag ?? '' };
   const html = await theme.render(route.path, pageLocals(shown, route, theme.tokens, theme.migrations, withBundle));
   return { html, bundle };

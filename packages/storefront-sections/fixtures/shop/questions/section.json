@@ -1,0 +1,75 @@
+{
+  "sdk": 1,
+  "name": "questions",
+  "kind": "section",
+  "title": "Вопросы с плавным раскрытием",
+  "settings": [
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "setting": {
+        "kind": "string",
+        "default": "Частые вопросы"
+      }
+    },
+    {
+      "id": "open-first",
+      "label": "Первый вопрос",
+      "setting": {
+        "kind": "toggle",
+        "default": true,
+        "labels": {
+          "on": "Открыт",
+          "off": "Закрыт"
+        }
+      }
+    }
+  ],
+  "blocks": {
+    "question": {
+      "title": "Вопрос",
+      "limit": 20,
+      "settings": [
+        {
+          "id": "question",
+          "label": "Вопрос",
+          "setting": {
+            "kind": "string",
+            "default": "Новый вопрос"
+          }
+        },
+        {
+          "id": "answer",
+          "label": "Ответ",
+          "setting": {
+            "kind": "richtext",
+            "default": "<p>Ответ</p>"
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    {
+      "type": "question",
+      "settings": {
+        "question": "Как стирать кашемир?",
+        "answer": "<p>Руками, в прохладной воде.</p>"
+      }
+    },
+    {
+      "type": "question",
+      "settings": {
+        "question": "Сколько идёт доставка?",
+        "answer": "<p>Два дня по Москве, до недели — по России.</p>"
+      }
+    },
+    {
+      "type": "question",
+      "settings": {
+        "question": "Можно ли вернуть шарф?",
+        "answer": "<p>Да, в течение 14 дней.</p>"
+      }
+    }
+  ]
+}

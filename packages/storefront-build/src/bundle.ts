@@ -20,6 +20,12 @@ const CORE_SPECIFIER = "'@merfy/shell/core'";
 const SECTION_IMPORT = 'merfy-section:';
 const CORE_NAMESPACE = 'merfy-core';
 const SECTION_NAMESPACE = 'merfy-section';
+// Файлы dist/behaviors (блок 6, часть 6б): merfy-kit:<файл> — из строки входа, ./<файл> — из самих файлов (куски esbuild
+// называются chunk-<ХЕШ>.js, хеш — прописные буквы и цифры). Имя поведения идёт в код как идентификатор — kebab-case.
+const KIT_IMPORT = 'merfy-kit:';
+const KIT_NAMESPACE = 'merfy-kit';
+const KIT_FILE = /^[A-Za-z0-9_-]+\.js$/;
+const KIT_NAME = /^[a-z][a-z-]*$/;
 const SECTION_FILE = `${SECTION_NAMESPACE}:`;
 const HEX64 = /^[0-9a-f]{64}$/;
 const UNSAFE_INLINE = /<\/script|<!--/i;
@@ -47,6 +53,7 @@ export interface BundleSource {
   parts: readonly string[]; // экспорты ядра — части страницы, по порядку
   sections: readonly BundleSection[];
   modules: ReadonlyMap<string, string>; // текст модуля секции по 64 знакам hex
+  kit?: BundleKit; // поведения и анимации страницы (блок 6, часть 6б); нет — страница без них
 }
 
 // Предупреждение сборки бандла — строка журнала сборщика; сборка идёт дальше.
@@ -69,7 +76,48 @@ export interface PageBundle {
 
 // Аргументы esbuild — модуль из одной строки. Имена частей сверены схемой входов (partNameSchema): это имена
 // экспортов ядра, они идут в код как есть; остальное — через JSON.stringify.
-export function bundleEntry(parts: readonly string[], sections: readonly BundleSection[]): string {
+// Что из SDK поведений нужно странице (блок 6, часть 6б): имена поведений каталога, появления data-animate и провайдер
+// для ctx.animate. Все три пусты — часть behaviors в бандл не идёт.
+export interface KitPlan {
+  behaviors: readonly string[];
+  reveal: boolean;
+  animate: boolean;
+}
+
+// Файлы dist/behaviors (имя файла → текст) и что из них нужно; собирает их тот же esbuild, что и бандл страницы.
+export interface BundleKit {
+  files: ReadonlyMap<string, string>;
+  plan: KitPlan;
+}
+
+const exportOf = (name: string): string => name.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase());
+const kitSpecifier = (file: string): string => JSON.stringify(`${KIT_IMPORT}${file}`);
+
+// Импорты поведений и выражение части behaviors для parts. Имя поведения идёт в код идентификатором, поэтому не kebab-case
+// — bundle-failed до esbuild.
+function kitEntry(kit: KitPlan): { imports: string; part: string } | null {
+  if (kit.behaviors.length === 0 && !kit.reveal && !kit.animate) return null;
+  const bad = kit.behaviors.find((name) => !KIT_NAME.test(name));
+  if (bad !== undefined)
+    throw new StorefrontBuildError('bundle-failed', `имя поведения ${JSON.stringify(bad)}: нужен kebab-case`);
+  const lines = [`import { behaviors as kitBehaviors } from ${kitSpecifier('part.js')};`];
+  const list = kit.behaviors.map((name, index) => {
+    lines.push(`import { ${exportOf(name)} as kit${index} } from ${kitSpecifier(`${name}.js`)};`);
+    return `kit${index}`;
+  });
+  const options = [`list: [${list.join(', ')}]`];
+  if (kit.reveal) {
+    lines.push(`import { reveal as kitReveal } from ${kitSpecifier('reveal.js')};`);
+    options.push('reveal: kitReveal');
+  }
+  if (kit.animate) {
+    lines.push(`import { animate as kitAnimate } from ${kitSpecifier('animate.js')};`);
+    options.push('animate: kitAnimate');
+  }
+  return { imports: `${lines.join('\n')}\n`, part: `kitBehaviors({ ${options.join(', ')} })` };
+}
+
+export function bundleEntry(parts: readonly string[], sections: readonly BundleSection[], kit?: KitPlan): string {
   const imports = sections.map(
     (section, index) => `import s${index} from ${JSON.stringify(SECTION_IMPORT + section.script)};\n`,
   );
@@ -78,12 +126,31 @@ export function bundleEntry(parts: readonly string[], sections: readonly BundleS
       `{ name: ${JSON.stringify(section.name)}, kind: ${JSON.stringify(section.kind)}, script: ${JSON.stringify(section.script)}, uses: ${JSON.stringify(section.uses)}, definition: s${index} }`,
   );
   const names = ['start', ...parts].join(', ');
-  return `import { ${names} } from ${CORE_SPECIFIER};\n${imports.join('')}start({ parts: [${parts.join(', ')}], sections: [${entries.join(', ')}] });\n`;
+  const kitCode = kit === undefined ? null : kitEntry(kit);
+  const partList = [...parts, ...(kitCode === null ? [] : [kitCode.part])].join(', ');
+  return `import { ${names} } from ${CORE_SPECIFIER};\n${kitCode?.imports ?? ''}${imports.join('')}start({ parts: [${partList}], sections: [${entries.join(', ')}] });\n`;
 }
 
 // Импорт в бандле страницы: @merfy/shell и @merfy/shell/core — ядро, merfy-section:<hex> — модуль секции; иначе —
 // ошибка с местом в модуле, который импортирует.
-function resolveImport(path: string): OnResolveResult {
+// Файл поведений по импорту: merfy-kit:<файл> из строки входа, ./<файл> из файла поведений; иначе null.
+function kitFileOf(path: string, importer: string): string | null {
+  if (importer === KIT_NAMESPACE) return path.replace(/^\.\//, '');
+  return path.startsWith(KIT_IMPORT) ? path.slice(KIT_IMPORT.length) : null;
+}
+
+// Из модуля секции в kit ходить нельзя; имя файла — только из списка знаков KIT_FILE. Остальное — ошибка с местом в
+// модуле, который импортирует.
+function kitImport(path: string, importer: string): OnResolveResult | null {
+  const file = kitFileOf(path, importer);
+  if (file === null) return null;
+  if (importer !== SECTION_NAMESPACE && KIT_FILE.test(file)) return { path: file, namespace: KIT_NAMESPACE };
+  return { errors: [{ text: `импорт ${path} в бандле страницы запрещён: можно только @merfy/shell` }] };
+}
+
+function resolveImport(path: string, importer: string): OnResolveResult {
+  const kit = kitImport(path, importer);
+  if (kit !== null) return kit;
   if (CORE_IMPORTS.has(path)) return { path: 'core', namespace: CORE_NAMESPACE };
   const hex = path.startsWith(SECTION_IMPORT) ? path.slice(SECTION_IMPORT.length) : '';
   if (HEX64.test(hex)) return { path: hex, namespace: SECTION_NAMESPACE };
@@ -93,8 +160,14 @@ function resolveImport(path: string): OnResolveResult {
 const pagePlugin = (source: BundleSource): Plugin => ({
   name: 'merfy-page',
   setup(bundler) {
-    bundler.onResolve({ filter: /.*/ }, (args) => resolveImport(args.path));
+    bundler.onResolve({ filter: /.*/ }, (args) => resolveImport(args.path, args.namespace));
     bundler.onLoad({ filter: /.*/, namespace: CORE_NAMESPACE }, () => ({ contents: source.core, loader: 'js' }));
+    bundler.onLoad({ filter: /.*/, namespace: KIT_NAMESPACE }, (args) => {
+      const contents = source.kit?.files.get(args.path);
+      return contents === undefined
+        ? { errors: [{ text: `в dist/behaviors нет файла ${args.path}` }] }
+        : { contents, loader: 'js' };
+    });
     bundler.onLoad({ filter: /.*/, namespace: SECTION_NAMESPACE }, (args) => ({
       contents: source.modules.get(args.path) ?? '',
       loader: 'js',
@@ -105,7 +178,11 @@ const pagePlugin = (source: BundleSource): Plugin => ({
 async function bundleText(source: BundleSource): Promise<string> {
   const result = await build({
     ...ESBUILD_OPTIONS,
-    stdin: { contents: bundleEntry(source.parts, source.sections), loader: 'js', sourcefile: 'merfy-page.js' },
+    stdin: {
+      contents: bundleEntry(source.parts, source.sections, source.kit?.plan),
+      loader: 'js',
+      sourcefile: 'merfy-page.js',
+    },
     plugins: [pagePlugin(source)],
   });
   return result.outputFiles.map((file) => file.text).join('');

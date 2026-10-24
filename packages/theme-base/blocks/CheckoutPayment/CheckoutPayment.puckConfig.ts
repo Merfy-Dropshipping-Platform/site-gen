@@ -13,11 +13,8 @@ export const CheckoutPaymentSchema = z.object({
   heading: z.string(),
   subheading: z.string(),
   methods: z.array(PaymentMethodSchema).min(1),
-  cardForm: z.object({
-    cvvHelpEnabled: z.boolean(),
-    nameOnCardEnabled: z.boolean(),
-    warningText: z.string(),
-  }),
+  // Форма карты (`cardForm`) убрана: данные карты покупатель вводит на странице платёжки.
+  // Схема не строгая — старые ревизии с `cardForm` разбираются, лишнее поле отбрасывается.
   padding: z.object({
     top: z.number().int().min(0).max(80),
     bottom: z.number().int().min(0).max(80),
@@ -50,7 +47,6 @@ export const CheckoutPaymentPuckConfig: BlockPuckConfig<CheckoutPaymentProps> = 
         label: { type: 'text', label: 'Подпись' },
       },
     },
-    cardForm: { type: 'object', label: 'Форма карты' },
     padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
@@ -62,7 +58,6 @@ export const CheckoutPaymentPuckConfig: BlockPuckConfig<CheckoutPaymentProps> = 
       { key: 'sberbank', enabled: false, label: 'Sber Pay' },
       { key: 'tinkoff_bank', enabled: false, label: 'T-Pay' },
     ],
-    cardForm: { cvvHelpEnabled: true, nameOnCardEnabled: true, warningText: 'Счёт будет выставлен по вашему адресу' },
     padding: { top: 0, bottom: 0 },
   },
   schema: CheckoutPaymentSchema,

@@ -259,6 +259,9 @@ importers:
 
   packages/storefront-build:
     dependencies:
+      '@merfy/shell':
+        specifier: workspace:*
+        version: link:../storefront-shell
       '@merfy/storefront-config':
         specifier: workspace:*
         version: link:../storefront-config

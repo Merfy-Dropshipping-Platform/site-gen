@@ -4,8 +4,8 @@
  * CheckoutSubmit — характеризационные тесты ошибочных и редких ответов
  * бэкенда на цепочке сабмита, не покрытых основным набором `checkout-submit-*`:
  *
- *  - `__checkoutTokenizeCard` (карта): результат токенизации уходит в
- *    create-payment как paymentToken;
+ *  - карта на витрине не вводится: токенайзера нет, paymentToken в
+ *    create-payment не уходит, способ оплаты уходит как paymentMethod;
  *  - `/delivery/select` для cdek_pickup вернул ошибку → сабмит прерывается
  *    своим сообщением, /checkout не вызывается;
  *  - `/checkout` вернул 404 → cartId сбрасывается, показывается «устарела»;
@@ -153,8 +153,8 @@ function successChain(
   });
 }
 
-describe("CheckoutSubmit — токенизация карты (__checkoutTokenizeCard)", () => {
-  it("paymentMethod=bank_card и токенайзер задан → его результат уходит как paymentToken в create-payment", async () => {
+describe("CheckoutSubmit — карту на витрине не вводят (токенизации нет)", () => {
+  it("paymentMethod=bank_card, даже если старый __checkoutTokenizeCard задан → он не вызывается, paymentToken в create-payment нет, способ уходит", async () => {
     const tokenize = jest.fn(async () => "tok_visa_1");
     (window as any).__checkoutTokenizeCard = tokenize;
     const fetchMock = successChain();
@@ -169,9 +169,10 @@ describe("CheckoutSubmit — токенизация карты (__checkoutTokeni
     );
     await submit(section);
 
-    expect(tokenize).toHaveBeenCalledTimes(1);
+    expect(tokenize).not.toHaveBeenCalled();
     const payment = bodyOf(fetchMock, /\/create-payment$/);
-    expect(payment.paymentToken).toBe("tok_visa_1");
+    expect("paymentToken" in payment).toBe(false);
+    expect(payment.paymentMethod).toBe("bank_card");
   });
 });
 

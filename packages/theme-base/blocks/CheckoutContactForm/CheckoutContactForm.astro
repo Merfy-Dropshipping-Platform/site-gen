@@ -211,6 +211,9 @@ const paddingStyle = padding
       // видно и обязательно ТОЛЬКО когда регистрация обязательна
       // (requireCustomerAuth===true) И режим контакта не 'email'.
       var emailOnly = !(cfg.requireCustomerAuth === true && cfg.contactMethod !== 'email');
+      // Оплата предложения расширения (?offer=<токен>): телефон нужен перевозчику,
+      // поэтому поле видно всегда.
+      if (window.__merfyOffer) emailOnly = false;
       var emailWrap = root.querySelector('[data-checkout-field="email"]');
       var phoneWrap = root.querySelector('[data-checkout-field="phone"]');
       // Скрытие через DOM-атрибут hidden (не Tailwind-строку) — скрытый input
@@ -222,13 +225,36 @@ const paddingStyle = padding
       }
     }
 
+    // Предложение расширения: почту выставляет заказ — подставляем и закрываем от
+    // правки (на неё придёт чек), телефон из заказа подставляем как подсказку.
+    function fillFromOffer() {
+      var offer = window.__merfyOffer;
+      if (!offer || !offer.loaded || !offer.data) return;
+      var emailInput = root.querySelector('[data-checkout-field="email"] input');
+      if (emailInput && offer.data.email) {
+        emailInput.value = offer.data.email;
+        emailInput.readOnly = true;
+        emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      var phoneInput = root.querySelector('[data-checkout-field="phone"] input');
+      if (phoneInput && !phoneInput.value && offer.data.customerPhone) {
+        phoneInput.value = offer.data.customerPhone;
+        phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+
     // Один listener на форму (guard-флаг от двойной инициализации при
     // повторном прогоне на astro:page-load). Повторный init только пере-применяет.
     if (!root.__merfyContactCfgInit) {
       root.__merfyContactCfgInit = true;
       document.addEventListener('checkout:config-ready', apply);
+      document.addEventListener('checkout:offer-ready', function () {
+        apply();
+        fillFromOffer();
+      });
     }
     apply();
+    fillFromOffer();
   }
 
   initCheckoutContactConfig();

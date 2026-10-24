@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 // ядра помечены «@vitest-environment node»: esbuild в jsdom не работает. browser — настоящий Chromium (Playwright):
 // ядро секций, поведения, аналитика в бандле страницы (`pnpm test:browser`).
 // Порог покрытия — от 80 % (решение владельца 23.09), его считает unit (`pnpm test:coverage`).
+
 export default defineConfig({
   test: {
     coverage: {
@@ -19,7 +20,21 @@ export default defineConfig({
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },
     projects: [
-      { extends: true, test: { name: 'unit', environment: 'jsdom', include: ['__tests__/*.test.ts'] } },
+      {
+        // shop-markup.test.ts (plan-7b, 7б-3) читает шаблоны секций из соседнего пакета: в jsdom глобальный URL —
+        // не node-овский, fileURLToPath на таком URL не работает; для этого файла среда node.
+        extends: true,
+        test: { name: 'unit-node', environment: 'node', include: ['__tests__/shop-markup.test.ts'] },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'jsdom',
+          include: ['__tests__/*.test.ts'],
+          exclude: ['**/node_modules/**', '__tests__/shop-markup.test.ts'],
+        },
+      },
       {
         extends: true,
         test: {

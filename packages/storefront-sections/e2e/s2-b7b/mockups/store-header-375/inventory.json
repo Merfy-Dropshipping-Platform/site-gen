@@ -1,0 +1,48 @@
+{
+  "screen": "store-header-375",
+  "title": "Витрина → шапка, 375 px: бургер, название по центру, «Избранное», «Корзина»",
+  "surface": "phone",
+  "widths": [
+    375
+  ],
+  "protoRoot": "body",
+  "protoOpen": [],
+  "open": [
+    {
+      "wait": 800
+    }
+  ],
+  "items": [
+    {
+      "id": "burger",
+      "what": "кнопка «Меню» (бургер) слева",
+      "text": "Меню",
+      "role": "button",
+      "exact": true
+    },
+    {
+      "id": "logo",
+      "what": "название магазина правее бургера",
+      "text": "Мой сайт",
+      "role": "link",
+      "rightOf": "burger"
+    },
+    {
+      "id": "wishlist",
+      "what": "значок «Избранное» правее названия",
+      "text": "Избранное",
+      "role": "link",
+      "exact": true,
+      "rightOf": "logo"
+    },
+    {
+      "id": "cart",
+      "what": "значок «Корзина» крайний справа",
+      "text": "Корзина",
+      "role": "link",
+      "exact": true,
+      "rightOf": "wishlist"
+    }
+  ],
+  "notes": "Поиск и «Профиль» на телефоне — в меню под шапкой (экран store-header-burger-375). Положение логотипа на телефоне не влияет (факт 29)."
+}

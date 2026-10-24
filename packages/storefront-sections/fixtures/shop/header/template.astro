@@ -1,38 +1,587 @@
 ---
-const { settings, blocks, theme, shop } = Astro.props;
+const { settings, blocks, theme, shop, page } = Astro.props;
 ---
-<div class:list={['mx-auto flex max-w-page items-center gap-4 px-4 py-3 font-body', { 'flex-col': settings['logo-position'] === 'top-center', 'justify-between': settings['logo-position'] !== 'center-absolute' }]}>
-  <a class="font-heading text-xl text-heading no-underline" href="/">
-    {theme['logo-image'] ? <img class="h-10 w-auto" src={theme['logo-image']} alt={shop.name} /> : shop.name}
-  </a>
-  <nav data-menu-type={settings['menu-type']}>
-    <ul class="m-0 flex list-none gap-4 p-0">
-      {settings.menu.items.map((item) => (
-        <li>
-          <a class="text-foreground no-underline" href={item.url}>{item.label}</a>
-          {item.items.length > 0 && (
-            <ul class="m-0 list-none p-0">
-              {item.items.map((child) => (
-                <li>
-                  <a class="text-foreground no-underline" href={child.url}>{child.label}</a>
-                  {child.items.length > 0 && (
-                    <ul class="m-0 list-none p-0">
-                      {child.items.map((leaf) => <li><a class="text-foreground no-underline" href={leaf.url}>{leaf.label}</a></li>)}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
+
+<div
+  class:list={['-my-section mx-auto max-w-page bg-background font-body', 'py-3 md:py-6']}
+  data-logo-position={settings['logo-position']}
+  data-menu-type={settings['menu-type']}
+>
+  <!-- Ряд телефона (до 768 px): бургер, название по центру, «Избранное», «Корзина»; положение логотипа не влияет. -->
+  <div class:list={['flex items-center gap-4 px-4', settings['menu-type'] === 'sidebar' ? '' : 'md:hidden']}>
+    {settings['menu-type'] === 'sidebar' ? (
+      <div data-behavior="dialog" data-side="left" data-transition="drawer">
+        <button aria-label="Меню" class="group text-heading" data-part="open">
+          <svg class="size-6 group-aria-expanded:hidden" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          <svg class="hidden size-6 group-aria-expanded:block" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <dialog
+          class:list={['m-0 h-full max-h-none max-w-none w-full backdrop:bg-transparent bg-background p-0 md:w-90', settings['color-scheme'] && `color-${settings['color-scheme']}`]}
+          data-part="content"
+        >
+          <div class="flex items-center justify-between gap-4 px-4 py-3">
+            <button aria-label="Закрыть меню" class="text-heading" data-part="close">
+              <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            {blocks.some((block) => block.type === 'cart') && (
+              <a aria-label="Корзина" class="text-muted-foreground hover:text-heading" href="/cart">
+                <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0" /></svg>
+              </a>
+            )}
+          </div>
+          <ul class="m-0 list-none p-0">
+            {settings.menu.items.map((item) => (
+              <li class="border-b border-border py-3">
+                {item.items.length === 0 ? (
+                  <a
+                    aria-current={item.url === page.path ? 'page' : undefined}
+                    class:list={['font-body no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                    href={item.url}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <details open={item.items.some((child) => child.url === page.path || child.items.some((leaf) => leaf.url === page.path))}>
+                    <summary class:list={['cursor-pointer list-none font-body', item.items.some((child) => child.url === page.path || child.items.some((leaf) => leaf.url === page.path)) ? 'text-heading' : 'text-muted-foreground']}>{item.label}</summary>
+                  <ul class="m-0 list-none p-0">
+                    {item.items.map((child) => (
+                      <li class="py-2">
+                        {child.items.length > 0 ? (
+                          <details open={child.items.some((leaf) => leaf.url === page.path)}>
+                            <summary class:list={['cursor-pointer list-none pl-4 font-body', child.items.some((leaf) => leaf.url === page.path) ? 'text-heading' : 'text-muted-foreground']}>{child.label}</summary>
+                            <ul class="m-0 list-none p-0">
+                              {child.items.map((leaf) => (
+                                <li class="py-2 pl-8">
+                                  <a
+                                    aria-current={leaf.url === page.path ? 'page' : undefined}
+                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                    href={leaf.url}
+                                  >
+                                    {leaf.label}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : (
+                          <a
+                            aria-current={child.url === page.path ? 'page' : undefined}
+                            class:list={['pl-4 no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                            href={child.url}
+                          >
+                            {child.label}
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  </details>
+                )}
+              </li>
+            ))}
+          </ul>
+          <div class="hidden items-center gap-4 px-4 py-3 md:flex">
+            {blocks.some((block) => block.type === 'search') && <a class="no-underline hover:text-heading" href="/catalog">Поиск</a>}
+            {blocks.some((block) => block.type === 'profile') && <a class="no-underline hover:text-heading" href="/login">Профиль</a>}
+          </div>
+        </dialog>
+      </div>
+    ) : (
+      <div class="md:hidden" data-behavior="dialog" data-modal="false" data-transition="drop">
+        <button aria-label="Меню" class="group text-heading" data-part="open">
+          <svg class="size-6 group-aria-expanded:hidden" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          <svg class="hidden size-6 group-aria-expanded:block" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <dialog
+          class:list={['m-0 w-full max-w-none bg-background p-4', settings['color-scheme'] && `color-${settings['color-scheme']}`]}
+          data-part="content"
+        >
+          {blocks.some((block) => block.type === 'search') && (
+            <form action="/catalog" class="flex items-center gap-2" method="get">
+              <input
+                aria-label="Поиск"
+                class="w-full border border-border bg-background px-3 py-2 font-body text-foreground"
+                name="q"
+                type="search"
+              />
+              <button class="bg-heading px-4 py-2 font-body text-background" type="submit">Найти</button>
+            </form>
           )}
-        </li>
+          {blocks.some((block) => block.type === 'profile') && <a class="block py-2 no-underline hover:text-heading" href="/login">Профиль</a>}
+          <ul class="m-0 list-none p-0">
+            {settings.menu.items.map((item) => (
+              <li class="border-b border-border py-3">
+                {item.items.length === 0 ? (
+                  <a
+                    aria-current={item.url === page.path ? 'page' : undefined}
+                    class:list={['font-body no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                    href={item.url}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <details open={item.items.some((child) => child.url === page.path || child.items.some((leaf) => leaf.url === page.path))}>
+                    <summary class:list={['cursor-pointer list-none font-body', item.items.some((child) => child.url === page.path || child.items.some((leaf) => leaf.url === page.path)) ? 'text-heading' : 'text-muted-foreground']}>{item.label}</summary>
+                  <ul class="m-0 list-none p-0">
+                    {item.items.map((child) => (
+                      <li class="py-2">
+                        {child.items.length > 0 ? (
+                          <details open={child.items.some((leaf) => leaf.url === page.path)}>
+                            <summary class:list={['cursor-pointer list-none pl-4 font-body', child.items.some((leaf) => leaf.url === page.path) ? 'text-heading' : 'text-muted-foreground']}>{child.label}</summary>
+                            <ul class="m-0 list-none p-0">
+                              {child.items.map((leaf) => (
+                                <li class="py-2 pl-8">
+                                  <a
+                                    aria-current={leaf.url === page.path ? 'page' : undefined}
+                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                    href={leaf.url}
+                                  >
+                                    {leaf.label}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : (
+                          <a
+                            aria-current={child.url === page.path ? 'page' : undefined}
+                            class:list={['pl-4 no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                            href={child.url}
+                          >
+                            {child.label}
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  </details>
+                )}
+              </li>
+            ))}
+          </ul>
+        </dialog>
+      </div>
+    )}
+    <a class="mx-auto truncate font-heading text-xl text-heading no-underline" href="/">
+      {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
+    </a>
+    <div class="flex items-center gap-4">
+      {blocks.filter((block) => block.type === 'wishlist' || block.type === 'cart').map((block) => (
+        <a
+          aria-label={block.type === 'wishlist' ? 'Избранное' : 'Корзина'}
+          class="text-muted-foreground hover:text-heading"
+          href={block.type === 'wishlist' ? '/wishlist' : '/cart'}
+        >
+          <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d={block.type === 'wishlist' ? 'M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z' : 'M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0'} />
+          </svg>
+        </a>
       ))}
-    </ul>
-  </nav>
-  <div class="flex items-center gap-4">
-    {blocks.map((block) => (
-      <a class="text-foreground no-underline" href={block.type === 'search' ? '/catalog' : block.type === 'wishlist' ? '/wishlist' : block.type === 'cart' ? '/cart' : '/login'}>
-        {block.type === 'search' ? 'Поиск' : block.type === 'wishlist' ? 'Избранное' : block.type === 'cart' ? 'Корзина' : 'Профиль'}
-      </a>
-    ))}
+    </div>
+  </div>
+
+  <!-- Компьютер (от 768 px): ряды по положению логотипа; у бокового меню ряд телефона и на компьютере. -->
+  <div class:list={['px-4', settings['menu-type'] === 'sidebar' ? 'hidden' : 'md:block']}>
+    {(settings['logo-position'] === 'top-left' || settings['logo-position'] === 'top-center') && (
+      <div>
+        <div class:list={['relative flex items-center py-2', settings['logo-position'] === 'top-center' ? 'justify-center' : 'justify-start']}>
+          <a class="font-heading text-xl text-heading no-underline" href="/">
+            {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
+          </a>
+          <div class="absolute right-0 flex items-center gap-4">
+            {blocks.map((block) => (
+              <div class="flex items-center">
+                {block.type === 'search' ? (
+                  <div data-behavior="dialog" data-modal="false" data-transition="fade">
+                    <button aria-label="Поиск" class="text-muted-foreground hover:text-heading" data-part="open">
+                      <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M10 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12Zm4.5 10.5L20 20" /></svg>
+                    </button>
+                    <dialog class="left-0 m-0 w-full max-w-none bg-background p-4" data-part="content">
+                      <form action="/catalog" class="flex items-center gap-2" method="get">
+                        <input
+                          aria-label="Поиск"
+                          autofocus
+                          class="w-full border border-border bg-background px-3 py-2 font-body text-foreground"
+                          name="q"
+                          type="search"
+                        />
+                        <button class="bg-heading px-4 py-2 font-body text-background" type="submit">Найти</button>
+                      </form>
+                    </dialog>
+                  </div>
+                ) : (
+                  <a
+                    aria-label={block.type === 'wishlist' ? 'Избранное' : block.type === 'cart' ? 'Корзина' : 'Профиль'}
+                    class="text-muted-foreground hover:text-heading"
+                    href={block.type === 'wishlist' ? '/wishlist' : block.type === 'cart' ? '/cart' : '/login'}
+                  >
+                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path d={block.type === 'wishlist' ? 'M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z' : block.type === 'cart' ? 'M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0' : 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0'} />
+                    </svg>
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        {settings['menu-type'] !== 'sidebar' && (
+          <div class:list={['flex py-2', settings['logo-position'] === 'top-center' ? 'justify-center' : 'justify-start']}>
+            <nav
+              aria-label="Основное меню"
+              class:list={[settings['color-scheme'] && `color-${settings['color-scheme']}`]}
+              data-behavior="nav-menu"
+            >
+              <ul class="m-0 flex list-none gap-6 p-0" data-part="list">
+                {settings.menu.items.map((item) => (
+                  <li class="relative" data-part="item">
+                    {item.items.length === 0 ? (
+                      <a
+                        aria-current={item.url === page.path ? 'page' : undefined}
+                        class:list={['no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                        data-part="link"
+                        href={item.url}
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{item.label}</button>
+                    )}
+                    {item.items.length > 0 && settings['menu-type'] === 'mega-menu' && (
+                      <div class="absolute inset-x-0 top-full bg-background p-6 md:grid md:grid-cols-3 md:gap-8" data-part="content">
+                        {item.items.map((child) => (
+                          <div data-part="item">
+                            <p class="font-body uppercase tracking-widest text-muted-foreground">{child.label}</p>
+                            <ul class="m-0 list-none p-0">
+                              {child.items.map((leaf) => (
+                                <li class="py-1">
+                                  <a
+                                    aria-current={leaf.url === page.path ? 'page' : undefined}
+                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                    data-part="link"
+                                    href={leaf.url}
+                                  >
+                                    {leaf.label}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {item.items.length > 0 && settings['menu-type'] !== 'mega-menu' && (
+                      <div class="absolute left-0 top-full bg-background p-4" data-part="content">
+                        <ul class="m-0 list-none p-0">
+                          {item.items.map((child) => (
+                            <li class="relative py-1" data-part="item">
+                              {child.items.length === 0 ? (
+                                <a
+                                  aria-current={child.url === page.path ? 'page' : undefined}
+                                  class:list={['no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                  data-part="link"
+                                  href={child.url}
+                                >
+                                  {child.label}
+                                </a>
+                              ) : (
+                                <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{child.label}</button>
+                              )}
+                              {child.items.length > 0 && (
+                                <div class="absolute left-full top-0 bg-background p-4" data-part="content">
+                                  <ul class="m-0 list-none p-0">
+                                    {child.items.map((leaf) => (
+                                      <li class="py-1">
+                                        <a
+                                          aria-current={leaf.url === page.path ? 'page' : undefined}
+                                          class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                          data-part="link"
+                                          href={leaf.url}
+                                        >
+                                          {leaf.label}
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+        )}
+      </div>
+    )}
+    {settings['logo-position'] === 'center-left' && (
+      <div class="flex items-center justify-between py-2">
+        <a class="font-heading text-xl text-heading no-underline" href="/">
+          {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
+        </a>
+        <div class="flex flex-1 justify-center">
+          {settings['menu-type'] !== 'sidebar' && (
+            <nav
+              aria-label="Основное меню"
+              class:list={[settings['color-scheme'] && `color-${settings['color-scheme']}`]}
+              data-behavior="nav-menu"
+            >
+              <ul class="m-0 flex list-none gap-6 p-0" data-part="list">
+                {settings.menu.items.map((item) => (
+                  <li class="relative" data-part="item">
+                    {item.items.length === 0 ? (
+                      <a
+                        aria-current={item.url === page.path ? 'page' : undefined}
+                        class:list={['no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                        data-part="link"
+                        href={item.url}
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{item.label}</button>
+                    )}
+                    {item.items.length > 0 && settings['menu-type'] === 'mega-menu' && (
+                      <div class="absolute inset-x-0 top-full bg-background p-6 md:grid md:grid-cols-3 md:gap-8" data-part="content">
+                        {item.items.map((child) => (
+                          <div data-part="item">
+                            <p class="font-body uppercase tracking-widest text-muted-foreground">{child.label}</p>
+                            <ul class="m-0 list-none p-0">
+                              {child.items.map((leaf) => (
+                                <li class="py-1">
+                                  <a
+                                    aria-current={leaf.url === page.path ? 'page' : undefined}
+                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                    data-part="link"
+                                    href={leaf.url}
+                                  >
+                                    {leaf.label}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {item.items.length > 0 && settings['menu-type'] !== 'mega-menu' && (
+                      <div class="absolute left-0 top-full bg-background p-4" data-part="content">
+                        <ul class="m-0 list-none p-0">
+                          {item.items.map((child) => (
+                            <li class="relative py-1" data-part="item">
+                              {child.items.length === 0 ? (
+                                <a
+                                  aria-current={child.url === page.path ? 'page' : undefined}
+                                  class:list={['no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                  data-part="link"
+                                  href={child.url}
+                                >
+                                  {child.label}
+                                </a>
+                              ) : (
+                                <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{child.label}</button>
+                              )}
+                              {child.items.length > 0 && (
+                                <div class="absolute left-full top-0 bg-background p-4" data-part="content">
+                                  <ul class="m-0 list-none p-0">
+                                    {child.items.map((leaf) => (
+                                      <li class="py-1">
+                                        <a
+                                          aria-current={leaf.url === page.path ? 'page' : undefined}
+                                          class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                          data-part="link"
+                                          href={leaf.url}
+                                        >
+                                          {leaf.label}
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+        </div>
+        <div class="flex items-center gap-4">
+          {blocks.map((block) => (
+            <div class="flex items-center">
+              {block.type === 'search' ? (
+                <div data-behavior="dialog" data-modal="false" data-transition="fade">
+                  <button aria-label="Поиск" class="text-muted-foreground hover:text-heading" data-part="open">
+                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M10 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12Zm4.5 10.5L20 20" /></svg>
+                  </button>
+                  <dialog class="left-0 m-0 w-full max-w-none bg-background p-4" data-part="content">
+                    <form action="/catalog" class="flex items-center gap-2" method="get">
+                      <input
+                        aria-label="Поиск"
+                        autofocus
+                        class="w-full border border-border bg-background px-3 py-2 font-body text-foreground"
+                        name="q"
+                        type="search"
+                      />
+                      <button class="bg-heading px-4 py-2 font-body text-background" type="submit">Найти</button>
+                    </form>
+                  </dialog>
+                </div>
+              ) : (
+                <a
+                  aria-label={block.type === 'wishlist' ? 'Избранное' : block.type === 'cart' ? 'Корзина' : 'Профиль'}
+                  class="text-muted-foreground hover:text-heading"
+                  href={block.type === 'wishlist' ? '/wishlist' : block.type === 'cart' ? '/cart' : '/login'}
+                >
+                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d={block.type === 'wishlist' ? 'M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z' : block.type === 'cart' ? 'M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0' : 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0'} />
+                  </svg>
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+    {settings['logo-position'] === 'center-absolute' && (
+      <div class="grid grid-cols-3 items-center py-2">
+        <div class="justify-self-start">
+          {settings['menu-type'] !== 'sidebar' && (
+            <nav
+              aria-label="Основное меню"
+              class:list={[settings['color-scheme'] && `color-${settings['color-scheme']}`]}
+              data-behavior="nav-menu"
+            >
+              <ul class="m-0 flex list-none gap-6 p-0" data-part="list">
+                {settings.menu.items.map((item) => (
+                  <li class="relative" data-part="item">
+                    {item.items.length === 0 ? (
+                      <a
+                        aria-current={item.url === page.path ? 'page' : undefined}
+                        class:list={['no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                        data-part="link"
+                        href={item.url}
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{item.label}</button>
+                    )}
+                    {item.items.length > 0 && settings['menu-type'] === 'mega-menu' && (
+                      <div class="absolute inset-x-0 top-full bg-background p-6 md:grid md:grid-cols-3 md:gap-8" data-part="content">
+                        {item.items.map((child) => (
+                          <div data-part="item">
+                            <p class="font-body uppercase tracking-widest text-muted-foreground">{child.label}</p>
+                            <ul class="m-0 list-none p-0">
+                              {child.items.map((leaf) => (
+                                <li class="py-1">
+                                  <a
+                                    aria-current={leaf.url === page.path ? 'page' : undefined}
+                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                    data-part="link"
+                                    href={leaf.url}
+                                  >
+                                    {leaf.label}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {item.items.length > 0 && settings['menu-type'] !== 'mega-menu' && (
+                      <div class="absolute left-0 top-full bg-background p-4" data-part="content">
+                        <ul class="m-0 list-none p-0">
+                          {item.items.map((child) => (
+                            <li class="relative py-1" data-part="item">
+                              {child.items.length === 0 ? (
+                                <a
+                                  aria-current={child.url === page.path ? 'page' : undefined}
+                                  class:list={['no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                  data-part="link"
+                                  href={child.url}
+                                >
+                                  {child.label}
+                                </a>
+                              ) : (
+                                <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{child.label}</button>
+                              )}
+                              {child.items.length > 0 && (
+                                <div class="absolute left-full top-0 bg-background p-4" data-part="content">
+                                  <ul class="m-0 list-none p-0">
+                                    {child.items.map((leaf) => (
+                                      <li class="py-1">
+                                        <a
+                                          aria-current={leaf.url === page.path ? 'page' : undefined}
+                                          class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
+                                          data-part="link"
+                                          href={leaf.url}
+                                        >
+                                          {leaf.label}
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+        </div>
+        <a class="justify-self-center font-heading text-xl text-heading no-underline" href="/">
+          {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
+        </a>
+        <div class="flex items-center gap-4 justify-self-end">
+          {blocks.map((block) => (
+            <div class="flex items-center">
+              {block.type === 'search' ? (
+                <div data-behavior="dialog" data-modal="false" data-transition="fade">
+                  <button aria-label="Поиск" class="text-muted-foreground hover:text-heading" data-part="open">
+                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M10 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12Zm4.5 10.5L20 20" /></svg>
+                  </button>
+                  <dialog class="left-0 m-0 w-full max-w-none bg-background p-4" data-part="content">
+                    <form action="/catalog" class="flex items-center gap-2" method="get">
+                      <input
+                        aria-label="Поиск"
+                        autofocus
+                        class="w-full border border-border bg-background px-3 py-2 font-body text-foreground"
+                        name="q"
+                        type="search"
+                      />
+                      <button class="bg-heading px-4 py-2 font-body text-background" type="submit">Найти</button>
+                    </form>
+                  </dialog>
+                </div>
+              ) : (
+                <a
+                  aria-label={block.type === 'wishlist' ? 'Избранное' : block.type === 'cart' ? 'Корзина' : 'Профиль'}
+                  class="text-muted-foreground hover:text-heading"
+                  href={block.type === 'wishlist' ? '/wishlist' : block.type === 'cart' ? '/cart' : '/login'}
+                >
+                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d={block.type === 'wishlist' ? 'M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z' : block.type === 'cart' ? 'M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0' : 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0'} />
+                  </svg>
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
   </div>
 </div>

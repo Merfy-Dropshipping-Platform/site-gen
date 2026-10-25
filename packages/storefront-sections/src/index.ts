@@ -87,6 +87,19 @@ export { sectionAnswer, type AnswerProblem, type SectionAnswer } from './answer'
 export { AI_FILES, isAiFile, withoutAiFiles } from './ai-files';
 export { PROBLEM_CODES, isWarning } from './problems';
 export { SECTION_ID, SECTION_USES, SOURCE_LIMITS, sectionManifestSchema } from './format';
+// Роли секций (блок 12 «Секций и SDK», часть 12а): таблица ролей и место секции с учётом роли.
+export {
+  OVERLAY_LIST,
+  ROLE_LIMIT,
+  ROLE_PLACES,
+  SECTION_ROLES,
+  roleKeysOf,
+  type RoleKeys,
+  type RolePlace,
+  type SectionRole,
+} from './roles';
+export { listGroupOf, sectionLimitOf, sectionListAllowed } from './format';
+export { RoleTakenError } from './registry';
 export { SCRIPT_LIMITS } from './script';
 export { MAX_TEMPLATE_DEPTH } from './depth';
 export { FORBIDDEN_TAGS } from './template';

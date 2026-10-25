@@ -47,6 +47,8 @@ export const routeCopies = (route: ShopRoute): readonly RouteCopy[] =>
 
 export const HEADER_LIST = 'header';
 export const FOOTER_LIST = 'footer';
+// Секции поверх страницы (блок 12 «Секций и SDK», 12.2): общий список, рендер на каждой странице после подвала.
+export const OVERLAY_LIST = 'overlay';
 export const SHOP_ROUTES: readonly ShopRoute[] = [{ id: 'home', path: '/', file: 'index.html', entity: 'site' }];
 // Страница 404 (блок 7, часть 7а): адрес у сборки есть, строки в манифесте и карте сайта нет — раздача отдаёт её файл на
 // любой неизвестный адрес.
@@ -166,7 +168,13 @@ function routesOf(inputs: BuildInputs, mode: PageMode = 'live'): Routes {
   // Каталог и страницы N списков (блок 11 «Секций и SDK», часть 11а) — после страниц записей.
   const records = RECORD_ENTRIES[mode](inputs).map(recordRouteOf);
   const index = mode === 'preview' ? previewIndex(inputs) : recordIndex(inputs);
-  const list = [...SHOP_ROUTES, ...specialRoutes(inputs, mode), ...own, ...records, ...listRoutesOf(inputs, mode, records, index)];
+  const list = [
+    ...SHOP_ROUTES,
+    ...specialRoutes(inputs, mode),
+    ...own,
+    ...records,
+    ...listRoutesOf(inputs, mode, records, index),
+  ];
   // По адресу — и копии страниц блока 10 (Р10а-16): копия ведёт на ту же строку.
   const withCopies = list.flatMap((route): readonly [string, ShopRoute][] => [
     [route.path, route],

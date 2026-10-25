@@ -42,6 +42,7 @@ import type { WriteModel } from "./write-model";
 import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
 import type { PanelDefaultsSource } from "./panel-defaults";
 import { saveOnBase, writeLabels } from "./save-on-base";
+import { assertRoleInstances } from "./section-roles";
 import type { RevisionStore } from "./save-on-base";
 import {
   RevisionConflictError,
@@ -547,9 +548,43 @@ export class DocumentAdapter implements StoreContent {
    * `setCurrentUnconditional`); `expected` задан — CAS: 0 обновлённых строк →
    * `CasMiss`, транзакция откатывается целиком (вставленные ревизии тоже).
    */
+  // Роли секций магазина для проверки ревизии (блок 12 «Секций и SDK», часть 12а): роль — из manifest текущей правки
+  // (draft) секции в storefront_section, как у role-taken реестра секций.
+  private async sectionRoles(
+    siteId: string,
+    names: readonly string[],
+  ): Promise<ReadonlyMap<string, string>> {
+    const rows = await this.db
+      .select({
+        name: schema.storefrontSection.name,
+        role: sql<string | null>`${schema.storefrontSection.manifest}->>'role'`,
+      })
+      .from(schema.storefrontSection)
+      .where(
+        and(
+          eq(schema.storefrontSection.author, "shop"),
+          eq(schema.storefrontSection.owner, siteId),
+          eq(schema.storefrontSection.draft, true),
+          inArray(schema.storefrontSection.name, [...names]),
+        ),
+      );
+    return new Map(
+      rows.flatMap((row): [string, string][] =>
+        typeof row.role === "string" ? [[row.name, row.role]] : [],
+      ),
+    );
+  }
+
   private async commit(
     write: Parameters<RevisionStore["commit"]>[0],
   ): Promise<boolean> {
+    // Второй экземпляр секции с ролью — отказ role-duplicate до записи (блок 12, часть 12а): через commit идут запись
+    // с базой и без неё и снимок клиента.
+    await assertRoleInstances(
+      (siteId, names) => this.sectionRoles(siteId, names),
+      write.siteId,
+      write.rows.map((row) => row.data),
+    );
     try {
       await this.db.transaction(async (tx) => {
         for (const row of write.rows) {

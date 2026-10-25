@@ -55,6 +55,13 @@ export const PROBLEM_CODES = [
   // data секции для скрипта (блок 8 «Секций и SDK», часть 8г): поле не из публичных, имя ctx.data без объявления.
   'data-field-private',
   'data-unknown',
+  // Роли секций и секции расширений (блок 12 «Секций и SDK», часть 12а): роль не из списка, место не по роли, роль у
+  // секции расширения, роль уже занята другой секцией магазина (приём, registry.ts), чужое расширение в uses.
+  'role-unknown',
+  'role-place',
+  'role-not-allowed',
+  'role-taken',
+  'ext-foreign',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];
 

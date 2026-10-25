@@ -8836,7 +8836,8 @@
         "enum": [
           "header",
           "page",
-          "footer"
+          "footer",
+          "overlay"
         ]
       }
     },
@@ -8936,6 +8937,18 @@
         "type": "string",
         "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
       }
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "cart",
+        "cart-drawer",
+        "cart-added",
+        "login",
+        "search",
+        "notices",
+        "cookie-banner"
+      ]
     }
   },
   "required": [

@@ -41,6 +41,7 @@ const API = [
   'HOME_PAGE',
   'NOT_FOUND_PAGE_ID',
   'NOT_FOUND_ROUTE',
+  'OVERLAY_LIST',
   'pageInfoById',
   'SPECIAL_PAGES',
   'SPECIAL_PAGE_IDS',

@@ -5,6 +5,7 @@ import { sectionFieldShape, settingFieldsOf, settingsEntryShape } from './fields
 import { problem, when, type Checked, type SectionProblem } from './problems';
 import { RECORD_SETTING_KINDS, sectionDataShape } from './record-fields';
 import { settingsTexts } from './settings';
+import { OVERLAY_LIST, ROLE_LIMIT, ROLE_PLACES, SECTION_ROLES, isSectionRole } from './roles';
 import { WRAPPER_IDS, wrapperProblems } from './wrapper';
 
 // Формат секции SDK 1 (блок 1 «Секций и SDK»; design.md блока 7, п. 20) — один у всех авторов (С7-11 А): папка с
@@ -53,7 +54,9 @@ const defaultBlockSchema = z.strictObject({
 // страница; скрытые считаются); removable: false — секцию нельзя удалить, её ошибка рендера — ошибка сборки; uses —
 // что шаблон читает сверх settings и blocks: theme — настройки темы, shop — публичные данные магазина; newPage — id
 // настройки вида string: секция ставится на новую страницу, в эту настройку пишется имя страницы.
-export const SECTION_GROUPS = ['header', 'page', 'footer'] as const;
+// overlay «Поверх страницы» (блок 12 «Секций и SDK», 12.2, п. 7): общая для всех страниц, рендер после подвала; в ней —
+// только секции с ролью поверх страницы (role-place).
+export const SECTION_GROUPS = ['header', 'page', 'footer', 'overlay'] as const;
 export type SectionGroup = (typeof SECTION_GROUPS)[number];
 export const SECTION_USES = ['theme', 'shop'] as const;
 export type SectionUse = (typeof SECTION_USES)[number];
@@ -106,6 +109,9 @@ export const sectionManifestSchema = z.strictObject({
   // Поля «Настроек темы» в панели секции (блок 10 «Секций и SDK», часть 10б, Р10б-11): id сквозных настроек;
   // имена сверяет theme-setting-unknown (script-names.ts).
   themeSettings: z.array(sectionIdSchema).max(4).refine(unique, { error: 'значение дважды' }).optional(),
+  // Роль секции (блок 12 «Секций и SDK», 12.1): место и один экземпляр — из таблицы ролей (roles.ts); неизвестную роль
+  // раньше схемы ловит role-unknown, место — role-place.
+  role: z.enum(SECTION_ROLES).optional(),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;
@@ -239,6 +245,37 @@ function sdkProblems(value: unknown): SectionProblem[] {
   return [problem('sdk-unsupported', MANIFEST_FILE, text)];
 }
 
+// Роль не из списка платформы (блок 12 «Секций и SDK», 12.1) — раньше схемы: z.enum сказал бы «лишний ключ», а автору
+// нужен список ролей платформы.
+function roleUnknownProblems(value: unknown): SectionProblem[] {
+  if (!isRecord(value) || !Object.hasOwn(value, 'role') || isSectionRole(value.role)) return [];
+  const text = `роль ${JSON.stringify(value.role)} не из списка платформы: ${SECTION_ROLES.join(', ')}`;
+  return [problem('role-unknown', MANIFEST_FILE, text)];
+}
+
+// Место секции с ролью (блок 12, 12.1): группа overlay — только у секции с ролью поверх страницы; записанные groups и
+// limit должны совпадать с местом роли. У глобального скрипта — ничего: роль у него ловит placeProblems по PLACE_KEYS.
+function rolePlaceProblems(manifest: SectionManifest): string[] {
+  if (manifest.kind === 'global') return [];
+  if (manifest.role === undefined)
+    return (manifest.groups ?? []).includes('overlay')
+      ? ['groups: группа overlay — только у секции с ролью поверх страницы']
+      : [];
+  const place = ROLE_PLACES[manifest.role];
+  const groups =
+    manifest.groups === undefined || sameGroups(manifest.groups, place.group)
+      ? []
+      : [`groups: роль ${manifest.role} ставит секцию в ${place.list} — groups не нужен`];
+  const limit =
+    manifest.limit === undefined || manifest.limit === ROLE_LIMIT
+      ? []
+      : ['limit: у секции с ролью один экземпляр — limit не нужен'];
+  return [...groups, ...limit];
+}
+
+const sameGroups = (groups: readonly SectionGroup[], group: 'page' | 'overlay'): boolean =>
+  groups.length === 1 && groups[0] === group;
+
 // Ключ inlineEdit (часть 6, Р1-6-1) — только у видов string, text и richtext, в настройках секции и блоков. Сырой JSON,
 // до разбора формой: у другого вида форма сказала бы «лишний ключ», а автору нужен setting-invalid с путём. Ссылки на
 // общие настройки ({ "wrapper": … }) setting не имеют — пропускаются.
@@ -283,7 +320,12 @@ export function readManifest(files: SectionFiles): Checked<SectionManifest> {
     return { ok: false, problems: [problem('manifest-missing', MANIFEST_FILE, 'нет section.json')] };
   const json = parseJson(text);
   if (!json.ok) return json;
-  const early = [...oldKeyProblems(json.value), ...sdkProblems(json.value), ...inlineEditKindProblems(json.value)];
+  const early = [
+    ...oldKeyProblems(json.value),
+    ...sdkProblems(json.value),
+    ...inlineEditKindProblems(json.value),
+    ...roleUnknownProblems(json.value),
+  ];
   if (early.length > 0) return { ok: false, problems: early };
   const parsed = sectionManifestSchema.safeParse(json.value, RUSSIAN_ERRORS);
   if (!parsed.success) return { ok: false, problems: manifestIssues(parsed.error.issues, json.value) };
@@ -297,6 +339,7 @@ export function readManifest(files: SectionFiles): Checked<SectionManifest> {
     ...placeProblems(parsed.data).map((message) => problem('manifest-invalid', MANIFEST_FILE, message)),
     ...blockMenuProblems(parsed.data).map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
     ...wrapperProblems(parsed.data).map((message) => problem('manifest-invalid', MANIFEST_FILE, message)),
+    ...rolePlaceProblems(parsed.data).map((message) => problem('role-place', MANIFEST_FILE, message)),
   ];
   return problems.length > 0 ? { ok: false, problems } : { ok: true, value: parsed.data };
 }
@@ -331,10 +374,27 @@ export const kindProblems = (manifest: SectionManifest, files: SectionFiles): Se
     .filter((rule) => rule.broken(files))
     .map((rule) => problem('kind-mismatch', rule.file, rule.message));
 
-// Группы секции (часть 4, Р1-4-2): нет ключа groups — только страницы.
-export const sectionGroupsOf = (manifest: SectionManifest): readonly SectionGroup[] => manifest.groups ?? ['page'];
+// Группы секции (часть 4, Р1-4-2): нет ключа groups — только страницы. У секции с ролью (блок 12, 12.1) — группа места
+// роли: запись в section.json проверил role-place.
+export const sectionGroupsOf = (manifest: SectionManifest): readonly SectionGroup[] =>
+  manifest.role === undefined ? (manifest.groups ?? ['page']) : [ROLE_PLACES[manifest.role].group];
 
-const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage', 'wrapper'] as const;
+// Сколько экземпляров секции в одном списке: у секции с ролью — один (п. 5), иначе limit; нет — без предела.
+export const sectionLimitOf = (manifest: SectionManifest): number | undefined =>
+  manifest.role === undefined ? manifest.limit : ROLE_LIMIT;
+
+// Группа списка ревизии: header, footer и overlay — свои списки, остальные — страницы.
+export const listGroupOf = (list: string): SectionGroup =>
+  list === 'header' || list === 'footer' || list === OVERLAY_LIST ? list : 'page';
+
+// Может ли экземпляр секции стоять в этом списке: с ролью — только в списке роли (особая страница или overlay), без
+// роли — по группам секции.
+export const sectionListAllowed = (manifest: SectionManifest, list: string): boolean =>
+  manifest.role === undefined
+    ? sectionGroupsOf(manifest).includes(listGroupOf(list))
+    : ROLE_PLACES[manifest.role].list === list;
+
+const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage', 'wrapper', 'role'] as const;
 
 // newPage — настройка вида string секции, которую ставят на страницу.
 function newPageProblems(manifest: SectionManifest): string[] {

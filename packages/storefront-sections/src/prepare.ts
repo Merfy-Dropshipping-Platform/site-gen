@@ -20,6 +20,7 @@ import {
   type SectionFiles,
   type SectionManifest,
 } from './format';
+import { authorProblems } from './author-rules';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
 import { buildScript, type BuiltScript } from './script';
 import { NO_FACTS, type ScriptFacts } from './script-facts';
@@ -170,6 +171,8 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
     ...problemsOf(script),
     ...namesOf(manifest, checked, script, entry),
     ...styles,
+    // Блок 12, часть 12а: роль и ctx.ext секции расширения — по префиксу имени от двери.
+    ...(manifest.ok ? authorProblems(manifest.value, input.prefix) : []),
   ];
   if (!manifest.ok || problems.some((item) => !isWarning(item))) return refuse(problems);
   const name = `${input.prefix}:${manifest.value.name}`;

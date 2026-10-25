@@ -208,4 +208,28 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     fix: 'Объяви имя в `data` section.json или исправь имя в скрипте.',
     example: { before: 'ctx.data.prodcut', after: 'ctx.data.product' },
   },
+  'role-unknown': {
+    when: 'В section.json роль не из списка платформы.',
+    fix: 'Возьми роль из списка: cart, cart-drawer, cart-added, login, search, notices, cookie-banner — или убери ключ role.',
+    example: { before: '"role": "minicart"', after: '"role": "cart-drawer"' },
+  },
+  'role-place': {
+    when: 'У секции с ролью groups или limit не совпадают с местом роли, или группа overlay — у секции без роли.',
+    fix: 'Убери groups и limit: место и один экземпляр задаёт роль; группа overlay — только у секции с ролью.',
+    example: { before: '"role": "cart-drawer", "groups": ["footer"]', after: '"role": "cart-drawer"' },
+  },
+  'role-not-allowed': {
+    when: 'Роль у секции расширения: роли бывают только у секций магазина.',
+    fix: 'Убери ключ role: корзину, вход и поиск делает сам магазин, расширение показывает свои данные через ctx.ext.',
+  },
+  'role-taken': {
+    when: 'В магазине уже есть секция с этой ролью — вторую сохранить нельзя.',
+    fix: 'Измени секцию, которая названа в ответе: новая версия той же секции сохраняется.',
+    example: { before: '"name": "my-cart-drawer"', after: '"name": "cart-drawer"' },
+  },
+  'ext-foreign': {
+    when: 'Секция расширения подключает в uses чужое расширение.',
+    fix: 'Оставь в uses только "ext:<id своего расширения>".',
+    example: { before: '"uses": ["ext:loyalty"]', after: '"uses": ["ext:reviews"]' },
+  },
 };

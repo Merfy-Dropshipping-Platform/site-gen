@@ -17,6 +17,8 @@ describe('папки секций', () => {
       'bad-import',
       'geo-locate',
       'hero',
+      // Часть 6: фикстура секции с правкой в превью.
+      'inline-edit',
       'kinds',
       'reviews-list',
       'shop-broken',

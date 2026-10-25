@@ -36,7 +36,11 @@ function moneyOf(raw: unknown): Money | null {
   if (!isRecord(raw)) return null;
   const amount: unknown = raw.amount;
   const currency: unknown = raw.currency;
-  return typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 && typeof currency === 'string' && currency !== ''
+  return typeof amount === 'number' &&
+    Number.isFinite(amount) &&
+    amount >= 0 &&
+    typeof currency === 'string' &&
+    currency !== ''
     ? { amount, currency }
     : null;
 }
@@ -52,16 +56,19 @@ function priceOf(raw: unknown): Variant['price'] | null {
 }
 
 function optionOf(raw: unknown): VariantOption | null {
-  if (!isRecord(raw) || typeof raw.id !== 'string' || typeof raw.name !== 'string' || !Array.isArray(raw.values)) return null;
+  if (!isRecord(raw) || typeof raw.id !== 'string' || typeof raw.name !== 'string' || !Array.isArray(raw.values))
+    return null;
   const values = raw.values.flatMap((item: unknown): readonly VariantOption['values'][number][] => {
-    if (!isRecord(item) || typeof item.id !== 'string' || typeof item.value !== 'string' || !isStringList(item.images)) return [];
+    if (!isRecord(item) || typeof item.id !== 'string' || typeof item.value !== 'string' || !isStringList(item.images))
+      return [];
     return [{ id: item.id, value: item.value, images: item.images }];
   });
   return { id: raw.id, name: raw.name, values };
 }
 
 function variantOf(raw: unknown, price: unknown, compareAt: unknown, available: unknown): Variant | null {
-  if (!isRecord(raw) || typeof raw.id !== 'string' || !isStringList(raw.options) || typeof available !== 'boolean') return null;
+  if (!isRecord(raw) || typeof raw.id !== 'string' || !isStringList(raw.options) || typeof available !== 'boolean')
+    return null;
   const variantPrice = priceOf(price);
   if (variantPrice === null) return null;
   return { id: raw.id, options: raw.options, price: variantPrice, compareAtPrice: priceOf(compareAt), available };
@@ -91,7 +98,9 @@ function pageEntriesOf(): Readonly<Record<string, PageEntry>> {
   try {
     parsed = JSON.parse(tag.textContent);
   } catch (error) {
-    console.error(`variants: JSON ${VARIANTS_SELECTOR} не разбирается: ${error instanceof Error ? error.message : 'не Error'}`);
+    console.error(
+      `variants: JSON ${VARIANTS_SELECTOR} не разбирается: ${error instanceof Error ? error.message : 'не Error'}`,
+    );
     return {};
   }
   if (!isRecord(parsed)) return {};
@@ -141,7 +150,11 @@ function productVariantsOf(core: CoreHandle, productId: string, entry: PageEntry
   const pickVariantId = (group: string, value: string): Variant | null => {
     const exact = entry.variants.find((variant) => {
       const at = entry.options.findIndex((option) => option.id === group);
-      return at >= 0 && variant.options[at] === value && variant.options.every((id, index) => index === at || id === currentOptions()[index]);
+      return (
+        at >= 0 &&
+        variant.options[at] === value &&
+        variant.options.every((id, index) => index === at || id === currentOptions()[index])
+      );
     });
     if (exact !== undefined) return exact;
     const withValue = entry.variants.filter((variant) => {

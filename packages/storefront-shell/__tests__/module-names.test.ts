@@ -5,7 +5,16 @@ import { ACTIONS, ACTION_EVENTS, MODULE_NAMES, MODULE_NAMES_COMPLETE } from '../
 // storefront-sections сверяет "uses" section.json и data-action по этим спискам ядра.
 describe('MODULE_NAMES и ACTION_EVENTS', () => {
   it('модули SDK — восемь, у каждого действия SDK модуль из списка', () => {
-    expect(MODULE_NAMES).toEqual(['cart', 'favorites', 'auth', 'newsletter', 'consent', 'variants', 'search', 'catalog']);
+    expect(MODULE_NAMES).toEqual([
+      'cart',
+      'favorites',
+      'auth',
+      'newsletter',
+      'consent',
+      'variants',
+      'search',
+      'catalog',
+    ]);
     expect(MODULE_NAMES_COMPLETE).toBe(true);
     expect(Object.values(ACTIONS).every((spec) => MODULE_NAMES.some((name) => name === spec.module))).toBe(true);
   });

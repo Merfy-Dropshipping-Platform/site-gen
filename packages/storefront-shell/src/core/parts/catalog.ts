@@ -28,7 +28,8 @@ type ProductsResult = Result<{
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const countOf = (value: unknown): number | null => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null);
+const countOf = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null;
 
 const fail = (core: CoreHandle, failure: Failure, options?: ActionOptions): Result<never> => {
   reportFailure(core, failure, options);
@@ -57,7 +58,10 @@ export function storeQueryOf(shopId: string, query: CatalogQuery, withPaging: bo
 }
 
 // Ответ /store/products → { items, total, page, pages }; не по форме — null.
-function productsOf(reply: { readonly status: number; readonly body: unknown }, currency: string): ProductsResult | null {
+function productsOf(
+  reply: { readonly status: number; readonly body: unknown },
+  currency: string,
+): ProductsResult | null {
   const body = reply.body;
   if (reply.status !== 200 || !isRecord(body)) return null;
   const items = storeItemsOf(body.products, currency);
@@ -70,13 +74,17 @@ function productsOf(reply: { readonly status: number; readonly body: unknown }, 
 }
 
 const groupOf = (raw: unknown): CatalogFilters['groups'][number] | null => {
-  if (!isRecord(raw) || typeof raw.key !== 'string' || typeof raw.name !== 'string' || !Array.isArray(raw.values)) return null;
+  if (!isRecord(raw) || typeof raw.key !== 'string' || typeof raw.name !== 'string' || !Array.isArray(raw.values))
+    return null;
   const values = raw.values.filter((value): value is string => typeof value === 'string');
   return { key: raw.key, name: raw.name, values };
 };
 
 // Ответ /store/filters → { groups, price, total }; не по форме — null.
-function filtersOf(reply: { readonly status: number; readonly body: unknown }, currency: string): Result<CatalogFilters> | null {
+function filtersOf(
+  reply: { readonly status: number; readonly body: unknown },
+  currency: string,
+): Result<CatalogFilters> | null {
   const body = reply.body;
   if (reply.status !== 200 || !isRecord(body) || body.success !== true || !isRecord(body.data)) return null;
   const data = body.data;
@@ -131,7 +139,10 @@ export const catalog: SdkPart<'catalog', CatalogModule> = {
       const shopId = core.config?.shop.id ?? '';
       return ask(core, '/store/products', storeQueryOf(shopId, query, true), productsOf, 'catalog.products', options);
     },
-    filters: async (query: Omit<CatalogQuery, 'page' | 'limit' | 'sort' | 'collectionIds'> = {}, options?: ActionOptions) => {
+    filters: async (
+      query: Omit<CatalogQuery, 'page' | 'limit' | 'sort' | 'collectionIds'> = {},
+      options?: ActionOptions,
+    ) => {
       const shopId = core.config?.shop.id ?? '';
       return ask(core, '/store/filters', storeQueryOf(shopId, query, false), filtersOf, 'catalog.filters', options);
     },

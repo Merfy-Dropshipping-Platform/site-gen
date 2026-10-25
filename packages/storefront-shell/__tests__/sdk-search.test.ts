@@ -6,7 +6,11 @@ import { API_URL, SHOP_ID, fakeCore } from './sdk-support';
 // Модуль «Поиск» (блок 11 «Секций и SDK», часть 11б; design.md 11.5): запрос шлюза, кеш, отмена прошлого вызова,
 // search.open. Шлюз — заглушка fetch: адрес запроса и ответ. Текст цены — как money сборки: разделитель тысяч
 // неразрывный пробел (toLocaleString('ru-RU')).
-const rub = (amount: number) => ({ amount, currency: 'RUB', text: `${Math.round(amount / 100).toLocaleString('ru-RU')} ₽` });
+const rub = (amount: number) => ({
+  amount,
+  currency: 'RUB',
+  text: `${Math.round(amount / 100).toLocaleString('ru-RU')} ₽`,
+});
 const HIT = {
   id: 'p-nova',
   title: 'Шарф «Нова»',
@@ -18,16 +22,22 @@ const HIT = {
   quantity: 7,
   allowBackorder: false,
   variantGroups: [],
-  variantCombinations: [{ id: 'v-1', price: 1900, compareAtPrice: null, available: false, options: {} }, { id: 'v-2', price: 2300, compareAtPrice: null, available: true, options: {} }],
+  variantCombinations: [
+    { id: 'v-1', price: 1900, compareAtPrice: null, available: false, options: {} },
+    { id: 'v-2', price: 2300, compareAtPrice: null, available: true, options: {} },
+  ],
 };
 
 function gateway(answer: (url: URL) => Promise<Response>) {
   const urls: URL[] = [];
-  vi.stubGlobal('fetch', vi.fn((input: string) => {
-    const url = new URL(input);
-    urls.push(url);
-    return answer(url);
-  }));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: string) => {
+      const url = new URL(input);
+      urls.push(url);
+      return answer(url);
+    }),
+  );
   return urls;
 }
 const json = (body: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify(body), { status }));
@@ -43,7 +53,9 @@ describe('ctx.search.query', () => {
     const urls = gateway(() => json({ products: [HIT], hasMore: true }));
     const api = search.create(fakeCore().core);
     const found = await api.query('  нова ', { limit: 5 });
-    expect(urls.map((url) => url.href)).toEqual([`${API_URL}/store/products/search?store_id=${SHOP_ID}&q=%D0%BD%D0%BE%D0%B2%D0%B0&limit=5`]);
+    expect(urls.map((url) => url.href)).toEqual([
+      `${API_URL}/store/products/search?store_id=${SHOP_ID}&q=%D0%BD%D0%BE%D0%B2%D0%B0&limit=5`,
+    ]);
     expect(found).toEqual({
       ok: true,
       data: {
@@ -105,7 +117,10 @@ describe('ctx.search.query', () => {
     const fake = fakeCore();
     const api = search.create(fake.core);
     expect(await api.query('x')).toMatchObject({ ok: false, error: { code: 'server' } });
-    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))),
+    );
     expect(await api.query('y', { quiet: true })).toMatchObject({ ok: false, error: { code: 'network' } });
     expect(fake.named('merfy:notice:show')).toHaveLength(1);
   });
@@ -118,7 +133,8 @@ describe('search.open', () => {
     const api = search.create(fake.core);
     expect(await api.open()).toEqual({ ok: true, data: { panel: false } });
     expect(assign).toHaveBeenCalledWith('/catalog');
-    document.body.innerHTML = '<merfy-section data-section="shop:search" data-section-id="s-1"><div data-behavior="search"></div></merfy-section>';
+    document.body.innerHTML =
+      '<merfy-section data-section="shop:search" data-section-id="s-1"><div data-behavior="search"></div></merfy-section>';
     expect(await api.open()).toEqual({ ok: true, data: { panel: true } });
     expect(fake.named('merfy:search:open')).toEqual([{}]);
     document.body.replaceChildren();
@@ -132,8 +148,25 @@ describe('строка товара шлюза', () => {
   it('адрес — handle или id; цены нет — 0 ₽; старая не больше цены — null; не по форме — null', () => {
     expect(productUrl('sharf-nova', 'p-1')).toBe('/product/sharf-nova');
     expect(productUrl('шарф нова', 'p-1')).toBe('/product/p-1');
-    const plain = storeItemOf({ id: 'p-2', title: 'Плед', handle: 'pled', basePrice: null, compareAtPrice: 0, quantity: 0, allowBackorder: true }, 'RUB');
-    expect(plain).toMatchObject({ price: { amount: 0 }, compareAtPrice: null, available: true, image: null, hasVariants: false });
+    const plain = storeItemOf(
+      {
+        id: 'p-2',
+        title: 'Плед',
+        handle: 'pled',
+        basePrice: null,
+        compareAtPrice: 0,
+        quantity: 0,
+        allowBackorder: true,
+      },
+      'RUB',
+    );
+    expect(plain).toMatchObject({
+      price: { amount: 0 },
+      compareAtPrice: null,
+      available: true,
+      image: null,
+      hasVariants: false,
+    });
     expect(storeItemOf({ title: 'без id' }, 'RUB')).toBeNull();
   });
 });

@@ -72,7 +72,16 @@ export function markupParams(name: ActionName): readonly string[] {
 
 // Модули SDK для "uses" в section.json (design.md блока 5, раздел 3.8): по этому списку проверка при сохранении (часть 5в)
 // сверяет uses, сборка выбирает части бандла страницы. Новый модуль в ModuleName без строки здесь — ошибка типов.
-export const MODULE_NAMES = ['cart', 'favorites', 'auth', 'newsletter', 'consent', 'variants', 'search', 'catalog'] as const satisfies readonly ModuleName[];
+export const MODULE_NAMES = [
+  'cart',
+  'favorites',
+  'auth',
+  'newsletter',
+  'consent',
+  'variants',
+  'search',
+  'catalog',
+] as const satisfies readonly ModuleName[];
 type MissingModule = Exclude<ModuleName, (typeof MODULE_NAMES)[number]>;
 export const MODULE_NAMES_COMPLETE: [MissingModule] extends [never] ? true : never = true;
 

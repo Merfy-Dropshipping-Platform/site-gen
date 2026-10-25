@@ -285,9 +285,17 @@ export interface CatalogModule {
     query?: CatalogQuery,
     options?: ActionOptions,
   ): Promise<
-    Result<{ readonly items: readonly CatalogItem[]; readonly total: number; readonly page: number; readonly pages: number }>
+    Result<{
+      readonly items: readonly CatalogItem[];
+      readonly total: number;
+      readonly page: number;
+      readonly pages: number;
+    }>
   >;
-  filters(query?: Omit<CatalogQuery, 'page' | 'limit' | 'sort' | 'collectionIds'>, options?: ActionOptions): Promise<Result<CatalogFilters>>;
+  filters(
+    query?: Omit<CatalogQuery, 'page' | 'limit' | 'sort' | 'collectionIds'>,
+    options?: ActionOptions,
+  ): Promise<Result<CatalogFilters>>;
 }
 export interface Modules {
   readonly cart: CartModule;

@@ -5,17 +5,41 @@ import { fakeCore, storefrontConfig } from './sdk-support';
 
 // Модуль «Варианты» (блок 11 «Секций и SDK», часть 11б; design.md 11.6): JSON вариантов страницы → выбранное сочетание,
 // выбор значения, наличие, фото; ?variant= у товара страницы; merfy:variant:change.
-const money = (amount: number) => ({ amount, currency: 'RUB', text: `${Math.round(amount / 100).toLocaleString('ru-RU')} ₽` });
+const money = (amount: number) => ({
+  amount,
+  currency: 'RUB',
+  text: `${Math.round(amount / 100).toLocaleString('ru-RU')} ₽`,
+});
 const NOVA = {
   options: [
-    { id: 'color', name: 'Цвет', values: [{ id: 'grey', value: 'серый', images: [] }, { id: 'blue', value: 'синий', images: ['https://s3.merfy.ru/p/blue.jpg'] }] },
-    { id: 'length', name: 'Длина', values: [{ id: '150', value: '150 см', images: [] }, { id: '180', value: '180 см', images: [] }] },
+    {
+      id: 'color',
+      name: 'Цвет',
+      values: [
+        { id: 'grey', value: 'серый', images: [] },
+        { id: 'blue', value: 'синий', images: ['https://s3.merfy.ru/p/blue.jpg'] },
+      ],
+    },
+    {
+      id: 'length',
+      name: 'Длина',
+      values: [
+        { id: '150', value: '150 см', images: [] },
+        { id: '180', value: '180 см', images: [] },
+      ],
+    },
   ],
   variants: [
     { id: 'v-grey-150', options: ['grey', '150'], price: money(190000), compareAtPrice: null, available: true },
     { id: 'v-grey-180', options: ['grey', '180'], price: money(230000), compareAtPrice: null, available: false },
     { id: 'v-blue-150', options: ['blue', '150'], price: money(190000), compareAtPrice: null, available: true },
-    { id: 'v-blue-180', options: ['blue', '180'], price: money(230000), compareAtPrice: money(260000), available: true },
+    {
+      id: 'v-blue-180',
+      options: ['blue', '180'],
+      price: money(230000),
+      compareAtPrice: money(260000),
+      available: true,
+    },
   ],
   default: 'v-grey-150',
 };
@@ -90,7 +114,11 @@ describe('выбор значения', () => {
   });
 
   it('сочетания нет — первое с этим значением, сначала в наличии; неизвестные группа или значение — invalid', () => {
-    const sparse = { ...NOVA, variants: NOVA.variants.filter((variant) => variant.id !== 'v-grey-150'), default: 'v-blue-150' };
+    const sparse = {
+      ...NOVA,
+      variants: NOVA.variants.filter((variant) => variant.id !== 'v-grey-150'),
+      default: 'v-blue-150',
+    };
     pageWith({ 'p-nova': sparse });
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const nova = moduleOf().api.of('p-nova');
@@ -108,7 +136,9 @@ describe('выбор значения', () => {
     nova?.pick('color', 'blue');
     expect(nova?.isAvailable('length', '180')).toBe(true);
     const variant = nova?.$variant.get();
-    expect(variant === null || variant === undefined ? null : nova?.imageFor(variant)).toEqual({ url: 'https://s3.merfy.ru/p/blue.jpg' });
+    expect(variant === null || variant === undefined ? null : nova?.imageFor(variant)).toEqual({
+      url: 'https://s3.merfy.ru/p/blue.jpg',
+    });
     nova?.pick('color', 'grey');
     const grey = nova?.$variant.get();
     expect(grey === null || grey === undefined ? 'нет' : nova?.imageFor(grey)).toBeNull();
@@ -135,7 +165,10 @@ describe('data-action="variants.pick"', () => {
     expect(markup?.params).toEqual(['product-id', 'group', 'value']);
     const call = (values: Record<string, string>) => markup?.call(api, values);
     expect(await call({ 'product-id': 'p-nova', group: 'color', value: 'blue' })).toMatchObject({ ok: true });
-    expect(await call({ 'product-id': 'p-net', group: 'color', value: 'blue' })).toMatchObject({ ok: false, error: { code: 'invalid' } });
+    expect(await call({ 'product-id': 'p-net', group: 'color', value: 'blue' })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid' },
+    });
     expect(api.pick('p-nova', 'length', '180')).toMatchObject({ ok: true, data: { id: 'v-blue-180' } });
     expect(api.of('p-nova')?.$variant.get()?.id).toBe('v-blue-180');
     expect(VARIANTS_SELECTOR).toBe('script[type="application/json"][data-merfy-variants]');

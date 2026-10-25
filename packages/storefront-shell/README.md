@@ -164,3 +164,16 @@ codeOnly }` (скрипт секций превью → скрипт превь�
   extensions по `output` функции. Расширения нет в конфиге страницы — сбой секции `part-unknown`.
 - Часть `ext` — в бандле только страниц, где у секции `ext` в `meta.parts` (`pageParts`, часть 5в); бюджет ядра 12 КБ —
   без неё, её доля — до 2 КБ brotli (`__tests__/ext-budget.test.ts`).
+
+## Варианты, поиск и каталог (блок 11 «Секций и SDK», часть 11б)
+
+- `ctx.variants.of(productId)` (`"uses": ["variants"]` или `data-action="variants.pick"`) — варианты товара из JSON
+  страницы `data-merfy-variants`: `$variant`, `options`, `pick(group, value)`, `pickVariant(id)`, `isAvailable`,
+  `imageFor`. У товара страницы — `?variant=<id>` в адресе. После выбора — `merfy:variant:change`.
+- `data-action="variants.pick"` с `data-product-id`, `data-group`, `data-value` — id из JSON; цену, фото и кнопку
+  обновляет скрипт секции через `ctx.watch(v.$variant, …)`.
+- `ctx.search.query(q, { limit })` — подсказки `/store/products/search`: кеш 40 ответов, новый вызов отменяет прошлый,
+  пустой запрос — без запроса. `data-action="search.open"` — панель поиска (`merfy:search:open`) или `/catalog`.
+- `ctx.catalog.products(query)`, `ctx.catalog.filters(query)` — `/store/products` и `/store/filters` для своих секций;
+  наш модуль «Каталог» (поведение `catalog`) список с фильтрами читает у сервера готовым HTML.
+- Цены модулей — `PriceMoney`: копейки, валюта и текст «1 900 ₽».

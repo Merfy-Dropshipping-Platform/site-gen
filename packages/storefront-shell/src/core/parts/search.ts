@@ -61,18 +61,24 @@ export const search: SdkPart<'search', SearchModule> = {
       cache.set(key, answer);
       const oldest = cache.keys().next();
       if (cache.size > SEARCH_CACHE_SIZE && oldest.done !== true) cache.delete(oldest.value);
-
     };
 
     // Запрос шлюза: ответ всегда ложится в кеш; обещание выполняется, только если вызова новее не было.
-    const ask = (config: NonNullable<CoreHandle['config']>, text: string, limit: number, options?: ActionOptions): Promise<SearchAnswer> => {
+    const ask = (
+      config: NonNullable<CoreHandle['config']>,
+      text: string,
+      limit: number,
+      options?: ActionOptions,
+    ): Promise<SearchAnswer> => {
       const key = `${text}|${limit}`;
       const params = new URLSearchParams({ store_id: config.shop.id, q: text, limit: String(limit) });
       const mine = (calls.number += 1);
       return new Promise((resolve) => {
         void requestJson(`${config.api.url}/store/products/search?${params}`, { method: 'GET' }).then((reply) => {
           const answer = answerOf(reply, config.currency);
-          const done = answer ?? fail(core, failureOf(reasonOf(reply), 'search.query: шлюз поиска ответил не по форме', reply), options);
+          const done =
+            answer ??
+            fail(core, failureOf(reasonOf(reply), 'search.query: шлюз поиска ответил не по форме', reply), options);
           remember(key, done);
           if (mine === calls.number) resolve(done);
         });
@@ -84,7 +90,9 @@ export const search: SdkPart<'search', SearchModule> = {
       const limit = options?.limit ?? SEARCH_LIMIT;
       if (text === '') return Promise.resolve({ ok: true, data: { items: [], hasMore: false } });
       if (text.length > SEARCH_Q_MAX || !Number.isInteger(limit) || limit < 1 || limit > LIMIT_MAX) {
-        return Promise.resolve(fail(core, failureOf('invalid', 'search.query: запрос до 500 знаков, лимит — целое от 1 до 50'), options));
+        return Promise.resolve(
+          fail(core, failureOf('invalid', 'search.query: запрос до 500 знаков, лимит — целое от 1 до 50'), options),
+        );
       }
       const config = core.config;
       if (config === null) {

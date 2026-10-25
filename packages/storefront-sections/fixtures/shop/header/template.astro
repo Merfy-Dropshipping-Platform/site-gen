@@ -166,23 +166,54 @@ const { settings, blocks, theme, shop, page } = Astro.props;
       {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
     </a>
     <div class="flex items-center gap-4">
-      {blocks.filter((block) => block.type === 'wishlist' || block.type === 'cart').map((block) => (
-        <a
-          aria-label={block.type === 'wishlist' ? 'Избранное' : 'Корзина'}
-          class="text-muted-foreground hover:text-heading"
-          href={block.type === 'wishlist' ? '/wishlist' : '/cart'}
-        >
-          <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d={block.type === 'wishlist' ? 'M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z' : 'M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0'} />
-          </svg>
-        </a>
+      {blocks.map((block) => (
+        <div class="flex items-center">
+          {block.type === 'search' ? (
+            settings['menu-type'] === 'sidebar' && (
+              <div data-behavior="dialog" data-modal="false" data-transition="fade">
+                <button aria-label="Поиск" class="hidden md:inline-flex text-muted-foreground hover:text-heading" data-part="open">
+                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M10 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12Zm4.5 10.5L20 20" /></svg>
+                </button>
+                <dialog class="left-0 m-0 w-full max-w-none bg-background p-4" data-part="content">
+                  <form action="/catalog" class="flex items-center gap-2" method="get">
+                    <input
+                      aria-label="Поиск"
+                      autofocus
+                      class="w-full border border-border bg-background px-3 py-2 font-body text-foreground"
+                      name="q"
+                      type="search"
+                    />
+                    <button class="bg-heading px-4 py-2 font-body text-background" type="submit">Найти</button>
+                  </form>
+                </dialog>
+              </div>
+            )
+          ) : block.type === 'profile' ? (
+            settings['menu-type'] === 'sidebar' && (
+              <a aria-label="Профиль" class="hidden md:inline-flex text-muted-foreground hover:text-heading" href="/login">
+                <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" /></svg>
+              </a>
+            )
+          ) : (
+            <a
+              aria-label={block.type === 'wishlist' ? 'Избранное' : 'Корзина'}
+              class="text-muted-foreground hover:text-heading"
+              href={block.type === 'wishlist' ? '/wishlist' : '/cart'}
+            >
+              <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path d={block.type === 'wishlist' ? 'M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z' : 'M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0'} />
+              </svg>
+            </a>
+          )}
+        </div>
       ))}
     </div>
   </div>
 
-  <!-- Компьютер (от 768 px): ряды по положению логотипа; у бокового меню ряд телефона и на компьютере. -->
+  <!-- Компьютер (от 768 px): ряды по положению логотипа; у бокового меню ряд телефона и на компьютере — с поиском
+       и «Профилем» с 768 px, как у flux, — и ряды компьютера не выводятся. -->
   <div class:list={['px-4', settings['menu-type'] === 'sidebar' ? 'hidden' : 'md:block']}>
-    {(settings['logo-position'] === 'top-left' || settings['logo-position'] === 'top-center') && (
+    {(settings['logo-position'] === 'top-left' || settings['logo-position'] === 'top-center') && settings['menu-type'] !== 'sidebar' && (
       <div>
         <div class:list={['relative flex items-center py-2', settings['logo-position'] === 'top-center' ? 'justify-center' : 'justify-start']}>
           <a class="font-heading text-xl text-heading no-underline" href="/">
@@ -317,7 +348,7 @@ const { settings, blocks, theme, shop, page } = Astro.props;
         )}
       </div>
     )}
-    {settings['logo-position'] === 'center-left' && (
+    {settings['logo-position'] === 'center-left' && settings['menu-type'] !== 'sidebar' && (
       <div class="flex items-center justify-between py-2">
         <a class="font-heading text-xl text-heading no-underline" href="/">
           {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
@@ -450,7 +481,7 @@ const { settings, blocks, theme, shop, page } = Astro.props;
         </div>
       </div>
     )}
-    {settings['logo-position'] === 'center-absolute' && (
+    {settings['logo-position'] === 'center-absolute' && settings['menu-type'] !== 'sidebar' && (
       <div class="grid grid-cols-3 items-center py-2">
         <div class="justify-self-start">
           {settings['menu-type'] !== 'sidebar' && (

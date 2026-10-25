@@ -188,6 +188,20 @@ describe('«Шапка»: значки, поиск, логотип', () => {
     expect(source).not.toContain('aria-label="Поиск"');
   });
 
+  it('боковое: значок поиска и «Профиль» — в ряду шапки с 768 px, как у flux', async () => {
+    const source = await html({ settings: { 'menu-type': 'sidebar' } });
+    const search = tags(source, 'button\\b').filter((tag) => attr(tag, 'aria-label') === 'Поиск');
+    const profile = tags(source, 'a\\b').filter((tag) => attr(tag, 'aria-label') === 'Профиль');
+    expect(search).toHaveLength(1);
+    expect(profile).toHaveLength(1);
+    const fromTablet = (tag: string): boolean => {
+      const names = (attr(tag, 'class') ?? '').split(/\s+/);
+      return names.includes('hidden') && names.some((name) => name.startsWith('md:'));
+    };
+    expect(search.every(fromTablet)).toBe(true);
+    expect(profile.every(fromTablet)).toBe(true);
+  });
+
   it('форма поиска: GET в /catalog, поле q, кнопка «Найти»', async () => {
     const source = await html();
     const form = tags(source, 'form\\b').find((tag) => attr(tag, 'action') === '/catalog');

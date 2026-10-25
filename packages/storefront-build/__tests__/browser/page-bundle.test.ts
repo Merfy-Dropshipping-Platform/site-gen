@@ -176,8 +176,10 @@ describe('бандл страницы в Chromium', () => {
   it('в <head> один <script type="module" src="/_merfy/b/…">; модуль старого вида пропущен с предупреждением', () => {
     const html = new TextDecoder().decode(rendered.file.content);
     expect(rendered.bundle?.path).toMatch(/^_merfy\/b\/[0-9a-f]{64}\.js$/);
+    const hex = rendered.bundle?.path.slice('_merfy/b/'.length, -3) ?? '';
+    const integrity = `sha256-${Buffer.from(hex, 'hex').toString('base64')}`;
     expect(html.match(/<script type="module"[^>]*>/g)).toEqual([
-      `<script type="module" src="/${rendered.bundle?.path}">`,
+      `<script type="module" src="/${rendered.bundle?.path}" integrity="${integrity}">`,
     ]);
     expect(html).not.toContain('importmap');
     expect(html).not.toContain('merfy-modules');

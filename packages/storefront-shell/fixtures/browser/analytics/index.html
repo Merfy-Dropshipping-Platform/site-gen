@@ -4,15 +4,22 @@
     <meta charset="utf-8" />
     <title>Каталог — фикстура аналитики</title>
     <script type="application/json" id="merfy-config">
-      {"v":1,"mode":"live","shop":{"id":"7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70","name":"Шарфы","url":"https://scarves.example"},"currency":"RUB","locale":"ru-RU","api":{"url":"__ORIGIN__/api"},"theme":{"id":"nova","version":"0.1.0"},"page":{"id":"catalog","path":"/catalog"},"analytics":{"url":"__ORIGIN__/a","counters":[{"kind":"metrika","number":"12345678"}]}}
+      {"v":1,"mode":"live","shop":{"id":"7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70","name":"Шарфы","url":"https://scarves.example"},"currency":"RUB","locale":"ru-RU","api":{"url":"__ORIGIN__/api"},"theme":{"id":"nova","version":"0.1.0"},"page":{"id":"catalog","path":"/catalog"},"analytics":{"url":"__ORIGIN__/a","counters":[{"kind":"metrika","number":"12345678"}],"custom":[{"code":"<script>window.__b13Waits = 1<\/script>","consent":"required"},{"code":"<script>window.__b13Now = 1<\/script><img src=\"/never.png\" onerror=\"window.__b13Img = 1\">","consent":"none"}]}}
     </script>
-    <!-- Бандл страницы (часть 5б): ядро секций, части auth, cart, favorites, analytics и секция «Купить». -->
+    <!-- Бандл страницы (части 5б и 13б): ядро секций, части auth, cart, consent, favorites, analytics, секции «Купить» и «Баннер cookie». -->
     <script type="module" src="/b/page.js"></script>
   </head>
   <body>
     <h1>Каталог</h1>
     <merfy-section data-section="shop:buy" data-section-id="buy-1">
       <button type="button" data-buy data-action="cart.add" data-product-id="scarf-1" data-quantity="2">В корзину</button>
+    </merfy-section>
+    <merfy-section data-section="shop:cookie-banner" data-section-id="cookie-banner-1">
+      <div data-ref="banner" hidden role="region" aria-label="Согласие на cookie">
+        <p>Мы используем файлы cookie</p>
+        <button type="button" data-accept data-action="consent.accept">Принять</button>
+        <button type="button" data-decline data-action="consent.decline">Отклонить</button>
+      </div>
     </merfy-section>
   </body>
 </html>

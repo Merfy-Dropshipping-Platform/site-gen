@@ -26,7 +26,7 @@ afterAll(async () => {
 });
 
 describe('счётчики мерчанта в снимке', () => {
-  it('счётчик — сущность counter, адрес сборщика — во входах; «свой код» не прошёл', async () => {
+  it('счётчик — counter, «свой код» — custom-code, адрес сборщика — во входах', async () => {
     const site = await insertSite(harness.db);
     fakes.analytics.pixels.set(site.id, PIXELS);
     const inputs = parseBuildInputs((await readSnapshot(harness.deps.snapshot, site.id)).inputs);
@@ -37,6 +37,14 @@ describe('счётчики мерчанта в снимке', () => {
         id: PIXELS[0].id,
         updatedAt: '1970-01-01T00:00:00.000Z',
         data: { kind: 'metrika', number: '12345678' },
+      },
+    ]);
+    expect(inputs.data.entities.filter((entity) => entity.type === 'custom-code')).toEqual([
+      {
+        type: 'custom-code',
+        id: PIXELS[1].id,
+        updatedAt: '1970-01-01T00:00:00.000Z',
+        data: { code: '<script>', consent: 'required' },
       },
     ]);
   });

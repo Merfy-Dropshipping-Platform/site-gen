@@ -144,7 +144,7 @@
     },
     {
       "id": "analytics-counters-change",
-      "title": "Счётчики мерчанта: добавил, поменял номер, выключил или удалил счётчик",
+      "title": "Счётчики и «свой код» мерчанта: добавил, поменял номер, код или отметку согласия, выключил или удалил",
       "trigger": {
         "service": "analytics-collector",
         "description": "RPC analytics.pixels.create, update, delete: событие после успешной правки"

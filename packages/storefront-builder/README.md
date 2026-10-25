@@ -199,3 +199,10 @@ p95 «правка → витрина» за сутки:
 SELECT round(percentile_cont(0.95) WITHIN GROUP (ORDER BY extract(epoch FROM finished_at - event_at) * 1000))::int AS p95_ms
 FROM storefront_build WHERE outcome = 'live' AND finished_at > now() - interval '1 day';
 ```
+
+## «Свой код» мерчанта (блок 13 «Секций и SDK», часть 13б)
+
+`src/counters.ts`: «свой код» (`pixel_type: custom`) из того же `analytics.pixels.list` — сущности `custom-code`
+`{ code, consent }` снимка: `none` — запускается сразу, иначе — после «Принять» в баннере cookie. Включённый и непустой,
+до 64 КБ на магазин по порядку id; не влез — строка `custom-code-skipped` без кода. Пересборка — событие
+`analytics-counters-change`.

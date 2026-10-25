@@ -7,10 +7,7 @@ import { problem, type SectionProblem } from './problems';
 // ext-foreign. prefix — префикс имени от двери (PrepareInput.prefix): shop — секция магазина, иначе id расширения.
 export function authorProblems(manifest: SectionManifest, prefix: string): SectionProblem[] {
   if (prefix === SHOP_PREFIX) return [];
-  return [
-    ...roleNotAllowedProblems(manifest, prefix),
-    ...foreignExtProblems(manifest, prefix),
-  ];
+  return [...roleNotAllowedProblems(manifest, prefix), ...foreignExtProblems(manifest, prefix)];
 }
 
 function roleNotAllowedProblems(manifest: SectionManifest, prefix: string): SectionProblem[] {
@@ -23,5 +20,7 @@ function foreignExtProblems(manifest: SectionManifest, prefix: string): SectionP
   const ownUse = `${EXT_USE_PREFIX}${prefix}`;
   return (manifest.uses ?? [])
     .filter((use) => use.startsWith(EXT_USE_PREFIX) && use !== ownUse)
-    .map((use) => problem('ext-foreign', MANIFEST_FILE, `uses: ${use} — секция расширения ${prefix} подключает только ${ownUse}`));
+    .map((use) =>
+      problem('ext-foreign', MANIFEST_FILE, `uses: ${use} — секция расширения ${prefix} подключает только ${ownUse}`),
+    );
 }

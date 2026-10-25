@@ -168,7 +168,13 @@ function routesOf(inputs: BuildInputs, mode: PageMode = 'live'): Routes {
   // Каталог и страницы N списков (блок 11 «Секций и SDK», часть 11а) — после страниц записей.
   const records = RECORD_ENTRIES[mode](inputs).map(recordRouteOf);
   const index = mode === 'preview' ? previewIndex(inputs) : recordIndex(inputs);
-  const list = [...SHOP_ROUTES, ...specialRoutes(inputs, mode), ...own, ...records, ...listRoutesOf(inputs, mode, records, index)];
+  const list = [
+    ...SHOP_ROUTES,
+    ...specialRoutes(inputs, mode),
+    ...own,
+    ...records,
+    ...listRoutesOf(inputs, mode, records, index),
+  ];
   // По адресу — и копии страниц блока 10 (Р10а-16): копия ведёт на ту же строку.
   const withCopies = list.flatMap((route): readonly [string, ShopRoute][] => [
     [route.path, route],

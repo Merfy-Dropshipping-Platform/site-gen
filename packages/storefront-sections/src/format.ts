@@ -262,12 +262,14 @@ function rolePlaceProblems(manifest: SectionManifest): string[] {
       ? ['groups: группа overlay — только у секции с ролью поверх страницы']
       : [];
   const place = ROLE_PLACES[manifest.role];
-  const groups = manifest.groups === undefined || sameGroups(manifest.groups, place.group) ? [] : [
-    `groups: роль ${manifest.role} ставит секцию в ${place.list} — groups не нужен`,
-  ];
-  const limit = manifest.limit === undefined || manifest.limit === ROLE_LIMIT ? [] : [
-    'limit: у секции с ролью один экземпляр — limit не нужен',
-  ];
+  const groups =
+    manifest.groups === undefined || sameGroups(manifest.groups, place.group)
+      ? []
+      : [`groups: роль ${manifest.role} ставит секцию в ${place.list} — groups не нужен`];
+  const limit =
+    manifest.limit === undefined || manifest.limit === ROLE_LIMIT
+      ? []
+      : ['limit: у секции с ролью один экземпляр — limit не нужен'];
   return [...groups, ...limit];
 }
 

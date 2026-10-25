@@ -2,13 +2,7 @@ import { SECTION_ROLES as SHELL_ROLES } from '@merfy/shell/roles';
 import { OVERLAY_LIST as BUILD_OVERLAY_LIST, SPECIAL_PAGE_IDS } from '@merfy/storefront-build';
 import { describe, expect, it } from 'vitest';
 import { authorProblems } from '../src/author-rules';
-import {
-  readManifest,
-  sectionGroupsOf,
-  sectionLimitOf,
-  sectionListAllowed,
-  type SectionManifest,
-} from '../src/format';
+import { readManifest, sectionGroupsOf, sectionLimitOf, sectionListAllowed, type SectionManifest } from '../src/format';
 import { prepareSection } from '../src/prepare';
 import { PROBLEM_CODES } from '../src/problems';
 import { OVERLAY_LIST, ROLE_PLACES, SECTION_ROLES, roleKeysOf } from '../src/roles';
@@ -82,9 +76,7 @@ describe('role в section.json', () => {
   it('группа overlay без роли — role-place; неизвестная роль — role-unknown со списком ролей', () => {
     expect(codesOf({ groups: ['overlay'] })).toEqual(['role-place']);
     const unknown = read({ role: 'minicart' });
-    expect(unknown.ok ? [] : unknown.problems).toEqual([
-      problemLike('role-unknown', 'cart-drawer'),
-    ]);
+    expect(unknown.ok ? [] : unknown.problems).toEqual([problemLike('role-unknown', 'cart-drawer')]);
   });
 
   it('роль у глобального скрипта — manifest-invalid: места на странице у него нет', () => {
@@ -111,7 +103,11 @@ describe('список ревизии и место секции', () => {
     const drawer = manifestOf({ role: 'cart-drawer' });
     expect(['overlay', 'footer', 'home'].map((list) => sectionListAllowed(drawer, list))).toEqual([true, false, false]);
     const cart = manifestOf({ role: 'cart', groups: ['page'] });
-    expect(['page-cart', 'home', 'overlay'].map((list) => sectionListAllowed(cart, list))).toEqual([true, false, false]);
+    expect(['page-cart', 'home', 'overlay'].map((list) => sectionListAllowed(cart, list))).toEqual([
+      true,
+      false,
+      false,
+    ]);
   });
 });
 
@@ -131,7 +127,11 @@ describe('секция расширения', () => {
   });
 
   it('приём: роль у секции расширения — отказ; styles.css — file-unknown, отдельного кода нет (Р12а-6)', async () => {
-    const files = { 'section.json': manifestText({ role: 'cart-drawer' }), 'template.astro': '<p>Корзина</p>', 'styles.css': 'p{}' };
+    const files = {
+      'section.json': manifestText({ role: 'cart-drawer' }),
+      'template.astro': '<p>Корзина</p>',
+      'styles.css': 'p{}',
+    };
     const result = await prepareSection({ prefix: 'reviews', files });
     const codes = result.ok ? [] : result.problems.map((item) => item.code);
     expect(codes).toEqual(expect.arrayContaining(['file-unknown', 'role-not-allowed']));

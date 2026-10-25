@@ -22,6 +22,7 @@ import {
   RevisionMergeConflictError,
 } from "./content/store-content.port";
 import { SectionIdDuplicateError } from "./content/section-ids";
+import { RoleDuplicateError } from "./content/section-roles";
 
 /** Ошибка записи ревизии → устойчивый конверт RPC (шлюз отображает код в HTTP). */
 function revisionWriteFailure(e: any) {
@@ -44,6 +45,15 @@ function revisionWriteFailure(e: any) {
     return {
       success: false,
       code: "section-id-duplicate",
+      message: e.message,
+      duplicates: e.duplicates,
+    };
+  }
+  // Блок 12, часть 12а: второй экземпляр секции с ролью; шлюз отдаёт ответ как есть.
+  if (e instanceof RoleDuplicateError) {
+    return {
+      success: false,
+      code: "role-duplicate",
       message: e.message,
       duplicates: e.duplicates,
     };

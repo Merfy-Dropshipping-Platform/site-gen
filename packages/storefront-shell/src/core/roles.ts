@@ -1,7 +1,15 @@
 // Роли секций (блок 12 «Секций и SDK», 12.1; «Решил сам» пп. 1, 6, 15): список платформы — часть SDK ("sdk": 1), новая
 // роль — только новой версией SDK; своих ролей у мерчанта и расширений нет. Сборка ставит data-role на обёртку
 // экземпляра секции с ролью, ядро находит секцию по нему — имени секции оно не знает.
-export const SECTION_ROLES = ['cart', 'cart-drawer', 'cart-added', 'login', 'search', 'notices', 'cookie-banner'] as const;
+export const SECTION_ROLES = [
+  'cart',
+  'cart-drawer',
+  'cart-added',
+  'login',
+  'search',
+  'notices',
+  'cookie-banner',
+] as const;
 export type SectionRole = (typeof SECTION_ROLES)[number];
 export const ROLE_ATTRIBUTE = 'data-role';
 

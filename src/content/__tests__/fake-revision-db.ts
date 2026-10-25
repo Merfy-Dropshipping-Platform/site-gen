@@ -78,6 +78,8 @@ export function makeFakeRevisionDb(
   const revisions = new Map<string, FakeRevision>();
   const inPlaceUpdates: Array<{ id: unknown; data: unknown }> = [];
   const hooks: { beforeCas?: () => void } = {};
+  // Роли секций магазина (блок 12, часть 12а): строки storefront_section, которые читает DocumentAdapter.sectionRoles.
+  const sectionRoles: Array<{ name: string; role: string | null }> = [];
   let clock = 0;
 
   /**
@@ -183,7 +185,11 @@ export function makeFakeRevisionDb(
       from: (table: unknown) => ({
         where: (cond: unknown) =>
           rowsResult<unknown>(
-            table === schema.site ? selectSites(cond) : selectRevisions(cond),
+            table === schema.site
+              ? selectSites(cond)
+              : table === schema.storefrontSection
+                ? structuredClone(sectionRoles)
+                : selectRevisions(cond),
           ),
       }),
     };
@@ -223,6 +229,10 @@ export function makeFakeRevisionDb(
     revisions,
     inPlaceUpdates,
     hooks,
+    /** Роль секции магазина в storefront_section (блок 12, часть 12а); null — секция без роли. */
+    seedSectionRole(name: string, role: string | null) {
+      sectionRoles.push({ name, role });
+    },
     /**
      * Положить ревизию напрямую (стартовое состояние магазина). `siteId` —
      * ревизия ДРУГОГО магазина в той же базе (проверки изоляции): она не

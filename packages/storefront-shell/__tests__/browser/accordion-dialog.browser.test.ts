@@ -262,7 +262,9 @@ describe('dialog', () => {
 
 // Блок 10, часть 10а (Р10а-6): окно открывает событие SDK — копия на document.
 describe('dialog: open-on', () => {
-  const PANEL = (on: string) => `<merfy-section data-section="shop:cart-drawer" data-section-id="drawer" style="display:block">
+  const PANEL = (
+    on: string,
+  ) => `<merfy-section data-section="shop:cart-drawer" data-section-id="drawer" style="display:block">
   <div data-behavior="dialog" data-transition="drawer" data-open-on="${on}">
     <dialog data-part="content" id="panel" style="margin:0 0 0 auto;width:400px;height:100vh;max-height:none">
       <button data-part="close" id="close-panel">Скрыть</button>

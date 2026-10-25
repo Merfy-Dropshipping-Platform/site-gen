@@ -282,7 +282,12 @@ function pageOf(core: CoreHandle): KeyValue {
 }
 
 // Общее состояние модуля: сторы, очередь и хранилище номера.
-function runtimeOf(core: CoreHandle, state: Atom<CartState>, totals: Atom<CartTotals>, adding: Atom<number>): CartRuntime {
+function runtimeOf(
+  core: CoreHandle,
+  state: Atom<CartState>,
+  totals: Atom<CartTotals>,
+  adding: Atom<number>,
+): CartRuntime {
   return {
     core,
     state,

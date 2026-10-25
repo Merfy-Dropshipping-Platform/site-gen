@@ -69,7 +69,9 @@ export type ChangedItem = { readonly kind: 'done' } | { readonly kind: 'failure'
 
 // PATCH или DELETE строки: 200 — сделано; иначе — Failure по reasonOf (блок 10, Р10а-3).
 const changedOf = (reply: Reply, what: string): ChangedItem =>
-  reply.status === 200 ? { kind: 'done' } : { kind: 'failure', failure: failureOf(reasonOf(reply), `cart: ${what} — статус ${reply.status}`) };
+  reply.status === 200
+    ? { kind: 'done' }
+    : { kind: 'failure', failure: failureOf(reasonOf(reply), `cart: ${what} — статус ${reply.status}`) };
 
 // PATCH /store/carts/:id/items/:itemId { quantity } → 200; DELETE → 200. Иначе — Failure по reasonOf.
 export async function changeItem(api: CartApi, cartId: string, lineId: string, quantity: number): Promise<ChangedItem> {
@@ -83,4 +85,4 @@ export async function changeItem(api: CartApi, cartId: string, lineId: string, q
 export async function removeItem(api: CartApi, cartId: string, lineId: string): Promise<ChangedItem> {
   const reply = await requestJson(`${api.url}/store/carts/${cartId}/items/${lineId}`, { method: 'DELETE' });
   return changedOf(reply, 'удаление строки корзины');
-};
+}

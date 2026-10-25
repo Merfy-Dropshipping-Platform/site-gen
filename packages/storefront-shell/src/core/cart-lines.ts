@@ -37,7 +37,13 @@ function lineOfItem(item: Record<string, unknown>, currency: string): CartLine |
   const price: Money = { amount: item.unitPriceCents, currency };
   const total: Money = { amount: totalOf(item, item.unitPriceCents, item.quantity), currency };
   const title = typeof item.name === 'string' ? item.name : '';
-  const shown = { title, image: imageOf(item.imageUrl), options: optionsOf(item.options), total, gift: item.isBonus === true };
+  const shown = {
+    title,
+    image: imageOf(item.imageUrl),
+    options: optionsOf(item.options),
+    total,
+    gift: item.isBonus === true,
+  };
   return { id: item.id, productId: item.productId, variantId, quantity: item.quantity, price, ...shown };
 }
 

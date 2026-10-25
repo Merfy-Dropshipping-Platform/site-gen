@@ -157,9 +157,10 @@ async function cartFromCopy(rt: CartRuntime, conf: CartApi, copy: Handoff): Prom
   }
   rt.page.setItem(CART_ID_KEY, created.id);
   for (const line of copy.lines) {
-    const body = line.variantId === null
-      ? { product_id: line.productId, quantity: line.quantity }
-      : { product_id: line.productId, quantity: line.quantity, variant_id: line.variantId };
+    const body =
+      line.variantId === null
+        ? { product_id: line.productId, quantity: line.quantity }
+        : { product_id: line.productId, quantity: line.quantity, variant_id: line.variantId };
     const added = await addItem(conf, created.id, body);
     if (added.kind === 'failure') {
       console.error(`cart: возврат строки корзины после отказа оплаты — ${added.failure.code}`);

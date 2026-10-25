@@ -23,7 +23,8 @@ function headersOf(request: JsonRequest): Record<string, string> | null {
 // Тело запроса и заголовки: body — JSON; заголовков нет — их нет и в запросе.
 function initOf(request: JsonRequest, signal: AbortSignal): RequestInit {
   const headers = headersOf(request);
-  const base: RequestInit = headers === null ? { method: request.method, signal } : { method: request.method, signal, headers };
+  const base: RequestInit =
+    headers === null ? { method: request.method, signal } : { method: request.method, signal, headers };
   return request.body === undefined ? base : { ...base, body: JSON.stringify(request.body) };
 }
 

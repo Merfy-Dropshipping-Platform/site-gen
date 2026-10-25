@@ -53,10 +53,17 @@ describe('cart.change', () => {
   it('PATCH, потом GET: строка и итоги — из ответа; merfy:cart:change — после ответа', async () => {
     const { gateway, module, named } = await cartWithLine();
     gateway.answer('PATCH /store/carts/c-1/items/l-1', { status: 200, body: { item: serverItem('l-1', 'p12', 3) } });
-    gateway.answer('GET /store/carts/c-1', cartReply({ subtotalCents: 747000, totalCents: 747000 }, serverItem('l-1', 'p12', 3)));
+    gateway.answer(
+      'GET /store/carts/c-1',
+      cartReply({ subtotalCents: 747000, totalCents: 747000 }, serverItem('l-1', 'p12', 3)),
+    );
     const result = await module.change({ lineId: 'l-1', quantity: 3 });
     expect(result).toEqual({ ok: true, data: { ready: true, lines: [cartLine('l-1', 'p12', 3)] } });
-    expect(gateway.keys()).toEqual(['GET /store/carts/c-1', 'PATCH /store/carts/c-1/items/l-1', 'GET /store/carts/c-1']);
+    expect(gateway.keys()).toEqual([
+      'GET /store/carts/c-1',
+      'PATCH /store/carts/c-1/items/l-1',
+      'GET /store/carts/c-1',
+    ]);
     expect(gateway.calls[1]?.body).toEqual({ quantity: 3 });
     expect(module.$totals.get()).toMatchObject({ ready: true, subtotal: rub(747000), total: rub(747000) });
     expect(module.$total.get()).toEqual(rub(747000));
@@ -149,7 +156,10 @@ describe('cart.change', () => {
     await settle();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const result = await module.remove({ lineId: 'l-2' });
-    expect(result.ok ? null : result.error).toEqual({ code: 'invalid', message: 'cart.remove: подарок акции не меняется' });
+    expect(result.ok ? null : result.error).toEqual({
+      code: 'invalid',
+      message: 'cart.remove: подарок акции не меняется',
+    });
   });
 });
 

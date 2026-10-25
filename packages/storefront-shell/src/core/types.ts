@@ -187,7 +187,10 @@ export interface CartModule {
     args: { readonly productId: string; readonly variantId?: string; readonly quantity?: number },
     options?: ActionOptions,
   ): Promise<Result<CartState>>;
-  change(args: { readonly lineId: string; readonly quantity: number }, options?: ActionOptions): Promise<Result<CartState>>;
+  change(
+    args: { readonly lineId: string; readonly quantity: number },
+    options?: ActionOptions,
+  ): Promise<Result<CartState>>;
   remove(args: { readonly lineId: string }, options?: ActionOptions): Promise<Result<CartState>>;
   open(): Promise<Result<{ readonly drawer: boolean }>>; // Р10а-5
   checkout(): Promise<Result<null>>; // Р10а-7: переход на /checkout

@@ -41,7 +41,11 @@ describe('строки корзины', () => {
 
   it('подарок акции — gift: true', () => {
     const item = { ...serverItem('l-2', 'p12', 1), unitPriceCents: 0, totalCents: 0, isBonus: true };
-    expect(linesOf({ cart: CART, items: [item] }, 'RUB')?.[0]).toMatchObject({ gift: true, price: rub(0), total: rub(0) });
+    expect(linesOf({ cart: CART, items: [item] }, 'RUB')?.[0]).toMatchObject({
+      gift: true,
+      price: rub(0),
+      total: rub(0),
+    });
   });
 
   it('нет name, imageUrl, options, totalCents — пустое название, без фото и вариантов, сумма — цена × штуки', () => {

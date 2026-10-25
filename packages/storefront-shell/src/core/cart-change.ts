@@ -13,8 +13,7 @@ export interface ChangeArgs {
 export const remainText = (left: number): string => `Осталось ${left} шт. — больше нет в наличии`;
 
 const isLineId = (value: unknown): boolean => typeof value === 'string' && value !== '';
-const isQuantityFrom0 = (value: unknown): boolean =>
-  typeof value === 'number' && Number.isInteger(value) && value >= 0;
+const isQuantityFrom0 = (value: unknown): boolean => typeof value === 'number' && Number.isInteger(value) && value >= 0;
 
 // Проверка аргументов сразу, по порядку (п. 3): ошибка — invalid без запросов.
 function argsFailure(name: string, args: ChangeArgs): Failure | null {
@@ -142,7 +141,9 @@ function changeIn(
   return rt.enqueue(() => changeOnServer(rt, name, args, conf, diff, options));
 }
 
-export function changeInModule(rt: CartRuntime): (args: ChangeArgs, options?: ActionOptions) => Promise<Result<CartState>> {
+export function changeInModule(
+  rt: CartRuntime,
+): (args: ChangeArgs, options?: ActionOptions) => Promise<Result<CartState>> {
   return (args, options) => changeIn(rt, 'cart.change', args, options);
 }
 

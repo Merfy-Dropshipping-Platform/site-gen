@@ -51,7 +51,8 @@ function moduleWith(cartType: Record<string, string> | null = null, mode: Mode =
   return { module, ...handle };
 }
 const placeDrawer = (): void => {
-  document.body.innerHTML = '<div data-behavior="dialog" data-open-on="cart-open"><dialog data-part="content"></dialog></div>';
+  document.body.innerHTML =
+    '<div data-behavior="dialog" data-open-on="cart-open"><dialog data-part="content"></dialog></div>';
 };
 
 describe('cart.open', () => {
@@ -141,7 +142,10 @@ describe('заказ после оплаты', () => {
   const pending = (orderId: string) =>
     localStorage.setItem(PENDING_ORDER_KEY, JSON.stringify({ orderId, apiBase: 'https://evil.example', items: [] }));
   const handoff = (cartId: string) =>
-    localStorage.setItem(HANDOFF_KEY, JSON.stringify({ cartId, lines: [{ productId: 'p12', variantId: null, quantity: 2 }] }));
+    localStorage.setItem(
+      HANDOFF_KEY,
+      JSON.stringify({ cartId, lines: [{ productId: 'p12', variantId: null, quantity: 2 }] }),
+    );
   const status = (value: string) => ({ status: 200, body: { success: true, data: { status: value } } });
 
   it('таблица исходов — как у пяти тем', () => {
@@ -166,7 +170,11 @@ describe('заказ после оплаты', () => {
     watch(module.$count);
     await settle();
     expect(gateway.keys()).toEqual(['GET /orders/c-1/payment-status']);
-    expect([PENDING_ORDER_KEY, HANDOFF_KEY, CART_ID_KEY].map((key) => localStorage.getItem(key))).toEqual([null, null, null]);
+    expect([PENDING_ORDER_KEY, HANDOFF_KEY, CART_ID_KEY].map((key) => localStorage.getItem(key))).toEqual([
+      null,
+      null,
+      null,
+    ]);
     expect(module.$cart.get()).toEqual({ ready: true, lines: [] });
   });
 
@@ -227,7 +235,11 @@ describe('номер корзины в превью', () => {
     storage.setItem(CART_ID_KEY, 'c-2');
     storage.setItem('merfy:other', 'x');
     expect(postMessage.mock.calls).toEqual([[{ type: 'cart-id', id: 'c-2' }, '*']]);
-    const odd = previewCartStorage(pageStorage(window, 'preview'), { location: { search: '?merfy-cart=../x' }, parent: { postMessage } }, CART_ID_KEY);
+    const odd = previewCartStorage(
+      pageStorage(window, 'preview'),
+      { location: { search: '?merfy-cart=../x' }, parent: { postMessage } },
+      CART_ID_KEY,
+    );
     expect(odd.getItem(CART_ID_KEY)).toBeNull();
   });
 });

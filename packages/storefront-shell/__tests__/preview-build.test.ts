@@ -7,6 +7,7 @@ import { PREVIEW_FILE, buildPreview } from '../build/preview';
 import { SECTION_FAILURE_EVENT } from '../src/core/events';
 import {
   PREVIEW_BUNDLE_TAG_ID,
+  PREVIEW_LIST_EVENT,
   PREVIEW_REPLACE_EVENT,
   PREVIEW_UPDATE_EVENT,
   PREVIEW_UPDATED_EVENT,
@@ -58,5 +59,11 @@ describe('сборка скрипта превью', () => {
 
   it('имя сбоя экземпляра в протоколе превью — то же, что у ядра', () => {
     expect(SECTION_ERROR_EVENT).toBe(SECTION_FAILURE_EVENT);
+  });
+});
+
+describe('событие списка в превью (блок 11 «Секций и SDK», часть 11а-2)', () => {
+  it('имя события — в пространстве merfy:preview', () => {
+    expect(PREVIEW_LIST_EVENT).toBe('merfy:preview:list');
   });
 });

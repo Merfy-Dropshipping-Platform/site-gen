@@ -2,6 +2,7 @@ import {
   BLOCK_DESELECT_EVENT,
   BLOCK_SELECT_EVENT,
   MESSAGE_MAX_LENGTH,
+  PREVIEW_LIST_EVENT,
   PREVIEW_UPDATE_EVENT,
   PREVIEW_UPDATED_EVENT,
   SECTION_ERROR_EVENT,
@@ -34,6 +35,8 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   // Часть 6в: события выбора блока для кода секции — тоже из протокола превью.
   var SELECT_EVENT = ${JSON.stringify(BLOCK_SELECT_EVENT)};
   var DESELECT_EVENT = ${JSON.stringify(BLOCK_DESELECT_EVENT)};
+  // Блок 11, часть 11а-2: модуль «Каталог» просит список с параметрами — тоже из протокола превью.
+  var LIST_EVENT = ${JSON.stringify(PREVIEW_LIST_EVENT)};
   // Кнопки и поля секции — как в превью пяти тем (src/services/preview.service.ts): нажатие — коду секции, выбора нет.
   var CONTROLS = 'button, input, select, textarea, label[for], [data-action]';
   // «Ошибка в скрипте секции «» — escape-последовательностями, как подсказки кнопок рамки.
@@ -62,6 +65,8 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var readySent = 0;
   var tickets = {};
   var hashes = {};
+  // Тип и props блоков из reconcile и update-block (блок 11): по ним блок запрашивается заново с параметрами списка.
+  var known = {};
   function post(message) {
     window.parent.postMessage(message, '*');
   }
@@ -206,8 +211,10 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     return !node.dispatchEvent(new CustomEvent(UPDATE_EVENT, { bubbles: true, cancelable: true, detail: detail }));
   }
   // Тело запроса блока: экземпляр; меню ревизии и правки настроек темы (часть 4) — если конструктор их прислал.
-  function fetchBlock(instance, props) {
+  // list (блок 11, часть 11а-2) — параметры списка из события модуля «Каталог»; нет — без ключа.
+  function fetchBlock(instance, props, list) {
     var payload = { instance: instance };
+    if (typeof list === 'string') payload.list = list;
     if (props && Array.isArray(props.menus)) payload.menus = props.menus;
     if (props && props.theme && typeof props.theme === 'object') payload.theme = props.theme;
     // Часть 8г-2 блока 8: страница и запись из адреса превью (?page=…&record=…) — те же, что у всей страницы превью.
@@ -242,6 +249,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   }
   function updateBlock(data) {
     var instance = instanceOf(data.blockId, data.blockType, data.props);
+    known[instance.id] = { type: data.blockType, props: data.props };
     var ticket = (tickets[instance.id] || 0) + 1;
     tickets[instance.id] = ticket;
     fetchBlock(instance, data.props)
@@ -298,6 +306,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     var wanted = {};
     blocks.forEach(function (block) {
       wanted[block.id] = true;
+      known[block.id] = { type: block.type, props: block.props };
     });
     all().forEach(function (node) {
       if (!wanted[node.getAttribute('data-section-id')]) node.parentNode.removeChild(node);
@@ -424,6 +433,26 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   document.documentElement.addEventListener('mouseleave', function () {
     hinted = null;
     mark('data-merfy-block-hint', []);
+  });
+  // Список с параметрами (блок 11 «Секций и SDK», часть 11а-2, Р11а-20): модуль «Каталог» шлёт событие на узле внутри
+  // своей секции. Блок известен — событие отменяется, блок запрашивается с list; ответ на старый запрос отбрасывается,
+  // как у update-block; стили блока — сразу, HTML секции — модулю в detail.reply (вставляет он сам).
+  document.addEventListener(LIST_EVENT, function (event) {
+    var node = event.target && event.target.closest ? event.target.closest('merfy-section[data-section-id]') : null;
+    var id = node ? node.getAttribute('data-section-id') : null;
+    var block = id ? known[id] : null;
+    var detail = event.detail;
+    if (!block || !detail || typeof detail.list !== 'string' || typeof detail.reply !== 'function') return;
+    event.preventDefault();
+    var ticket = (tickets[id] || 0) + 1;
+    tickets[id] = ticket;
+    fetchBlock(instanceOf(id, block.type, block.props), block.props, detail.list)
+      .then(function (answer) {
+        if (tickets[id] !== ticket || !byId(id) || !nodeOf(answer.html)) return;
+        setCss(id, answer.css);
+        detail.reply(answer.html);
+      })
+      .catch(failed);
   });
   window.addEventListener('message', function (event) {
     var data = event.data;

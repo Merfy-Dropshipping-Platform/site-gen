@@ -11,6 +11,7 @@ import {
 } from '@merfy/storefront-build';
 import { withSectionRenderer } from '@merfy/storefront-sections';
 import { hexOf, recordDrawnPage, type ObjectStore } from '@merfy/storefront-storage';
+import { LIST_ARGS_MAX, listAt } from './list-rpc';
 import { z } from 'zod';
 import type { LoadedTheme } from './build-job';
 import { errorText } from './errors';
@@ -24,7 +25,7 @@ import type { SdkDocs } from './sdk-docs';
 import { SECTION_BODY_LIMIT_BYTES, SECTION_TOOL_ROUTES, sectionTool, type SectionToolsDeps } from './section-tools';
 
 // Дорисовка мимо очереди (design.md блока 6, В6-2, вариант 2; Св-1 В): раздача (блок 5, nginx-minio-proxy,
-// storefront/) на промахе зовёт GET /draw?shop&build&path&render&theme и ждёт страницу. Свои места — не места сборок;
+// storefront/) на промахе зовёт GET /draw?shop&build&path&render&theme[&list] и ждёт страницу. Свои места — не места сборок;
 // мест нет или не успели за тайм-аут — 503, страница придёт со следующей сборкой. Версия живой сборки не та, что у
 // сборщика, — 409: рисовать чужой версией нельзя. Такой страницы у темы нет — 404. Дорисованная страница ложится в
 // список дорисовок сборки (recordDrawnPage блока 5), заголовок X-Merfy-Hash — её отпечаток.
@@ -61,6 +62,9 @@ const drawQuerySchema = z.object({
   path: z.string().startsWith('/'),
   render: z.string().min(1),
   theme: z.string().min(1),
+  // Блок 11 «Секций и SDK», часть 11а-2: параметры списка в каноническом виде (nginx route.js, listArgs); есть —
+  // страница рисуется с ними и в список дорисовок не идёт.
+  list: z.string().min(1).max(LIST_ARGS_MAX).optional(),
 });
 type DrawQuery = z.infer<typeof drawQuerySchema>;
 
@@ -121,9 +125,16 @@ async function draw(deps: DrawDeps, query: DrawQuery): Promise<DrawAnswer> {
   if (snapshot.inputs.theme.version !== label.version) return { status: 409, body: TEXT.version };
   const theme = await deps.catalog.themeAt(label.id, label.version);
   const inputs = parseBuildInputs(snapshot.inputs);
+  // Параметры списка (блок 11, часть 11а-2): товары страницы и значения фильтров — у сервиса product.
+  const list =
+    query.list === undefined
+      ? undefined
+      : await listAt(deps.snapshot.products, query.shop, inputs, query.path, theme.build, query.list);
   const page = await withSectionRenderer((render) =>
-    renderShopPage(inputs, query.path, theme.build, livePage(deps, query, snapshot.assets, render)),
+    renderShopPage(inputs, query.path, theme.build, livePage(deps, query, snapshot.assets, render), list),
   );
+  // Страница с параметрами списка — ответ этому покупателю: без списка дорисовок и без отпечатка (Р11а-18).
+  if (query.list !== undefined) return { status: 200, body: new TextDecoder().decode(page.file.content) };
   const drawn = { shop: query.shop, build: query.build, row: page.row, content: page.file.content };
   await recordDrawnPage(deps.store, drawn);
   return { status: 200, body: new TextDecoder().decode(page.file.content), hash: hexOf(page.row.hash) };

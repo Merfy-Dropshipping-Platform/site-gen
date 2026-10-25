@@ -129,3 +129,29 @@ describe('рендер по запросу страницы записи (бло
     expect(await response.text()).toContain('Мы бережём данные покупателей');
   });
 });
+
+describe('дорисовка с параметрами списка (блок 11 «Секций и SDK», часть 11а-2)', () => {
+  // Подставной секции с per-page на стенде нет, а фильтрам нужен product.findAll — их проверяет list-rpc.test.ts;
+  // здесь — граница длины list (секция стенда не добавляется без правки чужих файлов).
+  it('list длиннее 2048 знаков — 400; короткий list — 200 без записи в список дорисовок', async () => {
+    await serve();
+    const own = await insertSite(harness.db, { name: 'Списки' });
+    const drawList = (path: string, list: string): Promise<Response> => {
+      const query = new URLSearchParams({
+        shop: own.id,
+        build: String(BUILD),
+        path,
+        render: RENDER_HASH,
+        theme: 'nova@0.0.1',
+        list,
+      });
+      return fetch(`${base}/draw?${query.toString()}`);
+    };
+    expect((await drawList('/', 'q='.padEnd(2049, 'а'))).status).toBe(400);
+    const response = await drawList('/', 'page=2');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('x-merfy-hash')).toBeNull();
+    const list = await readObject(harness.store, drawnKey(own.id, BUILD), parseDrawnList);
+    expect(list?.value.rows['/']).toBeUndefined();
+  });
+});

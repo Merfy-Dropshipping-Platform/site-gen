@@ -100,6 +100,8 @@ const API = [
   'catalogUrlOf',
   'listSourceAt',
   'collectionIdsOf',
+  'listSourceOf',
+  'pageListOf',
   'EMPTY_LIST_QUERY',
   'LIST_SORTS',
   'filtersRpcArgs',

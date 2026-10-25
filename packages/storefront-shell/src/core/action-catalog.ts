@@ -50,6 +50,12 @@ export const ACTIONS = {
       'выбрать значение группы вариантов товара; аргументы { productId, group, value } — id из JSON вариантов страницы, ответ — Variant, потом merfy:variant:change',
     markup: { 'product-id': 'text', group: 'text', value: 'text' },
   },
+  // Блок 11, часть 11б: кнопка «Поиск» «Шапки» — панель секции «Поиск» или страница каталога.
+  'search.open': {
+    module: 'search',
+    about: 'открыть панель поиска: есть на странице — merfy:search:open, нет — переход на /catalog; ответ — { panel }',
+    markup: {},
+  },
 } as const satisfies Readonly<Record<string, ActionSpec>>;
 
 export type ActionName = keyof typeof ACTIONS;

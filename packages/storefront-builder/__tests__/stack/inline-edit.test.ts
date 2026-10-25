@@ -1,6 +1,6 @@
 import type { Server } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import type { StandPageLocals } from '@merfy/storefront-build';
+import type { ShopPageLocals, StandPageLocals } from '@merfy/storefront-build';
 import { NO_MIGRATIONS, panelForTheme, parsePanel, parseTheme } from '@merfy/tokens';
 import { acceptSection, readSectionFolder, type Door } from '@merfy/storefront-sections';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -27,9 +27,13 @@ let server: Server;
 let base: string;
 
 const tokens = parseTheme(novaTheme.tokens);
-const renderStand = (locals: StandPageLocals): Promise<string> =>
+// Стенд превью передаёт локалы вида страницы (ShopPageLocals, с секциями), тип входа PreviewTheme — StandPageLocals:
+// объединение пропускает и то и другое, секции читаются только у локалов страницы.
+const renderStand = (locals: StandPageLocals | ShopPageLocals): Promise<string> =>
   Promise.resolve(
-    `<!doctype html><html><head><meta charset="utf-8"></head><body><main>${locals.sections.join('')}</main></body></html>`,
+    `<!doctype html><html><head><meta charset="utf-8"></head><body><main>${
+      'sections' in locals ? locals.sections.join('') : ''
+    }</main></body></html>`,
   );
 const NOVA: PreviewTheme = {
   version: '0.0.3',
@@ -59,7 +63,7 @@ async function serve(): Promise<void> {
     snapshot: harness.deps.snapshot,
     themes: harness.deps.themes,
     catalog: harness.catalog,
-    renderHash: harness.deps.renderHash,
+    renderHash: harness.deps.snapshot.platform.renderHash,
     slots: createSlots(1),
     timeoutMs: 3_000,
     log: harness.deps.log,

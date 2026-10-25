@@ -86,11 +86,13 @@ const TEST_CORE = [
   "export const cart = { name: 'cart' };",
   "export const favorites = { name: 'favorites' };",
   "export const analytics = { name: 'analytics' };",
+  // Оформление заказа (блок 10а): страница /checkout собирает бандл с частью checkout из ядра.
+  "export const checkout = { name: 'checkout' };",
 ].join('\n');
 export const TEST_SHELL: ShellBuild = {
   version: '0.1.0',
   hash: sha256(TEST_CORE),
-  parts: ['auth', 'cart', 'favorites'],
+  parts: ['auth', 'cart', 'favorites', 'checkout'],
   code: TEST_CORE,
 };
 

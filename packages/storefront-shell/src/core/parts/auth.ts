@@ -223,6 +223,13 @@ function returnTo(rt: AuthRuntime): void {
   navigation.go(safeReturnPath(redirect));
 }
 
+// Отказ invalid без запроса: нет конфига витрины или тело входа пустое.
+function invalidVerify(rt: AuthRuntime, text: string, options?: ActionOptions): Result<never> {
+  const failure = failureOf('invalid', text);
+  reportFailure(rt.core, failure, options);
+  return failed(failure);
+}
+
 // Порядок входа (Р10в-4): токен → слияние избранного → $customer → merfy:auth:signin → возврат.
 async function verifyOf(
   rt: AuthRuntime,
@@ -230,17 +237,10 @@ async function verifyOf(
   options?: ActionOptions,
 ): Promise<Result<{ readonly customer: Customer }>> {
   const conf = shopApiOf(rt.core);
-  if (conf === null) {
-    const failure = failureOf('invalid', 'auth.verify: нужен конфиг витрины');
-    reportFailure(rt.core, failure, options);
-    return failed(failure);
-  }
+  if (conf === null) return invalidVerify(rt, 'auth.verify: нужен конфиг витрины', options);
   const body = verifyBody(args, conf.storeId);
-  if (body === null) {
-    const failure = failureOf('invalid', 'auth.verify: код из шести цифр, токен ссылки; нужен конфиг витрины');
-    reportFailure(rt.core, failure, options);
-    return failed(failure);
-  }
+  if (body === null)
+    return invalidVerify(rt, 'auth.verify: код из шести цифр, токен ссылки; нужен конфиг витрины', options);
   const reply = await requestJson(authUrl(conf, 'magic/verify'), { method: 'POST', body });
   const customer = isOkReply(reply) ? customerOf(reply.body) : null;
   const token = isOkReply(reply) ? sessionTokenOf(reply.body) : null;

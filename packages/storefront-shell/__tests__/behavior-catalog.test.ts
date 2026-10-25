@@ -32,7 +32,7 @@ function sectionHtml(view: View): string {
 const pageHtml = (view: View, list: string | null = null): string =>
   `<!doctype html><html><head>${list === null ? '' : `<meta name="merfy-list" content="${list}">`}</head><body><main>${sectionHtml(view)}</main></body></html>`;
 
-type Answer = string | 'network' | 'hang';
+type Answer = 'network' | 'hang' | (string & {});
 interface Asked {
   readonly path: string;
   readonly signal: AbortSignal | null;

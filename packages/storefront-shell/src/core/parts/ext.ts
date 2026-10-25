@@ -213,6 +213,23 @@ function productStoreOf(spec: StoreSpec): ProductStore {
   };
 }
 
+// Подписка фасада товара: первый слушатель включает обновление, последний — выключает.
+function productWatchOf(state: ExtensionState, store: ProductStore, productId: string): () => void {
+  store.pending.add(productId);
+  store.mounted += 1;
+  if (store.stopListeners === null)
+    store.stopListeners = listenRefresh(refreshEvents(store.spec), () => rereadProducts(state, store));
+  scheduleFlush(state, store);
+  return (): void => {
+    store.pending.delete(productId);
+    store.mounted -= 1;
+    if (store.mounted === 0 && store.stopListeners !== null) {
+      store.stopListeners();
+      store.stopListeners = null;
+    }
+  };
+}
+
 // Фасад товара: один на id, заморожен и зарегистрирован — ctx.watch его принимает (Р9в-10).
 function productFacadeOf(
   state: ExtensionState,
@@ -229,21 +246,7 @@ function productFacadeOf(
   if (cached !== undefined) return cached;
   const one = atom<ExtValue>(null);
   store.atoms.set(productId, one);
-  onMount(one, () => {
-    store.pending.add(productId);
-    store.mounted += 1;
-    if (store.stopListeners === null)
-      store.stopListeners = listenRefresh(refreshEvents(store.spec), () => rereadProducts(state, store));
-    scheduleFlush(state, store);
-    return (): void => {
-      store.pending.delete(productId);
-      store.mounted -= 1;
-      if (store.mounted === 0 && store.stopListeners !== null) {
-        store.stopListeners();
-        store.stopListeners = null;
-      }
-    };
-  });
+  onMount(one, () => productWatchOf(state, store, productId));
   const facade: ReadableStore<ExtValue> = Object.freeze({ get: (): ExtValue => valueOf(one) });
   registerFacade(facade, one);
   store.facades.set(productId, facade);

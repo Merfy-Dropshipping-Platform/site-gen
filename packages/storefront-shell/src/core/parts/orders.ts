@@ -179,13 +179,16 @@ function guestFailure(rt: OrdersRuntime, author: string, options?: ActionOptions
   return failWith(rt, failureOf('unauthorized', author), options);
 }
 
+// Массив неизвестной формы: Array.isArray на unknown сужает до any[], свой предикат — до readonly unknown[].
+const isUnknownList = (value: unknown): value is readonly unknown[] => Array.isArray(value);
+
 // Список из ответа: массив или { items } (Р10в-7).
 function listItemsOf(reply: Reply): readonly unknown[] | null {
   if (!isOkReply(reply)) return null;
   const data: unknown = dataOf(reply);
-  if (Array.isArray(data)) return data;
+  if (isUnknownList(data)) return data;
   const items: unknown = isRecord(data) ? data.items : null;
-  return Array.isArray(items) ? items : null;
+  return isUnknownList(items) ? items : null;
 }
 
 async function listOf(

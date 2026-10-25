@@ -35,6 +35,7 @@ function coreWith(pageId = 'home', mode: 'live' | 'preview' = 'live') {
   const base = storefrontConfig(mode);
   const handle = fakeCore(mode, { ...base, page: { id: pageId, path: '/' } });
   let fav: FavoritesModule | null = null;
+  const replaced: { -readonly [K in ModuleName]?: Modules[K] } = {};
   const signinAt: number[] = [];
   const calls = (): number => vi.mocked(fetch).mock.calls.length;
   const core: CoreHandle = {
@@ -44,11 +45,13 @@ function coreWith(pageId = 'home', mode: 'live' | 'preview' = 'live') {
       handle.core.emit(name, detail);
     },
     part: <N extends ModuleName>(name: N): Modules[N] => {
-      if (name !== 'favorites' || fav === null) return handle.core.part(name);
-      return fav as unknown as Modules[N];
+      const own: Modules[N] | undefined = replaced[name];
+      if (own !== undefined) return own;
+      return handle.core.part(name);
     },
   };
   fav = favorites.create(core);
+  replaced.favorites = fav;
   return { core, fav, signinAt, named: handle.named };
 }
 

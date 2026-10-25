@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ACTIONS, MODULE_NAMES, markupParams } from '../src/core/action-catalog';
 import { CUSTOMER_TOKEN_KEY } from '../src/core/customer-token';
 import { ORDER_MISSING_TEXT, orderOf, orders, shipmentCancellable } from '../src/core/parts/orders';
-import { SHOP_ID, fakeCore, fakeGateway } from './sdk-support';
+import { SHOP_ID, addressOf, fakeCore, fakeGateway } from './sdk-support';
 
 // Заказы покупательницы (блок 10 «Секций и SDK», 10.8, «Решил сам» п. 20; часть 10в, Р10в-7, Р10в-8): /store/orders
 // шлюза с токеном; вид заказа — как у страницы заказа flux; «Отменить» — по статусу и правилу перевозчика.
@@ -62,7 +62,8 @@ describe('заказы', () => {
         ],
       },
     });
-    const url = new URL(String(vi.mocked(fetch).mock.calls[0]?.[0]));
+    const first: string | URL | Request | undefined = vi.mocked(fetch).mock.calls[0]?.[0];
+    const url = new URL(addressOf(first ?? ''));
     expect([url.searchParams.get('store_id'), url.searchParams.get('take')]).toEqual([SHOP_ID, '50']);
     expect(vi.mocked(fetch).mock.calls[0]?.[1]?.headers).toEqual({ authorization: `Bearer ${TOKEN}` });
     const second = await module.list();

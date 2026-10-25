@@ -59,6 +59,14 @@ const TEMPLATES = [
   system("blog", "Блог", "/blogs/:slug"),
   system("article", "Запись блога", "/blogs/:blog/:slug"),
   system("policy", "Политика", "/legal/:slug"),
+  // Особые страницы блока 10 (часть 10а, Р10а-14): строки ревизии — прежние шесть полей, копий адресов в них нет.
+  system("page-cart", "Корзина", "/cart"),
+  system("page-checkout", "Оформление заказа", "/checkout"),
+  system("page-checkout-result", "Спасибо за заказ", "/checkout-result"),
+  system("page-profile", "Профиль", "/account/profile"),
+  system("page-wishlist", "Избранное", "/wishlist"),
+  system("page-orders", "Заказы", "/account/orders"),
+  system("page-login", "Вход", "/login"),
 ];
 const TEMPLATE_TREES = Object.fromEntries(
   TEMPLATES.map((page) => [page.id, tree(page.name)]),
@@ -88,6 +96,13 @@ describe("особые страницы новой темы", () => {
       "/catalog",
       "/blogs",
       "/legal",
+      "/cart",
+      "/checkout",
+      "/checkout-result",
+      "/account",
+      "/wishlist",
+      "/login",
+      "/verify",
       "/404",
     ]);
     expect([

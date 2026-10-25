@@ -8,7 +8,15 @@ import { readNewThemeIds } from "../storefront-handoff/storefront-handoff.servic
 export const SPECIAL_PAGES_FILE =
   "packages/storefront-build/special-pages.json";
 
-export type SpecialPage = { id: string; name: string; slug: string };
+export type SpecialPage = {
+  id: string;
+  name: string;
+  slug: string;
+  // Блок 10, часть 10а (Р10а-15): та же страница ещё по этим адресам; строка ревизии — прежние шесть полей, без копий.
+  aliases?: string[];
+  // Страница не из секций — её пишет сборка (оформление заказа и его результат).
+  sections?: false;
+};
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -25,6 +33,9 @@ function readString(record: UnknownRecord, field: string, at: number): string {
   return value;
 }
 
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === "string");
+
 function toSpecialPage(row: unknown, at: number): SpecialPage {
   if (!isRecord(row))
     throw new Error(`${SPECIAL_PAGES_FILE}: строка ${at} — не объект`);
@@ -32,6 +43,9 @@ function toSpecialPage(row: unknown, at: number): SpecialPage {
     id: readString(row, "id", at),
     name: readString(row, "name", at),
     slug: readString(row, "slug", at),
+    // Блок 10, часть 10а (Р10а-15): копии адресов — статические; сборка проверяет список схемой.
+    ...(isStringArray(row.aliases) ? { aliases: row.aliases } : {}),
+    ...(row.sections === false ? { sections: false as const } : {}),
   };
 }
 
@@ -49,11 +63,16 @@ export const SPECIAL_PAGES: readonly SpecialPage[] = readSpecialPages(
 export const SPECIAL_PAGE_IDS: ReadonlySet<string> = new Set(
   SPECIAL_PAGES.map((page) => page.id),
 );
-// Занятые адреса — как SPECIAL_PAGE_SLUGS сборки (packages/storefront-build/src/special-pages.ts): у образца шаблона —
-// первая часть до «/:».
-const takenSlug = (slug: string): string => slug.split("/:")[0];
+// Занятые адреса — как SPECIAL_PAGE_SLUGS сборки (packages/storefront-build/src/special-pages.ts): первая часть
+// адреса каждой страницы и каждой копии, без повторов, по порядку списка.
+const addressesOf = (page: SpecialPage): string[] => [
+  page.slug,
+  ...(page.aliases ?? []),
+];
+const firstSegment = (address: string): string =>
+  `/${address.slice(1).split("/")[0]}`;
 export const SPECIAL_PAGE_SLUGS: ReadonlySet<string> = new Set(
-  SPECIAL_PAGES.map((page) => takenSlug(page.slug)),
+  SPECIAL_PAGES.flatMap(addressesOf).map(firstSegment),
 );
 
 const NEW_THEME_IDS = readNewThemeIds(process.cwd());

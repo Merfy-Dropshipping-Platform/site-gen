@@ -321,4 +321,10 @@ export const auth: SdkPart<'auth', AuthModule> = {
       updateProfile: (args, options) => updateProfileOf(rt, args, options),
     };
   },
+  markup: {
+    signout: {
+      params: [],
+      call: (api: AuthModule): Promise<Result<unknown>> => api.signout(),
+    },
+  },
 };

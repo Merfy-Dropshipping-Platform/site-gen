@@ -372,6 +372,7 @@ export interface Modules {
   readonly consent: ConsentModule;
   readonly favorites: FavoritesModule;
   readonly auth: AuthModule;
+  readonly orders: OrdersModule;
   readonly newsletter: NewsletterModule;
   // Блок 11 «Секций и SDK», часть 11б.
   readonly variants: VariantsModule;

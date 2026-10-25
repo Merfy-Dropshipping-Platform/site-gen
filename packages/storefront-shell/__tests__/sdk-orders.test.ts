@@ -165,3 +165,19 @@ describe('таблица действий и модули блока 10в', () =
     expect(MODULE_NAMES).toContain('orders');
   });
 });
+
+// Договор RPC платформы (проверка dev 25.10): успех — любой 2xx с success: true; POST …/cancel шлюза отвечает 201.
+describe('успех ответа — любой 2xx, не только 200', () => {
+  it('cancel: 201 — отмена прошла, заказ прочитан заново', async () => {
+    localStorage.setItem(CUSTOMER_TOKEN_KEY, TOKEN);
+    const gateway = fakeGateway();
+    gateway.answer('POST /store/orders/1042/cancel', { status: 201, body: { success: true } });
+    gateway.answer('GET /store/orders/1042', {
+      status: 200,
+      body: { success: true, data: { ...ORDER, status: 'cancelled' } },
+    });
+    const module = orders.create(fakeCore().core);
+    const result = await module.cancel({ number: '1042', reason: 'Передумала' }, { quiet: true });
+    expect(result.ok ? result.data.order.statusText : null).toBe('Отменён');
+  });
+});

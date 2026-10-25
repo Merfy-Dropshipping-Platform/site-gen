@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 import standInputsJson from '../fixtures/stand-inputs.json';
 import { buildStorefront, type ThemeBuild } from '../src/build';
 import { CHECKOUT_COLOR_VARS, checkoutVarsCss } from '../src/checkout-css';
-import { CHECKOUT_PAGES } from '../src/checkout-pages';
+import { checkoutFiles, CHECKOUT_PAGES } from '../src/checkout-pages';
+import { LIVE_PAGE, NO_SECTIONS, type PageRender } from '../src/sections-render';
+import { changedInputs } from './support';
 import type { BuildFile } from '../src/client-files';
 import { routeOf } from '../src/routes';
+import type { CheckoutBlock } from '../src/inputs';
 import { standInputs } from './support';
 import { ASSETS, codeInputs } from './support-code';
 import { fakeRender, novaTokens } from './support-theme';
@@ -46,6 +49,45 @@ describe('страницы оформления', () => {
     expect(bundleOf('checkout/index.html')).toMatch(CHECKOUT_PART);
     expect(bundleOf('checkout-result/index.html')).not.toMatch(CHECKOUT_PART);
     expect(bundleOf('index.html')).not.toMatch(CHECKOUT_PART);
+  });
+});
+
+// Свойства блоков «Оформления заказа» по режиму (блок 10 «Секций и SDK», часть 10а, Р10а-19): на витрине действует
+// только «Шапка оформления», в превью — все четыре блока, как на проде.
+describe('свойства блоков оформления по режиму', () => {
+  const PREVIEW_PAGE: PageRender = { sections: NO_SECTIONS, mode: 'preview' };
+  const BLOCKS: CheckoutBlock[] = [
+    { type: 'CheckoutHeader', props: { siteTitle: 'Магазин стены' } },
+    { type: 'CheckoutLayout', props: { summaryPosition: 'left' } },
+    { type: 'CheckoutForm', props: { requirePhone: true } },
+    { type: 'CheckoutSummary', props: { showNotes: true } },
+  ];
+
+  it('в превью — все четыре блока, на витрине — только «Шапка оформления»', async () => {
+    const seen: string[] = [];
+    const theme: ThemeBuild = {
+      tokens: novaTokens,
+      clientFiles: [],
+      render: (path, locals) => {
+        seen.push(`${path} ${JSON.stringify(locals.checkout)}`);
+        return Promise.resolve('<html><body>оформление</body></html>');
+      },
+    };
+    const inputs = changedInputs((copy) => {
+      copy.revision.checkout = { blocks: BLOCKS };
+    });
+    await checkoutFiles(inputs, theme, PREVIEW_PAGE);
+    await checkoutFiles(inputs, theme, LIVE_PAGE);
+    const [previewCheckout, , liveCheckout] = seen;
+    expect(seen).toHaveLength(4);
+    expect(previewCheckout ?? '').toContain('"siteTitle":"Магазин стены"');
+    expect(previewCheckout ?? '').toContain('"summaryPosition":"left"');
+    expect(previewCheckout ?? '').toContain('"requirePhone":true');
+    expect(previewCheckout ?? '').toContain('"showNotes":true');
+    expect(liveCheckout ?? '').toContain('"siteTitle":"Магазин стены"');
+    expect(liveCheckout ?? '').not.toContain('"summaryPosition"');
+    expect(liveCheckout ?? '').not.toContain('"requirePhone"');
+    expect(liveCheckout ?? '').not.toContain('"showNotes"');
   });
 });
 

@@ -16,6 +16,7 @@ export type { AnimateOptions, Animation, Bezier, EasingName, KeyframeValue, Keyf
 export { newsletter } from './parts/newsletter';
 export { variants } from './parts/variants';
 export { search } from './parts/search';
+export { catalog } from './parts/catalog';
 // Блок 11 «Секций и SDK», часть 11б: типы модулей вариантов, поиска и каталога; части — в задачах Б11б-3…Б11б-5.
 export type {
   CatalogFilters,

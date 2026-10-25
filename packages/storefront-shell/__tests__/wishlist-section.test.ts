@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import headerScript from '../../storefront-sections/fixtures/shop/header/script';
 import wishlistScript from '../sections/wishlist/script';
+import { auth } from '../src/core/parts/auth';
 import { cart } from '../src/core/parts/cart';
 import { FAVORITES_KEY, favorites } from '../src/core/parts/favorites';
 import { start, type StartedCore } from '../src/core/start';
@@ -116,7 +117,7 @@ describe('«Шапка»: избранное', () => {
       '<a href="/wishlist">Избранное <span data-ref="favorites-count" hidden>0</span></a>' +
         '<a href="/cart" data-action="cart.open">Корзина <span data-ref="cart-count" hidden>0</span></a>',
     );
-    core = start({ parts: [cart, favorites], sections: [entry('shop:header', headerScript, { uses: ['cart', 'favorites'] })] });
+    core = start({ parts: [cart, favorites, auth], sections: [entry('shop:header', headerScript, { uses: ['cart', 'favorites', 'auth'] })] });
     await settle();
     expect(shown(header, 'favorites-count')).toEqual(['2']);
     expect(header.querySelector('[data-ref="cart-count"]')?.hasAttribute('hidden')).toBe(true);

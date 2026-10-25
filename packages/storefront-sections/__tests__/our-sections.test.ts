@@ -72,3 +72,23 @@ describe('наши секции блока 10б — проверка при со
   });
 });
 
+
+// Блок 10, часть 10в: вход и кабинет — те же правила, что у секции мерчанта.
+describe('наши секции блока 10в — проверка при сохранении', () => {
+  it.each([
+    ['login', 'shop:login', ['auth'], undefined],
+    ['account', 'shop:account', ['auth'], ['scheme']],
+    ['orders', 'shop:orders', ['orders'], ['scheme']],
+  ])('%s: страница, одна на список, свой модуль', async (folder, name, uses, wrapper) => {
+    const { problems, section } = await prepared(folder);
+    expect(problems).toEqual([]);
+    expect([section?.name, section?.warnings, section?.manifest.groups, section?.manifest.limit]).toEqual([name, [], ['page'], 1]);
+    expect(section?.scriptMeta.uses).toEqual(uses);
+    expect(section?.manifest.wrapper).toEqual(wrapper);
+  });
+
+  it('«Шапка» с auth — без отказов', async () => {
+    const { problems } = await prepared('../../storefront-sections/fixtures/shop/header');
+    expect(problems).toEqual([]);
+  });
+});

@@ -8,9 +8,9 @@ export const LIST_ADDRESS_PARAMS: readonly string[] = ['q', 'collection'];
 export const SCROLL_MARGIN = '200px';
 const PAGE_PATH = /\/page\/(\d+)$/;
 
-// Выбраны ли параметры списка, кроме q, collection и номера.
-const filtersChosen = (url: URL): boolean =>
-  [...url.searchParams.keys()].some((name) => name !== 'page' && !LIST_ADDRESS_PARAMS.includes(name));
+// Есть ли в адресе параметры списка, кроме номера. С ними, как на проде (факт 18; приёмка блока 11, 25.10), номер
+// страницы в адрес при листании не попадает: строки дописываются без смены адреса.
+const filtersChosen = (url: URL): boolean => [...url.searchParams.keys()].some((name) => name !== 'page');
 
 // Есть ли у запроса параметры списка, кроме номера: ответ тогда — от рисовальщика с <meta name="merfy-list">.
 export const listParamsIn = (url: URL): boolean => [...url.searchParams.keys()].some((name) => name !== 'page');
@@ -165,7 +165,15 @@ function load(session: Session, how: How, url: URL): void {
 
 function listenPaging(session: Session): void {
   const paging = session.host.params.paging;
-  if (paging === 'pages') return;
+  if (paging === 'pages') {
+    // В режиме номеров листают ссылки номеров: «Показать ещё» и «Показать предыдущие» спрятаны, как на проде
+    // (приёмка блока 11, 25.10).
+    const next = partOf(session.host, 'next');
+    if (next !== null) next.hidden = true;
+    const prev = partOf(session.host, 'prev');
+    if (prev !== null) prev.hidden = true;
+    return;
+  }
   const pages = partOf(session.host, 'pages');
   if (pages !== null) pages.hidden = true;
   listenLink(session, 'next', 'end');

@@ -139,13 +139,13 @@ describe('поведение catalog: листание', () => {
     expect(window.location.pathname).toBe('/catalog');
   });
 
-  it('«Номера страниц»: ссылки обычные, запросов нет, номера видны', () => {
+  it('«Номера страниц»: ссылки обычные, запросов нет, номера видны, «Показать ещё» спрятана', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined); // jsdom: переход по ссылке не реализован
     const asked = server({});
     open({ page: 1, rows: [1, 2], next: '/catalog/page/2', paging: 'pages' });
-    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
-    expect(part('next')?.dispatchEvent(click)).toBe(true);
     expect(part('pages')?.hidden).toBe(false);
+    // Приёмка блока 11 (25.10): в режиме номеров кнопки «Показать ещё» быть не должно, как на проде.
+    expect(part('next')?.hidden).toBe(true);
     expect(asked).toHaveLength(0);
   });
 
@@ -259,9 +259,11 @@ describe('поведение catalog в превью', () => {
 describe('адрес и параметры превью', () => {
   const at = (path: string): URL => new URL(path, 'https://shop.example');
 
-  it('addressOf: страница — её адрес, пока выбраны только q и collection; фильтры — q и collection без номера', () => {
+  it('addressOf: страница — её адрес без параметров; с q, collection или фильтрами — адрес не меняется', () => {
     expect(addressOf(at('/catalog/page/2'), 'page')).toBe('/catalog/page/2');
-    expect(addressOf(at('/catalog?q=%D0%BD&page=2'), 'page')).toBe('/catalog?q=%D0%BD&page=2');
+    // Приёмка блока 11 (25.10): номер страницы не попадает в адрес поиска — как на проде, в адресе только q и collection.
+    expect(addressOf(at('/catalog?q=%D0%BD&page=2'), 'page')).toBeNull();
+    expect(addressOf(at('/catalog?collection=a&page=2'), 'page')).toBeNull();
     expect(addressOf(at('/catalog?sort=price_desc&page=2'), 'page')).toBeNull();
     expect(addressOf(at('/catalog?sort=price_desc&collection=a&collection=b'), 'filters')).toBe('/catalog?collection=a&collection=b');
     expect(addressOf(at('/catalog?availability=in_stock'), 'filters')).toBe('/catalog');

@@ -112,7 +112,7 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
   return { core, started, apiOf };
 }
 
-const MODULE_NAMES: readonly string[] = ['cart', 'favorites', 'auth', 'newsletter'];
+const MODULE_NAMES: readonly string[] = ['cart', 'favorites', 'auth', 'newsletter', 'variants', 'search', 'catalog'];
 
 // Модуль расширения по uses: ["ext:<id>"] (блок 9, часть 9в) — у части ext на странице, по id из конфига. Нет части или
 // id нет в конфиге страницы — ShellError part-unknown, как у незнакомой части.

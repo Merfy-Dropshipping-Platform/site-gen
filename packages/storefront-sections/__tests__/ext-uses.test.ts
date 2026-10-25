@@ -13,7 +13,8 @@ import { NO_MARKUP, templateMarkup } from '../src/template-markup';
 // входы сборки не идёт, в script_meta — вместе с частью ext. Правило id — то же, что extUseSchema в
 // @merfy/storefront-config (те же строки проверяет его extensions.test.ts). Расширение — test-ext «Отзывы-тест».
 const FIXTURES = fileURLToPath(new URL('../fixtures', import.meta.url));
-const USES_TEXT = 'нужно theme, shop, cart, favorites, auth, newsletter или ext:<id расширения>';
+const USES_TEXT =
+  'нужно theme, shop, cart, favorites, auth, newsletter, variants, search, catalog или ext:<id расширения>';
 const FORM_TEXT =
   'метод расширения — ext.<id>.<метод>, id — из "ext:<id>" в uses, метод — из storefront.methods манифеста';
 const UNDECLARED_TEXT =

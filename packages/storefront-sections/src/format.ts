@@ -70,8 +70,9 @@ export const extUseSchema = z.templateLiteral([EXT_USE_PREFIX, z.string().regex(
 export type ExtUse = z.infer<typeof extUseSchema>;
 export const isExtUse = (value: string): value is ExtUse => extUseSchema.safeParse(value).success;
 const USES_LIMIT = 12;
-// Текст подсказки фиксированный (тест ext-uses.test.ts): 13а добавила consent в MANIFEST_USES, в текст его не добавляем.
-const USES_TEXT = 'нужно theme, shop, cart, favorites, auth, newsletter или ext:<id расширения>';
+// Текст подсказки фиксированный (тест ext-uses.test.ts): список модулей — как в MANIFEST_USES (consent — отдельной строкой).
+const USES_TEXT =
+  'нужно theme, shop, cart, favorites, auth, newsletter, variants, search, catalog или ext:<id расширения>';
 const isSectionUse = (value: string): value is SectionUse => SECTION_USES.some((use) => use === value);
 export const propsUsesOf = (manifest: Pick<SectionManifest, 'uses'>): SectionUse[] =>
   (manifest.uses ?? []).filter(isSectionUse);

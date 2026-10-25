@@ -14,6 +14,22 @@ export type { AnimateOptions, Animation, Bezier, EasingName, KeyframeValue, Keyf
 // Блок 9: подписка на рассылку, типы событий и денег. Каталоги событий и действий — @merfy/shell/events и
 // @merfy/shell/actions.
 export { newsletter } from './parts/newsletter';
+// Блок 11 «Секций и SDK», часть 11б: типы модулей вариантов, поиска и каталога; части — в задачах Б11б-3…Б11б-5.
+export type {
+  CatalogFilters,
+  CatalogItem,
+  CatalogModule,
+  CatalogQuery,
+  PriceMoney,
+  ProductVariants,
+  SearchItem,
+  SearchModule,
+  Variant,
+  VariantImage,
+  VariantOption,
+  VariantValue,
+  VariantsModule,
+} from './types';
 // Часть 5б: аналитика магазина — часть SDK без API для секций (src/core/analytics/).
 export { analytics } from './analytics/part';
 // Блок 9, часть 9в: модули расширений ctx.ext — в бандле страниц, где секция объявила "ext:<id>" в uses.

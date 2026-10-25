@@ -28,7 +28,7 @@ import {
   PG_CONNECTION,
   CENTRAL_PROXY_APP_SENTINEL,
 } from "./constants";
-import { buildSiteHost, buildSitePublicUrl } from "./common/site-domain";
+import { buildSiteHost } from "./common/site-domain";
 import * as schema from "./db/schema";
 import { SiteGeneratorService } from "./generator/generator.service";
 import { SitesEventsService } from "./events/events.service";
@@ -807,7 +807,7 @@ export class SitesDomainService {
     const provisioningStartedAt = Date.now();
     const [domainSettled, projectSettled] = await Promise.allSettled([
       needsDomain
-        ? this.domainClient.generateSubdomain(tenantId)
+        ? this.domainClient.generateSubdomain(tenantId, siteId)
         : Promise.resolve(null),
       needsProject
         ? this.getOrCreateTenantProject(tenantId, companyName)
@@ -1663,15 +1663,24 @@ export class SitesDomainService {
     let coolifyAppUuid = site.coolifyAppUuid;
     let finalUrl = site.publicUrl;
 
-    // 1. Определить публичный URL (если не установлен — генерируем subdomain)
+    // 1. Определить публичный URL (если не установлен — генерируем subdomain).
+    // Фикс 25.10: поддомен выдаёт domain-сервис по (tenantId, siteId) — каждому
+    // магазину организации свой. Локальная генерация от tenantId давала второму
+    // магазину адрес первого.
     if (!finalUrl) {
-      const slug = params.tenantId.replace(/-/g, "").slice(0, 12);
-      finalUrl = buildSitePublicUrl(slug);
+      const domainResult = await this.domainClient.generateSubdomain(
+        params.tenantId,
+        params.siteId,
+      );
+      const subdomain = domainResult.name;
+      const slug = this.storage.extractSubdomainSlug(subdomain);
+      finalUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
 
       await this.db
         .update(schema.site)
         .set({
           publicUrl: finalUrl,
+          ...(!site.domainId ? { domainId: domainResult.id } : {}),
           ...(!site.storageSlug ? { storageSlug: slug } : {}),
           updatedAt: new Date(),
         })
@@ -1683,7 +1692,7 @@ export class SitesDomainService {
         );
 
       this.logger.log(
-        `Generated local subdomain on publish: ${buildSiteHost(slug)}, publicUrl: ${finalUrl}`,
+        `Generated subdomain on publish: ${subdomain}, publicUrl: ${finalUrl}`,
       );
     }
 
@@ -2734,6 +2743,7 @@ export class SitesDomainService {
         if (!site.publicUrl) {
           const domainResult = await this.domainClient.generateSubdomain(
             site.tenantId,
+            site.id,
           );
           const subdomain = domainResult.name;
           const publicUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
@@ -3589,7 +3599,7 @@ export class SitesDomainService {
    *   2. If no generated history exists (edge case — sites attached an
    *      external domain before fallback was tracked), ask the domain
    *      microservice to generate a fresh subdomain via the existing
-   *      `generateSubdomain(tenantId)` RPC.
+   *      `generateSubdomain(tenantId, siteId)` RPC.
    *
    * Reuses `switchDomain(...)` so Coolify reconciliation, publicUrl
    * update and history insert all match the live attach path.
@@ -3649,7 +3659,10 @@ export class SitesDomainService {
     this.logger.log(
       `[restoreFallbackDomain] no inactive generated history for site ${siteId}, requesting new subdomain for tenant ${siteRow.tenantId}`,
     );
-    const sub = await this.domainClient.generateSubdomain(siteRow.tenantId);
+    const sub = await this.domainClient.generateSubdomain(
+      siteRow.tenantId,
+      siteId,
+    );
     if (!sub?.id || !sub?.name) {
       throw new Error(
         `domain_service did not return a subdomain for tenant ${siteRow.tenantId}`,

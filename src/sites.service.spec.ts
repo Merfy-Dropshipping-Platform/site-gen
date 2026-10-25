@@ -43,6 +43,9 @@ class MockStorage {
   extractSubdomainSlug(_url: string) {
     return "t1";
   }
+  getSitePublicUrlBySubdomain(_subdomain: string) {
+    return "https://t1.merfy.ru";
+  }
   async checkSiteFiles(_prefix: string) {
     return {
       exists: true,
@@ -71,6 +74,11 @@ class MockCoolifyClient {
 class MockDomainClient {
   async verifyDomain(_domain: string) {
     return { verified: true };
+  }
+
+  // publish запрашивает поддомен у domain-сервиса по (tenantId, siteId).
+  async generateSubdomain(_tenantId: string, _siteId?: string) {
+    return { id: "dom-1", name: "t1.merfy.ru" };
   }
 
   // attachDomain делегирует создание домена в domain-сервис (093).

@@ -95,15 +95,22 @@ export class DomainClient implements OnModuleInit {
    * Пытается использовать RPC, при неудаче переключается на HTTP.
    *
    * @param tenantId - UUID тенанта для генерации детерминированного поддомена
+   * @param siteId - UUID магазина (фикс 25.10): каждому магазину организации —
+   *                 свой поддомен; без него domain-сервис даёт поддомен организации
    * @returns Сгенерированный поддомен с id и именем
    */
-  async generateSubdomain(tenantId: string): Promise<GeneratedSubdomain> {
-    this.logger.log(`Generating subdomain for tenant ${tenantId}`);
+  async generateSubdomain(
+    tenantId: string,
+    siteId?: string,
+  ): Promise<GeneratedSubdomain> {
+    this.logger.log(
+      `Generating subdomain for tenant ${tenantId}${siteId ? ` site ${siteId}` : ""}`,
+    );
 
     // Пробуем RPC
     if (this.rpcAvailable && this.domainClient) {
       try {
-        const result = await this.generateSubdomainViaRpc(tenantId);
+        const result = await this.generateSubdomainViaRpc(tenantId, siteId);
         if (result) {
           return result;
         }
@@ -115,7 +122,7 @@ export class DomainClient implements OnModuleInit {
     }
 
     // Fallback на HTTP
-    return this.generateSubdomainViaHttp(tenantId);
+    return this.generateSubdomainViaHttp(tenantId, siteId);
   }
 
   /**
@@ -123,6 +130,7 @@ export class DomainClient implements OnModuleInit {
    */
   private async generateSubdomainViaRpc(
     tenantId: string,
+    siteId?: string,
   ): Promise<GeneratedSubdomain | null> {
     if (!this.domainClient) {
       return null;
@@ -133,7 +141,7 @@ export class DomainClient implements OnModuleInit {
         this.domainClient
           .send<
             RpcResponse<GeneratedSubdomain>
-          >("domain.generate_subdomain", { tenantId })
+          >("domain.generate_subdomain", { tenantId, siteId })
           .pipe(
             timeout(this.rpcTimeout),
             catchError((err) => {
@@ -181,6 +189,7 @@ export class DomainClient implements OnModuleInit {
    */
   private async generateSubdomainViaHttp(
     tenantId: string,
+    siteId?: string,
   ): Promise<GeneratedSubdomain> {
     const url = `${this.httpBaseUrl}/domains/generate-subdomain`;
 
@@ -195,7 +204,7 @@ export class DomainClient implements OnModuleInit {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ tenantId }),
+        body: JSON.stringify({ tenantId, siteId }),
         signal: AbortSignal.timeout(this.rpcTimeout),
       });
 

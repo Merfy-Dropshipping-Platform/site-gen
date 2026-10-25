@@ -1,4 +1,12 @@
-import { POLICY_PAGES, RECORD_FIELD_KINDS, type RecordFieldKind } from '@merfy/storefront-build';
+import {
+  DATA_ENTRIES_MAX,
+  DATA_FIELDS_MAX,
+  DATA_FROM,
+  DATA_NAME,
+  POLICY_PAGES,
+  RECORD_FIELD_KINDS,
+  type RecordFieldKind,
+} from '@merfy/storefront-build';
 import { z } from 'zod';
 import type { SectionSettingSpec } from './fields';
 
@@ -65,3 +73,22 @@ export function recordFieldProblem(path: string, spec: RecordSettingSpec, value:
   const rule = VALUE_RULES[spec.kind];
   return rule.ok(value) ? undefined : `${path}: ${rule.text}`;
 }
+
+// data секции для скрипта (Р8г-6, design.md 8.3): имя → { from, fields }. Смысл — section-data.ts: from — поле с
+// записью этой секции, fields — публичные поля вида.
+const DATA_NAME_TEXT = 'имя — латинские буквы и цифры, первая — строчная: product';
+const dataEntryShape = z.strictObject({
+  from: z.string().regex(DATA_FROM, { error: 'from — page.record или settings.<id поля с записью>' }),
+  fields: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(DATA_FIELDS_MAX)
+    .refine((fields) => new Set(fields).size === fields.length, { error: 'поле дважды' }),
+});
+export const sectionDataShape = z.record(z.string(), dataEntryShape).superRefine((data, context) => {
+  const names = Object.keys(data);
+  for (const name of names.filter((key) => !DATA_NAME.test(key)))
+    context.addIssue({ code: 'custom', path: [name], message: DATA_NAME_TEXT });
+  if (names.length > DATA_ENTRIES_MAX)
+    context.addIssue({ code: 'custom', message: `не больше ${DATA_ENTRIES_MAX} имён` });
+});

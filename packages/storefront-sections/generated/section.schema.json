@@ -7627,6 +7627,35 @@
           "sticky"
         ]
       }
+    },
+    "data": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^(?:page\\.record|settings\\.[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "fields": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "from",
+          "fields"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [

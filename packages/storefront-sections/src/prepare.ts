@@ -5,6 +5,7 @@ import { platformDictionary, sectionTailwindTheme } from '@merfy/tokens';
 import { classProblems, type ClassField, type ClassFields } from './classes';
 import { settingFieldsOf } from './fields';
 import { fieldRuleProblems } from './field-rules';
+import { dataProblems } from './section-data';
 import type { SectionField } from './fields';
 import {
   MANIFEST_FILE,
@@ -63,7 +64,13 @@ const refuse = (problems: SectionProblem[]): PrepareResult => ({ ok: false, prob
 // Проблемы section.json: разбор, вид секции и файлы, правила полей (блок 3 «Секций и SDK») — когда файл разобран.
 function manifestProblems(manifest: Checked<SectionManifest>, files: SectionFiles): SectionProblem[] {
   if (!manifest.ok) return manifest.problems;
-  return [...kindProblems(manifest.value, files), ...fieldRuleProblems(manifest.value, files[MANIFEST_FILE] ?? '')];
+  // data секции (часть 8г блока 8): поля с записью и публичные поля.
+  const text = files[MANIFEST_FILE] ?? '';
+  return [
+    ...kindProblems(manifest.value, files),
+    ...fieldRuleProblems(manifest.value, text),
+    ...dataProblems(manifest.value, text),
+  ];
 }
 
 // Факты скрипта для сверки имён: секции без скрипта — null; скрипт не собрался — ключи actions не известны (NO_FACTS),

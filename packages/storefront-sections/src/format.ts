@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
 import { sectionFieldShape, settingFieldsOf, settingsEntryShape } from './fields';
 import { problem, when, type Checked, type SectionProblem } from './problems';
-import { RECORD_SETTING_KINDS } from './record-fields';
+import { RECORD_SETTING_KINDS, sectionDataShape } from './record-fields';
 import { settingsTexts } from './settings';
 import { WRAPPER_IDS, wrapperProblems } from './wrapper';
 
@@ -100,6 +100,8 @@ export const sectionManifestSchema = z.strictObject({
   tokens: z.record(z.string(), z.unknown()).optional(),
   // Общие настройки секции (часть 5, Р1-5-5): id из WRAPPER_IDS без повторов; нет ключа — ['scheme', 'padding'].
   wrapper: z.array(z.enum(WRAPPER_IDS)).max(3).refine(unique, { error: 'id дважды' }).optional(),
+  // Поля записей для скрипта (блок 8 «Секций и SDK», часть 8г): имя → { from, fields }; смысл — section-data.ts.
+  data: sectionDataShape.optional(),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;

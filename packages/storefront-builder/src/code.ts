@@ -15,6 +15,7 @@ import {
   revisionMenusSchema,
   sectionGroupsOf,
   sectionMenus,
+  sectionRecordKeys,
   visibleSections,
   type CurrentSection,
   type Queryable,
@@ -215,6 +216,8 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   hash: row.contentHash,
   render: current.renderHash,
   script: row.scriptHash,
+  // Блок 8, часть 8г: поля с записями и data секции — только если объявлены, иначе входы и ключ прежние.
+  ...sectionRecordKeys(current.manifest),
   // Часть 4: флаги section.json — только если объявлены, иначе входы и ключ прежние.
   ...(current.manifest.removable === undefined ? {} : { removable: current.manifest.removable }),
   // uses с модулями SDK (часть 5в блока 5): во входы сборки — только theme и shop, модули идут через script_meta.

@@ -1,7 +1,14 @@
 import type { ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import type { MenuTree, PageInfo, RenderBlock, RenderStage, ShopProps } from '@merfy/storefront-build';
+import type {
+  MenuTree,
+  PageInfo,
+  RenderBlock,
+  RenderStage,
+  SectionRecordValues,
+  ShopProps,
+} from '@merfy/storefront-build';
 import { z } from 'zod';
 import { defaultLaunch, spawnIsolated, type IsolatedLaunch } from './isolation';
 import type { SettingValues } from './trial-render';
@@ -28,6 +35,8 @@ export interface SectionRenderRequest {
   shop?: ShopProps;
   // Блок 7, часть 7а: страница, на которой стоит секция; нет — главная (render-worker.ts).
   page?: PageInfo;
+  // Блок 8, часть 8г: записи полей с записями по id настройки; нет — {} (render-worker.ts).
+  records?: SectionRecordValues;
 }
 
 export interface SectionRenderer {
@@ -254,7 +263,7 @@ class Renderer implements SectionRenderer {
 
   private send(running: Running, job: Job): void {
     const id = this.nextId++;
-    const { hash, settings, module, blocks, preview, menus, theme, shop, page } = job.request;
+    const { hash, settings, module, blocks, preview, menus, theme, shop, page, records } = job.request;
     const message = {
       id,
       hash,
@@ -265,6 +274,7 @@ class Renderer implements SectionRenderer {
       theme: theme ?? {},
       ...(shop === undefined ? {} : { shop }),
       ...(page === undefined ? {} : { page }),
+      ...(records === undefined ? {} : { records }),
       ...(running.sent.has(hash) ? {} : { module }),
     };
     running.sent.add(hash);

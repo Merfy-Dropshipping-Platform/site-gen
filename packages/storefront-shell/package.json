@@ -15,6 +15,7 @@
     "./events": "./src/core/event-catalog.ts",
     "./actions": "./src/core/action-catalog.ts",
     "./counters": "./src/core/analytics/counters.ts",
+    "./roles": "./src/core/roles.ts",
     "./core-parts.json": "./core-parts.json"
   },
   "scripts": {

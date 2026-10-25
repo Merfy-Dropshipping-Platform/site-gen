@@ -143,6 +143,15 @@
       "status": "works"
     },
     {
+      "id": "extension-toggle",
+      "title": "Расширение включили или выключили: его секции, глобальные скрипты и описания ctx.ext — пересборкой (блок 12)",
+      "trigger": { "file": "src/extension-sections/extension-sections.controller.ts", "name": "sites.extension.toggled" },
+      "themes": "new",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "works"
+    },
+    {
       "id": "analytics-counters-change",
       "title": "Счётчики и «свой код» мерчанта: добавил, поменял номер, код или отметку согласия, выключил или удалил",
       "trigger": {

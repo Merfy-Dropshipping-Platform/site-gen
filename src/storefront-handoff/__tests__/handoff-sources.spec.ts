@@ -58,6 +58,7 @@ describe("источники событий сборщика", () => {
       "branding-change",
       "contacts-change",
       "domain-change",
+      "extension-toggle",
       "merchant-publish",
       "policy-change",
       "product-change",

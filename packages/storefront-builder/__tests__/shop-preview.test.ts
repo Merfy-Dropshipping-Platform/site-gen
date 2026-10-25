@@ -14,6 +14,7 @@ import panelJson from '../../theme-contract/panel/theme-panel.json';
 import novaThemeJson from '../../theme-nova/theme.json';
 import { PREVIEW_POLICY_META } from '../src/preview-policy';
 import { sectionPreview, shopPreview, shopSections, type ShopPreviewDeps } from '../src/shop-preview';
+import type { VisibleSection } from '../src/section-extension';
 import type { ShopPageLocals } from '@merfy/storefront-build';
 
 // Превью главной, одного блока и список секций (блок 1 «Секций и SDK») — на подставных зависимостях: без базы, брокера
@@ -696,7 +697,10 @@ describe('каталог и список страницы в превью (бл�
 
 describe('themeSettings секции в списке /sections (блок 10 «Секций и SDK», часть 10б)', () => {
   it('объявлен в section.json — в ответе как есть; нет — ключа нет', async () => {
-    const withKey: CurrentSection = { ...HEADER, manifest: { ...HEADER.manifest, themeSettings: ['wishlist-enabled'] } };
+    const withKey: CurrentSection = {
+      ...HEADER,
+      manifest: { ...HEADER.manifest, themeSettings: ['wishlist-enabled'] },
+    };
     const answer = await shopSections(
       depsOf(
         new Map([
@@ -710,5 +714,29 @@ describe('themeSettings секции в списке /sections (блок 10 «С
       .object({ sections: z.array(z.object({ name: z.string() }).passthrough()) })
       .parse(JSON.parse(answer.body));
     expect(parsed.sections.map((item) => item.themeSettings)).toEqual([['wishlist-enabled'], undefined]);
+  });
+});
+describe('список секций — расширение секции (блок 12, часть 12б)', () => {
+  const REVIEWS: CurrentSection = {
+    name: 'test-ext:reviews',
+    manifest: { sdk: 1, name: 'reviews', kind: 'section', title: 'Отзывы', settings: [HEADING] },
+    render: MODULE,
+    renderHash: HASH,
+  };
+
+  it('секция расширения — с extension { id, title }; своя секция магазина — без ключа', async () => {
+    const extension = { id: 'test-ext', title: 'Отзывы-тест' };
+    const { deps } = depsOf(
+      new Map<string, VisibleSection>([
+        [HERO.name, HERO],
+        [REVIEWS.name, { ...REVIEWS, extension }],
+      ]),
+    );
+    const list = z
+      .object({ sections: z.array(z.record(z.string(), z.unknown())) })
+      .parse(JSON.parse((await shopSections(deps, SHOP)).body));
+    const byName = new Map(list.sections.map((item) => [item.name, item]));
+    expect(byName.get('test-ext:reviews')).toMatchObject({ title: 'Отзывы', extension });
+    expect(byName.get('shop:hero')).not.toHaveProperty('extension');
   });
 });

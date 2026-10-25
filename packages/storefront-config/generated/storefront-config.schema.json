@@ -78,6 +78,50 @@
         "version": {
           "type": "string",
           "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?$"
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "logo-image": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "social-telegram": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "social-vk": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "social-dzen": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "social-youtube": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "social-tiktok": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "social-max": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "cart-type": {
+              "type": "string",
+              "enum": [
+                "drawer",
+                "page"
+              ]
+            },
+            "cookie-banner-enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [

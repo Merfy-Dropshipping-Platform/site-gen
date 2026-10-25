@@ -85,7 +85,6 @@ describe('«Избранное»', () => {
     gateway.answer('GET /store/products', { status: 200, body: { products: [NOVA] } });
     await settle();
     expect(shown(page, 'title')).toEqual(['Шарф «Нова»']);
-    expect(shown(page, 'title')).toEqual(['Шарф «Нова»']);
     expect(shown(page, 'price')[0]?.replace(/\s/g, '')).toBe('2490₽');
     expect(shown(page, 'old-price')[0]?.replace(/\s/g, '')).toBe('2990₽');
     expect(page.querySelector('[data-ref="link"]')?.getAttribute('href')).toBe('/product/nova');

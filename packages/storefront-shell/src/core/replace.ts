@@ -1,7 +1,10 @@
 import { SECTION_TAG } from '../element';
 import { messageOf } from '../report';
+import type { BehaviorsApi } from './behaviors/types';
 import { SDK_MARKUP_SELECTOR, startInstance, type Instance, type InstanceRuntime } from './instance';
 import {
+  BLOCK_DESELECT_EVENT,
+  BLOCK_SELECT_EVENT,
   PREVIEW_REPLACE_EVENT,
   REPLACE_TEXT,
   SCRIPT_HASH,
@@ -9,7 +12,7 @@ import {
   type PreviewReplaceDetail,
   type ReplaceOutcome,
 } from './preview-protocol';
-import type { SectionDef, SectionEntry } from './types';
+import type { Json, SectionDef, SectionEntry } from './types';
 
 // Замена экземпляра секции в превью (блок 5 «Секций и SDK», часть 5г; design.md блока 5, раздел 3.11). Слушатель
 // merfy:preview:replace ставит только бандл превью — start({ ..., preview: watchPreviewReplace }); на опубликованном
@@ -184,9 +187,58 @@ async function replaceSection(deps: ReplaceDeps, element: HTMLElement, detail: P
   detail.reply(reply.outcome, reply.message);
 }
 
-// Одна попытка: снять прежний экземпляр, поставить HTML ответа, запустить новый экземпляр и отдать ему события
-// страницы (13б Г). null — запустился (или запускать нечего), текст — ошибка запуска.
-function attempt(deps: ReplaceDeps, element: HTMLElement, fresh: Element, saved: Saved | null): Promise<string | null> {
+// Состояние поведений экземпляра (блок 6, часть 6в): save части behaviors — до снятия прежнего экземпляра, restore —
+// новому с тем же id. Части нет, у экземпляра нет поведений или save отдал null — без переноса. Ошибка части — строка
+// в консоли, замена идёт дальше.
+type KeepApi = Pick<BehaviorsApi, 'save' | 'restore'>;
+
+interface Kept {
+  readonly api: KeepApi;
+  readonly id: string;
+  readonly state: Json;
+}
+
+// - isKeepApi — объект с функциями save и restore.
+function isKeepApi(value: unknown): value is KeepApi {
+  return isRecord(value) && typeof value.save === 'function' && typeof value.restore === 'function';
+}
+
+// - keptOf — api = deps.runtime.apiOfPart('behaviors'); не isKeepApi или экземпляра нет — null; save по id прежнего
+//   экземпляра, null — null; исключение — строка в консоли и null.
+function keptOf(deps: ReplaceDeps, element: HTMLElement): Kept | null {
+  const instance = deps.instances.get(element);
+  if (instance === undefined) return null;
+  const api: unknown = deps.runtime.apiOfPart('behaviors');
+  if (!isKeepApi(api)) return null;
+  let state: Json | null;
+  try {
+    state = api.save(instance.id);
+  } catch (error) {
+    console.error(`Поведения секции #${instance.id}, save: ${messageOf(error)}`);
+    return null;
+  }
+  return state === null ? null : { api, id: instance.id, state };
+}
+
+// - restoreKept — restore новому экземпляру; исключение — строка в консоли.
+function restoreKept(kept: Kept): void {
+  try {
+    kept.api.restore(kept.id, kept.state);
+  } catch (error) {
+    console.error(`Поведения секции #${kept.id}, restore: ${messageOf(error)}`);
+  }
+}
+
+// Одна попытка: снять прежний экземпляр, поставить HTML ответа, запустить новый экземпляр, вернуть состояние его
+// поведений (часть 6в) и отдать ему события страницы (13б Г). null — запустился (или запускать нечего), текст — ошибка
+// запуска.
+function attempt(
+  deps: ReplaceDeps,
+  element: HTMLElement,
+  fresh: Element,
+  saved: Saved | null,
+  kept: Kept | null,
+): Promise<string | null> {
   deps.instances.get(element)?.teardown();
   deps.instances.delete(element);
   swap(element, fresh);
@@ -194,17 +246,19 @@ function attempt(deps: ReplaceDeps, element: HTMLElement, fresh: Element, saved:
   if (entry === null && !hasMarkup(element)) return Promise.resolve(null);
   const instance = startInstance(deps.runtime, element, entry, saved ?? undefined);
   deps.instances.set(element, instance);
+  if (kept !== null) restoreKept(kept);
   deps.runtime.bus.deliver(instance.owner, 'merfy:page:ready', {});
   deps.runtime.bus.deliver(instance.owner, 'merfy:page:view', { path: deps.runtime.win.location.pathname });
   return instance.settled;
 }
 
+// Вторая попытка — без ctx.state и без состояния поведений: чистый запуск.
 async function restart(deps: ReplaceDeps, element: HTMLElement, fresh: Element, name: string): Promise<Reply> {
   const saved = deps.byName.has(name) ? copyState(deps.instances.get(element)?.currentState()) : null;
-  const first = await attempt(deps, element, fresh, saved);
+  const first = await attempt(deps, element, fresh, saved, keptOf(deps, element));
   if (first === null) return { outcome: saved === null ? 'fresh' : 'kept-state', message: '' };
   if (saved === null || !element.isConnected) return { outcome: 'failed', message: first };
-  const second = await attempt(deps, element, fresh, null);
+  const second = await attempt(deps, element, fresh, null, null);
   return second === null ? { outcome: 'fresh', message: '' } : { outcome: 'failed', message: second };
 }
 
@@ -212,6 +266,7 @@ async function restart(deps: ReplaceDeps, element: HTMLElement, fresh: Element, 
 // data-section-id (sectionIdOf), detail — isReplaceDetail; иначе событие не отменяется и скрипт превью ставит HTML сам.
 // Иначе preventDefault и replaceSection; исключение внутри — reply('failed', messageOf(ошибки)): очередь не встаёт.
 export function watchPreviewReplace(deps: ReplaceDeps): void {
+  watchBlockSelection(deps);
   const listener = (event: Event): void => {
     const target = event.target;
     const detail: unknown = event instanceof CustomEvent ? event.detail : null;
@@ -223,4 +278,33 @@ export function watchPreviewReplace(deps: ReplaceDeps): void {
     });
   };
   deps.runtime.win.document.addEventListener(PREVIEW_REPLACE_EVENT, listener, { signal: deps.signal });
+}
+
+// События превью «выбран блок» и «выбор снят» (блок 6, часть 6в; В6-1 А): скрипт секций превью шлёт их на узле блока
+// внутри <merfy-section>. Ядро отдаёт событие только экземпляру этой секции — её подпискам ctx.listen; узел вне секции
+// с экземпляром или данные не по каталогу — без доставки.
+// Правило каталога для обоих событий — { blockId: строка } без лишних полей — проверено здесь локально: импорт
+// checkEventDetail затягивал весь каталог событий (about-тексты) в бандл каждой опубликованной страницы и ломал бюджет
+// ядра (core-build.test.ts, отклонение от карточки 6в-2 — в отчёте части).
+type BlockDetail = { readonly blockId: string };
+
+function isBlockDetail(value: unknown): value is BlockDetail {
+  return isRecord(value) && Object.keys(value).length === 1 && typeof value.blockId === 'string';
+}
+
+function watchBlockSelection(deps: ReplaceDeps): void {
+  const names = [BLOCK_SELECT_EVENT, BLOCK_DESELECT_EVENT] as const;
+  names.forEach((name) => {
+    const listener = (event: Event): void => {
+      const detail: unknown = event instanceof CustomEvent ? event.detail : null;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const section = target.closest(SECTION_TAG);
+      if (!(section instanceof HTMLElement)) return;
+      const instance = deps.instances.get(section);
+      if (instance === undefined || !isBlockDetail(detail)) return;
+      deps.runtime.bus.deliver(instance.owner, name, detail);
+    };
+    deps.runtime.win.document.addEventListener(name, listener, { signal: deps.signal });
+  });
 }

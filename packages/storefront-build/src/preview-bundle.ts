@@ -5,12 +5,13 @@ import { sha256 } from './canonical';
 import { LIVE_PARTS, pageParts, type CodeAssets } from './code';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs, CodeSection } from './inputs';
+import { previewKit } from './preview-kit';
 
 // Код страницы превью конструктора (блок 5 «Секций и SDK», часть 5г; design.md блока 5, раздел 3.11; Р5г-10): перед
 // </body> HTML превью — JSON-тег #merfy-preview-bundle со строкой бандла и dist/preview.js текстом. Бандл — как у
 // опубликованного сайта (pageBundle, code.ts), но с секциями всего кода магазина со скриптом (секцию ставят на страницу
 // без перезагрузки превью) и с preview: watchPreviewReplace; частей без API для секций (LIVE_PARTS) нет — превью ничего
-// не отправляет. Поведений в бандле превью пока нет (часть 6в).
+// не отправляет. Поведения — все из сборки ядра (часть 6в, preview-kit.ts).
 export interface PreviewCode {
   tags: string; // '' — нет ядра во входах, сборки ядра или dist/preview.js: превью без кода, как в 5б
   notices: CodeNotice[]; // пропущенные секции (section-script-skipped) — как у бандла страницы
@@ -74,6 +75,7 @@ export async function previewCode(inputs: BuildInputs, assets: CodeAssets): Prom
     sections,
     modules,
     preview: true,
+    ...previewKit(assets.shell),
   });
   return { tags: previewTagsOf(text, assets.shell.preview), notices };
 }

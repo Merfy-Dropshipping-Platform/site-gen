@@ -1,9 +1,11 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { ERROR_CODES, EVENT_CATALOG, EVENT_NAMES, checkEventDetail, isEventName } from '../src/core/event-catalog';
+import { BLOCK_DESELECT_EVENT, BLOCK_SELECT_EVENT } from '../src/core/preview-protocol';
 import type { ErrorCode, EventName } from '../src/core/types';
 
 // Каталог событий (блок 9: 13а А, «Решил сам» п. 11) — публичный интерфейс: имена и поля только добавляются.
-// merfy:geo:change отложено 20.10 вместе с городом по IP — в каталоге 20 имён.
+// merfy:geo:change отложено 20.10 вместе с городом по IP; события превью «выбран блок» и «выбор снят» — блок 6, часть 6в.
+// В каталоге 22 имени.
 const NAMES = [
   'merfy:page:ready',
   'merfy:page:view',
@@ -23,6 +25,8 @@ const NAMES = [
   'merfy:catalog:page',
   'merfy:section:mount',
   'merfy:section:error',
+  'merfy:block:select',
+  'merfy:block:deselect',
   'merfy:notice:show',
   'merfy:consent:change',
 ];
@@ -36,7 +40,7 @@ const CART_ADD = {
 };
 
 describe('каталог событий', () => {
-  it('20 имён merfy:объект:действие; каталог и типы EventMap — одно и то же', () => {
+  it('22 имени merfy:объект:действие; каталог и типы EventMap — одно и то же', () => {
     expect([...EVENT_NAMES].sort()).toEqual([...NAMES].sort());
     expectTypeOf<keyof typeof EVENT_CATALOG>().toEqualTypeOf<EventName>();
     expect(isEventName('merfy:cart:add')).toBe(true);
@@ -47,6 +51,11 @@ describe('каталог событий', () => {
   it('семь кодов ошибок: шесть из 14б и refused', () => {
     expectTypeOf<(typeof ERROR_CODES)[number]>().toEqualTypeOf<ErrorCode>();
     expect(ERROR_CODES).toHaveLength(7);
+  });
+
+  it('события выбора блока в превью — имена протокола @merfy/shell/preview (часть 6в)', () => {
+    expect([BLOCK_SELECT_EVENT, BLOCK_DESELECT_EVENT]).toEqual(['merfy:block:select', 'merfy:block:deselect']);
+    expect([BLOCK_SELECT_EVENT, BLOCK_DESELECT_EVENT].every((name) => isEventName(name))).toBe(true);
   });
 
   it('у каждого события есть описание для документации', () => {
@@ -66,6 +75,8 @@ describe('checkEventDetail', () => {
     ['merfy:catalog:page', { page: 2 }],
     ['merfy:consent:change', { state: 'accepted' }],
     ['merfy:section:error', { section: 'shop:a', id: 'a-1', script: '', stage: 'runtime', message: 'сломалась' }],
+    ['merfy:block:select', { blockId: 'slide-2' }],
+    ['merfy:block:deselect', { blockId: 'slide-2' }],
   ])('%s %j — по каталогу', (name, detail) => {
     expect(checkEventDetail(name, detail)).toBeNull();
   });
@@ -90,6 +101,9 @@ describe('checkEventDetail', () => {
       'merfy:notice:show: code — одно из: out-of-stock, limit, unauthorized, network, server, invalid, refused',
     ],
     ['merfy:consent:change', {}, 'merfy:consent:change: нет поля state'],
+    ['merfy:block:select', {}, 'merfy:block:select: blockId — строка'],
+    ['merfy:block:deselect', { blockId: 2 }, 'merfy:block:deselect: blockId — строка'],
+    ['merfy:block:select', { blockId: 'slide-2', index: 1 }, 'merfy:block:select: лишнее поле index'],
   ])('%s %j — «%s»', (name, detail, problem) => {
     expect(checkEventDetail(name, detail)).toBe(problem);
   });

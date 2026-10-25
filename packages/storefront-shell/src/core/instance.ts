@@ -15,6 +15,7 @@ import type {
   Mode,
   Result,
   SectionEntry,
+  SectionEvent,
   SectionFailureDetail,
   ThemeSettings,
 } from './types';
@@ -28,7 +29,7 @@ export const SDK_MARKUP_SELECTOR = '[data-action*="."], [data-behavior], [data-a
 // Действие части в разметке, привязанное к API созданной части (сами слушатели — задача 5а-5, actions.ts).
 export interface MarkupCall {
   readonly params: readonly string[];
-  call(values: Readonly<Record<string, string>>): Promise<Result<unknown>>;
+  call(values: Readonly<Record<string, string>>, event?: SectionEvent): Promise<Result<unknown>>;
 }
 
 // Стартовое окружение экземпляров одной страницы: окно, шина, хранилище, части.

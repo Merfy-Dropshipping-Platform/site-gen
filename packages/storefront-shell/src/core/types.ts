@@ -121,6 +121,7 @@ export interface EventMap {
     readonly quantity: number;
     readonly previousQuantity: number;
   };
+  'merfy:cart:open': NoDetail; // блок 10: cart.open при «Сайдбар» и выезжающей корзине на странице
   'merfy:variant:change': { readonly productId: string; readonly variantId: string };
   'merfy:favorites:add': { readonly productId: string };
   'merfy:favorites:remove': { readonly productId: string };
@@ -149,14 +150,29 @@ export interface ActionOptions {
 }
 
 // Модули по uses (11г А) — вид для секций по 3.12 и каталогам блоков 9 и 10. Корзина — на сервере (блок 9, часть 9а):
-// строка — ответ шлюза, id строки — номер строки на сервере. cart.remove и cart.change — блок 10. Избранное и вход — в
-// памяти страницы до блока 10.
+// строка — ответ шлюза, id строки — номер строки на сервере. Блок 10 (часть 10а): итоги, cart.change и cart.remove по
+// номеру строки, cart.open, cart.checkout. Избранное и вход — в памяти страницы до частей 10б и 10в.
 export interface CartLine {
   readonly id: string;
   readonly productId: string;
   readonly variantId: string | null;
   readonly quantity: number;
   readonly price: Money; // за штуку
+  // Блок 10, 10.1: что показывают строки корзины — из ответа orders, SDK цен не считает.
+  readonly title: string; // название товара (orders: name)
+  readonly image: string | null; // адрес фото (imageUrl)
+  readonly options: Readonly<Record<string, string>>; // варианты: «Цвет» → «Красный»
+  readonly total: Money; // сумма строки (totalCents)
+  readonly gift: boolean; // подарок по акции (isBonus): 0 ₽, без «−», «+» и «Удалить»
+}
+// Итоги корзины (блок 10, 10.1, Р10а-2): суммы считает orders. Корзины нет — нули, ready: true.
+export interface CartTotals {
+  readonly ready: boolean; // false — итоги ещё не прочитаны
+  readonly subtotal: Money;
+  readonly discount: Money;
+  readonly discountName: string | null; // имя автоматической скидки магазина; промокод покупательницы — null
+  readonly extensionDiscount: Money;
+  readonly total: Money; // к оплате
 }
 export interface CartState {
   readonly ready: boolean; // false — корзину с сервера ещё не прочитали
@@ -165,10 +181,19 @@ export interface CartState {
 export interface CartModule {
   readonly $cart: ReadableStore<CartState>;
   readonly $count: ReadableStore<number>; // штук в корзине плюс ждущих ответа сервера
+  readonly $totals: ReadableStore<CartTotals>; // блок 10: итоги с сервера, читаются, когда стор впервые читает секция
+  readonly $total: ReadableStore<Money>; // итог к оплате — $totals.total
   add(
     args: { readonly productId: string; readonly variantId?: string; readonly quantity?: number },
     options?: ActionOptions,
   ): Promise<Result<CartState>>;
+  change(
+    args: { readonly lineId: string; readonly quantity: number },
+    options?: ActionOptions,
+  ): Promise<Result<CartState>>;
+  remove(args: { readonly lineId: string }, options?: ActionOptions): Promise<Result<CartState>>;
+  open(): Promise<Result<{ readonly drawer: boolean }>>; // Р10а-5
+  checkout(): Promise<Result<null>>; // Р10а-7: переход на /checkout
 }
 export interface FavoritesState {
   readonly ready: boolean;
@@ -306,7 +331,8 @@ export interface SectionDef<State extends object = Record<string, unknown>, Uses
 // Действие SDK в разметке: data-action="cart.add" → params из data-* элемента → call (раздел 3.4).
 export interface MarkupAction<Api> {
   readonly params: readonly string[]; // ['product-id', 'quantity'] — без префикса data-
-  call(api: Api, values: Readonly<Record<string, string>>): Promise<Result<unknown>>;
+  // event — событие нажатия (блок 10, Р10а-4): cart.open и cart.checkout отменяют переход по ссылке до первого await.
+  call(api: Api, values: Readonly<Record<string, string>>, event?: SectionEvent): Promise<Result<unknown>>;
 }
 
 // Экземпляр для кода платформы (готовое поведение блока 6): узел, режим и сигнал снятия.

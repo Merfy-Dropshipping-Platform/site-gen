@@ -10,6 +10,8 @@ export interface EventBus {
   emit(name: string, detail: unknown): void;
   listen(name: string, owner: object, fn: (detail: unknown) => void): Stop;
   deliver(owner: object, name: string, detail: unknown): void;
+  // Есть ли подписка секции на это имя (блок 9, часть 9б): уведомление без секции «Уведомления» — в консоль.
+  listening(name: string): boolean;
 }
 
 interface Subscription {
@@ -23,15 +25,15 @@ const copyOf = (detail: unknown): unknown => {
   return deepFreeze(parsed);
 };
 
+const stopOf =
+  (list: Subscription[], subscription: Subscription): Stop =>
+  () => {
+    const at = list.indexOf(subscription);
+    if (at >= 0) list.splice(at, 1);
+  };
+
 export function createEventBus(doc: Document): EventBus {
   const byName = new Map<string, Subscription[]>();
-
-  const stopOf =
-    (list: Subscription[], subscription: Subscription): Stop =>
-    () => {
-      const at = list.indexOf(subscription);
-      if (at >= 0) list.splice(at, 1);
-    };
 
   return {
     emit(name: string, detail: unknown): void {
@@ -53,5 +55,6 @@ export function createEventBus(doc: Document): EventBus {
         if (subscription.owner === owner) subscription.fn(copy);
       });
     },
+    listening: (name: string): boolean => (byName.get(name)?.length ?? 0) > 0,
   };
 }

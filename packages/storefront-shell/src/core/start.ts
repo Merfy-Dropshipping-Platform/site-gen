@@ -9,6 +9,7 @@ import { EXT_PART_NAME, EXT_USE_PREFIX, extModuleOf } from './ext-registry';
 import { SDK_MARKUP_SELECTOR, startInstance, type Instance, type InstanceRuntime, type MarkupCall } from './instance';
 import { navigationType, watchPage } from './page-events';
 import { pageStorage, type KeyValue } from './storage';
+import { emitCore } from './notice-fallback';
 import type {
   CoreHandle,
   EventDetail,
@@ -85,7 +86,7 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
   const core: CoreHandle = Object.freeze({
     config,
     mode,
-    emit: <E extends EventName>(name: E, detail: EventDetail<E>): void => bus.emit(name, detail),
+    emit: <E extends EventName>(name: E, detail: EventDetail<E>): void => emitCore(bus, name, detail),
     part: <N extends ModuleName>(name: N): Modules[N] => apiOf(name),
   });
 

@@ -34,6 +34,7 @@ export {
   type ListedPage,
   type PageList,
 } from './page-list';
+export { VARIANTS_ATTRIBUTE, type PageVariants } from './page-variants';
 export {
   EMPTY_LIST_QUERY,
   LIST_SORTS,

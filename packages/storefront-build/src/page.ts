@@ -13,8 +13,11 @@ import { pageLocals, shopName } from './head';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
-import { EMPTY_LIST_QUERY, type ListQuery } from './list-query';
+import { EMPTY_LIST_QUERY, listQueryIsEmpty, listQueryString, type ListQuery } from './list-query';
 import { listSourceOf, pageListOf, type ListSource, type ListedPage, type PageList } from './page-list';
+import { pageVariantsOf, variantsTagOf, VARIANTS_NOTICE_BYTES } from './page-variants';
+import { sectionRecords } from './section-records';
+import type { ProductRecord } from './records';
 import { catalogUrlOf, pageInfoOf, pageListsOf, recordIndex, routeOf, type ShopRoute } from './routes';
 import { recordDepsOf } from './section-records';
 import { pageSectionTheme } from './section-tokens';
@@ -148,7 +151,7 @@ async function renderWithBundle(
   pageContent: PageContent,
 ): Promise<{ html: string; bundle: Awaited<ReturnType<typeof pageBundle>> }> {
   const bundle = await pageBundle(shown, route.id, page, pageContent);
-  const withBundle = { ...pageContent, bundleTag: bundle?.tag ?? '' };
+  const withBundle = { ...pageContent, bundleTag: `${pageContent.headTags ?? ''}${bundle?.tag ?? ''}` };
   // Страницу 404 (часть 7а) тема рисует маршрутом главной: адрес /404 Astro держит за своей страницей ошибки и маршрут
   // [slug].astro не вызывает. Канонический адрес в head — /404: его считает pageLocals по route.
   const drawPath = route.id === NOT_FOUND_PAGE_ID ? '/' : route.path;
@@ -221,11 +224,78 @@ function pageListAt(
   return pageListOf(recordIndex(shown), shown, source, listQueryOf(list, route), list?.listed ?? null);
 }
 
+// Значение поля с записью — товар (публичные поля ProductRecord, records.ts): группы и сочетания на месте.
+const isProductRecord = (value: object | null): value is ProductRecord =>
+  value !== null && 'options' in value && 'variants' in value && 'images' in value;
+
+// Товары страницы (блок 11, Р11а-12): запись страницы, если это товар, и записи полей вида product её секций, без
+// повторов по id.
+function pageProductsOf(route: ShopRoute, placed: readonly PlacedSection[], props: PageProps): ProductRecord[] {
+  const pageProduct = route.record?.type === 'product' ? [route.record.record] : [];
+  const fieldProducts = placed.flatMap((section) =>
+    Object.entries(section.recordFields ?? {})
+      .filter(([, kind]) => kind === 'product')
+      .map(([id]) => sectionRecords(section, props).values[id] ?? null)
+      .flatMap((value): ProductRecord[] => (isProductRecord(value) ? [value] : [])),
+  );
+  const byId = new Map([...pageProduct, ...fieldProducts].map((product) => [product.id, product]));
+  return [...byId.values()];
+}
+
+// Экранирование значения атрибута тега: &, ", <, > (meta content, договор SEO).
+const META_ESCAPES: Record<string, string> = { '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' };
+const escapeMetaValue = (text: string): string => text.replace(/[&"<>]/g, (char) => META_ESCAPES[char] ?? char);
+
+// Теги страницы (блок 11, Р11а-13): noindex, follow и merfy-list с каноническим видом параметров — у страницы с
+// непустыми параметрами списка; JSON вариантов товаров страницы. Пусто — ''.
+function headTagsOf(
+  route: ShopRoute,
+  placed: readonly PlacedSection[],
+  props: PageProps,
+  list: ListRequest | undefined,
+  page: PageRender,
+): string {
+  const meta =
+    list !== undefined && !listQueryIsEmpty(list.query)
+      ? `<meta name="robots" content="noindex, follow"><meta name="merfy-list" content="${escapeMetaValue(listQueryString(list.query))}">`
+      : '';
+  const tag = variantsTagOf(pageVariantsOf(pageProductsOf(route, placed, props)));
+  const bytes = Buffer.byteLength(tag, 'utf8');
+  if (bytes > VARIANTS_NOTICE_BYTES)
+    page.notice?.(route.id, {
+      code: 'page-variants-heavy',
+      section: '',
+      bytes,
+      message: `JSON вариантов страницы — ${bytes} байт`,
+    });
+  return `${meta}${tag}`;
+}
+
 // Зависимости списка — карточки этой страницы (Р11а-8): их правки меняют страницу.
 function listDepsOf(list: PageList | null): string[] {
   if (list === null) return [];
   const keys = list.items.map((item) => (list.kind === 'products' ? `product:${item.id}` : `publication:${item.id}`));
   return [...new Set(keys)];
+}
+
+// Разметка секций страницы и её props (блоки 7–8, 11): базовые props страницы, список страницы (page.list, Р11а-5) и
+// разметка видимых секций одним проходом.
+async function renderSectionsOf(
+  shown: BuildInputs,
+  route: ShopRoute,
+  theme: ShopTheme,
+  page: PageRender,
+  lists: readonly (readonly PlacedSection[])[],
+  list: ListRequest | undefined,
+): Promise<{ rendered: PageContent; props: PageProps; pageList: PageList | null; placed: readonly PlacedSection[] }> {
+  // Страница секций (часть 7а): id и адрес этой страницы; записи магазина — полям с записями (часть 8г).
+  const base = { ...pagePropsOf(shown, theme), page: pageInfoOf(route), records: recordIndex(shown) };
+  // Список страницы (блок 11 «Секций и SDK», часть 11а): у каждой секции в page.list; нет — ключа нет (Р11а-5).
+  const pageList = pageListAt(shown, route, lists[1] ?? [], base, list);
+  const props = pageList === null ? base : { ...base, page: { ...base.page, list: pageList } };
+  const placed = lists.flat();
+  const rendered = await renderPlacedSections(placed, theme.tokens.dictionary, { ...page, props }, sectionThemeOf(shown, placed));
+  return { rendered, props, pageList, placed };
 }
 
 export async function renderShopPage(
@@ -241,19 +311,13 @@ export async function renderShopPage(
   // Скрытые экземпляры убираются здесь, до рендера (п. 22): разметка, CSS секций и список модулей — по видимым.
   const shown = withoutHidden(inputs);
   const lists = pageListsOf(route.id).map((list) => placedSections(shown, list));
-  // Страница секций (часть 7а): id и адрес этой страницы; записи магазина — полям с записями (часть 8г).
-  const base = { ...pagePropsOf(shown, theme), page: pageInfoOf(route), records: recordIndex(shown) };
-  // Список страницы (блок 11 «Секций и SDK», часть 11а): у каждой секции в page.list; нет — ключа нет (Р11а-5).
-  const pageList = pageListAt(shown, route, lists[1] ?? [], base, list);
-  const props = pageList === null ? base : { ...base, page: { ...base.page, list: pageList } };
-  const placed = lists.flat();
-  const rendered = await renderPlacedSections(
-    placed,
-    theme.tokens.dictionary,
-    { ...page, props },
-    sectionThemeOf(inputs, placed),
-  );
-  const pageContent = pageContentOf(rendered, lists, route);
+  const state = await renderSectionsOf(shown, route, theme, page, lists, list);
+  const { props, pageList, placed } = state;
+  // Теги списка и JSON вариантов (блок 11, часть 11а) — в <head> перед бандлом.
+  const pageContent = {
+    ...pageContentOf(state.rendered, lists, route),
+    headTags: headTagsOf(route, placed, props, list, page),
+  };
   // Сквозные настройки темы — те же значения, что у секций в Astro.props.theme: с PageContent они идут в theme.settings
   // конфига (блок 9 «Секций и SDK», часть 9б; Р9б-14).
   const withTheme = { ...pageContent, themeSettings: props.theme };

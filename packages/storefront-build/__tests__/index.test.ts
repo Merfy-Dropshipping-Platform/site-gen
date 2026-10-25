@@ -107,6 +107,7 @@ const API = [
   'listQueryString',
   'parseListQuery',
   'productsRpcArgs',
+  'VARIANTS_ATTRIBUTE',
   'DATA_ENTRIES_MAX',
   'DATA_FIELDS_MAX',
   'DATA_FROM',

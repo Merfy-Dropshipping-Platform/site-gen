@@ -59,7 +59,8 @@ export interface BundleSource {
 
 // Предупреждение сборки бандла — строка журнала сборщика; сборка идёт дальше.
 export interface CodeNotice {
-  code: 'section-script-skipped' | 'page-script-heavy';
+  // page-variants-heavy — JSON вариантов страницы больше 32 КБ (блок 11 «Секций и SDK», часть 11а).
+  code: 'section-script-skipped' | 'page-script-heavy' | 'page-variants-heavy';
   message: string;
   section: string | null;
   bytes: number | null;

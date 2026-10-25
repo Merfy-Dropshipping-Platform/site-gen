@@ -28,6 +28,9 @@ export { CATALOG_PAGE_ID, CATALOG_PATH, catalogUrlOf } from './routes';
 export { listSourceAt, type ListRequest } from './page';
 export {
   collectionIdsOf,
+  // Блок 11, часть 11а-2: источник и список страницы — сборщику (дорисовка и превью одного блока).
+  listSourceOf,
+  pageListOf,
   type ListFacets,
   type ListProductCard,
   type ListSource,

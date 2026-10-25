@@ -2,11 +2,13 @@ import {
   FONT_LIBRARY_HASH,
   type BlogData,
   type BuildInputs,
+  type CheckoutBlock,
   type CodeAssets,
   type Entity,
   type PublicationData,
   type RevisionPage,
   type ThemeState,
+  checkoutBlockSchema,
 } from '@merfy/storefront-build';
 import { cleanArticleHtml } from '@merfy/storefront-sections';
 import { z } from 'zod';
@@ -186,20 +188,38 @@ async function rowsOf<T>(db: Queryable, sql: string, siteId: string, schema: z.Z
 // (site.current_revision_id), как у нынешней сборки.
 export const revisionKeySql = (key: 'tokens' | 'settings'): string =>
   `CASE WHEN jsonb_typeof(r.data->'${key}') = 'object' THEN r.data->'${key}' ELSE '{}'::jsonb END`;
-// Свои страницы (часть 4, Р1-4-8) — ключ pages ревизии: список; не список — своих страниц нет.
+// Свои страницы (часть 4, Р1-4-8) — ключ pages ревизии: список; не список — своих страниц нет. Блоки «Оформления
+// заказа» (блок 10, Р10а-19) — Puck-документ page-checkout: не массив — блоков нет (null).
 const REVISION_SQL = `SELECT ${revisionKeySql('tokens')} AS tokens, ${revisionKeySql('settings')} AS settings,
-  CASE WHEN jsonb_typeof(r.data->'pages') = 'array' THEN r.data->'pages' ELSE '[]'::jsonb END AS pages
+  CASE WHEN jsonb_typeof(r.data->'pages') = 'array' THEN r.data->'pages' ELSE '[]'::jsonb END AS pages,
+  CASE WHEN jsonb_typeof(r.data->'pagesData'->'page-checkout'->'content') = 'array'
+    THEN r.data->'pagesData'->'page-checkout'->'content' ELSE NULL END AS checkout
   FROM site s LEFT JOIN site_revision r ON r.id = s.current_revision_id WHERE s.id = $1`;
 const jsonObject = z.record(z.string(), z.json());
 export type JsonObject = z.infer<typeof jsonObject>;
-const revisionRow = z.object({ tokens: jsonObject, settings: jsonObject, pages: z.array(z.unknown()) });
+const revisionRow = z.object({
+  tokens: jsonObject,
+  settings: jsonObject,
+  pages: z.array(z.unknown()),
+  checkout: z.array(z.unknown()).nullable(),
+});
 
 // Ревизия во входах сборки: правки токенов (блок 1), правки настроек темы — их читают секции с "uses": ["theme"] (часть
-// 4 блока 1 «Секций и SDK»), и свои страницы мерчанта.
+// 4 блока 1 «Секций и SDK»), свои страницы мерчанта и блоки «Оформления заказа» (блок 10, Р10а-19).
 export interface RevisionInput {
   tokens: JsonObject;
   settings: JsonObject;
   pages: RevisionPage[];
+  checkout?: { blocks: CheckoutBlock[] };
+}
+
+// Блоки «Оформления заказа» (блок 10, Р10а-19): строки четырёх типов с props-объектом, остальные — без них.
+function checkoutOf(rows: readonly unknown[]): { blocks: CheckoutBlock[] } {
+  const blocks = rows.flatMap((row) => {
+    const parsed = checkoutBlockSchema.safeParse(row);
+    return parsed.success ? [parsed.data] : [];
+  });
+  return { blocks };
 }
 
 // Ревизия из текущей ревизии магазина. Неверная своя страница — без неё, строка журнала page-invalid.
@@ -207,7 +227,12 @@ export async function readRevision(db: Queryable, siteId: string, log: Log): Pro
   const row = (await rowsOf(db, REVISION_SQL, siteId, revisionRow)).at(0);
   if (row === undefined) return { tokens: {}, settings: {}, pages: [] };
   const invalid = (fields: LogFields): void => log('page-invalid', { shopId: siteId, ...fields });
-  return { tokens: row.tokens, settings: row.settings, pages: revisionPagesOf(row.pages, invalid) };
+  return {
+    tokens: row.tokens,
+    settings: row.settings,
+    pages: revisionPagesOf(row.pages, invalid),
+    ...(row.checkout === null ? {} : { checkout: checkoutOf(row.checkout) }),
+  };
 }
 
 // Сущности магазина из базы sites: политики, контакты, опубликованные статьи блога.

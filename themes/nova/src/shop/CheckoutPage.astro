@@ -1,0 +1,92 @@
+---
+// Оформление заказа и «Спасибо за заказ» новой темы (блок 10 «Секций и SDK», часть 10а, Р10а-17): нынешние блоки
+// theme-base, те же, что у пяти тем. Цвета и шрифты — таблица переменных checkout.varsCss из токенов магазина.
+// Вместо /scripts/cart-store.js пяти тем — window.cartStore из части checkout ядра: она в бандле страницы
+// (packages/storefront-build/src/checkout-pages.ts). Настройки формы оформления (факт 33) ядро тоже тянет само —
+// исходники темы без сети (сторк рендера блока 4). Страницу рендерит только сборщик: данные — из
+// Astro.locals.merfy.checkout.
+import OrderConfirmation from "../../../../packages/theme-base/blocks/OrderConfirmation/OrderConfirmation.astro";
+import CheckoutForm from "../../../../packages/theme-base/blocks/CheckoutForm/CheckoutForm.astro";
+import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
+import CheckoutSplit from "../../../../packages/theme-base/blocks/CheckoutLayout/CheckoutSplit.astro";
+import CheckoutSummary from "../../../../packages/theme-base/blocks/CheckoutSummary/CheckoutSummary.astro";
+import ShopHead from "./ShopHead.astro";
+import "./checkout.css";
+
+const page = Astro.locals.merfy;
+if (page === undefined) throw new Error("Страницу магазина рендерит только сборщик: нет Astro.locals.merfy");
+const checkout = page.checkout;
+if (checkout === undefined) throw new Error("Оформление рендерит только сборщик: нет locals.merfy.checkout");
+
+// Свойства «Спасибо за заказ» — страница flux пяти тем (packages/theme-flux/pages/checkout-result.json), как есть.
+const RESULT_PROPS = {
+	id: "OrderConfirmation-1",
+	banner: { enabled: false, src: "", placement: "order", align: "center", width: 580 },
+	orderBg: "",
+	summaryBg: "",
+	accentColor: "",
+	buttonColor: "",
+	errorColor: "",
+	headingFont: "",
+	headingWeight: "",
+	bodyFont: "",
+	bodyWeight: "",
+	greetingTemplate: "Спасибо за заказ, {name}!",
+	confirmedTitle: "Ваш заказ подтверждён",
+	confirmedNote: "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
+	detailsTitle: "Детали заказа",
+	helpText: "Нужна помощь? Обратитесь к нам",
+	returnButtonText: "Вернуться к магазину",
+	returnButtonHref: "/",
+	legalText:
+		"Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.",
+	padding: { top: 0, bottom: 0 },
+};
+---
+
+<html lang={page.head.lang} {...page.head.attributes}>
+	<head>
+		<ShopHead head={page.head} />
+		<style id="merfy-checkout" is:inline set:html={checkout.varsCss}></style>
+	</head>
+	<body>
+		{checkout.result ? (
+			<div class="color-scheme-2">
+				<OrderConfirmation {...RESULT_PROPS} />
+			</div>
+		) : (
+			<div class="color-scheme-2">
+				<main class="flex-1 w-full bg-background text-foreground">
+					<CheckoutSplit {...checkout.layout}>
+						<CheckoutHeader
+							slot="header"
+							siteTitle={page.shop.name}
+							logoMode="text"
+							logoImage={null}
+							rightIcon="cart"
+							accountLink="/account"
+							backLink="/cart"
+							cartLink="/cart"
+							padding={{ top: 24, bottom: 24 }}
+							{...checkout.header}
+						/>
+						<CheckoutForm slot="form" {...checkout.form} />
+						<CheckoutSummary slot="summary" {...checkout.summary} />
+					</CheckoutSplit>
+				</main>
+			</div>
+		)}
+
+		<script is:inline define:vars={{ config: checkout.config }}>
+			// НЕ клоббер: превью может выставить window.__MERFY_CONFIG__.checkout ДО этого скрипта (шаблон пяти тем).
+			window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
+			if (!window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = config.shopId || "";
+			if (!window.__MERFY_CONFIG__.apiUrl)
+				window.__MERFY_CONFIG__.apiUrl = config.apiUrl || "https://gateway.merfy.ru/api";
+			if (config.dadataToken) {
+				window.__DADATA_TOKEN__ = config.dadataToken;
+			}
+		</script>
+
+	</body>
+</html>

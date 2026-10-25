@@ -157,6 +157,15 @@ const entitySchema = z.strictObject({
   data: jsonObject,
 });
 
+// Блоки «Оформления заказа» (блок 10, Р10а-19): Puck-документ пяти тем pagesData['page-checkout'].content — только
+// CheckoutHeader, CheckoutLayout, CheckoutForm, CheckoutSummary, по порядку; props — как в ревизии.
+const CHECKOUT_BLOCK_TYPES = ['CheckoutHeader', 'CheckoutLayout', 'CheckoutForm', 'CheckoutSummary'] as const;
+export const checkoutBlockSchema = z.strictObject({
+  type: z.enum(CHECKOUT_BLOCK_TYPES),
+  props: jsonObject,
+});
+export type CheckoutBlock = z.infer<typeof checkoutBlockSchema>;
+
 const buildInputsSchema = z.strictObject({
   // Хэш кода рендера платформы (В4-1 В): пакеты, которые рисуют страницы новой темы.
   platform: z.strictObject({ renderHash: hashSchema }),
@@ -175,6 +184,8 @@ const buildInputsSchema = z.strictObject({
     tokens: jsonObject,
     settings: jsonObject.optional(),
     pages: z.array(pageSchema).optional(),
+    // Блоки «Оформления заказа» (блок 10, Р10а-19): сборка получает их этим входом.
+    checkout: z.strictObject({ blocks: z.array(checkoutBlockSchema) }).optional(),
   }),
   site: z.strictObject({
     id: z.uuid(),

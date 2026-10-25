@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { parseBuildInputs } from '@merfy/storefront-build';
 import type { Pool } from 'pg';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { openRpc, type RpcClient } from '../../src/rpc';
 import { PRODUCT_QUEUE, readSnapshot, type SnapshotDeps } from '../../src/snapshot';
 import { codeDeps } from './builder';
@@ -211,5 +211,38 @@ describe('снимок входов: коллекции и блоги (блок 
     expect(ofType('publication')[0].data).toMatchObject({ slug: 'linen', publishedAt: null, cover: null });
     expect(ofType('product')[0].data).toMatchObject({ title: 'Шарф', price: 250000 });
     expect(ofType('product')[0].data).not.toHaveProperty('costPrice');
+  });
+});
+
+// Блок 10, часть 10а (Р10а-19): блоки «Оформления заказа» — из Puck-документа page-checkout ревизии; в ревизию входов
+// идут строки четырёх типов с props-объектом, остальные — без них.
+describe('снимок входов: блоки «Оформления заказа» (блок 10 «Секций и SDK», часть 10а)', () => {
+  it('checkout: строки четырёх типов с props — в blocks; другой тип — без него; пустой документ — blocks: []', async () => {
+    const header = { type: 'CheckoutHeader', props: { colorScheme: 'scheme-2' } };
+    const summary = { type: 'CheckoutSummary', props: {} };
+    const site = await insertSite(db);
+    await insertRevision(db, site.id, {
+      tokens: {},
+      pages: [],
+      pagesData: { 'page-checkout': { content: [header, { type: 'Footer', props: {} }, summary] } },
+    });
+    const empty = await insertSite(db);
+    await insertRevision(db, empty.id, { tokens: {}, pages: [], pagesData: { 'page-checkout': { content: [] } } });
+    const revision = async (siteId: string) => parseBuildInputs((await readSnapshot(deps(), siteId)).inputs).revision;
+    expect(await revision(site.id)).toEqual({
+      tokens: {},
+      settings: {},
+      pages: [],
+      checkout: { blocks: [header, summary] },
+    });
+    expect(await revision(empty.id)).toEqual({ tokens: {}, settings: {}, pages: [], checkout: { blocks: [] } });
+  });
+
+  it('запрос ревизии читает pagesData страницы page-checkout', async () => {
+    const site = await insertSite(db);
+    const spy = vi.spyOn(db, 'query');
+    await readSnapshot(deps(), site.id);
+    expect(spy.mock.calls.map((call) => String(call[0])).join('\n')).toContain('page-checkout');
+    spy.mockRestore();
   });
 });

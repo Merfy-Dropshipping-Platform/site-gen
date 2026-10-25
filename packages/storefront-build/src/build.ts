@@ -11,8 +11,9 @@ import { shopFonts } from './head';
 import { buildKey, dataKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
 import { renderShopPage, type RenderedPage, type ShopTheme } from './page';
-import { specialFiles } from './platform-pages';
-import { shopRoutes } from './routes';
+import { checkoutFiles } from './checkout-pages';
+import { specialFiles, type SpecialFiles } from './platform-pages';
+import { routeCopies, shopRoutes, specialRoutes } from './routes';
 import { NO_SECTIONS, type PageRender, type RenderSection, type SectionFailed } from './sections-render';
 import { renderStandPage, type StandBuild } from './stand';
 
@@ -86,6 +87,37 @@ const bundleFiles = (pages: readonly RenderedPage[]): BuildFile[] => [
 const shopPagesOf = (inputs: BuildInputs, theme: ThemeBuild, page: PageRender): Promise<readonly RenderedPage[]> =>
   inBatches(shopRoutes(inputs), PAGE_CONCURRENCY, (route) => renderShopPage(inputs, route.path, theme, page));
 
+// Все файлы сборки: код темы, бандлы, страницы и их копии, страницы 404/502 и оформления (блок 10, часть 10а) —
+// по порядку путей.
+const allFilesOf = (
+  inputs: BuildInputs,
+  theme: ThemeBuild,
+  pages: readonly RenderedPage[],
+  shopPages: readonly RenderedPage[],
+  special: SpecialFiles,
+  checkout: SpecialFiles,
+): BuildFile[] =>
+  [
+    ...theme.clientFiles,
+    ...bundleFiles([...pages, ...special.rendered, ...checkout.rendered]),
+    ...pages.map((page) => page.file),
+    ...copyFilesOf(inputs, shopPages),
+    ...special.files,
+    ...checkout.files,
+  ].sort(byPath);
+
+// Файлы адресов-копий страниц блока 10 (часть 10а, Р10а-16): тот же HTML своим файлом; строки манифеста и карты сайта
+// у копии нет.
+const copyFilesOf = (inputs: BuildInputs, pages: readonly RenderedPage[]): BuildFile[] => {
+  const byPath = new Map(pages.map((page): [string, BuildFile] => [page.row.path, page.file]));
+  return specialRoutes(inputs, 'live').flatMap((route) =>
+    routeCopies(route).flatMap((copy) => {
+      const source = byPath.get(route.path);
+      return source === undefined ? [] : [{ path: copy.file, content: source.content }];
+    }),
+  );
+};
+
 export async function buildStorefront(
   raw: unknown,
   references: BuildReferences,
@@ -106,14 +138,11 @@ export async function buildStorefront(
   const shopPages = await shopPagesOf(inputs, theme, page);
   const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
   const pages = [...shopPages, ...standPages];
-  // Страницы 404 и 502 (блок 7, часть 7а): файлы есть в сборке, строк страниц в манифесте нет.
+  // Страницы 404 и 502 (блок 7, часть 7а) и оформление заказа (блок 10, часть 10а): файлы есть в сборке, строк
+  // страниц в манифесте нет.
   const special = await specialFiles(inputs, theme, page);
-  const files = [
-    ...theme.clientFiles,
-    ...bundleFiles([...pages, ...special.rendered]),
-    ...pages.map((page) => page.file),
-    ...special.files,
-  ].sort(byPath);
+  const checkout = await checkoutFiles(inputs, theme, page);
+  const files = allFilesOf(inputs, theme, pages, shopPages, special, checkout);
   // Файлы шрифтов (блок 12) — только в манифесте: байты уже в хранилище по отпечатку, их не льём.
   const fontFiles = shopFonts(inputs, theme.tokens, theme.migrations).files.map(
     (file) => [file.path, file.hash] as const,

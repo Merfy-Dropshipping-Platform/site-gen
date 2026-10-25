@@ -158,11 +158,17 @@ function withScript(section: CodeSection): ScriptSection[] {
 
 // Части бандла страницы (design.md блока 5, раздел 3.8): части ядра из core.json — всегда (С7-3 Б), потом части из
 // script_meta секций страницы, которых в ядре нет, по алфавиту, последними — части без API для секций (LIVE_PARTS).
-export function pageParts(core: readonly string[], sections: readonly CodeSection[]): string[] {
+export function pageParts(
+  core: readonly string[],
+  sections: readonly CodeSection[],
+  additional: readonly string[] = [],
+): string[] {
   const known = new Set([...core, ...LIVE_PARTS]);
   const wanted = new Set(sections.flatMap((section) => section.meta?.parts ?? []));
   const extra = [...wanted].filter((part) => !known.has(part)).sort();
-  return [...core, ...extra, ...LIVE_PARTS];
+  // Блок 10, часть 10а (Р10а-17): части самой страницы (оформление — checkout) — после частей секций, до LIVE_PARTS.
+  const fromPage = [...new Set(additional)].filter((part) => !known.has(part) && !wanted.has(part)).sort();
+  return [...core, ...extra, ...fromPage, ...LIVE_PARTS];
 }
 
 // Бандл страницы опубликованного сайта (раздел 3.10). Превью, рендер без кода (page.code нет) и входы без ядра — без
@@ -173,6 +179,7 @@ export async function pageBundle(
   pageId: string,
   page: PageRender,
   content: PageHtml = NO_HTML,
+  additionalParts: readonly string[] = [],
 ): Promise<PageBundle | null> {
   const shell = inputs.shell;
   const assets = page.code;
@@ -191,7 +198,7 @@ export async function pageBundle(
   );
   const modules = new Map(scripts.map(({ hash }): [string, string] => [hexOf(hash), moduleText(hash, assets.modules)]));
   const kit = kitOf(built.kit, content, [...modules.values()]);
-  const source = { core, parts: pageParts(shell.parts, code), sections, modules };
+  const source = { core, parts: pageParts(shell.parts, code, additionalParts), sections, modules };
   const bundle = await bundlePage(kit === undefined ? source : { ...source, kit });
   bundle.notices.forEach((notice) => page.notice?.(pageId, notice));
   return kit?.plan.reveal === true ? { ...bundle, tag: `${MOTION_HEAD}${bundle.tag}` } : bundle;

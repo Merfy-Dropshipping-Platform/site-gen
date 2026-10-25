@@ -148,6 +148,8 @@ export function createCheckoutStore(
 }
 
 // create: только на витрине (mode 'live') — window.cartStore = createCheckoutStore(...) и refresh(); в превью — ничего.
+// Настройки формы оформления (блок 10, часть 10а, факт 33) — тоже здесь: у пяти тем их тянет скрипт страницы
+// (themes/flux/src/pages/checkout.astro); исходники новой темы сторож рендера от сети держит чистыми — код сети в ядре.
 export const checkout: SdkPart<'checkout', null> = {
   name: 'checkout',
   create: (core: CoreHandle): null => {
@@ -155,6 +157,88 @@ export const checkout: SdkPart<'checkout', null> = {
     const store = createCheckoutStore(core.config.api.url, window.localStorage, window.document);
     Reflect.set(window, 'cartStore', store);
     void store.refresh();
+    void loadCheckoutSettings(core.config.api.url, core.config.shop.id, window, window.document);
     return null;
   },
 };
+
+// Событие готовности настроек: его ждут блоки формы (CheckoutSubmit и другие), пока его нет — submit заблокирован.
+export const CONFIG_READY_EVENT = 'checkout:config-ready';
+const AUTH_TOKEN_KEY = 'merfy_customer_token';
+
+// Окно настроек оформления; в тестах — поддельное (адрес не переключаем по-настоящему).
+export interface SettingsWindow {
+  readonly self: unknown;
+  readonly top: unknown;
+  readonly localStorage: Pick<Storage, 'getItem'>;
+  location: { href: string };
+}
+
+// Поле объекта; не объект — undefined.
+const fieldOf = (source: unknown, key: string): unknown =>
+  typeof source === 'object' && source !== null ? Reflect.get(source, key) : undefined;
+
+const oneOf = (value: unknown, allowed: readonly string[], fallback: string): string =>
+  typeof value === 'string' && allowed.includes(value) ? value : fallback;
+
+export interface CheckoutFormConfig {
+  readonly contactMethod: string;
+  readonly customerNameMode: string;
+  readonly addressRequired: boolean;
+  readonly requireCustomerAuth: boolean;
+}
+
+// Дефолты — как у пяти тем: полная форма; обязательный вход — только явным флагом (fail-open, любой сбой — гость идёт дальше).
+export function checkoutFormConfigOf(settings: unknown): CheckoutFormConfig {
+  return {
+    contactMethod: oneOf(fieldOf(settings, 'contactMethod'), ['email', 'email-phone'], 'email-phone'),
+    customerNameMode: oneOf(fieldOf(settings, 'customerNameMode'), ['surname', 'name', 'name-surname'], 'name-surname'),
+    addressRequired: fieldOf(settings, 'addressRequired') !== false,
+    requireCustomerAuth: fieldOf(settings, 'requireCustomerAuth') === true,
+  };
+}
+
+// Настройки — в window.__MERFY_CONFIG__.checkout и событием checkout:config-ready (факт 33). Конфиг уже есть (превью
+// отдало его сервером) — только событие, чужие поля не трогаем. Гость магазина с обязательным входом — на /login:
+// настоящий барьер серверный (orders, 403), это только UX. Превью (рамка) адрес не переключает.
+export function publishCheckoutSettings(
+  settings: unknown,
+  win: SettingsWindow,
+  doc: Pick<Document, 'dispatchEvent'>,
+  winRef: object,
+): void {
+  const config = checkoutFormConfigOf(settings);
+  const existing: unknown = Reflect.get(winRef, '__MERFY_CONFIG__');
+  const holder = typeof existing === 'object' && existing !== null ? existing : {};
+  if (fieldOf(holder, 'checkout') !== undefined) {
+    doc.dispatchEvent(new CustomEvent(CONFIG_READY_EVENT));
+    return;
+  }
+  Reflect.set(holder, 'checkout', config);
+  if (typeof existing !== 'object' || existing === null) Reflect.set(winRef, '__MERFY_CONFIG__', holder);
+  const guest = win.localStorage.getItem(AUTH_TOKEN_KEY) === null;
+  if (win.self === win.top && config.requireCustomerAuth && guest) {
+    win.location.href = `/login?redirect=${encodeURIComponent('/checkout')}`;
+    return;
+  }
+  doc.dispatchEvent(new CustomEvent(CONFIG_READY_EVENT));
+}
+
+// Настройки из шлюза при открытии оформления: сбой сети и пустой shopId — дефолты, событие всё равно диспатчится.
+export async function loadCheckoutSettings(
+  apiUrl: string,
+  shopId: string,
+  win: SettingsWindow,
+  doc: Pick<Document, 'dispatchEvent'>,
+): Promise<void> {
+  const settings =
+    shopId === '' ? null : await settingsReply(apiUrl, shopId).catch((): null => null);
+  publishCheckoutSettings(settings, win, doc, win);
+}
+
+async function settingsReply(apiUrl: string, shopId: string): Promise<unknown> {
+  const reply = await requestJson(`${apiUrl}/public/sites/${encodeURIComponent(shopId)}/settings`, {
+    method: 'GET',
+  });
+  return reply.status === 0 ? null : fieldOf(reply.body, 'settings');
+}

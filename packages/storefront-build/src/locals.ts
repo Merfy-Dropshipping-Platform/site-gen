@@ -54,6 +54,24 @@ export interface ShopPageLocals {
   // <main>, подвал — после.
   header: string[];
   footer: string[];
+  // Оформление заказа (блок 10, часть 10а, Р10а-17): данные страниц /checkout и /checkout-result; другие страницы
+  // пишут без него.
+  checkout?: CheckoutLocals;
+}
+
+// Объект JSON — свойства блоков оформления из ревизии (блок 10, Р10а-19).
+export type JsonObject = Readonly<Record<string, unknown>>;
+
+// Оформление заказа новой темы (блок 10, Р10а-17): те же блоки theme-base, что у пяти тем.
+export interface CheckoutLocals {
+  readonly result: boolean; // false — /checkout, true — /checkout-result
+  readonly config: { readonly shopId: string; readonly apiUrl: string; readonly dadataToken: string };
+  readonly varsCss: string; // таблица переменных пяти тем по схемам магазина (checkout-css.ts)
+  // Свойства блоков из revision.checkout: на витрине — только header; в превью — все четыре (Р10а-19).
+  readonly header: JsonObject;
+  readonly layout: JsonObject;
+  readonly form: JsonObject;
+  readonly summary: JsonObject;
 }
 
 // Стенд темы в превью конструктора (design.md блока 8, П8-1 А): та же серверная сборка темы рисует /theme-stand с

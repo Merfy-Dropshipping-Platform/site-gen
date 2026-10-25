@@ -95,6 +95,13 @@ describe("PagesService: особые страницы новой темы", () =
       ["blog", "system", false, "/blogs/:slug"],
       ["article", "system", false, "/blogs/:blog/:slug"],
       ["policy", "system", false, "/legal/:slug"],
+      ["page-cart", "system", false, "/cart"],
+      ["page-checkout", "system", false, "/checkout"],
+      ["page-checkout-result", "system", false, "/checkout-result"],
+      ["page-profile", "system", false, "/account/profile"],
+      ["page-wishlist", "system", false, "/wishlist"],
+      ["page-orders", "system", false, "/account/orders"],
+      ["page-login", "system", false, "/login"],
       ["not-found", "system", false, "/404"],
     ]);
   });
@@ -127,5 +134,26 @@ describe("PagesService: шаблоны записей новой темы (бл�
       svc.deletePage({ tenantId: "t1", siteId: "s1", pageId: "product" }),
     ).rejects.toThrow(new ForbiddenException("cannot_delete_system_page"));
     expect(storeContent.save).not.toHaveBeenCalled();
+  });
+});
+
+describe("PagesService: особые страницы блока 10 «Секций и SDK» (часть 10а)", () => {
+  it("адреса страниц и копий заняты — slug_collides_with_system_page", async () => {
+    for (const slug of ["/cart", "/checkout", "/account", "/wishlist", "/login", "/verify"]) {
+      const { svc, storeContent } = serviceOf({ pages: [HOME], pagesData: {}, sections: {} });
+      await expect(svc.createPage({ tenantId: "t1", siteId: "s1", name: "Своя", slug })).rejects.toThrow(
+        new BadRequestException("slug_collides_with_system_page"),
+      );
+      expect(storeContent.save).not.toHaveBeenCalled();
+    }
+  });
+
+  it("корзину и оформление удалить нельзя", async () => {
+    for (const pageId of ["page-cart", "page-checkout"]) {
+      const { svc } = serviceOf({ pages: [HOME], pagesData: {}, sections: {} });
+      await expect(svc.deletePage({ tenantId: "t1", siteId: "s1", pageId })).rejects.toThrow(
+        new ForbiddenException("cannot_delete_system_page"),
+      );
+    }
   });
 });

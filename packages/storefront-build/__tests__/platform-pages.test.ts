@@ -62,7 +62,13 @@ describe('адрес страницы 404', () => {
 describe('404.html и 502.html в сборке', () => {
   it('файлы в сборке и манифесте; строк страниц у них нет', async () => {
     const { manifest, files } = await buildStorefront(standInputsJson, REFERENCES, THEME);
-    expect(files.map((file) => file.path)).toEqual(['404.html', '502.html', 'index.html']);
+    expect(files.map((file) => file.path)).toEqual([
+      '404.html',
+      '502.html',
+      'checkout-result/index.html',
+      'checkout/index.html',
+      'index.html',
+    ]);
     expect(Object.keys(manifest.files)).toEqual(expect.arrayContaining(['404.html', '502.html']));
     expect(manifest.pages.map((page) => page.path)).toEqual(['/']);
   });

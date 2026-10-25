@@ -252,3 +252,12 @@ codeOnly }` (скрипт секций превью → скрипт превь�
   `/catalog`, окно `dialog` по событию SDK не открывается.
 - Номер корзины — и в `merfy:cartId` при каждом получении (`keepCartId`, `dropCartId`, `parts/cart.ts`): «Оформить
   заказ» — ссылка `/checkout` и работает при упавшем скрипте корзины.
+
+### Блоки расширений в местах `data-ext-point` (блок 12 «Секций и SDK»)
+
+Шаблон роли даёт место пустым элементом `<div data-ext-point="<место>"></div>`: `cart` (корзина и панель корзины),
+`account` (кабинет), `orders` (заказы), `product` (обёртка кнопки «В корзину» с `data-product-id`). Приём секции видит
+место в разметке и добавляет в `script_meta` часть ядра и её классы (`src/core/ext-points.ts`): `cart`, `account` —
+`points`, `orders` — `records`, `product` — `purchase`. Части показывают блоки включённых расширений по описаниям
+`GET /store/extensions/storefront`, как у пяти тем; в превью конструктора блоков нет. Имён расширений в ядре нет —
+тест `__tests__/extension-vocabulary.test.ts`.

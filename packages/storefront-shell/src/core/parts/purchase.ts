@@ -64,7 +64,7 @@ function oncePerPage(): void {
   }
 }
 
-// Место товара (В12-2 А): рантайм theme-base рисует блок у кнопки «В корзину».
+// Место товара (В12-2 А): рантайм theme-base показывает блок у кнопки «В корзину».
 function mountOne(runtime: PurchaseRuntime, place: HTMLElement, api: ShopApi): void {
   for (const child of [...place.children]) child.setAttribute('data-product-actions', '');
   const holder = document.createElement('div');

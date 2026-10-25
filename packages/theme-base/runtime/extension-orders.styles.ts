@@ -19,7 +19,7 @@
  * __tests__/extension-theme-look.test.ts). Цвета статусов (info, warning,
  * success, danger, neutral) — не темы: статусы остаются читаемыми.
  */
-export const EXTENSION_ORDERS_STYLES = `
+export const EXTENSION_ORDERS_STYLES = /* @__PURE__ */ `
 .xo, .xo-row {
   --xo-ink: #141414;
   --xo-back: #6A6A6A;

@@ -14,7 +14,7 @@ import {
 } from './records';
 import { listRoutesOf } from './list-routes';
 import type { PageMode } from './sections-render';
-import { HOME_PAGE, NOT_FOUND_PAGE_ID, type PageInfo } from './special-pages';
+import { HOME_PAGE, NOT_FOUND_PAGE_ID, STATIC_SPECIAL_PAGES, type PageInfo, type SpecialPage } from './special-pages';
 
 // Страницы магазина новой темы (design.md блока 4, Св-1): главная и свои страницы мерчанта (блок 1 «Секций и SDK»,
 // часть 4, Р1-4-8). Страница рендерит три списка секций ревизии: шапку, свой список и подвал. Страницы товаров,
@@ -29,9 +29,20 @@ export interface ShopRoute {
   record?: RecordEntry;
   // Страница списка (блок 11 «Секций и SDK», часть 11а): номер страницы списка; нет — страница без своего списка.
   list?: { page: number };
-  // Вторые адреса страницы списка — 301 на path (…/page/1); у записи свои — record.aliases.
-  aliases?: string[];
+  // Вторые адреса страницы списка — 301 на path (…/page/1); у записи свои — record.aliases. Блок 10, часть 10а
+  // (Р10а-16): адреса-копии страницы — тот же HTML своим файлом (/account → account/index.html); нет — копий нет.
+  aliases?: readonly string[] | readonly RouteCopy[];
 }
+
+// Адрес-копия страницы блока 10 (Р10а-16): адрес и файл того же HTML.
+export interface RouteCopy {
+  readonly path: string;
+  readonly file: string;
+}
+
+// Адреса-копии страницы (блок 10): объектные элементы aliases; строки — вторые адреса записи и списка (301).
+export const routeCopies = (route: ShopRoute): readonly RouteCopy[] =>
+  (route.aliases ?? []).filter((alias): alias is RouteCopy => typeof alias === 'object');
 
 export const HEADER_LIST = 'header';
 export const FOOTER_LIST = 'footer';
@@ -76,6 +87,33 @@ export const catalogShown = (inputs: BuildInputs): boolean =>
   (inputs.code.pages[CATALOG_PAGE_ID] ?? []).some((instance) => instance.hidden !== true);
 // shop.catalogUrl: CATALOG_PATH или null.
 export const catalogUrlOf = (inputs: BuildInputs): string | null => (catalogShown(inputs) ? CATALOG_PATH : null);
+
+// Особые страницы блока 10 из секций (часть 10а, Р10а-16): страницы с sections: false пишет сборка оформления (Б10а-9).
+const BLOCK10_SECTION_PAGES: readonly SpecialPage[] = STATIC_SPECIAL_PAGES.filter((page) => page.sections !== false);
+
+// Копии адресов страницы блока 10: файл — <адрес>/index.html.
+const copiesOf = (page: SpecialPage): readonly RouteCopy[] =>
+  (page.aliases ?? []).map((path): RouteCopy => ({ path, file: `${path.slice(1)}/index.html` }));
+
+const specialRouteOf = (page: SpecialPage): ShopRoute => {
+  const copies = copiesOf(page);
+  return {
+    id: page.id,
+    path: page.slug,
+    file: `${page.slug.slice(1)}/index.html`,
+    entity: 'site',
+    ...(copies.length === 0 ? {} : { aliases: copies }),
+  };
+};
+
+// Особые страницы блока 10 по режиму (часть 10а, Р10а-16): live — страницы из секций с видимым экземпляром в своём
+// списке; preview — все страницы из секций (мерчант ставит первую секцию). sections: false — не здесь (Б10а-9).
+export function specialRoutes(inputs: BuildInputs, mode: PageMode): readonly ShopRoute[] {
+  const visible = (page: SpecialPage): boolean =>
+    (inputs.code.pages[page.id] ?? []).some((instance) => instance.hidden !== true);
+  const pages = mode === 'live' ? BLOCK10_SECTION_PAGES.filter(visible) : BLOCK10_SECTION_PAGES;
+  return pages.map(specialRouteOf);
+}
 
 // Записи со своим списком (блок 11, часть 11а): коллекция и блог — первая страница списка, второй адрес …/page/1.
 const LIST_RECORD_TYPES: ReadonlySet<RecordType> = new Set(['collection', 'blog']);
@@ -127,8 +165,13 @@ function routesOf(inputs: BuildInputs, mode: PageMode = 'live'): Routes {
   // Каталог и страницы N списков (блок 11 «Секций и SDK», часть 11а) — после страниц записей.
   const records = RECORD_ENTRIES[mode](inputs).map(recordRouteOf);
   const index = mode === 'preview' ? previewIndex(inputs) : recordIndex(inputs);
-  const list = [...SHOP_ROUTES, ...own, ...records, ...listRoutesOf(inputs, mode, records, index)];
-  const byPath = new Map([...list, NOT_FOUND_ROUTE].map((route): [string, ShopRoute] => [route.path, route]));
+  const list = [...SHOP_ROUTES, ...specialRoutes(inputs, mode), ...own, ...records, ...listRoutesOf(inputs, mode, records, index)];
+  // По адресу — и копии страниц блока 10 (Р10а-16): копия ведёт на ту же строку.
+  const withCopies = list.flatMap((route): readonly [string, ShopRoute][] => [
+    [route.path, route],
+    ...routeCopies(route).map((copy): [string, ShopRoute] => [copy.path, route]),
+  ]);
+  const byPath = new Map([...withCopies, [NOT_FOUND_ROUTE.path, NOT_FOUND_ROUTE] as const]);
   const routes = { list, byPath };
   routesByMode[mode].set(inputs, routes);
   return routes;
@@ -177,7 +220,10 @@ export function pageInfoById(inputs: BuildInputs, id: string, record: string | n
   if (id === CATALOG_PAGE_ID) return pageInfoOf(routeOf(CATALOG_PATH, inputs, 'preview'));
   const path = isRecordType(id) ? previewRecordPath(inputs, id, record) : undefined;
   if (path !== undefined) return pageInfoOf(routeOf(path, inputs, 'preview'));
-  const route = [...shopRoutes(inputs), NOT_FOUND_ROUTE].find((candidate) => candidate.id === id);
+  // Особая страница блока 10 (Р10а-16) находится и без секций — превью страницы, которую мерчант ещё не собрал.
+  const route = [...shopRoutes(inputs), ...specialRoutes(inputs, 'preview'), NOT_FOUND_ROUTE].find(
+    (candidate) => candidate.id === id,
+  );
   return route === undefined ? HOME_PAGE : pageInfoOf(route);
 }
 

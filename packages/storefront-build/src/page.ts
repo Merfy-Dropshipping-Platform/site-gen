@@ -75,9 +75,12 @@ const pageDeps = (inputs: BuildInputs, route: ShopRoute, recordDeps: readonly st
 ];
 
 // Вторые адреса (часть 8б: адрес записи по id; блок 11: …/page/1 первой страницы списка) — поле строки только у страницы,
-// у которой они есть.
+// у которой они есть. Адреса-копии блока 10 (объекты) — не вторые адреса: у копии свой файл и строки манифеста нет.
 function aliasesOf(route: ShopRoute): { aliases?: string[] } {
-  const aliases = [...(route.record?.aliases ?? []), ...(route.aliases ?? [])];
+  const aliases = [
+    ...(route.record?.aliases ?? []),
+    ...(route.aliases ?? []).filter((alias): alias is string => typeof alias === 'string'),
+  ];
   return aliases.length === 0 ? {} : { aliases };
 }
 

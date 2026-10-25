@@ -31,7 +31,9 @@ export interface StandInputs {
   // Адрес сборщика аналитики нужен виду live: опубликованная страница без него не соберётся (блок 11).
   env: { apiUrl: string; analyticsUrl?: string };
   // Ключи ревизии как есть: что не подошло теме, стенд печатает списком и рисует без этого (пустое не ломает).
-  revision: { tokens: unknown; settings: unknown };
+  // checkout (блок 10, Р10а-19) — блоки «Оформления заказа» из той же ревизии: стенду не нужны, превью страницы
+  // оформления читает их из входов сборки.
+  revision: { tokens: unknown; settings: unknown; checkout?: unknown };
 }
 
 export interface StandTheme {
@@ -124,7 +126,11 @@ const standInputsOf = (inputs: BuildInputs): StandInputs => ({
   site: { id: inputs.site.id, name: inputs.site.name, publicUrl: inputs.site.publicUrl },
   theme: { id: inputs.theme.id, version: inputs.theme.version },
   env: inputs.env,
-  revision: { tokens: inputs.revision.tokens, settings: inputs.revision.settings ?? {} },
+  revision: {
+    tokens: inputs.revision.tokens,
+    settings: inputs.revision.settings ?? {},
+    ...(inputs.revision.checkout === undefined ? {} : { checkout: inputs.revision.checkout }),
+  },
 });
 
 // Страница стенда в сборке — страница сайта, как главная: её перерисовывает та же правка магазина.

@@ -12,7 +12,7 @@ import { buildKey, dataKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
 import { renderShopPage, type RenderedPage, type ShopTheme } from './page';
 import { specialFiles } from './platform-pages';
-import { shopRoutes } from './routes';
+import { routeCopies, shopRoutes, specialRoutes } from './routes';
 import { NO_SECTIONS, type PageRender, type RenderSection, type SectionFailed } from './sections-render';
 import { renderStandPage, type StandBuild } from './stand';
 
@@ -86,6 +86,18 @@ const bundleFiles = (pages: readonly RenderedPage[]): BuildFile[] => [
 const shopPagesOf = (inputs: BuildInputs, theme: ThemeBuild, page: PageRender): Promise<readonly RenderedPage[]> =>
   inBatches(shopRoutes(inputs), PAGE_CONCURRENCY, (route) => renderShopPage(inputs, route.path, theme, page));
 
+// Файлы адресов-копий страниц блока 10 (часть 10а, Р10а-16): тот же HTML своим файлом; строки манифеста и карты сайта
+// у копии нет.
+const copyFilesOf = (inputs: BuildInputs, pages: readonly RenderedPage[]): BuildFile[] => {
+  const byPath = new Map(pages.map((page): [string, BuildFile] => [page.row.path, page.file]));
+  return specialRoutes(inputs, 'live').flatMap((route) =>
+    routeCopies(route).flatMap((copy) => {
+      const source = byPath.get(route.path);
+      return source === undefined ? [] : [{ path: copy.file, content: source.content }];
+    }),
+  );
+};
+
 export async function buildStorefront(
   raw: unknown,
   references: BuildReferences,
@@ -112,6 +124,7 @@ export async function buildStorefront(
     ...theme.clientFiles,
     ...bundleFiles([...pages, ...special.rendered]),
     ...pages.map((page) => page.file),
+    ...copyFilesOf(inputs, shopPages),
     ...special.files,
   ].sort(byPath);
   // Файлы шрифтов (блок 12) — только в манифесте: байты уже в хранилище по отпечатку, их не льём.

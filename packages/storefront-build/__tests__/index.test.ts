@@ -62,6 +62,7 @@ const API = [
   'checkPageRow',
   'checkSeo',
   'checkThemeVersion',
+  'checkoutBlockSchema',
   'classSystem',
   'dataKey',
   'dependentPages',

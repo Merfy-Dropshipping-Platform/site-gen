@@ -54,7 +54,10 @@ export interface PreviewDeps {
 }
 
 const STAND_SQL = `SELECT s.id, s.name, s.theme_id, s.theme_version, s.public_url, ${revisionKeySql('tokens')} AS tokens,
-  ${revisionKeySql('settings')} AS settings FROM site s LEFT JOIN site_revision r ON r.id = s.current_revision_id
+  ${revisionKeySql('settings')} AS settings,
+  CASE WHEN jsonb_typeof(r.data->'pagesData'->'page-checkout'->'content') = 'array'
+    THEN r.data->'pagesData'->'page-checkout'->'content' ELSE NULL END AS checkout
+  FROM site s LEFT JOIN site_revision r ON r.id = s.current_revision_id
   WHERE s.id = $1 AND s.deleted_at IS NULL`;
 
 const standRowSchema = z.object({
@@ -65,6 +68,7 @@ const standRowSchema = z.object({
   public_url: z.string().nullable(),
   tokens: z.record(z.string(), z.json()),
   settings: z.record(z.string(), z.json()),
+  checkout: z.array(z.unknown()).nullable(),
 });
 type StandRow = z.infer<typeof standRowSchema>;
 
@@ -118,7 +122,7 @@ const inputsOf = (deps: PreviewDeps, { row, theme }: StandShop): StandInputs => 
   site: { id: row.id, name: row.name, publicUrl: row.public_url },
   theme: { id: row.theme_id ?? '', version: theme.version },
   env: { apiUrl: deps.apiUrl },
-  revision: { tokens: row.tokens, settings: row.settings },
+  revision: { tokens: row.tokens, settings: row.settings, ...(row.checkout === null ? {} : { checkout: row.checkout }) },
 });
 
 // HTML стенда с правками мерчанта; правки, что не подошли теме, — в журнал (и разделом на самом стенде).

@@ -373,7 +373,8 @@ async function pumpCards(rt: FavoritesRuntime): Promise<void> {
 function mountProducts(rt: FavoritesRuntime, products: Atom<FavoriteProducts>): void {
   onMount(products, () => {
     const stop = rt.state.listen(() => void pumpCards(rt));
-    void pumpCards(rt);
+    // Первая прокачка — микрозадачей: секция подписалась во время старта страницы, ответы шлюза ещё настраиваются.
+    void Promise.resolve().then(() => pumpCards(rt));
     return stop;
   });
 }

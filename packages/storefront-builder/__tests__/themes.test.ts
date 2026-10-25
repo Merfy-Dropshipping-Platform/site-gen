@@ -37,11 +37,11 @@ describe('темы новой архитектуры', () => {
   });
 
   // Превью конструктора (блок 8): схема панели платформы, файлы клиента по адресу, стенд рисуется тем же рисовальщиком.
-  it('nova для превью: 44 поля панели, CSS среди файлов клиента, стенд рисуется', async () => {
+  it('nova для превью: 45 полей панели, CSS среди файлов клиента, стенд рисуется', async () => {
     const loaded = await loadThemes(ROOT);
     const preview = loaded.previews.get('nova');
     expect(preview?.version).toBe(loaded.themes.get('nova')?.version);
-    expect(preview?.panel.groups).toHaveLength(11);
+    expect(preview?.panel.groups).toHaveLength(12);
     expect([...(preview?.assets.keys() ?? [])].some((path) => /^\/_astro\/.+\.css$/.test(path))).toBe(true);
     expect(await preview?.renderStand(STAND_LOCALS)).toContain('data-stand="logo"');
     await loaded.close();
@@ -52,18 +52,18 @@ describe('темы новой архитектуры', () => {
     const [plain, standed] = await Promise.all([loadThemes(ROOT), loadThemes(ROOT, { standPage: true })]);
     expect(plain.themes.get('nova')?.build.stand).toBeUndefined();
     const stand = standed.themes.get('nova')?.build.stand;
-    expect(stand?.panel.groups).toHaveLength(11);
+    expect(stand?.panel.groups).toHaveLength(12);
     expect(await stand?.renderStand(STAND_LOCALS)).toContain('data-stand="logo"');
     await Promise.all([plain.close(), standed.close()]);
   });
 
   // Две панели у сборки (блок 3 «Секций и SDK», часть 3в): показанная мерчанту и полная панель платформы. Nova ничего не
   // скрывает в theme.json, поэтому групп поровну.
-  it('nova: у сборки две панели — показанная мерчанту и полная платформы, по 11 групп', async () => {
+  it('nova: у сборки две панели — показанная мерчанту и полная платформы, по 12 групп', async () => {
     const loaded = await loadThemes(ROOT);
     const build = loaded.themes.get('nova')?.build;
-    expect(build?.panel?.groups).toHaveLength(11);
-    expect(build?.platformPanel?.groups).toHaveLength(11);
+    expect(build?.panel?.groups).toHaveLength(12);
+    expect(build?.platformPanel?.groups).toHaveLength(12);
     await loaded.close();
   });
 

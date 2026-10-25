@@ -195,15 +195,21 @@ const { settings, blocks, theme, shop, page } = Astro.props;
                 <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" /></svg>
               </a>
             )
+          ) : block.type === 'wishlist' ? (
+            theme['wishlist-enabled'] !== false && (
+              <a aria-label="Избранное" class="text-muted-foreground hover:text-heading" href="/wishlist">
+                <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z" />
+                </svg>
+                <span class="font-body text-xs" data-ref="favorites-count" hidden>0</span>
+              </a>
+            )
           ) : (
-            <a
-              aria-label={block.type === 'wishlist' ? 'Избранное' : 'Корзина'}
-              class="text-muted-foreground hover:text-heading"
-              href={block.type === 'wishlist' ? '/wishlist' : '/cart'}
-            >
+            <a aria-label="Корзина" class="text-muted-foreground hover:text-heading" href="/cart" data-action="cart.open">
               <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path d={block.type === 'wishlist' ? 'M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z' : 'M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0'} />
+                <path d="M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0" />
               </svg>
+              <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
             </a>
           )}
         </div>
@@ -467,15 +473,29 @@ const { settings, blocks, theme, shop, page } = Astro.props;
                   </dialog>
                 </div>
               ) : (
-                <a
-                  aria-label={block.type === 'wishlist' ? 'Избранное' : block.type === 'cart' ? 'Корзина' : 'Профиль'}
-                  class="text-muted-foreground hover:text-heading"
-                  href={block.type === 'wishlist' ? '/wishlist' : block.type === 'cart' ? '/cart' : '/login'}
-                >
+                block.type === 'wishlist' ? (
+                theme['wishlist-enabled'] !== false && (
+                  <a aria-label="Избранное" class="text-muted-foreground hover:text-heading" href="/wishlist">
+                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z" />
+                    </svg>
+                    <span class="font-body text-xs" data-ref="favorites-count" hidden>0</span>
+                  </a>
+                )
+                ) : block.type === 'cart' ? (
+                <a aria-label="Корзина" class="text-muted-foreground hover:text-heading" href="/cart" data-action="cart.open">
                   <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <path d={block.type === 'wishlist' ? 'M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z' : block.type === 'cart' ? 'M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0' : 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0'} />
+                    <path d="M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0" />
+                  </svg>
+                  <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
+                </a>
+                ) : (
+                <a aria-label="Профиль" class="text-muted-foreground hover:text-heading" href="/login">
+                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" />
                   </svg>
                 </a>
+                )
               )}
             </div>
           ))}
@@ -600,15 +620,29 @@ const { settings, blocks, theme, shop, page } = Astro.props;
                   </dialog>
                 </div>
               ) : (
-                <a
-                  aria-label={block.type === 'wishlist' ? 'Избранное' : block.type === 'cart' ? 'Корзина' : 'Профиль'}
-                  class="text-muted-foreground hover:text-heading"
-                  href={block.type === 'wishlist' ? '/wishlist' : block.type === 'cart' ? '/cart' : '/login'}
-                >
+                block.type === 'wishlist' ? (
+                theme['wishlist-enabled'] !== false && (
+                  <a aria-label="Избранное" class="text-muted-foreground hover:text-heading" href="/wishlist">
+                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z" />
+                    </svg>
+                    <span class="font-body text-xs" data-ref="favorites-count" hidden>0</span>
+                  </a>
+                )
+                ) : block.type === 'cart' ? (
+                <a aria-label="Корзина" class="text-muted-foreground hover:text-heading" href="/cart" data-action="cart.open">
                   <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <path d={block.type === 'wishlist' ? 'M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5Z' : block.type === 'cart' ? 'M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0' : 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0'} />
+                    <path d="M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0" />
+                  </svg>
+                  <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
+                </a>
+                ) : (
+                <a aria-label="Профиль" class="text-muted-foreground hover:text-heading" href="/login">
+                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" />
                   </svg>
                 </a>
+                )
               )}
             </div>
           ))}

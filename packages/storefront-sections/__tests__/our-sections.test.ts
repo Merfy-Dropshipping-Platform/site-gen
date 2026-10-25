@@ -56,3 +56,19 @@ describe('наши секции блока 10 — проверка при сох
     expect((await prepared('cart-badge')).problems).toEqual([]);
   });
 });
+
+// Блок 10, часть 10б: «Избранное» — те же правила, что у секции мерчанта; «Шапка» с themeSettings — без отказов.
+describe('наши секции блока 10б — проверка при сохранении', () => {
+  it('«Избранное»: страница, одна на список, модуль favorites', async () => {
+    const { problems, section } = await prepared('wishlist');
+    expect(problems).toEqual([]);
+    expect([section?.name, section?.warnings, section?.manifest.groups, section?.manifest.limit]).toEqual([
+      'shop:wishlist',
+      [],
+      ['page'],
+      1,
+    ]);
+    expect(section?.scriptMeta.uses).toEqual(['favorites']);
+  });
+});
+

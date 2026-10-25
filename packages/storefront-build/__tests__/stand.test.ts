@@ -28,8 +28,8 @@ describe('standLocals', () => {
       'data-motion-reveal': 'off',
       'data-motion-hover': 'none',
     });
-    expect(locals.settings).toMatchObject({ 'cart-type': 'drawer', 'cookie-banner-enabled': true, 'logo-image': '' });
-    expect(Object.keys(locals.settings)).toHaveLength(14);
+    expect(locals.settings).toMatchObject({ 'cart-type': 'drawer', 'cookie-banner-enabled': true, 'wishlist-enabled': true, 'logo-image': '' });
+    expect(Object.keys(locals.settings)).toHaveLength(15);
     expect(locals.config).toEqual({
       'shop.name': 'Шарфы',
       mode: 'preview',

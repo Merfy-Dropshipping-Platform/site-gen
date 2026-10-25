@@ -27,6 +27,16 @@ export const REPLACE_LIMIT = 20;
 export const MESSAGE_MAX_LENGTH = 2000;
 // Хеш кода секции — sha256, 64 знака hex: тот же, что script строки списка секций бандла.
 export const SCRIPT_HASH = /^[0-9a-f]{64}$/;
+// Модуль «Каталог» (блок 11 «Секций и SDK», план 11б-2) → скрипту секций превью: событие на узле внутри <merfy-section>,
+// всплывает, cancelable, detail — PreviewListDetail. В превью нет раздачи: скрипт секций превью отменяет событие,
+// запрашивает блок заново с параметрами списка, ставит стили блока и отдаёт HTML секции в reply — вставляет его модуль,
+// как ответ раздачи на сайте. Не отменено — превью не знает этот блок, модуль оставляет список как есть.
+export const PREVIEW_LIST_EVENT = 'merfy:preview:list';
+
+export interface PreviewListDetail {
+  readonly list: string; // параметры списка в каноническом виде (listQueryString сборки); '' — без параметров
+  readonly reply: (html: string) => void; // HTML одной <merfy-section> из ответа превью; ошибка запроса — не вызывается
+}
 
 // Итог замены у ядра; очередь скрипта превью добавляет superseded (пришла правка новее) и absent (секции нет).
 export type ReplaceOutcome = 'kept-state' | 'fresh' | 'failed' | 'reloaded';

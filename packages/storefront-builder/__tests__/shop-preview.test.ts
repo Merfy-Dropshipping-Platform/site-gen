@@ -100,7 +100,7 @@ describe('превью главной', () => {
   it('page=stand — стенд темы, как раньше; другая страница — 404', async () => {
     const { deps } = depsOf();
     expect((await shopPreview(deps, url(`shop=${SHOP}&page=stand`))).body).toBe('стенд');
-    expect((await shopPreview(deps, url(`shop=${SHOP}&page=catalog`))).status).toBe(404);
+    expect((await shopPreview(deps, url(`shop=${SHOP}&page=chuzhaya`))).status).toBe(404);
   });
 
   it('главная: секции из процесса рендера магазина, скрипт превью перед </body>, без списка модулей', async () => {
@@ -585,5 +585,105 @@ describe('поля с записями в превью одного блока (
       { product: null },
     ];
     expect(rendered.map(([, request]) => request.records)).toEqual(expected);
+  });
+});
+
+describe('каталог и список страницы в превью (блок 11 «Секций и SDK», часть 11а-2)', () => {
+  const AT = '2026-10-20T10:00:00.000Z';
+  const productOf = (n: number) => ({
+    type: 'product',
+    id: `00000000-0000-4000-8000-00000000010${n}`,
+    updatedAt: AT,
+    data: {
+      title: `Шарф ${n}`,
+      handle: `sharf-${n}`,
+      description: '',
+      price: 190000,
+      compareAtPrice: null,
+      images: [],
+      available: true,
+      options: [],
+      variants: [],
+      collectionIds: [],
+      seo: { title: '', description: '' },
+    },
+  });
+  const PER_PAGE = {
+    id: 'per-page',
+    label: 'Товаров на странице',
+    setting: { kind: 'range' as const, default: 24, min: 2, max: 24, step: 1 },
+  };
+  const GRID: CurrentSection = {
+    name: 'shop:grid',
+    manifest: { sdk: 1, name: 'grid', kind: 'section', title: 'Каталог', settings: [HEADING, PER_PAGE] },
+    render: MODULE,
+    renderHash: HASH,
+  };
+  const LIST_INPUTS = parseBuildInputs({
+    ...standInputsJson,
+    code: {
+      sections: [{ name: 'shop:grid', kind: 'section', hash: sha256('правка'), render: HASH, script: null }],
+      pages: {},
+      globals: [],
+    },
+    data: { status: 'received', entities: [1, 2, 3].map(productOf) },
+  });
+  const listDeps = () => {
+    const made = depsOf(new Map([[GRID.name, GRID]]));
+    made.deps.inputs = () => Promise.resolve({ inputs: LIST_INPUTS, renders: new Map([[HASH, MODULE]]) });
+    return made;
+  };
+  const instance = { id: 'grid-1', section: 'shop:grid', settings: { 'per-page': 2 } };
+
+  it('page=catalog — страница каталога и с пустым списком', async () => {
+    const answer = await shopPreview(listDeps().deps, url(`shop=${SHOP}&page=catalog`));
+    expect(answer.status).toBe(200);
+    expect(answer.body).toContain('<link rel="canonical" href="https://nova-stand.example/catalog">');
+  });
+
+  it('блок на каталоге — page.list по настройке блока; list из тела — номер страницы', async () => {
+    const { deps, rendered } = listDeps();
+    for (const list of [undefined, 'page=2'])
+      expect((await sectionPreview(deps, SHOP, JSON.stringify({ instance, page: 'catalog', list }))).status).toBe(200);
+    expect(rendered.map(([, request]) => request.page?.list)).toMatchObject([
+      { page: 1, pages: 2, perPage: 2, url: '/catalog' },
+      { page: 2, pages: 2, items: [{ title: 'Шарф 3' }] },
+    ]);
+  });
+
+  it('выбранное в теле и клиент product — карточки по ответу сервиса', async () => {
+    const { deps, rendered } = listDeps();
+    const calls: unknown[][] = [];
+    const reply = (pattern: unknown) =>
+      pattern === 'product.findAll'
+        ? { success: true, data: [{ id: productOf(3).id }], total: 1 }
+        : { success: true, data: { groups: [], priceRange: { min: 0, max: 0 } } };
+    deps.products = {
+      call: (...args) => {
+        calls.push(args);
+        return Promise.resolve(reply(args[1]));
+      },
+      timeoutMs: 1_000,
+      log: () => undefined,
+    };
+    const body = JSON.stringify({ instance, page: 'catalog', list: 'sort=price_asc' });
+    expect((await sectionPreview(deps, SHOP, body)).status).toBe(200);
+    expect(calls.map((call) => call[1])).toEqual(['product.findAll', 'product.getFilters']);
+    expect(rendered[0]?.[1].page?.list).toMatchObject({ total: 1, items: [{ id: productOf(3).id }] });
+  });
+
+  it('секция без per-page на главной — без page.list; list не строкой или длиннее 2048 — 400', async () => {
+    const { deps, rendered } = depsOf(
+      new Map([
+        [HERO.name, HERO],
+        [GRID.name, GRID],
+      ]),
+    );
+    deps.inputs = () => Promise.resolve({ inputs: LIST_INPUTS, renders: new Map([[HASH, MODULE]]) });
+    const hero = { id: 'hero-1', section: 'shop:hero', settings: {} };
+    expect((await sectionPreview(deps, SHOP, JSON.stringify({ instance: hero, page: 'home' }))).status).toBe(200);
+    expect(rendered[0]?.[1].page?.list).toBeUndefined();
+    for (const list of [7, 'q='.padEnd(2049, 'а')])
+      expect((await sectionPreview(deps, SHOP, JSON.stringify({ instance, page: 'catalog', list }))).status).toBe(400);
   });
 });

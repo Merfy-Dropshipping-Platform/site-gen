@@ -1,10 +1,16 @@
 import {
+  CATALOG_PAGE_ID,
+  CATALOG_PATH,
   NOT_FOUND_PAGE_ID,
   NOT_FOUND_ROUTE,
   PREVIEW_AGENT,
   PREVIEW_SECTIONS_AGENT,
+  StorefrontBuildError,
   isRecordType,
+  listSourceOf,
   pageInfoById,
+  pageListOf,
+  routeOf,
   pagePropsOf,
   parseBuildInputs,
   previewRecordPath,
@@ -35,6 +41,7 @@ import type { Dictionary } from '@merfy/tokens';
 import { z } from 'zod';
 import { instanceSchema, readVisibleSections, wrapperOf, type SectionInstance } from './code';
 import type { DrawAnswer } from './draw';
+import { LIST_ARGS_MAX, listRequestOf } from './list-rpc';
 import { inlineAssets } from './inline-assets';
 import {
   previewScriptOf,
@@ -46,7 +53,7 @@ import {
 } from './preview-code';
 import { inlineFonts } from './preview-fonts';
 import { withPreviewPolicy } from './preview-policy';
-import { readSnapshot } from './snapshot';
+import { readSnapshot, type ProductRequest } from './snapshot';
 import { answer, isAnswer, jsonAnswer, standPreview, standShop, type PreviewDeps } from './stand-preview';
 
 // Превью магазина новой темы (блок 1 «Секций и SDK», Р1, Р2). GET /preview?shop&page — главная: та же страница, что в
@@ -70,13 +77,15 @@ export interface ShopPreviewDeps {
   fonts: (css: string) => Promise<string>;
   // Сборка ядра сервиса (блок 5, часть 5г): её части — uses кода секции до части 5в; нет — uses пустой.
   shell?: PreviewShell;
+  // Блок 11, часть 11а-2: сервис product — список блока с параметрами; нет — список из записей.
+  products?: ProductRequest;
 }
 
 const HOME_PAGES: ReadonlySet<string> = new Set(['', '/', 'home']);
 const FONTS_STYLE = /<style id="merfy-fonts">([\s\S]*?)<\/style>/;
 const TEXT = {
   page: 'в превью есть главная (page=home), страница 404 (page=not-found), свои страницы (page=<id страницы>), шаблоны записей (page=product, collection, blog, article или policy; запись — record=<id или адрес>) и стенд темы (page=stand)',
-  block: 'нужно тело JSON { instance: { id, section, settings }, menus?, theme?, page? }',
+  block: 'нужно тело JSON { instance: { id, section, settings }, menus?, theme?, page?, list? }',
   section: (name: string) => `секции ${name} у магазина нет`,
   extensions: 'сервис расширений не ответил',
 } as const;
@@ -89,6 +98,8 @@ const blockSchema = z.object({
   page: z.string().optional(),
   // Блок 8, часть 8б-2: запись шаблона (id или адрес), на странице которого стоит блок; нет — запись по умолчанию.
   record: z.string().optional(),
+  // Блок 11, часть 11а-2: параметры списка из события модуля «Каталог» (канонический вид); нет — без параметров.
+  list: z.string().max(LIST_ARGS_MAX).optional(),
 });
 
 const isPreviewAnswer = (value: PreviewShop | DrawAnswer): value is DrawAnswer => 'status' in value;
@@ -114,6 +125,7 @@ export const shopPreviewDeps = (preview: PreviewDeps): ShopPreviewDeps => ({
   render: (shopId, request) => preview.renderers.render(shopId, request),
   fonts: (css) => inlineFonts(css, preview.fonts),
   shell: preview.snapshot.code.shell,
+  products: preview.snapshot.products,
 });
 
 const previewPage = (deps: ShopPreviewDeps, shopId: string, modules: ReadonlyMap<string, string>): PageRender => ({
@@ -161,6 +173,8 @@ function withoutFontPreloads(html: string): string {
 function previewPathOf(inputs: BuildInputs, page: string, record: string | null): string | undefined {
   if (HOME_PAGES.has(page)) return '/';
   if (page === NOT_FOUND_PAGE_ID) return NOT_FOUND_ROUTE.path;
+  // Каталог (блок 11, часть 11а) — и с пустым списком: мерчант ставит в него первую секцию.
+  if (page === CATALOG_PAGE_ID) return CATALOG_PATH;
   if (isRecordType(page)) return previewRecordPath(inputs, page, record);
   return inputs.revision.pages?.find((candidate) => candidate.id === page)?.slug;
 }
@@ -204,7 +218,7 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   if (isPreviewAnswer(found)) return found;
   const parsed = blockSchema.safeParse(jsonOf(body));
   if (!parsed.success) return jsonAnswer(400, { problems: [TEXT.block] });
-  const { instance, menus, theme, page, record } = parsed.data;
+  const { instance, menus, theme, page, record, list } = parsed.data;
   const sections = await deps.sections(found.shopId);
   if (sections === null) return jsonAnswer(502, { problems: [TEXT.extensions] });
   const current = sections.get(instance.section);
@@ -220,7 +234,10 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   const placed = previewPlaced(instance, current, settings, blocks, menus ?? [], current.renderHash);
   // page — у каждой секции (часть 7а): без page и без uses пропсы не читаются, страница — главная.
   const needsProps = propsUsesOf(current.manifest).length > 0 || page !== undefined;
-  const props = needsProps ? await previewProps(deps, found.shopId, theme, page, record) : undefined;
+  const base = needsProps ? await previewProps(deps, found.shopId, theme, page, record) : undefined;
+  // Список страницы блока (блок 11, часть 11а-2, Р11а-19): по этому блоку и параметрам списка из тела.
+  const props =
+    base === undefined ? undefined : await withBlockList(deps, found.shopId, base, placed, { page, record, list });
   const modules = new Map([[current.renderHash, current.render]]);
   const content = await renderPlacedSections([placed], found.dictionary, {
     ...previewPage(deps, found.shopId, modules),
@@ -269,6 +286,36 @@ async function previewProps(
   // Блок на шаблоне записи (часть 8б-2): запись record — та же, что у превью страницы. Записи магазина — полям с
   // записями (часть 8г).
   return { ...props, page: pageInfoById(inputs, pageId, record ?? null), records: recordIndex(inputs) };
+}
+
+// Список страницы блока (блок 11, часть 11а-2, Р11а-19): источник — по этому блоку (его per-page и поле collection,
+// несохранённые правки видны), выбранное — из параметров списка тела. Страница без списка — пропсы как есть.
+async function withBlockList(
+  deps: ShopPreviewDeps,
+  shopId: string,
+  props: PageProps,
+  placed: ReturnType<typeof previewPlaced>,
+  where: { page?: string; record?: string; list?: string },
+): Promise<PageProps> {
+  const { inputs } = await deps.inputs(shopId);
+  const path = previewPathOf(inputs, where.page ?? 'home', where.record ?? null) ?? '/';
+  const source = listSourceOf(inputs, routeOf(path, inputs, 'preview'), [placed], props);
+  if (source === null) return props;
+  const request = await listRequestOf(deps.products, shopId, inputs, source, where.list ?? '');
+  const index = recordIndex(inputs);
+  try {
+    return {
+      ...props,
+      page: { ...props.page, list: pageListOf(index, inputs, source, request.query, request.listed) },
+    };
+  } catch (error) {
+    // Номер больше последнего — тот же список с номером 1: превью не отвечает 404 на правку мерчанта.
+    if (error instanceof StorefrontBuildError && error.code === 'page-unknown') {
+      const first = { ...request.query, page: 1 };
+      return { ...props, page: { ...props.page, list: pageListOf(index, inputs, source, first, request.listed) } };
+    }
+    throw error;
+  }
 }
 
 export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null): Promise<DrawAnswer> {

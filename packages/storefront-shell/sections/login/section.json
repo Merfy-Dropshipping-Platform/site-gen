@@ -1,0 +1,24 @@
+{
+  "sdk": 1,
+  "name": "login",
+  "kind": "section",
+  "title": "Вход",
+  "groups": ["page"],
+  "limit": 1,
+  "uses": ["auth"],
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Вход в аккаунт", "inlineEdit": true } },
+    {
+      "id": "text",
+      "label": "Текст",
+      "setting": {
+        "kind": "text",
+        "default": "Введите e-mail — пришлём ссылку для входа. Войдём в аккаунт или создадим новый.",
+        "inlineEdit": true
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    { "id": "button-label", "label": "Текст", "section": "Кнопка", "setting": { "kind": "string", "default": "" } }
+  ]
+}

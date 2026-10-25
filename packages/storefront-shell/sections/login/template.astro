@@ -1,0 +1,49 @@
+---
+const { settings } = Astro.props;
+---
+
+<div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body">
+  <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h1>
+  {settings.text ? <p class="m-0 text-foreground">{settings.text}</p> : null}
+  <div data-ref="email-step" class="flex max-w-page flex-col gap-3">
+    <label class="text-sm">E-mail</label>
+    <input
+      data-ref="email"
+      type="email"
+      autocomplete="email"
+      placeholder="example@merfy.ru"
+      class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
+    />
+    <p data-ref="email-error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
+    <button
+      type="button"
+      data-ref="request"
+      data-action="request"
+      class="rounded-button bg-primary px-4 py-2 text-primary-foreground"
+    >
+      {settings['button-label'] || 'Получить ссылку для входа'}
+    </button>
+  </div>
+  <div data-ref="code-step" class="flex max-w-page flex-col gap-3" hidden>
+    <p class="m-0 text-foreground">Мы отправили письмо на <span data-ref="sent-to"></span>. Перейдите по ссылке из письма или введите код из него</p>
+    <input
+      data-ref="code"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      maxlength="6"
+      placeholder="000000"
+      class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
+    />
+    <p data-ref="code-error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
+    <button
+      type="button"
+      data-ref="verify"
+      data-action="verify"
+      class="rounded-button bg-primary px-4 py-2 text-primary-foreground"
+    >
+      Войти
+    </button>
+    <button type="button" data-action="change-email" class="text-sm underline">Изменить e-mail</button>
+  </div>
+  <p data-ref="checking" hidden>Входим…</p>
+</div>

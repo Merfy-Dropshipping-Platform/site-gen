@@ -16,7 +16,10 @@ export type BehaviorName =
   | 'quantity'
   | 'card-photos'
   | 'sticky-header'
-  | 'video';
+  | 'video'
+  // Блок 11 «Секций и SDK», часть 11б-2: листание и фильтры списка, подсказки поиска.
+  | 'catalog'
+  | 'search';
 
 export type Library = 'embla' | 'motion';
 
@@ -89,6 +92,19 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
     onSection: true,
   },
   video: { libraries: [], parts: ['video', 'play'], params: {}, onSection: false },
+  // Блок 11 (design.md 11.3, 11.5): paging — поле секции «Как листать»; limit — сколько подсказок.
+  catalog: {
+    libraries: [],
+    parts: ['list', 'next', 'prev', 'pages', 'count', 'filters', 'empty', 'status'],
+    params: { paging: { kind: 'enum', values: ['pages', 'more', 'scroll'], default: 'more' } },
+    onSection: false,
+  },
+  search: {
+    libraries: [],
+    parts: ['input', 'results', 'item', 'link', 'image', 'title', 'price', 'compare', 'empty', 'all'],
+    params: { limit: { kind: 'int', min: 1, max: 20, default: 8 } },
+    onSection: false,
+  },
 };
 
 // Кривые: GSAP пяти тем — массивом Безье (факт 22, расхождение с формулами GSAP не больше 0,01); ease-out — слово CSS

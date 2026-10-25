@@ -1,0 +1,8 @@
+{
+  "sdk": 1,
+  "name": "search",
+  "kind": "section",
+  "title": "Поиск",
+  "uses": ["shop", "search"],
+  "settings": []
+}

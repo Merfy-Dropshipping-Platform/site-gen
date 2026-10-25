@@ -198,3 +198,16 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 - `ctx.catalog.products(query)`, `ctx.catalog.filters(query)` — `/store/products` и `/store/filters` для своих секций;
   наш модуль «Каталог» (поведение `catalog`) список с фильтрами читает у сервера готовым HTML.
 - Цены модулей — `PriceMoney`: копейки, валюта и текст «1 900 ₽».
+
+## Поведения `catalog` и `search` (блок 11 «Секций и SDK», часть 11б-2)
+
+- `data-behavior="catalog"` и `data-paging` (`pages`, `more` — по умолчанию, `scroll`): части `list` (с `data-page`),
+  `next`, `prev`, `pages`, `count`, `filters`, `empty`, `status`. «Показать ещё» и прокрутка запрашивают адрес `next`,
+  «Показать предыдущие» — `prev`, форма `filters` — свой `action` с выбранными полями; из ответа читается та же секция по
+  `data-section-id` и заменяет прежнюю (прежние строки — копиями в начале или в конце). В адресной строке — только `q`
+  и `collection`, как на проде. Ответ с фильтрами без `<meta name="merfy-list">` — уведомление, список прежний. В
+  превью — событие `merfy:preview:list` с `reply`.
+- `data-behavior="search"` и `data-limit` (1–20, по умолчанию 8): части `input`, `results`, `template[data-part="item"]`
+  со строкой (`link`, `image`, `title`, `price`, `compare`), `empty`, `all`. Пауза 250 мс после ввода; отправка формы —
+  `merfy:search:submit`; `merfy:search:open` открывает окно `dialog` вокруг панели. Нужен `"uses": ["search"]` секции.
+- Поведения получают ядро страницы — `BehaviorHost.core`.

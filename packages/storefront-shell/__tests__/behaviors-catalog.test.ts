@@ -19,14 +19,16 @@ const using = (library: Library): string[] =>
     .sort();
 
 describe('каталог поведений', () => {
-  it('девять поведений: search — в блоке 11, zoom — в блоке 8', () => {
+  it('одиннадцать поведений: catalog и search — блок 11, zoom — в блоке 8', () => {
     expect(Object.keys(BEHAVIORS).sort()).toEqual([
       'accordion',
       'card-photos',
       'carousel',
+      'catalog',
       'dialog',
       'nav-menu',
       'quantity',
+      'search',
       'sticky-header',
       'tabs',
       'video',
@@ -130,6 +132,24 @@ describe('readParams', () => {
     expect(Object.keys(params).sort()).toEqual(['autoplay', 'change', 'drag', 'effect', 'loop']);
     expect(readParams(element('<p data-animate="appear" data-delay="300"></p>'), PRESET_PARAMS)).toEqual({
       delay: 300,
+    });
+  });
+});
+
+
+describe('поведения блока 11 «Секций и SDK»', () => {
+  it('catalog: части списка и параметр paging, по умолчанию «Показать ещё»; search: части строк и limit', () => {
+    expect(BEHAVIORS.catalog).toEqual({
+      libraries: [],
+      parts: ['list', 'next', 'prev', 'pages', 'count', 'filters', 'empty', 'status'],
+      params: { paging: { kind: 'enum', values: ['pages', 'more', 'scroll'], default: 'more' } },
+      onSection: false,
+    });
+    expect(BEHAVIORS.search).toEqual({
+      libraries: [],
+      parts: ['input', 'results', 'item', 'link', 'image', 'title', 'price', 'compare', 'empty', 'all'],
+      params: { limit: { kind: 'int', min: 1, max: 20, default: 8 } },
+      onSection: false,
     });
   });
 });

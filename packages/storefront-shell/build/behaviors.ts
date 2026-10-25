@@ -39,7 +39,10 @@ export const BEHAVIOR_BUDGETS: Readonly<Record<BundleName | 'total', number>> = 
   'card-photos': 2048,
   'sticky-header': 2048,
   video: 2048,
-  total: 27648,
+  // Блок 11, часть 11б-2 — решение основного треда 23.10 (Р6-12).
+  catalog: 4096,
+  search: 3072,
+  total: 34816,
 };
 
 const BUNDLE_NAMES: readonly BundleName[] = [
@@ -52,6 +55,8 @@ const BUNDLE_NAMES: readonly BundleName[] = [
   'card-photos',
   'sticky-header',
   'video',
+  'catalog',
+  'search',
   'part',
   'reveal',
   'animate',
@@ -67,6 +72,8 @@ const ENTRY_OF: Readonly<Record<BundleName, string>> = {
   'card-photos': 'card-photos.ts',
   'sticky-header': 'sticky-header.ts',
   video: 'video.ts',
+  catalog: 'catalog-list.ts',
+  search: 'search.ts',
   part: 'part.ts',
   reveal: 'reveal.ts',
   animate: 'motion.ts',
@@ -165,6 +172,8 @@ function entriesOf(metafile: Metafile, sizes: Sizes): Record<BundleName, BundleI
     'card-photos': of('card-photos'),
     'sticky-header': of('sticky-header'),
     video: of('video'),
+    catalog: of('catalog'),
+    search: of('search'),
     part: of('part'),
     reveal: of('reveal'),
     animate: of('animate'),

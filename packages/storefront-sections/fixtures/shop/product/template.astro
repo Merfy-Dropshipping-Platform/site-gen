@@ -10,10 +10,30 @@ const { settings } = Astro.props;
       <div class="flex flex-col gap-4">
         <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.product.title}</h1>
         <p class="m-0 text-xl text-foreground">
-          {settings.product.price.text}
+          <span data-ref="price">{settings.product.price.text}</span>
           {settings.product.compareAtPrice && <s class="ml-2 text-base">{settings.product.compareAtPrice.text}</s>}
         </p>
-        <p class="m-0 text-sm text-foreground">{settings.product.available ? 'В наличии' : 'Нет в наличии'}</p>
+        <p class="m-0 text-sm text-foreground" data-ref="stock">{settings.product.available ? 'В наличии' : 'Нет в наличии'}</p>
+        {settings.product.options.map((option) => (
+          <div class="flex flex-col gap-2">
+            <p class="m-0 text-sm text-heading">{option.name}</p>
+            <div class="flex gap-2">
+              {option.values.map((value) => (
+                <button
+                  type="button"
+                  class="rounded-button border border-border px-4 py-2 text-foreground aria-[pressed=true]:border-primary-border"
+                  data-ref="value"
+                  data-action="variants.pick"
+                  data-product-id={settings.product.id}
+                  data-group={option.id}
+                  data-value={value.id}
+                  aria-pressed="false"
+                >{value.value}</button>
+              ))}
+            </div>
+          </div>
+        ))}
+        <button type="button" class="h-11 rounded-button bg-primary px-6 text-primary-foreground md:self-start" data-ref="buy" data-action="cart.add" data-product-id={settings.product.id}>В корзину</button>
         <p class="m-0 text-foreground">{settings.product.description}</p>
       </div>
     </div>

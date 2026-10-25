@@ -767,6 +767,16 @@ document.addEventListener('merfy:cart:add', (event) => {
 Части: `data-part="video"`, `data-part="play"`.
 
 Параметры: —.
+## catalog
+
+Части: `data-part="list"`, `data-part="next"`, `data-part="prev"`, `data-part="pages"`, `data-part="count"`, `data-part="filters"`, `data-part="empty"`, `data-part="status"`.
+
+Параметры: `data-paging` — одно из: pages, more, scroll; по умолчанию `more`.
+## search
+
+Части: `data-part="input"`, `data-part="results"`, `data-part="item"`, `data-part="link"`, `data-part="image"`, `data-part="title"`, `data-part="price"`, `data-part="compare"`, `data-part="empty"`, `data-part="all"`.
+
+Параметры: `data-limit` — целое от 1 до 20; по умолчанию `8`.
 
 ## Пресеты data-animate
 

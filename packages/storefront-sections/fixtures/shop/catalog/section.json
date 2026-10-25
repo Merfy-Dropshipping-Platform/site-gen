@@ -1,0 +1,71 @@
+{
+  "sdk": 1,
+  "name": "catalog",
+  "kind": "section",
+  "title": "Каталог",
+  "settings": [
+    { "id": "collection", "label": "Выбор коллекции", "setting": { "kind": "collection" } },
+    { "id": "per-page", "label": "Карточки", "setting": { "kind": "range", "default": 8, "min": 2, "max": 24, "step": 1 } },
+    { "id": "columns", "label": "Колонки", "setting": { "kind": "range", "default": 3, "min": 2, "max": 4, "step": 1 } },
+    {
+      "id": "paging",
+      "label": "Как листать",
+      "setting": {
+        "kind": "select",
+        "default": "more",
+        "options": [
+          { "value": "pages", "label": "Номера страниц" },
+          { "value": "more", "label": "Показать ещё" },
+          { "value": "scroll", "label": "Бесконечная прокрутка" }
+        ]
+      }
+    },
+    {
+      "id": "next-photo",
+      "label": "Следующее фото при наведении",
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Да", "off": "Нет" } }
+    },
+    {
+      "id": "quick-add",
+      "label": "Быстрое добавление",
+      "setting": {
+        "kind": "select",
+        "default": "none",
+        "options": [
+          { "value": "none", "label": "Нет" },
+          { "value": "button", "label": "Кнопка «В корзину»" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "subheading": {
+      "title": "Подзаголовок",
+      "limit": 1,
+      "settings": [{ "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "" } }]
+    },
+    "filters": {
+      "title": "Фильтры",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "filter-position",
+          "label": "Вид фильтра",
+          "setting": {
+            "kind": "radio",
+            "default": "top",
+            "options": [
+              { "value": "top", "label": "Сверху" },
+              { "value": "side", "label": "Сбоку" }
+            ]
+          }
+        }
+      ]
+    },
+    "sort": { "title": "Сортировка", "limit": 1, "settings": [] }
+  },
+  "defaultBlocks": [
+    { "type": "filters", "settings": {} },
+    { "type": "sort", "settings": {} }
+  ]
+}

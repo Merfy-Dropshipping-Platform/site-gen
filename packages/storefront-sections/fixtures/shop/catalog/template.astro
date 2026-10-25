@@ -1,0 +1,95 @@
+---
+const { settings, blocks, page } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col gap-8 px-4 font-body" data-behavior="catalog" data-paging={settings.paging}>
+  {page.list && (
+    <form class="flex flex-col gap-4 md:flex-row" data-part="filters" method="get" action={page.list.url}>
+      {blocks.map((block) => (
+        <div class:list={['flex gap-4', { 'flex-col': block.settings['filter-position'] !== 'top' }]}>
+          {block.type === 'subheading' && block.settings.heading && (
+            <p class="m-0 text-lg text-heading">{block.settings.heading}</p>
+          )}
+          {block.type === 'sort' && (
+            <select class="h-10 rounded-input border border-border px-4 text-foreground" name="sort" aria-label="Сортировка">
+              {page.list.sorts.map((sort) => <option value={sort.value} selected={sort.selected}>{sort.label}</option>)}
+            </select>
+          )}
+          {block.type === 'filters' && page.list.facets && (
+            <div class="flex flex-col gap-4">
+              <select class="h-10 rounded-input border border-border px-4 text-foreground" name="availability" aria-label="Наличие">
+                <option value="">Все товары</option>
+                <option value="in_stock" selected={page.list.query.availability === 'in_stock'}>В наличии</option>
+                <option value="sold_out" selected={page.list.query.availability === 'sold_out'}>Нет в наличии</option>
+              </select>
+              {page.list.facets.groups.map((group) => (
+                <fieldset class="m-0 flex flex-col gap-2 p-0">
+                  <legend class="text-sm text-heading">{group.name}</legend>
+                  {group.values.map((value) => (
+                    <label class="flex items-center gap-2 text-sm text-foreground">
+                      <input type="checkbox" name={`filter.${group.key}`} value={value.value} checked={value.selected} />
+                      {value.value}
+                    </label>
+                  ))}
+                </fieldset>
+              ))}
+              {page.list.facets.collections.map((collection) => (
+                <label class="flex items-center gap-2 text-sm text-foreground">
+                  <input type="checkbox" name="collection" value={collection.slug} checked={collection.selected} />
+                  {collection.title}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </form>
+  )}
+  {page.list && page.list.prev && (
+    <a class="text-foreground underline" data-part="prev" href={page.list.prev}>Показать предыдущие</a>
+  )}
+  {page.list && page.list.items.length === 0 && <p class="m-0 text-foreground" data-part="empty">Ничего не нашли</p>}
+  {page.list && (
+    <ul
+      class:list={['m-0 grid list-none gap-8 p-0', { 'md:grid-cols-2': settings.columns === 2, 'md:grid-cols-3': settings.columns === 3, 'md:grid-cols-4': settings.columns === 4 }]}
+      data-part="list"
+      data-page={page.list.page}
+    >
+      {page.list.items.map((card) => (
+        <li class="flex flex-col gap-2">
+          {card.image && (
+            <div data-behavior="card-photos" data-photos={card.images.join(' ')} data-hover-next={settings['next-photo'] ? 'true' : 'false'}>
+              <img class="h-auto w-full rounded-button" data-part="image" src={card.image} alt={card.title} />
+            </div>
+          )}
+          <a class="text-foreground no-underline" href={card.url}>{card.title}</a>
+          <p class="m-0 font-heading text-heading">
+            {card.price.text}
+            {card.compareAtPrice && <s class="ml-2 text-sm">{card.compareAtPrice.text}</s>}
+          </p>
+          {settings['quick-add'] === 'button' && card.available && (
+            <button type="button" class="h-10 rounded-button bg-primary px-4 text-primary-foreground" data-action="cart.add" data-product-id={card.id} data-variant-id={card.variantId ?? undefined}>В корзину</button>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+  {page.list && (
+    <p class="m-0 text-sm text-foreground">Показано <span data-part="count">{page.list.items.length}</span> из {page.list.total}</p>
+  )}
+  {page.list && page.list.next && (
+    <a class="inline-flex h-11 items-center justify-center rounded-button border border-border px-6 text-foreground no-underline md:self-start" data-part="next" href={page.list.next}>Показать ещё</a>
+  )}
+  {page.list && page.list.pages > 1 && (
+    <nav class="flex gap-2" data-part="pages" aria-label="Страницы">
+      {page.list.links.map((link) => link.url ? (
+        <a class="px-4 py-2 text-foreground" href={link.url} aria-current={link.current ? 'page' : undefined}>{link.page}</a>
+      ) : (
+        <span class="px-4 py-2 text-foreground">…</span>
+      ))}
+    </nav>
+  )}
+  {page.list && settings.collection && settings.collection.url && page.list.url !== settings.collection.url && (
+    <a class="text-foreground underline" href={settings.collection.url}>Смотреть все</a>
+  )}
+  <p class="m-0 text-sm text-foreground" data-part="status" aria-live="polite"></p>
+</div>

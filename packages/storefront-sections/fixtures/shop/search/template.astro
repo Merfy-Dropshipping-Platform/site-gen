@@ -1,0 +1,29 @@
+---
+const { shop } = Astro.props;
+---
+<div data-behavior="dialog" data-transition="drop" data-modal="false">
+  <button type="button" data-part="open" hidden>Поиск</button>
+  <dialog class="w-full bg-card p-4 text-card-foreground" data-part="content" aria-label="Поиск">
+    <div class="mx-auto flex max-w-page flex-col gap-4 font-body">
+      <button type="button" class="md:self-start text-foreground underline bg-transparent" data-part="close">Закрыть</button>
+      <div class="flex flex-col gap-4" data-behavior="search" data-limit="8">
+        <form class="flex gap-2" method="get" action={shop.catalogUrl ?? undefined} role="search">
+          <input class="h-10 w-full rounded-input border border-border px-4 text-foreground" data-part="input" type="search" name="q" placeholder="Поиск" aria-label="Поиск по магазину" autocomplete="off" />
+        </form>
+        <ul class="m-0 flex list-none flex-col gap-2 p-0" data-part="results"></ul>
+        <template data-part="item">
+          <li>
+            <a class="flex items-center gap-4 text-foreground no-underline" data-part="link">
+              <img class="h-10 w-auto rounded-button" data-part="image" alt="" />
+              <span data-part="title"></span>
+              <span class="text-heading" data-part="price"></span>
+              <s class="text-sm" data-part="compare"></s>
+            </a>
+          </li>
+        </template>
+        <p class="m-0 text-sm text-foreground" data-part="empty" hidden>Ничего не нашли</p>
+        {shop.catalogUrl && <a class="text-foreground underline" data-part="all" href={shop.catalogUrl} hidden>Все результаты</a>}
+      </div>
+    </div>
+  </dialog>
+</div>

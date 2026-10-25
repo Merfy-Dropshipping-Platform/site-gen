@@ -82,7 +82,7 @@ const { settings, blocks, theme, shop, page } = Astro.props;
             ))}
           </ul>
           <div class="hidden items-center gap-4 px-4 py-3 md:flex">
-            {blocks.some((block) => block.type === 'search') && <a class="no-underline hover:text-heading" href="/catalog">Поиск</a>}
+            {blocks.some((block) => block.type === 'search') && <button type="button" class="no-underline hover:text-heading" data-action="search.open">Поиск</button>}
             {blocks.some((block) => block.type === 'profile') && <a class="no-underline hover:text-heading" href="/login">Профиль</a>}
           </div>
         </dialog>

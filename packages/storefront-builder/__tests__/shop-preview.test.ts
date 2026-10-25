@@ -32,6 +32,12 @@ const HERO: CurrentSection = {
   render: MODULE,
   renderHash: HASH,
 };
+const HEADER: CurrentSection = {
+  name: 'shop:header',
+  manifest: { sdk: 1, name: 'header', kind: 'section', title: 'Шапка', settings: [] },
+  render: MODULE,
+  renderHash: HASH,
+};
 const ANALYTICS: CurrentSection = {
   name: 'shop:analytics',
   manifest: { sdk: 1, name: 'analytics', kind: 'global', title: 'Аналитика магазина', settings: [] },
@@ -685,5 +691,24 @@ describe('каталог и список страницы в превью (бл�
     expect(rendered[0]?.[1].page?.list).toBeUndefined();
     for (const list of [7, 'q='.padEnd(2049, 'а')])
       expect((await sectionPreview(deps, SHOP, JSON.stringify({ instance, page: 'catalog', list }))).status).toBe(400);
+  });
+});
+
+describe('themeSettings секции в списке /sections (блок 10 «Секций и SDK», часть 10б)', () => {
+  it('объявлен в section.json — в ответе как есть; нет — ключа нет', async () => {
+    const withKey: CurrentSection = { ...HEADER, manifest: { ...HEADER.manifest, themeSettings: ['wishlist-enabled'] } };
+    const answer = await shopSections(
+      depsOf(
+        new Map([
+          [withKey.name, withKey],
+          [HERO.name, HERO],
+        ]),
+      ).deps,
+      SHOP,
+    );
+    const parsed = z
+      .object({ sections: z.array(z.object({ name: z.string() }).passthrough()) })
+      .parse(JSON.parse(answer.body));
+    expect(parsed.sections.map((item) => item.themeSettings)).toEqual([['wishlist-enabled'], undefined]);
   });
 });

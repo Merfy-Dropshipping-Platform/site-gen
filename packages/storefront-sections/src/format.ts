@@ -103,6 +103,9 @@ export const sectionManifestSchema = z.strictObject({
   wrapper: z.array(z.enum(WRAPPER_IDS)).max(3).refine(unique, { error: 'id дважды' }).optional(),
   // Поля записей для скрипта (блок 8 «Секций и SDK», часть 8г): имя → { from, fields }; смысл — section-data.ts.
   data: sectionDataShape.optional(),
+  // Поля «Настроек темы» в панели секции (блок 10 «Секций и SDK», часть 10б, Р10б-11): id сквозных настроек;
+  // имена сверяет theme-setting-unknown (script-names.ts).
+  themeSettings: z.array(sectionIdSchema).max(4).refine(unique, { error: 'значение дважды' }).optional(),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;

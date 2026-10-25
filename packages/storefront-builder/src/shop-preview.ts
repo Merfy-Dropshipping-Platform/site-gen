@@ -345,7 +345,8 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
 }
 
 // Место секции (часть 4, Р1-4-2): groups, limit, removable, uses, newPage — только объявленные в section.json.
-const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage'] as const;
+// Блок 10 (часть 10б): themeSettings — поля «Настроек темы» в панели секции.
+const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage', 'themeSettings'] as const;
 
 function placeKeys(manifest: CurrentSection['manifest']): Record<string, unknown> {
   return Object.fromEntries(PLACE_KEYS.flatMap((key) => (manifest[key] === undefined ? [] : [[key, manifest[key]]])));

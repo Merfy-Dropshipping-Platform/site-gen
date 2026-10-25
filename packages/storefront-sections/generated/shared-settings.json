@@ -43,5 +43,10 @@
     "id": "cookie-banner-enabled",
     "label": "Баннер cookie",
     "group": "Баннер"
+  },
+  {
+    "id": "wishlist-enabled",
+    "label": "Избранное",
+    "group": "Избранное"
   }
 ]

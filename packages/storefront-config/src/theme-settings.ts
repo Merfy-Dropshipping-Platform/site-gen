@@ -21,6 +21,8 @@ export const themeSettingsSchema = z.strictObject({
   'social-max': settingText.optional(),
   'cart-type': z.enum(CART_TYPES).optional(),
   'cookie-banner-enabled': z.boolean().optional(),
+  // Блок 10 (часть 10б, п. 14): «Избранное: Включено / Выключено»; «Выключено» — пункта и сердечек нет в HTML.
+  'wishlist-enabled': z.boolean().optional(),
 });
 
 export type ThemeSettings = z.infer<typeof themeSettingsSchema>;

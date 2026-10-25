@@ -10,14 +10,22 @@
           "id": "logo-image",
           "label": "Картинка",
           "shared": true,
-          "setting": { "kind": "image", "default": "", "maxBytes": 512000 }
+          "setting": {
+            "kind": "image",
+            "default": "",
+            "maxBytes": 512000
+          }
         },
         {
           "id": "logo-width",
           "label": "Размер",
           "token": "width-logo",
           "control": "slider",
-          "range": { "min": 0, "max": 100, "step": 4 }
+          "range": {
+            "min": 0,
+            "max": 100,
+            "step": 4
+          }
         }
       ]
     },
@@ -26,9 +34,24 @@
       "title": "Цвета",
       "layout": "schemes",
       "fields": [
-        { "id": "color-background", "label": "Фон", "token": "background", "control": "color" },
-        { "id": "color-heading", "label": "Заголовок", "token": "heading", "control": "color" },
-        { "id": "color-foreground", "label": "Текст", "token": "foreground", "control": "color" },
+        {
+          "id": "color-background",
+          "label": "Фон",
+          "token": "background",
+          "control": "color"
+        },
+        {
+          "id": "color-heading",
+          "label": "Заголовок",
+          "token": "heading",
+          "control": "color"
+        },
+        {
+          "id": "color-foreground",
+          "label": "Текст",
+          "token": "foreground",
+          "control": "color"
+        },
         {
           "id": "color-primary",
           "label": "Фон",
@@ -109,7 +132,13 @@
       "id": "typography",
       "title": "Типографика",
       "fields": [
-        { "id": "heading-font", "label": "Шрифт", "row": "Заголовок", "token": "font-heading", "control": "font" },
+        {
+          "id": "heading-font",
+          "label": "Шрифт",
+          "row": "Заголовок",
+          "token": "font-heading",
+          "control": "font"
+        },
         {
           "id": "heading-weight",
           "label": "Насыщенность",
@@ -117,8 +146,20 @@
           "token": "weight-heading",
           "control": "weight"
         },
-        { "id": "body-font", "label": "Шрифт", "row": "Текст", "token": "font-body", "control": "font" },
-        { "id": "body-weight", "label": "Насыщенность", "row": "Текст", "token": "weight-body", "control": "weight" }
+        {
+          "id": "body-font",
+          "label": "Шрифт",
+          "row": "Текст",
+          "token": "font-body",
+          "control": "font"
+        },
+        {
+          "id": "body-weight",
+          "label": "Насыщенность",
+          "row": "Текст",
+          "token": "weight-body",
+          "control": "weight"
+        }
       ]
     },
     {
@@ -131,7 +172,11 @@
           "sublabel": "Между секций",
           "token": "spacing-section-gap",
           "control": "slider",
-          "range": { "min": 0, "max": 120, "step": 4 }
+          "range": {
+            "min": 0,
+            "max": 120,
+            "step": 4
+          }
         }
       ]
     },
@@ -144,7 +189,11 @@
           "label": "Скругление",
           "token": "radius-button",
           "control": "slider",
-          "range": { "min": 0, "max": 100, "step": 4 }
+          "range": {
+            "min": 0,
+            "max": 100,
+            "step": 4
+          }
         }
       ]
     },
@@ -157,7 +206,11 @@
           "label": "Скругление",
           "token": "radius-input",
           "control": "slider",
-          "range": { "min": 0, "max": 48, "step": 4 }
+          "range": {
+            "min": 0,
+            "max": 48,
+            "step": 4
+          }
         }
       ]
     },
@@ -171,8 +224,14 @@
           "token": "choice-card-style",
           "control": "segment",
           "options": [
-            { "value": "standard", "label": "Стандарт" },
-            { "value": "card", "label": "Карточка" }
+            {
+              "value": "standard",
+              "label": "Стандарт"
+            },
+            {
+              "value": "card",
+              "label": "Карточка"
+            }
           ]
         },
         {
@@ -181,9 +240,18 @@
           "token": "choice-card-align",
           "control": "align",
           "options": [
-            { "value": "left", "label": "Слева" },
-            { "value": "center", "label": "По центру" },
-            { "value": "right", "label": "Справа" }
+            {
+              "value": "left",
+              "label": "Слева"
+            },
+            {
+              "value": "center",
+              "label": "По центру"
+            },
+            {
+              "value": "right",
+              "label": "Справа"
+            }
           ]
         },
         {
@@ -191,23 +259,40 @@
           "label": "Обводка",
           "token": "border-width-card",
           "control": "slider",
-          "range": { "min": 0, "max": 4, "step": 1 }
+          "range": {
+            "min": 0,
+            "max": 4,
+            "step": 1
+          }
         },
         {
           "id": "card-radius",
           "label": "Скругление",
           "token": "radius-card",
           "control": "slider",
-          "range": { "min": 0, "max": 48, "step": 4 }
+          "range": {
+            "min": 0,
+            "max": 48,
+            "step": 4
+          }
         },
         {
           "id": "card-padding",
           "label": "Отступ",
           "token": "spacing-card",
           "control": "slider",
-          "range": { "min": 0, "max": 32, "step": 2 }
+          "range": {
+            "min": 0,
+            "max": 32,
+            "step": 2
+          }
         },
-        { "id": "card-scheme", "label": "Цветовая схема", "token": "scheme-card", "control": "scheme" }
+        {
+          "id": "card-scheme",
+          "label": "Цветовая схема",
+          "token": "scheme-card",
+          "control": "scheme"
+        }
       ]
     },
     {
@@ -219,7 +304,11 @@
           "label": "Скругление",
           "token": "radius-media",
           "control": "slider",
-          "range": { "min": 0, "max": 48, "step": 4 }
+          "range": {
+            "min": 0,
+            "max": 48,
+            "step": 4
+          }
         }
       ]
     },
@@ -231,37 +320,61 @@
           "id": "social-telegram",
           "label": "Telegram",
           "shared": true,
-          "setting": { "kind": "url", "default": "", "placeholder": "https://t.me/..." }
+          "setting": {
+            "kind": "url",
+            "default": "",
+            "placeholder": "https://t.me/..."
+          }
         },
         {
           "id": "social-vk",
           "label": "Вконтакте",
           "shared": true,
-          "setting": { "kind": "url", "default": "", "placeholder": "https://vk.com/..." }
+          "setting": {
+            "kind": "url",
+            "default": "",
+            "placeholder": "https://vk.com/..."
+          }
         },
         {
           "id": "social-dzen",
           "label": "Дзен",
           "shared": true,
-          "setting": { "kind": "url", "default": "", "placeholder": "https://dzen.ru/..." }
+          "setting": {
+            "kind": "url",
+            "default": "",
+            "placeholder": "https://dzen.ru/..."
+          }
         },
         {
           "id": "social-youtube",
           "label": "Youtube",
           "shared": true,
-          "setting": { "kind": "url", "default": "", "placeholder": "https://youtube.com/..." }
+          "setting": {
+            "kind": "url",
+            "default": "",
+            "placeholder": "https://youtube.com/..."
+          }
         },
         {
           "id": "social-tiktok",
           "label": "TikTok",
           "shared": true,
-          "setting": { "kind": "url", "default": "", "placeholder": "https://tiktok.com/..." }
+          "setting": {
+            "kind": "url",
+            "default": "",
+            "placeholder": "https://tiktok.com/..."
+          }
         },
         {
           "id": "social-max",
           "label": "MAX",
           "shared": true,
-          "setting": { "kind": "url", "default": "", "placeholder": "https://max.ru/..." }
+          "setting": {
+            "kind": "url",
+            "default": "",
+            "placeholder": "https://max.ru/..."
+          }
         }
       ]
     },
@@ -278,8 +391,14 @@
             "kind": "select",
             "default": "drawer",
             "options": [
-              { "value": "drawer", "label": "Сайдбар" },
-              { "value": "page", "label": "Страница" }
+              {
+                "value": "drawer",
+                "label": "Сайдбар"
+              },
+              {
+                "value": "page",
+                "label": "Страница"
+              }
             ]
           }
         },
@@ -288,7 +407,10 @@
           "label": "Цветовая схема",
           "token": "scheme-cart-drawer",
           "control": "scheme",
-          "visibleWhen": { "setting": "cart-type", "equals": "drawer" }
+          "visibleWhen": {
+            "setting": "cart-type",
+            "equals": "drawer"
+          }
         }
       ]
     },
@@ -300,20 +422,37 @@
           "id": "cookie-banner-enabled",
           "label": "Баннер cookie",
           "shared": true,
-          "setting": { "kind": "toggle", "default": true, "labels": { "on": "Вкл", "off": "Выкл" } }
+          "setting": {
+            "kind": "toggle",
+            "default": true,
+            "labels": {
+              "on": "Вкл",
+              "off": "Выкл"
+            }
+          }
         },
         {
           "id": "cookie-banner-scheme",
           "label": "Цветовая схема",
           "token": "scheme-cookie-banner",
           "control": "scheme",
-          "visibleWhen": { "setting": "cookie-banner-enabled", "equals": true }
+          "visibleWhen": {
+            "setting": "cookie-banner-enabled",
+            "equals": true
+          }
         }
       ],
       "sidebar": {
         "title": "Баннер",
         "fields": [
-          { "id": "cookie-banner-title", "label": "Заголовок", "setting": { "kind": "string", "default": "" } },
+          {
+            "id": "cookie-banner-title",
+            "label": "Заголовок",
+            "setting": {
+              "kind": "string",
+              "default": ""
+            }
+          },
           {
             "id": "cookie-banner-text",
             "label": "Текст",
@@ -326,13 +465,19 @@
             "id": "cookie-banner-primary-label",
             "label": "Основная",
             "section": "Кнопки",
-            "setting": { "kind": "string", "default": "Принять" }
+            "setting": {
+              "kind": "string",
+              "default": "Принять"
+            }
           },
           {
             "id": "cookie-banner-secondary-label",
             "label": "Дополнительная",
             "section": "Кнопки",
-            "setting": { "kind": "string", "default": "" }
+            "setting": {
+              "kind": "string",
+              "default": ""
+            }
           },
           {
             "id": "cookie-banner-position",
@@ -341,15 +486,46 @@
               "kind": "select",
               "default": "bottom-left",
               "options": [
-                { "value": "bottom-left", "label": "Снизу слева" },
-                { "value": "bottom-center", "label": "Снизу по центру" },
-                { "value": "bottom-right", "label": "Снизу справа" },
-                { "value": "bar", "label": "Полоса во всю ширину" }
+                {
+                  "value": "bottom-left",
+                  "label": "Снизу слева"
+                },
+                {
+                  "value": "bottom-center",
+                  "label": "Снизу по центру"
+                },
+                {
+                  "value": "bottom-right",
+                  "label": "Снизу справа"
+                },
+                {
+                  "value": "bar",
+                  "label": "Полоса во всю ширину"
+                }
               ]
             }
           }
         ]
       }
+    },
+    {
+      "id": "wishlist",
+      "title": "Избранное",
+      "fields": [
+        {
+          "id": "wishlist-enabled",
+          "label": "Избранное",
+          "shared": true,
+          "setting": {
+            "kind": "toggle",
+            "default": true,
+            "labels": {
+              "on": "Включено",
+              "off": "Выключено"
+            }
+          }
+        }
+      ]
     }
   ]
 }

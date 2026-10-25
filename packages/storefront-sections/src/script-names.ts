@@ -139,6 +139,14 @@ const themeSettingUnknown: NameRule = ({ facts }) =>
     return [problem('theme-setting-unknown', item.file, text, item)];
   });
 
+// themeSettings section.json (блок 10 «Секций и SDK», часть 10б, Р10б-11): имена — из сквозных настроек темы.
+const sectionThemeSettingUnknown: NameRule = ({ manifest }) =>
+  (manifest.themeSettings ?? []).flatMap((name) => {
+    if (SHARED_NAMES.includes(name)) return [];
+    const text = `themeSettings: настройки темы «${name}» нет. Есть: ${quoted(SHARED_NAMES)}${nearText(name, SHARED_NAMES)}`;
+    return [problem('theme-setting-unknown', 'section.json', text)];
+  });
+
 // ctx.data.<имя> без объявления в data section.json (блок 8 «Секций и SDK», часть 8г; Р8г-6).
 const dataUnknown: NameRule = ({ manifest, facts }) => dataUnknownProblems(manifest, facts?.reads ?? []);
 
@@ -146,6 +154,7 @@ export const NAME_RULES: readonly NameRule[] = [
   eventUnknown,
   actionUnknown,
   themeSettingUnknown,
+  sectionThemeSettingUnknown,
   scriptClasses,
   dataUnknown,
 ];

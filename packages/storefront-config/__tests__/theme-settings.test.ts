@@ -75,7 +75,7 @@ describe('theme.settings в конфиге страницы', () => {
     expect([error.code, error.path]).toEqual(['config-invalid', 'theme.settings.cart-typ']);
   });
 
-  it('имена сквозных настроек — девять полей панели с "shared": true', () => {
+  it('имена сквозных настроек — десять полей панели с "shared": true', () => {
     expect(THEME_SETTING_NAMES).toEqual([
       'logo-image',
       'social-telegram',
@@ -86,7 +86,15 @@ describe('theme.settings в конфиге страницы', () => {
       'social-max',
       'cart-type',
       'cookie-banner-enabled',
+      'wishlist-enabled',
     ]);
+  });
+
+  it('wishlist-enabled — да/нет (блок 10, часть 10б)', () => {
+    expect(buildStorefrontConfig(input({ 'wishlist-enabled': false })).theme.settings).toEqual({ 'wishlist-enabled': false });
+    expect(errorOf(() => buildStorefrontConfig(input({ 'wishlist-enabled': 'нет' }))).path).toBe(
+      'theme.settings.wishlist-enabled',
+    );
   });
 
   it('тег: </script> в адресе логотипа не закрывает тег, разбор даёт тот же конфиг', () => {

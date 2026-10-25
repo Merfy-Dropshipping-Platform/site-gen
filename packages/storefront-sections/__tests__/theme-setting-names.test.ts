@@ -17,7 +17,7 @@ const MANIFEST: SectionManifest = {
 const HEAD = "import { defineSection } from '@merfy/shell';\n";
 const KNOWN =
   '«logo-image», «social-telegram», «social-vk», «social-dzen», «social-youtube», «social-tiktok», «social-max», ' +
-  '«cart-type», «cookie-banner-enabled»';
+  '«cart-type», «cookie-banner-enabled», «wishlist-enabled»';
 
 // Скрипт секции с одним действием open: body — строки тела действия.
 const sectionScript = (body: readonly string[], imports = ''): string =>
@@ -68,6 +68,7 @@ describe('theme-setting-unknown', () => {
       'social-max',
       'cart-type',
       'cookie-banner-enabled',
+      'wishlist-enabled',
     ]);
   });
 });

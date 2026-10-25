@@ -1,6 +1,15 @@
 import { settingFieldShape, settingProblem } from '@merfy/tokens';
 import { z } from 'zod';
 import { MENU_ID, MENU_ID_MAX } from './menus';
+import {
+  blogSpec,
+  collectionSpec,
+  hintSpec,
+  isRecordFieldSpec,
+  policySpec,
+  productSpec,
+  recordFieldProblem,
+} from './record-fields';
 
 // Поле настройки секции (блок 1 «Секций и SDK», часть 3, п. 4, Р52): поле настройки панели темы (settingFieldShape из
 // @merfy/tokens) или поле вида richtext — HTML с форматированием, только у секций: панель темы его не знает. Значение
@@ -76,6 +85,12 @@ export const sectionFieldShape = settingFieldShape.extend({
     alignmentSpec,
     colorSchemeSpec,
     paddingSpec,
+    // Поля с записями и подсказка (блок 8 «Секций и SDK», часть 8г): формы — record-fields.ts.
+    productSpec,
+    collectionSpec,
+    blogSpec,
+    policySpec,
+    hintSpec,
   ]),
 });
 
@@ -136,28 +151,59 @@ const paddingText = (path: string, max: number, value: unknown): string | undefi
   return fits ? undefined : `${path}: нужны два целых числа от 0 до ${max}, кратные ${PADDING_STEP}, или null`;
 };
 
+// Проверка значений видов части 5 — таблица Р1-5-3 (часть 8г блока 8: вынесена из sectionSettingProblem). Каждая
+// возвращает текст «<путь>: нужно …» или undefined.
+const menuText = (path: string, value: unknown): string | undefined =>
+  typeof value === 'string' && value.length <= MENU_ID_MAX && MENU_ID.test(value)
+    ? undefined
+    : `${path}: нужен id меню: строчные латинские буквы и цифры через дефис, до ${MENU_ID_MAX} знаков`;
+
+const richtextText = (path: string, value: unknown): string | undefined =>
+  typeof value === 'string' && value.length <= RICHTEXT_MAX
+    ? undefined
+    : `${path}: нужно HTML до ${RICHTEXT_MAX} знаков`;
+
+type CheckedKind =
+  | 'menu'
+  | 'richtext'
+  | 'image-pair'
+  | 'radio'
+  | 'range'
+  | 'alignment'
+  | 'color-scheme'
+  | 'padding';
+type CheckedSpec = Extract<SectionSettingSpec, { kind: CheckedKind }>;
+
+const KIND_CHECKS: {
+  [K in CheckedKind]: (path: string, spec: Extract<SectionSettingSpec, { kind: K }>, value: unknown) => string | undefined;
+} = {
+  menu: (path, _spec, value) => menuText(path, value),
+  richtext: (path, _spec, value) => richtextText(path, value),
+  'image-pair': (path, _spec, value) => imagePairText(path, value),
+  radio: (path, spec, value) => oneOfText(path, spec.options.map((option) => option.value), value),
+  range: (path, spec, value) => rangeText(path, spec, value),
+  alignment: (path, _spec, value) => oneOfText(path, ALIGNMENT_VALUES, value),
+  'color-scheme': (path, _spec, value) => schemeText(path, value),
+  padding: (path, spec, value) => paddingText(path, spec.max ?? PADDING_MAX_DEFAULT, value),
+};
+
+function checkOf<K extends CheckedKind>(
+  kind: K,
+  path: string,
+  spec: Extract<SectionSettingSpec, { kind: K }>,
+  value: unknown,
+): string | undefined {
+  return KIND_CHECKS[kind](path, spec, value);
+}
+
+const isCheckedSpec = (spec: SectionSettingSpec): spec is CheckedSpec => spec.kind in KIND_CHECKS;
+
 // Проверка значения по виду — таблица Р1-5-3. У видов панели (string, text, url, image, select, toggle) — settingProblem
-// из @merfy/tokens: ai и другие ключи спецификации на значение не влияют.
+// из @merfy/tokens: ai и другие ключи спецификации на значение не влияют. Поля с записями и подсказка (часть 8г блока 8)
+// — правила record-fields.ts, до проверок видов панели.
 export function sectionSettingProblem(path: string, spec: SectionSettingSpec, value: unknown): string | undefined {
-  if (spec.kind === 'menu')
-    return typeof value === 'string' && value.length <= MENU_ID_MAX && MENU_ID.test(value)
-      ? undefined
-      : `${path}: нужен id меню: строчные латинские буквы и цифры через дефис, до ${MENU_ID_MAX} знаков`;
-  if (spec.kind === 'richtext')
-    return typeof value === 'string' && value.length <= RICHTEXT_MAX
-      ? undefined
-      : `${path}: нужно HTML до ${RICHTEXT_MAX} знаков`;
-  if (spec.kind === 'image-pair') return imagePairText(path, value);
-  if (spec.kind === 'radio')
-    return oneOfText(
-      path,
-      spec.options.map((option) => option.value),
-      value,
-    );
-  if (spec.kind === 'range') return rangeText(path, spec, value);
-  if (spec.kind === 'alignment') return oneOfText(path, ALIGNMENT_VALUES, value);
-  if (spec.kind === 'color-scheme') return schemeText(path, value);
-  if (spec.kind === 'padding') return paddingText(path, spec.max ?? PADDING_MAX_DEFAULT, value);
+  if (isRecordFieldSpec(spec)) return recordFieldProblem(path, spec, value);
+  if (isCheckedSpec(spec)) return checkOf(spec.kind, path, spec, value);
   return settingProblem(path, spec, value);
 }
 

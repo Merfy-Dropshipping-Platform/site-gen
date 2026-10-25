@@ -60,7 +60,12 @@
                 "alignment",
                 "color-scheme",
                 "padding",
-                "menu"
+                "menu",
+                "product",
+                "collection",
+                "blog",
+                "policy",
+                "hint"
               ]
             }
           },

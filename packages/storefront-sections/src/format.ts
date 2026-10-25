@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
 import { sectionFieldShape, settingFieldsOf, settingsEntryShape } from './fields';
 import { problem, when, type Checked, type SectionProblem } from './problems';
+import { RECORD_SETTING_KINDS } from './record-fields';
 import { settingsTexts } from './settings';
 import { WRAPPER_IDS, wrapperProblems } from './wrapper';
 
@@ -313,10 +314,14 @@ function placeProblems(manifest: SectionManifest): string[] {
   ];
 }
 
-// Вид menu — только у настроек секции: меню блока конструктор не правит (окно меню — у поля секции).
+// Вид menu, поля с записями и подсказка (часть 8г блока 8) — только у настроек секции: меню блока конструктор не правит
+// (окно меню — у поля секции), запись получает секция.
+const SECTION_ONLY_KINDS: ReadonlySet<string> = new Set(['menu', ...RECORD_SETTING_KINDS]);
 const blockMenuProblems = (manifest: SectionManifest): string[] =>
   Object.entries(manifest.blocks ?? {}).flatMap(([type, block]) =>
     block.settings.flatMap((field, index) =>
-      field.setting.kind === 'menu' ? [`blocks.${type}.settings.${index}: вид menu — только у настроек секции`] : [],
+      SECTION_ONLY_KINDS.has(field.setting.kind)
+        ? [`blocks.${type}.settings.${index}: вид ${field.setting.kind} — только у настроек секции`]
+        : [],
     ),
   );

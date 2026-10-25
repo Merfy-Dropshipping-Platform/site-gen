@@ -44,3 +44,8 @@
 | `alignment` | `default` | — |
 | `color-scheme` | `default` | — |
 | `padding` | `default` | `max`, `step` |
+| `product` | — | `default` |
+| `collection` | — | `default` |
+| `blog` | — | `default` |
+| `policy` | — | `default` |
+| `hint` | `title`, `text` | `default`, `link` |

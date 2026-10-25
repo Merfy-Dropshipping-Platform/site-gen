@@ -220,8 +220,47 @@ export interface CustomerState {
   readonly ready: boolean;
   readonly customer: Customer | null;
 }
+// Вход покупательницы (блок 10, часть 10в, Р10в-1…Р10в-6): по коду из письма; токен — merfy_customer_token.
+export type NoData = Readonly<Record<string, never>>;
+export type VerifyArgs = { readonly email: string; readonly code: string } | { readonly token: string };
 export interface AuthModule {
-  readonly $customer: ReadableStore<CustomerState>;
+  readonly $customer: ReadableStore<CustomerState>; // читается, когда стор впервые читает секция
+  requestCode(args: { readonly email: string }, options?: ActionOptions): Promise<Result<NoData>>;
+  verify(args: VerifyArgs, options?: ActionOptions): Promise<Result<{ readonly customer: Customer }>>;
+  signout(options?: ActionOptions): Promise<Result<NoData>>;
+  updateProfile(
+    args: { readonly name?: string; readonly phone?: string },
+    options?: ActionOptions,
+  ): Promise<Result<{ readonly customer: Customer }>>;
+}
+// Заказы покупательницы (блок 10, часть 10в, Р10в-7, Р10в-8): ctx.orders.
+export interface OrderSummary {
+  readonly number: string;
+  readonly createdAt: string; // ISO
+  readonly status: string; // как в orders: paid, processing, sent…
+  readonly statusText: string; // «Оплачен»; незнакомый статус — как есть
+  readonly total: Money | null; // totalCents; нет — null
+}
+export interface OrderLine {
+  readonly title: string;
+  readonly image: string | null;
+  readonly options: Readonly<Record<string, string>>;
+  readonly quantity: number;
+  readonly total: Money;
+  readonly gift: boolean;
+}
+export interface Order extends OrderSummary {
+  readonly lines: readonly OrderLine[];
+  readonly address: string | null;
+  readonly canCancel: boolean;
+}
+export interface OrdersModule {
+  list(options?: ActionOptions): Promise<Result<{ readonly orders: readonly OrderSummary[] }>>;
+  get(args: { readonly number: string }, options?: ActionOptions): Promise<Result<{ readonly order: Order }>>;
+  cancel(
+    args: { readonly number: string; readonly reason: string },
+    options?: ActionOptions,
+  ): Promise<Result<{ readonly order: Order }>>;
 }
 // Подписка на рассылку магазина — форма подвала (блок 1, раздел 3.22): тот же запрос, что у rose и flux.
 export interface NewsletterModule {

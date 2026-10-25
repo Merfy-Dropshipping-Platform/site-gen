@@ -11,6 +11,11 @@ import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeade
 import CheckoutSplit from "../../../../packages/theme-base/blocks/CheckoutLayout/CheckoutSplit.astro";
 import CheckoutSummary from "../../../../packages/theme-base/blocks/CheckoutSummary/CheckoutSummary.astro";
 import ShopHead from "./ShopHead.astro";
+// Резолвер корня блока window.__merfyRoot (Spec 102) — тот же, что сборки пяти тем получают инжектом в <head>
+// (src/common/block-root-inline.ts). Страницы оформления новой темы собирает storefront-builder, без того инжекта:
+// определение пишем сами, до встроенных скриптов блоков (выпуск nova 0.7.1 №69: pageerror «window.__merfyRoot is
+// not a function», итог заказа — со спиннером). Идемпотентно: повторный инжект ничего не меняет.
+import { BLOCK_ROOT_INLINE_BODY } from "../../../../src/common/block-root-inline";
 import "./checkout.css";
 
 const page = Astro.locals.merfy;
@@ -47,6 +52,7 @@ const RESULT_PROPS = {
 <html lang={page.head.lang} {...page.head.attributes}>
 	<head>
 		<ShopHead head={page.head} />
+		<script is:inline set:html={BLOCK_ROOT_INLINE_BODY}></script>
 		<style id="merfy-checkout" is:inline set:html={checkout.varsCss}></style>
 	</head>
 	<body>

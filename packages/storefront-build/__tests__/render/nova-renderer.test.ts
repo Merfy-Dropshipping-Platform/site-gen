@@ -137,4 +137,22 @@ describe('рисовальщик темы nova: оформление', () => {
     const html = await renderer.render('/checkout-result', { ...probeLocals, checkout: { ...checkout, result: true } });
     expect(html).toContain('Спасибо за заказ');
   });
+
+  // Выпуск nova 0.7.1 (№69): страницы оформления собирает storefront-builder, без инжекта __merfyRoot в <head>,
+  // который получают сборки пяти тем, — встроенные скрипты блоков падали «window.__merfyRoot is not a function».
+  // Определение — то же, из src/common/block-root-inline.ts, и стоит до скриптов блоков.
+  it('/checkout и /checkout-result: резолвер __merfyRoot до встроенных скриптов блоков', async () => {
+    for (const path of ['/checkout', '/checkout-result']) {
+      const html = await renderer.render(path, {
+        ...probeLocals,
+        checkout: { ...checkout, result: path === '/checkout-result' },
+      });
+      const marker = html.indexOf('window.__merfyRoot=function');
+      expect(marker).toBeGreaterThanOrEqual(0);
+      expect(marker).toBeLessThan(html.indexOf('<body'));
+      const blockScript = html.indexOf('data-checkout-summary-fit-script');
+      if (blockScript >= 0) expect(marker).toBeLessThan(blockScript);
+      expect(html.indexOf('window.__merfyRoot(blockId)')).toBeGreaterThan(marker);
+    }
+  });
 });

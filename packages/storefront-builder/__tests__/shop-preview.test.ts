@@ -156,6 +156,26 @@ describe('превью одного блока', () => {
     expect(rendered[0]?.[1].settings).toEqual({ heading: 'Тёплые шарфы из кашемира' });
   });
 
+  it('секция с ролью — data-role на обёртке; без роли — атрибута нет (блок 12, как полный рендер)', async () => {
+    const banner: CurrentSection = {
+      name: 'shop:cookie-banner',
+      manifest: { sdk: 1, name: 'cookie-banner', kind: 'section', title: 'Баннер cookie', role: 'cookie-banner', settings: [] },
+      render: MODULE,
+      renderHash: HASH,
+    };
+    const { deps } = depsOf(new Map([
+      [banner.name, banner],
+      [HERO.name, HERO],
+    ]));
+    const withRole = await sectionPreview(deps, SHOP, block({ id: 'banner-1', section: 'shop:cookie-banner', settings: {} }));
+    expect(withRole.status).toBe(200);
+    const html = blockAnswerSchema.parse(JSON.parse(withRole.body)).html;
+    expect(html).toMatch(/^<merfy-section data-section="shop:cookie-banner" data-section-id="banner-1" data-role="cookie-banner" class="py-section">/);
+    const plain = await sectionPreview(deps, SHOP, block({ id: 'hero-1', section: 'shop:hero', settings: {} }));
+    expect(plain.status).toBe(200);
+    expect(blockAnswerSchema.parse(JSON.parse(plain.body)).html).not.toContain('data-role');
+  });
+
   it('тело не по форме — 400; секции у магазина нет — 404; расширения не ответили — 502', async () => {
     expect((await sectionPreview(depsOf().deps, SHOP, '{"instance":1}')).status).toBe(400);
     const unknown = block({ id: 'faq-1', section: 'shop:faq', settings: {} });

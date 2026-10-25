@@ -80,6 +80,8 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--spacing-section-y': '80px',
   '--spacing-grid-col-gap': '16px',
   '--spacing-grid-row-gap': '40px',
+  // Внутренний отступ карточки товара: дефолты тем — flux 12px, bloom и satin 0px.
+  '--product-card-padding': '0px',
   // 084 Stage 3 catalog — pre-084 defaults match prior hardcoded
   // values in Catalog.astro (gap: 16px, sidebar grid-template-columns:
   // 220px). Sidebar fallback is 220px to preserve exact pre-Stage-3

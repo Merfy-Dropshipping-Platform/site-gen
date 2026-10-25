@@ -13,7 +13,8 @@ import { pageLocals, shopName } from './head';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
-import { pageInfoOf, pageListsOf, routeOf, type ShopRoute } from './routes';
+import { pageInfoOf, pageListsOf, recordIndex, routeOf, type ShopRoute } from './routes';
+import { recordDepsOf } from './section-records';
 import { pageSectionTheme } from './section-tokens';
 import {
   LIVE_PAGE,
@@ -61,10 +62,10 @@ export interface RenderedPage {
 const pageEntity = (inputs: BuildInputs, route: ShopRoute) =>
   route.record?.entity ?? { type: route.entity, id: inputs.site.id };
 
-// Зависимости: записи страницы (сама запись — первой) и сайт — шапка и подвал есть на каждой странице.
-const pageDeps = (inputs: BuildInputs, route: ShopRoute): string[] => [
-  ...(route.record?.deps ?? []),
-  entityKey('site', inputs.site.id),
+// Зависимости: записи страницы (сама запись — первой), записи из полей секций (часть 8г) и сайт — шапка и подвал есть
+// на каждой странице. Ключ — один раз.
+const pageDeps = (inputs: BuildInputs, route: ShopRoute, recordDeps: readonly string[]): string[] => [
+  ...new Set([...(route.record?.deps ?? []), ...recordDeps, entityKey('site', inputs.site.id)]),
 ];
 
 // Второй адрес записи (часть 8б) — поле строки только у страницы записи, у которой он есть.
@@ -158,9 +159,9 @@ const sectionThemeOf = (inputs: BuildInputs, placed: readonly PlacedSection[]): 
   );
 
 // Строка манифеста страницы: путь, файл, сущность и её зависимости, время обновления данных.
-function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer): PageRow {
+function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer, recordDeps: readonly string[]): PageRow {
   const entity = pageEntity(inputs, route);
-  const deps = pageDeps(inputs, route);
+  const deps = pageDeps(inputs, route, recordDeps);
   return checkPageRow({
     path: route.path,
     file: route.file,
@@ -184,8 +185,8 @@ export async function renderShopPage(
   // Скрытые экземпляры убираются здесь, до рендера (п. 22): разметка, CSS секций и список модулей — по видимым.
   const shown = withoutHidden(inputs);
   const lists = pageListsOf(route.id).map((list) => placedSections(shown, list));
-  // Страница секций (часть 7а): id и адрес этой страницы.
-  const props = { ...pagePropsOf(shown, theme), page: pageInfoOf(route) };
+  // Страница секций (часть 7а): id и адрес этой страницы; записи магазина — полям с записями (часть 8г).
+  const props = { ...pagePropsOf(shown, theme), page: pageInfoOf(route), records: recordIndex(shown) };
   const placed = lists.flat();
   const rendered = await renderPlacedSections(
     placed,
@@ -200,7 +201,7 @@ export async function renderShopPage(
   const { html, bundle } = await renderWithBundle(shown, route, theme, page, withTheme);
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');
-  const row = pageRowOf(inputs, route, content);
+  const row = pageRowOf(inputs, route, content, recordDepsOf(placed, props));
   const file = bundle?.file ?? null;
   return { row, file: { path: route.file, content }, ...(file === null ? {} : { bundle: file }) };
 }

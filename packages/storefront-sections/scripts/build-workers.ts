@@ -20,7 +20,10 @@ const ENTRIES: Readonly<Record<string, string>> = {
 // он не загружается («Dynamic require of "path" is not supported»). Процесс проверки получает его через format.ts.
 // @babel/parser и @babel/traverse (часть 5в блока 5) — тоже из node_modules: в @babel/traverse
 // есть require('tty') (пакет debug), собранный ESM-файл его не загружает.
-const EXTERNAL = ['astro', 'astro/*', '@astrojs/compiler-rs', '@babel/parser', '@babel/traverse', 'esbuild-wasm', 'jsonc-parser', 'sanitize-html', 'tailwindcss'];
+// esbuild — тоже из node_modules (часть 8г блока 8): record-fields.ts импортирует значения из
+// @merfy/storefront-build, чей index реэкспортирует bundle.ts с esbuild; в собранном ESM-файле его
+// require('fs') не загружается. Процесс проверки esbuild не вызывает — бандл страницы собирает сборщик.
+const EXTERNAL = ['astro', 'astro/*', '@astrojs/compiler-rs', '@babel/parser', '@babel/traverse', 'esbuild', 'esbuild-wasm', 'jsonc-parser', 'sanitize-html', 'tailwindcss'];
 
 async function bundle(entry: string): Promise<string> {
   const result = await build({

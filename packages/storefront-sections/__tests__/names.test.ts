@@ -14,8 +14,8 @@ const problemsOf = (run: () => unknown): string[] => {
 };
 
 describe('словарь имён полей', () => {
-  it('файлы пакета читаются: 34 имени в трёх группах, 8 отказов, 9 сквозных', () => {
-    expect(NAMES.names).toHaveLength(34);
+  it('файлы пакета читаются: 39 имён в трёх группах, 8 отказов, 9 сквозных', () => {
+    expect(NAMES.names).toHaveLength(39);
     expect(NAMES.groups.map((group) => group.title)).toEqual(['Содержимое', 'Вид', 'Поведение']);
     expect(NAMES.refusals.map((refusal) => refusal.id)).toEqual([
       'section-view',

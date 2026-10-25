@@ -50,6 +50,9 @@ export const PROBLEM_CODES = [
   'behavior-part-orphan',
   'behavior-param-invalid',
   'animate-preset-unknown',
+  // data секции для скрипта (блок 8 «Секций и SDK», часть 8г): поле не из публичных, имя ctx.data без объявления.
+  'data-field-private',
+  'data-unknown',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];
 

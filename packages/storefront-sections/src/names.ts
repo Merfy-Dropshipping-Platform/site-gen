@@ -8,7 +8,7 @@ import { z } from 'zod';
 // данных проверяет parseNames при загрузке модуля: сломанный словарь — исключение со списком проблем.
 
 export const SDK_KINDS = ['string', 'text', 'richtext', 'url', 'image', 'image-pair', 'select', 'radio', 'toggle',
-  'range', 'alignment', 'color-scheme', 'padding', 'menu'] as const;
+  'range', 'alignment', 'color-scheme', 'padding', 'menu', 'product', 'collection', 'blog', 'policy', 'hint'] as const;
 export type SdkKind = (typeof SDK_KINDS)[number];
 
 export interface NameGroup { id: string; title: string }

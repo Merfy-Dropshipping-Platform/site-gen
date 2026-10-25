@@ -148,7 +148,7 @@ describe('что внутри', () => {
       '## Поведение',
       '## Нет в словаре',
     ]);
-    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(51);
+    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(56);
     expect(markdown.endsWith(' |\n')).toBe(true);
   });
 });

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
 import { sectionFieldShape, settingFieldsOf, settingsEntryShape } from './fields';
 import { problem, when, type Checked, type SectionProblem } from './problems';
+import { RECORD_SETTING_KINDS, sectionDataShape } from './record-fields';
 import { settingsTexts } from './settings';
 import { WRAPPER_IDS, wrapperProblems } from './wrapper';
 
@@ -99,6 +100,8 @@ export const sectionManifestSchema = z.strictObject({
   tokens: z.record(z.string(), z.unknown()).optional(),
   // Общие настройки секции (часть 5, Р1-5-5): id из WRAPPER_IDS без повторов; нет ключа — ['scheme', 'padding'].
   wrapper: z.array(z.enum(WRAPPER_IDS)).max(3).refine(unique, { error: 'id дважды' }).optional(),
+  // Поля записей для скрипта (блок 8 «Секций и SDK», часть 8г): имя → { from, fields }; смысл — section-data.ts.
+  data: sectionDataShape.optional(),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;
@@ -313,10 +316,14 @@ function placeProblems(manifest: SectionManifest): string[] {
   ];
 }
 
-// Вид menu — только у настроек секции: меню блока конструктор не правит (окно меню — у поля секции).
+// Вид menu, поля с записями и подсказка (часть 8г блока 8) — только у настроек секции: меню блока конструктор не правит
+// (окно меню — у поля секции), запись получает секция.
+const SECTION_ONLY_KINDS: ReadonlySet<string> = new Set(['menu', ...RECORD_SETTING_KINDS]);
 const blockMenuProblems = (manifest: SectionManifest): string[] =>
   Object.entries(manifest.blocks ?? {}).flatMap(([type, block]) =>
     block.settings.flatMap((field, index) =>
-      field.setting.kind === 'menu' ? [`blocks.${type}.settings.${index}: вид menu — только у настроек секции`] : [],
+      SECTION_ONLY_KINDS.has(field.setting.kind)
+        ? [`blocks.${type}.settings.${index}: вид ${field.setting.kind} — только у настроек секции`]
+        : [],
     ),
   );

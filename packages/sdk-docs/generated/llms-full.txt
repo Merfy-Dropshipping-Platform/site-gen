@@ -261,6 +261,7 @@ const { settings } = Astro.props;
 | `newPage` | id поля вида string: имя новой страницы, куда ставится секция |
 | `tokens` | свои токены секции; имя с меткой custom |
 | `wrapper` | общие настройки секции; нет ключа — scheme и padding |
+| `data` | Поля записей для `script.ts`: имя → `from` (`page.record` или `settings.<id поля с записью>`) и `fields` — публичные поля записи. В `ctx.data.<имя>` — объявленные поля или `null`. |
 
 ## Виды полей
 
@@ -282,6 +283,11 @@ const { settings } = Astro.props;
 | `alignment` | `default` | — |
 | `color-scheme` | `default` | — |
 | `padding` | `default` | `max`, `step` |
+| `product` | — | `default` |
+| `collection` | — | `default` |
+| `blog` | — | `default` |
+| `policy` | — | `default` |
+| `hint` | `title`, `text` | `default`, `link` |
 
 
 ---
@@ -316,6 +322,11 @@ const { settings } = Astro.props;
 | `logo` | `image` | Логотип | Своя картинка логотипа в секции. Логотип магазина — настройка темы `logo-image` |
 | `newsletter` | `toggle` | Рассылка | Показать форму подписки на рассылку |
 | `menu` | `menu` | Меню | Меню магазина: в ревизии — id меню, в шаблоне — дерево `{ title, items }` |
+| `product` | `product` | Выбор товара | Товар магазина: в ревизии — id или адрес товара, в шаблоне — публичные поля товара или null. Пусто — товар страницы на шаблоне «Товар», на других страницах — первый товар магазина |
+| `collection` | `collection` | Выбор коллекции | Коллекция магазина: в ревизии — id или адрес, в шаблоне — коллекция с первыми 24 товарами или null. Пусто — коллекция страницы на шаблоне «Коллекция», на других страницах — все товары магазина |
+| `posts` | `blog` | Выбор публикации | Блог магазина: в ревизии — id или адрес блога, в шаблоне — блог с 12 новыми записями или null. Пусто — блог страницы на шаблоне «Блог», на других страницах — записи всех блогов |
+| `policy` | `policy` | Выбор страницы | Политика магазина: в ревизии — тип (refund, privacy, tos, shipping), в шаблоне — `{ type, title, url, html }` или null. Пусто — политика страницы на шаблоне «Политика», на других страницах — свой текст секции |
+| `price` | `hint` | Стоимость | Подсказка вместо поля: цена товара меняется в кабинете, на странице «Товары». Значения нет |
 
 ## Вид
 
@@ -354,7 +365,7 @@ const { settings } = Astro.props;
 | `width`, `container`, `full-width` | Ширина секции будет общей настройкой секции; своего поля ширины у секции нет |
 | `show-*`, `hide-*`, `visible`, `hidden` | Показать или скрыть часть секции — блок с `limit: 1`: его скрывают в конструкторе |
 | `scheme`, `padding`, `sticky` | Общая настройка секции: в `settings` её не объявляют, секция перечисляет её в `wrapper` |
-| `products`, `product`, `collection`, `posts` | Полей выбора товаров, товара, коллекции и публикаций у секций пока нет: они появятся вместе с данными магазина в секциях |
+| `products` | Выбора нескольких товаров руками нет, как на проде: товары — из коллекции, поле `collection`; один товар — поле `product` |
 | `logo-image` | Это настройка «Настроек темы» «Логотип → Картинка»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['logo-image']` |
 | `social-telegram` | Это настройка «Настроек темы» «Социальные сети → Telegram»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-telegram']` |
 | `social-vk` | Это настройка «Настроек темы» «Социальные сети → Вконтакте»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-vk']` |
@@ -840,6 +851,58 @@ const { settings, shop } = Astro.props;
 
 Корзина, избранное и вход — модули SDK в браузере, тот же ключ `uses` ([modules.md](modules.md)).
 
+## Записи магазина в полях секции
+
+Поля видов `product`, `collection`, `blog` и `policy` в `settings` — выбор записи магазина: в ревизии хранится id или
+адрес записи (у политики — тип), в шаблоне секция получает публичные поля записи или `null`. Вид `hint` — подсказка в
+панели конструктора без значения (например, «Цена меняется на странице "Товары"»).
+
+```astro
+---
+const { settings } = Astro.props;
+---
+{settings.product === null ? (
+  <p>Товар недоступен</p>
+) : (
+  <h2>{settings.product.title}</h2>
+)}
+```
+
+Пустое поле на шаблоне записи своего вида — запись этой страницы: секция «Карточка товара» на шаблоне «Товар»
+показывает товар страницы. На других страницах пустое поле — как у секций пяти тем на проде: первый товар, все товары
+(первые 24), записи всех блогов (первые 12); у политики — `null`.
+
+Публичные поля по виду (`null`-запись не ломает шаблон — проверьте поле на `null`):
+
+| Вид | Публичные поля записи |
+|---|---|
+| `product` | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `options`, `variants`, `collections`, `updatedAt` |
+| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `available`) |
+| `blog` | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `cover`, `excerpt`) |
+| `policy` | `type`, `title`, `url`, `html` |
+
+### `data` — записи для `script.ts`
+
+Скрипт секции получает записи только через ключ `data` в `section.json`: имя → `from` и `fields` — публичные поля.
+Проверка при сохранении не пропускает непубличные поля (`data-field-private`) и чтения `ctx.data.<имя>` без объявления
+(`data-unknown`).
+
+```json
+"data": {
+  "product": { "from": "settings.product", "fields": ["id", "title", "price", "available"] }
+}
+```
+
+```ts
+export default defineSection({
+  mount(_el, ctx) {
+    if (ctx.data.product !== null) ctx.log(ctx.data.product.title);
+  },
+});
+```
+
+Записи нет — `null`. Ссылки меню на товары и коллекции хранятся по id, шаблон получает основной адрес записи.
+
 
 
 ---
@@ -1119,6 +1182,22 @@ const { settings, shop } = Astro.props;
 Когда: Пресета в data-animate нет в каталоге пресетов SDK.
 
 Как исправить: Возьми пресет из подсказки ответа или со страницы behaviors.md..
+
+## data-field-private
+
+Когда: В `data` секции поле записи не из публичных полей её вида.
+
+Как исправить: Оставь в `fields` только публичные поля из текста ошибки: у товара — `id`, `title`, `price` и другие..
+Пример: было `"fields": ["id", "costPrice"]` → стало `"fields": ["id", "price"]`.
+
+
+## data-unknown
+
+Когда: Скрипт читает `ctx.data.<имя>`, которого нет в `data` section.json.
+
+Как исправить: Объяви имя в `data` section.json или исправь имя в скрипте..
+Пример: было `ctx.data.prodcut` → стало `ctx.data.product`.
+
 
 
 ---

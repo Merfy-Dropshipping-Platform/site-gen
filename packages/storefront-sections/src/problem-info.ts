@@ -192,4 +192,14 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: 'Пресета в data-animate нет в каталоге пресетов SDK.',
     fix: 'Возьми пресет из подсказки ответа или со страницы behaviors.md.',
   },
+  'data-field-private': {
+    when: 'В `data` секции поле записи не из публичных полей её вида.',
+    fix: 'Оставь в `fields` только публичные поля из текста ошибки: у товара — `id`, `title`, `price` и другие.',
+    example: { before: '"fields": ["id", "costPrice"]', after: '"fields": ["id", "price"]' },
+  },
+  'data-unknown': {
+    when: 'Скрипт читает `ctx.data.<имя>`, которого нет в `data` section.json.',
+    fix: 'Объяви имя в `data` section.json или исправь имя в скрипте.',
+    example: { before: 'ctx.data.prodcut', after: 'ctx.data.product' },
+  },
 };

@@ -44,6 +44,7 @@ import {
 import type { Dictionary } from '@merfy/tokens';
 import { z } from 'zod';
 import { instanceSchema, readVisibleSections, wrapperOf, type SectionInstance } from './code';
+import { extensionKey, type VisibleSection } from './section-extension';
 import type { DrawAnswer } from './draw';
 import { LIST_ARGS_MAX, listRequestOf } from './list-rpc';
 import { inlineAssets } from './inline-assets';
@@ -76,7 +77,8 @@ export interface ShopPreviewDeps {
   stand: (rawShop: string | null) => Promise<DrawAnswer>;
   inputs: (shopId: string) => Promise<PreviewInputs>;
   theme: (id: string, version: string) => Promise<ShopTheme>;
-  sections: (shopId: string) => Promise<ReadonlyMap<string, CurrentSection> | null>;
+  // Видимые секции; у секций включённых расширений — их id и название (блок 12, часть 12б).
+  sections: (shopId: string) => Promise<ReadonlyMap<string, VisibleSection> | null>;
   render: (shopId: string, request: SectionRenderRequest) => Promise<string>;
   fonts: (css: string) => Promise<string>;
   // Сборка ядра сервиса (блок 5, часть 5г): её части — uses кода секции до части 5в; нет — uses пустой.
@@ -357,6 +359,8 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
       ...placeKeys(section.manifest),
       // Хеш кода секции (блок 5, часть 5г): по нему конструктор видит новую версию кода.
       ...scriptHashOf(section),
+      // Расширение секции (блок 12, часть 12б, Р12б-10): «<секция> · <название>» в конструкторе; своим секциям — нет.
+      ...extensionKey(section),
     }));
   return jsonAnswer(200, { sections: list, wrapper: WRAPPER_FIELDS });
 }

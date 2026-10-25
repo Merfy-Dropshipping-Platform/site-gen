@@ -1,0 +1,81 @@
+{
+  "accept": {
+    "valid": [
+      {
+        "extensionId": "test-ext",
+        "release": "0.1.0",
+        "kind": "section",
+        "name": "reviews",
+        "files": {
+          "section.json": "{\"sdk\":1,\"name\":\"reviews\",\"kind\":\"section\",\"title\":\"Отзывы\"}",
+          "template.astro": "<div></div>"
+        }
+      },
+      {
+        "extensionId": "test-ext",
+        "release": "0.1.1-dev.1",
+        "kind": "global",
+        "name": "mark",
+        "files": {
+          "section.json": "{\"sdk\":1,\"name\":\"mark\",\"kind\":\"global\",\"title\":\"Отметка\"}",
+          "script.ts": "export default {};"
+        }
+      }
+    ],
+    "invalid": [
+      { "why": "id расширения с заглавной", "request": { "extensionId": "Test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "files": {} } },
+      { "why": "версия не semver", "request": { "extensionId": "test-ext", "release": "0.1", "kind": "section", "name": "reviews", "files": {} } },
+      { "why": "версия со сборкой +build", "request": { "extensionId": "test-ext", "release": "0.1.0+build.1", "kind": "section", "name": "reviews", "files": {} } },
+      { "why": "вид не section и не global", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "page", "name": "reviews", "files": {} } },
+      { "why": "имя вместе с id расширения", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "test-ext:reviews", "files": {} } },
+      { "why": "лишний ключ shopId", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "files": {}, "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b" } },
+      { "why": "файл не текст", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "files": { "section.json": 1 } } }
+    ]
+  },
+  "replies": {
+    "valid": [
+      { "success": true, "data": { "status": "accepted", "name": "test-ext:reviews", "id": "0b5d7f0e-4c1a-4f7e-9a51-6d2a8e3c9b10" } },
+      { "success": true, "data": { "status": "unchanged", "name": "test-ext:mark", "id": "7e9c2b14-0d3f-4a8e-b6c1-5f2e9a7d4c03" } },
+      {
+        "success": false,
+        "error": {
+          "code": "refused",
+          "message": "секция не прошла проверку",
+          "problems": [
+            { "code": "release-changed", "file": "", "line": null, "column": null, "message": "выпуск 0.1.0 уже принят с другим исходником: новая версия — новый номер выпуска" },
+            { "code": "class-unknown", "file": "template.astro", "line": 1, "column": 13, "message": "класс unknown-x не из словаря" }
+          ]
+        }
+      },
+      { "success": false, "error": { "code": "uploads-closed", "message": "загрузка секций на этом контуре выключена: песочница процессов рендера не закрыта" } },
+      { "success": false, "error": { "code": "builder-unavailable", "message": "сборщик витрин не ответил" } },
+      { "success": false, "error": { "code": "body-invalid", "message": "нужно тело JSON { \"files\": { \"<путь>\": \"<текст>\" } }" } },
+      { "success": false, "error": { "code": "tool-failed", "message": "инструмент секций упал" } }
+    ],
+    "invalid": [
+      { "why": "refused без problems", "reply": { "success": false, "error": { "code": "refused", "message": "секция не прошла проверку", "problems": [] } } },
+      { "why": "незнакомый код", "reply": { "success": false, "error": { "code": "oops", "message": "?" } } },
+      { "why": "сохранено без id", "reply": { "success": true, "data": { "status": "accepted", "name": "test-ext:reviews" } } },
+      { "why": "статус не из двух", "reply": { "success": true, "data": { "status": "saved", "name": "test-ext:reviews", "id": "1" } } }
+    ]
+  },
+  "toggled": {
+    "valid": [
+      { "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b", "extensionId": "test-ext", "state": "enabled" },
+      { "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b", "extensionId": "test-ext", "state": "disabled" }
+    ],
+    "invalid": [
+      { "why": "состояние installed", "message": { "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b", "extensionId": "test-ext", "state": "installed" } },
+      { "why": "магазин не uuid", "message": { "shopId": "shop-1", "extensionId": "test-ext", "state": "enabled" } },
+      { "why": "лишний ключ tenantId", "message": { "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b", "extensionId": "test-ext", "state": "enabled", "tenantId": "t-1" } }
+    ]
+  },
+  "container": {
+    "valid": [{ "files": { "section.json": "{}", "template.astro": "<div></div>" } }],
+    "invalid": [
+      { "why": "нет files", "body": { "sections": {} } },
+      { "why": "файл не текст", "body": { "files": { "section.json": 1 } } },
+      { "why": "лишний ключ", "body": { "files": {}, "version": "0.1.0" } }
+    ]
+  }
+}

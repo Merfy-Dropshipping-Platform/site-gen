@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { EMPTY_LIST_QUERY, money, sha256, type ListProductCard, type PageList } from '@merfy/storefront-build';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -112,7 +113,11 @@ describe('наши секции блока 11', () => {
       images: [],
       description: '',
       options: [
-        { id: 'g-1', name: 'Цвет', values: [{ id: 'v-1', value: 'синий', images: ['https://s3.merfy.ru/p/blue.jpg'] }] },
+        {
+          id: 'g-1',
+          name: 'Цвет',
+          values: [{ id: 'v-1', value: 'синий', images: ['https://s3.merfy.ru/p/blue.jpg'] }],
+        },
       ],
     };
     const settings = { product: 'p-1', 'sold-out': 'show' };
@@ -134,4 +139,9 @@ describe('наши секции блока 11', () => {
     expect(withPhoto).toContain('src="https://s3.merfy.ru/p/1.jpg"');
     expect(withPhoto).not.toMatch(/<img[^>]*\bhidden\b/);
   }, 30_000);
+});
+
+it('место блоков расширений — data-ext-point="product" у кнопки «В корзину» (блок 12, часть 12б)', () => {
+  const PRODUCT_TEMPLATE = readFileSync(`${SHOP}/product/template.astro`, 'utf8');
+  expect(PRODUCT_TEMPLATE).toContain('data-ext-point="product" data-product-id={settings.product.id}');
 });

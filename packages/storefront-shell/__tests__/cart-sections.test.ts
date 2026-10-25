@@ -151,3 +151,9 @@ describe('«Промежуточный итог»', () => {
     expect(summary.querySelector('[data-ref="discount"]')?.hasAttribute('hidden')).toBe(true);
   });
 });
+
+describe('место блоков расширений (блок 12, часть 12б)', () => {
+  it('место блоков расширений — data-ext-point="cart" (блок 12, часть 12б)', () => {
+    expect(CART_TEMPLATE).toContain('<div data-ext-point="cart"></div>');
+  });
+});

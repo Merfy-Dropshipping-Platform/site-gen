@@ -31,6 +31,7 @@ import { z } from 'zod';
 import { StorefrontBuilderError, errorText } from './errors';
 import type { Log } from './log';
 import type { Call } from './rpc';
+import { sectionExtensionOf, type VisibleSection } from './section-extension';
 
 // Код магазина для сборки (design.md блока 7, п. 19 и 24). Секции, видимые магазину, — включённых у него расширений в
 // их версиях и свои опубликованные (реестр storefront_section); секций платформы и тем нет. Места —
@@ -85,7 +86,15 @@ const extensionsAnswer = z.object({
   success: z.boolean(),
   // storefront — раздел манифеста как есть (блок 9 «Секций и SDK», часть 9в): сторы и методы для ctx.ext.
   data: z
-    .array(z.object({ id: z.string().min(1), version: z.string().min(1), storefront: z.unknown().optional() }))
+    .array(
+      z.object({
+        id: z.string().min(1),
+        version: z.string().min(1),
+        storefront: z.unknown().optional(),
+        // Название расширения (блок 12, часть 12б): подпись его секций в /sections; старый сервис extensions — без него.
+        name: z.string().optional(),
+      }),
+    )
     .optional(),
 });
 const placementRow = z.object({ sections: z.unknown(), menus: z.unknown().optional() });
@@ -122,6 +131,8 @@ export type Placement = z.infer<typeof placementSchema>;
 // Включённое расширение и его раздел storefront манифеста как есть — его разбирает extensionStorefrontOf.
 export interface EnabledExtension extends Extension {
   storefront: unknown;
+  // название расширения (manifest.name, блок 12, часть 12б) — подпись секций в /sections
+  title?: string;
 }
 
 // Включённые у магазина расширения — id, версия и раздел storefront. null — не получены, причина — в журнале.
@@ -133,7 +144,12 @@ export async function enabledForShop(
     const raw = await request.call(EXTENSIONS_QUEUE, ENABLED_FOR_SHOP, { shopId }, request.timeoutMs);
     const answer = extensionsAnswer.parse(raw);
     if (!answer.success) throw new StorefrontBuilderError('rpc-failed', `${ENABLED_FOR_SHOP}: success = false`);
-    return (answer.data ?? []).map(({ id, version, storefront }) => ({ id, version, storefront }));
+    return (answer.data ?? []).map(({ id, version, storefront, name }) => ({
+      id,
+      version,
+      storefront,
+      ...(name === undefined || name === '' ? {} : { title: name }),
+    }));
   } catch (error) {
     request.log('extensions-failed', { shopId, error: errorText(error) });
     return null;
@@ -385,14 +401,18 @@ export async function readShopCode(deps: CodeDeps, shopId: string): Promise<Shop
 
 // Секции SDK 1, видимые магазину, по имени — для превью одного блока и списка секций конструктора (блок 1 «Секций и
 // SDK»). Порядок — по имени, как отдаёт реестр. null — расширения не ответили.
-export async function readVisibleSections(deps: CodeDeps, shopId: string): Promise<Map<string, CurrentSection> | null> {
-  const extensions = await enabledExtensions(deps, shopId);
-  if (extensions === null) return null;
+// Секции включённых расширений — с id и названием расширения (блок 12, часть 12б): подпись в «Добавить секцию».
+export async function readVisibleSections(deps: CodeDeps, shopId: string): Promise<Map<string, VisibleSection> | null> {
+  const enabled = await enabledForShop(deps, shopId);
+  if (enabled === null) return null;
+  const extensions = enabled.map(({ id, version }) => ({ id, version }));
   const rows = await (deps.rows ?? visibleSections)(deps.db, { shopId, extensions });
   return new Map(
-    rows.flatMap((row): [string, CurrentSection][] => {
+    rows.flatMap((row): [string, VisibleSection][] => {
       const current = currentSection(row);
-      return current === null ? [] : [[row.name, current]];
+      if (current === null) return [];
+      const extension = sectionExtensionOf(row.name, enabled);
+      return [[row.name, extension === undefined ? current : { ...current, extension }]];
     }),
   );
 }

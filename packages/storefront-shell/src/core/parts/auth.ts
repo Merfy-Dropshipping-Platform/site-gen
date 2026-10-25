@@ -85,9 +85,10 @@ function replyFailure(
   return failureOf(reason, author, reply);
 }
 
+// Договор RPC платформы: успех — любой 2xx с success: true (шлюз отвечает POST-ам 201, проверка dev 25.10).
 const isOkReply = (reply: Reply): boolean => {
   const body = reply.body;
-  return reply.status === 200 && typeof body === 'object' && body !== null && Reflect.get(body, 'success') === true;
+  return reply.status >= 200 && reply.status < 300 && typeof body === 'object' && body !== null && Reflect.get(body, 'success') === true;
 };
 
 interface ShopApi {

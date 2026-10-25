@@ -294,3 +294,39 @@ describe('выход и профиль', () => {
     expect(gateway.calls).toEqual([]);
   });
 });
+
+// Договор RPC платформы (проверка dev 25.10): успех — любой 2xx с success: true; шлюз (Nest) отвечает POST-ам 201.
+describe('успех ответа — любой 2xx, не только 200', () => {
+  it('requestCode: 201 magic/request — { ok: true }', async () => {
+    const gateway = fakeGateway();
+    gateway.answer('POST /store/auth/magic/request', { status: 201, body: { success: true } });
+    const module = auth.create(coreWith().core);
+    expect(await module.requestCode({ email: 'anna@example.ru' })).toEqual({ ok: true, data: {} });
+    expect(gateway.keys()).toEqual(['POST /store/auth/magic/request']);
+  });
+
+  it('verify: 201 magic/verify — токен записан, покупательница в сторе', async () => {
+    const gateway = fakeGateway();
+    gateway.answer('POST /store/auth/magic/verify', {
+      status: 201,
+      body: { success: true, data: { customer: ANNA, sessionToken: 't-new', isNew: false } },
+    });
+    gateway.answer('GET /storefront/wishlist', emptyWishlist);
+    const { core, signinAt } = coreWith();
+    const module = auth.create(core);
+    expect((await module.verify({ email: 'anna@example.ru', code: '123456' })).ok).toBe(true);
+    expect(localStorage.getItem(CUSTOMER_TOKEN_KEY)).toBe('t-new');
+    expect(module.$customer.get().customer?.email).toBe('anna@example.ru');
+    expect(signinAt.length).toBeGreaterThan(0);
+  });
+
+  it('signout: 201 logout — выход, токен удалён', async () => {
+    localStorage.setItem(CUSTOMER_TOKEN_KEY, TOKEN);
+    const gateway = fakeGateway();
+    gateway.answer('POST /store/auth/logout', { status: 201, body: { success: true } });
+    const module = auth.create(coreWith().core);
+    expect(await module.signout()).toEqual({ ok: true, data: {} });
+    expect(localStorage.getItem(CUSTOMER_TOKEN_KEY)).toBeNull();
+    expect(module.$customer.get()).toEqual({ ready: true, customer: null });
+  });
+});

@@ -1,7 +1,8 @@
 import { defineSection } from '@merfy/shell';
 
 // «Товар» тест-магазина (блок 11 «Секций и SDK», часть 11б-2; design.md 11.6): выбранное сочетание — цена, наличие,
-// кнопка «В корзину» и нажатые значения; «Распроданное: Прятать» скрывает значения без сочетания в наличии.
+// фото, кнопка «В корзину» и нажатые значения; «Распроданное: Прятать» скрывает значения без сочетания в наличии.
+// Фото — как variantImageFor на проде: первое выбранное значение с фото; нет — галерея остаётся на текущем.
 export default defineSection({
   mount(_el, ctx) {
     const productId = ctx.ref('buy')?.attr('data-product-id') ?? '';
@@ -14,6 +15,12 @@ export default defineSection({
       const buy = ctx.ref('buy');
       buy?.attr('data-variant-id', variant.id);
       buy?.attr('disabled', variant.available ? null : '');
+      const image = variants.imageFor(variant);
+      const photo = ctx.ref('photo');
+      if (photo !== null && image !== null) {
+        photo.attr('src', image.url);
+        photo.attr('hidden', null);
+      }
       ctx.refs('value').forEach((button) => {
         const value = button.attr('data-value') ?? '';
         button.attr('aria-pressed', variant.options.includes(value) ? 'true' : 'false');

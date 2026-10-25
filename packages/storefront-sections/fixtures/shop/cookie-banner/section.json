@@ -6,7 +6,7 @@
   "groups": ["footer"],
   "limit": 1,
   "wrapper": ["scheme"],
-  "uses": ["shop"],
+  "uses": ["shop", "consent"],
   "settings": [
     { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "" } },
     {

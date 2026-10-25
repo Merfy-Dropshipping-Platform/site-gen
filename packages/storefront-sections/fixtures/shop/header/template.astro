@@ -24,8 +24,9 @@ const { settings, blocks, theme, shop, page } = Astro.props;
               <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
             {blocks.some((block) => block.type === 'cart') && (
-              <a aria-label="Корзина" class="text-muted-foreground hover:text-heading" href="/cart">
+              <a aria-label="Корзина" class="text-muted-foreground hover:text-heading" href="/cart" data-action="cart.open">
                 <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0" /></svg>
+                <span data-ref="cart-count" class="text-sm" hidden>0</span>
               </a>
             )}
           </div>

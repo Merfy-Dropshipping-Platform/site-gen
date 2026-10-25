@@ -1,0 +1,10 @@
+{
+  "sdk": 1,
+  "name": "cart-drawer",
+  "kind": "section",
+  "title": "Корзина-панель",
+  "groups": ["footer"],
+  "limit": 1,
+  "wrapper": [],
+  "uses": ["cart"]
+}

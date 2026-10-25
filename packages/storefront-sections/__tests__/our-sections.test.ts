@@ -37,3 +37,22 @@ describe('наши секции блока 9 — проверка при сох�
     expect(section?.scriptMeta).toEqual({ uses: [], parts: [], classes: [] });
   });
 });
+
+// Блок 10, часть 10а: секции корзины — те же правила, что у секции мерчанта.
+describe('наши секции блока 10 — проверка при сохранении', () => {
+  it.each([
+    ['cart', 'shop:cart', ['page']],
+    ['cart-summary', 'shop:cart-summary', ['page']],
+    ['cart-drawer', 'shop:cart-drawer', ['footer']],
+    ['cart-added', 'shop:cart-added', ['footer']],
+  ])('%s: без отказов и предупреждений, одна на список, модуль cart', async (folder, name, groups) => {
+    const { problems, section } = await prepared(folder);
+    expect(problems).toEqual([]);
+    expect([section?.name, section?.warnings, section?.manifest.groups, section?.manifest.limit]).toEqual([name, [], groups, 1]);
+    expect(section?.scriptMeta.uses).toEqual(['cart']);
+  });
+
+  it('«Значок корзины» с cart.open — без отказов', async () => {
+    expect((await prepared('cart-badge')).problems).toEqual([]);
+  });
+});

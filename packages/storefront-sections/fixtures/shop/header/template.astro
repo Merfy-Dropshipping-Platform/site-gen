@@ -83,7 +83,7 @@ const { settings, blocks, theme, shop, page } = Astro.props;
           </ul>
           <div class="hidden items-center gap-4 px-4 py-3 md:flex">
             {blocks.some((block) => block.type === 'search') && <button type="button" class="no-underline hover:text-heading" data-action="search.open">Поиск</button>}
-            {blocks.some((block) => block.type === 'profile') && <a class="no-underline hover:text-heading" href="/login">Профиль</a>}
+            {blocks.some((block) => block.type === 'profile') && <a class="no-underline hover:text-heading" data-ref="profile" href="/login">Профиль</a>}
           </div>
         </dialog>
       </div>
@@ -108,7 +108,7 @@ const { settings, blocks, theme, shop, page } = Astro.props;
               <button class="bg-heading px-4 py-2 font-body text-background" type="submit">Найти</button>
             </form>
           )}
-          {blocks.some((block) => block.type === 'profile') && <a class="block py-2 no-underline hover:text-heading" href="/login">Профиль</a>}
+          {blocks.some((block) => block.type === 'profile') && <a class="block py-2 no-underline hover:text-heading" data-ref="profile" href="/login">Профиль</a>}
           <ul class="m-0 list-none p-0">
             {settings.menu.items.map((item) => (
               <li class="border-b border-border py-3">
@@ -191,7 +191,7 @@ const { settings, blocks, theme, shop, page } = Astro.props;
             )
           ) : block.type === 'profile' ? (
             settings['menu-type'] === 'sidebar' && (
-              <a aria-label="Профиль" class="hidden md:inline-flex text-muted-foreground hover:text-heading" href="/login">
+              <a aria-label="Профиль" class="hidden md:inline-flex text-muted-foreground hover:text-heading" data-ref="profile" href="/login">
                 <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" /></svg>
               </a>
             )
@@ -490,7 +490,7 @@ const { settings, blocks, theme, shop, page } = Astro.props;
                   <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
                 </a>
                 ) : (
-                <a aria-label="Профиль" class="text-muted-foreground hover:text-heading" href="/login">
+                <a aria-label="Профиль" class="text-muted-foreground hover:text-heading" data-ref="profile" href="/login">
                   <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                     <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" />
                   </svg>
@@ -637,7 +637,7 @@ const { settings, blocks, theme, shop, page } = Astro.props;
                   <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
                 </a>
                 ) : (
-                <a aria-label="Профиль" class="text-muted-foreground hover:text-heading" href="/login">
+                <a aria-label="Профиль" class="text-muted-foreground hover:text-heading" data-ref="profile" href="/login">
                   <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                     <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" />
                   </svg>

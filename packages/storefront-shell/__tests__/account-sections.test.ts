@@ -5,11 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import accountScript from '../sections/account/script';
 import ordersScript from '../sections/orders/script';
 import { CUSTOMER_TOKEN_KEY } from '../src/core/customer-token';
+import { cart } from '../src/core/parts/cart';
+import { favorites } from '../src/core/parts/favorites';
 import { navigation } from '../src/core/navigation';
 import { auth } from '../src/core/parts/auth';
 import { ORDER_MISSING_TEXT, orders } from '../src/core/parts/orders';
 import { start, type StartedCore } from '../src/core/start';
 import { configTag, entry, placeSection, watchFailures } from './core-support';
+import headerScript from '../../storefront-sections/fixtures/shop/header/script';
 import { fakeGateway } from './sdk-support';
 
 // «Личный кабинет» и «Заказы» (блок 10 «Секций и SDK», 10.8, «Решил сам» п. 20; часть 10в, Р10в-12, Р10в-13): данные —
@@ -279,5 +282,47 @@ describe('«Заказы»', () => {
     second.run();
     await settle();
     expect([second.gateway.calls.length, hidden(second.page, 'loading')]).toEqual([0, true]);
+  });
+});
+
+// «Профиль» в «Шапке» (п. 21; Р10в-14): в HTML — /login, вошедшей скрипт ставит /account.
+const HEADER_TEMPLATE = source('../../storefront-sections/fixtures/shop/header/template.astro');
+
+function openHeader() {
+  const gateway = fakeGateway();
+  document.head.innerHTML = configTag('live');
+  const header = placeSection(
+    'shop:header',
+    'header-1',
+    '<a href="/login" data-ref="profile" aria-label="Профиль">Профиль</a>' +
+      '<a href="/wishlist">Избранное <span data-ref="favorites-count" hidden>0</span></a>' +
+      '<a href="/cart" data-action="cart.open">Корзина <span data-ref="cart-count" hidden>0</span></a>',
+  );
+  core = start({
+    parts: [cart, favorites, auth],
+    sections: [entry('shop:header', headerScript, { uses: ['cart', 'favorites', 'auth'] })],
+  });
+  return { gateway, header };
+}
+
+describe('«Шапка»: «Профиль»', () => {
+  it('шаблон: у каждой ссылки /login — data-ref="profile"', () => {
+    const links = HEADER_TEMPLATE.match(/<a\b[^>]*href="\/login"[^>]*>/g) ?? [];
+    expect(links.length).toBeGreaterThan(0);
+    expect(links.every((link) => link.includes('data-ref="profile"'))).toBe(true);
+  });
+
+  it('вошедшая — /account; гостья — /login', async () => {
+    const first = openHeader();
+    first.gateway.answer('GET /store/auth/me', { status: 200, body: { success: true, data: { customer: ANNA, session: {} } } });
+    first.gateway.answer('GET /storefront/wishlist', { status: 200, body: { success: true, data: [] } });
+    await settle();
+    expect(first.header.querySelector('[data-ref="profile"]')?.getAttribute('href')).toBe('/account');
+    core?.stop();
+    document.body.replaceChildren();
+    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    const second = openHeader();
+    await settle();
+    expect(second.header.querySelector('[data-ref="profile"]')?.getAttribute('href')).toBe('/login');
   });
 });

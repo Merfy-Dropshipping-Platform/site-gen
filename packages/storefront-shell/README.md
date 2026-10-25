@@ -238,3 +238,9 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 - Модуль `orders` — заказы покупательницы: `list`, `get`, `cancel` с причиной; в бандле — по `uses: ["orders"]`.
 - Страницы `page-profile` и `page-orders` — только для вошедших: гостья уходит на `/login?redirect=…` до запуска секций
   (`src/core/private-pages.ts`).
+
+## Вход и кабинет (часть 10в, план 2)
+
+- Секции `login` «Вход» (`page-login`, адреса `/login` и `/verify`), `account` «Личный кабинет» (`page-profile`,
+  `/account/profile` и `/account`), `orders` «Заказы» (`page-orders`, `/account/orders`, заказ — `?n=<номер>`).
+- «Шапка»: «Профиль» — `/login`, вошедшей — `/account` (`data-ref="profile"`, `ctx.auth.$customer`).

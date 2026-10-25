@@ -6,7 +6,7 @@
   "groups": ["header"],
   "limit": 1,
   "removable": false,
-  "uses": ["theme", "shop"],
+  "uses": ["theme", "shop", "cart"],
   "wrapper": ["scheme", "padding", "sticky"],
   "settings": [
     {

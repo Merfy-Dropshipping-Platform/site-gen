@@ -1,0 +1,52 @@
+<div data-behavior="dialog" data-transition="drawer" data-side="right" data-open-on="cart-open">
+  <dialog data-part="content" class="scheme-cart-drawer m-0 h-full max-h-none max-w-none w-full bg-background p-4 font-body md:w-114">
+    <div class="flex items-center justify-between gap-4">
+      <h2 class="m-0 font-heading weight-heading text-xl text-heading">Корзина</h2>
+      <button type="button" data-part="close" class="underline">Скрыть</button>
+    </div>
+    <div data-ref="empty" class="flex flex-col gap-3" hidden>
+      <a class="no-underline" href="/catalog">Продолжить покупки</a>
+      <a class="no-underline" href="/login">Есть аккаунт? Войти</a>
+    </div>
+    <div data-ref="lines" class="flex flex-1 flex-col gap-3 overflow-y-auto" hidden>
+      <template>
+        <div class="flex items-center gap-3">
+          <img data-ref="image" alt="" class="h-16 w-16 shrink-0 rounded-button object-cover" />
+          <div class="flex flex-1 flex-col gap-1">
+            <p data-ref="title" class="m-0 font-heading weight-heading"></p>
+            <p data-ref="options" class="m-0 text-sm text-muted-foreground"></p>
+            <p data-ref="price" class="m-0"></p>
+          </div>
+          <div class="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              data-ref="less"
+              data-action="cart.change"
+              aria-label="Меньше"
+              class="h-8 w-8 rounded-button border-width-button border-border"
+            >
+              −
+            </button>
+            <span data-ref="quantity" class="min-w-6 text-center">0</span>
+            <button
+              type="button"
+              data-ref="more"
+              data-action="cart.change"
+              aria-label="Больше"
+              class="h-8 w-8 rounded-button border-width-button border-border"
+            >
+              +
+            </button>
+          </div>
+          <p data-ref="total" class="m-0 shrink-0 font-heading weight-heading"></p>
+          <button type="button" data-ref="remove" data-action="cart.remove" class="shrink-0 text-sm underline">Удалить</button>
+        </div>
+      </template>
+    </div>
+    <div class="flex flex-col gap-2">
+      <p class="m-0">Итого <span data-ref="total"></span></p>
+      <p class="m-0 text-sm text-muted-foreground">Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.</p>
+      <a class="no-underline" href="/cart">Оформить заказ</a>
+    </div>
+  </dialog>
+</div>

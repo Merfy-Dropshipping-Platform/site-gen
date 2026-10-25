@@ -15,6 +15,7 @@
 | `merfy:cart:add` | товар добавлен в корзину — после ответа сервера; quantity — сколько добавилось, price — за штуку | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0; price — { amount, currency } |
 | `merfy:cart:remove` | строка убрана из корзины | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0 |
 | `merfy:cart:change` | покупатель поменял количество в корзине | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0; previousQuantity — целое от 0 |
+| `merfy:cart:open` | покупатель открыл выезжающую корзину (cart.open при «Сайдбар») | — |
 | `merfy:variant:change` | выбран вариант товара | productId — строка; variantId — строка |
 | `merfy:favorites:add` | товар отмечен в избранном | productId — строка |
 | `merfy:favorites:remove` | отметка избранного снята | productId — строка |

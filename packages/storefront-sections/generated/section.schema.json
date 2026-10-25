@@ -96,6 +96,9 @@
                           "title",
                           "description"
                         ]
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -183,6 +186,9 @@
                           "title",
                           "description"
                         ]
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -270,6 +276,9 @@
                           "title",
                           "description"
                         ]
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -287,6 +296,9 @@
                       },
                       "default": {
                         "type": "string"
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -374,6 +386,9 @@
                           "title",
                           "description"
                         ]
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -730,6 +745,9 @@
                           "title",
                           "description"
                         ]
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -901,6 +919,9 @@
                           "title",
                           "description"
                         ]
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -981,6 +1002,9 @@
                       },
                       "default": {
                         "type": "string"
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -1068,6 +1092,9 @@
                           "title",
                           "description"
                         ]
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -1155,6 +1182,9 @@
                           "title",
                           "description"
                         ]
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -4468,6 +4498,9 @@
                                 "title",
                                 "description"
                               ]
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -4555,6 +4588,9 @@
                                 "title",
                                 "description"
                               ]
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -4642,6 +4678,9 @@
                                 "title",
                                 "description"
                               ]
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -4659,6 +4698,9 @@
                             },
                             "default": {
                               "type": "string"
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -4746,6 +4788,9 @@
                                 "title",
                                 "description"
                               ]
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -5102,6 +5147,9 @@
                                 "title",
                                 "description"
                               ]
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -5273,6 +5321,9 @@
                                 "title",
                                 "description"
                               ]
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -5353,6 +5404,9 @@
                             },
                             "default": {
                               "type": "string"
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -5440,6 +5494,9 @@
                                 "title",
                                 "description"
                               ]
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -5527,6 +5584,9 @@
                                 "title",
                                 "description"
                               ]
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
                             }
                           },
                           "required": [

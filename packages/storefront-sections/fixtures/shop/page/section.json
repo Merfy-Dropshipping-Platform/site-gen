@@ -6,11 +6,11 @@
   "newPage": "heading",
   "settings": [
     { "id": "policy", "label": "Выбор страницы", "setting": { "kind": "policy" } },
-    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Страница" } },
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Страница", "inlineEdit": true } },
     {
       "id": "text",
       "label": "Текст",
-      "setting": { "kind": "richtext", "default": "<p>Расскажите покупателям, о чём эта страница.</p>" }
+      "setting": { "kind": "richtext", "default": "<p>Расскажите покупателям, о чём эта страница.</p>", "inlineEdit": true }
     }
   ]
 }

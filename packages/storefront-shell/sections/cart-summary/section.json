@@ -1,0 +1,25 @@
+{
+  "sdk": 1,
+  "name": "cart-summary",
+  "kind": "section",
+  "title": "Промежуточный итог",
+  "groups": ["page"],
+  "limit": 1,
+  "uses": ["cart"],
+  "blocks": {
+    "total": {
+      "title": "Итоговая цена",
+      "limit": 1,
+      "settings": []
+    },
+    "button": {
+      "title": "Кнопка оформления заказа",
+      "limit": 1,
+      "settings": []
+    }
+  },
+  "defaultBlocks": [
+    { "type": "total", "settings": {} },
+    { "type": "button", "settings": {} }
+  ]
+}

@@ -1,0 +1,15 @@
+<div data-behavior="dialog" data-transition="fade" data-open-on="cart-add">
+  <dialog data-part="content" class="scheme-cart-drawer flex flex-col gap-3 p-4 font-body">
+    <h2 class="m-0 font-heading weight-heading text-xl text-heading">Товар добавлен в корзину</h2>
+    <div class="flex items-center gap-3">
+      <img data-ref="image" alt="" class="h-16 w-16 shrink-0 rounded-button object-cover" hidden />
+      <div class="flex flex-1 flex-col gap-1">
+        <p data-ref="title" class="m-0 font-heading weight-heading"></p>
+        <p data-ref="price" class="m-0"></p>
+      </div>
+    </div>
+    <a class="no-underline" href="/cart" data-ref="go-cart">В корзину (<span data-ref="count">0</span>)</a>
+    <a class="no-underline" href="/checkout" data-action="cart.checkout">Купить сейчас</a>
+    <button type="button" data-part="close" class="underline">Продолжить покупки</button>
+  </dialog>
+</div>

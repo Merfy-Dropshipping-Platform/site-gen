@@ -120,12 +120,18 @@ export function serverItem(id: string, productId: string, quantity: number, vari
     variantCombinationId: variant,
     quantity,
     unitPriceCents: 249000,
+    totalCents: 249000 * quantity,
     name: 'Шарф',
+    imageUrl: null,
+    options: null,
+    isBonus: false,
   };
 }
 
 export function cartLine(id: string, productId: string, quantity: number, variantId: string | null = null) {
-  return { id, productId, variantId, quantity, price: { amount: 249000, currency: 'RUB' } };
+  const price = { amount: 249000, currency: 'RUB' };
+  const total = { amount: 249000 * quantity, currency: 'RUB' };
+  return { id, productId, variantId, quantity, price, title: 'Шарф', image: null, options: {}, total, gift: false };
 }
 
 // Дождаться микрозадач и ответов шлюза в памяти.

@@ -1,0 +1,9 @@
+{
+  "sdk": 1,
+  "name": "cart",
+  "kind": "section",
+  "title": "Корзина",
+  "groups": ["page"],
+  "limit": 1,
+  "uses": ["cart"]
+}

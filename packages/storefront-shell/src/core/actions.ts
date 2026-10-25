@@ -9,7 +9,7 @@ import type { Action, Ctx, El, Result, SectionEvent } from './types';
 // Действие части SDK в разметке, привязанное к API своей части: params — MarkupAction.params, call — вызов с API части.
 export interface BoundMarkup {
   readonly params: readonly string[];
-  call(values: Readonly<Record<string, string>>): Promise<Result<unknown>>;
+  call(values: Readonly<Record<string, string>>, event?: SectionEvent): Promise<Result<unknown>>;
 }
 
 export interface ActionHost {
@@ -170,6 +170,6 @@ function runAction(host: ActionHost, target: HTMLElement, name: string, event: E
   if (bound !== null)
     withBusy(
       target,
-      host.run(() => bound.call(valuesOf(target, bound))),
+      host.run(() => bound.call(valuesOf(target, bound), sectionEvent())),
     );
 }

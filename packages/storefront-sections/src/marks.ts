@@ -7,23 +7,42 @@ import { problem, type SectionProblem } from './problems';
 // blocks.map и вставляет в его открывающий тег data-merfy-block={Astro.props.__merfy.block(<имя>)} — автор метку не
 // пишет. Модуль рендера компилируется из текста с метками (compile.ts), запреты и места ошибок — по исходному тексту.
 
+// Вставка в исходный текст шаблона: at — индекс знака, text — что вставить. Метки блоков и метки правки в превью
+// (edit-marks.ts, часть 6) собираются в один список и применяются вместе.
+export interface Insert {
+  at: number;
+  text: string;
+}
+
+// Применяет вставки к тексту от конца к началу, чтобы индексы остальных не сдвигались; равные at — в порядке списка.
+export function applyInserts(text: string, inserts: readonly Insert[]): string {
+  const ordered = inserts
+    .map((insert, index) => ({ insert, index }))
+    .sort((a, b) => b.insert.at - a.insert.at || b.index - a.index);
+  return ordered.reduce(
+    (result, { insert }) => result.slice(0, insert.at) + insert.text + result.slice(insert.at),
+    text,
+  );
+}
+
 export interface MarkedTemplate {
   text: string; // шаблон с метками; из него компилируется модуль рендера
   marks: number; // сколько меток вставлено
   unmarked: number[]; // начало каждого blocks.map без одного корневого элемента HTML (индекс знака в тексте)
+  inserts: Insert[]; // те же метки списком вставок, по возрастанию at
 }
 
 const MARK = (name: string) => ` data-merfy-block={Astro.props.__merfy.block(${name})}`;
 const NO_ROOT_TEXT = 'blocks.map без одного корневого элемента: подпункт выбирается только слева';
 const NO_MAP_TEXT = 'в шаблоне нет blocks.map: подпункты выбираются только слева';
 
-const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
-const identifierOf = (value: unknown): string =>
+export const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
+export const identifierOf = (value: unknown): string =>
   isNode(value) && value.type === 'Identifier' ? stringOf(fieldOf(value, 'name')) : '';
-const isMember = (value: unknown): value is AstNode => isNode(value) && value.type === 'MemberExpression';
+export const isMember = (value: unknown): value is AstNode => isNode(value) && value.type === 'MemberExpression';
 
 // blocks.map(...): вызов, callee — MemberExpression с object Identifier blocks и property map (не вычисляемое).
-function blocksMapCall(node: AstNode): boolean {
+export function blocksMapCall(node: AstNode): boolean {
   const callee = fieldOf(node, 'callee');
   if (!isMember(callee) || fieldOf(callee, 'computed') === true) return false;
   return identifierOf(fieldOf(callee, 'object')) === 'blocks' && identifierOf(fieldOf(callee, 'property')) === 'map';
@@ -40,7 +59,7 @@ function rootElementOf(arrow: AstNode): AstNode | null {
 }
 
 // Первый элемент списка узлов: nodesOf обходит стеком и меняет порядок массивов, поэтому первый — по месту в тексте.
-const firstOf = (value: unknown): unknown => {
+export const firstOf = (value: unknown): unknown => {
   const nodes = (Array.isArray(value) ? value : [value]).filter(isNode);
   return [...nodes].sort((left, right) => left.start - right.start)[0];
 };
@@ -69,7 +88,8 @@ export async function markBlocks(text: string): Promise<MarkedTemplate> {
     .sort((left, right) => left - right);
   let marked = text;
   for (const { mark } of marks) marked = marked.slice(0, mark.insert) + MARK(mark.name) + marked.slice(mark.insert);
-  return { text: marked, marks: marks.length, unmarked };
+  const inserts = marks.map(({ mark }) => ({ at: mark.insert, text: MARK(mark.name) })).reverse();
+  return { text: marked, marks: marks.length, unmarked, inserts };
 }
 
 // Предупреждения block-select-unavailable (Р57) — только у секции с blocks в section.json: на каждое место из

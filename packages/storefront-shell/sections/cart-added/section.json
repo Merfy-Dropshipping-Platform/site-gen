@@ -1,0 +1,10 @@
+{
+  "sdk": 1,
+  "name": "cart-added",
+  "kind": "section",
+  "title": "Товар добавлен в корзину",
+  "groups": ["footer"],
+  "limit": 1,
+  "wrapper": [],
+  "uses": ["cart"]
+}

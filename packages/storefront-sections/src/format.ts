@@ -236,13 +236,51 @@ function sdkProblems(value: unknown): SectionProblem[] {
   return [problem('sdk-unsupported', MANIFEST_FILE, text)];
 }
 
+// Ключ inlineEdit (часть 6, Р1-6-1) — только у видов string, text и richtext, в настройках секции и блоков. Сырой JSON,
+// до разбора формой: у другого вида форма сказала бы «лишний ключ», а автору нужен setting-invalid с путём. Ссылки на
+// общие настройки ({ "wrapper": … }) setting не имеют — пропускаются.
+const INLINE_EDIT_KINDS: readonly string[] = ['string', 'text', 'richtext'];
+const INLINE_EDIT_WRONG_KIND = 'ключ inlineEdit — только у видов string, text и richtext';
+
+function inlineEditKindProblems(value: unknown): SectionProblem[] {
+  if (!isRecord(value)) return [];
+  return settingsListsOf(value).flatMap(([path, list]) => inlineEditListProblems(path, list));
+}
+
+// Списки настроек с путями: настройки секции и настройки каждого типа блока (ссылки на общие настройки — без setting).
+const settingsListsOf = (value: Record<string, unknown>): [path: string, list: unknown][] => {
+  const lists: [path: string, list: unknown][] = [['settings', value.settings]];
+  if (!isRecord(value.blocks)) return lists;
+  const blocks = Object.entries(value.blocks).filter((entry): entry is [string, Record<string, unknown>] =>
+    isRecord(entry[1]),
+  );
+  return [
+    ...lists,
+    ...blocks.map(([type, block]): [path: string, list: unknown] => [`blocks.${type}.settings`, block.settings]),
+  ];
+};
+
+const inlineEditListProblems = (path: string, list: unknown): SectionProblem[] => {
+  if (!Array.isArray(list)) return [];
+  return list.flatMap((entry, index) => {
+    const setting = isRecord(entry) ? entry.setting : undefined;
+    return inlineEditProblem(`${path}.${index}`, setting);
+  });
+};
+
+const inlineEditProblem = (path: string, setting: unknown): SectionProblem[] => {
+  if (!isRecord(setting) || !Object.hasOwn(setting, 'inlineEdit')) return [];
+  if (typeof setting.kind === 'string' && INLINE_EDIT_KINDS.includes(setting.kind)) return [];
+  return [problem('setting-invalid', MANIFEST_FILE, `${path}.setting.inlineEdit: ${INLINE_EDIT_WRONG_KIND}`)];
+};
+
 export function readManifest(files: SectionFiles): Checked<SectionManifest> {
   const text = files[MANIFEST_FILE];
   if (text === undefined)
     return { ok: false, problems: [problem('manifest-missing', MANIFEST_FILE, 'нет section.json')] };
   const json = parseJson(text);
   if (!json.ok) return json;
-  const early = [...oldKeyProblems(json.value), ...sdkProblems(json.value)];
+  const early = [...oldKeyProblems(json.value), ...sdkProblems(json.value), ...inlineEditKindProblems(json.value)];
   if (early.length > 0) return { ok: false, problems: early };
   const parsed = sectionManifestSchema.safeParse(json.value, RUSSIAN_ERRORS);
   if (!parsed.success) return { ok: false, problems: manifestIssues(parsed.error.issues, json.value) };

@@ -44,6 +44,8 @@ export const PROBLEM_CODES = [
   'visible-when-invalid',
   'render-empty-failed',
   'block-select-unavailable',
+  // Правка текста в превью (блок 1, часть 6): у настройки с "inlineEdit": true в шаблоне нет места правки — ошибка.
+  'inline-edit-unavailable',
   // Поведения и появления в шаблоне (блок 6 «Секций и SDK», часть 6б): data-behavior, data-part, data-animate.
   'behavior-unknown',
   'behavior-part-unknown',

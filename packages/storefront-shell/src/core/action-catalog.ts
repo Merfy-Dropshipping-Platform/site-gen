@@ -5,8 +5,8 @@ import type { ModuleName } from './types';
 // (action-unknown) и параметры, документация блока 14 описывает действия. Общей функции run нет: запрос, стор, событие и
 // уведомление каждая функция делает у себя. Внутри "sdk": 1 имя и параметр можно только добавить.
 
-// Параметр разметки — data-<имя> элемента: строка или целое число от 1.
-export type ParamRule = 'text' | 'count-from-1';
+// Параметр разметки — data-<имя> элемента: строка, целое число от 1 или целое от 0.
+export type ParamRule = 'text' | 'count-from-1' | 'count-from-0';
 
 export interface ActionSpec {
   readonly module: ModuleName;
@@ -20,6 +20,28 @@ export const ACTIONS = {
     module: 'cart',
     about: 'добавить товар в корзину; аргументы { productId, variantId?, quantity? = 1 }, ответ — CartState',
     markup: { 'product-id': 'text', 'variant-id': 'text', quantity: 'count-from-1' },
+  },
+  // Блок 10, часть 10а: по номеру строки корзины; quantity 0 — убрать строку.
+  'cart.change': {
+    module: 'cart',
+    about: 'поменять количество строки корзины; аргументы { lineId, quantity }, 0 — убрать строку; ответ — CartState',
+    markup: { 'line-id': 'text', quantity: 'count-from-0' },
+  },
+  'cart.remove': {
+    module: 'cart',
+    about: 'убрать строку из корзины; аргументы { lineId }, ответ — CartState',
+    markup: { 'line-id': 'text' },
+  },
+  'cart.open': {
+    module: 'cart',
+    about:
+      'открыть корзину: при «Сайдбар» и выезжающей корзине на странице — merfy:cart:open, иначе переход на /cart; ответ — { drawer }',
+    markup: {},
+  },
+  'cart.checkout': {
+    module: 'cart',
+    about: 'перейти в оформление заказа: номер корзины и копия строк для оформления, переход на /checkout',
+    markup: {},
   },
   'favorites.toggle': {
     module: 'favorites',

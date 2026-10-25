@@ -33,11 +33,11 @@
 |---|---|---|
 | `image` | `default`, `maxBytes` | — |
 | `url` | `default` | `placeholder` |
-| `string` | `default` | `ai` |
-| `text` | `default` | `ai` |
+| `string` | `default` | `ai`, `inlineEdit` |
+| `text` | `default` | `ai`, `inlineEdit` |
 | `select` | `default`, `options` | — |
 | `toggle` | `default`, `labels` | — |
-| `richtext` | `default` | — |
+| `richtext` | `default` | `inlineEdit` |
 | `menu` | `default` | — |
 | `image-pair` | `default`, `maxBytes` | — |
 | `radio` | `default`, `options` | — |

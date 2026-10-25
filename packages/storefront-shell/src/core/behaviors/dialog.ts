@@ -311,6 +311,18 @@ function listenSectionEvents(box: Box): void {
   );
 }
 
+// Открытие по событию SDK (блок 10, Р10а-6): ядро копирует события на document; закрытое окно открывается.
+const OPEN_EVENTS: Readonly<Record<string, string>> = { 'cart-open': 'merfy:cart:open', 'cart-add': 'merfy:cart:add' };
+
+function listenOpenEvent(box: Box): void {
+  const name = OPEN_EVENTS[String(box.host.params['open-on'])];
+  if (name === undefined) return;
+  const open = (): void => {
+    if (box.state === 'closed') doOpen(box);
+  };
+  document.addEventListener(name, open, { signal: box.host.signal });
+}
+
 function listenClosers(box: Box): void {
   listenEscape(box);
   listenOutside(box);
@@ -336,6 +348,7 @@ export const dialog: Behavior<'dialog'> = {
     };
     setExpanded(box, false);
     listenOpenButtons(box);
+    listenOpenEvent(box);
     listenClosers(box);
     return {
       save: () => ({ open: box.state !== 'closed' }),

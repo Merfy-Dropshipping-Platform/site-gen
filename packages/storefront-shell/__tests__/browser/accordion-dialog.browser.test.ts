@@ -259,3 +259,42 @@ describe('dialog', () => {
     await page.close();
   });
 });
+
+// Блок 10, часть 10а (Р10а-6): окно открывает событие SDK — копия на document.
+describe('dialog: open-on', () => {
+  const PANEL = (
+    on: string,
+  ) => `<merfy-section data-section="shop:cart-drawer" data-section-id="drawer" style="display:block">
+  <div data-behavior="dialog" data-transition="drawer" data-open-on="${on}">
+    <dialog data-part="content" id="panel" style="margin:0 0 0 auto;width:400px;height:100vh;max-height:none">
+      <button data-part="close" id="close-panel">Скрыть</button>
+    </dialog>
+  </div>
+</merfy-section>`;
+  const fire = (page: Page, name: string) =>
+    page.evaluate((event) => document.dispatchEvent(new CustomEvent(event, { detail: {} })), name);
+
+  it('cart-open: merfy:cart:open открывает, «Скрыть» закрывает, merfy:cart:add — нет', async () => {
+    const { page, errors } = await open(PANEL('cart-open'));
+    await fire(page, 'merfy:cart:add');
+    expect(await isOpen(page, '#panel')).toBe(false);
+    await fire(page, 'merfy:cart:open');
+    await settle(page);
+    expect(await isOpen(page, '#panel')).toBe(true);
+    await page.click('#close-panel');
+    await settle(page);
+    expect(await isOpen(page, '#panel')).toBe(false);
+    expect(errors).toEqual([]);
+  });
+
+  it('cart-add: merfy:cart:add открывает; без open-on события окно не открывают', async () => {
+    const added = await open(PANEL('cart-add'));
+    await fire(added.page, 'merfy:cart:add');
+    await settle(added.page);
+    expect(await isOpen(added.page, '#panel')).toBe(true);
+    const plain = await open(PANEL('none'));
+    await fire(plain.page, 'merfy:cart:open');
+    await fire(plain.page, 'merfy:cart:add');
+    expect(await isOpen(plain.page, '#panel')).toBe(false);
+  });
+});

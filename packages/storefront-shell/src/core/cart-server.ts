@@ -1,7 +1,7 @@
-import { cartIdOf, lineOf, linesOf } from './cart-lines';
+import { cartIdOf, lineOf, linesOf, totalsOf } from './cart-lines';
 import { CART_MISSING_CODE, type Failure, type Reply, failureOf, reasonOf, serverCodeOf } from './failures';
 import { requestJson } from './requests';
-import type { CartLine } from './types';
+import type { CartLine, CartTotals } from './types';
 
 // Запросы корзины к шлюзу (блок 9, часть 9а): чтение, создание, добавление. Каждый шаг — либо данные, либо Failure,
 // либо missing: корзины с номером нет — это ветка «новая корзина», а не ошибка (п. 5). Ошибки не бросает requestJson.
@@ -13,7 +13,7 @@ export interface CartApi {
 }
 
 export type ReadCart =
-  | { readonly kind: 'lines'; readonly lines: readonly CartLine[] }
+  | { readonly kind: 'lines'; readonly lines: readonly CartLine[]; readonly totals: CartTotals | null }
   | { readonly kind: 'missing' }
   | { readonly kind: 'failure'; readonly failure: Failure };
 
@@ -39,7 +39,7 @@ export async function readCart(api: CartApi, cartId: string): Promise<ReadCart> 
   if (reply.status !== 200) return { kind: 'failure', failure: failureOf(reasonOf(reply), readText(reply)) };
   const lines = linesOf(reply.body, api.currency);
   if (lines === null) return { kind: 'failure', failure: failureOf('server', 'cart: ответ корзины не по форме') };
-  return { kind: 'lines', lines };
+  return { kind: 'lines', lines, totals: totalsOf(reply.body, api.currency) };
 }
 
 // Создание корзины: 201 с номером — она, остальное — Failure.
@@ -64,3 +64,25 @@ export async function addItem(api: CartApi, cartId: string, body: AddItemBody): 
 const readText = (reply: Reply): string => `cart: чтение корзины — статус ${reply.status}`;
 
 const invalidText = (productId: string): string => `cart.add: товара ${productId} нет — проверьте productId`;
+
+export type ChangedItem = { readonly kind: 'done' } | { readonly kind: 'failure'; readonly failure: Failure };
+
+// PATCH или DELETE строки: 200 — сделано; иначе — Failure по reasonOf (блок 10, Р10а-3).
+const changedOf = (reply: Reply, what: string): ChangedItem =>
+  reply.status === 200
+    ? { kind: 'done' }
+    : { kind: 'failure', failure: failureOf(reasonOf(reply), `cart: ${what} — статус ${reply.status}`) };
+
+// PATCH /store/carts/:id/items/:itemId { quantity } → 200; DELETE → 200. Иначе — Failure по reasonOf.
+export async function changeItem(api: CartApi, cartId: string, lineId: string, quantity: number): Promise<ChangedItem> {
+  const reply = await requestJson(`${api.url}/store/carts/${cartId}/items/${lineId}`, {
+    method: 'PATCH',
+    body: { quantity },
+  });
+  return changedOf(reply, 'изменение строки корзины');
+}
+
+export async function removeItem(api: CartApi, cartId: string, lineId: string): Promise<ChangedItem> {
+  const reply = await requestJson(`${api.url}/store/carts/${cartId}/items/${lineId}`, { method: 'DELETE' });
+  return changedOf(reply, 'удаление строки корзины');
+}

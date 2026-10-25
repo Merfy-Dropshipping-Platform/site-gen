@@ -28,9 +28,13 @@ afterEach(() => {
 });
 
 describe('таблица действий', () => {
-  it('cart.add, consent.accept, consent.decline, favorites.toggle, newsletter.subscribe, search.open, variants.pick; имя — «модуль.функция»', () => {
+  it('действия блоков 9, 10 и 11; имя — «модуль.функция»', () => {
     expect([...ACTION_NAMES].sort()).toEqual([
       'cart.add',
+      'cart.change',
+      'cart.checkout',
+      'cart.open',
+      'cart.remove',
       'consent.accept',
       'consent.decline',
       'favorites.toggle',
@@ -40,7 +44,7 @@ describe('таблица действий', () => {
     ]);
     expect(isActionName('cart.add')).toBe(true);
     expect(isActionName('cart.ad')).toBe(false);
-    expect(isActionName('cart.remove')).toBe(false);
+    expect(isActionName('cart.delete')).toBe(false);
   });
 
   it('у каждого действия есть функция в API своей части', () => {

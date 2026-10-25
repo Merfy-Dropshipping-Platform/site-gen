@@ -129,7 +129,7 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 - Сторы ядра — Nano Stores 1.5.4 (`src/core/stores.ts`): `atom` замораживает значение, `set` с тем же значением
   подписчиков не вызывает; `batch`, `computed`, `onMount` — из Nano Stores. Секциям — по-прежнему фасад `{ get }` и
   `ctx.watch`.
-- Каталог событий — `src/core/event-catalog.ts`, вход `@merfy/shell/events`: 22 имени `merfy:объект:действие`, правила
+- Каталог событий — `src/core/event-catalog.ts`, вход `@merfy/shell/events`: 23 имени `merfy:объект:действие`, правила
   полей, семь кодов ошибок, `checkEventDetail` для превью и тестов. Типы данных — `EventMap` (`src/core/types.ts`).
   Имена и поля внутри `"sdk": 1` только добавляются. На витрине данные событий не проверяются.
 - Таблица действий — `src/core/action-catalog.ts`, вход `@merfy/shell/actions`: `cart.add`, `favorites.toggle`,
@@ -164,6 +164,27 @@ codeOnly }` (скрипт секций превью → скрипт превь�
   extensions по `output` функции. Расширения нет в конфиге страницы — сбой секции `part-unknown`.
 - Часть `ext` — в бандле только страниц, где у секции `ext` в `meta.parts` (`pageParts`, часть 5в); бюджет ядра 12 КБ —
   без неё, её доля — до 2 КБ brotli (`__tests__/ext-budget.test.ts`).
+
+## Корзина блока 10 (часть 10а)
+
+- Строка `$cart` — ещё `title`, `image`, `options`, `total`, `gift` (подарок акции); итоги — `ctx.cart.$totals`
+  (`subtotal`, `discount`, `discountName`, `extensionDiscount`, `total`) и `ctx.cart.$total`: читаются, когда стор
+  впервые читает секция, после `cart.add` — только пока на них подписаны.
+- `cart.change({ lineId, quantity })`, `cart.remove({ lineId })` — `PATCH` и `DELETE`, потом `GET`; счётчик — сразу,
+  строка — после ответа; разметка — `data-line-id`, `data-quantity`.
+- `cart.open()` — при «Сайдбар» (`cart-type`) и окне `data-open-on="cart-open"` на странице — `merfy:cart:open`, иначе
+  `/cart`. Поведение `dialog`: параметр `open-on` — `cart-open` или `cart-add`.
+- `cart.checkout()` — `merfy:cartId` и копия строк `merfy:cart-handoff:v1`, переход на `/checkout`. После оплаты ядро
+  читает `merfy:pendingOrder` и сводит корзину по таблице пяти тем (`src/core/cart-checkout.ts`).
+- В превью номер корзины приходит в адресе рамки (`merfy-cart`), новый номер — сообщение `cart-id` конструктору.
+
+## Секции корзины и оформление (часть 10а, план 2)
+
+- Часть `checkout` — `window.cartStore` для нынешнего оформления, только в бандле страницы `/checkout`
+  (`src/core/parts/checkout.ts`): строки — ответ шлюза, номер — `merfy:cartId`, новую корзину не создаёт.
+- Наши секции: `cart` «Корзина», `cart-summary` «Промежуточный итог» — страница корзины; `cart-drawer`
+  «Корзина-панель» и `cart-added` «Товар добавлен в корзину» — подвал, окна открывает `dialog` по `open-on`.
+- «Шапка» и «Значок корзины» — `data-action="cart.open"` у ссылки `/cart`, число — `ctx.cart.$count`.
 
 ## Варианты, поиск и каталог (блок 11 «Секций и SDK», часть 11б)
 

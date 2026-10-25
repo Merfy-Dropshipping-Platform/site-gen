@@ -16,7 +16,13 @@ import {
 // richtext — строка до RICHTEXT_MAX знаков; перед рендером её очищает richtext.ts (в settings.ts).
 export const RICHTEXT_MAX = 20_000;
 
-const richtextSpecShape = z.strictObject({ kind: z.literal('richtext'), default: z.string() });
+// inlineEdit (часть 6, Р1-6-1): настройку правят ещё и прямо в превью; допустим у string, text и richtext. Форма панели
+// темы (@merfy/tokens) ключа не знает.
+const richtextSpecShape = z.strictObject({
+  kind: z.literal('richtext'),
+  default: z.string(),
+  inlineEdit: z.boolean().optional(),
+});
 // Вид menu (часть 4, Р1-4-3): значение — id меню из ключа menus ревизии; в шаблон приходит дерево меню (menus.ts).
 const menuSpecShape = z.strictObject({ kind: z.literal('menu'), default: z.string() });
 
@@ -36,8 +42,18 @@ const imagePairValue = z.strictObject({ url1: z.string(), url2: z.string() });
 const paddingValue = z.strictObject({ top: z.int(), bottom: z.int() });
 
 const [imageSpec, urlSpec, , , selectSpec, toggleSpec] = settingFieldShape.shape.setting.options;
-const stringSpec = z.strictObject({ kind: z.literal('string'), default: z.string(), ai: z.enum(AI_KINDS).optional() });
-const textSpec = z.strictObject({ kind: z.literal('text'), default: z.string(), ai: z.enum(AI_KINDS).optional() });
+const stringSpec = z.strictObject({
+  kind: z.literal('string'),
+  default: z.string(),
+  ai: z.enum(AI_KINDS).optional(),
+  inlineEdit: z.boolean().optional(),
+});
+const textSpec = z.strictObject({
+  kind: z.literal('text'),
+  default: z.string(),
+  ai: z.enum(AI_KINDS).optional(),
+  inlineEdit: z.boolean().optional(),
+});
 const imagePairSpec = z.strictObject({
   kind: z.literal('image-pair'),
   default: imagePairValue,
@@ -163,24 +179,25 @@ const richtextText = (path: string, value: unknown): string | undefined =>
     ? undefined
     : `${path}: нужно HTML до ${RICHTEXT_MAX} знаков`;
 
-type CheckedKind =
-  | 'menu'
-  | 'richtext'
-  | 'image-pair'
-  | 'radio'
-  | 'range'
-  | 'alignment'
-  | 'color-scheme'
-  | 'padding';
+type CheckedKind = 'menu' | 'richtext' | 'image-pair' | 'radio' | 'range' | 'alignment' | 'color-scheme' | 'padding';
 type CheckedSpec = Extract<SectionSettingSpec, { kind: CheckedKind }>;
 
 const KIND_CHECKS: {
-  [K in CheckedKind]: (path: string, spec: Extract<SectionSettingSpec, { kind: K }>, value: unknown) => string | undefined;
+  [K in CheckedKind]: (
+    path: string,
+    spec: Extract<SectionSettingSpec, { kind: K }>,
+    value: unknown,
+  ) => string | undefined;
 } = {
   menu: (path, _spec, value) => menuText(path, value),
   richtext: (path, _spec, value) => richtextText(path, value),
   'image-pair': (path, _spec, value) => imagePairText(path, value),
-  radio: (path, spec, value) => oneOfText(path, spec.options.map((option) => option.value), value),
+  radio: (path, spec, value) =>
+    oneOfText(
+      path,
+      spec.options.map((option) => option.value),
+      value,
+    ),
   range: (path, spec, value) => rangeText(path, spec, value),
   alignment: (path, _spec, value) => oneOfText(path, ALIGNMENT_VALUES, value),
   'color-scheme': (path, _spec, value) => schemeText(path, value),

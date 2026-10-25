@@ -118,6 +118,11 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: '`data-action` в шаблоне называет действие, которого нет ни у секции, ни у SDK.',
     fix: 'Объяви действие в defineSection или возьми имя из каталога: actions.md.',
   },
+  // ctx.theme['<имя>'] не из сквозных настроек темы (блок 9 «Секций и SDK», часть 9б).
+  'theme-setting-unknown': {
+    when: '`ctx.theme` читает настройку темы, которой нет в сквозных настройках панели.',
+    fix: 'Возьми имя из сквозных настроек: logo-image, social-*, cart-type, cookie-banner-enabled.',
+  },
   'script-heavy': {
     when: 'Скрипт после сжатия больше порога предупреждения; секция сохраняется.',
     fix: 'Сократи скрипт: готовое поведение data-behavior вместо своего кода, без повторов.',

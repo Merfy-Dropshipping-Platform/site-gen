@@ -133,6 +133,11 @@
   ошибке. `cart.remove` — блок 10.
 - Подписка на рассылку — `ctx.newsletter.subscribe({ email })` по `uses: ["newsletter"]`.
 - Бюджет бандла страницы без секций — 12 КБ brotli (`build/build.ts`).
+- Уведомление без секции «Уведомления» на странице (часть 9б) — `console.warn` с его текстом
+  (`src/core/notice-fallback.ts`): ядро смотрит, слушает ли `merfy:notice:show` хоть одна секция (`EventBus.listening`).
+- `ctx.theme` (часть 9б) — сквозные настройки темы из `theme.settings` конфига страницы, те же значения, что у шаблона в
+  `Astro.props.theme`: `ctx.theme['cart-type']` — `'drawer' | 'page'`. Только чтение, один объект на страницу, у каждой
+  секции и глобального скрипта; нет поля — пустой объект. Имя не из сквозных — `theme-setting-unknown` при сохранении.
 
 ## Расширения в секциях: `ctx.ext` (блок 9 «Секций и SDK», часть 9в)
 

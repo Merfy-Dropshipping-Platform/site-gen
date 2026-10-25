@@ -271,11 +271,11 @@ const { settings } = Astro.props;
 |---|---|---|
 | `image` | `default`, `maxBytes` | — |
 | `url` | `default` | `placeholder` |
-| `string` | `default` | `ai` |
-| `text` | `default` | `ai` |
+| `string` | `default` | `ai`, `inlineEdit` |
+| `text` | `default` | `ai`, `inlineEdit` |
 | `select` | `default`, `options` | — |
 | `toggle` | `default`, `labels` | — |
-| `richtext` | `default` | — |
+| `richtext` | `default` | `inlineEdit` |
 | `menu` | `default` | — |
 | `image-pair` | `default`, `maxBytes` | — |
 | `radio` | `default`, `options` | — |
@@ -1168,6 +1168,14 @@ const { page } = Astro.props;
 Когда: У блока в blocks.map нет одного корневого элемента; секция сохраняется.
 
 Как исправить: Оберни разметку блока одним элементом — тогда блок выбирается кликом в превью..
+
+## inline-edit-unavailable
+
+Когда: У настройки с "inlineEdit": true в template.astro нет места правки в превью.
+
+Как исправить: Выдели значение отдельным элементом; у richtext — set:html и без другого содержимого..
+Пример: было `<h1>{settings.heading} — магазин шарфов</h1>` → стало `<h1>{settings.heading}</h1>`.
+
 
 ## behavior-unknown
 

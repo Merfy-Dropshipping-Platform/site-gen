@@ -1,0 +1,21 @@
+---
+const { settings } = Astro.props;
+---
+<div class="mx-auto max-w-page px-4 font-body">
+  {settings.product && (
+    <div class="grid gap-8 md:grid-cols-2">
+      <div class="flex flex-col gap-4">
+        {settings.product.images.map((src) => <img class="h-auto w-full rounded-button" src={src} alt={settings.product.title} />)}
+      </div>
+      <div class="flex flex-col gap-4">
+        <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.product.title}</h1>
+        <p class="m-0 text-xl text-foreground">
+          {settings.product.price.text}
+          {settings.product.compareAtPrice && <s class="ml-2 text-base">{settings.product.compareAtPrice.text}</s>}
+        </p>
+        <p class="m-0 text-sm text-foreground">{settings.product.available ? 'В наличии' : 'Нет в наличии'}</p>
+        <p class="m-0 text-foreground">{settings.product.description}</p>
+      </div>
+    </div>
+  )}
+</div>

@@ -1,0 +1,7 @@
+{
+  "sdk": 1,
+  "name": "collection",
+  "kind": "section",
+  "title": "Коллекция",
+  "settings": [{ "id": "collection", "label": "Выбор коллекции", "setting": { "kind": "collection" } }]
+}

@@ -1,0 +1,19 @@
+{
+  "sdk": 1,
+  "name": "product",
+  "kind": "section",
+  "title": "Товар",
+  "settings": [
+    { "id": "product", "label": "Выбор товара", "setting": { "kind": "product" } },
+    {
+      "id": "price",
+      "label": "Стоимость",
+      "setting": {
+        "kind": "hint",
+        "title": "Настройка недоступна",
+        "text": "Изменения проводятся на странице",
+        "link": { "label": "Товары", "href": "/products" }
+      }
+    }
+  ]
+}

@@ -92,3 +92,54 @@ describe('задание сборки', () => {
     expect(errorText('строка')).toBe('строка');
   });
 });
+
+// Блок 8 «Секций и SDK», часть 8б-2: product.created и product.deleted из кабинета несут handle — адрес страницы товара.
+describe('адреса товаров в событиях product.events', () => {
+  const event = (body: Record<string, unknown>) =>
+    parseIncoming(PRODUCT_EXCHANGE, { tenantId: SITE, timestamp: AT, ...body }, RECEIVED);
+
+  it('product.created с адресом — адрес товара в список', () => {
+    expect(event({ event: 'product.created', productIds: ['p-1'], handle: 'sharf' })).toEqual({
+      owner: 'tenant',
+      tenantId: SITE,
+      type: 'product-change',
+      eventAt: AT,
+      paths: { add: ['/product/sharf'], remove: [] },
+    });
+  });
+
+  it('адрес пустой или с «/» — адрес по id', () => {
+    expect(event({ event: 'product.created', productIds: ['p-1'], handle: '' })).toMatchObject({
+      paths: { add: ['/product/p-1'], remove: [] },
+    });
+    expect(event({ event: 'product.created', productIds: ['p-1'], handle: 'a/../b' })).toMatchObject({
+      paths: { add: ['/product/p-1'], remove: [] },
+    });
+  });
+
+  it('product.deleted — убрать адрес и адрес по id', () => {
+    expect(event({ event: 'product.deleted', productIds: ['p-1'], handle: 'sharf' })).toMatchObject({
+      paths: { add: [], remove: ['/product/sharf', '/product/p-1'] },
+    });
+    expect(event({ event: 'product.deleted', productIds: ['p-1'], handle: '' })).toMatchObject({
+      paths: { add: [], remove: ['/product/p-1'] },
+    });
+  });
+
+  it('без адреса, не один товар, правка, коллекция или поля не по форме — без адресов, событие принято', () => {
+    const bodies = [
+      { event: 'product.created', productIds: ['p-1'] },
+      { event: 'product.created', productIds: ['p-1', 'p-2'], handle: 'sharf' },
+      { event: 'product.updated', productIds: ['p-1'], handle: 'sharf' },
+      { event: 'product.created', productIds: 'p-1', handle: 'sharf' },
+      { event: 'product.created', productIds: ['p-1'], handle: 7 },
+      { event: 'collection.updated', productIds: [], collectionIds: ['c-1'] },
+      { event: 'product.availability_changed', productIds: ['p-1'], changedFields: ['available'] },
+    ];
+    for (const body of bodies) {
+      const parsed = event(body);
+      expect(parsed).toMatchObject({ owner: 'tenant', type: 'product-change' });
+      expect(parsed).not.toHaveProperty('paths');
+    }
+  });
+});

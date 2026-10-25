@@ -21,6 +21,8 @@ export { pagePropsOf, renderShopPage, type RenderPage, type RenderedPage, type S
 export { NOT_FOUND_ROUTE, SHOP_ROUTES, pageInfoById, routeOf, type ShopRoute } from './routes';
 // Страницы записей (блок 8 «Секций и SDK», часть 8б)
 export { recordIndex, routeDuplicates, shopRoutes, templateShown, type RouteDuplicate } from './routes';
+// Превью шаблонов записей (часть 8б-2)
+export { isRecordType, previewRecordPath } from './routes';
 export {
   HOME_PAGE,
   NOT_FOUND_PAGE_ID,

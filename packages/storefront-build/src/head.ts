@@ -1,4 +1,4 @@
-import { buildStorefrontConfig, configTag } from '@merfy/storefront-config';
+import { buildStorefrontConfig, configTag, type StorefrontConfigInput } from '@merfy/storefront-config';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import {
@@ -18,9 +18,11 @@ import { countersOf } from './counters';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { ShopPageHead, ShopPageLocals, ShopSocial } from './locals';
+import type { RecordEntry, RecordType } from './records';
 import type { ShopRoute } from './routes';
 import { EMPTY_PAGE_CONTENT, type PageContent, type PageMode } from './sections-render';
 import { NOT_FOUND_PAGE_ID, NOT_FOUND_TEXT, platformPageTitle } from './special-pages';
+import { productStructuredData } from './structured-data';
 
 // Данные страницы для рисовальщика (design.md блока 4, В4-4 Б и SEO). Всё индексируемое — язык, заголовок, описание,
 // ключевые слова, канонический адрес — считает сборка. Конфиг магазина (блок 3) и CSS токенов с правками мерчанта (блок 1) приходят
@@ -45,6 +47,10 @@ export const shopName = (site: BuildInputs['site']): string => site.name.trim() 
 // 4, Р1-4-8) — её SEO из ревизии: без заголовка — имя страницы, нет и его — имя магазина. Пусто — мерчант не заполнил:
 // тема тег не рендерит (договор SEO, seo.ts).
 function seoOf(inputs: BuildInputs, route: ShopRoute, name: string) {
+  // Страница записи (блок 8, часть 8б-2; design.md 8.6): SEO записи (records.ts) — заголовок мерчанта или название,
+  // описание мерчанта или описание без HTML; ключевых слов нет.
+  if (route.record !== undefined)
+    return { title: route.record.seo.title.trim() || name, description: route.record.seo.description, keywords: '' };
   // Страница 404 (часть 7а): заголовок платформы с именем магазина, описание — магазина, ключевых слов нет.
   if (route.id === NOT_FOUND_PAGE_ID)
     return {
@@ -75,11 +81,21 @@ function shareImage(logoUrl: string): string {
   return url !== null && url.protocol === 'https:' && SHARE_IMAGE.test(url.pathname) ? url.href : '';
 }
 
-const socialOf = (name: string, locale: string, logoUrl: string): ShopSocial => ({
-  type: 'website',
+// og:type страницы записи (design.md блока 8, 8.6): товар — product, статья — article, остальные — website, как главная.
+const OG_TYPES: Readonly<Record<RecordType, string>> = {
+  product: 'product',
+  collection: 'website',
+  blog: 'website',
+  article: 'article',
+  policy: 'website',
+};
+
+// Картинка страницы записи — её картинка (records.ts, seo.image); нет или не подходит соцсетям — логотип магазина.
+const socialOf = (name: string, locale: string, logoUrl: string, record?: RecordEntry): ShopSocial => ({
+  type: record === undefined ? 'website' : OG_TYPES[record.type],
   siteName: name,
   locale: locale.replace('-', '_'),
-  image: shareImage(logoUrl),
+  image: shareImage(record?.seo.image ?? '') || shareImage(logoUrl),
   card: 'summary',
 });
 
@@ -126,13 +142,26 @@ export function platformPageStyles(
 
 type ConfigAnalytics = Parameters<typeof buildStorefrontConfig>[0]['analytics'];
 
+// Страница для конфига витрины: id и адрес; у страницы записи — вид и id записи (часть 8б-2; блоки 13 и 12в).
+const configPageOf = (route: ShopRoute): StorefrontConfigInput['page'] => ({
+  id: route.id,
+  path: route.path,
+  ...(route.record === undefined ? {} : { record: { type: route.record.type, id: route.record.id } }),
+});
+
 // Аналитика — только на опубликованном сайте: превью конструктора событий не шлёт (Р1).
 const ANALYTICS_BY_MODE: Record<PageMode, (inputs: BuildInputs) => ConfigAnalytics> = {
   live: (inputs) => ({ url: inputs.env.analyticsUrl, counters: countersOf(inputs.data.entities) }),
   preview: () => null,
 };
 
-// <head> страницы: язык, SEO, канонический адрес, конфиг, стили, код секций и теги соцсетей.
+// Разметка для поиска (design.md блока 8, 8.6) — только у страницы товара; у остальных страниц поля нет.
+function structuredDataOf(route: ShopRoute, canonical: string): { structuredData?: string } {
+  const data = productStructuredData(route.record, canonical);
+  return data === '' ? {} : { structuredData: data };
+}
+
+// <head> страницы: язык, SEO, канонический адрес, конфиг, стили, код секций, теги соцсетей и разметка для поиска.
 function headOf(
   inputs: BuildInputs,
   route: ShopRoute,
@@ -145,20 +174,22 @@ function headOf(
     site: { ...inputs.site, name },
     theme: inputs.theme,
     env: inputs.env,
-    page: { id: route.id, path: route.path },
+    page: configPageOf(route),
     mode: content.mode,
     analytics: ANALYTICS_BY_MODE[content.mode](inputs),
     extensions: pageExtensions(inputs, route.id),
   });
+  const canonical = new URL(route.path, inputs.site.publicUrl).href;
   return {
     lang: config.locale,
     ...seoOf(inputs, route, name),
-    canonical: new URL(route.path, inputs.site.publicUrl).href,
+    canonical,
     configHtml: configTag(config),
     ...pageStyles(inputs, theme, migrations),
     // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены: стили секций и тег бандла (часть 5б).
     codeHtml: codeHead(inputs, route.id, content.sectionsCss, content.bundleTag),
-    social: socialOf(name, config.locale, inputs.site.logoUrl),
+    social: socialOf(name, config.locale, inputs.site.logoUrl, route.record),
+    ...structuredDataOf(route, canonical),
   };
 }
 

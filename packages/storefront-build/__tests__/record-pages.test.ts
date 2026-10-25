@@ -137,6 +137,23 @@ describe('запись страницы — секциям и в строке м
       code: 'manifest-invalid',
     });
   });
+
+  // Список страницы (блок 11 «Секций и SDK», часть 11а, Р11а-11): list — номер страницы списка в строке манифеста.
+  it('list в строке страницы — номер страницы списка; строка без list проходит как раньше', () => {
+    const row = {
+      path: '/product/sharf',
+      file: 'product/sharf/index.html',
+      hash: `sha256:${'a'.repeat(64)}`,
+      entity: { type: 'product', id: P1 },
+      deps: [`product:${P1}`],
+      dataUpdatedAt: AT,
+    };
+    expect(checkPageRow({ ...row, list: { page: 2 } })).toMatchObject({ list: { page: 2 } });
+    expect(checkPageRow(row)).not.toHaveProperty('list');
+    for (const list of [{ page: 0 }, {}, { page: 1, extra: 1 }]) {
+      expect(errorOf(() => checkPageRow({ ...row, list }))).toMatchObject({ code: 'manifest-invalid' });
+    }
+  });
 });
 
 describe('политика без секций шаблона — текст от платформы (В8-1 А)', () => {

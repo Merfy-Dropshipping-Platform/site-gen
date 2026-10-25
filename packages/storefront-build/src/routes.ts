@@ -12,6 +12,7 @@ import {
   type RecordIndex,
   type RecordType,
 } from './records';
+import { listRoutesOf } from './list-routes';
 import type { PageMode } from './sections-render';
 import { HOME_PAGE, NOT_FOUND_PAGE_ID, type PageInfo } from './special-pages';
 
@@ -76,6 +77,12 @@ export const catalogShown = (inputs: BuildInputs): boolean =>
 // shop.catalogUrl: CATALOG_PATH или null.
 export const catalogUrlOf = (inputs: BuildInputs): string | null => (catalogShown(inputs) ? CATALOG_PATH : null);
 
+// Записи со своим списком (блок 11, часть 11а): коллекция и блог — первая страница списка, второй адрес …/page/1.
+const LIST_RECORD_TYPES: ReadonlySet<RecordType> = new Set(['collection', 'blog']);
+
+const recordListOf = (entry: RecordEntry): Pick<ShopRoute, 'list' | 'aliases'> =>
+  LIST_RECORD_TYPES.has(entry.type) ? { list: { page: 1 }, aliases: [`${entry.path}/page/1`] } : {};
+
 // Страница записи: id — id шаблона (его список секций), адрес — основной адрес записи, файл — <адрес>/index.html.
 const recordRouteOf = (entry: RecordEntry): ShopRoute => ({
   id: entry.type,
@@ -83,23 +90,8 @@ const recordRouteOf = (entry: RecordEntry): ShopRoute => ({
   file: `${entry.path.slice(1)}/index.html`,
   entity: entry.entity.type,
   record: entry,
+  ...recordListOf(entry),
 });
-
-// Маршрут каталога (блок 11 «Секций и SDK», часть 11а, Р11а-1): первая страница списка, второй адрес — /catalog/page/1.
-// В сборке — при показанном каталоге; в превью — всегда: мерчант ставит в каталог первую секцию.
-function listRoutesOf(inputs: BuildInputs, mode: PageMode): ShopRoute[] {
-  if (mode !== 'preview' && !catalogShown(inputs)) return [];
-  return [
-    {
-      id: CATALOG_PAGE_ID,
-      path: CATALOG_PATH,
-      file: 'catalog/index.html',
-      entity: 'site',
-      list: { page: 1 },
-      aliases: [`${CATALOG_PATH}/page/1`],
-    },
-  ];
-}
 
 interface Routes {
   list: readonly ShopRoute[];
@@ -134,7 +126,8 @@ function routesOf(inputs: BuildInputs, mode: PageMode = 'live'): Routes {
   );
   // Каталог и страницы N списков (блок 11 «Секций и SDK», часть 11а) — после страниц записей.
   const records = RECORD_ENTRIES[mode](inputs).map(recordRouteOf);
-  const list = [...SHOP_ROUTES, ...own, ...records, ...listRoutesOf(inputs, mode)];
+  const index = mode === 'preview' ? previewIndex(inputs) : recordIndex(inputs);
+  const list = [...SHOP_ROUTES, ...own, ...records, ...listRoutesOf(inputs, mode, records, index)];
   const byPath = new Map([...list, NOT_FOUND_ROUTE].map((route): [string, ShopRoute] => [route.path, route]));
   const routes = { list, byPath };
   routesByMode[mode].set(inputs, routes);

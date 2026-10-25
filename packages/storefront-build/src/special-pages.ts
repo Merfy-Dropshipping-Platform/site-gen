@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import specialPagesJson from '../special-pages.json';
+import type { PageList } from './page-list';
 
 // Особые страницы платформы (блок 7 «Секций и SDK», часть 7а): постоянный id, имя в меню страниц конструктора, адрес.
 // Тот же файл читает sites (src/content/new-theme-pages.ts). Шаблоны записей — блок 8; блоки 10 и 11 добавят свои строки.
@@ -16,6 +17,8 @@ export interface PageInfo {
   // Блок 8, часть 8б: запись страницы шаблона — публичные поля (records.ts). Нет ключа — страница без записи; null так
   // видят секции процесса рендера.
   record?: object | null;
+  // Блок 11, часть 11а: список страницы; нет — у страницы нет списка.
+  list?: PageList;
 }
 
 // Id — kebab; адрес — «/» или «/kebab».

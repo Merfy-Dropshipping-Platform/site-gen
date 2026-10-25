@@ -13,6 +13,8 @@ import { pageLocals, shopName } from './head';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
+import { EMPTY_LIST_QUERY, type ListQuery } from './list-query';
+import { listSourceOf, pageListOf, type ListSource, type ListedPage, type PageList } from './page-list';
 import { catalogUrlOf, pageInfoOf, pageListsOf, recordIndex, routeOf, type ShopRoute } from './routes';
 import { recordDepsOf } from './section-records';
 import { pageSectionTheme } from './section-tokens';
@@ -20,6 +22,7 @@ import {
   LIVE_PAGE,
   renderPlacedSections,
   type PageContent,
+  type PageMode,
   type PageProps,
   type PageRender,
   type PlacedSection,
@@ -68,9 +71,12 @@ const pageDeps = (inputs: BuildInputs, route: ShopRoute, recordDeps: readonly st
   ...new Set([...(route.record?.deps ?? []), ...recordDeps, entityKey('site', inputs.site.id)]),
 ];
 
-// Второй адрес записи (часть 8б) — поле строки только у страницы записи, у которой он есть.
-const aliasesOf = (route: ShopRoute): { aliases?: string[] } =>
-  route.record === undefined || route.record.aliases.length === 0 ? {} : { aliases: route.record.aliases };
+// Вторые адреса (часть 8б: адрес записи по id; блок 11: …/page/1 первой страницы списка) — поле строки только у страницы,
+// у которой они есть.
+function aliasesOf(route: ShopRoute): { aliases?: string[] } {
+  const aliases = [...(route.record?.aliases ?? []), ...(route.aliases ?? [])];
+  return aliases.length === 0 ? {} : { aliases };
+}
 
 type Update = [key: string, updatedAt: string];
 
@@ -160,7 +166,13 @@ const sectionThemeOf = (inputs: BuildInputs, placed: readonly PlacedSection[]): 
   );
 
 // Строка манифеста страницы: путь, файл, сущность и её зависимости, время обновления данных.
-function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer, recordDeps: readonly string[]): PageRow {
+function pageRowOf(
+  inputs: BuildInputs,
+  route: ShopRoute,
+  content: Buffer,
+  recordDeps: readonly string[],
+  list: PageList | null,
+): PageRow {
   const entity = pageEntity(inputs, route);
   const deps = pageDeps(inputs, route, recordDeps);
   return checkPageRow({
@@ -171,7 +183,49 @@ function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer, recor
     deps,
     dataUpdatedAt: dataUpdatedAt(inputs, deps),
     ...aliasesOf(route),
+    // Список страницы (блок 11, Р11а-11) — номер; у страницы без списка поля нет.
+    ...(list === null ? {} : { list: { page: list.page } }),
   });
+}
+
+// Параметры списка страницы (план 11а-2): выбранное и ответ сервиса product; нет — список из записей сборки.
+export interface ListRequest {
+  query: ListQuery;
+  listed: ListedPage | null;
+}
+
+// Чей список у страницы по адресу (план 11а-2 — до запроса к сервису product). Нет страницы — page-unknown.
+export function listSourceAt(inputs: BuildInputs, path: string, theme: ShopTheme, mode?: PageMode): ListSource | null {
+  const route = routeOf(path, inputs, mode ?? 'live');
+  const shown = withoutHidden(inputs);
+  const props = { ...pagePropsOf(shown, theme), page: pageInfoOf(route), records: recordIndex(shown) };
+  return listSourceOf(shown, route, placedSections(shown, route.id), props);
+}
+
+// Номер страницы списка: из запроса, а если он первый — из адреса (страница N).
+function listQueryOf(list: ListRequest | undefined, route: ShopRoute): ListQuery {
+  if (list === undefined) return { ...EMPTY_LIST_QUERY, page: route.list?.page ?? 1 };
+  return { ...list.query, page: list.query.page === 1 ? (route.list?.page ?? 1) : list.query.page };
+}
+
+// page.list страницы (Р11а-5): по источнику списка и запросу; нет списка — null.
+function pageListAt(
+  shown: BuildInputs,
+  route: ShopRoute,
+  placed: readonly PlacedSection[],
+  base: PageProps,
+  list: ListRequest | undefined,
+): PageList | null {
+  const source = listSourceOf(shown, route, placed, base);
+  if (source === null) return null;
+  return pageListOf(recordIndex(shown), shown, source, listQueryOf(list, route), list?.listed ?? null);
+}
+
+// Зависимости списка — карточки этой страницы (Р11а-8): их правки меняют страницу.
+function listDepsOf(list: PageList | null): string[] {
+  if (list === null) return [];
+  const keys = list.items.map((item) => (list.kind === 'products' ? `product:${item.id}` : `publication:${item.id}`));
+  return [...new Set(keys)];
 }
 
 export async function renderShopPage(
@@ -179,6 +233,7 @@ export async function renderShopPage(
   path: string,
   theme: ShopTheme,
   page: PageRender = LIVE_PAGE,
+  list?: ListRequest,
 ): Promise<RenderedPage> {
   // Превью конструктора (часть 8б-2) — маршруты превью: страницы всех шаблонов и примеры; сборка — только записи с
   // показанным шаблоном.
@@ -187,7 +242,10 @@ export async function renderShopPage(
   const shown = withoutHidden(inputs);
   const lists = pageListsOf(route.id).map((list) => placedSections(shown, list));
   // Страница секций (часть 7а): id и адрес этой страницы; записи магазина — полям с записями (часть 8г).
-  const props = { ...pagePropsOf(shown, theme), page: pageInfoOf(route), records: recordIndex(shown) };
+  const base = { ...pagePropsOf(shown, theme), page: pageInfoOf(route), records: recordIndex(shown) };
+  // Список страницы (блок 11 «Секций и SDK», часть 11а): у каждой секции в page.list; нет — ключа нет (Р11а-5).
+  const pageList = pageListAt(shown, route, lists[1] ?? [], base, list);
+  const props = pageList === null ? base : { ...base, page: { ...base.page, list: pageList } };
   const placed = lists.flat();
   const rendered = await renderPlacedSections(
     placed,
@@ -202,7 +260,7 @@ export async function renderShopPage(
   const { html, bundle } = await renderWithBundle(shown, route, theme, page, withTheme);
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');
-  const row = pageRowOf(inputs, route, content, recordDepsOf(placed, props));
+  const row = pageRowOf(inputs, route, content, [...recordDepsOf(placed, props), ...listDepsOf(pageList)], pageList);
   const file = bundle?.file ?? null;
   return { row, file: { path: route.file, content }, ...(file === null ? {} : { bundle: file }) };
 }

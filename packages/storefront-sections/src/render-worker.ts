@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { writeSync } from 'node:fs';
 import { createInterface } from 'node:readline';
+import type { PageList } from '@merfy/storefront-build';
 import { z } from 'zod';
 import { loadTemplate } from './module-loader';
 import { renderTemplate, type TemplateComponent } from './trial-render';
@@ -48,8 +49,13 @@ const pageSchema = z.strictObject({
   id: z.string(),
   path: z.string().nullable(),
   record: z.record(z.string(), z.json()).nullable().default(null),
+  // Блок 11, часть 11а: список страницы (page.list) — карточки, номера, выбранное; у страницы без списка — null.
+  list: z
+    .custom<PageList | null>(() => true)
+    .nullable()
+    .default(null),
 });
-const HOME_PAGE = { id: 'home', path: '/', record: null };
+const HOME_PAGE = { id: 'home', path: '/', record: null, list: null };
 const requestSchema = z.strictObject({
   id: z.number().int().positive(),
   hash: z.string().min(1),
@@ -111,7 +117,17 @@ async function answerTo(line: string): Promise<{ id: number; answer: object }> {
     if (module !== undefined && !templates.has(hash)) templates.set(hash, loadTemplate(module));
     const template = templates.get(hash);
     if (template === undefined) return { id, answer: { error: `модуля ${hash} в процессе нет`, denied: false } };
-    const props = { settings, blocks, preview, menus, theme, shop, page, records };
+    // Блок 11: list — PageList или undefined (null процесса — «списка нет»).
+    const props = {
+      settings,
+      blocks,
+      preview,
+      menus,
+      theme,
+      shop,
+      page: { ...page, list: page.list ?? undefined },
+      records,
+    };
     return { id, answer: { html: await renderTemplate(await template, props) } };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

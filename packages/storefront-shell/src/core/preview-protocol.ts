@@ -14,6 +14,11 @@ export const SECTION_UPDATED_MESSAGE = 'section-updated';
 // Ядро → странице, на document: сбой экземпляра (design.md 3.7); скрипт секций превью (план 2) ставит секции красную
 // рамку и подпись. То же имя, что SECTION_FAILURE_EVENT в core/events.ts.
 export const SECTION_ERROR_EVENT = 'merfy:section:error';
+// Скрипт секций превью → ядру (блок 6, часть 6в; В6-1 А): мерчант выбрал блок секции в панели слева или снял выбор.
+// Событие на первом узле блока (data-merfy-block) внутри <merfy-section>, всплывает, detail — { blockId }. Имена — из
+// каталога событий: ядро отдаёт событие только экземпляру этой секции, секция слушает его через ctx.listen.
+export const BLOCK_SELECT_EVENT = 'merfy:block:select';
+export const BLOCK_DESELECT_EVENT = 'merfy:block:deselect';
 // JSON-тег с текстом бандла страницы превью: строка JSON, её пишет сборщик перед dist/preview.js.
 export const PREVIEW_BUNDLE_TAG_ID = 'merfy-preview-bundle';
 // Загрузок кода секций без перезагрузки превью: старые модули остаются в памяти страницы. Двадцатая — перезагрузка.

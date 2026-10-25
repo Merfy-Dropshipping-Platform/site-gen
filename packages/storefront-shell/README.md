@@ -73,7 +73,7 @@
   версии секции скрипт превью загружает модулем из `blob:`-адреса (`src/preview/entry.ts`, единственное место с
   `import()`): рамка превью — без `allow-same-origin` (блок 2).
 - Протокол — `src/core/preview-protocol.ts`, вход `@merfy/shell/preview`: `merfy:preview:update { html, script,
-  codeOnly }` (скрипт секций превью → скрипт превью), `merfy:preview:replace` (скрипт превью → ядро),
+codeOnly }` (скрипт секций превью → скрипт превью), `merfy:preview:replace` (скрипт превью → ядро),
   `merfy:preview:updated` странице и `section-updated { id, outcome, message }` конструктору; `SECTION_ERROR_EVENT` —
   имя сбоя экземпляра для скрипта секций превью. Итоги: `kept-state`, `fresh`, `failed`, `reloaded`, `superseded`,
   `absent`.
@@ -113,7 +113,7 @@
 - Сторы ядра — Nano Stores 1.5.4 (`src/core/stores.ts`): `atom` замораживает значение, `set` с тем же значением
   подписчиков не вызывает; `batch`, `computed`, `onMount` — из Nano Stores. Секциям — по-прежнему фасад `{ get }` и
   `ctx.watch`.
-- Каталог событий — `src/core/event-catalog.ts`, вход `@merfy/shell/events`: 20 имён `merfy:объект:действие`, правила
+- Каталог событий — `src/core/event-catalog.ts`, вход `@merfy/shell/events`: 22 имени `merfy:объект:действие`, правила
   полей, семь кодов ошибок, `checkEventDetail` для превью и тестов. Типы данных — `EventMap` (`src/core/types.ts`).
   Имена и поля внутри `"sdk": 1` только добавляются. На витрине данные событий не проверяются.
 - Таблица действий — `src/core/action-catalog.ts`, вход `@merfy/shell/actions`: `cart.add`, `favorites.toggle`,

@@ -32,12 +32,18 @@ const coded = (status: number, code: string, message = 'Отзыв уже отм
   body: { success: false, code, message },
 });
 
+// Заглушка входа для ext-тестов: покупательница уже вошла; методы интерфейса 10в не вызываются.
+const BUYER = { email: 'buyer@example.com', name: null, phone: null } as const;
+const buyerOk = { ok: true as const, data: { customer: BUYER } };
+
 const signedIn: SdkPart<'auth', AuthModule> = {
   name: 'auth',
   create: (): AuthModule => ({
-    $customer: readable(
-      atom<CustomerState>({ ready: true, customer: { email: 'buyer@example.com', name: null, phone: null } }),
-    ),
+    $customer: readable(atom<CustomerState>({ ready: true, customer: BUYER })),
+    requestCode: () => Promise.resolve({ ok: true, data: {} }),
+    verify: () => Promise.resolve(buyerOk),
+    signout: () => Promise.resolve({ ok: true, data: {} }),
+    updateProfile: () => Promise.resolve(buyerOk),
   }),
 };
 

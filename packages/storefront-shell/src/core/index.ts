@@ -37,6 +37,9 @@ export type {
 export { analytics } from './analytics/part';
 // Блок 10, часть 10а: window.cartStore для нынешнего оформления — только в бандле страницы /checkout.
 export { checkout } from './parts/checkout';
+// Блок 10, часть 10в: заказы покупательницы — ctx.orders; в бандле страниц, где секция объявила "orders" в uses.
+export { orders } from './parts/orders';
+export type { NoData, Order, OrderLine, OrderSummary, OrdersModule, VerifyArgs } from './types';
 // Блок 9, часть 9в: модули расширений ctx.ext — в бандле страниц, где секция объявила "ext:<id>" в uses.
 export { ext } from './parts/ext';
 export type { ExtMethod, ExtModule, ExtStore, ExtUse, ExtValue } from './types';

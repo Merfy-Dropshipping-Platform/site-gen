@@ -229,3 +229,12 @@ codeOnly }` (скрипт секций превью → скрипт превь�
   `<template>`, «Убрать» — `favorites.toggle`; пусто — «В избранном пока ничего нет» и «Перейти в каталог».
 - «Шапка»: ссылка `/wishlist` и сердечки — при `theme['wishlist-enabled'] !== false`; число отмеченных —
   `ctx.watch(ctx.favorites.$count)` у каждого `data-ref="favorites-count"`.
+
+## Вход и кабинет (часть 10в, план 1)
+
+- Модуль `auth` (`src/core/parts/auth.ts`): вход по коду из письма — `requestCode`, `verify` (код или ссылка `/verify?token=`),
+  `signout`, `updateProfile`; токен — `merfy_customer_token`; вход сливает избранное до `merfy:auth:signin`; на странице
+  «Вход» — переход по `?redirect` (только адрес этого сайта) или в кабинет.
+- Модуль `orders` — заказы покупательницы: `list`, `get`, `cancel` с причиной; в бандле — по `uses: ["orders"]`.
+- Страницы `page-profile` и `page-orders` — только для вошедших: гостья уходит на `/login?redirect=…` до запуска секций
+  (`src/core/private-pages.ts`).

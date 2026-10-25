@@ -8,6 +8,7 @@ import { createEventBus, type EventBus } from './events';
 import { EXT_PART_NAME, EXT_USE_PREFIX, extModuleOf } from './ext-registry';
 import { SDK_MARKUP_SELECTOR, startInstance, type Instance, type InstanceRuntime, type MarkupCall } from './instance';
 import { navigationType, watchPage } from './page-events';
+import { leavePrivatePage } from './private-pages';
 import { pageStorage, type KeyValue } from './storage';
 import { emitCore } from './notice-fallback';
 import type {
@@ -112,7 +113,16 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
   return { core, started, apiOf };
 }
 
-const MODULE_NAMES: readonly string[] = ['cart', 'favorites', 'auth', 'newsletter', 'variants', 'search', 'catalog'];
+const MODULE_NAMES: readonly string[] = [
+  'cart',
+  'favorites',
+  'auth',
+  'newsletter',
+  'variants',
+  'search',
+  'catalog',
+  'orders',
+];
 
 // Модуль расширения по uses: ["ext:<id>"] (блок 9, часть 9в) — у части ext на странице, по id из конфига. Нет части или
 // id нет в конфиге страницы — ShellError part-unknown, как у незнакомой части.
@@ -235,6 +245,9 @@ export function start(options: StartOptions, env: CoreEnv = { window }): Started
   const read = readConfig(win);
   const bus = createEventBus(win.document);
   const page = pageStorage(win, read.mode);
+  // Страницы кабинета (блок 10, часть 10в): гостья уходит на «Вход» до запуска секций.
+  if (leavePrivatePage(win, read.config, read.mode, page))
+    return { config: read.config, mode: read.mode, stop: (): void => controller.abort() };
   if (read.config !== null && read.mode === 'live')
     watchSectionErrors(win, read.config, controller.signal, CORE_ERRORS); // до запуска секций: сбой старта — в пачке
   const parts = createCoreParts(read.config, read.mode, bus, options);

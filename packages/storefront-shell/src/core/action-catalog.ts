@@ -48,6 +48,43 @@ export const ACTIONS = {
     about: 'отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added }',
     markup: { 'product-id': 'text' },
   },
+  // Блок 10, часть 10в: вход по коду из письма и кабинет. Тексты ошибок секция показывает сама (quiet: true).
+  'auth.requestCode': {
+    module: 'auth',
+    about: 'отправить письмо с кодом и ссылкой для входа; аргументы { email }, ответ — {}',
+    markup: null,
+  },
+  'auth.verify': {
+    module: 'auth',
+    about:
+      'войти по коду { email, code } или ссылке { token }; ответ — { customer }, потом merfy:auth:signin; на «Входе» — переход по ?redirect или в кабинет',
+    markup: null,
+  },
+  'auth.signout': {
+    module: 'auth',
+    about: 'выйти: токен и избранное браузера стёрты, merfy:auth:signout; в кабинете — переход на «Вход»',
+    markup: {},
+  },
+  'auth.updateProfile': {
+    module: 'auth',
+    about: 'сохранить имя и телефон; аргументы { name?, phone? }, ответ — { customer }',
+    markup: null,
+  },
+  'orders.list': {
+    module: 'orders',
+    about: 'заказы покупательницы, новые сверху; ответ — { orders }',
+    markup: null,
+  },
+  'orders.get': {
+    module: 'orders',
+    about: 'заказ по номеру; аргументы { number }, ответ — { order }',
+    markup: null,
+  },
+  'orders.cancel': {
+    module: 'orders',
+    about: 'отменить заказ; аргументы { number, reason }, ответ — { order }',
+    markup: null,
+  },
   // Блок 13: кнопки баннера cookie. Ответ — один на все страницы магазина, событие merfy:consent:change.
   'consent.accept': {
     module: 'consent',
@@ -103,6 +140,7 @@ export const MODULE_NAMES = [
   'variants',
   'search',
   'catalog',
+  'orders',
 ] as const satisfies readonly ModuleName[];
 type MissingModule = Exclude<ModuleName, (typeof MODULE_NAMES)[number]>;
 export const MODULE_NAMES_COMPLETE: [MissingModule] extends [never] ? true : never = true;

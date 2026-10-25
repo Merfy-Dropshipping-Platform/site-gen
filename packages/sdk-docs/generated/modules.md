@@ -15,6 +15,12 @@
 ## favorites
 
 Действия: `favorites.toggle`.
+## auth
+
+Действия: `auth.requestCode`, `auth.verify`, `auth.signout`, `auth.updateProfile`.
+## orders
+
+Действия: `orders.list`, `orders.get`, `orders.cancel`.
 ## consent
 
 Действия: `consent.accept`, `consent.decline`.

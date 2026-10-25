@@ -3,6 +3,7 @@
   "name": "product",
   "kind": "section",
   "title": "Товар",
+  "uses": ["variants"],
   "settings": [
     { "id": "product", "label": "Выбор товара", "setting": { "kind": "product" } },
     {
@@ -13,6 +14,18 @@
         "title": "Настройка недоступна",
         "text": "Изменения проводятся на странице",
         "link": { "label": "Товары", "href": "/products" }
+      }
+    },
+    {
+      "id": "sold-out",
+      "label": "Распроданное",
+      "setting": {
+        "kind": "select",
+        "default": "show",
+        "options": [
+          { "value": "show", "label": "Показывать" },
+          { "value": "hide", "label": "Прятать" }
+        ]
       }
     }
   ]

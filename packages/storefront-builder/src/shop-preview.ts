@@ -8,6 +8,7 @@ import {
   pagePropsOf,
   parseBuildInputs,
   previewRecordPath,
+  recordIndex,
   renderPlacedSections,
   renderShopPage,
   type BuildInputs,
@@ -22,6 +23,7 @@ import {
   resolveSectionSettings,
   revisionMenusSchema,
   sectionMenus,
+  sectionRecordKeys,
   type CurrentSection,
   type RevisionMenu,
   type SectionRenderRequest,
@@ -245,6 +247,7 @@ function previewPlaced(
     hash,
     settings,
     ...wrapperOf(instance, current),
+    ...sectionRecordKeys(current.manifest),
     ...blocks,
     ...(Object.keys(trees).length === 0 ? {} : { menus: trees }),
     ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),
@@ -263,8 +266,9 @@ async function previewProps(
   const { inputs } = await deps.inputs(shopId);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
   const props = pagePropsOf(inputs, theme, themeEdits ?? inputs.revision.settings ?? {});
-  // Блок на шаблоне записи (часть 8б-2): запись record — та же, что у превью страницы.
-  return { ...props, page: pageInfoById(inputs, pageId, record ?? null) };
+  // Блок на шаблоне записи (часть 8б-2): запись record — та же, что у превью страницы. Записи магазина — полям с
+  // записями (часть 8г).
+  return { ...props, page: pageInfoById(inputs, pageId, record ?? null), records: recordIndex(inputs) };
 }
 
 export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null): Promise<DrawAnswer> {

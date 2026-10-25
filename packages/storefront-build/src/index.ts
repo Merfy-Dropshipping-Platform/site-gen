@@ -23,6 +23,17 @@ export { NOT_FOUND_ROUTE, SHOP_ROUTES, pageInfoById, routeOf, type ShopRoute } f
 export { recordIndex, routeDuplicates, shopRoutes, templateShown, type RouteDuplicate } from './routes';
 // Превью шаблонов записей (часть 8б-2)
 export { isRecordType, previewRecordPath } from './routes';
+// Поля с записями в секциях (часть 8г): виды полей и правила data — для пакета секций.
+export {
+  DATA_ENTRIES_MAX,
+  DATA_FIELDS_MAX,
+  DATA_FROM,
+  DATA_NAME,
+  RECORD_FIELD_KINDS,
+  type RecordFieldKind,
+  type SectionDataEntry,
+  type SectionRecordValues,
+} from './section-records';
 export {
   HOME_PAGE,
   NOT_FOUND_PAGE_ID,

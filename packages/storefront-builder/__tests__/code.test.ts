@@ -172,6 +172,43 @@ describe('enabledExtensions', () => {
   });
 });
 
+describe('поля с записями в коде магазина (блок 8 «Секций и SDK», часть 8г)', () => {
+  const FIELDS = [
+    HEADING,
+    { id: 'product', label: 'Выбор товара', setting: { kind: 'product' } },
+    { id: 'posts', label: 'Выбор публикации', setting: { kind: 'blog' } },
+    {
+      id: 'price',
+      label: 'Стоимость',
+      setting: { kind: 'hint', title: 'Настройка недоступна', text: 'Изменения проводятся на странице' },
+    },
+  ];
+  const DATA = { product: { from: 'settings.product', fields: ['id', 'title', 'price'] } };
+  const CARD: SectionRow = {
+    ...row('shop:product-card', 'section', null),
+    manifest: { sdk: 1, name: 'product-card', kind: 'section', title: 'Карточка товара', settings: FIELDS, data: DATA },
+  };
+
+  it('секция с полями с записями — recordFields без подсказки и data во входах; без полей — ключей нет', () => {
+    const { context } = contextOf();
+    const placement = {
+      home: [instance('card-1', 'shop:product-card', { product: 'p-1' }), instance('hero-1', 'shop:hero')],
+    };
+    const shop = codeOf([CARD, HERO], placement, context);
+    expect(shop.code.sections.find((section) => section.name === 'shop:product-card')).toMatchObject({
+      recordFields: { product: 'product', posts: 'blog' },
+      data: DATA,
+    });
+    expect(shop.code.sections.find((section) => section.name === 'shop:hero')).not.toHaveProperty('recordFields');
+    expect(shop.code.pages.home?.[0]?.settings).toEqual({
+      heading: 'Тёплые шарфы из кашемира',
+      product: 'p-1',
+      posts: null,
+      price: null,
+    });
+  });
+});
+
 describe('codeOf: блоки секции (часть 3)', () => {
   const QUESTION = {
     title: 'Вопрос',

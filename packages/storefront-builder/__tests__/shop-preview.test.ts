@@ -530,3 +530,60 @@ describe('превью шаблонов записей (блок 8 «Секци�
     expect((await sectionPreview(deps, SHOP, wrong)).status).toBe(400);
   });
 });
+
+describe('поля с записями в превью одного блока (блок 8 «Секций и SDK», часть 8г)', () => {
+  const PLED = '00000000-0000-4000-8000-000000000102';
+  const CARD: CurrentSection = {
+    name: 'shop:product-card',
+    manifest: {
+      sdk: 1,
+      name: 'product-card',
+      kind: 'section',
+      title: 'Карточка товара',
+      settings: [HEADING, { id: 'product', label: 'Выбор товара', setting: { kind: 'product', default: null } }],
+    },
+    render: MODULE,
+    renderHash: HASH,
+  };
+  const PLED_INPUTS = parseBuildInputs({
+    ...standInputsJson,
+    data: {
+      status: 'received',
+      entities: [
+        {
+          type: 'product',
+          id: PLED,
+          updatedAt: '2026-10-20T10:00:00.000Z',
+          data: {
+            title: 'Плед',
+            handle: 'pled',
+            description: 'Тёплый и мягкий',
+            price: 350000,
+            compareAtPrice: null,
+            images: ['https://s3.merfy.ru/p/2.jpg'],
+            available: true,
+            options: [],
+            variants: [],
+            collectionIds: [],
+            seo: { title: '', description: '' },
+          },
+        },
+      ],
+    },
+  });
+
+  it('с page в теле — запись поля в запросе рендера; без page и uses — записей нет, поле null', async () => {
+    const { deps, rendered } = depsOf(new Map([[CARD.name, CARD]]));
+    deps.inputs = () => Promise.resolve({ inputs: PLED_INPUTS, renders: new Map([[HASH, MODULE]]) });
+    const instance = { id: 'card-1', section: 'shop:product-card', settings: { product: PLED } };
+    expect((await sectionPreview(deps, SHOP, JSON.stringify({ instance, page: 'home' }))).status).toBe(200);
+    expect((await sectionPreview(deps, SHOP, JSON.stringify({ instance }))).status).toBe(200);
+    // Типизированный хелпер: expect.objectContaining возвращает any, значения ожидания — те же.
+    const recordLike = (fields: Record<string, unknown>): unknown => expect.objectContaining(fields);
+    const expected: unknown[] = [
+      { product: recordLike({ id: PLED, title: 'Плед', url: '/product/pled' }) },
+      { product: null },
+    ];
+    expect(rendered.map(([, request]) => request.records)).toEqual(expected);
+  });
+});

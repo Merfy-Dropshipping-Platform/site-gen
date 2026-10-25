@@ -58,6 +58,8 @@ const requestSchema = z.strictObject({
   theme: valuesSchema.default({}),
   shop: shopSchema.default(EMPTY_SHOP),
   page: pageSchema.default(HOME_PAGE),
+  // Блок 8, часть 8г: записи полей с записями по id настройки — публичные поля записи или null; нет ключа — {}.
+  records: z.record(z.string(), z.record(z.string(), z.json()).nullable()).default({}),
 });
 
 const templates = new Map<string, Promise<TemplateComponent>>();
@@ -101,12 +103,12 @@ function requestOf(line: string) {
 async function answerTo(line: string): Promise<{ id: number; answer: object }> {
   const parsed = requestOf(line);
   if (parsed === null || !parsed.success) return { id: 0, answer: { error: 'запрос не по форме', denied: false } };
-  const { id, hash, module, settings, blocks, preview, menus, theme, shop, page } = parsed.data;
+  const { id, hash, module, settings, blocks, preview, menus, theme, shop, page, records } = parsed.data;
   try {
     if (module !== undefined && !templates.has(hash)) templates.set(hash, loadTemplate(module));
     const template = templates.get(hash);
     if (template === undefined) return { id, answer: { error: `модуля ${hash} в процессе нет`, denied: false } };
-    const props = { settings, blocks, preview, menus, theme, shop, page };
+    const props = { settings, blocks, preview, menus, theme, shop, page, records };
     return { id, answer: { html: await renderTemplate(await template, props) } };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

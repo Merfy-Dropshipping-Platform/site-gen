@@ -4,6 +4,7 @@ import { EXT_USE_PREFIX, TEMPLATE_FILE, type SectionManifest } from './format';
 import { levenshteinOf } from './name-check';
 import { problem, type SectionProblem } from './problems';
 import type { ScriptFacts } from './script-facts';
+import { dataUnknownProblems } from './section-data';
 import type { MarkupName, TemplateMarkup } from './template-markup';
 
 // Сверка имён при сохранении (11д А; design.md блока 5, раздел 3.9) — по разметке шаблона, фактам скрипта и section.json.
@@ -123,6 +124,9 @@ const scriptClasses: NameRule = ({ facts, scriptEntry }) =>
       ),
     );
 
-export const NAME_RULES: readonly NameRule[] = [eventUnknown, actionUnknown, scriptClasses];
+// ctx.data.<имя> без объявления в data section.json (блок 8 «Секций и SDK», часть 8г; Р8г-6).
+const dataUnknown: NameRule = ({ manifest, facts }) => dataUnknownProblems(manifest, facts?.reads ?? []);
+
+export const NAME_RULES: readonly NameRule[] = [eventUnknown, actionUnknown, scriptClasses, dataUnknown];
 
 export const nameProblems = (input: NameInput): SectionProblem[] => NAME_RULES.flatMap((rule) => rule(input));

@@ -1,7 +1,9 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { sectionGroupsOf, sectionLimitOf } from '../src/format';
 import { prepareSection } from '../src/prepare';
 import { readSectionFolder } from '../src/read-folder';
+import { ROLE_PLACES, type SectionRole } from '../src/roles';
 
 // Наши секции блока 9 «Секций и SDK» (часть 9б) проходят проверку при сохранении так же, как секция мерчанта:
 // «Значок корзины» и «Уведомления» — без отказов и предупреждений; место (groups, limit) и script_meta — по section.json.
@@ -25,14 +27,14 @@ describe('наши секции блока 9 — проверка при сох�
     ]);
   });
 
-  it('«Уведомления»: подвал и страница, одна на список, без модулей SDK', async () => {
+  it('«Уведомления»: роль notices — поверх страницы, одна, без модулей SDK (блок 12, часть 12а)', async () => {
     const { problems, section } = await prepared('notices');
     expect(problems).toEqual([]);
-    expect([section?.name, section?.warnings, section?.manifest.groups, section?.manifest.limit]).toEqual([
+    expect([section?.name, section?.warnings, section?.manifest.role, section?.manifest.groups]).toEqual([
       'shop:notices',
       [],
-      ['footer', 'page'],
-      1,
+      'notices',
+      undefined,
     ]);
     expect(section?.scriptMeta).toEqual({ uses: [], parts: [], classes: [] });
   });
@@ -43,12 +45,15 @@ describe('наши секции блока 10 — проверка при сох
   it.each([
     ['cart', 'shop:cart', ['page']],
     ['cart-summary', 'shop:cart-summary', ['page']],
-    ['cart-drawer', 'shop:cart-drawer', ['footer']],
-    ['cart-added', 'shop:cart-added', ['footer']],
+    ['cart-drawer', 'shop:cart-drawer', ['overlay']],
+    ['cart-added', 'shop:cart-added', ['overlay']],
   ])('%s: без отказов и предупреждений, одна на список, модуль cart', async (folder, name, groups) => {
     const { problems, section } = await prepared(folder);
     expect(problems).toEqual([]);
-    expect([section?.name, section?.warnings, section?.manifest.groups, section?.manifest.limit]).toEqual([name, [], groups, 1]);
+    // Блок 12, часть 12а: место секции с ролью — по таблице ролей, а не по ключам section.json.
+    const manifest = section?.manifest;
+    const place = manifest === undefined ? null : [sectionGroupsOf(manifest), sectionLimitOf(manifest)];
+    expect([section?.name, section?.warnings, place]).toEqual([name, [], [groups, 1]]);
     expect(section?.scriptMeta.uses).toEqual(['cart']);
   });
 
@@ -90,5 +95,29 @@ describe('наши секции блока 10в — проверка при со
   it('«Шапка» с auth — без отказов', async () => {
     const { problems } = await prepared('../../storefront-sections/fixtures/shop/header');
     expect(problems).toEqual([]);
+  });
+});
+
+// Блок 12, часть 12а: наши секции с ролью — роль, место и один экземпляр по таблице ролей (12.1, 12.2, п. 8).
+describe('наши секции с ролью — проверка при сохранении', () => {
+  const ROLE_SECTIONS: [string, SectionRole][] = [
+    ['cart', 'cart'],
+    ['cart-drawer', 'cart-drawer'],
+    ['cart-added', 'cart-added'],
+    ['login', 'login'],
+    ['notices', 'notices'],
+    ['../../storefront-sections/fixtures/shop/search', 'search'],
+    ['../../storefront-sections/fixtures/shop/cookie-banner', 'cookie-banner'],
+  ];
+
+  it.each(ROLE_SECTIONS)('%s: роль %s, место и limit — по таблице, без отказов', async (folder, role) => {
+    const { problems, section } = await prepared(folder);
+    expect(problems).toEqual([]);
+    const manifest = section?.manifest;
+    expect(manifest?.role).toBe(role);
+    expect(manifest === undefined ? null : [sectionGroupsOf(manifest), sectionLimitOf(manifest)]).toEqual([
+      [ROLE_PLACES[role].group],
+      1,
+    ]);
   });
 });

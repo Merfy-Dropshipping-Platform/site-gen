@@ -3,8 +3,7 @@
   "name": "cart-added",
   "kind": "section",
   "title": "Товар добавлен в корзину",
-  "groups": ["footer"],
-  "limit": 1,
+  "role": "cart-added",
   "wrapper": [],
   "uses": ["cart"]
 }

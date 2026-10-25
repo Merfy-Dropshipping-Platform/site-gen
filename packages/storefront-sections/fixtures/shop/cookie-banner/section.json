@@ -3,8 +3,7 @@
   "name": "cookie-banner",
   "kind": "section",
   "title": "Баннер cookie",
-  "groups": ["footer"],
-  "limit": 1,
+  "role": "cookie-banner",
   "wrapper": ["scheme"],
   "uses": ["shop", "consent"],
   "settings": [

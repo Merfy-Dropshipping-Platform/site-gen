@@ -3,6 +3,7 @@
   "name": "search",
   "kind": "section",
   "title": "Поиск",
+  "role": "search",
   "uses": ["shop", "search"],
   "settings": []
 }

@@ -3,6 +3,5 @@
   "name": "notices",
   "kind": "section",
   "title": "Уведомления",
-  "groups": ["footer", "page"],
-  "limit": 1
+  "role": "notices"
 }

@@ -3,6 +3,7 @@
   "name": "cart",
   "kind": "section",
   "title": "Корзина",
+  "role": "cart",
   "groups": ["page"],
   "limit": 1,
   "uses": ["cart"]

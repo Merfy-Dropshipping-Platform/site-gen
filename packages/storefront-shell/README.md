@@ -244,3 +244,11 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 - Секции `login` «Вход» (`page-login`, адреса `/login` и `/verify`), `account` «Личный кабинет» (`page-profile`,
   `/account/profile` и `/account`), `orders` «Заказы» (`page-orders`, `/account/orders`, заказ — `?n=<номер>`).
 - «Шапка»: «Профиль» — `/login`, вошедшей — `/account` (`data-ref="profile"`, `ctx.auth.$customer`).
+
+## Секции с ролью (блок 12 «Секций и SDK», часть 12а)
+
+- `@merfy/shell/roles` — `SECTION_ROLES`, `roleSection`, `roleWorks`: ядро находит секцию по `data-role` на обёртке
+  экземпляра; секции нет или у неё `data-merfy-state="failed"` — запасной путь: `cart.open` — `/cart`, `search.open` —
+  `/catalog`, окно `dialog` по событию SDK не открывается.
+- Номер корзины — и в `merfy:cartId` при каждом получении (`keepCartId`, `dropCartId`, `parts/cart.ts`): «Оформить
+  заказ» — ссылка `/checkout` и работает при упавшем скрипте корзины.

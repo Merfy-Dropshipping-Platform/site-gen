@@ -157,6 +157,21 @@ export interface CartLine {
   readonly variantId: string | null;
   readonly quantity: number;
   readonly price: Money; // за штуку
+  // Блок 10, 10.1: что показывают строки корзины — из ответа orders, SDK цен не считает.
+  readonly title: string; // название товара (orders: name)
+  readonly image: string | null; // адрес фото (imageUrl)
+  readonly options: Readonly<Record<string, string>>; // варианты: «Цвет» → «Красный»
+  readonly total: Money; // сумма строки (totalCents)
+  readonly gift: boolean; // подарок по акции (isBonus): 0 ₽, без «−», «+» и «Удалить»
+}
+// Итоги корзины (блок 10, 10.1, Р10а-2): суммы считает orders. Корзины нет — нули, ready: true.
+export interface CartTotals {
+  readonly ready: boolean; // false — итоги ещё не прочитаны
+  readonly subtotal: Money;
+  readonly discount: Money;
+  readonly discountName: string | null; // имя автоматической скидки магазина; промокод покупательницы — null
+  readonly extensionDiscount: Money;
+  readonly total: Money; // к оплате
 }
 export interface CartState {
   readonly ready: boolean; // false — корзину с сервера ещё не прочитали

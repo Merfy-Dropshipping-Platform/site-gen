@@ -1,7 +1,7 @@
-import { cartIdOf, lineOf, linesOf } from './cart-lines';
+import { cartIdOf, lineOf, linesOf, totalsOf } from './cart-lines';
 import { CART_MISSING_CODE, type Failure, type Reply, failureOf, reasonOf, serverCodeOf } from './failures';
 import { requestJson } from './requests';
-import type { CartLine } from './types';
+import type { CartLine, CartTotals } from './types';
 
 // Запросы корзины к шлюзу (блок 9, часть 9а): чтение, создание, добавление. Каждый шаг — либо данные, либо Failure,
 // либо missing: корзины с номером нет — это ветка «новая корзина», а не ошибка (п. 5). Ошибки не бросает requestJson.
@@ -13,7 +13,7 @@ export interface CartApi {
 }
 
 export type ReadCart =
-  | { readonly kind: 'lines'; readonly lines: readonly CartLine[] }
+  | { readonly kind: 'lines'; readonly lines: readonly CartLine[]; readonly totals: CartTotals | null }
   | { readonly kind: 'missing' }
   | { readonly kind: 'failure'; readonly failure: Failure };
 
@@ -39,7 +39,7 @@ export async function readCart(api: CartApi, cartId: string): Promise<ReadCart> 
   if (reply.status !== 200) return { kind: 'failure', failure: failureOf(reasonOf(reply), readText(reply)) };
   const lines = linesOf(reply.body, api.currency);
   if (lines === null) return { kind: 'failure', failure: failureOf('server', 'cart: ответ корзины не по форме') };
-  return { kind: 'lines', lines };
+  return { kind: 'lines', lines, totals: totalsOf(reply.body, api.currency) };
 }
 
 // Создание корзины: 201 с номером — она, остальное — Failure.

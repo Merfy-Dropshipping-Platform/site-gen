@@ -7,15 +7,24 @@ import type { Json } from './types';
 export const REQUEST_TIMEOUT_MS = 10_000;
 
 export interface JsonRequest {
-  readonly method: 'GET' | 'POST';
+  readonly method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   readonly body?: Json;
+  readonly token?: string; // токен покупателя (блок 10, п. 17): заголовок Authorization: Bearer
 }
 
-// Тело запроса и заголовки: есть body — JSON с content-type, нет — ни того ни другого.
+// Заголовки: есть body — content-type JSON, есть token — Authorization; нет ни того ни другого — null.
+function headersOf(request: JsonRequest): Record<string, string> | null {
+  const headers: Record<string, string> = {};
+  if (request.body !== undefined) headers['content-type'] = 'application/json';
+  if (request.token !== undefined) headers.authorization = `Bearer ${request.token}`;
+  return Object.keys(headers).length === 0 ? null : headers;
+}
+
+// Тело запроса и заголовки: body — JSON; заголовков нет — их нет и в запросе.
 function initOf(request: JsonRequest, signal: AbortSignal): RequestInit {
-  const base: RequestInit = { method: request.method, signal };
-  if (request.body === undefined) return base;
-  return { ...base, headers: { 'content-type': 'application/json' }, body: JSON.stringify(request.body) };
+  const headers = headersOf(request);
+  const base: RequestInit = headers === null ? { method: request.method, signal } : { method: request.method, signal, headers };
+  return request.body === undefined ? base : { ...base, body: JSON.stringify(request.body) };
 }
 
 // Тело ответа: текст — JSON; не JSON (SyntaxError) — null.

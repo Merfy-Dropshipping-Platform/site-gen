@@ -1,4 +1,4 @@
-import type { CartLine, Money } from './types';
+import type { CartLine, CartTotals, Money } from './types';
 
 // Ответы шлюза о корзине (блок 9, часть 9а) → строки $cart. Форма — договор с orders (order_items): id и productId —
 // непустые строки, variantCombinationId — непустая строка, null или нет поля, quantity и unitPriceCents — целые от 0.
@@ -18,6 +18,14 @@ const variantOf = (item: Record<string, unknown>): string | null | undefined => 
   return nonEmptyText(value) ? value : undefined;
 };
 
+// Поля показа строки (блок 10, Р10а-1): чего нет — пустое название, без фото и вариантов, сумма — цена × штуки.
+const imageOf = (value: unknown): string | null => (nonEmptyText(value) ? value : null);
+const isTextEntry = (entry: [string, unknown]): entry is [string, string] => typeof entry[1] === 'string';
+const optionsOf = (value: unknown): Readonly<Record<string, string>> =>
+  isRecord(value) ? Object.fromEntries(Object.entries(value).filter(isTextEntry)) : {};
+const totalOf = (item: Record<string, unknown>, unit: number, quantity: number): number =>
+  isCount(item.totalCents) ? item.totalCents : unit * quantity;
+
 // Строка из ответа orders: null — форма не сошлась.
 function lineOfItem(item: Record<string, unknown>, currency: string): CartLine | null {
   const variantId = variantOf(item);
@@ -27,7 +35,10 @@ function lineOfItem(item: Record<string, unknown>, currency: string): CartLine |
   if (!isCount(item.quantity)) return null;
   if (!isCount(item.unitPriceCents)) return null;
   const price: Money = { amount: item.unitPriceCents, currency };
-  return { id: item.id, productId: item.productId, variantId, quantity: item.quantity, price };
+  const total: Money = { amount: totalOf(item, item.unitPriceCents, item.quantity), currency };
+  const title = typeof item.name === 'string' ? item.name : '';
+  const shown = { title, image: imageOf(item.imageUrl), options: optionsOf(item.options), total, gift: item.isBonus === true };
+  return { id: item.id, productId: item.productId, variantId, quantity: item.quantity, price, ...shown };
 }
 
 // GET …/carts/:id → { cart, items }: одна плохая строка — null целиком.
@@ -59,4 +70,28 @@ export function cartIdOf(body: unknown): string | null {
 export function withLine(lines: readonly CartLine[], line: CartLine): readonly CartLine[] {
   const known = lines.some((current) => current.id === line.id);
   return known ? lines.map((current) => (current.id === line.id ? line : current)) : [...lines, line];
+}
+
+// Итоги из GET …/carts/:id → { cart: { subtotalCents, discountCents, totalCents, promoCode, extensionDiscountCents } }
+// (блок 10, Р10а-2): суммы — целые от 0, скидки расширения нет — 0; не по форме — null, прежние итоги остаются.
+const AUTO_PREFIX = 'AUTO:';
+const discountNameOf = (promo: unknown): string | null =>
+  typeof promo === 'string' && promo.startsWith(AUTO_PREFIX) && promo.length > AUTO_PREFIX.length
+    ? promo.slice(AUTO_PREFIX.length)
+    : null;
+
+export function totalsOf(body: unknown, currency: string): CartTotals | null {
+  if (!isRecord(body) || !isRecord(body.cart)) return null;
+  const { subtotalCents, discountCents, totalCents, promoCode } = body.cart;
+  const extension = body.cart.extensionDiscountCents ?? 0;
+  if (!isCount(subtotalCents) || !isCount(discountCents) || !isCount(totalCents) || !isCount(extension)) return null;
+  const money = (amount: number): Money => ({ amount, currency });
+  return {
+    ready: true,
+    subtotal: money(subtotalCents),
+    discount: money(discountCents),
+    discountName: discountNameOf(promoCode),
+    extensionDiscount: money(extension),
+    total: money(totalCents),
+  };
 }

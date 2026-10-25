@@ -1,0 +1,27 @@
+{
+  "sdk": 1,
+  "name": "inline-edit",
+  "kind": "section",
+  "title": "Правка в превью",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Тёплые шарфы", "inlineEdit": true } },
+    { "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "Вяжем вручную", "inlineEdit": true } },
+    { "id": "answer", "label": "Ответ", "setting": { "kind": "richtext", "default": "<p>Доставка по России</p>", "inlineEdit": true } },
+    { "id": "caption", "label": "Подпись", "setting": { "kind": "string", "default": "Без правки в превью" } }
+  ],
+  "blocks": {
+    "item": {
+      "title": "Пункт",
+      "limit": 5,
+      "settings": [
+        { "id": "question", "label": "Вопрос", "setting": { "kind": "string", "default": "Новый пункт", "inlineEdit": true } },
+        { "id": "answer", "label": "Ответ", "setting": { "kind": "richtext", "default": "<p>Описание</p>", "inlineEdit": true } },
+        { "id": "label", "label": "Подпись", "setting": { "kind": "string", "default": "Метка" } }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "item", "settings": { "question": "Кашемир или шерсть?", "answer": "<p>Кашемир мягче.</p>" } },
+    { "type": "item", "settings": { "question": "Как стирать?", "answer": "<p>Руками.</p>" } }
+  ]
+}

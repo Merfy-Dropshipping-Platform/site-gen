@@ -1,0 +1,18 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
+  <h2 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h2>
+  <p class="m-0 text-foreground">{settings.text}</p>
+  <div class="text-foreground" set:html={settings.answer}></div>
+  <p class="m-0 text-foreground">{settings.caption}</p>
+  <div class="flex flex-col gap-4">
+    {blocks.map((block) => (
+      <div class="rounded-button bg-card p-4 text-card-foreground">
+        <h3 class="m-0 text-lg">{block.settings.question}</h3>
+        <div class="mt-2" set:html={block.settings.answer}></div>
+        <span class="text-lg">{block.settings.label}</span>
+      </div>
+    ))}
+  </div>
+</div>

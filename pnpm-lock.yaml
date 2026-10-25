@@ -549,6 +549,9 @@ importers:
       '@merfy/storefront-config':
         specifier: workspace:*
         version: link:../storefront-config
+      '@merfy/theme-base':
+        specifier: workspace:*
+        version: link:../theme-base
       embla-carousel:
         specifier: 8.6.0
         version: 8.6.0

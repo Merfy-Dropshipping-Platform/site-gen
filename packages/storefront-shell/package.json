@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@merfy/storefront-config": "workspace:*",
+    "@merfy/theme-base": "workspace:*",
     "embla-carousel": "8.6.0",
     "embla-carousel-autoplay": "8.6.0",
     "embla-carousel-fade": "8.6.0",

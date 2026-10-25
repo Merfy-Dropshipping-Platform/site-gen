@@ -172,7 +172,7 @@ function headOf(
 ): ShopPageHead {
   const config = buildStorefrontConfig({
     site: { ...inputs.site, name },
-    theme: inputs.theme,
+    theme: { ...inputs.theme, settings: content.themeSettings },
     env: inputs.env,
     page: configPageOf(route),
     mode: content.mode,

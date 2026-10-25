@@ -1,0 +1,17 @@
+<div
+  data-ref="list"
+  data-action="pointerenter:hold pointerleave:release"
+  class="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 p-4"
+  hidden
+>
+  <template>
+    <div
+      class="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-popover border-width-popover border-border bg-popover p-4 text-sm text-popover-foreground shadow-popover data-[level=error]:border-destructive data-[level=error]:bg-destructive data-[level=error]:text-destructive-foreground"
+    >
+      <p data-ref="text" class="flex-1"></p>
+      <button type="button" data-ref="close" data-action="close focusin:hold focusout:release" class="shrink-0 underline">
+        Закрыть
+      </button>
+    </div>
+  </template>
+</div>

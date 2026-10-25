@@ -1,8 +1,9 @@
 import { addItem, createCart, type CartApi } from './cart-server';
 import { failed, failureOf, reportFailure, type Reply } from './failures';
 import { navigation } from './navigation';
-import { apiOf, CART_ID_KEY, cartIdOf, markRead, readCartInto, type CartRuntime } from './parts/cart';
+import { apiOf, cartIdOf, dropCartId, keepCartId, markRead, readCartInto, type CartRuntime } from './parts/cart';
 import { requestJson } from './requests';
+import { roleWorks } from './roles';
 import type { CartLine, CoreHandle, Result, SectionEvent } from './types';
 
 // cart.open, cart.checkout и заказ после оплаты (блок 10, 10.2, 10.5; «Решил сам» пп. 4, 5, 9, 11; Р10а-5, Р10а-7,
@@ -11,7 +12,6 @@ import type { CartLine, CoreHandle, Result, SectionEvent } from './types';
 export const CHECKOUT_CART_KEY = 'merfy:cartId'; // номер для нынешнего оформления (факт 25)
 export const HANDOFF_KEY = 'merfy:cart-handoff:v1'; // копия строк при переходе в оформление
 export const PENDING_ORDER_KEY = 'merfy:pendingOrder'; // пишет оформление (CheckoutSubmit)
-export const DRAWER_SELECTOR = '[data-open-on="cart-open"]';
 export type Verdict = 'paid' | 'abandoned' | 'wait';
 
 // Статус оплаты → что делать; таблица пяти тем (theme-base/runtime/paid-order-cart.ts). Незнакомый — wait.
@@ -71,10 +71,10 @@ function handoffOf(raw: string): Handoff | null {
 
 export const readHandoff = (raw: string | null): Handoff | null => (raw === null ? null : handoffOf(raw));
 
-// «Сайдбар» (cart-type не 'page') и на странице есть окно с open-on="cart-open" (Р10а-5).
+// «Сайдбар» (cart-type не 'page') и секция с ролью cart-drawer работает (блок 12, 12.4, случай 3).
 export function drawerWanted(core: CoreHandle, doc: Document): boolean {
   const settings = core.config?.theme.settings;
-  return settings?.['cart-type'] !== 'page' && doc.querySelector(DRAWER_SELECTOR) !== null;
+  return settings?.['cart-type'] !== 'page' && roleWorks(doc, 'cart-drawer');
 }
 
 // cart.open из скрипта и из разметки (Р10а-4, Р10а-5): отмена перехода — синхронно, до первого await.
@@ -144,7 +144,7 @@ const verdictOf = (reply: Reply): Verdict => {
 function settlePaid(rt: CartRuntime, orderId: string): void {
   rt.page.removeItem(HANDOFF_KEY);
   if (cartIdOf(rt.page) !== orderId) return;
-  rt.page.removeItem(CART_ID_KEY);
+  dropCartId(rt.page, orderId);
   markRead(rt, []);
 }
 
@@ -155,7 +155,7 @@ async function cartFromCopy(rt: CartRuntime, conf: CartApi, copy: Handoff): Prom
     console.error(`cart: возврат корзины после отказа оплаты — статус ${created.failure.code}`);
     return;
   }
-  rt.page.setItem(CART_ID_KEY, created.id);
+  keepCartId(rt.page, created.id);
   for (const line of copy.lines) {
     const body =
       line.variantId === null

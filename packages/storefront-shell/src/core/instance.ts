@@ -110,6 +110,18 @@ function reportFailure(
 // Снят до конца mount — settled с этим текстом (часть 5г): замена в превью не ждёт запуска, которого не будет.
 const SETTLED_BEFORE_MOUNT = 'экземпляр снят до запуска';
 
+// Сбой пришёл готовым из HTML: settled — с текстом сбоя, как у сбоя до запуска.
+const FAILED_FROM_HTML = 'секция пришла на страницу с признаком сбоя (data-merfy-state="failed")';
+
+// Секция из HTML с data-merfy-state="failed" (блок 12, решение основного треда 25.10, 21:50): то же, что reportFailure,
+// но без события SECTION_FAILURE_EVENT и строки в консоли — сбой уже случился на сервере. Признак на элементе остаётся.
+function failFromHtml(state: InstanceState, teardown: (withUnmount: boolean) => void): Instance {
+  state.settle(FAILED_FROM_HTML);
+  teardown(false);
+  disableActions(state.element);
+  return finishOf(state, teardown);
+}
+
 function teardownOf(state: InstanceState, withUnmount: boolean): void {
   if (state.finished.value) return;
   state.finished.value = true;
@@ -188,7 +200,9 @@ function stateOf(
     controller,
     scope: createElScope(element, controller.signal),
     runtime,
-    failed: { value: false },
+    // Блок 12 (решение основного треда 25.10, 21:50): секция пришла в HTML уже с признаком сбоя — сбой случился на
+    // сервере, экземпляр не запускается.
+    failed: { value: element.getAttribute('data-merfy-state') === 'failed' },
     finished: { value: false },
     initial,
     settle: settling.settle,
@@ -276,6 +290,7 @@ export function startInstance(
   const state = stateOf(runtime, element, entry, initial);
   const teardown = (withUnmount: boolean): void => teardownOf(state, withUnmount);
   state.run = createGuard((stage, error) => reportFailure(state, teardown, stage, error));
+  if (state.failed.value) return failFromHtml(state, teardown);
 
   let input: SectionInput;
   try {

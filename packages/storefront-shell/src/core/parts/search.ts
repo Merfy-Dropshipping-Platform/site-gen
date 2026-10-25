@@ -1,5 +1,6 @@
 import { type Failure, failed, failureOf, reasonOf, reportFailure } from '../failures';
 import { requestJson } from '../requests';
+import { roleWorks } from '../roles';
 import { storeItemOf } from '../store-items';
 import type { ActionOptions, CoreHandle, Result, SdkPart, SearchItem, SearchModule } from '../types';
 
@@ -10,7 +11,6 @@ import type { ActionOptions, CoreHandle, Result, SdkPart, SearchItem, SearchModu
 export const SEARCH_LIMIT = 8; // как у product-service по умолчанию
 export const SEARCH_Q_MAX = 500;
 export const SEARCH_CACHE_SIZE = 40;
-export const SEARCH_PANEL_SELECTOR = '[data-behavior="search"]';
 export const CATALOG_PATH = '/catalog';
 // Переход на каталог — через этот объект: в jsdom window.location.assign подменить нельзя, тест подменяет go.
 export const searchNavigation = { go: (path: string): void => window.location.assign(path) };
@@ -103,7 +103,8 @@ export const search: SdkPart<'search', SearchModule> = {
     };
 
     const open = (): Promise<Result<{ readonly panel: boolean }>> => {
-      if (document.querySelector(SEARCH_PANEL_SELECTOR) !== null) {
+      // Панель поиска — секция с ролью search (блок 12, 12.4, случай 3); её нет или её скрипт упал — переход на каталог.
+      if (roleWorks(document, 'search')) {
         core.emit('merfy:search:open', {});
         return Promise.resolve({ ok: true, data: { panel: true } });
       }

@@ -1,3 +1,4 @@
+import { recordPath, recordSlug } from '@merfy/storefront-build';
 import { z } from 'zod';
 import { parseWith } from './parse';
 
@@ -32,7 +33,14 @@ export const priorityOf = (type: string): number => PRIORITY_OF_EVENT[type] ?? P
 // Событие, приведённое к одному виду: чьё оно — сайта или организации — и когда была правка.
 export type IncomingEvent =
   | { owner: 'site'; siteId: string; type: string; eventAt: string }
-  | { owner: 'tenant'; tenantId: string; type: string; eventAt: string };
+  | { owner: 'tenant'; tenantId: string; type: string; eventAt: string; paths?: EntityPathsChange };
+
+// Адреса страниц товара, которые событие дописывает в список адресов магазина и убирает из него (блок 8 «Секций и
+// SDK», часть 8б-2, Р8б-16): по списку раздача до следующей сборки отправляет адрес на рендер по запросу.
+export interface EntityPathsChange {
+  add: string[];
+  remove: string[];
+}
 
 const instant = z.iso.datetime({ offset: true });
 
@@ -49,7 +57,11 @@ const productEventSchema = z.object({
   event: z.string().min(1),
   tenantId: z.string().min(1),
   timestamp: instant.optional(),
+  // Блок 8 «Секций и SDK», часть 8б-2: не по форме — как будто поля нет; событие всё равно принято.
+  productIds: z.array(z.string().min(1)).optional().catch(undefined),
+  handle: z.string().optional().catch(undefined),
 });
+type ProductEventBody = z.infer<typeof productEventSchema>;
 
 export interface ContentEvent {
   type: string;
@@ -63,9 +75,27 @@ function contentEvent(body: unknown): IncomingEvent {
   return { owner: 'site', siteId: event.siteId, type: event.type, eventAt: event.eventAt };
 }
 
+// Адреса из события кабинета: создан — адрес товара; удалён — адрес и адрес по id. Без handle (импорт, правка) или не
+// про один товар — null.
+function entityPathsOf(event: ProductEventBody): EntityPathsChange | null {
+  const [productId, ...others] = event.productIds ?? [];
+  if (productId === undefined || others.length > 0 || event.handle === undefined) return null;
+  const path = recordPath.product(recordSlug(event.handle, productId));
+  if (event.event === 'product.created') return { add: [path], remove: [] };
+  if (event.event !== 'product.deleted') return null;
+  return { add: [], remove: [...new Set([path, recordPath.product(productId)])] };
+}
+
 function productEvent(body: unknown, receivedAt: string): IncomingEvent {
   const event = parseWith(productEventSchema, body, 'message-invalid', PRODUCT_EXCHANGE);
-  return { owner: 'tenant', tenantId: event.tenantId, type: PRODUCT_CHANGE, eventAt: event.timestamp ?? receivedAt };
+  const accepted = {
+    owner: 'tenant' as const,
+    tenantId: event.tenantId,
+    type: PRODUCT_CHANGE,
+    eventAt: event.timestamp ?? receivedAt,
+  };
+  const paths = entityPathsOf(event);
+  return paths === null ? accepted : { ...accepted, paths };
 }
 
 const PARSERS: Readonly<Record<string, (body: unknown, receivedAt: string) => IncomingEvent>> = {

@@ -178,7 +178,9 @@ export async function renderShopPage(
   theme: ShopTheme,
   page: PageRender = LIVE_PAGE,
 ): Promise<RenderedPage> {
-  const route = routeOf(path, inputs);
+  // Превью конструктора (часть 8б-2) — маршруты превью: страницы всех шаблонов и примеры; сборка — только записи с
+  // показанным шаблоном.
+  const route = routeOf(path, inputs, page.mode);
   // Скрытые экземпляры убираются здесь, до рендера (п. 22): разметка, CSS секций и список модулей — по видимым.
   const shown = withoutHidden(inputs);
   const lists = pageListsOf(route.id).map((list) => placedSections(shown, list));

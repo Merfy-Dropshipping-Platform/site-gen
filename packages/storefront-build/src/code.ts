@@ -1,4 +1,5 @@
 import { MOTION_CSS, MOTION_HEAD_SCRIPT } from '@merfy/shell/behaviors/motion-css';
+import { EXT_USE_PREFIX, type StorefrontExtensions } from '@merfy/storefront-config';
 import { bundlePage, type BundleKit, type BundleSection, type PageBundle } from './bundle';
 import { kitPlanOf } from './features';
 import { sha256 } from './canonical';
@@ -17,6 +18,24 @@ const HASH_PREFIX = 'sha256:';
 // Части без API для секций — в бандле каждой страницы опубликованного сайта (раздел 3.13): аналитика, как трекер в
 // HTML каждой страницы на проде.
 export const LIVE_PARTS: readonly string[] = ['analytics'];
+
+// id расширений из "ext:<id>" в meta.uses секции (блок 9 «Секций и SDK», часть 9в; Р9в-20): script_meta строки реестра.
+const extIdsOf = (section: CodeSection): string[] =>
+  (section.meta?.uses ?? []).flatMap((use) =>
+    use.startsWith(EXT_USE_PREFIX) ? [use.slice(EXT_USE_PREFIX.length)] : [],
+  );
+
+// Сторы и методы расширений для конфига страницы (Р9в-6): расширения из meta.uses секций этой страницы (шапка,
+// страница, подвал, глобальные скрипты; со скриптом и без — действие data-action="ext.…" есть и у секции без скрипта),
+// только те, что есть в code.extensions (включены у магазина). По алфавиту id.
+export function pageExtensions(inputs: BuildInputs, pageId: string): StorefrontExtensions {
+  const ids = new Set(pageCode(inputs, pageId).flatMap(extIdsOf));
+  return Object.fromEntries(
+    Object.entries(inputs.code.extensions ?? {})
+      .filter(([id]) => ids.has(id))
+      .sort(([left], [right]) => (left < right ? -1 : 1)),
+  );
+}
 
 // Байты кода, которых нет во входах: сборка ядра, скрипты секций и модули рендера по хешу. Входы называют их хешами,
 // сборка сверяет байты с ними.

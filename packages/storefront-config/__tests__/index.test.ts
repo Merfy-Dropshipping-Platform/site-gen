@@ -7,15 +7,19 @@ describe('API пакета (design.md блока 3, раздел 6)', () => {
       'CONFIG_TAG_ID',
       'COUNTER_KINDS',
       'COUNTER_NUMBERS',
+      'EXT_USE_PREFIX',
       'StorefrontConfigError',
       'buildStorefrontConfig',
       'configTag',
       'escapeScriptJson',
+      'extUseSchema',
+      'extensionStorefrontSchema',
       'isCounterNumber',
       'parseStorefrontConfig',
       'readStorefrontConfig',
       'rebuildEvents',
       'storefrontConfigSchema',
+      'storefrontExtensionsSchema',
     ]);
   });
 });

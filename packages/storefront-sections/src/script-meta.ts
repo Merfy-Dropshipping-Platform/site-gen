@@ -1,6 +1,6 @@
 import { ACTIONS, MODULE_NAMES, isActionName } from '@merfy/shell/actions';
 import { z } from 'zod';
-import type { SectionManifest } from './format';
+import { EXT_PART, extUseSchema, isExtUse, type SectionManifest } from './format';
 import type { ScriptFacts } from './script-facts';
 import { SCRIPT_CLASS } from './script-names';
 import type { TemplateMarkup } from './template-markup';
@@ -10,13 +10,14 @@ import type { TemplateMarkup } from './template-markup';
 // страницы: uses и модули действий SDK в разметке (data-action="cart.add" → cart, в uses его писать не нужно, 11г А);
 // classes — классы, которые скрипт ставит toggleClass('…'): CSS для них собирает сборка. Пишет приём секции; у строк до
 // части 5в — NULL, у секции без скрипта и без действий SDK — пустые списки.
+// "ext:<id>" (блок 9 «Секций и SDK», часть 9в; Р9в-20) — модуль расширения в uses, часть ext — в parts.
 export const scriptMetaSchema = z.strictObject({
-  uses: z.array(z.enum(MODULE_NAMES)),
-  parts: z.array(z.enum(MODULE_NAMES)),
+  uses: z.array(z.union([z.enum(MODULE_NAMES), extUseSchema])),
+  parts: z.array(z.union([z.enum(MODULE_NAMES), z.literal(EXT_PART)])),
   classes: z.array(z.string().regex(SCRIPT_CLASS)),
 });
 export type ScriptMeta = z.infer<typeof scriptMetaSchema>;
-export type SdkModule = ScriptMeta['uses'][number];
+export type SdkModule = (typeof MODULE_NAMES)[number];
 
 export const isSdkModule = (value: string): value is SdkModule => MODULE_NAMES.some((name) => name === value);
 
@@ -30,7 +31,15 @@ function markupModules(markup: TemplateMarkup): SdkModule[] {
   });
 }
 
+// uses — модули SDK и "ext:<id>" из section.json; parts — модули из uses и из разметки, часть ext — при "ext:<id>".
 export function scriptMetaOf(manifest: SectionManifest, markup: TemplateMarkup, facts: ScriptFacts | null): ScriptMeta {
-  const uses = sorted((manifest.uses ?? []).filter(isSdkModule));
-  return { uses, parts: sorted([...uses, ...markupModules(markup)]), classes: [...(facts?.classes ?? [])] };
+  const declared = manifest.uses ?? [];
+  const modules = declared.filter(isSdkModule);
+  const ext = declared.filter(isExtUse);
+  const extPart = ext.length === 0 ? [] : [EXT_PART];
+  return {
+    uses: sorted([...modules, ...ext]),
+    parts: sorted([...modules, ...markupModules(markup), ...extPart]),
+    classes: [...(facts?.classes ?? [])],
+  };
 }

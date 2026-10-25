@@ -2,7 +2,17 @@ import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { PageEntityType } from './manifest';
 import { entityKey } from './entities';
-import { recordIndexOf, recordPath, recordSlug, type RecordEntry, type RecordIndex, type RecordType } from './records';
+import { defaultRecord, previewRecordIndex } from './record-preview';
+import {
+  RECORD_TYPES,
+  recordIndexOf,
+  recordPath,
+  recordSlug,
+  type RecordEntry,
+  type RecordIndex,
+  type RecordType,
+} from './records';
+import type { PageMode } from './sections-render';
 import { HOME_PAGE, NOT_FOUND_PAGE_ID, type PageInfo } from './special-pages';
 
 // Страницы магазина новой темы (design.md блока 4, Св-1): главная и свои страницы мерчанта (блок 1 «Секций и SDK»,
@@ -68,38 +78,79 @@ interface Routes {
   byPath: ReadonlyMap<string, ShopRoute>;
 }
 
-const routesByInputs = new WeakMap<BuildInputs, Routes>();
+// Записи превью конструктора (часть 8б-2): записи магазина и примеры для видов, которых у магазина нет.
+const previewIndex = (inputs: BuildInputs): RecordIndex =>
+  previewRecordIndex(inputs.data.entities, recordIndex(inputs));
+
+// Страницы записей по режиму: в сборке и дорисовке (live) — записи с показанным шаблоном; в превью конструктора
+// (часть 8б-2) — все записи превью, и у шаблона без секций: мерчант ставит в него первую секцию. Примеры — только
+// здесь, в сборку они не попадают.
+const RECORD_ENTRIES: Readonly<Record<PageMode, (inputs: BuildInputs) => readonly RecordEntry[]>> = {
+  live: (inputs) => recordIndex(inputs).entries.filter((entry) => templateShown(inputs, entry.type)),
+  preview: (inputs) => previewIndex(inputs).entries,
+};
+
+const routesByMode: Readonly<Record<PageMode, WeakMap<BuildInputs, Routes>>> = {
+  live: new WeakMap(),
+  preview: new WeakMap(),
+};
 
 // Главная, свои страницы ревизии (/o-nas → o-nas/index.html; своя страница, как главная, — страница сайта) и страницы
-// записей с показанным шаблоном.
-function routesOf(inputs: BuildInputs): Routes {
-  const known = routesByInputs.get(inputs);
+// записей режима.
+function routesOf(inputs: BuildInputs, mode: PageMode = 'live'): Routes {
+  const known = routesByMode[mode].get(inputs);
   if (known !== undefined) return known;
   const own = (inputs.revision.pages ?? []).map(
     (page): ShopRoute => ({ id: page.id, path: page.slug, file: `${page.slug.slice(1)}/index.html`, entity: 'site' }),
   );
-  const records = recordIndex(inputs)
-    .entries.filter((entry) => templateShown(inputs, entry.type))
-    .map(recordRouteOf);
-  const list = [...SHOP_ROUTES, ...own, ...records];
+  const list = [...SHOP_ROUTES, ...own, ...RECORD_ENTRIES[mode](inputs).map(recordRouteOf)];
   const byPath = new Map([...list, NOT_FOUND_ROUTE].map((route): [string, ShopRoute] => [route.path, route]));
   const routes = { list, byPath };
-  routesByInputs.set(inputs, routes);
+  routesByMode[mode].set(inputs, routes);
   return routes;
 }
 
 export const shopRoutes = (inputs: BuildInputs): readonly ShopRoute[] => routesOf(inputs).list;
 
-// Без входов — только главная (стенд и тесты рисовальщика); со входами — и свои страницы.
-export function routeOf(path: string, inputs?: BuildInputs): ShopRoute {
+// Без входов — только главная (стенд и тесты рисовальщика); со входами — страницы сборки или, в режиме preview,
+// страницы превью конструктора (часть 8б-2).
+export function routeOf(path: string, inputs?: BuildInputs, mode: PageMode = 'live'): ShopRoute {
   const route =
-    inputs === undefined ? SHOP_ROUTES.find((candidate) => candidate.path === path) : routesOf(inputs).byPath.get(path);
+    inputs === undefined
+      ? SHOP_ROUTES.find((candidate) => candidate.path === path)
+      : routesOf(inputs, mode).byPath.get(path);
   if (route !== undefined) return route;
   throw new StorefrontBuildError('page-unknown', 'такой страницы у магазина нет', { path });
 }
 
-// Страница по id для превью одного блока (часть 7а): главная, своя страница ревизии или 404; другой id — главная.
-export function pageInfoById(inputs: BuildInputs, id: string): PageInfo {
+export const isRecordType = (value: string): value is RecordType => RECORD_TYPES.some((type) => type === value);
+
+const decodedPath = (path: string): string => {
+  try {
+    return decodeURI(path);
+  } catch {
+    return path;
+  }
+};
+
+// Запись по id или по адресу от корня — ссылке, нажатой в превью (как есть или раскодированной); чужой вид — нет.
+function recordById(index: RecordIndex, type: RecordType, id: string): RecordEntry | null {
+  const found = id.startsWith('/') ? (index.atPath(id) ?? index.atPath(decodedPath(id))) : index.find(type, id);
+  return found?.type === type ? found : null;
+}
+
+// Адрес записи шаблона в превью (часть 8б-2): запись record, иначе запись по умолчанию (record-preview.ts).
+export function previewRecordPath(inputs: BuildInputs, type: RecordType, id: string | null): string | undefined {
+  const index = previewIndex(inputs);
+  const found = id === null ? null : recordById(index, type, id);
+  return (found ?? defaultRecord(index, type))?.path;
+}
+
+// Страница по id для превью одного блока (часть 7а): главная, своя страница ревизии, 404 или шаблон записи с записью
+// record — та же, что у превью страницы (часть 8б-2); другой id — главная.
+export function pageInfoById(inputs: BuildInputs, id: string, record: string | null = null): PageInfo {
+  const path = isRecordType(id) ? previewRecordPath(inputs, id, record) : undefined;
+  if (path !== undefined) return pageInfoOf(routeOf(path, inputs, 'preview'));
   const route = [...shopRoutes(inputs), NOT_FOUND_ROUTE].find((candidate) => candidate.id === id);
   return route === undefined ? HOME_PAGE : pageInfoOf(route);
 }

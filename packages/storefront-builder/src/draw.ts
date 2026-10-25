@@ -20,6 +20,8 @@ import { readSnapshot, type SnapshotDeps } from './snapshot';
 import type { ThemeCatalog } from './theme-catalog';
 import { sectionPreview, shopPreview, shopPreviewDeps, shopSections } from './shop-preview';
 import { standTokens, themePanel, type PreviewDeps } from './stand-preview';
+import type { SdkDocs } from './sdk-docs';
+import { SECTION_BODY_LIMIT_BYTES, SECTION_TOOL_ROUTES, sectionTool, type SectionToolsDeps } from './section-tools';
 
 // Дорисовка мимо очереди (design.md блока 6, В6-2, вариант 2; Св-1 В): раздача (блок 5, nginx-minio-proxy,
 // storefront/) на промахе зовёт GET /draw?shop&build&path&render&theme и ждёт страницу. Свои места — не места сборок;
@@ -39,6 +41,10 @@ export interface DrawDeps {
   log: Log;
   // Превью конструктора (блок 8): /preview и /preview/tokens. Нет — эти адреса отвечают 404.
   preview?: PreviewDeps;
+  // Инструменты секций (/sections/check, /save, /source, /history, /rollback) и документация SDK (/sdk-docs) — блок 14
+  // «Секций и SDK». Нет — эти адреса отвечают 404.
+  sections?: SectionToolsDeps;
+  docs?: SdkDocs;
 }
 
 export interface DrawAnswer {
@@ -157,13 +163,13 @@ function send(response: ServerResponse, answer: DrawAnswer): void {
 // Тело запроса превью — правки токенов, это килобайты. Больше предела — не читаем.
 const BODY_LIMIT_BYTES = 256 * 1024;
 
-async function bodyOf(request: IncomingMessage): Promise<string> {
+async function bodyOf(request: IncomingMessage, limit = BODY_LIMIT_BYTES): Promise<string> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of request) {
     const piece = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
     size += piece.length;
-    if (size > BODY_LIMIT_BYTES) return '';
+    if (size > limit) return '';
     chunks.push(piece);
   }
   return Buffer.concat(chunks).toString('utf8');
@@ -217,6 +223,11 @@ async function route(deps: DrawDeps, request: IncomingMessage): Promise<DrawAnsw
   const url = new URL(request.url ?? '/', 'http://builder');
   if (url.pathname === '/health') return { status: 200, body: 'ok\n' };
   if (url.pathname in PREVIEW_ROUTES && deps.preview) return previewRoute(deps.preview, request, url);
+  if (url.pathname in SECTION_TOOL_ROUTES && deps.sections) {
+    const read = (): Promise<string> => bodyOf(request, SECTION_BODY_LIMIT_BYTES);
+    return sectionTool(deps.sections, request.method ?? '', url, read);
+  }
+  if (url.pathname === '/sdk-docs' && deps.docs) return deps.docs.answer(url.searchParams.get('file'));
   if (url.pathname !== '/draw') return { status: 404, body: '' };
   return drawPage(deps, Object.fromEntries(url.searchParams));
 }

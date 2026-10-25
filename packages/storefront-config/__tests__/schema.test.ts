@@ -117,3 +117,22 @@ describe('analytics в конфиге (design.md блока 11)', () => {
     );
   });
 });
+
+// Блок 8 «Секций и SDK», часть 8б-2: страница записи — вид и id записи; у остальных страниц поля нет.
+describe('page.record', () => {
+  it('вид записи и непустой id — проходит; без поля — как раньше', () => {
+    const record = { type: 'product', id: '00000000-0000-4000-8000-000000000101' };
+    expect(checkStorefrontConfig(withField('page.record', record)).page.record).toEqual(record);
+    expect(standConfig.page).not.toHaveProperty('record');
+  });
+
+  it.each<[string, string, unknown]>([
+    ['вид не из списка', 'page.record.type', { type: 'page', id: 'p-1' }],
+    ['пустой id', 'page.record.id', { type: 'product', id: '' }],
+    ['лишний ключ', 'page.record.title', { type: 'product', id: 'p-1', title: 'Шарф' }],
+  ])('%s — ошибка с путём поля', (_title, path, record) => {
+    const error = problemOf(withField('page.record', record));
+    expect(error.code).toBe('config-invalid');
+    expect(error.path).toBe(path);
+  });
+});

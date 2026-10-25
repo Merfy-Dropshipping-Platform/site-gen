@@ -80,6 +80,15 @@
 - В сборку идут HTML страниц и файлы бандлов страниц (`_merfy/b/<sha256>.js`); раздача отдаёт `_merfy/` с кэшем
   навсегда. Предупреждения бандла — строки журнала `section-script-skipped` и `page-script-heavy`.
 
+### Код секций в превью (блок 5 «Секций и SDK», часть 5г)
+
+- `GET /preview` — после двух скриптов превью JSON-тег бандла превью и `dist/preview.js` (`previewTags`,
+  `src/preview-code.ts`); байты кода — из снимка магазина (`assets`), как у сборки.
+- `POST /preview/section` — `{ html, css, script }`: `script` — `{ hash, code, uses }` (hash — 64 знака hex) или
+  `null`; у секции с кодом в HTML — тег входных данных, в CSS — классы её скрипта (`script_meta.classes`).
+- `GET /sections` — `scriptHash` у секции с кодом: конструктор перечитывает список при возврате на вкладку и шлёт
+  `update-block` экземплярам секции с другим хешем.
+
 ## Выпуск волнами (блок 10)
 
 - Ведущий волн живёт в сборщике (`src/release/conductor.ts`), состояние — в таблицах `storefront_release` и
@@ -161,6 +170,15 @@
 
 Строка журнала `route-duplicate` — `{ shopId, buildId, type, id, path, page }`: адрес по handle (`path`) занят другой
 записью; `page` — адрес, который получила запись (по id), `null` — страницы у записи нет. Сборка идёт.
+
+## Превью шаблонов и адрес нового товара (блок 8 «Секций и SDK», часть 8б-2)
+
+- `GET /preview?shop&page=<product|collection|blog|article|policy>&record=<id или адрес>` — шаблон записи с этой
+  записью; нет `record` — запись по умолчанию, записей вида нет — пример платформы. Тело превью одного блока —
+  `{ instance, menus?, theme?, page?, record? }`.
+- `product.created` с `handle` дописывает `/product/<адрес>` в список адресов магазина
+  (`storefront/entities/<магазин>.json`), `product.deleted` убирает адрес и адрес по id: nginx раздачи сразу
+  отправляет новый адрес на рендер по запросу. Сбой хранилища — строка журнала `entity-paths-failed`, событие принято.
 
 ## Журнал и p95
 

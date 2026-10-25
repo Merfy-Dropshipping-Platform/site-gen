@@ -69,7 +69,9 @@ describe('readShellBuild: поведения', () => {
 
   it('другой текст файла поведения или ядра — другой hash', async () => {
     const base = await readShellBuild(await fakeRoot(built()));
-    const kit = await readShellBuild(await fakeRoot(built({ 'behaviors/reveal.js': 'export const reveal = { v: 2 };' })));
+    const kit = await readShellBuild(
+      await fakeRoot(built({ 'behaviors/reveal.js': 'export const reveal = { v: 2 };' })),
+    );
     const core = await readShellBuild(await fakeRoot(built({ 'core.js': `${CORE_JS} // 2` })));
     expect(new Set([base.hash, kit.hash, core.hash]).size).toBe(3);
   });
@@ -87,5 +89,16 @@ describe('readShellBuild: поведения', () => {
     });
     const strange = { ...MANIFEST, entries: { ...MANIFEST.entries, accordion: entry('../core.js') } };
     await expect(readShellBuild(await fakeRoot(built({}, strange)))).rejects.toMatchObject({ code: 'shell-missing' });
+  });
+});
+
+// Скрипт превью в сборке ядра (блок 5, часть 5г, Р5г-11): dist/preview.js — ShellBuild.preview, в hash не входит.
+describe('readShellBuild: скрипт превью', () => {
+  it('preview — текст dist/preview.js, hash тот же; нет файла — ключа нет', async () => {
+    const plain = await readShellBuild(await fakeRoot(built()));
+    const withPreview = await readShellBuild(await fakeRoot(built({ 'preview.js': '(() => {})();' })));
+    expect(withPreview.preview).toBe('(() => {})();');
+    expect(withPreview.hash).toBe(plain.hash);
+    expect('preview' in plain).toBe(false);
   });
 });

@@ -182,6 +182,23 @@ describe("превью новой темы — от сборщика, нынеш
     ]);
   });
 
+  it("превью шаблона записи — record уходит к сборщику; пустой record — без ключа", async () => {
+    await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/preview?page=product&record=p-1`,
+    );
+    await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/preview?page=product&record=%2Fproduct%2Fsharf`,
+    );
+    await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/preview?page=product&record=`,
+    );
+    expect(seen.map((call) => call.url)).toEqual([
+      `/preview?shop=${NEW_SITE}&page=product&record=p-1`,
+      `/preview?shop=${NEW_SITE}&page=product&record=%2Fproduct%2Fsharf`,
+      `/preview?shop=${NEW_SITE}&page=product`,
+    ]);
+  });
+
   it("один блок превью новой темы — POST к сборщику с телом; нынешний магазин — старый блок", async () => {
     const block = {
       instance: {

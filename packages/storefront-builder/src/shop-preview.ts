@@ -3,9 +3,11 @@ import {
   NOT_FOUND_ROUTE,
   PREVIEW_AGENT,
   PREVIEW_SECTIONS_AGENT,
+  isRecordType,
   pageInfoById,
   pagePropsOf,
   parseBuildInputs,
+  previewRecordPath,
   renderPlacedSections,
   renderShopPage,
   type BuildInputs,
@@ -32,6 +34,14 @@ import { z } from 'zod';
 import { instanceSchema, readVisibleSections, wrapperOf, type SectionInstance } from './code';
 import type { DrawAnswer } from './draw';
 import { inlineAssets } from './inline-assets';
+import {
+  previewScriptOf,
+  previewTags,
+  scriptHashOf,
+  scriptPlacedOf,
+  type PreviewInputs,
+  type PreviewShell,
+} from './preview-code';
 import { inlineFonts } from './preview-fonts';
 import { withPreviewPolicy } from './preview-policy';
 import { readSnapshot } from './snapshot';
@@ -51,17 +61,19 @@ export interface PreviewShop {
 export interface ShopPreviewDeps {
   shop: (rawShop: string | null) => Promise<PreviewShop | DrawAnswer>;
   stand: (rawShop: string | null) => Promise<DrawAnswer>;
-  inputs: (shopId: string) => Promise<{ inputs: BuildInputs; renders: ReadonlyMap<string, string> }>;
+  inputs: (shopId: string) => Promise<PreviewInputs>;
   theme: (id: string, version: string) => Promise<ShopTheme>;
   sections: (shopId: string) => Promise<ReadonlyMap<string, CurrentSection> | null>;
   render: (shopId: string, request: SectionRenderRequest) => Promise<string>;
   fonts: (css: string) => Promise<string>;
+  // Сборка ядра сервиса (блок 5, часть 5г): её части — uses кода секции до части 5в; нет — uses пустой.
+  shell?: PreviewShell;
 }
 
 const HOME_PAGES: ReadonlySet<string> = new Set(['', '/', 'home']);
 const FONTS_STYLE = /<style id="merfy-fonts">([\s\S]*?)<\/style>/;
 const TEXT = {
-  page: 'в превью есть главная (page=home), страница 404 (page=not-found), свои страницы (page=<id страницы>) и стенд темы (page=stand)',
+  page: 'в превью есть главная (page=home), страница 404 (page=not-found), свои страницы (page=<id страницы>), шаблоны записей (page=product, collection, blog, article или policy; запись — record=<id или адрес>) и стенд темы (page=stand)',
   block: 'нужно тело JSON { instance: { id, section, settings }, menus?, theme?, page? }',
   section: (name: string) => `секции ${name} у магазина нет`,
   extensions: 'сервис расширений не ответил',
@@ -73,6 +85,8 @@ const blockSchema = z.object({
   theme: z.record(z.string(), z.unknown()).optional(),
   // Часть 7а блока 7: id страницы, на которой стоит блок; нет или неизвестный — главная.
   page: z.string().optional(),
+  // Блок 8, часть 8б-2: запись шаблона (id или адрес), на странице которого стоит блок; нет — запись по умолчанию.
+  record: z.string().optional(),
 });
 
 const isPreviewAnswer = (value: PreviewShop | DrawAnswer): value is DrawAnswer => 'status' in value;
@@ -91,12 +105,13 @@ export const shopPreviewDeps = (preview: PreviewDeps): ShopPreviewDeps => ({
   stand: (rawShop) => standPreview(preview, rawShop),
   inputs: async (shopId) => {
     const snapshot = await readSnapshot(preview.snapshot, shopId);
-    return { inputs: parseBuildInputs(snapshot.inputs), renders: snapshot.assets.renders };
+    return { inputs: parseBuildInputs(snapshot.inputs), renders: snapshot.assets.renders, assets: snapshot.assets };
   },
   theme: async (id, version) => (await preview.catalog.themeAt(id, version)).build,
   sections: (shopId) => readVisibleSections(preview.snapshot.code, shopId),
   render: (shopId, request) => preview.renderers.render(shopId, request),
   fonts: (css) => inlineFonts(css, preview.fonts),
+  shell: preview.snapshot.code.shell,
 });
 
 const previewPage = (deps: ShopPreviewDeps, shopId: string, modules: ReadonlyMap<string, string>): PageRender => ({
@@ -139,11 +154,19 @@ function withoutFontPreloads(html: string): string {
   return html.replace(LINK_TAG, (tag) => (isFontPreload(tag) ? '' : tag));
 }
 
-// Адрес страницы превью: главная, страница 404 (часть 7а; всегда темой — это поверхность правки) или своя страница.
-function previewPathOf(inputs: BuildInputs, page: string): string | undefined {
+// Адрес страницы превью: главная, страница 404 (часть 7а; всегда темой — это поверхность правки), шаблон записи с
+// записью (часть 8б-2: по id или адресу, иначе по умолчанию) или своя страница.
+function previewPathOf(inputs: BuildInputs, page: string, record: string | null): string | undefined {
   if (HOME_PAGES.has(page)) return '/';
   if (page === NOT_FOUND_PAGE_ID) return NOT_FOUND_ROUTE.path;
+  if (isRecordType(page)) return previewRecordPath(inputs, page, record);
   return inputs.revision.pages?.find((candidate) => candidate.id === page)?.slug;
+}
+
+// Запись шаблона из адреса превью: нет параметра или пустой — запись по умолчанию.
+function recordOf(url: URL): string | null {
+  const record = url.searchParams.get('record') ?? '';
+  return record === '' ? null : record;
 }
 
 export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<DrawAnswer> {
@@ -152,15 +175,17 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   if (page === 'stand') return deps.stand(rawShop);
   const found = await deps.shop(rawShop);
   if (isPreviewAnswer(found)) return found;
-  const { inputs, renders } = await deps.inputs(found.shopId);
-  // Главная или своя страница по id (часть 4, Р1-4-9): адрес — из ревизии; другой страницы в превью нет.
-  const path = previewPathOf(inputs, page);
+  const { inputs, renders, assets } = await deps.inputs(found.shopId);
+  // Главная, своя страница по id (часть 4, Р1-4-9) или шаблон записи (часть 8б-2); другой страницы в превью нет.
+  const path = previewPathOf(inputs, page, recordOf(url));
   if (path === undefined) return answer(404, TEXT.page);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
   const rendered = await renderShopPage(inputs, path, theme, previewPage(deps, found.shopId, renders));
-  // Оба скрипта превью (1а-13): слушатель токенов и скрипт секций — select-block, update-block, reconcile.
+  // Оба скрипта превью (1а-13): слушатель токенов и скрипт секций — select-block, update-block, reconcile. За ними —
+  // код страницы (блок 5, часть 5г): JSON-тег бандла превью и скрипт превью; нет снимка кода — без них.
   const agents = `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script>`;
-  const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), agents);
+  const code = await previewTags(inputs, assets);
+  const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), `${agents}${code}`);
   return answer(200, withPreviewPolicy(found.inline(withoutFontPreloads(await inlinePageFonts(html, deps)))));
 }
 
@@ -177,7 +202,7 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   if (isPreviewAnswer(found)) return found;
   const parsed = blockSchema.safeParse(jsonOf(body));
   if (!parsed.success) return jsonAnswer(400, { problems: [TEXT.block] });
-  const { instance, menus, theme, page } = parsed.data;
+  const { instance, menus, theme, page, record } = parsed.data;
   const sections = await deps.sections(found.shopId);
   if (sections === null) return jsonAnswer(502, { problems: [TEXT.extensions] });
   const current = sections.get(instance.section);
@@ -193,13 +218,15 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   const placed = previewPlaced(instance, current, settings, blocks, menus ?? [], current.renderHash);
   // page — у каждой секции (часть 7а): без page и без uses пропсы не читаются, страница — главная.
   const needsProps = propsUsesOf(current.manifest).length > 0 || page !== undefined;
-  const props = needsProps ? await previewProps(deps, found.shopId, theme, page) : undefined;
+  const props = needsProps ? await previewProps(deps, found.shopId, theme, page, record) : undefined;
   const modules = new Map([[current.renderHash, current.render]]);
   const content = await renderPlacedSections([placed], found.dictionary, {
     ...previewPage(deps, found.shopId, modules),
     props,
   });
-  return jsonAnswer(200, { html: content.sections[0] ?? '', css: content.sectionsCss });
+  // Код секции (блок 5, часть 5г): скрипт секций превью передаёт его скрипту превью; нет кода — null.
+  const script = previewScriptOf(current, deps.shell ?? null);
+  return jsonAnswer(200, { html: content.sections[0] ?? '', css: content.sectionsCss, script });
 }
 
 // Экземпляр превью: блоки, деревья меню и uses — только те ключи, что у секции есть.
@@ -221,6 +248,7 @@ function previewPlaced(
     ...blocks,
     ...(Object.keys(trees).length === 0 ? {} : { menus: trees }),
     ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),
+    ...scriptPlacedOf(current),
   };
 }
 
@@ -230,11 +258,13 @@ async function previewProps(
   shopId: string,
   themeEdits: unknown,
   pageId = 'home',
+  record?: string,
 ): Promise<PageProps> {
   const { inputs } = await deps.inputs(shopId);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
   const props = pagePropsOf(inputs, theme, themeEdits ?? inputs.revision.settings ?? {});
-  return { ...props, page: pageInfoById(inputs, pageId) };
+  // Блок на шаблоне записи (часть 8б-2): запись record — та же, что у превью страницы.
+  return { ...props, page: pageInfoById(inputs, pageId, record ?? null) };
 }
 
 export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null): Promise<DrawAnswer> {
@@ -257,6 +287,8 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
         ? {}
         : { blocks: section.manifest.blocks, defaultBlocks: section.manifest.defaultBlocks ?? [] }),
       ...placeKeys(section.manifest),
+      // Хеш кода секции (блок 5, часть 5г): по нему конструктор видит новую версию кода.
+      ...scriptHashOf(section),
     }));
   return jsonAnswer(200, { sections: list, wrapper: WRAPPER_FIELDS });
 }

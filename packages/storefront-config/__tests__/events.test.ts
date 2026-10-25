@@ -62,6 +62,7 @@ describe('события пересборки (design.md блока 3, 5.7)', ()
       ['theme-release', 'new', 'theme-stores', 'works'],
       ['platform-release', 'new', 'theme-stores', 'works'],
       ['extension-release', 'new', 'theme-stores', 'works'],
+      ['section-rollback', 'new', 'store', 'works'],
       ['domain-change', 'new', 'store', 'works'],
       ['shop-name-change', 'new', 'store', 'works'],
       ['policy-change', 'new', 'store', 'works'],

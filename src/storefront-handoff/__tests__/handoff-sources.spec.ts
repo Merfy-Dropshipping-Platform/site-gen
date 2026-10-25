@@ -82,6 +82,7 @@ describe("источники событий сборщика", () => {
     expect(builderTriggered.map((event) => event.id).sort()).toEqual([
       "extension-release",
       "platform-release",
+      "section-rollback",
       "theme-release",
     ]);
   });

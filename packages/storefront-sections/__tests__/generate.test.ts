@@ -148,7 +148,8 @@ describe('что внутри', () => {
       '## Поведение',
       '## Нет в словаре',
     ]);
-    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(56);
+    // Блок 11, часть 11б: шесть новых имён — шесть строк таблиц.
+    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(62);
     expect(markdown.endsWith(' |\n')).toBe(true);
   });
 });

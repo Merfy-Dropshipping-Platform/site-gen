@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { StorefrontConfigError, type StorefrontConfigErrorCode } from './errors';
 import { storefrontExtensionsSchema } from './extensions';
+import { themeSettingsSchema } from './theme-settings';
 
 // Схема конфига витрины v1 (design.md блока 3, 5.2) — единственное место правил. Строгая на всех уровнях:
 // незнакомый ключ — ошибка. Тип StorefrontConfig выводится из неё, JSON Schema пишет команда generate.
@@ -77,6 +78,8 @@ const configShape = z.strictObject({
   theme: z.strictObject({
     id: kebabId,
     version: z.string().regex(SEMVER, { error: 'нужна версия semver: 1.2.3' }),
+    // Сквозные настройки темы для ctx.theme (блок 9 «Секций и SDK», часть 9б); нет панели темы — поля нет.
+    settings: themeSettingsSchema.optional(),
   }),
   // Страница записи (часть 8б-2): вид и id записи — для аналитики товара (блок 13) и сторов расширений; у главной,
   // своих страниц и 404 ключа нет.

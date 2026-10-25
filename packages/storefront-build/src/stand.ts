@@ -81,11 +81,12 @@ function shopUrl(publicUrl: string | null): string | null {
 const shopName = (name: string, url: string | null): string =>
   name.trim() || (url === null ? '' : new URL(url).host) || SHOP_NAME_FALLBACK;
 
-function standConfig(inputs: StandInputs, mode: StandView) {
+// settings — значения настроек стенда (locals.settings): сквозные из них — в theme.settings конфига (часть 9б).
+function standConfig(inputs: StandInputs, mode: StandView, settings: Readonly<Record<string, unknown>>) {
   const publicUrl = shopUrl(inputs.site.publicUrl);
   return buildStorefrontConfig({
     site: { id: inputs.site.id, name: shopName(inputs.site.name, publicUrl), publicUrl },
-    theme: inputs.theme,
+    theme: { ...inputs.theme, settings },
     env: inputs.env,
     page: { id: 'theme-stand', path: STAND_PAGE_PATH },
     mode,
@@ -94,16 +95,17 @@ function standConfig(inputs: StandInputs, mode: StandView) {
 }
 
 export function standLocals(inputs: StandInputs, theme: StandTheme, view: StandView = 'preview'): StandPageLocals {
-  const config = standConfig(inputs, view);
+  const settings = readSettingsEdits(theme.panel, inputs.revision.settings ?? {});
+  const values = resolveSettings(theme.panel, settings.edits);
+  const config = standConfig(inputs, view, values);
   const name = config.shop.name;
   const tokens = readTokenEdits(theme.tokens.dictionary, theme.tokens.tokens, inputs.revision.tokens ?? {});
-  const settings = readSettingsEdits(theme.panel, inputs.revision.settings ?? {});
   const { css, fontsCss, attributes } = previewTokens(theme.tokens, tokens.edits);
   const previewScript = view === 'preview' ? PREVIEW_AGENT : '';
   return {
     head: { title: STAND_TITLE, configHtml: configTag(config), fontsCss, tokensCss: css, previewScript },
     attributes,
-    settings: resolveSettings(theme.panel, settings.edits),
+    settings: values,
     shop: { name },
     schemes: Object.keys(theme.tokens.tokens.schemes),
     config: {
@@ -116,13 +118,13 @@ export function standLocals(inputs: StandInputs, theme: StandTheme, view: StandV
   };
 }
 
-// Входы стенда из входов сборки. Настройки не про вид (логотип, баннер cookie) сборка пока не читает — у стенда их
-// умолчания.
+// Входы стенда из входов сборки. Правки настроек — из опубликованной ревизии, как у страниц магазина (блок 9 «Секций и
+// SDK», часть 9б): сквозные из них стенд отдаёт в theme.settings конфига.
 const standInputsOf = (inputs: BuildInputs): StandInputs => ({
   site: { id: inputs.site.id, name: inputs.site.name, publicUrl: inputs.site.publicUrl },
   theme: { id: inputs.theme.id, version: inputs.theme.version },
   env: inputs.env,
-  revision: { tokens: inputs.revision.tokens, settings: {} },
+  revision: { tokens: inputs.revision.tokens, settings: inputs.revision.settings ?? {} },
 });
 
 // Страница стенда в сборке — страница сайта, как главная: её перерисовывает та же правка магазина.

@@ -135,7 +135,8 @@
   `defineSection(…)` снимаются, `a[k]` — через помощник (только собственные поля; запись служебного поля — исключение),
   потом сжатие.
 - **Сверка имён** (`src/script-names.ts`, таблица `NAME_RULES`): `event-unknown` — `ctx.listen('…')` по каталогу событий
-  ядра; `action-unknown` — `data-action` по `actions` секции, действиям SDK и событиям ядра; `class-arbitrary` — класс
+  ядра; `action-unknown` — `data-action` по `actions` секции, действиям SDK и событиям ядра; `theme-setting-unknown` —
+  `ctx.theme['…']` по сквозным настройкам темы (`NAMES.shared`, блок 9, часть 9б); `class-arbitrary` — класс
   `toggleClass('…')` не вида утилиты. Новый код — строка таблицы и код в `PROBLEM_CODES`.
 - **`uses`** — `theme`, `shop` (данные шаблона) и модули SDK `cart`, `favorites`, `auth`, `newsletter`; в шаблон и входы
   сборки — только `theme` и `shop` (`propsUsesOf`).

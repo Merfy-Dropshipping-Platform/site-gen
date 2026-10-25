@@ -1093,6 +1093,12 @@ const { page } = Astro.props;
 
 Как исправить: Объяви действие в defineSection или возьми имя из каталога: actions.md..
 
+## theme-setting-unknown
+
+Когда: `ctx.theme` читает настройку темы, которой нет в сквозных настройках панели.
+
+Как исправить: Возьми имя из сквозных настроек: logo-image, social-*, cart-type, cookie-banner-enabled..
+
 ## script-heavy
 
 Когда: Скрипт после сжатия больше порога предупреждения; секция сохраняется.

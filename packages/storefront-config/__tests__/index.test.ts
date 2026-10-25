@@ -9,6 +9,7 @@ describe('API пакета (design.md блока 3, раздел 6)', () => {
       'COUNTER_NUMBERS',
       'EXT_USE_PREFIX',
       'StorefrontConfigError',
+      'THEME_SETTING_NAMES',
       'buildStorefrontConfig',
       'configTag',
       'escapeScriptJson',

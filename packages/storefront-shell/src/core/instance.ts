@@ -8,7 +8,16 @@ import { createCtx, type CtxDeps } from './ctx';
 import { EXT_USE_PREFIX } from './ext-registry';
 import { readSectionInput, type SectionInput } from './input';
 import type { KeyValue } from './storage';
-import type { BaseCtx, FailureStage, InstanceHost, Mode, Result, SectionEntry, SectionFailureDetail } from './types';
+import type {
+  BaseCtx,
+  FailureStage,
+  InstanceHost,
+  Mode,
+  Result,
+  SectionEntry,
+  SectionFailureDetail,
+  ThemeSettings,
+} from './types';
 
 // Запуск и снятие экземпляра секции (design.md блока 5, разделы 3.6 и 3.7): входные данные, ctx, attach частей до
 // mount, предохранитель на весь код секции, сбой — на экземпляр. Экземпляр есть и у секции без скрипта с разметкой SDK.
@@ -32,6 +41,7 @@ export interface InstanceRuntime {
   apiOfPart(name: string): unknown; // API созданной части платформы; части нет — null; секциям не отдаётся
   attachAll(host: InstanceHost): void; // attach частей с их API; ошибка в части — строка в консоли
   markup(name: string): MarkupCall | null; // 'cart.add' → действие add части cart
+  readonly theme: Readonly<ThemeSettings>; // ctx.theme: один замороженный объект на страницу (блок 9, часть 9б)
 }
 
 export interface Instance {
@@ -226,6 +236,7 @@ const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: Sectio
   run: state.run,
   signal: state.controller.signal,
   page: runtime.page,
+  theme: runtime.theme,
   name: state.name,
   id: state.id,
   mode: runtime.mode,

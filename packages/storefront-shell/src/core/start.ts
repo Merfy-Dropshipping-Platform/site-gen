@@ -9,6 +9,7 @@ import { EXT_PART_NAME, EXT_USE_PREFIX, extModuleOf } from './ext-registry';
 import { SDK_MARKUP_SELECTOR, startInstance, type Instance, type InstanceRuntime, type MarkupCall } from './instance';
 import { navigationType, watchPage } from './page-events';
 import { pageStorage, type KeyValue } from './storage';
+import { emitCore } from './notice-fallback';
 import type {
   CoreHandle,
   EventDetail,
@@ -72,6 +73,11 @@ function readConfig(win: Window): { config: StorefrontConfig | null; mode: Mode 
   }
 }
 
+// ctx.theme (блок 9 «Секций и SDK», часть 9б): сквозные настройки темы из конфига страницы — один замороженный объект на
+// страницу, общий для секций. Нет конфига или theme.settings — пустой объект.
+const themeOf = (config: StorefrontConfig | null): InstanceRuntime['theme'] =>
+  Object.freeze({ ...config?.theme.settings });
+
 interface CoreParts {
   readonly core: CoreHandle;
   readonly started: readonly StartedPart[];
@@ -85,7 +91,7 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
   const core: CoreHandle = Object.freeze({
     config,
     mode,
-    emit: <E extends EventName>(name: E, detail: EventDetail<E>): void => bus.emit(name, detail),
+    emit: <E extends EventName>(name: E, detail: EventDetail<E>): void => emitCore(bus, name, detail),
     part: <N extends ModuleName>(name: N): Modules[N] => apiOf(name),
   });
 
@@ -146,7 +152,7 @@ function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts
   };
   // API созданной части платформы по имени (для ядра, не для кода секций): так ctx.animate получает провайдер behaviors.
   const apiOfPart = (name: string): unknown => parts.started.find(({ part }) => part.name === name)?.api ?? null;
-  return { win, mode, bus, page, partApi, apiOfPart, attachAll, markup };
+  return { win, mode, bus, page, partApi, apiOfPart, attachAll, markup, theme: themeOf(parts.core.config) };
 }
 
 const startFor = (

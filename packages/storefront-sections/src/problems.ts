@@ -31,6 +31,8 @@ export const PROBLEM_CODES = [
   'sdk-only',
   'event-unknown',
   'action-unknown',
+  // ctx.theme['<имя>'] не из сквозных настроек темы (блок 9 «Секций и SDK», часть 9б).
+  'theme-setting-unknown',
   'script-heavy',
   'script-too-heavy',
   'build-timeout',

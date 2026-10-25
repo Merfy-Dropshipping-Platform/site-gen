@@ -26,6 +26,7 @@ import { createPreviewRenderers } from './preview-renderers';
 import { openRpc } from './rpc';
 import { enqueueVia, startRuntime, type RuntimeDeps } from './runtime';
 import { storeFontBytes } from './preview-fonts';
+import { roleRollback } from './role-rollback';
 import { consumeSectionErrors } from './section-error-store';
 import { RETRY_DELAYS_MS, readSettings } from './settings';
 import { createSlots } from './slots';
@@ -164,8 +165,16 @@ const deps: RuntimeDeps = {
 };
 
 const runtime = await startRuntime(deps);
-// Ошибки секций из браузеров (блок 11, часть 4): очередь шлюза → таблица storefront_section_error.
-await consumeSectionErrors({ broker, db, log });
+// Ошибки секций из браузеров (блок 11, часть 4): очередь шлюза → таблица storefront_section_error. Секции с ролью —
+// счёт под замком магазина и откат по порогу (блок 12 «Секций и SDK», часть 12в).
+const rollback = roleRollback({
+  db,
+  publishEvent: broker.publishEvent,
+  publishActivity: broker.publishActivity,
+  clock,
+  log,
+});
+await consumeSectionErrors({ broker, db, log, roles: { db, after: rollback } });
 // Выпуск платформы (задача 11): новый образ — новый код платформы (renderHash, в нём ядро и секции платформы); тот же
 // отпечаток — ничего. Заводится до подписки: resume ниже сразу поведёт его волну 0.
 const platformRelease = {

@@ -2,8 +2,8 @@ import type { SectionFailure } from '@merfy/storefront-build';
 import { z } from 'zod';
 import { SECTION_ERRORS_QUEUE, type Broker } from './broker';
 import type { Log } from './log';
-import { parseSectionErrors, type SectionErrorBatch } from './section-errors';
-import type { Queryable } from './shop-state';
+import { SECTION_ERROR_STAGES, parseSectionErrors, type SectionErrorBatch } from './section-errors';
+import type { Database, Queryable } from './shop-state';
 
 // Таблица storefront_section_error базы sites (план блока 11 «Каркаса витрины», часть 4; drizzle/*_storefront_section_
 // error.sql) и потребитель очереди storefront_section_errors. Счёт для автостопа выпуска (блок 10) —
@@ -76,6 +76,9 @@ export interface SectionErrorDeps {
   broker: Pick<Broker, 'consume'>;
   db: Queryable;
   log: Log;
+  // Блок 12, часть 12в: запись под замком магазина, счёт секций с ролью и откат по порогу (role-rollback.ts). Нет —
+  // только запись, как в блоке 11.
+  roles?: { db: Database; after: AfterCounted };
 }
 
 export async function recordSectionErrors(db: Queryable, batch: SectionErrorBatch): Promise<RecordedErrors> {
@@ -139,12 +142,121 @@ export async function sectionErrorSummary(db: Queryable, since: Date): Promise<S
   return summaryRowSchema.array().parse(rows);
 }
 
+// Порог ошибок секции из браузеров (блок 12 «Секций и SDK», часть 12в; design.md блока 12, В12-1 А): сумма count по
+// магазину, секции и отпечатку скрипта за окно — последние SECTION_ERROR_WINDOW_MINUTES минут, считая минуту пачки.
+// Автостоп выпуска по ошибкам из браузеров (блок 10 каркаса) ещё не написан — когда появится, берёт эти же значения.
+// Значения — до замера на магазинах с покупателями (риск 1 блока 12: ложный откат).
+export const SECTION_ERROR_WINDOW_MINUTES = 15;
+export const SECTION_ERROR_LIMIT = 10;
+const MINUTE_MS = 60_000;
+// Только ошибки из браузеров: ошибки рендера пишет сборка с отпечатком модуля рендера (recordRenderErrors).
+const BROWSER_STAGES: string[] = [...SECTION_ERROR_STAGES];
+
+// Секция с ролью из пачки: сумма за окно после пачки (errors) и до неё (before), самая частая ошибка окна.
+export interface RoleErrorCount {
+  section: string;
+  role: string;
+  title: string;
+  scriptHash: string;
+  errors: number;
+  before: number;
+  stage: string;
+  message: string;
+}
+
+export interface CountedErrors extends RecordedErrors {
+  roles: RoleErrorCount[];
+}
+
+// Что делать после записи и счёта (role-rollback.ts) — передаётся зависимостью: модуль отката читает этот.
+export type AfterCounted = (batch: SectionErrorBatch, counted: CountedErrors) => Promise<void>;
+
+const SHOP_ERRORS_LOCK_SQL = 'SELECT pg_advisory_xact_lock(hashtext($1))';
+// Своя секция магазина на витрине, с ролью и тем же отпечатком, что у ошибок пачки; ошибок нет — строки нет.
+const ROLE_COUNTS_SQL = `
+SELECT s.name AS section, s.manifest->>'role' AS role, coalesce(s.manifest->>'title', s.name) AS title,
+  s.script_hash AS "scriptHash", w.errors, top.stage, top.message
+FROM storefront_section s
+CROSS JOIN LATERAL (
+  SELECT sum(e.count)::int AS errors FROM storefront_section_error e
+  WHERE e.site_id = $1 AND e.section = s.name AND e.script_hash = s.script_hash
+    AND e.minute >= $2::timestamptz AND e.stage = ANY($3::text[])
+) w
+CROSS JOIN LATERAL (
+  SELECT e.stage, e.message FROM storefront_section_error e
+  WHERE e.site_id = $1 AND e.section = s.name AND e.script_hash = s.script_hash
+    AND e.minute >= $2::timestamptz AND e.stage = ANY($3::text[])
+  GROUP BY e.stage, e.message
+  ORDER BY sum(e.count) DESC, e.message COLLATE "C"
+  LIMIT 1
+) top
+WHERE s.author = 'shop' AND s.owner = $1 AND s.published AND s.manifest ? 'role'
+  AND (s.name, s.script_hash) IN (SELECT * FROM unnest($4::text[], $5::text[]))
+ORDER BY s.name COLLATE "C"`;
+
+const roleCountRow = z.object({
+  section: z.string(),
+  role: z.string(),
+  title: z.string(),
+  scriptHash: z.string(),
+  errors: z.number().int(),
+  stage: z.string(),
+  message: z.string(),
+});
+
+// Начало окна: минута пачки минус (окно − 1) минут.
+export const windowStart = (minute: string): string =>
+  new Date(Date.parse(minute) - (SECTION_ERROR_WINDOW_MINUTES - 1) * MINUTE_MS).toISOString();
+
+const ownCount = (batch: SectionErrorBatch, section: string, scriptHash: string): number =>
+  batch.rows
+    .filter((row) => row.section === section && row.scriptHash === scriptHash)
+    .reduce((sum, row) => sum + row.count, 0);
+
+async function roleCounts(client: Queryable, batch: SectionErrorBatch): Promise<RoleErrorCount[]> {
+  const sections = batch.rows.map((row) => row.section);
+  const hashes = batch.rows.map((row) => row.scriptHash);
+  const params = [batch.shopId, windowStart(batch.minute), BROWSER_STAGES, sections, hashes];
+  const { rows } = await client.query(ROLE_COUNTS_SQL, params);
+  return rows.map((row) => {
+    const count = roleCountRow.parse(row);
+    return { ...count, before: count.errors - ownCount(batch, count.section, count.scriptHash) };
+  });
+}
+
+// Запись пачки и счёт секций с ролью — одна транзакция под замком магазина: пачки одного магазина считаются по очереди,
+// поэтому before — точно сумма до этой пачки. Ничего не записано (магазина у сборщика нет) — счёта нет.
+export async function recordCounted(db: Database, batch: SectionErrorBatch): Promise<CountedErrors> {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(SHOP_ERRORS_LOCK_SQL, [`storefront_section_error:${batch.shopId}`]);
+    const recorded = await recordSectionErrors(client, batch);
+    const roles = recorded.written === 0 ? [] : await roleCounts(client, batch);
+    await client.query('COMMIT');
+    return { ...recorded, roles };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 // Потребитель очереди шлюза. Негодное сообщение — message-invalid: брокер пишет строку журнала и подтверждает его;
 // база недоступна — сообщение вернётся в очередь (broker.ts, deliver).
 export async function consumeSectionErrors(deps: SectionErrorDeps): Promise<void> {
   await deps.broker.consume(SECTION_ERRORS_QUEUE, SECTION_ERRORS_PREFETCH, async ({ body }) => {
     const batch = parseSectionErrors(body);
-    const recorded = await recordSectionErrors(deps.db, batch);
-    deps.log('section-errors', { shopId: batch.shopId, minute: batch.minute, ...recorded });
+    const { roles } = deps;
+    if (roles === undefined) {
+      const recorded = await recordSectionErrors(deps.db, batch);
+      deps.log('section-errors', { shopId: batch.shopId, minute: batch.minute, ...recorded });
+      return;
+    }
+    const counted = await recordCounted(roles.db, batch);
+    const { written, skipped } = counted;
+    deps.log('section-errors', { shopId: batch.shopId, minute: batch.minute, written, skipped });
+    await roles.after(batch, counted);
   });
 }

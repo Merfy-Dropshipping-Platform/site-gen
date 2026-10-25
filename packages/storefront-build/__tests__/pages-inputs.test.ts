@@ -155,3 +155,16 @@ describe('адреса шаблонов записей заняты (блок 8 
     }
   });
 });
+
+describe('адрес каталога занят (блок 11 «Секций и SDK», часть 11а)', () => {
+  it('своя страница /catalog — inputs-invalid', () => {
+    const inputs = changedInputs((changed) => {
+      part4(changed);
+      changed.revision.pages = [{ ...PAGE, slug: '/catalog' }];
+    });
+    expect(errorOf(() => parseBuildInputs(inputs))).toMatchObject({
+      code: 'inputs-invalid',
+      path: 'revision.pages.0.slug',
+    });
+  });
+});

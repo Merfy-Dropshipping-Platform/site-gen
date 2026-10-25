@@ -18,13 +18,25 @@ describe('особые страницы платформы', () => {
       { id: 'home', name: 'Главная', slug: '/' },
       { id: 'product', name: 'Товар', slug: '/product/:slug' },
       { id: 'collection', name: 'Коллекция', slug: '/collections/:slug' },
+      { id: 'catalog', name: 'Каталог', slug: '/catalog' },
       { id: 'blog', name: 'Блог', slug: '/blogs/:slug' },
       { id: 'article', name: 'Запись блога', slug: '/blogs/:blog/:slug' },
       { id: 'policy', name: 'Политика', slug: '/legal/:slug' },
       { id: 'not-found', name: 'Страница 404', slug: '/404' },
     ]);
-    expect([...SPECIAL_PAGE_IDS]).toEqual(['home', ...RECORD_TYPES, 'not-found']);
-    expect([...SPECIAL_PAGE_SLUGS]).toEqual(['/', '/product', '/collections', '/blogs', '/legal', '/404']);
+    // Каталог (блок 11, Р11а-1) — после «Коллекции».
+    expect([...SPECIAL_PAGE_IDS]).toEqual([
+      'home',
+      'product',
+      'collection',
+      'catalog',
+      'blog',
+      'article',
+      'policy',
+      'not-found',
+    ]);
+    expect(RECORD_TYPES.every((type) => SPECIAL_PAGE_IDS.has(type))).toBe(true);
+    expect([...SPECIAL_PAGE_SLUGS]).toEqual(['/', '/product', '/collections', '/catalog', '/blogs', '/legal', '/404']);
     expect(SPECIAL_PAGE_IDS.has(NOT_FOUND_PAGE_ID)).toBe(true);
     expect(HOME_PAGE).toEqual({ id: 'home', path: '/' });
   });

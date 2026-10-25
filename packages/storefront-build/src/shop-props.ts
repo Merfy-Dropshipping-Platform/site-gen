@@ -22,6 +22,9 @@ export interface ShopProps {
   contacts: { phone: string; email: string; fields: ShopContactField[] };
   policies: ShopPolicy[];
   payments: { online: boolean };
+  // Адрес каталога (блок 11 «Секций и SDK», Р11а-2): /catalog, если страница каталога есть; нет — null. Ключ
+  // необязательный: данные магазина в тестах секций и запросы рендера старой формы его не знают, процесс рендера даёт null.
+  catalogUrl?: string | null;
 }
 
 export const EMPTY_SHOP: ShopProps = {
@@ -29,6 +32,7 @@ export const EMPTY_SHOP: ShopProps = {
   contacts: { phone: '', email: '', fields: [] },
   policies: [],
   payments: { online: false },
+  catalogUrl: null,
 };
 
 // Тип политики, адрес страницы и название — POLICY_PAGES (records.ts, блок 8 «Секций и SDK», часть 8а): тот же список,
@@ -61,7 +65,7 @@ function policiesOf(entities: readonly Entity[]): ShopPolicy[] {
   });
 }
 
-export function shopPropsOf(name: string, entities: readonly Entity[]): ShopProps {
+export function shopPropsOf(name: string, entities: readonly Entity[], catalogUrl: string | null = null): ShopProps {
   const fields = contactFieldsOf(entities);
   const email = fields.find((field) => isEmail(field.value) || EMAIL_LABEL.test(field.label));
   const phone = fields.find((field) => field !== email && (isPhone(field.value) || PHONE_LABEL.test(field.label)));
@@ -75,5 +79,6 @@ export function shopPropsOf(name: string, entities: readonly Entity[]): ShopProp
     },
     policies: policiesOf(entities),
     payments: { online },
+    catalogUrl,
   };
 }

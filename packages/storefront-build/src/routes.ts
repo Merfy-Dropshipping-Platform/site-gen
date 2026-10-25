@@ -26,6 +26,10 @@ export interface ShopRoute {
   entity: PageEntityType;
   // Страница записи (блок 8 «Секций и SDK», часть 8б): запись страницы шаблона; нет — страница сайта.
   record?: RecordEntry;
+  // Страница списка (блок 11 «Секций и SDK», часть 11а): номер страницы списка; нет — страница без своего списка.
+  list?: { page: number };
+  // Вторые адреса страницы списка — 301 на path (…/page/1); у записи свои — record.aliases.
+  aliases?: string[];
 }
 
 export const HEADER_LIST = 'header';
@@ -63,6 +67,15 @@ export function recordIndex(inputs: BuildInputs): RecordIndex {
 export const templateShown = (inputs: BuildInputs, type: RecordType): boolean =>
   type === 'policy' || (inputs.code.pages[type] ?? []).some((instance) => instance.hidden !== true);
 
+// Каталог (блок 11 «Секций и SDK», Р11а-1): особая страница catalog, адрес /catalog.
+export const CATALOG_PAGE_ID = 'catalog';
+export const CATALOG_PATH = '/catalog';
+// Каталог показан, когда в его списке есть видимый экземпляр; скрытые не считаются.
+export const catalogShown = (inputs: BuildInputs): boolean =>
+  (inputs.code.pages[CATALOG_PAGE_ID] ?? []).some((instance) => instance.hidden !== true);
+// shop.catalogUrl: CATALOG_PATH или null.
+export const catalogUrlOf = (inputs: BuildInputs): string | null => (catalogShown(inputs) ? CATALOG_PATH : null);
+
 // Страница записи: id — id шаблона (его список секций), адрес — основной адрес записи, файл — <адрес>/index.html.
 const recordRouteOf = (entry: RecordEntry): ShopRoute => ({
   id: entry.type,
@@ -71,6 +84,22 @@ const recordRouteOf = (entry: RecordEntry): ShopRoute => ({
   entity: entry.entity.type,
   record: entry,
 });
+
+// Маршрут каталога (блок 11 «Секций и SDK», часть 11а, Р11а-1): первая страница списка, второй адрес — /catalog/page/1.
+// В сборке — при показанном каталоге; в превью — всегда: мерчант ставит в каталог первую секцию.
+function listRoutesOf(inputs: BuildInputs, mode: PageMode): ShopRoute[] {
+  if (mode !== 'preview' && !catalogShown(inputs)) return [];
+  return [
+    {
+      id: CATALOG_PAGE_ID,
+      path: CATALOG_PATH,
+      file: 'catalog/index.html',
+      entity: 'site',
+      list: { page: 1 },
+      aliases: [`${CATALOG_PATH}/page/1`],
+    },
+  ];
+}
 
 interface Routes {
   list: readonly ShopRoute[];
@@ -103,7 +132,9 @@ function routesOf(inputs: BuildInputs, mode: PageMode = 'live'): Routes {
   const own = (inputs.revision.pages ?? []).map(
     (page): ShopRoute => ({ id: page.id, path: page.slug, file: `${page.slug.slice(1)}/index.html`, entity: 'site' }),
   );
-  const list = [...SHOP_ROUTES, ...own, ...RECORD_ENTRIES[mode](inputs).map(recordRouteOf)];
+  // Каталог и страницы N списков (блок 11 «Секций и SDK», часть 11а) — после страниц записей.
+  const records = RECORD_ENTRIES[mode](inputs).map(recordRouteOf);
+  const list = [...SHOP_ROUTES, ...own, ...records, ...listRoutesOf(inputs, mode)];
   const byPath = new Map([...list, NOT_FOUND_ROUTE].map((route): [string, ShopRoute] => [route.path, route]));
   const routes = { list, byPath };
   routesByMode[mode].set(inputs, routes);
@@ -149,6 +180,8 @@ export function previewRecordPath(inputs: BuildInputs, type: RecordType, id: str
 // Страница по id для превью одного блока (часть 7а): главная, своя страница ревизии, 404 или шаблон записи с записью
 // record — та же, что у превью страницы (часть 8б-2); другой id — главная.
 export function pageInfoById(inputs: BuildInputs, id: string, record: string | null = null): PageInfo {
+  // Каталог (блок 11, часть 11а) — и с пустым списком: превью блока на странице, которую мерчант ещё не сохранил.
+  if (id === CATALOG_PAGE_ID) return pageInfoOf(routeOf(CATALOG_PATH, inputs, 'preview'));
   const path = isRecordType(id) ? previewRecordPath(inputs, id, record) : undefined;
   if (path !== undefined) return pageInfoOf(routeOf(path, inputs, 'preview'));
   const route = [...shopRoutes(inputs), NOT_FOUND_ROUTE].find((candidate) => candidate.id === id);

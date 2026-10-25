@@ -32,12 +32,15 @@ const shopSchema = z.strictObject({
   }),
   policies: z.array(z.strictObject({ type: z.string(), title: z.string(), url: z.string() })),
   payments: z.strictObject({ online: z.boolean() }),
+  // Блок 11, часть 11а: адрес каталога или null; в запросе старой формы ключа нет.
+  catalogUrl: z.string().nullable().default(null),
 });
 const EMPTY_SHOP = {
   name: '',
   contacts: { phone: '', email: '', fields: [] },
   policies: [],
   payments: { online: false },
+  catalogUrl: null,
 };
 // Блок 7, часть 7а: страница, на которой стоит секция; у страницы 404 адреса нет. Нет ключа — главная.
 // Блок 8, часть 8б: запись страницы шаблона — публичные поля записи; у страницы без записи — null.

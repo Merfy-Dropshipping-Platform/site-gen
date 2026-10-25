@@ -13,7 +13,7 @@ import { pageLocals, shopName } from './head';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
-import { pageInfoOf, pageListsOf, recordIndex, routeOf, type ShopRoute } from './routes';
+import { catalogUrlOf, pageInfoOf, pageListsOf, recordIndex, routeOf, type ShopRoute } from './routes';
 import { recordDepsOf } from './section-records';
 import { pageSectionTheme } from './section-tokens';
 import {
@@ -101,7 +101,8 @@ export function pagePropsOf(
     theme.panel === undefined
       ? {}
       : resolveSettings(theme.platformPanel ?? theme.panel, readSettingsEdits(theme.panel, settingsEdits).edits);
-  return { theme: settings, shop: shopPropsOf(shopName(inputs.site), inputs.data.entities), page: HOME_PAGE };
+  const shop = shopPropsOf(shopName(inputs.site), inputs.data.entities, catalogUrlOf(inputs));
+  return { theme: settings, shop, page: HOME_PAGE };
 }
 
 // Разметка трёх списков одного прохода — обратно по спискам: шапка, страница, подвал.

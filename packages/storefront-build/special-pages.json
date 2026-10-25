@@ -2,6 +2,7 @@
   { "id": "home", "name": "Главная", "slug": "/" },
   { "id": "product", "name": "Товар", "slug": "/product/:slug" },
   { "id": "collection", "name": "Коллекция", "slug": "/collections/:slug" },
+  { "id": "catalog", "name": "Каталог", "slug": "/catalog" },
   { "id": "blog", "name": "Блог", "slug": "/blogs/:slug" },
   { "id": "article", "name": "Запись блога", "slug": "/blogs/:blog/:slug" },
   { "id": "policy", "name": "Политика", "slug": "/legal/:slug" },

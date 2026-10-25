@@ -19,5 +19,5 @@ export const REBUILD_EVENT_INPUTS: Readonly<Record<string, readonly string[]>> =
   'collection-change': ['data.collection'],
   'payment-settings-change': ['data.billing'],
   'stock-change': ['data.product'],
-  'analytics-counters-change': ['data.counter'],
+  'analytics-counters-change': ['data.counter', 'data.custom-code'],
 };

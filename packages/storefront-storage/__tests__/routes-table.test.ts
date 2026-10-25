@@ -176,3 +176,25 @@ describe('страницы 404 и 502 платформы (блок 7 «Секц�
     expect(parseRoutesTable(old, 'routes/x/3.json')).toEqual(old);
   });
 });
+
+describe('политика CSP в таблице раздачи (блок 13 «Секций и SDK», часть 13б)', () => {
+  const CSP = "default-src 'self'; object-src 'none'; base-uri 'none'";
+
+  it('поле csp манифеста — в таблицу как есть; таблица читается обратно', () => {
+    const { manifest } = buildOf([HOME]);
+    const table = buildRoutesTable({ manifest: { ...manifest, csp: CSP }, build: 1, previous: null, now: NOW });
+    expect(table.csp).toBe(CSP);
+    expect(parseRoutesTable(JSON.parse(JSON.stringify(table)), 'routes/shop/1.json')).toEqual(table);
+  });
+
+  it('у манифеста без csp и в таблице поля нет', () => {
+    const { manifest } = buildOf([HOME]);
+    expect('csp' in buildRoutesTable({ manifest, build: 1, previous: null, now: NOW })).toBe(false);
+  });
+
+  it('csp с переводом строки — таблица не читается', () => {
+    const { manifest } = buildOf([HOME]);
+    const table = buildRoutesTable({ manifest, build: 1, previous: null, now: NOW });
+    expect(() => parseRoutesTable({ ...table, csp: `${CSP}\r\nX-Evil: 1` }, 'routes/shop/1.json')).toThrow();
+  });
+});

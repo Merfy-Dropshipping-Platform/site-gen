@@ -1,0 +1,42 @@
+{
+  "sdk": 1,
+  "name": "cookie-banner",
+  "kind": "section",
+  "title": "Баннер cookie",
+  "groups": ["footer"],
+  "limit": 1,
+  "wrapper": ["scheme"],
+  "uses": ["shop"],
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "" } },
+    {
+      "id": "text",
+      "label": "Текст",
+      "setting": {
+        "kind": "text",
+        "default": "Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием."
+      }
+    },
+    { "id": "button-label", "label": "Основная кнопка", "setting": { "kind": "string", "default": "Принять" } },
+    {
+      "id": "label",
+      "label": "Дополнительная кнопка",
+      "sublabel": "Пусто — кнопки нет",
+      "setting": { "kind": "string", "default": "" }
+    },
+    {
+      "id": "content-position",
+      "label": "Расположение",
+      "setting": {
+        "kind": "select",
+        "default": "bottom-left",
+        "options": [
+          { "value": "bottom-left", "label": "Снизу слева" },
+          { "value": "bottom-center", "label": "Снизу по центру" },
+          { "value": "bottom-right", "label": "Снизу справа" },
+          { "value": "bar", "label": "Полоса во всю ширину" }
+        ]
+      }
+    }
+  ]
+}

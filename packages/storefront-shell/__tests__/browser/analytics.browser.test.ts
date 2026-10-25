@@ -1,18 +1,22 @@
 import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { build } from 'esbuild';
+import { build, type Plugin } from 'esbuild';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-// Часть SDK «аналитика» в настоящем Chromium (design.md блока 11, раздел 5; блок 5 «Секций и SDK», часть 5б): страница
-// магазина с бандлом страницы — ядро секций, части auth, cart, favorites и analytics, как его собирает сборка магазина.
+// Часть SDK «аналитика» в настоящем Chromium (design.md блока 11, раздел 5; блок 5 «Секций и SDK», часть 5б; блок 13,
+// части 13а и 13б): страница магазина с бандлом страницы — ядро секций, части auth, cart, consent, favorites и
+// analytics, секция «Баннер cookie» и «свой код» мерчанта в конфиге, как их собирает сборка магазина.
 // Сборщик аналитики и шлюз корзины — этот же сервер (POST /a/collect → 204; POST /api/store/carts и …/items — ответы
 // шлюза), счётчик Метрики — подмена Playwright, остальное наружу обрывается: в сеть ничего не уходит. Chromium под
 // Playwright — робот (navigator.webdriver), поэтому traffic = bot.
 const PACKAGE_DIR = fileURLToPath(new URL('../..', import.meta.url));
 const PAGE_FILE = fileURLToPath(new URL('../../fixtures/browser/analytics/index.html', import.meta.url));
 const CORE_ENTRY = fileURLToPath(new URL('../../src/core/index.ts', import.meta.url));
+const BANNER_SCRIPT = fileURLToPath(
+  new URL('../../../storefront-sections/fixtures/shop/cookie-banner/script.ts', import.meta.url),
+);
 const SHOP = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
 const CONSENT_KEY = 'merfy:cookie-consent:v1';
 const VISIT_KEY = 'merfy:analytics:visit';
@@ -72,16 +76,28 @@ const readBody = (request: IncomingMessage): Promise<string> =>
     request.on('error', reject);
   });
 
-// Бандл страницы — ядро секций, четыре части и секция «Купить» без своего кода (только mount), как его собирает сборка
-// магазина (часть 5б). Кнопка «В корзину» в ней — действие разметки части cart.
+// @merfy/shell скрипта секции «Баннер cookie» — то же ядро, что у бандла: один экземпляр ядра на странице.
+const shellAlias: Plugin = {
+  name: 'shell-alias',
+  setup(context) {
+    context.onResolve({ filter: /^@merfy\/shell$/ }, () => ({ path: CORE_ENTRY }));
+  },
+};
+
+// Бандл страницы — ядро секций, пять частей, секция «Купить» без своего кода (только mount) и «Баннер cookie» со своим
+// скриптом (часть 13б), как его собирает сборка магазина (часть 5б). Кнопки — действия разметки частей cart и consent.
 async function pageBundle(): Promise<string> {
-  const buy = `{ name: 'shop:buy', kind: 'section', script: '${'a'.repeat(64)}', uses: ['auth', 'cart', 'favorites'], definition: defineSection({ mount() {} }) }`;
+  const uses = "['auth', 'cart', 'consent', 'favorites']";
+  const buy = `{ name: 'shop:buy', kind: 'section', script: '${'a'.repeat(64)}', uses: ${uses}, definition: defineSection({ mount() {} }) }`;
+  const banner = `{ name: 'shop:cookie-banner', kind: 'section', script: '${'b'.repeat(64)}', uses: ${uses}, definition: banner }`;
   const contents = [
-    `import { start, defineSection, auth, cart, favorites, analytics } from ${JSON.stringify(CORE_ENTRY)};`,
-    `start({ parts: [auth, cart, favorites, analytics], sections: [${buy}] });`,
+    `import { start, defineSection, auth, cart, consent, favorites, analytics } from ${JSON.stringify(CORE_ENTRY)};`,
+    `import banner from ${JSON.stringify(BANNER_SCRIPT)};`,
+    `start({ parts: [auth, cart, consent, favorites, analytics], sections: [${buy}, ${banner}] });`,
   ].join('\n');
   const result = await build({
     stdin: { contents, resolveDir: PACKAGE_DIR, loader: 'js' },
+    plugins: [shellAlias],
     bundle: true,
     format: 'esm',
     platform: 'browser',
@@ -164,6 +180,22 @@ async function openShop(consent: string | null): Promise<Visit> {
 const cookieNames = async (visit: Visit): Promise<string[]> =>
   (await visit.context.cookies()).map((cookie) => cookie.name);
 
+// Отметки «своего кода» фикстуры: __b13Waits — код «ждать согласия», __b13Now — «сразу», __b13Img — onerror картинки,
+// которой в выполненном коде быть не должно (из текста ядро выбирает только <script>).
+const MARKS = ['__b13Waits', '__b13Now', '__b13Img'];
+const marks = (visit: Visit): Promise<string[]> =>
+  visit.page.evaluate((names) => names.map((name) => typeof Reflect.get(window, name)), MARKS);
+const bannerShown = (visit: Visit): Promise<boolean> => visit.page.isVisible('[data-ref="banner"]');
+const bannerMounted = (visit: Visit): Promise<unknown> =>
+  visit.page.waitForFunction(
+    () =>
+      document.querySelector('merfy-section[data-section-id="cookie-banner-1"][data-merfy-state="mounted"]') !== null,
+  );
+const settle = async (visit: Visit): Promise<void> => {
+  const now = await visit.page.evaluate(() => performance.now());
+  await visit.page.waitForFunction((until) => performance.now() > until, now + 500);
+};
+
 beforeAll(async () => {
   server = await startServer(await pageBundle());
   browser = await chromium.launch();
@@ -222,6 +254,39 @@ describe('часть «аналитика» в Chromium', () => {
     await visit.page.waitForFunction((ms) => performance.now() > ms, 5_500);
     expect(server.batches).toEqual([]);
     expect(await cookieNames(visit)).toEqual([]);
+    expect([visit.counters, visit.outside]).toEqual([[], []]);
+    await visit.context.close();
+  });
+
+  it('баннер: до ответа виден, код «сразу» выполнен, «ждать» — нет; «Принять» — счётчик и код «ждать», баннер скрыт', async () => {
+    const visit = await openShop(null);
+    await bannerMounted(visit);
+    expect(await bannerShown(visit)).toBe(true);
+    await expect.poll(() => marks(visit)).toEqual(['undefined', 'number', 'undefined']);
+    expect(visit.counters).toEqual([]);
+    await visit.page.click('[data-accept]');
+    await expect.poll(() => visit.counters).toEqual([METRIKA]);
+    await expect.poll(() => marks(visit)).toEqual(['number', 'number', 'undefined']);
+    expect(await bannerShown(visit)).toBe(false);
+    const stored = await visit.page.evaluate((key) => localStorage.getItem(key), CONSENT_KEY);
+    expect(Number.isNaN(Date.parse(stored ?? ''))).toBe(false);
+    await visit.page.reload();
+    await bannerMounted(visit);
+    expect(await bannerShown(visit)).toBe(false);
+    expect(visit.outside).toEqual([]);
+    await visit.context.close();
+  });
+
+  it('баннер: «Отклонить» — скрыт, ответ записан; код «ждать», счётчики и запросы наружу — нет', async () => {
+    const visit = await openShop(null);
+    await bannerMounted(visit);
+    expect(await bannerShown(visit)).toBe(true);
+    await visit.page.click('[data-decline]');
+    await expect.poll(() => bannerShown(visit)).toBe(false);
+    const stored = await visit.page.evaluate((key) => localStorage.getItem(key), CONSENT_KEY);
+    expect(stored?.startsWith('declined:')).toBe(true);
+    await settle(visit);
+    expect(await marks(visit)).toEqual(['undefined', 'number', 'undefined']);
     expect([visit.counters, visit.outside]).toEqual([[], []]);
     await visit.context.close();
   });

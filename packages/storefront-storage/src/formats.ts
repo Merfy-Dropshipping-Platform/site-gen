@@ -51,6 +51,11 @@ const routesTableSchema = z.strictObject({
   files: z.record(routePathSchema, fileRowSchema),
   moved: z.record(routePathSchema, routePathSchema),
   gone: z.record(routePathSchema, instantSchema),
+  // Политика CSP сборки (блок 13 «Секций и SDK», часть 13б): раздача ставит её заголовком у HTML. Нет — заголовка нет.
+  csp: z
+    .string()
+    .regex(/^[\x20-\x7e]{1,12288}$/, { error: 'CSP — печатные знаки ASCII, от 1 до 12 288' })
+    .optional(),
 });
 
 const drawnListSchema = z.strictObject({

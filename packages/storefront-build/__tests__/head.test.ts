@@ -114,3 +114,30 @@ describe('pageLocals', () => {
     expect(error.path).toBe('revision.tokens');
   });
 });
+
+describe('pageLocals: «свой код» мерчанта (блок 13 «Секций и SDK», часть 13б)', () => {
+  const customCode = (id: string, code: string, consent: string) => ({
+    type: 'custom-code' as const,
+    id,
+    updatedAt: '1970-01-01T00:00:00.000Z',
+    data: { code, consent },
+  });
+
+  it('сущности custom-code — analytics.custom по id пикселя; без них поля custom нет', () => {
+    const inputs = changedInputs((changed) => {
+      changed.data.entities.push(
+        customCode('p-2', '<script>second()</script>', 'none'),
+        customCode('p-1', '<script>first()</script>', 'required'),
+      );
+    });
+    expect(configOf(pageLocals(inputs, HOME, novaTokens).head.configHtml)).toMatchObject({
+      analytics: {
+        custom: [
+          { code: '<script>first()</script>', consent: 'required' },
+          { code: '<script>second()</script>', consent: 'none' },
+        ],
+      },
+    });
+    expect(locals.head.configHtml).not.toContain('"custom"');
+  });
+});

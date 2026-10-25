@@ -8803,7 +8803,10 @@
               "favorites",
               "auth",
               "newsletter",
-              "consent"
+              "consent",
+              "variants",
+              "search",
+              "catalog"
             ]
           },
           {

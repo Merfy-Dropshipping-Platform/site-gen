@@ -149,8 +149,8 @@ export interface ActionOptions {
 }
 
 // Модули по uses (11г А) — вид для секций по 3.12 и каталогам блоков 9 и 10. Корзина — на сервере (блок 9, часть 9а):
-// строка — ответ шлюза, id строки — номер строки на сервере. cart.remove и cart.change — блок 10. Избранное и вход — в
-// памяти страницы до блока 10.
+// строка — ответ шлюза, id строки — номер строки на сервере. Блок 10 (часть 10а): итоги, cart.change и cart.remove по
+// номеру строки, cart.open, cart.checkout. Избранное и вход — в памяти страницы до частей 10б и 10в.
 export interface CartLine {
   readonly id: string;
   readonly productId: string;
@@ -180,10 +180,14 @@ export interface CartState {
 export interface CartModule {
   readonly $cart: ReadableStore<CartState>;
   readonly $count: ReadableStore<number>; // штук в корзине плюс ждущих ответа сервера
+  readonly $totals: ReadableStore<CartTotals>; // блок 10: итоги с сервера, читаются, когда стор впервые читает секция
+  readonly $total: ReadableStore<Money>; // итог к оплате — $totals.total
   add(
     args: { readonly productId: string; readonly variantId?: string; readonly quantity?: number },
     options?: ActionOptions,
   ): Promise<Result<CartState>>;
+  change(args: { readonly lineId: string; readonly quantity: number }, options?: ActionOptions): Promise<Result<CartState>>;
+  remove(args: { readonly lineId: string }, options?: ActionOptions): Promise<Result<CartState>>;
 }
 export interface FavoritesState {
   readonly ready: boolean;

@@ -1,14 +1,26 @@
 import { messageOf } from '../../report';
+import { changeInModule, removeInModule } from '../cart-change';
 import { withLine } from '../cart-lines';
 import type { AddItemBody, AddedItem, CartApi, CreatedCart, ReadCart } from '../cart-server';
 import { addItem, createCart, readCart } from '../cart-server';
 import { type Failure, failed, failureOf, partialText, reportFailure, reportWarning } from '../failures';
 import { pageStorage, type KeyValue } from '../storage';
 import { type Atom, atom, batch, computed, onMount, readable } from '../stores';
-import type { ActionOptions, CartLine, CartModule, CartState, CoreHandle, Result, SdkPart } from '../types';
+import type {
+  ActionOptions,
+  CartLine,
+  CartModule,
+  CartState,
+  CartTotals,
+  CoreHandle,
+  Money,
+  Result,
+  SdkPart,
+} from '../types';
 
 // Корзина на сервере (блок 9, часть 9а): $cart — ответ шлюза, $count — штуки плюс ждущие ответа, cart.add — по одному
-// запросу в порядке нажатий. Номер — CART_ID_KEY в pageStorage (Р9а-15); cart.remove — блок 10 (Р9а-7).
+// запросу в порядке нажатий. Номер — CART_ID_KEY в pageStorage (Р9а-15). Блок 10 (часть 10а): $totals и $total,
+// cart.change и cart.remove — cart-change.ts.
 
 export const CART_ID_KEY = 'merfy:cart-id:v1';
 export const REREAD_AFTER_MS = 30_000;
@@ -27,15 +39,18 @@ interface ArgRule {
 // Общее состояние модуля корзины: сторы, очередь, хранилище номера и отметка чтения.
 type SettledItem = Exclude<AddedItem, { readonly kind: 'missing' }>;
 
-interface CartRuntime {
+export interface CartRuntime {
   readonly core: CoreHandle;
   readonly state: Atom<CartState>;
+  readonly totals: Atom<CartTotals>; // блок 10: итоги с сервера (Р10а-2)
   readonly adding: Atom<number>;
   readonly page: KeyValue;
   readonly enqueue: <T>(task: () => Promise<T>) => Promise<T>;
   readonly writeStores: (write: () => void) => void;
   readDone: boolean;
   readAt: number;
+  totalsWatched: boolean; // на $totals или $total подписаны — после cart.add перечитать корзину
+  readQueued: boolean; // чтение по подписке или событию страницы стоит в очереди и ещё не началось
 }
 
 const isText = (value: unknown): boolean => typeof value === 'string' && value !== '';
@@ -77,23 +92,46 @@ function listenPage(rt: CartRuntime, reread: () => void): () => void {
   return () => signal.abort();
 }
 
-const apiOf = (core: CoreHandle): CartApi | null => {
+export const apiOf = (core: CoreHandle): CartApi | null => {
   const config = core.config;
   if (config === null) return null;
   return { url: config.api.url, storeId: config.shop.id, currency: config.currency };
 };
 
-const cartIdOf = (page: KeyValue): string | null => page.getItem(CART_ID_KEY);
+export const cartIdOf = (page: KeyValue): string | null => page.getItem(CART_ID_KEY);
 
-function markRead(rt: CartRuntime, lines: readonly CartLine[]): null {
+// Итоги без корзины: нули; ready — прочитаны ли.
+export function emptyTotals(currency: string, ready: boolean): CartTotals {
+  const zero: Money = { amount: 0, currency };
+  return { ready, subtotal: zero, discount: zero, discountName: null, extensionDiscount: zero, total: zero };
+}
+
+// Строки прочитаны. totals: итоги того же ответа; null — ответ без итогов, прежние остаются; нет аргумента — корзины
+// нет, итоги — нули.
+export function markRead(rt: CartRuntime, lines: readonly CartLine[], totals?: CartTotals | null): null {
   rt.readDone = true;
   rt.readAt = Date.now();
-  rt.writeStores(() => rt.state.set({ ready: true, lines }));
+  rt.writeStores(() => {
+    rt.state.set({ ready: true, lines });
+    if (totals === undefined) rt.totals.set(emptyTotals(rt.core.config?.currency ?? 'RUB', true));
+    else if (totals !== null) rt.totals.set(totals);
+  });
   return null;
 }
 
+// Чтение в очереди: подписки на $cart и $totals в одном запуске страницы и события страницы дают одно чтение, пока
+// поставленное не началось.
+export function queueRead(rt: CartRuntime): void {
+  if (rt.readQueued) return;
+  rt.readQueued = true;
+  void rt.enqueue(() => {
+    rt.readQueued = false;
+    return readCartInto(rt);
+  });
+}
+
 // Чтение корзины: 404 и cart_not_found — номер стёрт, пустая готовая; ошибка — Failure для вызвавшего (фон — Р9а-13).
-async function readCartInto(rt: CartRuntime): Promise<Failure | null> {
+export async function readCartInto(rt: CartRuntime): Promise<Failure | null> {
   const conf = apiOf(rt.core);
   if (conf === null) return failureOf('server', 'cart: конфиг витрины не прочитан');
   const id = cartIdOf(rt.page);
@@ -104,7 +142,7 @@ async function readCartInto(rt: CartRuntime): Promise<Failure | null> {
     return markRead(rt, []);
   }
   if (outcome.kind === 'failure') return outcome.failure;
-  return markRead(rt, outcome.lines);
+  return markRead(rt, outcome.lines, outcome.totals);
 }
 
 const failAdd = (rt: CartRuntime, failure: Failure, n: number, options?: ActionOptions): Result<CartState> => {
@@ -180,7 +218,10 @@ async function addOnServer(
     if (readFailure !== null) return failAdd(rt, readFailure, n, options);
   }
   const outcome = await postItem(rt, conf, args, n);
-  return finishAdd(rt, outcome, n, options);
+  const result = finishAdd(rt, outcome, n, options);
+  // Итогов в ответе добавления нет: пока на $totals подписаны — перечитать корзину следом (Р10а-2).
+  if (rt.totalsWatched) void rt.enqueue(() => readCartInto(rt));
+  return result;
 }
 
 const addInModule =
@@ -202,37 +243,65 @@ const addInModule =
     return rt.enqueue(() => addOnServer(rt, args, n, options));
   };
 
+// Запись в сторы — одним batch: $cart и $adding меняются вместе; ошибка подписчика — строкой в консоль (Р9а-11).
+function writeStoresOf(): CartRuntime['writeStores'] {
+  return (write) => {
+    try {
+      batch(write);
+    } catch (error) {
+      console.error(`Подписчик стора корзины: ${messageOf(error)}`);
+    }
+  };
+}
+
+// Первая подписка на сторы: $cart и $count — чтение непрочитанной корзины и слушатели страницы (Р9а-9); $totals и
+// $total — чтение итогов, отметка «подписаны» — до отключения стора (Р10а-2).
+function mountStores(rt: CartRuntime, state: Atom<CartState>, totals: Atom<CartTotals>): void {
+  onMount(state, () => {
+    const reread = (): void => queueRead(rt);
+    if (!rt.readDone && rt.core.config !== null) reread();
+    return listenPage(rt, reread);
+  });
+  onMount(totals, () => {
+    rt.totalsWatched = true;
+    if (!totals.get().ready && rt.core.config !== null) queueRead(rt);
+    return () => {
+      rt.totalsWatched = false;
+    };
+  });
+}
+
 export const cart: SdkPart<'cart', CartModule> = {
   name: 'cart',
   create: (core: CoreHandle): CartModule => {
     const state = atom<CartState>({ ready: false, lines: [] });
+    const totals = atom<CartTotals>(emptyTotals(core.config?.currency ?? 'RUB', false));
+    const total = computed(totals, (value) => value.total);
     const adding = atom(0);
     const count = computed([state, adding], (cartState, waiting) => countOfLines(cartState.lines) + waiting);
-    // Запись в сторы — одним batch: $cart и $adding меняются вместе; ошибка подписчика — строкой в консоль (Р9а-11).
-    const writeStores = (write: () => void): void => {
-      try {
-        batch(write);
-      } catch (error) {
-        console.error(`Подписчик стора корзины: ${messageOf(error)}`);
-      }
-    };
     const rt: CartRuntime = {
       core,
       state,
+      totals,
+      totalsWatched: false,
+      readQueued: false,
       adding,
       page: pageStorage(window, core.mode),
       enqueue: createQueue(),
-      writeStores,
+      writeStores: writeStoresOf(),
       readDone: false,
       readAt: 0,
     };
-    // Первая подписка на $cart или $count: чтение непрочитанной корзины и слушатели страницы до отключения стора.
-    onMount(state, () => {
-      const reread = (): void => void rt.enqueue(() => readCartInto(rt));
-      if (!rt.readDone && core.config !== null) reread();
-      return listenPage(rt, reread);
-    });
-    return { $cart: readable(state), $count: readable(count), add: addInModule(rt) };
+    mountStores(rt, state, totals);
+    return {
+      $cart: readable(state),
+      $count: readable(count),
+      $totals: readable(totals),
+      $total: readable(total),
+      add: addInModule(rt),
+      change: changeInModule(rt),
+      remove: removeInModule(rt),
+    };
   },
   markup: {
     add: {
@@ -243,6 +312,15 @@ export const cart: SdkPart<'cart', CartModule> = {
           ...(values['variant-id'] === undefined ? {} : { variantId: values['variant-id'] }),
           ...(values.quantity === undefined ? {} : { quantity: quantityFrom(values.quantity) }),
         }),
+    },
+    change: {
+      params: ['line-id', 'quantity'],
+      call: (api: CartModule, values): Promise<Result<unknown>> =>
+        api.change({ lineId: values['line-id'] ?? '', quantity: Number(values.quantity ?? '') }),
+    },
+    remove: {
+      params: ['line-id'],
+      call: (api: CartModule, values): Promise<Result<unknown>> => api.remove({ lineId: values['line-id'] ?? '' }),
     },
   },
 };

@@ -114,17 +114,15 @@ describe('итоги корзины', () => {
 
 describe('запросы', () => {
   it('PATCH, DELETE, PUT; токен — заголовок Authorization: Bearer; без тела и токена — без заголовков', async () => {
-    const fetchSpy = vi.fn(() => Promise.resolve(new Response('{}', { status: 200 })));
+    // lint пакета: неиспользуемые параметры не разрешены — тип шлюза задаёт типизированный хелпер (правило 24.10).
+    type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+    const fetchSpy = vi.fn<FetchLike>(() => Promise.resolve(new Response('{}', { status: 200 })));
     vi.stubGlobal('fetch', fetchSpy);
     await requestJson(`${API_URL}/x`, { method: 'PATCH', body: { quantity: 2 } });
     await requestJson(`${API_URL}/x`, { method: 'DELETE' });
     await requestJson(`${API_URL}/x`, { method: 'PUT', body: { ids: [] }, token: 'tok' });
     await requestJson(`${API_URL}/x`, { method: 'GET', token: 'tok' });
-    const inits = fetchSpy.mock.calls.map((call: [unknown, RequestInit | undefined]) => [
-      call[1]?.method,
-      call[1]?.headers ?? null,
-      call[1]?.body ?? null,
-    ]);
+    const inits = fetchSpy.mock.calls.map(([, init]) => [init?.method, init?.headers ?? null, init?.body ?? null]);
     expect(inits).toEqual([
       ['PATCH', { 'content-type': 'application/json' }, '{"quantity":2}'],
       ['DELETE', null, null],

@@ -5,7 +5,7 @@ import type { DoorFields } from './doors';
 import { SECTION_KINDS, type SectionFiles } from './format';
 import type { PreparedSection } from './prepare';
 import { sectionProblemSchema } from './problems';
-import type { SectionRole } from './roles';
+import { isSectionRole, type SectionRole } from './roles';
 
 // Реестр секций (design.md блока 7, С7-10 Б «одна общая таблица», С7-20 Б) — таблица storefront_section базы sites
 // (drizzle/0024). Строка — принятая правка секции или глобального скрипта любого автора. Выпуск платформы, темы и
@@ -103,7 +103,8 @@ const PICK_DRAFT_SQL = `UPDATE storefront_section SET draft = true
 const UNPUBLISH_SQL = `UPDATE storefront_section p SET published = false FROM storefront_section d
   WHERE p.author = 'shop' AND p.owner = $1 AND p.published
     AND d.owner = p.owner AND d.name = p.name AND d.draft AND d.id <> p.id`;
-const PUBLISH_SQL = `UPDATE storefront_section SET published = true
+// published_at (drizzle/0033) — когда правка встала на витрину: по нему откат находит прежнюю (часть 12в).
+const PUBLISH_SQL = `UPDATE storefront_section SET published = true, published_at = now()
   WHERE author = 'shop' AND owner = $1 AND draft AND NOT published RETURNING name`;
 const VISIBLE_SQL = `SELECT ${COLUMNS} FROM storefront_section
   WHERE (author, owner, release) IN (SELECT * FROM unnest($1::text[], $2::text[], $3::text[]))
@@ -240,8 +241,27 @@ export async function publishDrafts(db: Database, shopId: string): Promise<strin
   });
 }
 
+const roleField = z.object({ role: z.string() });
+
+// Роль строки реестра — из manifest, как его записал приём (Р12а-3); у секции без роли и у строк до 12а — undefined.
+function rowRole(row: SectionRow): SectionRole | undefined {
+  const parsed = roleField.safeParse(row.manifest);
+  return parsed.success && isSectionRole(parsed.data.role) ? parsed.data.role : undefined;
+}
+
+// Откат к правке с ролью (часть 12в, найдено при планировании 12а): роль этой правки — у текущей правки другой секции
+// магазина — отказ, как у saveDraft (Р12а-4). Иначе в магазине две секции с одной ролью.
+async function assertRowRoleFree(client: Queryable, shopId: string, row: SectionRow): Promise<void> {
+  const role = rowRole(row);
+  if (role === undefined) return;
+  const { rows } = await client.query(ROLE_HOLDER_SQL, [shopId, row.name, role]);
+  const holder = rows.map((item) => nameRow.parse(item).name).at(0);
+  if (holder !== undefined) throw new RoleTakenError(role, holder);
+}
+
 // «Верни как было» (С7-20 Б): прежняя строка снова текущая — новой строки и нового файла нет. Такой строки у секции
-// магазина нет — null, текущая правка остаётся.
+// магазина нет — null, текущая правка остаётся. Роль прежней строки занята другой секцией — RoleTakenError, текущая
+// правка остаётся (часть 12в).
 export async function rollbackSection(
   db: Database,
   shopId: string,
@@ -251,6 +271,7 @@ export async function rollbackSection(
   return underOwnerLock(db, shopId, async (client) => {
     const target = first(await select(client, BY_ID_SQL, [shopId, name, id]));
     if (target === null) return null;
+    await assertRowRoleFree(client, shopId, target);
     await client.query(CLEAR_DRAFT_SQL, [shopId, name]);
     return first(await select(client, PICK_DRAFT_SQL, [shopId, name, id]));
   });
@@ -259,6 +280,97 @@ export async function rollbackSection(
 // История своей секции — все правки по времени приёма, текущая и та, что на витрине, — флагами.
 export async function sectionHistory(db: Queryable, shopId: string, name: string): Promise<SectionRow[]> {
   return select(db, HISTORY_SQL, [shopId, name]);
+}
+
+// Откат секции с ролью по ошибкам из браузеров (блок 12 «Секций и SDK», часть 12в; design.md блока 12, В12-1 А). Под
+// замком владельца, как правки и публикация: два сигнала разом откатывают один раз — второй видит, что на витрине уже
+// не правка с этим скриптом (stale). Прежняя — последняя правка, которая была на витрине (published_at), не та же
+// строка и не тот же скрипт. Откат снимает правку с ошибкой с витрины (published_at — NULL: сама она не вернётся;
+// rolled_back_at — время отката) и ставит прежнюю; текущая правка (draft) переходит на прежнюю, только если ею была
+// правка с ошибкой — иначе следующая публикация вернула бы ошибку; новую правку мерчанта откат не трогает. Роль прежней
+// правки другая или занята другой секцией — отката нет (role-changed, role-taken). Время at — от вызывающего (часы
+// сборщика): по нему сутки между откатами.
+export type BrokenRollback =
+  | { status: 'rolled-back'; from: SectionRow; to: SectionRow }
+  | { status: 'stale' }
+  | { status: 'cooldown'; from: SectionRow; notify: boolean }
+  | { status: 'no-previous'; from: SectionRow }
+  | { status: 'role-changed'; from: SectionRow; to: SectionRow }
+  | { status: 'role-taken'; from: SectionRow; to: SectionRow; holder: string };
+
+// Не больше одного отката на магазин и роль за сутки (Р12в-11, ответ на поддельные ошибки): повторный переход порога —
+// без отката, запись мерчанту — не чаще раза в сутки (rollback_notice_at на правке, о которой записали).
+export const ROLE_ROLLBACK_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+const LIVE_SQL = `SELECT ${COLUMNS} ${SHOP_ROWS} AND published`;
+const PREVIOUS_SQL = `SELECT ${COLUMNS} ${SHOP_ROWS} AND id <> $3 AND published_at IS NOT NULL
+  AND script_hash IS DISTINCT FROM $4 ORDER BY published_at DESC, created_at DESC, id LIMIT 1`;
+// Откат меняет витрину сразу: роль занимает и текущая правка, и правка на витрине другой секции.
+const LIVE_ROLE_HOLDER_SQL = `SELECT name FROM storefront_section
+  WHERE author = 'shop' AND owner = $1 AND (draft OR published) AND name <> $2 AND manifest->>'role' = $3
+  ORDER BY name LIMIT 1`;
+const ROLLED_BACK_SINCE_SQL = `SELECT 1 FROM storefront_section
+  WHERE author = 'shop' AND owner = $1 AND manifest->>'role' = $2 AND rolled_back_at > $3::timestamptz LIMIT 1`;
+const NOTICED_SINCE_SQL = `SELECT 1 FROM storefront_section
+  WHERE author = 'shop' AND owner = $1 AND manifest->>'role' = $2 AND rollback_notice_at > $3::timestamptz LIMIT 1`;
+const NOTICE_SQL = `UPDATE storefront_section SET rollback_notice_at = $4
+  WHERE author = 'shop' AND owner = $1 AND name = $2 AND id = $3`;
+const TAKE_DOWN_SQL = `UPDATE storefront_section SET published = false, published_at = NULL, rolled_back_at = $4
+  WHERE author = 'shop' AND owner = $1 AND name = $2 AND id = $3`;
+const PUT_BACK_SQL = `UPDATE storefront_section SET published = true, published_at = now(), draft = draft OR $4
+  WHERE author = 'shop' AND owner = $1 AND name = $2 AND id = $3 RETURNING ${COLUMNS}`;
+
+async function liveRoleHolder(client: Queryable, shopId: string, name: string, role: SectionRole) {
+  const { rows } = await client.query(LIVE_ROLE_HOLDER_SQL, [shopId, name, role]);
+  return rows.map((item) => nameRow.parse(item).name).at(0);
+}
+
+// Есть ли у секций магазина с этой ролью отметка новее, чем сутки до at.
+async function markedSince(client: Queryable, sql: string, shopId: string, role: SectionRole, at: Date) {
+  const since = new Date(at.getTime() - ROLE_ROLLBACK_COOLDOWN_MS).toISOString();
+  return (await client.query(sql, [shopId, role, since])).rows.length > 0;
+}
+
+// Откат той же роли уже был за сутки — cooldown; notify — записи мерчанту за сутки не было (отметка ставится сейчас).
+async function cooldownOf(client: Queryable, shopId: string, from: SectionRow, role: SectionRole, at: Date) {
+  if (!(await markedSince(client, ROLLED_BACK_SINCE_SQL, shopId, role, at))) return null;
+  const notify = !(await markedSince(client, NOTICED_SINCE_SQL, shopId, role, at));
+  if (notify) await client.query(NOTICE_SQL, [shopId, from.name, from.id, at.toISOString()]);
+  const cooldown: BrokenRollback = { status: 'cooldown', from, notify };
+  return cooldown;
+}
+
+// Куда откатывать правку from, которая на витрине с ошибкой, или почему нельзя.
+async function rollbackPlan(client: Queryable, shopId: string, from: SectionRow): Promise<BrokenRollback> {
+  const to = first(await select(client, PREVIOUS_SQL, [shopId, from.name, from.id, from.scriptHash]));
+  if (to === null) return { status: 'no-previous', from };
+  const role = rowRole(from);
+  if (role === undefined || rowRole(to) !== role) return { status: 'role-changed', from, to };
+  const holder = await liveRoleHolder(client, shopId, from.name, role);
+  return holder === undefined ? { status: 'rolled-back', from, to } : { status: 'role-taken', from, to, holder };
+}
+
+export async function rollbackBroken(
+  db: Database,
+  shopId: string,
+  name: string,
+  scriptHash: string,
+  at: Date,
+): Promise<BrokenRollback> {
+  return underOwnerLock(db, shopId, async (client) => {
+    const from = first(await select(client, LIVE_SQL, [shopId, name]));
+    const role = from === null || from.scriptHash !== scriptHash ? undefined : rowRole(from);
+    if (from === null || role === undefined) return { status: 'stale' };
+    const cooldown = await cooldownOf(client, shopId, from, role, at);
+    if (cooldown !== null) return cooldown;
+    const plan = await rollbackPlan(client, shopId, from);
+    if (plan.status !== 'rolled-back') return plan;
+    // Уникальные индексы «одна текущая» и «одна на витрине»: сначала снять, потом поставить.
+    if (from.draft) await client.query(CLEAR_DRAFT_SQL, [shopId, name]);
+    await client.query(TAKE_DOWN_SQL, [shopId, name, from.id, at.toISOString()]);
+    const [to] = await select(client, PUT_BACK_SQL, [shopId, name, plan.to.id, from.draft]);
+    return { status: 'rolled-back', from, to };
+  });
 }
 
 function releaseColumns(visibility: Visibility): [string[], string[], string[]] {

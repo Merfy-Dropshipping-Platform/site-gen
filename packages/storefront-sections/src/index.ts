@@ -99,7 +99,7 @@ export {
   type SectionRole,
 } from './roles';
 export { listGroupOf, sectionLimitOf, sectionListAllowed } from './format';
-export { RoleTakenError } from './registry';
+export { RoleTakenError, rollbackBroken, type BrokenRollback } from './registry';
 export { SCRIPT_LIMITS } from './script';
 export { MAX_TEMPLATE_DEPTH } from './depth';
 export { FORBIDDEN_TAGS } from './template';

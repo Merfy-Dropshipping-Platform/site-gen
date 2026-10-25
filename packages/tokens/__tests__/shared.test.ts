@@ -54,7 +54,7 @@ describe('пометка сквозной настройки', () => {
     expect(titlesOf(panel)).toEqual(['Логотип → Картинка (logo-image)', 'Баннер → Баннер cookie (cookie-banner-enabled)']);
   });
 
-  it('панель платформы: 9 сквозных', () => {
+  it('панель платформы: 10 сквозных', () => {
     expect(titlesOf(platform)).toEqual([
       'Логотип → Картинка (logo-image)',
       'Социальные сети → Telegram (social-telegram)',
@@ -65,6 +65,7 @@ describe('пометка сквозной настройки', () => {
       'Социальные сети → MAX (social-max)',
       'Корзина → Вид корзины (cart-type)',
       'Баннер → Баннер cookie (cookie-banner-enabled)',
+      'Избранное → Избранное (wishlist-enabled)',
     ]);
   });
 });

@@ -20,6 +20,9 @@ const fileRowSchema = z.strictObject({
   t: z.string().min(1),
   c: z.enum(CACHE_CLASSES),
   m: instantSchema.optional(),
+  // Страница со списком (блок 11 «Секций и SDK», часть 11а): параметры списка раздача отдаёт рендеру по запросу
+  // (nginx-minio-proxy, storefront/njs/route.js, listAnswer). Нет ключа — обычный файл.
+  l: z.literal(true).optional(),
 });
 
 // Указатель «магазин → живая сборка». newest — самый новый номер сборки, что когда-либо выкладывался: «только если

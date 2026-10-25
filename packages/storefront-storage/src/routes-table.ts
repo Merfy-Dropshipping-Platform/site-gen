@@ -41,7 +41,9 @@ function servedFiles(manifest: StorefrontManifest): Files {
   const rowOf = (filePath: string, hash: string): FileRow => {
     const row: FileRow = { h: hexOf(hash), t: contentTypeOf(filePath), c: cacheClassOf(filePath) };
     const page = pageByFile.get(filePath);
-    return page === undefined ? row : { ...row, m: page.dataUpdatedAt };
+    if (page === undefined) return row;
+    // Страница со списком (блок 11 «Секций и SDK», часть 11а, Р11а-11) — l: true.
+    return { ...row, m: page.dataUpdatedAt, ...(page.list === undefined ? {} : { l: true as const }) };
   };
   const files = Object.entries(manifest.files)
     .filter(([filePath]) => !NOT_SERVED_FILES.has(filePath))

@@ -70,3 +70,8 @@ export const REPLACE_TEXT = {
   notDefinition: 'модуль секции не отдал определение секции',
   gone: 'секции уже нет на странице',
 } as const;
+
+// Номер корзины в превью (блок 10, «Решил сам» п. 24; часть 10а, Р10а-9): конструктор дописывает его к адресу рамки
+// параметром PREVIEW_CART_PARAM; ядро сообщает новый номер конструктору — { type: PREVIEW_CART_MESSAGE, id }.
+export const PREVIEW_CART_PARAM = 'merfy-cart';
+export const PREVIEW_CART_MESSAGE = 'cart-id';

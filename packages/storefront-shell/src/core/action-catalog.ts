@@ -32,6 +32,16 @@ export const ACTIONS = {
     about: 'убрать строку из корзины; аргументы { lineId }, ответ — CartState',
     markup: { 'line-id': 'text' },
   },
+  'cart.open': {
+    module: 'cart',
+    about: 'открыть корзину: при «Сайдбар» и выезжающей корзине на странице — merfy:cart:open, иначе переход на /cart; ответ — { drawer }',
+    markup: {},
+  },
+  'cart.checkout': {
+    module: 'cart',
+    about: 'перейти в оформление заказа: номер корзины и копия строк для оформления, переход на /checkout',
+    markup: {},
+  },
   'favorites.toggle': {
     module: 'favorites',
     about: 'отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added }',

@@ -611,7 +611,7 @@ export default defineSection<State>({
 
 ## cart
 
-Действия: `cart.add`.
+Действия: `cart.add`, `cart.change`, `cart.remove`, `cart.open`, `cart.checkout`.
 ## favorites
 
 Действия: `favorites.toggle`.
@@ -654,6 +654,7 @@ export default defineSection<State>({
 | `merfy:block:select` | превью: мерчант выбрал блок секции в панели слева | blockId — строка |
 | `merfy:block:deselect` | превью: выбор блока секции снят | blockId — строка |
 | `merfy:notice:show` | показать уведомление покупателю — его выводит секция «Уведомления» | level — одно из: error, warning; message — строка; code — одно из: out-of-stock, limit, unauthorized, network, server, invalid, refused, может не быть |
+| `merfy:cart:open` | покупатель открыл выезжающую корзину (cart.open при «Сайдбар») | — |
 | `merfy:consent:change` | выбор в баннере cookie | state — одно из: accepted, declined |
 
 ## Коды ошибок
@@ -686,6 +687,10 @@ document.addEventListener('merfy:cart:add', (event) => {
 | Действие | Модуль | Что делает и что отвечает | Параметры разметки |
 |---|---|---|---|
 | `cart.add` | cart | добавить товар в корзину; аргументы { productId, variantId?, quantity? = 1 }, ответ — CartState | `data-product-id`, `data-variant-id`, `data-quantity` |
+| `cart.change` | cart | поменять количество строки корзины; аргументы { lineId, quantity }, 0 — убрать строку; ответ — CartState | `data-line-id`, `data-quantity` |
+| `cart.remove` | cart | убрать строку из корзины; аргументы { lineId }, ответ — CartState | `data-line-id` |
+| `cart.open` | cart | открыть корзину: при «Сайдбар» и выезжающей корзине на странице — merfy:cart:open, иначе переход на /cart; ответ — { drawer } | — |
+| `cart.checkout` | cart | перейти в оформление заказа: номер корзины и копия строк для оформления, переход на /checkout | — |
 | `favorites.toggle` | favorites | отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added } | `data-product-id` |
 | `consent.accept` | consent | покупатель принял cookie: счётчики мерчанта и «свой код» с ожиданием согласия запускаются; ответ — "accepted" | — |
 | `consent.decline` | consent | покупатель отклонил cookie: аналитика ничего не отправляет, счётчиков нет; ответ — "declined" | — |
@@ -711,7 +716,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 Части: `data-part="open"`, `data-part="content"`, `data-part="close"`.
 
-Параметры: `data-transition` — одно из: fade, drawer, drawer-back, drop; по умолчанию `fade`; `data-side` — одно из: right, left; по умолчанию `right`; `data-modal` — да или нет; по умолчанию `true`.
+Параметры: `data-transition` — одно из: fade, drawer, drawer-back, drop; по умолчанию `fade`; `data-side` — одно из: right, left; по умолчанию `right`; `data-modal` — да или нет; по умолчанию `true`; `data-open-on` — одно из: none, cart-open, cart-add; по умолчанию `none`.
 ## carousel
 
 Части: `data-part="viewport"`, `data-part="container"`, `data-part="slide"`, `data-part="prev"`, `data-part="next"`, `data-part="dot"`, `data-part="thumb"`, `data-part="counter"`, `data-part="copy"`, `data-part="play"`.

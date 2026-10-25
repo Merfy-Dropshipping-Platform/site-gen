@@ -93,6 +93,7 @@ export const EVENT_CATALOG = {
       code: { oneOf: ERROR_CODES, optional: true },
     },
   },
+  'merfy:cart:open': { about: 'покупатель открыл выезжающую корзину (cart.open при «Сайдбар»)', fields: {} },
   'merfy:consent:change': { about: 'выбор в баннере cookie', fields: { state: { oneOf: ['accepted', 'declined'] } } },
 } as const satisfies { readonly [E in EventName]: EventSpec<EventMap[E]> };
 

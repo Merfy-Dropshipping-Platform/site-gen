@@ -30,6 +30,8 @@ describe('таблица действий', () => {
     expect([...ACTION_NAMES].sort()).toEqual([
       'cart.add',
       'cart.change',
+      'cart.checkout',
+      'cart.open',
       'cart.remove',
       'consent.accept',
       'consent.decline',

@@ -11,7 +11,7 @@
 
 ## cart
 
-Действия: `cart.add`.
+Действия: `cart.add`, `cart.change`, `cart.remove`, `cart.open`, `cart.checkout`.
 ## favorites
 
 Действия: `favorites.toggle`.

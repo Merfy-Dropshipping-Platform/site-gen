@@ -121,6 +121,7 @@ export interface EventMap {
     readonly quantity: number;
     readonly previousQuantity: number;
   };
+  'merfy:cart:open': NoDetail; // блок 10: cart.open при «Сайдбар» и выезжающей корзине на странице
   'merfy:variant:change': { readonly productId: string; readonly variantId: string };
   'merfy:favorites:add': { readonly productId: string };
   'merfy:favorites:remove': { readonly productId: string };
@@ -188,6 +189,8 @@ export interface CartModule {
   ): Promise<Result<CartState>>;
   change(args: { readonly lineId: string; readonly quantity: number }, options?: ActionOptions): Promise<Result<CartState>>;
   remove(args: { readonly lineId: string }, options?: ActionOptions): Promise<Result<CartState>>;
+  open(): Promise<Result<{ readonly drawer: boolean }>>; // Р10а-5
+  checkout(): Promise<Result<null>>; // Р10а-7: переход на /checkout
 }
 export interface FavoritesState {
   readonly ready: boolean;
@@ -325,7 +328,8 @@ export interface SectionDef<State extends object = Record<string, unknown>, Uses
 // Действие SDK в разметке: data-action="cart.add" → params из data-* элемента → call (раздел 3.4).
 export interface MarkupAction<Api> {
   readonly params: readonly string[]; // ['product-id', 'quantity'] — без префикса data-
-  call(api: Api, values: Readonly<Record<string, string>>): Promise<Result<unknown>>;
+  // event — событие нажатия (блок 10, Р10а-4): cart.open и cart.checkout отменяют переход по ссылке до первого await.
+  call(api: Api, values: Readonly<Record<string, string>>, event?: SectionEvent): Promise<Result<unknown>>;
 }
 
 // Экземпляр для кода платформы (готовое поведение блока 6): узел, режим и сигнал снятия.

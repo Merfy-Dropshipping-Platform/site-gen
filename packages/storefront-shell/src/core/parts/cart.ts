@@ -1,5 +1,7 @@
 import { messageOf } from '../../report';
 import { changeInModule, removeInModule } from '../cart-change';
+import { checkoutCart, openCart, watchPendingOrder } from '../cart-checkout';
+import { previewCartStorage } from '../cart-preview';
 import { withLine } from '../cart-lines';
 import type { AddItemBody, AddedItem, CartApi, CreatedCart, ReadCart } from '../cart-server';
 import { addItem, createCart, readCart } from '../cart-server';
@@ -23,6 +25,8 @@ import type {
 // cart.change и cart.remove — cart-change.ts.
 
 export const CART_ID_KEY = 'merfy:cart-id:v1';
+// Модуль → его состояние: действиям разметки open и checkout нужно событие нажатия и конфиг (Р10а-4).
+const RUNTIMES = new WeakMap<CartModule, CartRuntime>();
 export const REREAD_AFTER_MS = 30_000;
 
 interface AddArgs {
@@ -271,6 +275,29 @@ function mountStores(rt: CartRuntime, state: Atom<CartState>, totals: Atom<CartT
   });
 }
 
+// Память страницы корзины: в превью номер корзины приходит из адреса рамки и уходит конструктору (Р10а-9).
+function pageOf(core: CoreHandle): KeyValue {
+  const base = pageStorage(window, core.mode);
+  return core.mode === 'preview' ? previewCartStorage(base, window, CART_ID_KEY) : base;
+}
+
+// Общее состояние модуля: сторы, очередь и хранилище номера.
+function runtimeOf(core: CoreHandle, state: Atom<CartState>, totals: Atom<CartTotals>, adding: Atom<number>): CartRuntime {
+  return {
+    core,
+    state,
+    totals,
+    totalsWatched: false,
+    readQueued: false,
+    adding,
+    page: pageOf(core),
+    enqueue: createQueue(),
+    writeStores: writeStoresOf(),
+    readDone: false,
+    readAt: 0,
+  };
+}
+
 export const cart: SdkPart<'cart', CartModule> = {
   name: 'cart',
   create: (core: CoreHandle): CartModule => {
@@ -279,21 +306,10 @@ export const cart: SdkPart<'cart', CartModule> = {
     const total = computed(totals, (value) => value.total);
     const adding = atom(0);
     const count = computed([state, adding], (cartState, waiting) => countOfLines(cartState.lines) + waiting);
-    const rt: CartRuntime = {
-      core,
-      state,
-      totals,
-      totalsWatched: false,
-      readQueued: false,
-      adding,
-      page: pageStorage(window, core.mode),
-      enqueue: createQueue(),
-      writeStores: writeStoresOf(),
-      readDone: false,
-      readAt: 0,
-    };
+    const rt = runtimeOf(core, state, totals, adding);
     mountStores(rt, state, totals);
-    return {
+    if (core.mode === 'live') watchPendingOrder(rt);
+    const module: CartModule = {
       $cart: readable(state),
       $count: readable(count),
       $totals: readable(totals),
@@ -301,7 +317,11 @@ export const cart: SdkPart<'cart', CartModule> = {
       add: addInModule(rt),
       change: changeInModule(rt),
       remove: removeInModule(rt),
+      open: () => openCart(rt),
+      checkout: () => checkoutCart(rt),
     };
+    RUNTIMES.set(module, rt);
+    return module;
   },
   markup: {
     add: {
@@ -321,6 +341,21 @@ export const cart: SdkPart<'cart', CartModule> = {
     remove: {
       params: ['line-id'],
       call: (api: CartModule, values): Promise<Result<unknown>> => api.remove({ lineId: values['line-id'] ?? '' }),
+    },
+    // Разметка передаёт событие нажатия: отмена перехода по ссылке — синхронно (Р10а-4).
+    open: {
+      params: [],
+      call: (api: CartModule, _values, event): Promise<Result<unknown>> => {
+        const rt = RUNTIMES.get(api);
+        return rt === undefined ? api.open() : openCart(rt, event);
+      },
+    },
+    checkout: {
+      params: [],
+      call: (api: CartModule, _values, event): Promise<Result<unknown>> => {
+        const rt = RUNTIMES.get(api);
+        return rt === undefined ? api.checkout() : checkoutCart(rt, event);
+      },
     },
   },
 };

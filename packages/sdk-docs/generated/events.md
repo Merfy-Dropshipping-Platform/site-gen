@@ -27,6 +27,7 @@
 | `merfy:block:select` | превью: мерчант выбрал блок секции в панели слева | blockId — строка |
 | `merfy:block:deselect` | превью: выбор блока секции снят | blockId — строка |
 | `merfy:notice:show` | показать уведомление покупателю — его выводит секция «Уведомления» | level — одно из: error, warning; message — строка; code — одно из: out-of-stock, limit, unauthorized, network, server, invalid, refused, может не быть |
+| `merfy:cart:open` | покупатель открыл выезжающую корзину (cart.open при «Сайдбар») | — |
 | `merfy:consent:change` | выбор в баннере cookie | state — одно из: accepted, declined |
 
 ## Коды ошибок

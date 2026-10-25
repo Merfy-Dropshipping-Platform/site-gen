@@ -134,7 +134,10 @@ describe('бандл страницы', () => {
     expect([...at].sort((left, right) => left - right)).toEqual(at);
     expect(text.split(`script:"${scripts[1]}"`)).toHaveLength(2);
     expect(text).toContain('name:"analytics"');
-    expect(bundle?.tag).toBe(`<script type="module" src="/${bundle?.file?.path}"></script>`);
+    const path = bundle?.file?.path ?? '';
+    expect(bundle?.tag).toMatch(
+      new RegExp(`^<script type="module" src="/${path}" integrity="sha256-[A-Za-z0-9+/]{43}="></script>$`),
+    );
   });
 
   it('страница без мест — бандл с глобальным скриптом; страница без кода — бандл только с ядром и частями', async () => {

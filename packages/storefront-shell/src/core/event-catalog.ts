@@ -83,6 +83,8 @@ export const EVENT_CATALOG = {
       message: 'text',
     },
   },
+  'merfy:block:select': { about: 'превью: мерчант выбрал блок секции в панели слева', fields: { blockId: 'text' } },
+  'merfy:block:deselect': { about: 'превью: выбор блока секции снят', fields: { blockId: 'text' } },
   'merfy:notice:show': {
     about: 'показать уведомление покупателю — его выводит секция «Уведомления»',
     fields: {

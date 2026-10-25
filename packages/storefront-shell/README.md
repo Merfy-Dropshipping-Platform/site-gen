@@ -81,7 +81,7 @@
   версии секции скрипт превью загружает модулем из `blob:`-адреса (`src/preview/entry.ts`, единственное место с
   `import()`): рамка превью — без `allow-same-origin` (блок 2).
 - Протокол — `src/core/preview-protocol.ts`, вход `@merfy/shell/preview`: `merfy:preview:update { html, script,
-  codeOnly }` (скрипт секций превью → скрипт превью), `merfy:preview:replace` (скрипт превью → ядро),
+codeOnly }` (скрипт секций превью → скрипт превью), `merfy:preview:replace` (скрипт превью → ядро),
   `merfy:preview:updated` странице и `section-updated { id, outcome, message }` конструктору; `SECTION_ERROR_EVENT` —
   имя сбоя экземпляра для скрипта секций превью. Итоги: `kept-state`, `fresh`, `failed`, `reloaded`, `superseded`,
   `absent`.
@@ -115,13 +115,21 @@
 - Сборка: `pnpm build` → `dist/behaviors/` (файл на поведение, появления, провайдер и часть; общий код — в кусках,
   бюджеты brotli — `build/behaviors.ts`); бандл страницы склеивает их (часть 6б). Тесты — `pnpm test` (unit) и
   `pnpm test:browser` (настоящий Chromium).
+- Превью конструктора (часть 6в): бандл превью — со всеми поведениями, появлениями и провайдером `animate`
+  (`storefront-build`, `previewKit`). Замена экземпляра (`watchPreviewReplace`, часть 5г) вызывает `save(id)` части
+  behaviors до снятия прежнего экземпляра и `restore(id, …)` — у нового сразу после запуска: номер слайда, открытые
+  пункты, вкладка и окно на месте; вторая попытка после ошибки — без этого состояния. Выбор блока в панели слева —
+  события `merfy:block:select` и `merfy:block:deselect` с `{ blockId }` (`BLOCK_SELECT_EVENT`, `BLOCK_DESELECT_EVENT`
+  в `@merfy/shell/preview`): скрипт секций превью шлёт их на узле блока, ядро отдаёт только экземпляру этой секции
+  (`ctx.listen`). Наш `carousel` на них не отвечает (В6-1 А). Тесты — `core-preview-blocks.test.ts` и
+  `browser/preview-behaviors.browser.test.ts`.
 
 ## Сторы, события и действия (блок 9 «Секций и SDK», часть 9а)
 
 - Сторы ядра — Nano Stores 1.5.4 (`src/core/stores.ts`): `atom` замораживает значение, `set` с тем же значением
   подписчиков не вызывает; `batch`, `computed`, `onMount` — из Nano Stores. Секциям — по-прежнему фасад `{ get }` и
   `ctx.watch`.
-- Каталог событий — `src/core/event-catalog.ts`, вход `@merfy/shell/events`: 20 имён `merfy:объект:действие`, правила
+- Каталог событий — `src/core/event-catalog.ts`, вход `@merfy/shell/events`: 22 имени `merfy:объект:действие`, правила
   полей, семь кодов ошибок, `checkEventDetail` для превью и тестов. Типы данных — `EventMap` (`src/core/types.ts`).
   Имена и поля внутри `"sdk": 1` только добавляются. На витрине данные событий не проверяются.
 - Таблица действий — `src/core/action-catalog.ts`, вход `@merfy/shell/actions`: `cart.add`, `favorites.toggle`,

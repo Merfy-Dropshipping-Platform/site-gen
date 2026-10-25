@@ -44,6 +44,7 @@ export interface PageOptions {
   readonly beforeCore?: string; // обычный скрипт до бандла: заглушки браузера
   readonly withoutCore?: boolean; // страница без бандла — проверка запасного CSS
   readonly viewport?: { readonly width: number; readonly height: number };
+  readonly preview?: boolean; // бандл превью (часть 6в): start получает preview: watchPreviewReplace; с mode: 'preview'
 }
 
 // Сведения об анимациях WAAPI одного элемента: Motion заводит по анимации на свойство, здесь они сведены вместе.
@@ -99,13 +100,14 @@ export async function pageBundle(options: PageOptions): Promise<string> {
     (section, index) =>
       `{ name: ${JSON.stringify(section.name)}, kind: 'section', script: '${'a'.repeat(64)}', uses: [], definition: s${index} }`,
   );
+  const preview = options.preview === true;
   const entry = [
-    `import { start } from ${JSON.stringify(CORE)};`,
+    `import { start${preview ? ', watchPreviewReplace' : ''} } from ${JSON.stringify(CORE)};`,
     `import { ${['behaviors', ...list, ...extra].join(', ')} } from ${JSON.stringify(BEHAVIORS)};`,
     ...sections.map((_section, index) => `import s${index} from 'section:${index}';`),
     `const base = behaviors({ list: [${list.join(', ')}]${extra.map((name) => `, ${name}`).join('')} });`,
     'const part = { ...base, create: (core) => (window.__behaviorsApi = base.create(core)) };',
-    `start({ parts: [part], sections: [${rows.join(', ')}] });`,
+    `start({ parts: [part], sections: [${rows.join(', ')}]${preview ? ', preview: watchPreviewReplace' : ''} });`,
     'window.__ready = true;',
   ].join('\n');
   const result = await build({

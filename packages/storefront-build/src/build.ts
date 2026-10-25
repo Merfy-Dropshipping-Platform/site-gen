@@ -2,6 +2,9 @@ import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
 import type { CodeNoticed } from './bundle';
 import { NO_ASSETS, checkCodeAssets, type CodeAssets } from './code';
+import { countersOf } from './counters';
+import { storefrontCsp } from './csp';
+import { customCodesOf } from './custom-codes';
 import { entityHashes } from './entities';
 import { parseBuildInputs, type BuildInputs } from './inputs';
 import { shopFonts } from './head';
@@ -119,6 +122,17 @@ export async function buildStorefront(
   return { manifest, files };
 }
 
+// Политика CSP магазина (блок 13 «Секций и SDK», часть 13б): по файлам сборки, адресам и аналитике; длиннее предела —
+// null, поля в манифесте нет.
+const cspOf = (inputs: BuildInputs, files: Readonly<Record<string, string>>): string | null =>
+  storefrontCsp({
+    files,
+    apiUrl: inputs.env.apiUrl,
+    analyticsUrl: inputs.env.analyticsUrl,
+    counters: countersOf(inputs.data.entities),
+    custom: customCodesOf(inputs.data.entities),
+  });
+
 // Манифест сборки: ключи, версии, сущности и файлы — по списку файлов сборки и шрифтов.
 function manifestOf(
   inputs: BuildInputs,
@@ -127,6 +141,11 @@ function manifestOf(
   fontFiles: readonly (readonly [string, string])[],
   pages: readonly RenderedPage[],
 ): ReturnType<typeof checkManifest> {
+  const fileHashes = Object.fromEntries([
+    ...files.map((file) => [file.path, sha256(file.content)] as const),
+    ...fontFiles,
+  ]);
+  const csp = cspOf(inputs, fileHashes);
   return checkManifest({
     v: MANIFEST_VERSION,
     key: buildKey(inputs),
@@ -137,7 +156,8 @@ function manifestOf(
     shell: inputs.shell === null ? null : { version: inputs.shell.version },
     shop: { id: inputs.site.id },
     entities: entityHashes(inputs),
-    files: Object.fromEntries([...files.map((file) => [file.path, sha256(file.content)] as const), ...fontFiles]),
+    files: fileHashes,
     pages: pages.map((page) => page.row),
+    ...(csp === null ? {} : { csp }),
   });
 }

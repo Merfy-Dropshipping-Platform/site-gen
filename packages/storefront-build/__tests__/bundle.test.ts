@@ -98,7 +98,8 @@ describe('бандл страницы', () => {
     const file = bundle.file;
     expect(file?.path).toMatch(new RegExp(`^${BUNDLE_DIR}/[0-9a-f]{64}\\.js$`));
     expect(file === null ? '' : sha256(file.content)).toBe(`sha256:${file?.path.slice(BUNDLE_DIR.length + 1, -3)}`);
-    expect(bundle.tag).toBe(`<script type="module" src="/${file?.path}"></script>`);
+    const integrity = `sha256-${Buffer.from(file?.path.slice(BUNDLE_DIR.length + 1, -3) ?? '', 'hex').toString('base64')}`;
+    expect(bundle.tag).toBe(`<script type="module" src="/${file?.path}" integrity="${integrity}"></script>`);
     expect(again.file?.path).toBe(file?.path);
     expect(bundle.brotliBytes).toBeGreaterThan(0);
   });

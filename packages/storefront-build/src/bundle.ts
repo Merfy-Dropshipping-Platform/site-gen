@@ -250,8 +250,13 @@ export async function bundlePage(source: BundleSource): Promise<PageBundle> {
   if (brotliBytes > PAGE_SCRIPT_WARN_BYTES) notices.push(heavyNotice(brotliBytes));
   if (content.length <= BUNDLE_INLINE_MAX_BYTES && !UNSAFE_INLINE.test(text))
     return { tag: `<script type="module">${text}</script>`, file: null, brotliBytes, notices };
-  const path = `${BUNDLE_DIR}/${sha256(content).slice(HASH_PREFIX.length)}.js`;
-  return { tag: `<script type="module" src="/${path}"></script>`, file: { path, content }, brotliBytes, notices };
+  const hex = sha256(content).slice(HASH_PREFIX.length);
+  const path = `${BUNDLE_DIR}/${hex}.js`;
+  // integrity — тот же sha256 в base64: по нему файл проходит политику CSP магазина со «своим кодом» ('strict-dynamic',
+  // блок 13 «Секций и SDK», часть 13б), а браузер сверяет байты файла.
+  const integrity = `sha256-${Buffer.from(hex, 'hex').toString('base64')}`;
+  const tag = `<script type="module" src="/${path}" integrity="${integrity}"></script>`;
+  return { tag, file: { path, content }, brotliBytes, notices };
 }
 
 // Текст бандла без тега и файла — для превью конструктора (часть 5г, preview-bundle.ts): тот же esbuild и тот же

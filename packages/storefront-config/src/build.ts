@@ -1,3 +1,4 @@
+import { themeSettingsOf } from './theme-settings';
 import type { StorefrontExtensions } from './extensions';
 import { CONFIG_VERSION, CURRENCY, LOCALE, checkStorefrontConfig, type Counter, type StorefrontConfig } from './schema';
 
@@ -9,8 +10,9 @@ type CustomCodes = NonNullable<StorefrontConfig['analytics']>['custom'];
 export interface StorefrontConfigInput {
   // Строка сайта. В конфиг идут id, имя и публичный адрес; остальные поля строки допустимы и наружу не уходят.
   site: { id: string; name: string; publicUrl: string | null };
-  // id и версия — из манифеста темы.
-  theme: { id: string; version: string };
+  // id и версия — из манифеста темы; settings — значения настроек панели темы, как у шаблона в Astro.props.theme: в
+  // конфиг идут только сквозные (блок 9 «Секций и SDK», часть 9б). Нет — поля theme.settings нет.
+  theme: { id: string; version: string; settings?: Readonly<Record<string, unknown>> };
   // Адрес API — из окружения сборки: тот же, что PUBLIC_MERFY_API_URL у сборки тем (resolveApiUrl в site-gen).
   env: { apiUrl: string };
   // id из реестра страниц платформы или своей страницы темы (theme-stand) и адрес страницы.
@@ -57,7 +59,7 @@ export function buildStorefrontConfig(input: StorefrontConfigInput): StorefrontC
     currency: CURRENCY,
     locale: LOCALE,
     api: { url: env.apiUrl },
-    theme: { id: theme.id, version: theme.version },
+    theme: { id: theme.id, version: theme.version, ...themeSettingsOf(theme.settings) },
     page: pageOf(page),
     analytics: analyticsOf(input.analytics),
     ...extensionsOf(input.extensions),

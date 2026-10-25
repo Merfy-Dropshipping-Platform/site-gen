@@ -2,6 +2,7 @@ import { ACTIONS, ACTION_EVENTS, ACTION_NAMES, isActionName } from '@merfy/shell
 import { EVENT_NAMES } from '@merfy/shell/events';
 import { EXT_USE_PREFIX, TEMPLATE_FILE, type SectionManifest } from './format';
 import { levenshteinOf } from './name-check';
+import { NAMES } from './names';
 import { problem, type SectionProblem } from './problems';
 import type { ScriptFacts } from './script-facts';
 import { dataUnknownProblems } from './section-data';
@@ -124,9 +125,29 @@ const scriptClasses: NameRule = ({ facts, scriptEntry }) =>
       ),
     );
 
+// ctx.theme['<имя>'] (блок 9 «Секций и SDK», часть 9б; design.md блока 9, п. 16): имя — из сквозных настроек темы
+// (NAMES.shared: поля панели с "shared": true). ctx.theme целиком и имя из выражения не сверяются.
+const SHARED_NAMES: readonly string[] = NAMES.shared.map((item) => item.id);
+
+const themeNameOf = (path: readonly string[]): string | null => (path[0] === 'theme' ? (path[1] ?? null) : null);
+
+const themeSettingUnknown: NameRule = ({ facts }) =>
+  (facts?.reads ?? []).flatMap((item) => {
+    const name = themeNameOf(item.path);
+    if (name === null || SHARED_NAMES.includes(name)) return [];
+    const text = `настройки темы «${name}» нет в ctx.theme. Есть: ${quoted(SHARED_NAMES)}${nearText(name, SHARED_NAMES)}`;
+    return [problem('theme-setting-unknown', item.file, text, item)];
+  });
+
 // ctx.data.<имя> без объявления в data section.json (блок 8 «Секций и SDK», часть 8г; Р8г-6).
 const dataUnknown: NameRule = ({ manifest, facts }) => dataUnknownProblems(manifest, facts?.reads ?? []);
 
-export const NAME_RULES: readonly NameRule[] = [eventUnknown, actionUnknown, scriptClasses, dataUnknown];
+export const NAME_RULES: readonly NameRule[] = [
+  eventUnknown,
+  actionUnknown,
+  themeSettingUnknown,
+  scriptClasses,
+  dataUnknown,
+];
 
 export const nameProblems = (input: NameInput): SectionProblem[] => NAME_RULES.flatMap((rule) => rule(input));

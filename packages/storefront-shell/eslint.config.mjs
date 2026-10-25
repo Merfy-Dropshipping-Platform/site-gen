@@ -39,6 +39,11 @@ export default tseslint.config(
     files: ['src/core/log.ts'],
     rules: { 'no-console': ['error', { allow: ['error', 'info'] }] },
   },
+  // Уведомление без секции «Уведомления» на странице (блок 9, часть 9б; Р9а-20) — console.warn. Только этот файл.
+  {
+    files: ['src/core/notice-fallback.ts'],
+    rules: { 'no-console': ['error', { allow: ['error', 'warn'] }] },
+  },
   {
     files: ['src/**/*.ts', 'sections/**/*.ts'],
     rules: {

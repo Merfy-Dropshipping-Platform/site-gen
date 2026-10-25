@@ -195,7 +195,10 @@ export async function renderShopPage(
     sectionThemeOf(inputs, placed),
   );
   const pageContent = pageContentOf(rendered, lists, route);
-  const { html, bundle } = await renderWithBundle(shown, route, theme, page, pageContent);
+  // Сквозные настройки темы — те же значения, что у секций в Astro.props.theme: с PageContent они идут в theme.settings
+  // конфига (блок 9 «Секций и SDK», часть 9б; Р9б-14).
+  const withTheme = { ...pageContent, themeSettings: props.theme };
+  const { html, bundle } = await renderWithBundle(shown, route, theme, page, withTheme);
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');
   const row = pageRowOf(inputs, route, content, recordDepsOf(placed, props));

@@ -19,6 +19,7 @@ import type {
   ReadableStore,
   SectionEvent,
   Stop,
+  ThemeSettings,
 } from './types';
 
 // ctx экземпляра (design.md блока 5, раздел 3.2): имя, id, режим, входные данные, адрес страницы, своё хранилище,
@@ -35,6 +36,7 @@ export interface CtxDeps {
   readonly name: string;
   readonly id: string;
   readonly mode: Mode;
+  readonly theme: Readonly<ThemeSettings>; // сквозные настройки темы страницы (блок 9, часть 9б)
   readonly input: SectionInput;
   readonly animate: AnimateProvider | null; // провайдер части behaviors (блок 6); нет — ctx.animate бросает part-unknown
   readonly state?: Readonly<Record<string, unknown>>; // начальный ctx.state — копия при замене в превью (часть 5г)
@@ -170,6 +172,7 @@ export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknow
     signal: deps.signal,
     storage: createSectionStorage(deps.name, deps.page),
     ext: NO_EXT,
+    theme: deps.theme,
     ...methodsOf(deps, deps.signal),
     get state(): Partial<Record<string, unknown>> {
       return state; // свой объект экземпляра; ctx заморожен, а аксессор — работает

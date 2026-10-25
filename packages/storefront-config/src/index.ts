@@ -14,6 +14,8 @@ export {
   type StorefrontConfig,
 } from './schema';
 export { buildStorefrontConfig, type StorefrontConfigInput } from './build';
+// Блок 9 «Секций и SDK», часть 9б: сквозные настройки темы — theme.settings конфига и ctx.theme ядра витрины.
+export { THEME_SETTING_NAMES, type ThemeSettings } from './theme-settings';
 // Блок 9 «Секций и SDK», часть 9в: сторы и методы расширений для секций и "ext:<id>" в uses.
 export {
   EXT_USE_PREFIX,

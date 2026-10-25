@@ -166,6 +166,9 @@ export interface PageContent {
   mode: PageMode;
   // Тег бандла страницы для <head> (часть 5б); нет — без бандла.
   bundleTag?: string;
+  // Значения настроек темы страницы — те же, что у секций в Astro.props.theme: сквозные из них идут в theme.settings
+  // конфига (блок 9 «Секций и SDK», часть 9б). Нет — поля в конфиге нет.
+  themeSettings?: SettingValues;
 }
 
 export const WRAPPER_CLASS = 'py-section';

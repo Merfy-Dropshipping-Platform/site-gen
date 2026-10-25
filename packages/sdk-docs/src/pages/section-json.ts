@@ -22,6 +22,7 @@ const KEY_NOTES: Readonly<Record<string, string>> = {
   newPage: 'id поля вида string: имя новой страницы, куда ставится секция',
   tokens: 'свои токены секции; имя с меткой custom',
   wrapper: 'общие настройки секции; нет ключа — scheme и padding',
+  themeSettings: 'сквозные настройки темы, которые читает секция: имена полей панели с пометкой "shared": true',
   data: 'Поля записей для `script.ts`: имя → `from` (`page.record` или `settings.<id поля с записью>`) и `fields` — публичные поля записи. В `ctx.data.<имя>` — объявленные поля или `null`.',
 };
 

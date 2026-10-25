@@ -11,8 +11,8 @@ const withoutSharedKey = (text: string): unknown =>
   JSON.parse(text, (key, value: unknown) => (key === 'shared' ? undefined : value));
 
 describe('панель «Настроек темы» для конструктора', () => {
-  it('в панели платформы 9 сквозных', () => {
-    expect(sharedSettings(panel)).toHaveLength(9);
+  it('в панели платформы 10 сквозных', () => {
+    expect(sharedSettings(panel)).toHaveLength(10);
   });
 
   it('в ответе конструктору ключа shared нет, остальное — как в панели', () => {
@@ -24,6 +24,6 @@ describe('панель «Настроек темы» для конструкто
 
   it('панель сборщика не меняется', () => {
     panelForConstructor(panel);
-    expect(sharedSettings(panel)).toHaveLength(9);
+    expect(sharedSettings(panel)).toHaveLength(10);
   });
 });

@@ -211,3 +211,21 @@ codeOnly }` (скрипт секций превью → скрипт превь�
   со строкой (`link`, `image`, `title`, `price`, `compare`), `empty`, `all`. Пауза 250 мс после ввода; отправка формы —
   `merfy:search:submit`; `merfy:search:open` открывает окно `dialog` вокруг панели. Нужен `"uses": ["search"]` секции.
 - Поведения получают ядро страницы — `BehaviorHost.core`.
+
+## Избранное (часть 10б)
+
+- Список: гостья — `merfy:favorites:v1` в хранилище страницы (`{ ids: [{ productId, addedAt }] }`, новые сверху, до
+  200, не по форме — пустой список); вошедшая (`merfy_customer_token`) — `GET storefront/wishlist` шлюза с
+  `Authorization: Bearer` — `$favorites.ready` становится `true` после ответа.
+- Действие `favorites.toggle` (`data-product-id`): гостья — стор, браузер и событие сразу, запросов нет; вошедшая —
+  стор сразу, `POST`/`DELETE storefront/wishlist/items` по очереди, события `merfy:favorites:add` /
+  `merfy:favorites:remove` — после ответа; ошибка — откат и уведомление. 201-й товар — `limit`.
+- Вход: `mergeFavorites(module)` (часть 10в) — `GET` сервера, объединение без повторов по `addedAt`, первые 200 —
+  `PUT storefront/wishlist`, список браузера стёрт; ошибка — список браузера остаётся. `clearFavorites(module)` —
+  выход. 401 с токеном — токен удалён, `merfy:auth:signout`, избранное гостьи.
+- Карточки: `ctx.favorites.$products` (`{ ready, products }`, вид каталога блока 11) — `GET /store/products?ids=…` по
+  100 id, в порядке списка; запрос только недостающих, снятая отметка убирает карточку без запроса; ошибка шлюза —
+  `ready: true` и прежние карточки, уведомления нет. Секция «Избранное» (`sections/wishlist`) — карточки по
+  `<template>`, «Убрать» — `favorites.toggle`; пусто — «В избранном пока ничего нет» и «Перейти в каталог».
+- «Шапка»: ссылка `/wishlist` и сердечки — при `theme['wishlist-enabled'] !== false`; число отмеченных —
+  `ctx.watch(ctx.favorites.$count)` у каждого `data-ref="favorites-count"`.

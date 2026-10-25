@@ -1,0 +1,9 @@
+{
+  "sdk": 1,
+  "name": "wishlist",
+  "kind": "section",
+  "title": "Избранное",
+  "groups": ["page"],
+  "limit": 1,
+  "uses": ["favorites"]
+}

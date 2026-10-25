@@ -351,5 +351,17 @@
         ]
       }
     }
-  ]
+,
+    {
+      "id": "wishlist",
+      "title": "Избранное",
+      "fields": [
+        {
+          "id": "wishlist-enabled",
+          "label": "Избранное",
+          "shared": true,
+          "setting": { "kind": "toggle", "default": true, "labels": { "on": "Включено", "off": "Выключено" } }
+        }
+      ]
+    }  ]
 }

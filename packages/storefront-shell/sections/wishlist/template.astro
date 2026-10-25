@@ -1,0 +1,29 @@
+<div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body">
+  <h1 class="m-0 font-heading weight-heading text-3xl text-heading">Избранное</h1>
+  <div data-ref="empty" class="flex flex-col items-center gap-4 py-10" hidden>
+    <p class="m-0 text-lg">В избранном пока ничего нет</p>
+    <a class="no-underline" href="/catalog">Перейти в каталог</a>
+  </div>
+  <div data-ref="cards" class="flex flex-col gap-4" hidden>
+    <template>
+      <div class="flex items-center gap-4 rounded-button bg-card p-4 text-card-foreground">
+        <a data-ref="link" class="flex flex-1 items-center gap-4 no-underline" href="/catalog">
+          <img data-ref="image" alt="" class="h-20 w-20 shrink-0 rounded-button object-cover" />
+          <span class="flex flex-1 flex-col gap-1">
+            <span data-ref="title" class="font-heading weight-heading"></span>
+            <span data-ref="price" class="text-sm"></span>
+            <span data-ref="old-price" class="text-sm text-muted-foreground line-through" hidden></span>
+          </span>
+        </a>
+        <button
+          type="button"
+          data-ref="remove"
+          data-action="favorites.toggle"
+          class="shrink-0 text-sm underline"
+        >
+          Убрать
+        </button>
+      </div>
+    </template>
+  </div>
+</div>

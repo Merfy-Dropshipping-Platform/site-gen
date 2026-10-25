@@ -119,6 +119,9 @@
             },
             "cookie-banner-enabled": {
               "type": "boolean"
+            },
+            "wishlist-enabled": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false

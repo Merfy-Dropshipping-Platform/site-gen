@@ -6,7 +6,8 @@
   "groups": ["header"],
   "limit": 1,
   "removable": false,
-  "uses": ["theme", "shop", "cart"],
+  "uses": ["theme", "shop", "cart", "favorites"],
+  "themeSettings": ["wishlist-enabled"],
   "wrapper": ["scheme", "padding", "sticky"],
   "settings": [
     {

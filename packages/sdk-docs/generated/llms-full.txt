@@ -262,6 +262,7 @@ const { settings } = Astro.props;
 | `tokens` | свои токены секции; имя с меткой custom |
 | `wrapper` | общие настройки секции; нет ключа — scheme и padding |
 | `data` | Поля записей для `script.ts`: имя → `from` (`page.record` или `settings.<id поля с записью>`) и `fields` — публичные поля записи. В `ctx.data.<имя>` — объявленные поля или `null`. |
+| `themeSettings` | сквозные настройки темы, которые читает секция: имена полей панели с пометкой "shared": true |
 
 ## Виды полей
 
@@ -381,6 +382,7 @@ const { settings } = Astro.props;
 | `social-max` | Это настройка «Настроек темы» «Социальные сети → MAX»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-max']` |
 | `cart-type` | Это настройка «Настроек темы» «Корзина → Вид корзины»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['cart-type']` |
 | `cookie-banner-enabled` | Это настройка «Настроек темы» «Баннер → Баннер cookie»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['cookie-banner-enabled']` |
+| `wishlist-enabled` | Это настройка «Настроек темы» «Избранное → Избранное»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['wishlist-enabled']` |
 
 
 
@@ -818,6 +820,11 @@ document.addEventListener('merfy:cart:add', (event) => {
 | id | Подпись |
 |---|---|
 | `cookie-banner-enabled` | Баннер cookie |
+## Избранное
+
+| id | Подпись |
+|---|---|
+| `wishlist-enabled` | Избранное |
 
 ## Как читать
 

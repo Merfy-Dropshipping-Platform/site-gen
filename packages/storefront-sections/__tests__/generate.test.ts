@@ -148,8 +148,8 @@ describe('что внутри', () => {
       '## Поведение',
       '## Нет в словаре',
     ]);
-    // Блок 11, часть 11б: шесть новых имён — шесть строк таблиц.
-    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(62);
+    // Блок 11, часть 11б: шесть новых имён — шесть строк таблиц; блок 10, часть 10б — сквозная wishlist-enabled.
+    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(63);
     expect(markdown.endsWith(' |\n')).toBe(true);
   });
 });

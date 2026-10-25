@@ -87,4 +87,5 @@
 | `social-max` | Это настройка «Настроек темы» «Социальные сети → MAX»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['social-max']` |
 | `cart-type` | Это настройка «Настроек темы» «Корзина → Вид корзины»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['cart-type']` |
 | `cookie-banner-enabled` | Это настройка «Настроек темы» «Баннер → Баннер cookie»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['cookie-banner-enabled']` |
+| `wishlist-enabled` | Это настройка «Настроек темы» «Избранное → Избранное»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme['wishlist-enabled']` |
 

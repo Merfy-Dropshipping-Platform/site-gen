@@ -200,9 +200,15 @@ export interface FavoritesState {
   readonly ready: boolean;
   readonly ids: readonly string[];
 }
+// Карточки отмеченных (блок 10, часть 10б, Р10б-2, Р10б-8): вид каталога блока 11; товара нет у шлюза — карточки нет.
+export interface FavoriteProducts {
+  readonly ready: boolean; // false — карточки ещё не прочитаны
+  readonly products: readonly CatalogItem[]; // в порядке $favorites.ids
+}
 export interface FavoritesModule {
-  readonly $favorites: ReadableStore<FavoritesState>;
+  readonly $favorites: ReadableStore<FavoritesState>; // ready: false — список сервера ещё не прочитан (вошедшая)
   readonly $count: ReadableStore<number>;
+  readonly $products: ReadableStore<FavoriteProducts>; // читается, когда стор впервые читает секция
   toggle(args: { readonly productId: string }, options?: ActionOptions): Promise<Result<{ readonly added: boolean }>>;
 }
 export interface Customer {

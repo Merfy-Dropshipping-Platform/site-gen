@@ -738,6 +738,8 @@ describe('список секций — расширение секции (бл�
     const byName = new Map(list.sections.map((item) => [item.name, item]));
     expect(byName.get('test-ext:reviews')).toMatchObject({ title: 'Отзывы', extension });
     expect(byName.get('shop:hero')).not.toHaveProperty('extension');
+  });
+});
 
 // Превью особых страниц блока 10 (часть 10а, Р10а-16, Р10а-19): страницы корзины, избранного, входа и кабинета — из
 // секций, есть всегда; оформление и «Спасибо за заказ» — страницы сборки с локалами блоков (в превью — все четыре).

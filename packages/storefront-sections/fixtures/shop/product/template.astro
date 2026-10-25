@@ -5,7 +5,13 @@ const { settings } = Astro.props;
   {settings.product && (
     <div class="grid gap-8 md:grid-cols-2">
       <div class="flex flex-col gap-4">
-        {settings.product.images.map((src) => <img class="h-auto w-full rounded-button" src={src} alt={settings.product.title} />)}
+        {settings.product.images.length > 0 ? (
+          settings.product.images.map((src, index) => (
+            <img class="h-auto w-full rounded-button" data-ref={index === 0 ? 'photo' : undefined} src={src} alt={settings.product.title} />
+          ))
+        ) : (
+          <img class="h-auto w-full rounded-button" data-ref="photo" alt={settings.product.title} hidden />
+        )}
       </div>
       <div class="flex flex-col gap-4">
         <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.product.title}</h1>

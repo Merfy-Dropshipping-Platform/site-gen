@@ -96,4 +96,42 @@ describe('наши секции блока 11', () => {
       'data-part="list"',
     );
   }, 30_000);
+
+  it('«Товар»: галерея — <img data-ref="photo">; без своих фото место скрыто, с фото — первое', async () => {
+    // Приёмка блока 11 (25.10): у товара без своих фото фото появляется со значением «синий» — элемент фото в разметке
+    // есть всегда, скрипт секции переведёт его на фото значения (variants.imageFor).
+    const renderer = startSectionRenderer();
+    opened.push(renderer);
+    const request = await requestOf('product');
+    const scarf = {
+      id: 'p-1',
+      title: 'Шарф «Нова»',
+      price: money(190000),
+      compareAtPrice: null,
+      available: true,
+      images: [],
+      description: '',
+      options: [
+        { id: 'g-1', name: 'Цвет', values: [{ id: 'v-1', value: 'синий', images: ['https://s3.merfy.ru/p/blue.jpg'] }] },
+      ],
+    };
+    const settings = { product: 'p-1', 'sold-out': 'show' };
+    const bare = await renderer.render({
+      ...request,
+      settings,
+      records: { product: scarf },
+      page: { id: 'product', path: '/product/sharf-nova' },
+    });
+    expect(bare).toContain('<img');
+    expect(bare).toContain('data-ref="photo"');
+    expect(bare).toMatch(/<img[^>]*\bhidden\b/);
+    const withPhoto = await renderer.render({
+      ...request,
+      settings,
+      records: { product: { ...scarf, images: ['https://s3.merfy.ru/p/1.jpg'] } },
+      page: { id: 'product', path: '/product/sharf-nova' },
+    });
+    expect(withPhoto).toContain('src="https://s3.merfy.ru/p/1.jpg"');
+    expect(withPhoto).not.toMatch(/<img[^>]*\bhidden\b/);
+  }, 30_000);
 });

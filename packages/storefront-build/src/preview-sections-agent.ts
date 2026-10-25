@@ -375,6 +375,9 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       // ссылки — как ссылка.
       var control = target && target.closest ? target.closest(CONTROLS) : null;
       if (control && sectionOf(control) && !control.closest('a[href]')) return;
+      // Листание списка секции (блок 11, 11.9): клик по «Показать ещё»/«Показать предыдущие» — коду секции: поведение
+      // catalog само отменяет переход и шлёт merfy:preview:list. Не отдать — клик не дойдёт, список в превью не листается.
+      if (target && target.closest && target.closest('[data-part="next"],[data-part="prev"]')) return;
       // Подпункт (Р60): select-subsection с местом блока среди разных id секции, выбора секции нет. Ссылка внутри
       // подпункта превью не уводит; остальное (раскрыть <details>) работает, как на проде.
       var blockNode = target && target.closest ? target.closest('[data-merfy-block]') : null;

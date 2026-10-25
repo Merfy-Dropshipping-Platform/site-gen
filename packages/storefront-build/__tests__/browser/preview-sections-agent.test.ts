@@ -16,6 +16,7 @@ declare global {
   interface Window {
     received: Message[];
     send: (message: unknown) => void;
+    __nextDefaultPrevented: boolean | null;
   }
 }
 
@@ -239,5 +240,36 @@ describe('скрипт превью секций', () => {
     await send(selection);
     await expect.poll(() => shown('delete')).toBe(true);
     expect(await shown('duplicate')).toBe(true);
+  });
+
+  it('клик по «Показать ещё» внутри секции — коду секции: без select-block и без отмены события', async () => {
+    // Приёмка блока 11 (25.10): листание каталога в превью должно доходить до поведения catalog (мероприятие
+    // merfy:preview:list), клик по ссылке next агент превью не съедает.
+    await frame()
+      .locator('[data-section-id="hero-1"]')
+      .evaluate((node) => {
+        const link = document.createElement('a');
+        link.setAttribute('data-part', 'next');
+        link.setAttribute('href', '/catalog/page/2');
+        link.textContent = 'Показать ещё';
+        node.appendChild(link);
+        window.__nextDefaultPrevented = null;
+        link.addEventListener('click', (event) => {
+          window.__nextDefaultPrevented = event.defaultPrevented;
+          event.preventDefault();
+        });
+      });
+    const before = (await received()).length;
+    await frame().locator('[data-section-id="hero-1"] [data-part="next"]').click();
+    await page.waitForTimeout(300);
+    const messages = (await received()).slice(before).filter((message) =>
+      ['select-block', 'select-subsection', 'navigate'].includes(message.type),
+    );
+    expect(messages).toEqual([]);
+    expect(
+      await frame()
+        .locator('[data-section-id="hero-1"] [data-part="next"]')
+        .evaluate(() => window.__nextDefaultPrevented),
+    ).toBe(false);
   });
 });

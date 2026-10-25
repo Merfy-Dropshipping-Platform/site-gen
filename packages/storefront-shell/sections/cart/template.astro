@@ -1,0 +1,42 @@
+<div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body">
+  <h1 class="m-0 font-heading weight-heading text-3xl text-heading">Корзина</h1>
+  <div data-ref="empty" class="flex flex-col items-center gap-4 py-10" hidden>
+    <p class="m-0 text-lg">В корзине пока пусто</p>
+    <a class="no-underline" href="/catalog">Продолжить покупки</a>
+  </div>
+  <div data-ref="lines" class="flex flex-col gap-4" hidden>
+    <template>
+      <div class="flex items-center gap-4 rounded-button bg-card p-4 text-card-foreground">
+        <img data-ref="image" alt="" class="h-20 w-20 shrink-0 rounded-button object-cover" />
+        <div class="flex flex-1 flex-col gap-1">
+          <p data-ref="title" class="m-0 font-heading weight-heading"></p>
+          <p data-ref="options" class="m-0 text-sm text-muted-foreground"></p>
+          <p data-ref="price" class="m-0"></p>
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            data-ref="less"
+            data-action="cart.change"
+            aria-label="Меньше"
+            class="h-8 w-8 rounded-button border-width-button border-border"
+          >
+            −
+          </button>
+          <span data-ref="quantity" class="min-w-6 text-center">0</span>
+          <button
+            type="button"
+            data-ref="more"
+            data-action="cart.change"
+            aria-label="Больше"
+            class="h-8 w-8 rounded-button border-width-button border-border"
+          >
+            +
+          </button>
+        </div>
+        <p data-ref="total" class="m-0 shrink-0 font-heading weight-heading"></p>
+        <button type="button" data-ref="remove" data-action="cart.remove" class="shrink-0 text-sm underline">Удалить</button>
+      </div>
+    </template>
+  </div>
+</div>

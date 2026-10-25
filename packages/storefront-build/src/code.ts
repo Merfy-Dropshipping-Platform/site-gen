@@ -5,6 +5,7 @@ import { kitPlanOf } from './features';
 import { sha256 } from './canonical';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs, CodeSection, ShellInput } from './inputs';
+import { recordKeysOf } from './section-records';
 import { pageListsOf } from './routes';
 import type { PageContent, PageRender, PlacedSection } from './sections-render';
 import type { ShellBuild, ShellKit } from './shell';
@@ -101,6 +102,8 @@ export function placedSections(inputs: BuildInputs, pageId: string): PlacedSecti
       ...(instance.blocks === undefined ? {} : { blocks: instance.blocks }),
       ...(instance.menus === undefined ? {} : { menus: instance.menus }),
       ...(instance.wrapper === undefined ? {} : { wrapper: instance.wrapper }),
+      // Поля с записями и data секции (часть 8г блока 8).
+      ...recordKeysOf(section),
       ...placeFlags(inputs, instance.section),
       ...(script === null ? {} : { script: true }),
     };

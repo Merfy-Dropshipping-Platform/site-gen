@@ -4,6 +4,7 @@ import { hashSchema } from './canonical';
 import { entityKey } from './entities';
 import { StorefrontBuildError } from './errors';
 import { parseWith } from './parse';
+import { DATA_FIELDS_MAX, DATA_FROM, DATA_NAME, RECORD_FIELD_KINDS } from './section-records';
 import { SPECIAL_PAGE_IDS, SPECIAL_PAGE_SLUGS } from './special-pages';
 
 // Входы сборки магазина новой темы (design.md блока 4, В4-3 Б): всё, от чего зависят файлы, — явно и в одном месте.
@@ -62,6 +63,12 @@ const shellSchema = z.strictObject({
   parts: z.array(partNameSchema),
 });
 
+// data секции во входах (часть 8г блока 8): та же форма, что в section.json; смысл проверил приём секции.
+const sectionDataEntrySchema = z.strictObject({
+  from: z.string().regex(DATA_FROM),
+  fields: z.array(z.string().min(1)).min(1).max(DATA_FIELDS_MAX),
+});
+
 // Принятая правка секции из реестра (storefront_section): отпечаток правки, отпечаток модуля рендера (у секции; у
 // глобального скрипта — null) и отпечаток файла скрипта; null — секция без скрипта (п. 16).
 const codeSectionSchema = z.strictObject({
@@ -72,6 +79,9 @@ const codeSectionSchema = z.strictObject({
   script: hashSchema.nullable(),
   // Часть 4 (Р1-4-2): флаги section.json — только если объявлены, иначе входы и ключ прежние.
   removable: z.literal(false).optional(),
+  // Блок 8 «Секций и SDK», часть 8г: поля с записями (id настройки → вид) и data для скрипта — только если объявлены.
+  recordFields: z.record(z.string().min(1), z.enum(RECORD_FIELD_KINDS)).optional(),
+  data: z.record(z.string().regex(DATA_NAME), sectionDataEntrySchema).optional(),
   uses: z.array(z.enum(['theme', 'shop'])).optional(),
   // Свои токены секции из section.json (блок 4, Р4-10) — только если объявлены.
   tokens: z.record(z.string(), z.unknown()).optional(),

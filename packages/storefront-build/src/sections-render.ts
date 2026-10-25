@@ -6,6 +6,14 @@ import { StorefrontBuildError } from './errors';
 import { sectionInputTag } from './input-tag';
 import { htmlClasses, sectionCss } from './section-css';
 import { EMPTY_SHOP, type ShopProps } from './shop-props';
+import type { RecordIndex } from './records';
+import {
+  menusWithRecordPaths,
+  sectionRecords,
+  type RecordFieldKind,
+  type SectionDataEntry,
+  type SectionRecordValues,
+} from './section-records';
 import { HOME_PAGE, type PageInfo } from './special-pages';
 import { classSystem } from './tailwind-system';
 
@@ -53,6 +61,8 @@ export interface PageProps {
   shop: ShopProps;
   // Блок 7, часть 7а: страница — получает каждая секция, без "uses".
   page: PageInfo;
+  // Блок 8, часть 8г: записи магазина — полям с записями и ссылкам меню; нет — у полей null, ссылки как есть.
+  records?: RecordIndex;
 }
 
 export const NO_PAGE_PROPS: PageProps = { theme: {}, shop: EMPTY_SHOP, page: HOME_PAGE };
@@ -71,6 +81,8 @@ export interface SectionRenderRequest {
   shop?: ShopProps;
   // Блок 7, часть 7а: страница, на которой стоит секция, — у каждой секции.
   page?: PageInfo;
+  // Блок 8, часть 8г: записи полей с записями по id настройки — только у секции с такими полями.
+  records?: SectionRecordValues;
 }
 
 export type RenderSection = (request: SectionRenderRequest) => Promise<string>;
@@ -137,6 +149,9 @@ export interface PlacedSection {
   classes?: readonly string[];
   // Часть 5 блока 1: вид обёртки (общие настройки секции); нет — WRAPPER_CLASS.
   wrapper?: WrapperView;
+  // Блок 8, часть 8г: поля с записями (id настройки → вид) и data для скрипта — из кода секции (recordKeysOf).
+  recordFields?: Readonly<Record<string, RecordFieldKind>>;
+  data?: Readonly<Record<string, SectionDataEntry>>;
 }
 
 // HTML секций одной страницы, байт (блок 2, «Решил сам» п. 3): секция, которая не влезает, не рендерится (render-output).
@@ -223,15 +238,17 @@ function failedHtml(placed: PlacedSection, mode: PageMode, error: unknown, faile
 
 // Сверх settings и blocks (часть 4, Р1-4-5): меню — у секции с настройками вида menu; theme и shop — только тем, кто их
 // объявил в "uses": данные магазина не уходят в модуль секции без спроса.
-// page — у каждой секции (блок 7, часть 7а).
+// page — у каждой секции (блок 7, часть 7а). Записи полей с записями и адреса записей в меню — блок 8, часть 8г.
 const propsOf = (
   placed: PlacedSection,
   props: PageProps,
-): Pick<SectionRenderRequest, 'menus' | 'theme' | 'shop' | 'page'> => ({
+  records: SectionRecordValues,
+): Pick<SectionRenderRequest, 'menus' | 'theme' | 'shop' | 'page' | 'records'> => ({
   page: props.page,
-  ...(placed.menus === undefined ? {} : { menus: placed.menus }),
+  ...(placed.menus === undefined ? {} : { menus: menusWithRecordPaths(placed.menus, props.records) }),
   ...(placed.uses?.includes('theme') === true ? { theme: props.theme } : {}),
   ...(placed.uses?.includes('shop') === true ? { shop: props.shop } : {}),
+  ...(Object.keys(records).length === 0 ? {} : { records }),
 });
 
 export async function renderSection(
@@ -247,7 +264,9 @@ export async function renderSection(
       path: placed.hash,
     });
   try {
-    const input = placed.script === true ? sectionInputTag(placed) : '';
+    // Записи полей с записями (часть 8г): в запрос рендера и, по data, в тег входных данных.
+    const records = sectionRecords(placed, props);
+    const input = placed.script === true ? sectionInputTag(placed, records.data) : '';
     const html = await sections.render({
       section: placed.name,
       hash: placed.hash,
@@ -255,7 +274,7 @@ export async function renderSection(
       settings: placed.settings,
       blocks: placed.blocks ?? [],
       preview: mode === 'preview',
-      ...propsOf(placed, props),
+      ...propsOf(placed, props, records.values),
     });
     return wrapper(placed, `${html}${input}`);
   } catch (error) {

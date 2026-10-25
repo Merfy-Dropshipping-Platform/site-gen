@@ -4,7 +4,8 @@ import { ASTRO_RUNTIME } from './astro-runtime';
 import { behaviorProblems } from './behavior-check';
 import { MAX_TEMPLATE_DEPTH, templateDepth } from './depth';
 import { TEMPLATE_FILE, propsUsesOf, type SectionManifest, type SectionUse } from './format';
-import { blockSelectProblems, markBlocks } from './marks';
+import { NO_EDIT_TARGETS, editTargetsOf, markEdits, type EditTargets } from './edit-marks';
+import { applyInserts, blockSelectProblems, markBlocks } from './marks';
 import { isWarning, problem, type SectionProblem } from './problems';
 import { NO_RICHTEXT, richtextIdsOf, type RichtextIds } from './set-html';
 import { templateScan } from './template';
@@ -73,6 +74,8 @@ export interface TemplateOptions {
   richtext: RichtextIds;
   blocks: boolean;
   uses?: readonly SectionUse[];
+  // Настройки с "inlineEdit": true (часть 6, Р1-6-1); нет — правки в превью у секции нет.
+  edits?: EditTargets;
 }
 
 export const NO_TEMPLATE_OPTIONS: TemplateOptions = { richtext: NO_RICHTEXT, blocks: false, uses: [] };
@@ -81,6 +84,7 @@ export const templateOptionsOf = (manifest: SectionManifest): TemplateOptions =>
   richtext: richtextIdsOf(manifest),
   blocks: manifest.blocks !== undefined,
   uses: propsUsesOf(manifest),
+  edits: editTargetsOf(manifest),
 });
 
 // Глубже предела — сразу отказ, до разбора: компилятор такой шаблон не переварит (depth.ts). Дальше запреты и
@@ -94,20 +98,24 @@ export async function checkTemplate(
     const message = `шаблон вложен на ${depth} уровней (теги и скобки), предел — ${MAX_TEMPLATE_DEPTH}`;
     return { problems: [problem('template-too-deep', TEMPLATE_FILE, message)], render: null, markup: NO_MARKUP };
   }
-  const [scan, compiled, marked, behaviorFound] = await Promise.all([
+  const [scan, compiled, marked, edited, behaviorFound] = await Promise.all([
     templateScan(text, options.richtext, options.uses ?? []),
     compileTemplate(text),
     markBlocks(text),
+    markEdits(text, options.edits ?? NO_EDIT_TARGETS),
     behaviorProblems(text),
   ]);
   const { markup } = scan;
   const forbidden = [...scan.problems, ...behaviorFound];
   if (!compiled.ok) return { problems: [...forbidden, ...compiled.problems], render: null, markup };
   // Модуль рендера — из шаблона с метками блоков (Р57); запреты и места ошибок — по исходному тексту.
-  const module = marked.marks > 0 ? await compileTemplate(marked.text) : compiled;
+  // Метки блоков (Р57) и метки правки в превью (часть 6) — одним списком вставок в исходный текст, одна компиляция.
+  const inserts = [...marked.inserts, ...edited.inserts];
+  const module = inserts.length > 0 ? await compileTemplate(applyInserts(text, inserts)) : compiled;
   if (!module.ok) return { problems: [...forbidden, ...module.problems], render: null, markup };
   const problems = [
     ...forbidden,
+    ...edited.problems,
     ...blockSelectProblems(text, marked, options.blocks),
     ...(await moduleImportProblems(module.code)),
   ];

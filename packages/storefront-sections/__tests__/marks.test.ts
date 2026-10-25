@@ -24,6 +24,8 @@ describe('метки блоков', () => {
       text: FAQ.replace('<details open=', `<details${MARK('block')} open=`),
       marks: 1,
       unmarked: [],
+      // Часть 6: метки — ещё и списком вставок (applyInserts), для меток правки в превью.
+      inserts: [{ at: FAQ.indexOf('<details') + '<details'.length, text: MARK('block') }],
     });
   });
 
@@ -37,7 +39,7 @@ describe('метки блоков', () => {
   it('нет одного корневого элемента — места нет в тексте, предупреждение со строкой и колонкой', async () => {
     const text = `---\nconst { settings, blocks } = Astro.props;\n---\n<div>{blocks.map((block) => block.settings.on ? <p>a</p> : <p>b</p>)}</div>`;
     const marked = await markBlocks(text);
-    expect(marked).toEqual({ text, marks: 0, unmarked: [text.indexOf('blocks.map')] });
+    expect(marked).toEqual({ text, marks: 0, unmarked: [text.indexOf('blocks.map')], inserts: [] });
     expect(blockSelectProblems(text, marked, true)).toEqual([
       {
         code: 'block-select-unavailable',

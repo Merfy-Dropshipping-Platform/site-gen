@@ -65,6 +65,15 @@
       "status": "works"
     },
     {
+      "id": "section-rollback",
+      "title": "Откат секции с ролью по ошибкам из браузеров: прежняя опубликованная правка снова на витрине (блок 12)",
+      "trigger": { "file": "packages/storefront-builder/src/role-rollback.ts", "name": "section-rollback" },
+      "themes": "new",
+      "scope": "store",
+      "delayMs": 0,
+      "status": "works"
+    },
+    {
       "id": "domain-change",
       "title": "Смена домена магазина: подключение — switchDomain, отключение — restoreFallbackDomain",
       "trigger": { "file": "src/sites.service.ts", "name": "switchDomain" },

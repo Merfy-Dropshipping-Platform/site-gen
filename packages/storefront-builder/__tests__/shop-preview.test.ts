@@ -738,5 +738,78 @@ describe('список секций — расширение секции (бл�
     const byName = new Map(list.sections.map((item) => [item.name, item]));
     expect(byName.get('test-ext:reviews')).toMatchObject({ title: 'Отзывы', extension });
     expect(byName.get('shop:hero')).not.toHaveProperty('extension');
+
+// Превью особых страниц блока 10 (часть 10а, Р10а-16, Р10а-19): страницы корзины, избранного, входа и кабинета — из
+// секций, есть всегда; оформление и «Спасибо за заказ» — страницы сборки с локалами блоков (в превью — все четыре).
+describe('превью особых страниц блока 10', () => {
+  const SPECIAL_INPUTS = parseBuildInputs({
+    ...standInputsJson,
+    code: {
+      sections: [{ name: 'shop:hero', kind: 'section', hash: sha256('правка'), render: HASH, script: null }],
+      pages: {
+        home: [{ id: 'hero-1', section: 'shop:hero', settings: { heading: 'Шарфы к первым холодам' } }],
+        'page-cart': [{ id: 'hero-cart', section: 'shop:hero', settings: { heading: 'Корзина' } }],
+      },
+      globals: [],
+    },
+    revision: {
+      ...standInputsJson.revision,
+      checkout: {
+        blocks: [
+          { type: 'CheckoutHeader', props: { siteTitle: 'Магазин стены' } },
+          { type: 'CheckoutLayout', props: { summaryPosition: 'left' } },
+        ],
+      },
+    },
+  });
+  // Тема печатает локалы оформления в конец тела: у страниц из секций ключа checkout нет.
+  const CHECKOUT_THEME: ShopTheme = {
+    ...THEME,
+    render: (path, locals) =>
+      THEME.render(path, locals).then((html) =>
+        html.replace('</body>', `<merfy-checkout>${JSON.stringify(locals.checkout ?? null)}</merfy-checkout></body>`),
+      ),
+  };
+  const specialDeps = () => {
+    const { deps, rendered } = depsOf();
+    deps.inputs = () => Promise.resolve({ inputs: SPECIAL_INPUTS, renders: new Map([[HASH, MODULE]]) });
+    deps.theme = () => Promise.resolve(CHECKOUT_THEME);
+    return { deps, rendered };
+  };
+
+  it('страницы из секций — все в превью, даже без экземпляров; секция — со своей страницей', async () => {
+    const paths: Record<string, string> = {
+      'page-cart': '/cart',
+      'page-wishlist': '/wishlist',
+      'page-profile': '/account/profile',
+      'page-orders': '/account/orders',
+      'page-login': '/login',
+    };
+    for (const [id, path] of Object.entries(paths)) {
+      const answer = await shopPreview(specialDeps().deps, url(`shop=${SHOP}&page=${id}`));
+      expect(answer.status, id).toBe(200);
+      expect(answer.body, id).toContain(`<link rel="canonical" href="https://nova-stand.example${path}">`);
+    }
+    const { deps, rendered } = specialDeps();
+    const cart = await shopPreview(deps, url(`shop=${SHOP}&page=page-cart`));
+    expect(cart.body).toContain('data-section-id="hero-cart"');
+    expect(rendered.map(([, request]) => request.page)).toEqual([{ id: 'page-cart', path: '/cart' }]);
+  });
+
+  it('page=page-checkout — locals блоков оформления (в превью — все); page=page-checkout-result — результат', async () => {
+    const checkout = await shopPreview(specialDeps().deps, url(`shop=${SHOP}&page=page-checkout`));
+    expect(checkout.status).toBe(200);
+    expect(checkout.body).toContain('<link rel="canonical" href="https://nova-stand.example/checkout">');
+    expect(checkout.body).toContain('"siteTitle":"Магазин стены"');
+    expect(checkout.body).toContain('"summaryPosition":"left"');
+    const result = await shopPreview(specialDeps().deps, url(`shop=${SHOP}&page=page-checkout-result`));
+    expect(result.status).toBe(200);
+    expect(result.body).toContain('"result":true');
+  });
+
+  it('другой id — по-прежнему 404 с подсказкой об особых страницах', async () => {
+    const answer = await shopPreview(specialDeps().deps, url(`shop=${SHOP}&page=page-unknown`));
+    expect(answer.status).toBe(404);
+    expect(answer.body).toContain('page-cart');
   });
 });

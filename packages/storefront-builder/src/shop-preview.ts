@@ -1,11 +1,14 @@
 import {
   CATALOG_PAGE_ID,
   CATALOG_PATH,
+  CHECKOUT_PAGES,
   NOT_FOUND_PAGE_ID,
   NOT_FOUND_ROUTE,
   PREVIEW_AGENT,
   PREVIEW_SECTIONS_AGENT,
+  STATIC_SPECIAL_PAGES,
   StorefrontBuildError,
+  checkoutFiles,
   isRecordType,
   listSourceOf,
   pageInfoById,
@@ -87,7 +90,7 @@ export interface ShopPreviewDeps {
 const HOME_PAGES: ReadonlySet<string> = new Set(['', '/', 'home']);
 const FONTS_STYLE = /<style id="merfy-fonts">([\s\S]*?)<\/style>/;
 const TEXT = {
-  page: 'в превью есть главная (page=home), страница 404 (page=not-found), свои страницы (page=<id страницы>), шаблоны записей (page=product, collection, blog, article или policy; запись — record=<id или адрес>) и стенд темы (page=stand)',
+  page: `в превью есть главная (page=home), страница 404 (page=not-found), свои страницы (page=<id страницы>), особые страницы блока 10 (page=<id: ${STATIC_SPECIAL_PAGES.map((page) => page.id).join(', ')}>; оформление и результат — тоже), шаблоны записей (page=product, collection, blog, article или policy; запись — record=<id или адрес>) и стенд темы (page=stand)`,
   block: 'нужно тело JSON { instance: { id, section, settings }, menus?, theme?, page?, list? }',
   section: (name: string) => `секции ${name} у магазина нет`,
   extensions: 'сервис расширений не ответил',
@@ -171,13 +174,17 @@ function withoutFontPreloads(html: string): string {
   return html.replace(LINK_TAG, (tag) => (isFontPreload(tag) ? '' : tag));
 }
 
-// Адрес страницы превью: главная, страница 404 (часть 7а; всегда темой — это поверхность правки), шаблон записи с
+// Адрес страницы превью: главная, страница 404 (часть 7а; всегда темой — это поверхность правки), особая страница
+// блока 10 (часть 10а, Р10а-16: в превью есть всегда, даже без секций — мерчант ставит первую секцию), шаблон записи с
 // записью (часть 8б-2: по id или адресу, иначе по умолчанию) или своя страница.
 function previewPathOf(inputs: BuildInputs, page: string, record: string | null): string | undefined {
   if (HOME_PAGES.has(page)) return '/';
   if (page === NOT_FOUND_PAGE_ID) return NOT_FOUND_ROUTE.path;
   // Каталог (блок 11, часть 11а) — и с пустым списком: мерчант ставит в него первую секцию.
   if (page === CATALOG_PAGE_ID) return CATALOG_PATH;
+  // Особые страницы блока 10: адрес — из общего списка платформы; строки ревизии их не дают (только свои страницы).
+  const special = STATIC_SPECIAL_PAGES.find((candidate) => candidate.id === page);
+  if (special !== undefined) return special.slug;
   if (isRecordType(page)) return previewRecordPath(inputs, page, record);
   return inputs.revision.pages?.find((candidate) => candidate.id === page)?.slug;
 }
@@ -199,7 +206,16 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   const path = previewPathOf(inputs, page, recordOf(url));
   if (path === undefined) return answer(404, TEXT.page);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
-  const rendered = await renderShopPage(inputs, path, theme, previewPage(deps, found.shopId, renders));
+  // Оформление и «Спасибо за заказ» (часть 10а, Р10а-17) — страницы сборки, не из секций: свои локалы блоков
+  // (в превью — все четыре, Р10а-19); renderShopPage их не собирает.
+  const checkout = CHECKOUT_PAGES.find((candidate) => candidate.id === page);
+  const rendered = await (async (): Promise<{ file: { content: Uint8Array } }> => {
+    if (checkout === undefined) return renderShopPage(inputs, path, theme, previewPage(deps, found.shopId, renders));
+    const files = (await checkoutFiles(inputs, theme, previewPage(deps, found.shopId, renders))).files;
+    const file = files.find((candidate) => candidate.path === checkout.file);
+    if (file === undefined) throw new StorefrontBuildError('page-unknown', 'такой страницы у магазина нет', { path });
+    return { file: { content: file.content } };
+  })();
   // Оба скрипта превью (1а-13): слушатель токенов и скрипт секций — select-block, update-block, reconcile. За ними —
   // код страницы (блок 5, часть 5г): JSON-тег бандла превью и скрипт превью; нет снимка кода — без них.
   const agents = `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script>`;

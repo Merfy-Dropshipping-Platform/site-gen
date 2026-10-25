@@ -6,7 +6,8 @@ import { templateProblems } from '../src/template';
 // set:html — только с настройкой вида richtext (часть 3, Р58): значение очищено, Astro вставляет его без экранирования.
 const FRONT = '---\nconst { settings, blocks } = Astro.props;\n---\n';
 const IDS = { section: new Set(['content']), block: new Set(['answer']) };
-const REFUSED = 'set:html можно только с настройкой вида richtext';
+const REFUSED =
+  'set:html можно только с настройкой вида richtext, page.record.html или settings.<id>.html поля вида policy';
 const messages = async (body: string): Promise<string[]> =>
   (await templateProblems(`${FRONT}${body}`, IDS)).map((item) => item.message);
 
@@ -83,5 +84,53 @@ describe('set:html', () => {
     });
     if (!read.ok) throw new Error(JSON.stringify(read.problems));
     expect(richtextIdsOf(read.value)).toEqual({ section: new Set(['content']), block: new Set(['answer']) });
+  });
+});
+
+describe('set:html: HTML записи (блок 8 «Секций и SDK», часть 8г-2)', () => {
+  const PAGE_FRONT = '---\nconst { settings, page } = Astro.props;\n---\n';
+  const RECORD_IDS = { section: new Set<string>(), block: new Set<string>(), html: new Set(['policy']) };
+  const recordMessages = async (body: string): Promise<string[]> =>
+    (await templateProblems(`${PAGE_FRONT}${body}`, RECORD_IDS)).map((item) => item.message);
+
+  it('можно: page.record.html и settings.<id>.html поля вида policy', async () => {
+    expect(await recordMessages('<div set:html={page.record.html} />')).toEqual([]);
+    expect(await recordMessages("<div set:html={page['record']['html']} />")).toEqual([]);
+    expect(await recordMessages('<div set:html={settings.policy.html} />')).toEqual([]);
+  });
+
+  it('нельзя: другие поля записи, поле не вида policy, имя связано параметром стрелки', async () => {
+    for (const body of [
+      '<div set:html={page.record.description} />',
+      '<div set:html={settings.product.html} />',
+      '<div set:html={page.html} />',
+      '<div set:html={page.path.html} />',
+      '<div set:html={settings.policy.title} />',
+      '<ul>{[1].map((page) => <li set:html={page.record.html} />)}</ul>',
+      '<ul>{[1].map((settings) => <li set:html={settings.policy.html} />)}</ul>',
+    ])
+      expect(await recordMessages(body)).toEqual([REFUSED]);
+  });
+
+  it('id полей вида policy — в html; без таких полей ключа нет', () => {
+    const read = readManifest({
+      'section.json': JSON.stringify({
+        sdk: 1,
+        name: 'page',
+        kind: 'section',
+        title: 'Страница',
+        settings: [
+          { id: 'policy', label: 'Выбор страницы', setting: { kind: 'policy' } },
+          { id: 'text', label: 'Текст', setting: { kind: 'richtext', default: '' } },
+        ],
+      }),
+    });
+    if (!read.ok) throw new Error(JSON.stringify(read.problems));
+    expect(richtextIdsOf(read.value)).toEqual({
+      section: new Set(['text']),
+      block: new Set(),
+      html: new Set(['policy']),
+    });
+    expect(richtextIdsOf({ settings: [] })).toEqual({ section: new Set(), block: new Set() });
   });
 });

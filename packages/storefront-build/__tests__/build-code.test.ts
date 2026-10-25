@@ -20,16 +20,21 @@ describe('buildStorefront с кодом секций', () => {
     const { manifest, files } = await buildStorefront(codeInputs(), REFERENCES, theme, ASSETS, renderSection);
     const paths = files.map((file) => file.path);
     const bundles = paths.filter((path) => path.startsWith('_merfy/'));
-    expect(bundles).toHaveLength(1);
-    expect(bundles[0]).toMatch(/^_merfy\/b\/[0-9a-f]{64}\.js$/);
-    expect(paths).toEqual(['404.html', '502.html', '_astro/index.css', bundles[0], 'index.html'].sort());
+    // Блок 10: свои бандлы у главной (секции), у /checkout (часть checkout) и у /checkout-result (только ядро).
+    expect(bundles).toHaveLength(3);
+    expect(bundles.every((path) => /^_merfy\/b\/[0-9a-f]{64}\.js$/.test(path))).toBe(true);
+    expect(paths).toEqual(
+      ['404.html', '502.html', '_astro/index.css', ...bundles, 'checkout-result/index.html', 'checkout/index.html', 'index.html'].sort(),
+    );
     // Файлы шрифтов (блок 12) — только в манифесте, без байтов.
     const fontPaths = Object.keys(manifest.files).filter((path) => path.startsWith('_fonts/'));
     expect(Object.keys(manifest.files)).toEqual([...paths, ...fontPaths]);
     expect(manifest.shell).toEqual({ version: '0.1.0' });
     const home = new TextDecoder().decode(files.find((file) => file.path === 'index.html')?.content);
-    const integrity = `sha256-${Buffer.from(bundles[0]?.slice('_merfy/b/'.length, -3) ?? '', 'hex').toString('base64')}`;
-    expect(home).toContain(`<script type="module" src="/${bundles[0]}" integrity="${integrity}"></script>`);
+    const homeBundle = /src="\/(_merfy\/b\/[0-9a-f]{64}\.js)"/.exec(home)?.[1] ?? '';
+    expect(bundles).toContain(homeBundle);
+    const integrity = `sha256-${Buffer.from(homeBundle.slice('_merfy/b/'.length, -3), 'hex').toString('base64')}`;
+    expect(home).toContain(`<script type="module" src="/${homeBundle}" integrity="${integrity}"></script>`);
     // Политика CSP (часть 13б): «своего кода» во входах нет — обычная; длиннее 12 288 знаков манифест не проходит.
     expect(manifest.csp?.startsWith("default-src 'self'; script-src 'self' 'sha256-")).toBe(true);
     expect(() => checkManifest({ ...manifest, csp: 'a'.repeat(12_289) })).toThrow();

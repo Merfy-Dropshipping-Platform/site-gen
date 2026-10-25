@@ -14,6 +14,7 @@ import {
 } from './records';
 import { listRoutesOf } from './list-routes';
 import type { PageMode } from './sections-render';
+import { CHECKOUT_PAGES } from './checkout-pages';
 import { HOME_PAGE, NOT_FOUND_PAGE_ID, STATIC_SPECIAL_PAGES, type PageInfo, type SpecialPage } from './special-pages';
 
 // Страницы магазина новой темы (design.md блока 4, Св-1): главная и свои страницы мерчанта (блок 1 «Секций и SDK»,
@@ -171,7 +172,17 @@ function routesOf(inputs: BuildInputs, mode: PageMode = 'live'): Routes {
     [route.path, route],
     ...routeCopies(route).map((copy): [string, ShopRoute] => [copy.path, route]),
   ]);
-  const byPath = new Map([...withCopies, [NOT_FOUND_ROUTE.path, NOT_FOUND_ROUTE] as const]);
+  // Оформление заказа (блок 10, Р10а-17) в превью — та же страница режима preview; на витрине её пишут свои файлы
+  // (checkout-pages.ts), среди страниц секций её нет.
+  const checkoutRoutes =
+    mode === 'preview'
+      ? CHECKOUT_PAGES.map((page): ShopRoute => ({ id: page.id, path: page.path, file: page.file, entity: 'site' }))
+      : [];
+  const byPath = new Map([
+    ...withCopies,
+    ...checkoutRoutes.map((route): [string, ShopRoute] => [route.path, route]),
+    [NOT_FOUND_ROUTE.path, NOT_FOUND_ROUTE] as const,
+  ]);
   const routes = { list, byPath };
   routesByMode[mode].set(inputs, routes);
   return routes;

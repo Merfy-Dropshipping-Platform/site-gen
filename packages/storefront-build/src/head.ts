@@ -157,6 +157,17 @@ export function platformPageStyles(
   return { fontsCss, tokensCss };
 }
 
+// Схемы словаря с правками мерчанта (блок 10, Р10а-18): те же словарь и правки, из которых печатается tokensCss, —
+// по ним сборка пишет таблицу переменных оформления пяти тем (checkout-css.ts).
+export function themeSchemes(
+  inputs: BuildInputs,
+  theme: ParsedTheme,
+  migrations: TokenMigrations = NO_MIGRATIONS,
+): Record<string, Record<string, unknown>> {
+  const edits = editsOf(inputs, theme, migrations);
+  return resolveTokens(theme.dictionary, theme.tokens, edits).schemes;
+}
+
 type ConfigAnalytics = Parameters<typeof buildStorefrontConfig>[0]['analytics'];
 
 // Страница для конфига витрины: id и адрес; у страницы записи — вид и id записи (часть 8б-2; блоки 13 и 12в).

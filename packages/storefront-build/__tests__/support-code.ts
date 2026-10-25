@@ -17,6 +17,8 @@ const CORE = [
   "export const cart = { name: 'cart' };",
   "export const favorites = { name: 'favorites' };",
   "export const analytics = { name: 'analytics' };",
+  // Блок 10, часть 10а: часть checkout (window.cartStore) — экспорт ядра, но не часть core.json; бандл /checkout.
+  "export const checkout = { name: 'checkout' };",
 ].join('\n');
 
 export const SHELL_BUILD: ShellBuild = {

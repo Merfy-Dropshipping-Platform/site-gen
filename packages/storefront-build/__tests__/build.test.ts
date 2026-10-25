@@ -81,6 +81,8 @@ describe('buildStorefront', () => {
       '502.html',
       '_astro/index.css',
       '_astro/manrope.woff2',
+      'checkout-result/index.html',
+      'checkout/index.html',
       'index.html',
     ]);
     const fonts = shopFonts(standInputs, novaTokens).files.map((file) => [file.path, file.hash]);
@@ -124,7 +126,8 @@ describe('buildStorefront', () => {
     const changed = Object.keys(before.manifest.files).filter(
       (path) => before.manifest.files[path] !== after.manifest.files[path],
     );
-    expect(changed).toEqual(['index.html']);
+    // Блок 10, часть 10а: оформление тоже печатает год — файлы оформления меняются вместе с главной.
+    expect(changed).toEqual(['checkout-result/index.html', 'checkout/index.html', 'index.html']);
   });
 
   it('другой коммит платформы — те же файлы и ключ: коммит только справка', async () => {

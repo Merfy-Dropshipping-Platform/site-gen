@@ -88,16 +88,53 @@ describe('рисовальщик темы nova', () => {
     expect(head).toContain(`<style id="merfy-tokens">${probeLocals.head.tokensCss}</style>`);
   });
 
-  // CSS один — стенда в превью (Tailwind, блок 8). Шрифт темы — из библиотеки платформы (блок 12): своих файлов шрифтов
-  // и CSS с ними у темы нет, главная на CSS не ссылается.
-  it('файлы клиента: один CSS стенда, файлов шрифтов нет, в HTML главной ссылки на CSS нет', () => {
+  // CSS — стенда в превью (Tailwind, блок 8) и оформления (блок 10, часть 10а). Шрифт темы — из библиотеки платформы
+  // (блок 12): своих файлов шрифтов и CSS с ними у темы нет, главная на CSS не ссылается.
+  it('файлы клиента: CSS стенда и оформления, файлов шрифтов нет, в HTML главной ссылки на CSS нет', () => {
     const css = clientFiles.filter((file) => file.path.endsWith('.css')).map((file) => file.path);
-    expect(css).toHaveLength(1);
+    expect(css).toHaveLength(2);
     expect(clientFiles.some((file) => file.path.endsWith('.woff2'))).toBe(false);
     expect(css.filter((path) => html.includes(`href="/${path}"`))).toEqual([]);
   });
 
   it('такой страницы у темы нет — page-unknown', async () => {
     await expect(renderer.render('/nope', probeLocals)).rejects.toMatchObject({ code: 'page-unknown' });
+  });
+});
+
+// Блок 10, часть 10а (Р10а-17): оформление новой темы — нынешние блоки theme-base в серверной сборке nova.
+describe('рисовальщик темы nova: оформление', () => {
+  let renderer: Renderer;
+  const checkout = {
+    result: false,
+    config: { shopId: '3a9626f7-390d-4a66-bca5-a3b806ca6c1b', apiUrl: 'https://gateway.dev.merfy.ru/api', dadataToken: '' },
+    varsCss: '.color-scheme-2 { --color-bg: 255 255 255; }',
+    header: { siteTitle: 'Стенд Nova' },
+    layout: {},
+    form: {},
+    summary: {},
+  };
+
+  beforeAll(async () => {
+    const bundle = await buildRendererBundle(NOVA_DIR, OUT_DIR);
+    renderer = await startRenderer(bundle.serverEntry);
+  });
+
+  afterAll(async () => {
+    await renderer.close();
+  });
+
+  it('/checkout: шапка оформления, форма с кнопкой оплаты, конфиг магазина, переменные; без cart-store.js', async () => {
+    const html = await renderer.render('/checkout', { ...probeLocals, checkout });
+    expect(html).toContain('data-checkout-slot="header"');
+    expect(html).toContain('data-checkout-submit');
+    expect(html).toContain('3a9626f7-390d-4a66-bca5-a3b806ca6c1b');
+    expect(html).toContain('--color-bg: 255 255 255;');
+    expect(html).not.toContain('/scripts/cart-store.js');
+  });
+
+  it('/checkout-result: «Спасибо за заказ»', async () => {
+    const html = await renderer.render('/checkout-result', { ...probeLocals, checkout: { ...checkout, result: true } });
+    expect(html).toContain('Спасибо за заказ');
   });
 });

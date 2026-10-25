@@ -3,6 +3,18 @@
   "v": 1,
   "versions": [
     {
+      "version": "0.7.0",
+      "date": "2026-10-26",
+      "lines": [
+        {
+          "kind": "look",
+          "text": "Страницы оформления заказа /checkout и «Спасибо за заказ» /checkout-result — блоки пяти тем с цветами магазина",
+          "tokens": [],
+          "search": true
+        }
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "2026-10-24",
       "lines": [

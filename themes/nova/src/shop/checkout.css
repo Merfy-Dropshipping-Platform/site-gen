@@ -1,0 +1,6 @@
+/*
+ * Оформление заказа (блок 10 «Секций и SDK», часть 10а): блоки пяти тем из packages/theme-base — их Tailwind-классы.
+ * Цвета и шрифты — таблица переменных checkout.varsCss из токенов магазина (packages/storefront-build/src/checkout-css.ts).
+ */
+@import "tailwindcss";
+@source "../../../../packages/theme-base/blocks";

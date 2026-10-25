@@ -2,8 +2,16 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CART_UPDATED_EVENT, checkout, createCheckoutStore } from '../src/core/parts/checkout';
-import { API_URL, fakeCore, fakeGateway, serverItem } from './sdk-support';
+import {
+  CONFIG_READY_EVENT,
+  CART_UPDATED_EVENT,
+  checkout,
+  createCheckoutStore,
+  loadCheckoutSettings,
+  publishCheckoutSettings,
+  type SettingsWindow,
+} from '../src/core/parts/checkout';
+import { API_URL, SHOP_ID, fakeCore, fakeGateway, serverItem } from './sdk-support';
 
 // window.cartStore поверх корзины SDK для нынешнего оформления (блок 10 «Секций и SDK», 10.5, «Решил сам» п. 10; часть
 // 10а, Р10а-10). Договор — исходники блоков оформления theme-base: каждый метод, который они зовут, есть у объекта.
@@ -112,10 +120,85 @@ describe('window.cartStore', () => {
     const gateway = fakeGateway();
     localStorage.setItem('merfy:cartId', 'c-1');
     gateway.answer('GET /store/carts/c-1', { status: 200, body: { cart: CART, items } });
+    // Блок 10, часть 10а: вместе с корзиной часть тянет настройки формы оформления (факт 33).
+    gateway.answer(`GET /public/sites/${SHOP_ID}/settings`, { status: 200, body: { settings: {} } });
     checkout.create(fakeCore('preview').core);
     expect(Reflect.get(window, 'cartStore')).toBeUndefined();
     checkout.create(fakeCore('live').core);
-    await vi.waitFor(() => expect(gateway.keys()).toEqual(['GET /store/carts/c-1']));
+    await vi.waitFor(() =>
+      expect(gateway.keys()).toEqual(['GET /store/carts/c-1', `GET /public/sites/${SHOP_ID}/settings`]),
+    );
     expect(typeof Reflect.get(window, 'cartStore')).toBe('object');
+  });
+});
+
+// Настройки формы оформления (блок 10, часть 10а, факт 33): из шлюза при открытии страницы, событие
+// checkout:config-ready — всегда; гость магазина с обязательным входом — на /login. У пяти тем это скрипт страницы,
+// у новой — часть checkout ядра.
+describe('настройки формы оформления', () => {
+  const settingsWindow = (token: string | null): { win: SettingsWindow; holder: Record<string, unknown> } => {
+    const holder: Record<string, unknown> = {};
+    const win: SettingsWindow = {
+      self: 'top',
+      top: 'top',
+      localStorage: { getItem: (key: string): string | null => (key === 'merfy_customer_token' ? token : null) },
+      location: { href: '' },
+    };
+    return { win, holder };
+  };
+
+  it('настройки из шлюза — в __MERFY_CONFIG__.checkout и событием; иное значение — дефолт', async () => {
+    const gateway = fakeGateway();
+    gateway.answer(`GET /public/sites/${SHOP_ID}/settings`, {
+      status: 200,
+      body: { settings: { contactMethod: 'email', customerNameMode: 'surname', addressRequired: false } },
+    });
+    const { win } = settingsWindow('t-1');
+    const seen: boolean[] = [];
+    document.addEventListener(CONFIG_READY_EVENT, () => seen.push(true));
+    await loadCheckoutSettings(API_URL, SHOP_ID, win, document);
+    expect(Reflect.get(win, '__MERFY_CONFIG__')).toEqual({
+      checkout: { contactMethod: 'email', customerNameMode: 'surname', addressRequired: false, requireCustomerAuth: false },
+    });
+    expect(seen).toEqual([true]);
+    expect(win.location.href).toBe('');
+    expect(gateway.keys()).toEqual([`GET /public/sites/${SHOP_ID}/settings`]);
+  });
+
+  it('сбой сети и пустой shopId — дефолты, событие всё равно есть', async () => {
+    const gateway = fakeGateway();
+    gateway.answer(`GET /public/sites/${SHOP_ID}/settings`, 'network');
+    const seen: boolean[] = [];
+    document.addEventListener(CONFIG_READY_EVENT, () => seen.push(true));
+    const offline = settingsWindow(null);
+    await loadCheckoutSettings(API_URL, SHOP_ID, offline.win, document);
+    const noShop = settingsWindow(null);
+    await loadCheckoutSettings(API_URL, '', noShop.win, document);
+    expect(Reflect.get(offline.win, '__MERFY_CONFIG__')).toEqual({
+      checkout: { contactMethod: 'email-phone', customerNameMode: 'name-surname', addressRequired: true, requireCustomerAuth: false },
+    });
+    expect(seen).toEqual([true, true]);
+    expect(gateway.keys()).toEqual([`GET /public/sites/${SHOP_ID}/settings`]);
+  });
+
+  it('гость магазина с обязательным входом — на /login, без события; конфиг уже есть — только событие', () => {
+    const ready: boolean[] = [];
+    document.addEventListener(CONFIG_READY_EVENT, () => ready.push(true));
+    const guest = settingsWindow(null);
+    publishCheckoutSettings({ requireCustomerAuth: true }, guest.win, document, guest.win);
+    expect(guest.win.location.href).toBe('/login?redirect=%2Fcheckout');
+    expect(ready).toEqual([]);
+    publishCheckoutSettings({ requireCustomerAuth: true }, guest.win, document, guest.win);
+    expect(ready).toEqual([true]);
+    const readyOnce: unknown[] = [];
+    document.addEventListener(CONFIG_READY_EVENT, (event) => readyOnce.push(event));
+    const seeded = settingsWindow('t-1');
+    Reflect.set(seeded.win, '__MERFY_CONFIG__', { shopId: SHOP_ID, checkout: { contactMethod: 'email' } });
+    publishCheckoutSettings(null, seeded.win, document, seeded.win);
+    expect(Reflect.get(seeded.win, '__MERFY_CONFIG__')).toEqual({
+      shopId: SHOP_ID,
+      checkout: { contactMethod: 'email' },
+    });
+    expect(readyOnce).toHaveLength(1);
   });
 });

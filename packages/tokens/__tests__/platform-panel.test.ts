@@ -5,8 +5,8 @@ import { settingFields, tokenFields } from '../src/panel/fields';
 import { panelForTheme, parsePanel } from '../src/panel/panel';
 import { resolveSettings } from '../src/panel/settings';
 
-// Схема панели платформы (design.md блока 8, раздел 1 и П8-4 Б): вся нынешняя панель и группы блока 10 — правый сайдбар
-// баннера, 44 поля: 30 полей вида — токены (design.md блока 1, раздел 4.4), 14 настроек не про вид.
+// Схема панели платформы (design.md блока 8, раздел 1 и П8-4 Б): вся нынешняя панель и группы блока 10 — 40 полей: 30
+// полей вида — токены (design.md блока 1, раздел 4.4), 10 настроек не про вид (тексты баннера — поля его секции, блок 12).
 const PANEL_URL = new URL('../../theme-contract/panel/theme-panel.json', import.meta.url);
 const raw: unknown = JSON.parse(readFileSync(PANEL_URL, 'utf8'));
 const panel = parsePanel(raw, platformDictionary);
@@ -62,12 +62,12 @@ describe('theme-contract/panel/theme-panel.json', () => {
     ]);
   });
 
-  it('45 полей: 30 токенов вида — ровно таблица 4.4 блока 1, каждый один раз', () => {
+  it('40 полей: 30 токенов вида — ровно таблица 4.4 блока 1, каждый один раз', () => {
     expect(tokenFields(panel).map((field) => field.token)).toEqual(VIEW_TOKENS);
-    expect(settingFields(panel)).toHaveLength(15);
+    expect(settingFields(panel)).toHaveLength(10);
   });
 
-  it('15 настроек и их умолчания — как у нынешней панели, баннера cookie и избранного', () => {
+  it('10 настроек и их умолчания — как у нынешней панели, баннера cookie и избранного', () => {
     expect(resolveSettings(panel, {})).toEqual({
       'logo-image': '',
       'social-telegram': '',
@@ -78,18 +78,12 @@ describe('theme-contract/panel/theme-panel.json', () => {
       'social-max': '',
       'cart-type': 'drawer',
       'cookie-banner-enabled': true,
-      'cookie-banner-title': '',
-      'cookie-banner-text':
-        'Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием.',
-      'cookie-banner-primary-label': 'Принять',
-      'cookie-banner-secondary-label': '',
-      'cookie-banner-position': 'bottom-left',
       'wishlist-enabled': true,
     });
   });
 
-  it('сайдбар — только у баннера; схема корзины и баннера видны по условию', () => {
-    expect(panel.groups.filter((group) => group.sidebar).map((group) => group.id)).toEqual(['banner']);
+  it('сайдбара у групп нет (поля баннера — поля его секции); схема корзины и баннера видны по условию', () => {
+    expect(panel.groups.filter((group) => group.sidebar)).toEqual([]);
     const conditions = tokenFields(panel)
       .filter((field) => field.visibleWhen)
       .map((field) => [field.id, field.visibleWhen]);

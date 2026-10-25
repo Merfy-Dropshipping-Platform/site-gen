@@ -143,7 +143,8 @@ describe('схема панели для конструктора: GET /theme-pa
       categories: {},
       themePanel: { theme: { id: 'nova', version: '0.0.3', tokens: novaTheme.tokens }, panel: { v: 1 } },
     });
-    expect(JSON.stringify(answer)).toContain('"id":"cookie-banner-position"');
+    expect(JSON.stringify(answer)).toContain('"id":"cookie-banner-scheme"');
+    expect(JSON.stringify(answer)).not.toContain('"id":"cookie-banner-position"');
     expect(JSON.stringify(answer)).not.toContain('"shared"');
     expect((await fetch(`${base}/theme-panel?theme=rose`)).status).toBe(404);
     expect((await fetch(`${base}/theme-panel`)).status).toBe(404);

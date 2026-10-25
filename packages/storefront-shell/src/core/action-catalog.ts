@@ -43,6 +43,13 @@ export const ACTIONS = {
     about: 'подписать на рассылку магазина; аргументы { email }, ответ — { alreadySubscribed }; e-mail — из поля формы',
     markup: null,
   },
+  // Блок 11 «Секций и SDK», часть 11б: значение группы вариантов — id группы и значения из JSON вариантов страницы.
+  'variants.pick': {
+    module: 'variants',
+    about:
+      'выбрать значение группы вариантов товара; аргументы { productId, group, value } — id из JSON вариантов страницы, ответ — Variant, потом merfy:variant:change',
+    markup: { 'product-id': 'text', group: 'text', value: 'text' },
+  },
 } as const satisfies Readonly<Record<string, ActionSpec>>;
 
 export type ActionName = keyof typeof ACTIONS;

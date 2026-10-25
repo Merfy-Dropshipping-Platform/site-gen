@@ -1,4 +1,6 @@
 import {
+  BLOCK_DESELECT_EVENT,
+  BLOCK_SELECT_EVENT,
   MESSAGE_MAX_LENGTH,
   PREVIEW_UPDATE_EVENT,
   PREVIEW_UPDATED_EVENT,
@@ -29,6 +31,9 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var UPDATED_EVENT = ${JSON.stringify(PREVIEW_UPDATED_EVENT)};
   var ERROR_EVENT = ${JSON.stringify(SECTION_ERROR_EVENT)};
   var MESSAGE_MAX = ${MESSAGE_MAX_LENGTH};
+  // Часть 6в: события выбора блока для кода секции — тоже из протокола превью.
+  var SELECT_EVENT = ${JSON.stringify(BLOCK_SELECT_EVENT)};
+  var DESELECT_EVENT = ${JSON.stringify(BLOCK_DESELECT_EVENT)};
   // Кнопки и поля секции — как в превью пяти тем (src/services/preview.service.ts): нажатие — коду секции, выбора нет.
   var CONTROLS = 'button, input, select, textarea, label[for], [data-action]';
   // «Ошибка в скрипте секции «» — escape-последовательностями, как подсказки кнопок рамки.
@@ -109,6 +114,25 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     var nodes = section && id !== undefined ? blockNodesOf(section, id) : [];
     mark('data-merfy-block-selected', nodes);
     return nodes[0] || null;
+  }
+  // Выбор блока для кода секции (блок 6, часть 6в; В6-1 А): событие на первом узле блока с { blockId }. Другой блок или
+  // снятие выбора — сначала «выбор снят» прежнему; тот же блок — ничего. again — после замены секции: её новый
+  // экземпляр получает «выбран блок» ещё раз.
+  var announced = null;
+  function sendBlock(name, sectionId, id) {
+    var section = byId(sectionId);
+    var target = section ? blockNodesOf(section, id)[0] || section : null;
+    if (target) target.dispatchEvent(new CustomEvent(name, { bubbles: true, detail: { blockId: id } }));
+  }
+  function announce(again) {
+    var section = blockParent === null ? null : byId(blockParent);
+    var id = section && blockIndex !== null ? blockIdsOf(section)[blockIndex] : undefined;
+    var next = id === undefined ? null : { section: blockParent, block: id };
+    var same = announced !== null && next !== null && announced.section === next.section && announced.block === next.block;
+    if (same && !again) return;
+    if (announced !== null && !same) sendBlock(DESELECT_EVENT, announced.section, announced.block);
+    announced = next;
+    if (next !== null) sendBlock(SELECT_EVENT, next.section, next.block);
   }
   function ensureFrame() {
     if (frame) return frame;
@@ -355,9 +379,12 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   window.addEventListener('scroll', place, true);
   window.addEventListener('resize', place);
   // Часть 5г: замена секции закончилась — рамка выбора по новому размеру.
-  document.addEventListener(UPDATED_EVENT, function () {
+  document.addEventListener(UPDATED_EVENT, function (event) {
     place();
     showBlock();
+    // Часть 6в: заменили секцию с выбранным блоком — новый экземпляр получает «выбран блок».
+    var detail = event.detail || {};
+    if (announced !== null && detail.id === announced.section) announce(true);
   });
   // Сбой скрипта секции (design.md блока 5, 3.7): красная рамка (STYLE) и подпись первым элементом секции, тем же видом,
   // что ошибка рендера в превью. Сбой при снятии (unmount) подписи не даёт: секции уже нет или её меняют.
@@ -405,6 +432,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       blockIndex = typeof data.subsectionIndex === 'number' ? data.subsectionIndex : null;
       select(data.sectionId || null);
       showActions();
+      announce(false);
     }
     else if (data.type === 'update-block') updateBlock(data);
     else if (data.type === 'reconcile') reconcile(data);

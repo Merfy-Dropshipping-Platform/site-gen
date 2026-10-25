@@ -31,7 +31,8 @@ export function sendAnswer(res: Response, answer: BuilderAnswer): void {
 
 /**
  * GET /api/sites/:id/preview — превью магазина новой темы от сборщика:
- * главная с секциями (page нет, "/" или "home") или стенд темы (page=stand).
+ * главная с секциями (page нет, "/" или "home"), стенд темы (page=stand)
+ * или шаблон записи (page=<id шаблона>, record=<id или адрес>).
  */
 @Injectable()
 export class StandPreviewMiddleware implements NestMiddleware {
@@ -45,9 +46,16 @@ export class StandPreviewMiddleware implements NestMiddleware {
     if (siteId === undefined || !(await this.handoff.isNewTheme(siteId)))
       return next();
     const page = typeof req.query.page === "string" ? req.query.page : "";
+    // Запись шаблона (блок 8 «Секций и SDK», часть 8б-2): id или адрес записи —
+    // сборщику как есть; пустая — без ключа, как раньше.
+    const record = typeof req.query.record === "string" ? req.query.record : "";
     sendAnswer(
       res,
-      await this.builder.call("/preview", { shop: siteId, page }),
+      await this.builder.call("/preview", {
+        shop: siteId,
+        page,
+        ...(record === "" ? {} : { record }),
+      }),
     );
   }
 }

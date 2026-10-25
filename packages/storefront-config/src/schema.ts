@@ -54,6 +54,11 @@ const analyticsSchema = z.strictObject({
   custom: z.array(customCodeSchema).min(1).optional(),
 });
 
+// Виды записей страницы (блок 8 «Секций и SDK», часть 8б-2) — как RECORD_TYPES сборки (storefront-build,
+// records.ts): что каждый вид сборки здесь есть, проверяет typecheck сборки (configPageOf в head.ts).
+export const RECORD_PAGE_TYPES = ['product', 'collection', 'blog', 'article', 'policy'] as const;
+export type RecordPageType = (typeof RECORD_PAGE_TYPES)[number];
+
 const configShape = z.strictObject({
   v: z.literal(CONFIG_VERSION),
   mode: z.enum(MODES),
@@ -73,7 +78,13 @@ const configShape = z.strictObject({
     id: kebabId,
     version: z.string().regex(SEMVER, { error: 'нужна версия semver: 1.2.3' }),
   }),
-  page: z.strictObject({ id: kebabId, path: z.string().startsWith('/') }),
+  // Страница записи (часть 8б-2): вид и id записи — для аналитики товара (блок 13) и сторов расширений; у главной,
+  // своих страниц и 404 ключа нет.
+  page: z.strictObject({
+    id: kebabId,
+    path: z.string().startsWith('/'),
+    record: z.strictObject({ type: z.enum(RECORD_PAGE_TYPES), id: z.string().min(1) }).optional(),
+  }),
   // null — магазин ничего не отправляет: превью и стенд (design.md блока 11, «решил сам» 8).
   analytics: analyticsSchema.nullable(),
   // Сторы и методы расширений из uses секций страницы (блок 9 «Секций и SDK», часть 9в); нет таких секций — поля нет.

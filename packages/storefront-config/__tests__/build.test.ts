@@ -124,3 +124,11 @@ describe('buildStorefrontConfig: analytics (design.md блока 11)', () => {
     expect([error.code, error.path]).toEqual(['config-invalid', 'analytics']);
   });
 });
+
+describe('buildStorefrontConfig: страница записи (блок 8 «Секций и SDK», часть 8б-2)', () => {
+  it('record — вид и id записи; нет record — ключа нет', () => {
+    const page = { id: 'product', path: '/product/sharf', record: { type: 'product' as const, id: 'p-1' } };
+    expect(buildStorefrontConfig({ ...standInput, page }).page).toEqual(page);
+    expect(buildStorefrontConfig(standInput).page).not.toHaveProperty('record');
+  });
+});

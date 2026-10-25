@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { drawnKey, parseDrawnList, readObject } from '@merfy/storefront-storage';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -114,5 +114,18 @@ describe('места дорисовки — не места сборок', () =>
     runtime.stop();
     await until(() => Promise.resolve(logged(builder.lines, 'build-finish').length === 1));
     await builder.close();
+  });
+});
+
+describe('рендер по запросу страницы записи (блок 8 «Секций и SDK», часть 8б-2)', () => {
+  it('политика с текстом — /legal/privacy рендерится до сборки; без текста — 404', async () => {
+    await serve();
+    expect((await draw('/legal/privacy')).status).toBe(404);
+    const sql = `INSERT INTO site_policy (id, site_id, type, content, created_at, updated_at)
+      VALUES ($1, $2, 'privacy', $3, now(), now())`;
+    await harness.db.query(sql, [randomUUID(), site.id, 'Мы бережём данные покупателей']);
+    const response = await draw('/legal/privacy');
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain('Мы бережём данные покупателей');
   });
 });

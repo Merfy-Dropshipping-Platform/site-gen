@@ -227,6 +227,10 @@ export interface ExtModule {
 }
 export type ExtUse = `ext:${string}`;
 
+// Сквозные настройки темы — ctx.theme (блок 9, часть 9б; design.md блока 9, п. 16): значения из theme.settings конфига
+// страницы, те же, что у шаблона в Astro.props.theme. Только чтение; нет значения — undefined.
+export type ThemeSettings = NonNullable<StorefrontConfig['theme']['settings']>;
+
 // Анимация кода секции — ctx.animate (блок 6, design.md раздел 10): Motion внутри SDK, код секции его не импортирует.
 // Кривая — по имени (значения — EASINGS в behaviors/catalog.ts) или массивом Безье; свойства — из списка keyframes.ts.
 export type EasingName =
@@ -278,6 +282,8 @@ export interface BaseCtx<State extends object> {
   animate(el: El, keyframes: Keyframes, options?: AnimateOptions): Animation;
   // Блок 9, часть 9в: модули расширений из uses: ["ext:<id>"]; без таких uses — пустой объект.
   readonly ext: Readonly<Record<string, ExtModule>>;
+  // Блок 9, часть 9б: сквозные настройки темы страницы — ctx.theme['cart-type']; читать в момент действия.
+  readonly theme: Readonly<ThemeSettings>;
 }
 
 export type Ctx<State extends object = Record<string, unknown>, Uses extends ModuleName = ModuleName> = BaseCtx<State> &

@@ -73,6 +73,11 @@ function readConfig(win: Window): { config: StorefrontConfig | null; mode: Mode 
   }
 }
 
+// ctx.theme (блок 9 «Секций и SDK», часть 9б): сквозные настройки темы из конфига страницы — один замороженный объект на
+// страницу, общий для секций. Нет конфига или theme.settings — пустой объект.
+const themeOf = (config: StorefrontConfig | null): InstanceRuntime['theme'] =>
+  Object.freeze({ ...config?.theme.settings });
+
 interface CoreParts {
   readonly core: CoreHandle;
   readonly started: readonly StartedPart[];
@@ -147,7 +152,7 @@ function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts
   };
   // API созданной части платформы по имени (для ядра, не для кода секций): так ctx.animate получает провайдер behaviors.
   const apiOfPart = (name: string): unknown => parts.started.find(({ part }) => part.name === name)?.api ?? null;
-  return { win, mode, bus, page, partApi, apiOfPart, attachAll, markup };
+  return { win, mode, bus, page, partApi, apiOfPart, attachAll, markup, theme: themeOf(parts.core.config) };
 }
 
 const startFor = (

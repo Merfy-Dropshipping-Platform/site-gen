@@ -64,7 +64,7 @@ function bodyOf(init: RequestInit | undefined): unknown {
   return typeof init?.body === 'string' ? JSON.parse(init.body) : null;
 }
 
-function addressOf(input: string | URL | Request): string {
+export function addressOf(input: string | URL | Request): string {
   if (typeof input === 'string') return input;
   return input instanceof URL ? input.href : input.url;
 }

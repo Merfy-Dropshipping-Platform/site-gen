@@ -138,32 +138,40 @@ function replaceUrl(variantId: string): void {
   window.history.replaceState(window.history.state, '', url);
 }
 
-function productVariantsOf(core: CoreHandle, productId: string, entry: PageEntry): ProductVariants {
-  const store: Atom<Variant | null> = atom(initialOf(entry, urlVariantOf(core, productId)));
-  const variantsById = (id: string): Variant | null => entry.variants.find((variant) => variant.id === id) ?? null;
-  const valueIdsOf = (group: string): readonly string[] | null => {
-    const found = entry.options.find((option) => option.id === group);
-    return found === undefined ? null : found.values.map((value) => value.id);
-  };
-  const currentOptions = (): readonly string[] => store.get()?.options ?? [];
-  // Ищем точное сочетание; нет — первое с этим значением: сначала в наличии, потом любое (Р11б-4).
-  const pickVariantId = (group: string, value: string): Variant | null => {
-    const exact = entry.variants.find((variant) => {
-      const at = entry.options.findIndex((option) => option.id === group);
-      return (
-        at >= 0 &&
-        variant.options[at] === value &&
-        variant.options.every((id, index) => index === at || id === currentOptions()[index])
-      );
-    });
-    if (exact !== undefined) return exact;
-    const withValue = entry.variants.filter((variant) => {
-      const at = entry.options.findIndex((option) => option.id === group);
-      return at >= 0 && variant.options[at] === value;
-    });
-    return withValue.find((variant) => variant.available) ?? withValue[0] ?? null;
-  };
-  const select = (next: Variant): Result<Variant> => {
+const variantById = (entry: PageEntry, id: string): Variant | null =>
+  entry.variants.find((variant) => variant.id === id) ?? null;
+
+const valueIdsOf = (entry: PageEntry, group: string): readonly string[] | null => {
+  const found = entry.options.find((option) => option.id === group);
+  return found === undefined ? null : found.values.map((value) => value.id);
+};
+
+// Ищем точное сочетание; нет — первое с этим значением: сначала в наличии, потом любое (Р11б-4).
+function pickVariantOf(entry: PageEntry, group: string, value: string, current: readonly string[]): Variant | null {
+  const at = entry.options.findIndex((option) => option.id === group);
+  const exact = entry.variants.find(
+    (variant) =>
+      at >= 0 &&
+      variant.options[at] === value &&
+      variant.options.every((id, index) => index === at || id === current[index]),
+  );
+  if (exact !== undefined) return exact;
+  const withValue = entry.variants.filter((variant) => at >= 0 && variant.options[at] === value);
+  return withValue.find((variant) => variant.available) ?? withValue[0] ?? null;
+}
+
+// Картинки значения: у значения сочетания — картинки значения первой группы, где оно есть.
+function imagesOfValue(entry: PageEntry, valueId: string): readonly string[] | null {
+  for (const option of entry.options) {
+    const found = option.values.find((value) => value.id === valueId);
+    if (found !== undefined) return found.images;
+  }
+  return null;
+}
+
+// Выбор варианта: тот же id — молча; другой — событие и, у товара страницы, ?variant= (Р11б-4).
+function selectOf(core: CoreHandle, store: Atom<Variant | null>, productId: string): (next: Variant) => Result<Variant> {
+  return (next: Variant): Result<Variant> => {
     const current = store.get();
     store.set(next);
     if (current?.id === next.id) return { ok: true, data: next };
@@ -171,42 +179,50 @@ function productVariantsOf(core: CoreHandle, productId: string, entry: PageEntry
     if (core.mode === 'live' && isPageProduct(core, productId)) replaceUrl(next.id);
     return { ok: true, data: next };
   };
-  const fail = (message: string): Result<Variant> => {
+}
+
+const failOf =
+  (core: CoreHandle): ((message: string) => Result<Variant>) =>
+  (message: string): Result<Variant> => {
     const failure = invalidOf(message);
     reportFailure(core, failure);
     return failed(failure);
   };
+
+// Картинка сочетания: первая непустая среди картинок значений сочетания.
+function imageForOf(entry: PageEntry, variant: Variant): { readonly url: string } | null {
+  for (const valueId of variant.options) {
+    const images = imagesOfValue(entry, valueId);
+    if (images !== null && images.length > 0) return { url: images[0] };
+  }
+  return null;
+}
+
+function productVariantsOf(core: CoreHandle, productId: string, entry: PageEntry): ProductVariants {
+  const store: Atom<Variant | null> = atom(initialOf(entry, urlVariantOf(core, productId)));
+  const currentOptions = (): readonly string[] => store.get()?.options ?? [];
+  const select = selectOf(core, store, productId);
+  const fail = failOf(core);
   return {
     $variant: readable(store),
     options: entry.options,
     pick(group: string, value: string): Result<Variant> {
-      const valueIds = valueIdsOf(group);
+      const valueIds = valueIdsOf(entry, group);
       if (valueIds === null) return fail(`variants.pick: группы ${group} нет у товара ${productId}`);
       if (!valueIds.includes(value)) return fail(`variants.pick: значения ${value} нет в группе ${group}`);
-      const next = pickVariantId(group, value);
+      const next = pickVariantOf(entry, group, value, currentOptions());
       return next === null ? fail(`variants.pick: значения ${value} нет у товара ${productId}`) : select(next);
     },
     pickVariant(variantId: string): Result<Variant> {
-      const next = variantsById(variantId);
+      const next = variantById(entry, variantId);
       return next === null ? fail(`variants.pick: варианта ${variantId} нет у товара ${productId}`) : select(next);
     },
     isAvailable(group: string, value: string): boolean {
-      const next = pickVariantId(group, value);
+      const next = pickVariantOf(entry, group, value, currentOptions());
       return next?.available ?? false;
     },
     imageFor(variant: Variant) {
-      const imagesOf = (valueId: string): readonly string[] | null => {
-        for (const option of entry.options) {
-          const found = option.values.find((value) => value.id === valueId);
-          if (found !== undefined) return found.images;
-        }
-        return null;
-      };
-      for (const valueId of variant.options) {
-        const images = imagesOf(valueId);
-        if (images !== null && images.length > 0) return { url: images[0] };
-      }
-      return null;
+      return imageForOf(entry, variant);
     },
   };
 }

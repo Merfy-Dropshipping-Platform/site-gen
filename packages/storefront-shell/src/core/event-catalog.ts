@@ -72,6 +72,7 @@ export const EVENT_CATALOG = {
   'merfy:auth:signin': { about: 'покупатель вошёл', fields: {} },
   'merfy:auth:signout': { about: 'покупатель вышел', fields: {} },
   'merfy:search:submit': { about: 'отправлен поиск', fields: { query: 'text' } },
+  'merfy:search:open': { about: 'покупатель открыл панель поиска (search.open)', fields: {} },
   'merfy:catalog:page': { about: 'каталог показал следующую страницу', fields: { page: 'count' } },
   'merfy:section:mount': { about: 'секция запущена', fields: { section: 'text' } },
   'merfy:section:error': {

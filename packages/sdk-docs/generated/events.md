@@ -22,6 +22,7 @@
 | `merfy:auth:signin` | покупатель вошёл | — |
 | `merfy:auth:signout` | покупатель вышел | — |
 | `merfy:search:submit` | отправлен поиск | query — строка |
+| `merfy:search:open` | покупатель открыл панель поиска (search.open) | — |
 | `merfy:catalog:page` | каталог показал следующую страницу | page — целое от 0 |
 | `merfy:section:mount` | секция запущена | section — строка |
 | `merfy:section:error` | сбой секции | section — строка; id — строка; script — строка; stage — одно из: mount, runtime, unmount; message — строка |

@@ -21,3 +21,9 @@
 ## newsletter
 
 Действия: `newsletter.subscribe`.
+## variants
+
+Действия: `variants.pick`.
+## search
+
+Действия: `search.open`.

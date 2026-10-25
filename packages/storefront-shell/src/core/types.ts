@@ -128,6 +128,7 @@ export interface EventMap {
   'merfy:auth:signin': NoDetail;
   'merfy:auth:signout': NoDetail;
   'merfy:search:submit': { readonly query: string };
+  'merfy:search:open': NoDetail; // блок 11: search.open — панель поиска на странице открывается
   'merfy:catalog:page': { readonly page: number };
   'merfy:section:mount': { readonly section: string };
   'merfy:section:error': SectionFailureDetail;
@@ -230,12 +231,107 @@ export interface ConsentModule {
   accept(): Promise<Result<ConsentAnswer>>;
   decline(): Promise<Result<ConsentAnswer>>;
 }
+// Цена в модулях каталога, поиска и вариантов (блок 11 «Секций и SDK»): Money ядра и текст «1 900 ₽» — как у сборки.
+export interface PriceMoney extends Money {
+  readonly text: string;
+}
+// Варианты товара (блок 11, 11.6): данные — JSON страницы data-merfy-variants (сборка, page-variants.ts).
+export interface VariantValue {
+  readonly id: string;
+  readonly value: string;
+  readonly images: readonly string[];
+}
+export interface VariantOption {
+  readonly id: string;
+  readonly name: string;
+  readonly values: readonly VariantValue[];
+}
+export interface Variant {
+  readonly id: string;
+  readonly options: readonly string[]; // id значений по порядку групп options
+  readonly price: PriceMoney;
+  readonly compareAtPrice: PriceMoney | null;
+  readonly available: boolean;
+}
+export interface VariantImage {
+  readonly url: string;
+}
+export interface ProductVariants {
+  readonly $variant: ReadableStore<Variant | null>; // выбранное сочетание; вариантов нет — null
+  readonly options: readonly VariantOption[];
+  pick(group: string, value: string): Result<Variant>; // id группы и значения; остальные группы — как были
+  pickVariant(variantId: string): Result<Variant>;
+  isAvailable(group: string, value: string): boolean; // в наличии ли сочетание с этим значением при прочих выбранных
+  imageFor(variant: Variant): VariantImage | null;
+}
+export interface VariantsModule {
+  of(productId: string): ProductVariants | null; // товара нет в JSON страницы — null
+  pick(productId: string, group: string, value: string): Result<Variant>; // of(productId).pick; товара нет — invalid
+}
+// Поиск (блок 11, 11.5): строка подсказки — без остатков и артикулов.
+export interface SearchItem {
+  readonly id: string;
+  readonly title: string;
+  readonly url: string;
+  readonly image: string | null;
+  readonly price: PriceMoney;
+  readonly compareAtPrice: PriceMoney | null;
+  readonly available: boolean;
+}
+export interface SearchModule {
+  query(
+    q: string,
+    options?: { readonly limit?: number } & ActionOptions,
+  ): Promise<Result<{ readonly items: readonly SearchItem[]; readonly hasMore: boolean }>>;
+  open(): Promise<Result<{ readonly panel: boolean }>>; // Р11б-7
+}
+// Каталог для своих секций (блок 11, 11.4, п. 13): параметры — как у шлюза /store/products и /store/filters.
+export interface CatalogQuery {
+  readonly page?: number;
+  readonly limit?: number; // по умолчанию 20, как у шлюза
+  readonly sort?: 'newest' | 'price_asc' | 'price_desc' | 'title_asc';
+  readonly minPrice?: number; // рубли
+  readonly maxPrice?: number;
+  readonly availability?: 'in_stock' | 'sold_out';
+  readonly collectionIds?: readonly string[];
+  readonly q?: string;
+  readonly filters?: Readonly<Record<string, readonly string[]>>; // ключ группы → значения (ИЛИ)
+}
+export interface CatalogItem extends SearchItem {
+  readonly hasVariants: boolean;
+}
+export interface CatalogFilters {
+  readonly groups: readonly { readonly key: string; readonly name: string; readonly values: readonly string[] }[];
+  readonly price: { readonly min: PriceMoney; readonly max: PriceMoney } | null;
+  readonly total: number;
+}
+export interface CatalogModule {
+  products(
+    query?: CatalogQuery,
+    options?: ActionOptions,
+  ): Promise<
+    Result<{
+      readonly items: readonly CatalogItem[];
+      readonly total: number;
+      readonly page: number;
+      readonly pages: number;
+    }>
+  >;
+  filters(
+    query?: Omit<CatalogQuery, 'page' | 'limit' | 'sort' | 'collectionIds'>,
+    options?: ActionOptions,
+  ): Promise<Result<CatalogFilters>>;
+}
 export interface Modules {
   readonly cart: CartModule;
   readonly consent: ConsentModule;
   readonly favorites: FavoritesModule;
   readonly auth: AuthModule;
   readonly newsletter: NewsletterModule;
+  // Блок 11 «Секций и SDK», часть 11б.
+  readonly variants: VariantsModule;
+  readonly search: SearchModule;
+  readonly catalog: CatalogModule;
 }
 export type ModuleName = keyof Modules;
 

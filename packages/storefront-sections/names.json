@@ -167,6 +167,36 @@
       "about": "Сколько карточек в ряд на компьютере",
       "asks": ["колонки", "в ряд", "per-row", "grid", "cols"]
     },
+    "per-page": {
+      "kinds": ["range"], "label": "Карточки", "group": "content",
+      "about": "Сколько карточек на странице списка, от 2 до 24: по ней платформа делит список на страницы",
+      "asks": ["карточек на странице", "товаров на странице", "per-page", "page-size"]
+    },
+    "paging": {
+      "kinds": ["select"], "label": "Как листать", "group": "behavior",
+      "about": "Листание списка: `pages` — номера страниц, `more` — «Показать ещё», `scroll` — бесконечная прокрутка; значение — параметр `data-paging` поведения `catalog`",
+      "asks": ["как листать", "пагинация", "показать ещё", "бесконечная прокрутка", "pagination", "load-more", "infinite"]
+    },
+    "filter-position": {
+      "kinds": ["radio"], "label": "Вид фильтра", "group": "look",
+      "about": "Где фильтры списка: `top` — сверху, `side` — сбоку",
+      "asks": ["вид фильтра", "фильтры сбоку", "фильтры сверху", "filter-layout"]
+    },
+    "next-photo": {
+      "kinds": ["toggle"], "label": "Следующее фото при наведении", "group": "behavior",
+      "about": "Второе фото карточки при наведении — параметр `data-hover-next` поведения `card-photos`",
+      "asks": ["следующее фото", "фото при наведении", "second-image", "hover-image"]
+    },
+    "quick-add": {
+      "kinds": ["select"], "label": "Быстрое добавление", "group": "look",
+      "about": "Кнопка «В корзину» на карточке списка: варианты вида задаёт секция; кнопка — `data-action=\"cart.add\"` с сочетанием по умолчанию",
+      "asks": ["быстрое добавление", "в корзину с карточки", "quick-add", "quick-buy"]
+    },
+    "sold-out": {
+      "kinds": ["select"], "label": "Распроданное", "group": "behavior",
+      "about": "Значения вариантов, которых нет в наличии: `show` — показывать, `hide` — прятать",
+      "asks": ["распроданное", "нет в наличии", "sold-out", "out-of-stock"]
+    },
     "aspect-ratio": {
       "kinds": ["select"], "label": "Пропорции", "group": "look",
       "about": "Пропорции картинок в сетке",

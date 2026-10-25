@@ -65,6 +65,19 @@ export const ACTIONS = {
     about: 'подписать на рассылку магазина; аргументы { email }, ответ — { alreadySubscribed }; e-mail — из поля формы',
     markup: null,
   },
+  // Блок 11 «Секций и SDK», часть 11б: значение группы вариантов — id группы и значения из JSON вариантов страницы.
+  'variants.pick': {
+    module: 'variants',
+    about:
+      'выбрать значение группы вариантов товара; аргументы { productId, group, value } — id из JSON вариантов страницы, ответ — Variant, потом merfy:variant:change',
+    markup: { 'product-id': 'text', group: 'text', value: 'text' },
+  },
+  // Блок 11, часть 11б: кнопка «Поиск» «Шапки» — панель секции «Поиск» или страница каталога.
+  'search.open': {
+    module: 'search',
+    about: 'открыть панель поиска: есть на странице — merfy:search:open, нет — переход на /catalog; ответ — { panel }',
+    markup: {},
+  },
 } as const satisfies Readonly<Record<string, ActionSpec>>;
 
 export type ActionName = keyof typeof ACTIONS;
@@ -87,6 +100,9 @@ export const MODULE_NAMES = [
   'auth',
   'newsletter',
   'consent',
+  'variants',
+  'search',
+  'catalog',
 ] as const satisfies readonly ModuleName[];
 type MissingModule = Exclude<ModuleName, (typeof MODULE_NAMES)[number]>;
 export const MODULE_NAMES_COMPLETE: [MissingModule] extends [never] ? true : never = true;

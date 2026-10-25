@@ -14,8 +14,9 @@ const problemsOf = (run: () => unknown): string[] => {
 };
 
 describe('словарь имён полей', () => {
-  it('файлы пакета читаются: 39 имён в трёх группах, 8 отказов, 9 сквозных', () => {
-    expect(NAMES.names).toHaveLength(39);
+  it('файлы пакета читаются: 45 имён в трёх группах, 8 отказов, 9 сквозных', () => {
+    // Блок 11 «Секций и SDK», часть 11б: per-page, paging, filter-position, next-photo, quick-add, sold-out.
+    expect(NAMES.names).toHaveLength(45);
     expect(NAMES.groups.map((group) => group.title)).toEqual(['Содержимое', 'Вид', 'Поведение']);
     expect(NAMES.refusals.map((refusal) => refusal.id)).toEqual([
       'section-view',
@@ -92,5 +93,17 @@ describe('словарь имён полей', () => {
     expect(sharedSettingHint({ id: 'cart-type', label: 'Вид корзины', group: 'Корзина' })).toBe(
       'настройка «Настроек темы» «Корзина → Вид корзины»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme[\'cart-type\']`',
     );
+  });
+});
+
+describe('имена блока 11 «Секций и SDK»', () => {
+  it('виды и группы — как у полей наших секций и параметров поведений', () => {
+    const byName = new Map(NAMES.names.map((entry) => [entry.name, entry]));
+    expect(byName.get('per-page')).toMatchObject({ kinds: ['range'], group: 'content', label: 'Карточки' });
+    expect(byName.get('paging')).toMatchObject({ kinds: ['select'], group: 'behavior', label: 'Как листать' });
+    expect(byName.get('filter-position')).toMatchObject({ kinds: ['radio'], group: 'look', label: 'Вид фильтра' });
+    expect(byName.get('next-photo')).toMatchObject({ kinds: ['toggle'], group: 'behavior' });
+    expect(byName.get('quick-add')).toMatchObject({ kinds: ['select'], group: 'look', label: 'Быстрое добавление' });
+    expect(byName.get('sold-out')).toMatchObject({ kinds: ['select'], group: 'behavior', label: 'Распроданное' });
   });
 });

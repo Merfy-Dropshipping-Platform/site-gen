@@ -5,7 +5,7 @@ import type { ErrorCode, EventName } from '../src/core/types';
 
 // Каталог событий (блок 9: 13а А, «Решил сам» п. 11) — публичный интерфейс: имена и поля только добавляются.
 // merfy:geo:change отложено 20.10 вместе с городом по IP; события превью «выбран блок» и «выбор снят» — блок 6, часть 6в.
-// В каталоге 23 имени: merfy:cart:open — блок 10, часть 10а.
+// В каталоге 24 имени: merfy:cart:open — блок 10, часть 10а; merfy:search:open — блок 11, часть 11б.
 const NAMES = [
   'merfy:page:ready',
   'merfy:page:view',
@@ -23,6 +23,7 @@ const NAMES = [
   'merfy:auth:signin',
   'merfy:auth:signout',
   'merfy:search:submit',
+  'merfy:search:open',
   'merfy:catalog:page',
   'merfy:section:mount',
   'merfy:section:error',
@@ -41,7 +42,7 @@ const CART_ADD = {
 };
 
 describe('каталог событий', () => {
-  it('23 имени merfy:объект:действие; каталог и типы EventMap — одно и то же', () => {
+  it('24 имени merfy:объект:действие; каталог и типы EventMap — одно и то же', () => {
     expect([...EVENT_NAMES].sort()).toEqual([...NAMES].sort());
     expectTypeOf<keyof typeof EVENT_CATALOG>().toEqualTypeOf<EventName>();
     expect(isEventName('merfy:cart:add')).toBe(true);

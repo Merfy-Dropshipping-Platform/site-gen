@@ -107,6 +107,14 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 - Сборка: `pnpm build` → `dist/behaviors/` (файл на поведение, появления, провайдер и часть; общий код — в кусках,
   бюджеты brotli — `build/behaviors.ts`); бандл страницы склеивает их (часть 6б). Тесты — `pnpm test` (unit) и
   `pnpm test:browser` (настоящий Chromium).
+- Превью конструктора (часть 6в): бандл превью — со всеми поведениями, появлениями и провайдером `animate`
+  (`storefront-build`, `previewKit`). Замена экземпляра (`watchPreviewReplace`, часть 5г) вызывает `save(id)` части
+  behaviors до снятия прежнего экземпляра и `restore(id, …)` — у нового сразу после запуска: номер слайда, открытые
+  пункты, вкладка и окно на месте; вторая попытка после ошибки — без этого состояния. Выбор блока в панели слева —
+  события `merfy:block:select` и `merfy:block:deselect` с `{ blockId }` (`BLOCK_SELECT_EVENT`, `BLOCK_DESELECT_EVENT`
+  в `@merfy/shell/preview`): скрипт секций превью шлёт их на узле блока, ядро отдаёт только экземпляру этой секции
+  (`ctx.listen`). Наш `carousel` на них не отвечает (В6-1 А). Тесты — `core-preview-blocks.test.ts` и
+  `browser/preview-behaviors.browser.test.ts`.
 
 ## Сторы, события и действия (блок 9 «Секций и SDK», часть 9а)
 

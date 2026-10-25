@@ -14,10 +14,7 @@ interface NoticesState {
 
 // ctx.state — Partial: умолчания записываются при первом чтении, дальше объект полный.
 const ready = (state: Partial<NoticesState>): state is NoticesState =>
-  state.notices !== undefined &&
-  state.timers !== undefined &&
-  state.hover !== undefined &&
-  state.focus !== undefined;
+  state.notices !== undefined && state.timers !== undefined && state.hover !== undefined && state.focus !== undefined;
 
 const freshState = (): NoticesState => ({ notices: [], timers: new Map(), hover: false, focus: false });
 

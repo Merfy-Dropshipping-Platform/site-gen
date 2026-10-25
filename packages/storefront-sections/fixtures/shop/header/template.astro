@@ -264,7 +264,7 @@ const { settings, blocks, theme, shop, page } = Astro.props;
                     <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
                   </a>
                 ) : (
-                  <a aria-label="Профиль" class="text-muted-foreground hover:text-heading" href="/login">
+                  <a aria-label="Профиль" class="text-muted-foreground hover:text-heading" data-ref="profile" href="/login">
                     <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                       <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" />
                     </svg>

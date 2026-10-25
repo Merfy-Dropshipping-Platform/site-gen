@@ -91,6 +91,7 @@ describe("PagesService: особые страницы новой темы", () =
       ["home", "system", false, "/"],
       ["product", "system", false, "/product/:slug"],
       ["collection", "system", false, "/collections/:slug"],
+      ["catalog", "system", false, "/catalog"],
       ["blog", "system", false, "/blogs/:slug"],
       ["article", "system", false, "/blogs/:blog/:slug"],
       ["policy", "system", false, "/legal/:slug"],

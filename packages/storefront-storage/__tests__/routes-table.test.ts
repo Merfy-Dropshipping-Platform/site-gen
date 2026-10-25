@@ -198,3 +198,27 @@ describe('политика CSP в таблице раздачи (блок 13 «�
     expect(() => parseRoutesTable({ ...table, csp: `${CSP}\r\nX-Evil: 1` }, 'routes/shop/1.json')).toThrow();
   });
 });
+
+describe('страница со списком в таблице раздачи (блок 11 «Секций и SDK», часть 11а)', () => {
+  const CATALOG = { path: '/catalog/', entity: `site:${SHOP}`, list: { page: 1 } };
+
+  it('страница со списком — l: true в строке её адреса и файла; страница без списка — без ключа l', () => {
+    const { manifest, table } = publish([HOME, CATALOG, ABOUT], 1);
+    expect(table.files['/catalog/']).toMatchObject({ l: true, m: UPDATED_AT, h: hexOf(manifest.pages[1].hash) });
+    expect(table.files['/catalog/index.html']).toMatchObject({ l: true });
+    expect(table.files['/about/']).not.toHaveProperty('l');
+    expect(parseRoutesTable(table, 'routes/x/1.json')).toEqual(table);
+  });
+
+  it('схема таблицы принимает l: true и не принимает l: false и l: 1', () => {
+    const { table } = publish([HOME], 1);
+    const withList = { ...table, files: { ...table.files, '/': { ...table.files['/'], l: true } } };
+    expect(parseRoutesTable(withList, 'routes/x/1.json')).toEqual(withList);
+    expect(() =>
+      parseRoutesTable({ ...table, files: { ...table.files, '/': { ...table.files['/'], l: false } } }, 'x'),
+    ).toThrow();
+    expect(() =>
+      parseRoutesTable({ ...table, files: { ...table.files, '/': { ...table.files['/'], l: 1 } } }, 'x'),
+    ).toThrow();
+  });
+});

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SITEMAP_LIMIT, seoFiles } from '../src/sitemap';
-import { HOME, SCARF, buildOf } from './manifests';
+import { HOME, SCARF, SHOP, buildOf } from './manifests';
 
 const PUBLIC_URL = 'https://scarf.merfy.ru';
 const COLLECTION = { path: '/collections/winter/', entity: 'collection:00000000-0000-4000-8000-000000000301' };
@@ -104,5 +104,23 @@ describe('страницы записей в карте (блок 8 «Секци
     const files = seoFiles({ manifest: buildOf([HOME, sharf]).manifest, publicUrl: PUBLIC_URL, indexable: true });
     expect(textOf(files, '/sitemap-products.xml')).toContain('<loc>https://scarf.merfy.ru/product/sharf</loc>');
     expect(files.map((file) => file.text).join('')).not.toContain(`/product/${id}`);
+  });
+});
+
+describe('страницы N в карте сайта (блок 11 «Секций и SDK», часть 11а)', () => {
+  const CATALOG = { path: '/catalog', entity: `site:${SHOP}`, list: { page: 1 } };
+
+  it('в карте — только первая страница списка: /catalog/page/2 нет', () => {
+    const page2 = { path: '/catalog/page/2', entity: `site:${SHOP}`, list: { page: 2 } };
+    const about = { path: '/o-nas', entity: `site:${SHOP}` };
+    const files = seoFiles({
+      manifest: buildOf([HOME, CATALOG, page2, about]).manifest,
+      publicUrl: PUBLIC_URL,
+      indexable: true,
+    });
+    const texts = files.map((file) => file.text).join('');
+    expect(texts).toContain('<loc>https://scarf.merfy.ru/catalog</loc>');
+    expect(texts).toContain('<loc>https://scarf.merfy.ru/o-nas</loc>');
+    expect(texts).not.toContain('/catalog/page/2');
   });
 });

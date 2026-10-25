@@ -166,6 +166,9 @@ export interface PageContent {
   mode: PageMode;
   // Тег бандла страницы для <head> (часть 5б); нет — без бандла.
   bundleTag?: string;
+  // Теги перед бандлом (блок 11 «Секций и SDK», часть 11а): noindex и merfy-list страницы с параметрами списка, JSON
+  // вариантов товаров страницы. Нет — без них.
+  headTags?: string;
   // Значения настроек темы страницы — те же, что у секций в Astro.props.theme: сквозные из них идут в theme.settings
   // конфига (блок 9 «Секций и SDK», часть 9б). Нет — поля в конфиге нет.
   themeSettings?: SettingValues;

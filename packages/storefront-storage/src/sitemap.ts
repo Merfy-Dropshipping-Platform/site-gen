@@ -77,6 +77,8 @@ function groupEntries(pages: readonly PageRow[], publicUrl: string): Map<Sitemap
   sorted.forEach((page) => {
     const group = SITEMAP_GROUPS[page.entity.type];
     if (group === null) return;
+    // Страницы N списка (блок 11, п. 24) — не в карте сайта: в ней только первая страница.
+    if ((page.list?.page ?? 1) > 1) return;
     const entries = groups.get(group) ?? [];
     entries.push({ loc: urlOf(publicUrl, page.path), lastmod: page.dataUpdatedAt });
     groups.set(group, entries);

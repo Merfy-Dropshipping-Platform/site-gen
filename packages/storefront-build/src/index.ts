@@ -23,6 +23,30 @@ export { NOT_FOUND_ROUTE, SHOP_ROUTES, pageInfoById, routeOf, type ShopRoute } f
 export { recordIndex, routeDuplicates, shopRoutes, templateShown, type RouteDuplicate } from './routes';
 // Превью шаблонов записей (часть 8б-2)
 export { isRecordType, previewRecordPath } from './routes';
+// Каталог, страницы списка и параметры списка (блок 11 «Секций и SDK», часть 11а)
+export { CATALOG_PAGE_ID, CATALOG_PATH, catalogUrlOf } from './routes';
+export { listSourceAt, type ListRequest } from './page';
+export {
+  collectionIdsOf,
+  type ListFacets,
+  type ListProductCard,
+  type ListSource,
+  type ListedPage,
+  type PageList,
+} from './page-list';
+export { VARIANTS_ATTRIBUTE, type PageVariants } from './page-variants';
+export {
+  EMPTY_LIST_QUERY,
+  LIST_SORTS,
+  filtersRpcArgs,
+  listQueryIsEmpty,
+  listQueryString,
+  parseListQuery,
+  productsRpcArgs,
+  type FiltersRpcArgs,
+  type ListQuery,
+  type ProductsRpcArgs,
+} from './list-query';
 // Поля с записями в секциях (часть 8г): виды полей и правила data — для пакета секций.
 export {
   DATA_ENTRIES_MAX,

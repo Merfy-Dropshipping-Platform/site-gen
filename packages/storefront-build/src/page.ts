@@ -13,13 +13,19 @@ import { pageLocals, shopName } from './head';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
-import { pageInfoOf, pageListsOf, recordIndex, routeOf, type ShopRoute } from './routes';
+import { EMPTY_LIST_QUERY, listQueryIsEmpty, listQueryString, type ListQuery } from './list-query';
+import { listSourceOf, pageListOf, type ListSource, type ListedPage, type PageList } from './page-list';
+import { pageVariantsOf, variantsTagOf, VARIANTS_NOTICE_BYTES } from './page-variants';
+import { sectionRecords } from './section-records';
+import type { ProductRecord } from './records';
+import { catalogUrlOf, pageInfoOf, pageListsOf, recordIndex, routeOf, type ShopRoute } from './routes';
 import { recordDepsOf } from './section-records';
 import { pageSectionTheme } from './section-tokens';
 import {
   LIVE_PAGE,
   renderPlacedSections,
   type PageContent,
+  type PageMode,
   type PageProps,
   type PageRender,
   type PlacedSection,
@@ -68,9 +74,12 @@ const pageDeps = (inputs: BuildInputs, route: ShopRoute, recordDeps: readonly st
   ...new Set([...(route.record?.deps ?? []), ...recordDeps, entityKey('site', inputs.site.id)]),
 ];
 
-// Второй адрес записи (часть 8б) — поле строки только у страницы записи, у которой он есть.
-const aliasesOf = (route: ShopRoute): { aliases?: string[] } =>
-  route.record === undefined || route.record.aliases.length === 0 ? {} : { aliases: route.record.aliases };
+// Вторые адреса (часть 8б: адрес записи по id; блок 11: …/page/1 первой страницы списка) — поле строки только у страницы,
+// у которой они есть.
+function aliasesOf(route: ShopRoute): { aliases?: string[] } {
+  const aliases = [...(route.record?.aliases ?? []), ...(route.aliases ?? [])];
+  return aliases.length === 0 ? {} : { aliases };
+}
 
 type Update = [key: string, updatedAt: string];
 
@@ -101,7 +110,8 @@ export function pagePropsOf(
     theme.panel === undefined
       ? {}
       : resolveSettings(theme.platformPanel ?? theme.panel, readSettingsEdits(theme.panel, settingsEdits).edits);
-  return { theme: settings, shop: shopPropsOf(shopName(inputs.site), inputs.data.entities), page: HOME_PAGE };
+  const shop = shopPropsOf(shopName(inputs.site), inputs.data.entities, catalogUrlOf(inputs));
+  return { theme: settings, shop, page: HOME_PAGE };
 }
 
 // Разметка трёх списков одного прохода — обратно по спискам: шапка, страница, подвал.
@@ -141,7 +151,7 @@ async function renderWithBundle(
   pageContent: PageContent,
 ): Promise<{ html: string; bundle: Awaited<ReturnType<typeof pageBundle>> }> {
   const bundle = await pageBundle(shown, route.id, page, pageContent);
-  const withBundle = { ...pageContent, bundleTag: bundle?.tag ?? '' };
+  const withBundle = { ...pageContent, bundleTag: `${pageContent.headTags ?? ''}${bundle?.tag ?? ''}` };
   // Страницу 404 (часть 7а) тема рисует маршрутом главной: адрес /404 Astro держит за своей страницей ошибки и маршрут
   // [slug].astro не вызывает. Канонический адрес в head — /404: его считает pageLocals по route.
   const drawPath = route.id === NOT_FOUND_PAGE_ID ? '/' : route.path;
@@ -159,7 +169,13 @@ const sectionThemeOf = (inputs: BuildInputs, placed: readonly PlacedSection[]): 
   );
 
 // Строка манифеста страницы: путь, файл, сущность и её зависимости, время обновления данных.
-function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer, recordDeps: readonly string[]): PageRow {
+function pageRowOf(
+  inputs: BuildInputs,
+  route: ShopRoute,
+  content: Buffer,
+  recordDeps: readonly string[],
+  list: PageList | null,
+): PageRow {
   const entity = pageEntity(inputs, route);
   const deps = pageDeps(inputs, route, recordDeps);
   return checkPageRow({
@@ -170,7 +186,116 @@ function pageRowOf(inputs: BuildInputs, route: ShopRoute, content: Buffer, recor
     deps,
     dataUpdatedAt: dataUpdatedAt(inputs, deps),
     ...aliasesOf(route),
+    // Список страницы (блок 11, Р11а-11) — номер; у страницы без списка поля нет.
+    ...(list === null ? {} : { list: { page: list.page } }),
   });
+}
+
+// Параметры списка страницы (план 11а-2): выбранное и ответ сервиса product; нет — список из записей сборки.
+export interface ListRequest {
+  query: ListQuery;
+  listed: ListedPage | null;
+}
+
+// Чей список у страницы по адресу (план 11а-2 — до запроса к сервису product). Нет страницы — page-unknown.
+export function listSourceAt(inputs: BuildInputs, path: string, theme: ShopTheme, mode?: PageMode): ListSource | null {
+  const route = routeOf(path, inputs, mode ?? 'live');
+  const shown = withoutHidden(inputs);
+  const props = { ...pagePropsOf(shown, theme), page: pageInfoOf(route), records: recordIndex(shown) };
+  return listSourceOf(shown, route, placedSections(shown, route.id), props);
+}
+
+// Номер страницы списка: из запроса, а если он первый — из адреса (страница N).
+function listQueryOf(list: ListRequest | undefined, route: ShopRoute): ListQuery {
+  if (list === undefined) return { ...EMPTY_LIST_QUERY, page: route.list?.page ?? 1 };
+  return { ...list.query, page: list.query.page === 1 ? (route.list?.page ?? 1) : list.query.page };
+}
+
+// page.list страницы (Р11а-5): по источнику списка и запросу; нет списка — null.
+function pageListAt(
+  shown: BuildInputs,
+  route: ShopRoute,
+  placed: readonly PlacedSection[],
+  base: PageProps,
+  list: ListRequest | undefined,
+): PageList | null {
+  const source = listSourceOf(shown, route, placed, base);
+  if (source === null) return null;
+  return pageListOf(recordIndex(shown), shown, source, listQueryOf(list, route), list?.listed ?? null);
+}
+
+// Значение поля с записью — товар (публичные поля ProductRecord, records.ts): группы и сочетания на месте.
+const isProductRecord = (value: object | null): value is ProductRecord =>
+  value !== null && 'options' in value && 'variants' in value && 'images' in value;
+
+// Товары страницы (блок 11, Р11а-12): запись страницы, если это товар, и записи полей вида product её секций, без
+// повторов по id.
+function pageProductsOf(route: ShopRoute, placed: readonly PlacedSection[], props: PageProps): ProductRecord[] {
+  const pageProduct = route.record?.type === 'product' ? [route.record.record] : [];
+  const fieldProducts = placed.flatMap((section) =>
+    Object.entries(section.recordFields ?? {})
+      .filter(([, kind]) => kind === 'product')
+      .map(([id]) => sectionRecords(section, props).values[id] ?? null)
+      .flatMap((value): ProductRecord[] => (isProductRecord(value) ? [value] : [])),
+  );
+  const byId = new Map([...pageProduct, ...fieldProducts].map((product) => [product.id, product]));
+  return [...byId.values()];
+}
+
+// Экранирование значения атрибута тега: &, ", <, > (meta content, договор SEO).
+const META_ESCAPES: Record<string, string> = { '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' };
+const escapeMetaValue = (text: string): string => text.replace(/[&"<>]/g, (char) => META_ESCAPES[char] ?? char);
+
+// Теги страницы (блок 11, Р11а-13): noindex, follow и merfy-list с каноническим видом параметров — у страницы с
+// непустыми параметрами списка; JSON вариантов товаров страницы. Пусто — ''.
+function headTagsOf(
+  route: ShopRoute,
+  placed: readonly PlacedSection[],
+  props: PageProps,
+  list: ListRequest | undefined,
+  page: PageRender,
+): string {
+  const meta =
+    list !== undefined && !listQueryIsEmpty(list.query)
+      ? `<meta name="robots" content="noindex, follow"><meta name="merfy-list" content="${escapeMetaValue(listQueryString(list.query))}">`
+      : '';
+  const tag = variantsTagOf(pageVariantsOf(pageProductsOf(route, placed, props)));
+  const bytes = Buffer.byteLength(tag, 'utf8');
+  if (bytes > VARIANTS_NOTICE_BYTES)
+    page.notice?.(route.id, {
+      code: 'page-variants-heavy',
+      section: '',
+      bytes,
+      message: `JSON вариантов страницы — ${bytes} байт`,
+    });
+  return `${meta}${tag}`;
+}
+
+// Зависимости списка — карточки этой страницы (Р11а-8): их правки меняют страницу.
+function listDepsOf(list: PageList | null): string[] {
+  if (list === null) return [];
+  const keys = list.items.map((item) => (list.kind === 'products' ? `product:${item.id}` : `publication:${item.id}`));
+  return [...new Set(keys)];
+}
+
+// Разметка секций страницы и её props (блоки 7–8, 11): базовые props страницы, список страницы (page.list, Р11а-5) и
+// разметка видимых секций одним проходом.
+async function renderSectionsOf(
+  shown: BuildInputs,
+  route: ShopRoute,
+  theme: ShopTheme,
+  page: PageRender,
+  lists: readonly (readonly PlacedSection[])[],
+  list: ListRequest | undefined,
+): Promise<{ rendered: PageContent; props: PageProps; pageList: PageList | null; placed: readonly PlacedSection[] }> {
+  // Страница секций (часть 7а): id и адрес этой страницы; записи магазина — полям с записями (часть 8г).
+  const base = { ...pagePropsOf(shown, theme), page: pageInfoOf(route), records: recordIndex(shown) };
+  // Список страницы (блок 11 «Секций и SDK», часть 11а): у каждой секции в page.list; нет — ключа нет (Р11а-5).
+  const pageList = pageListAt(shown, route, lists[1] ?? [], base, list);
+  const props = pageList === null ? base : { ...base, page: { ...base.page, list: pageList } };
+  const placed = lists.flat();
+  const rendered = await renderPlacedSections(placed, theme.tokens.dictionary, { ...page, props }, sectionThemeOf(shown, placed));
+  return { rendered, props, pageList, placed };
 }
 
 export async function renderShopPage(
@@ -178,6 +303,7 @@ export async function renderShopPage(
   path: string,
   theme: ShopTheme,
   page: PageRender = LIVE_PAGE,
+  list?: ListRequest,
 ): Promise<RenderedPage> {
   // Превью конструктора (часть 8б-2) — маршруты превью: страницы всех шаблонов и примеры; сборка — только записи с
   // показанным шаблоном.
@@ -185,23 +311,20 @@ export async function renderShopPage(
   // Скрытые экземпляры убираются здесь, до рендера (п. 22): разметка, CSS секций и список модулей — по видимым.
   const shown = withoutHidden(inputs);
   const lists = pageListsOf(route.id).map((list) => placedSections(shown, list));
-  // Страница секций (часть 7а): id и адрес этой страницы; записи магазина — полям с записями (часть 8г).
-  const props = { ...pagePropsOf(shown, theme), page: pageInfoOf(route), records: recordIndex(shown) };
-  const placed = lists.flat();
-  const rendered = await renderPlacedSections(
-    placed,
-    theme.tokens.dictionary,
-    { ...page, props },
-    sectionThemeOf(inputs, placed),
-  );
-  const pageContent = pageContentOf(rendered, lists, route);
+  const state = await renderSectionsOf(shown, route, theme, page, lists, list);
+  const { props, pageList, placed } = state;
+  // Теги списка и JSON вариантов (блок 11, часть 11а) — в <head> перед бандлом.
+  const pageContent = {
+    ...pageContentOf(state.rendered, lists, route),
+    headTags: headTagsOf(route, placed, props, list, page),
+  };
   // Сквозные настройки темы — те же значения, что у секций в Astro.props.theme: с PageContent они идут в theme.settings
   // конфига (блок 9 «Секций и SDK», часть 9б; Р9б-14).
   const withTheme = { ...pageContent, themeSettings: props.theme };
   const { html, bundle } = await renderWithBundle(shown, route, theme, page, withTheme);
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');
-  const row = pageRowOf(inputs, route, content, recordDepsOf(placed, props));
+  const row = pageRowOf(inputs, route, content, [...recordDepsOf(placed, props), ...listDepsOf(pageList)], pageList);
   const file = bundle?.file ?? null;
   return { row, file: { path: route.file, content }, ...(file === null ? {} : { bundle: file }) };
 }

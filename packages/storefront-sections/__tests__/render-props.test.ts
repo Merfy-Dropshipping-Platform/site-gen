@@ -67,4 +67,19 @@ describe('menus, theme и shop в процессе рендера', () => {
     const html = await renderer.render(await requestOf(EMPTY, 'shop:footer'));
     expect(html).toContain('<p>[][][0][false]</p>');
   }, 30_000);
+
+  // Блок 11 «Секций и SDK», часть 11а, Р11а-2: shop.catalogUrl — адрес каталога или null; в запросе старой формы ключа нет.
+  it('shop.catalogUrl — адрес каталога; в запросе старой формы — null', async () => {
+    const renderer = startSectionRenderer();
+    opened.push(renderer);
+    const template = `---
+const { shop } = Astro.props;
+---
+<p>[{String(shop.catalogUrl)}]</p>`;
+    const request = await requestOf(template, 'shop:search');
+    expect(await renderer.render(request)).toContain('<p>[null]</p>');
+    expect(await renderer.render({ ...request, shop: { ...SHOP, catalogUrl: '/catalog' } })).toContain(
+      '<p>[/catalog]</p>',
+    );
+  }, 30_000);
 });

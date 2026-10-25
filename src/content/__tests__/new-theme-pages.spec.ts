@@ -54,6 +54,8 @@ const system = (id: string, name: string, slug: string) => ({
 const TEMPLATES = [
   system("product", "Товар", "/product/:slug"),
   system("collection", "Коллекция", "/collections/:slug"),
+  // Каталог (блок 11 «Секций и SDK», часть 11а) — особая страница со своим адресом, после «Коллекции».
+  system("catalog", "Каталог", "/catalog"),
   system("blog", "Блог", "/blogs/:slug"),
   system("article", "Запись блога", "/blogs/:blog/:slug"),
   system("policy", "Политика", "/legal/:slug"),
@@ -83,6 +85,7 @@ describe("особые страницы новой темы", () => {
       "/",
       "/product",
       "/collections",
+      "/catalog",
       "/blogs",
       "/legal",
       "/404",

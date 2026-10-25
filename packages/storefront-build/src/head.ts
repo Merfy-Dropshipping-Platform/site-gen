@@ -20,7 +20,7 @@ import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import type { ShopPageHead, ShopPageLocals, ShopSocial } from './locals';
 import type { RecordEntry, RecordType } from './records';
-import type { ShopRoute } from './routes';
+import { CATALOG_PAGE_ID, type ShopRoute } from './routes';
 import { EMPTY_PAGE_CONTENT, type PageContent, type PageMode } from './sections-render';
 import { NOT_FOUND_PAGE_ID, NOT_FOUND_TEXT, platformPageTitle } from './special-pages';
 import { productStructuredData } from './structured-data';
@@ -47,7 +47,23 @@ export const shopName = (site: BuildInputs['site']): string => site.name.trim() 
 // SEO страницы. У главной — SEO магазина: заголовок мерчанта, иначе имя магазина, иначе адрес. У своей страницы (часть
 // 4, Р1-4-8) — её SEO из ревизии: без заголовка — имя страницы, нет и его — имя магазина. Пусто — мерчант не заполнил:
 // тема тег не рендерит (договор SEO, seo.ts).
+// Страница N списка (блок 11 «Секций и SDK», Р11а-12): «… — страница N» в <title>; canonical — её адрес (route.path).
 function seoOf(inputs: BuildInputs, route: ShopRoute, name: string) {
+  const seo = baseSeoOf(inputs, route, name);
+  const page = route.list?.page ?? 1;
+  return page > 1 ? { ...seo, title: `${seo.title} — страница ${page}` } : seo;
+}
+
+// Каталог (блок 11, Р11а-12): заголовок платформы «Каталог · <магазин>», описание — магазина, ключевых слов нет.
+const CATALOG_HEADING = 'Каталог';
+
+function baseSeoOf(inputs: BuildInputs, route: ShopRoute, name: string) {
+  if (route.id === CATALOG_PAGE_ID)
+    return {
+      title: platformPageTitle(CATALOG_HEADING, name),
+      description: inputs.site.description.trim(),
+      keywords: '',
+    };
   // Страница записи (блок 8, часть 8б-2; design.md 8.6): SEO записи (records.ts) — заголовок мерчанта или название,
   // описание мерчанта или описание без HTML; ключевых слов нет.
   if (route.record !== undefined)

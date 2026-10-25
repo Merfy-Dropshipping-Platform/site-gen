@@ -12,11 +12,18 @@ interface NoticesState {
   focus: boolean;
 }
 
+// ctx.state — Partial: умолчания записываются при первом чтении, дальше объект полный.
+const ready = (state: Partial<NoticesState>): state is NoticesState =>
+  state.notices !== undefined &&
+  state.timers !== undefined &&
+  state.hover !== undefined &&
+  state.focus !== undefined;
+
+const freshState = (): NoticesState => ({ notices: [], timers: new Map(), hover: false, focus: false });
+
 const stateOf = (ctx: Ctx<NoticesState, never>): NoticesState => {
-  if (ctx.state.notices === undefined) {
-    ctx.state = { notices: [], timers: new Map(), hover: false, focus: false };
-  }
-  return ctx.state as NoticesState;
+  if (!ready(ctx.state)) ctx.state = freshState();
+  return ready(ctx.state) ? ctx.state : freshState();
 };
 
 const held = (state: NoticesState): boolean => state.hover || state.focus;

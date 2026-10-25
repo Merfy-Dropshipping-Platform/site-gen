@@ -89,6 +89,8 @@ export const TOKEN_REGISTRY = {
   '--spacing-section-y':       { category: 'spacing', unit: 'px', scope: 'theme', min: 0, max: 160 },
   '--spacing-grid-col-gap':    { category: 'spacing', unit: 'px', scope: 'theme' },
   '--spacing-grid-row-gap':    { category: 'spacing', unit: 'px', scope: 'theme' },
+  // Внутренний отступ карточки товара (cardPadding, фикс владельца 09.09): дефолт темы в theme.json, в CSS — с fallback.
+  '--product-card-padding':    { category: 'spacing', unit: 'px', scope: 'theme' },
   /**
    * 084 Stage 3 catalog — additive theme-scope tokens. Sidebar width and
    * grid row gap for the Catalog page. Pre-084 themes don't set them so

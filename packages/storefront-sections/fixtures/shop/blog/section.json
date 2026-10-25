@@ -1,0 +1,7 @@
+{
+  "sdk": 1,
+  "name": "blog",
+  "kind": "section",
+  "title": "Блог",
+  "settings": [{ "id": "posts", "label": "Выбор публикации", "setting": { "kind": "blog" } }]
+}

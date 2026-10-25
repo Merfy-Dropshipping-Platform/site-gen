@@ -5,6 +5,7 @@
   "title": "Страница",
   "newPage": "heading",
   "settings": [
+    { "id": "policy", "label": "Выбор страницы", "setting": { "kind": "policy" } },
     { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Страница" } },
     {
       "id": "text",

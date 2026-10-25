@@ -7,14 +7,18 @@ import type { SectionManifest } from './format';
 // экранирования. Можно только с настройкой вида richtext — её значение очищено (richtext.ts): settings.<id> настройки
 // секции или <блок>.settings.<id>, где <блок> — первый параметр стрелки в blocks.map(...), а <id> — richtext у каждого
 // типа блока, где он есть. Запрет консервативный: имя settings, связанное параметром стрелки, или имя блока, связанное
-// ещё где-то, — отказ: по дереву не видно, что за значение под этим именем.
+// ещё где-то, — отказ: по дереву не видно, что за значение под этим именем. Блок 8, часть 8г-2: ещё HTML записи —
+// page.record.html и settings.<id>.html поля вида policy (recordHtmlAllowed).
 export interface RichtextIds {
   section: ReadonlySet<string>;
   block: ReadonlySet<string>;
+  // Блок 8, часть 8г-2: id полей вида policy секции — у них можно settings.<id>.html (текст политики экранирован).
+  html?: ReadonlySet<string>;
 }
 
 export const NO_RICHTEXT: RichtextIds = { section: new Set(), block: new Set() };
-export const SET_HTML_TEXT = 'set:html можно только с настройкой вида richtext';
+export const SET_HTML_TEXT =
+  'set:html можно только с настройкой вида richtext, page.record.html или settings.<id>.html поля вида policy';
 
 type Fields = SectionManifest['settings'];
 
@@ -30,7 +34,14 @@ export function richtextIdsOf(manifest: Pick<SectionManifest, 'settings' | 'bloc
   const block = [...ids].filter((id) =>
     types.every((type) => type.settings.every((field) => field.id !== id || field.setting.kind === 'richtext')),
   );
-  return { section: new Set(richtextOf(manifest.settings)), block: new Set(block) };
+  const html = settingFieldsOf(manifest.settings)
+    .filter((field) => field.setting.kind === 'policy')
+    .map((field) => field.id);
+  return {
+    section: new Set(richtextOf(manifest.settings)),
+    block: new Set(block),
+    ...(html.length === 0 ? {} : { html: new Set(html) }),
+  };
 }
 
 const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
@@ -69,6 +80,8 @@ function isBlocksMapArrow(call: AstNode): AstNode | null {
 interface Scope {
   settingsBound: boolean;
   blocksBound: boolean;
+  // Блок 8, часть 8г-2: имя page связано параметром стрелки — page.record.html не разрешаем.
+  pageBound: boolean;
   blockParams: ReadonlySet<string>;
 }
 
@@ -99,15 +112,27 @@ function scopeOf(nodes: readonly AstNode[]): Scope {
   return {
     settingsBound: all.has('settings'),
     blocksBound: all.has('blocks'),
+    pageBound: all.has('page'),
     blockParams: new Set([...asBlock].filter((name) => !elsewhere.has(name))),
   };
 }
 
-// Значение атрибута — {settings.<richtext>} или {<блок>.settings.<richtext>}.
+// HTML записи (блок 8, часть 8г-2; Р8г-7): page.record.html — текст статьи, очищенный сборщиком, или политики с
+// экранированием; settings.<id>.html — у поля вида policy. Имена page и settings не связаны параметрами стрелок.
+function recordHtmlAllowed(expression: AstNode, ids: RichtextIds, scope: Scope): boolean {
+  const object = fieldOf(expression, 'object');
+  if (keyOf(expression) !== 'html' || !isMember(object)) return false;
+  const owner = identifierOf(fieldOf(object, 'object'));
+  if (owner === 'page') return !scope.pageBound && keyOf(object) === 'record';
+  return owner === 'settings' && !scope.settingsBound && (ids.html?.has(keyOf(object)) ?? false);
+}
+
+// Значение атрибута — {settings.<richtext>}, {<блок>.settings.<richtext>} или HTML записи (recordHtmlAllowed).
 function allowed(value: unknown, ids: RichtextIds, scope: Scope): boolean {
   if (!isNode(value) || value.type !== 'JSXExpressionContainer') return false;
   const expression = fieldOf(value, 'expression');
   if (!isMember(expression)) return false;
+  if (recordHtmlAllowed(expression, ids, scope)) return true;
   const id = keyOf(expression);
   const object = fieldOf(expression, 'object');
   if (identifierOf(object) === 'settings') return !scope.settingsBound && ids.section.has(id);

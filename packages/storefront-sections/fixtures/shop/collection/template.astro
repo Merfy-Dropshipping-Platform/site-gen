@@ -1,0 +1,22 @@
+---
+const { settings } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col gap-8 px-4 font-body">
+  {settings.collection && settings.collection.title && (
+    <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.collection.title}</h1>
+  )}
+  {settings.collection && settings.collection.description && (
+    <p class="m-0 text-foreground">{settings.collection.description}</p>
+  )}
+  {settings.collection && (
+    <ul class="m-0 grid list-none gap-8 p-0 md:grid-cols-3">
+      {settings.collection.products.map((card) => (
+        <li class="flex flex-col gap-2">
+          {card.image && <img class="h-auto w-full rounded-button" src={card.image} alt={card.title} />}
+          <a class="text-foreground no-underline" href={card.url}>{card.title}</a>
+          <p class="m-0 font-heading text-heading">{card.price.text}</p>
+        </li>
+      ))}
+    </ul>
+  )}
+</div>

@@ -101,6 +101,13 @@
   — поля записи для `script.ts` (`ctx.data.<имя>`); поле не из публичных — `data-field-private`, имя без объявления —
   `data-unknown`.
 - Имена словаря: `product`, `collection`, `posts` (вид `blog`), `policy`, `price` (вид `hint`); `products` — отказ.
+- `set:html` (часть 8г-2, `src/set-html.ts`): кроме richtext — `page.record.html` (текст статьи, очищенный сборщиком,
+  или текст политики с экранированием) и `settings.<id>.html` поля вида `policy`. Другие поля записей — только текстом;
+  имя `page` или `settings`, связанное параметром стрелки, — отказ.
+- Наши секции с записями — `fixtures/shop/`: «Товар» (`product`), «Коллекция» (`collection`), «Блог» (`blog`),
+  «Статья» (`article`, показывает запись страницы статьи), у «Страницы» — поле «Выбор страницы» (вид `policy`). В
+  тест-магазин их ставят как мерчант: `pnpm sections accept fixtures/shop/<имя> --shop <id>`, затем
+  `pnpm sections publish --shop <id>`.
 
 ## Стили секции (блок 4 «Секций и SDK»)
 

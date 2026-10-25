@@ -28,7 +28,7 @@ describe('запреты шаблона секции', () => {
     const text = `${FRONT}<div onclick="x" set:html={settings.heading} client:load is:raw {...settings}></div>`;
     expect(await textsOf(text)).toEqual([
       'обработчик onclick: события — только в script.ts',
-      'set:html можно только с настройкой вида richtext',
+      'set:html можно только с настройкой вида richtext, page.record.html или settings.<id>.html поля вида policy',
       'директива client:load в шаблоне секции запрещена',
       'директива is:raw в шаблоне секции запрещена',
       '{...} в атрибутах запрещён: перечисли атрибуты по одному',

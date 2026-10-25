@@ -210,6 +210,12 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     var payload = { instance: instance };
     if (props && Array.isArray(props.menus)) payload.menus = props.menus;
     if (props && props.theme && typeof props.theme === 'object') payload.theme = props.theme;
+    // Часть 8г-2 блока 8: страница и запись из адреса превью (?page=…&record=…) — те же, что у всей страницы превью.
+    var query = new URLSearchParams(location.search);
+    var pageId = query.get('page');
+    var recordId = query.get('record');
+    if (pageId) payload.page = pageId;
+    if (recordId) payload.record = recordId;
     var request = { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) };
     return fetch(blockUrl, request).then(function (response) {
       if (!response.ok) throw new Error('блок ' + instance.id + ': ответ ' + response.status);

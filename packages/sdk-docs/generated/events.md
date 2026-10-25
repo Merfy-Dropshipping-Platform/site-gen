@@ -15,6 +15,7 @@
 | `merfy:cart:add` | товар добавлен в корзину — после ответа сервера; quantity — сколько добавилось, price — за штуку | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0; price — { amount, currency } |
 | `merfy:cart:remove` | строка убрана из корзины | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0 |
 | `merfy:cart:change` | покупатель поменял количество в корзине | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0; previousQuantity — целое от 0 |
+| `merfy:cart:open` | покупатель открыл выезжающую корзину (cart.open при «Сайдбар») | — |
 | `merfy:variant:change` | выбран вариант товара | productId — строка; variantId — строка |
 | `merfy:favorites:add` | товар отмечен в избранном | productId — строка |
 | `merfy:favorites:remove` | отметка избранного снята | productId — строка |
@@ -27,7 +28,6 @@
 | `merfy:block:select` | превью: мерчант выбрал блок секции в панели слева | blockId — строка |
 | `merfy:block:deselect` | превью: выбор блока секции снят | blockId — строка |
 | `merfy:notice:show` | показать уведомление покупателю — его выводит секция «Уведомления» | level — одно из: error, warning; message — строка; code — одно из: out-of-stock, limit, unauthorized, network, server, invalid, refused, может не быть |
-| `merfy:cart:open` | покупатель открыл выезжающую корзину (cart.open при «Сайдбар») | — |
 | `merfy:consent:change` | выбор в баннере cookie | state — одно из: accepted, declined |
 
 ## Коды ошибок

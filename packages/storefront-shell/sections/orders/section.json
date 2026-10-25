@@ -1,0 +1,10 @@
+{
+  "sdk": 1,
+  "name": "orders",
+  "kind": "section",
+  "title": "Заказы",
+  "groups": ["page"],
+  "limit": 1,
+  "uses": ["orders"],
+  "wrapper": ["scheme"]
+}

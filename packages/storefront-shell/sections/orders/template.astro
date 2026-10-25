@@ -1,0 +1,80 @@
+<div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body">
+  <div data-ref="list-view" class="flex flex-col gap-4">
+    <h1 class="m-0 font-heading weight-heading text-3xl text-heading">Мои заказы</h1>
+    <p data-ref="loading" class="m-0 text-foreground">Загрузка...</p>
+    <p data-ref="empty" class="m-0 text-foreground" hidden>У вас пока нет заказов</p>
+    <p data-ref="error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
+    <ul data-ref="orders" class="m-0 list-none p-0">
+      <template>
+        <li class="flex flex-wrap items-center gap-3 rounded-button border border-border p-4">
+          <span data-ref="number" class="font-heading weight-heading"></span>
+          <span data-ref="date" class="text-sm text-muted-foreground"></span>
+          <span data-ref="status" class="text-sm"></span>
+          <a data-ref="open" class="no-underline" href="/account/orders">Перейти</a>
+        </li>
+      </template>
+    </ul>
+  </div>
+  <div data-ref="order-view" class="flex flex-col gap-4" hidden>
+    <a class="no-underline" href="/account/orders">Вернуться к заказам</a>
+    <p data-ref="order-error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
+    <div data-ref="order-body" class="flex flex-col gap-4">
+      <div class="flex flex-col gap-2">
+        <span class="text-sm text-muted-foreground">Номер заказа</span>
+        <span data-ref="order-number" class="font-heading weight-heading"></span>
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-sm text-muted-foreground">Статус</span>
+        <span data-ref="order-status"></span>
+      </div>
+      <div data-ref="address-row" class="flex flex-col gap-2">
+        <span class="text-sm text-muted-foreground">Адрес доставки</span>
+        <span data-ref="order-address"></span>
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-sm text-muted-foreground">Итоговая стоимость</span>
+        <span data-ref="order-total"></span>
+      </div>
+      <ul data-ref="lines" class="m-0 flex list-none flex-col gap-3 p-0">
+        <template>
+          <li class="flex flex-wrap items-center gap-3 rounded-button border border-border p-4">
+            <img data-ref="image" alt="" class="h-20 w-20 shrink-0 rounded-button object-cover" />
+            <span data-ref="title" class="font-heading weight-heading"></span>
+            <span data-ref="options" class="text-sm text-muted-foreground"></span>
+            <span data-ref="quantity" class="text-sm"></span>
+            <span data-ref="total"></span>
+          </li>
+        </template>
+      </ul>
+      <button
+        type="button"
+        data-ref="cancel-open"
+        data-action="cancel-open"
+        class="self-start text-sm underline"
+        hidden
+      >
+        Отменить заказ
+      </button>
+      <div data-ref="cancel-form" class="flex flex-col gap-3 rounded-button border border-border p-4" hidden>
+        <h2 class="m-0 font-heading weight-heading text-xl text-heading">Отмена заказа</h2>
+        <p class="m-0 text-sm text-muted-foreground">После отмены восстановить заказ невозможно.</p>
+        <textarea
+          data-ref="reason"
+          rows="3"
+          maxlength="500"
+          placeholder="Укажите причину отмены"
+          class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
+        ></textarea>
+        <p data-ref="cancel-error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
+        <button
+          type="button"
+          data-action="cancel-confirm"
+          class="self-start rounded-button bg-primary px-4 py-2 text-primary-foreground"
+        >
+          Подтвердить отмену
+        </button>
+        <button type="button" data-action="cancel-close" class="self-start text-sm underline">Нет, оставить</button>
+      </div>
+    </div>
+  </div>
+</div>

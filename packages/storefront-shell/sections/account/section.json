@@ -1,0 +1,10 @@
+{
+  "sdk": 1,
+  "name": "account",
+  "kind": "section",
+  "title": "Личный кабинет",
+  "groups": ["page"],
+  "limit": 1,
+  "uses": ["auth"],
+  "wrapper": ["scheme"]
+}

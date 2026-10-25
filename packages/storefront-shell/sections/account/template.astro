@@ -1,0 +1,40 @@
+<div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body">
+  <h1 class="m-0 font-heading weight-heading text-3xl text-heading">Основные данные</h1>
+  <p data-ref="loading" class="m-0 text-foreground">Загрузка...</p>
+  <div data-ref="form" class="flex max-w-page flex-col gap-4" hidden>
+    <label class="flex flex-col gap-2 text-sm">
+      E-mail
+      <input
+        data-ref="email"
+        type="email"
+        disabled
+        class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
+      />
+    </label>
+    <label class="flex flex-col gap-2 text-sm">
+      Имя
+      <input data-ref="name" type="text" autocomplete="name" class="rounded-button border border-border bg-card px-4 py-2 text-foreground" />
+    </label>
+    <label class="flex flex-col gap-2 text-sm">
+      Телефон
+      <input
+        data-ref="phone"
+        type="tel"
+        autocomplete="tel"
+        placeholder="+7 (000) 000-00-00"
+        class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
+      />
+    </label>
+    <p data-ref="status" class="m-0 text-sm" hidden></p>
+    <button
+      type="button"
+      data-ref="save"
+      data-action="save"
+      class="rounded-button bg-primary px-4 py-2 text-primary-foreground"
+    >
+      Сохранить
+    </button>
+    <a class="no-underline" href="/account/orders">Мои заказы</a>
+    <button type="button" data-action="auth.signout" class="text-sm underline">Выйти из аккаунта</button>
+  </div>
+</div>

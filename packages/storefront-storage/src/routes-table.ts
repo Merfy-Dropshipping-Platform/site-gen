@@ -36,6 +36,13 @@ const entityKeyOf = (page: PageRow): string => `${page.entity.type}:${page.entit
 const goneUntil = (now: string): string => new Date(Date.parse(now) + GONE_DAYS * DAY_MS).toISOString();
 
 // Каждый файл — по пути от корня; страница — ещё и по своему адресу. У файла страницы — дата правки её данных.
+// Страницы без строки манифеста (блок 10, часть 10а, Р10а-17: /checkout и /checkout-result, как у 404) — файл
+// index.html отдаётся и по адресу своей папки: у них нет строки, адрес которой писала бы строка страницы.
+const dirAddressOf = (filePath: string): string | null => {
+  if (filePath === 'index.html') return '/';
+  return filePath.endsWith('/index.html') ? `/${filePath.slice(0, -'/index.html'.length)}` : null;
+};
+
 function servedFiles(manifest: StorefrontManifest): Files {
   const pageByFile = new Map(manifest.pages.map((page) => [page.file, page]));
   const rowOf = (filePath: string, hash: string): FileRow => {
@@ -49,7 +56,13 @@ function servedFiles(manifest: StorefrontManifest): Files {
     .filter(([filePath]) => !NOT_SERVED_FILES.has(filePath))
     .map(([filePath, hash]) => [`/${filePath}`, rowOf(filePath, hash)] as const);
   const pages = manifest.pages.map((page) => [page.path, rowOf(page.file, page.hash)] as const);
-  return Object.fromEntries([...files, ...pages]);
+  const pageFiles = new Set(manifest.pages.map((page) => page.file));
+  // Адрес папки — только у index.html без строки страницы: у страниц из манифеста адрес пишет своя строка (пути
+  // страниц со слешем не дублируются адресом без слеша).
+  const fixed = Object.entries(manifest.files)
+    .filter(([filePath]) => !pageFiles.has(filePath) && dirAddressOf(filePath) !== null)
+    .map(([filePath, hash]) => [dirAddressOf(filePath) ?? `/${filePath}`, rowOf(filePath, hash)] as const);
+  return Object.fromEntries([...files, ...pages, ...fixed]);
 }
 
 // Сущности с одной страницей: только у них новый адрес однозначен. У сайта страниц много — 301 на главную соврал бы.

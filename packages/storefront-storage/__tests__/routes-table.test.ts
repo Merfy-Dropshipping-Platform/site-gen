@@ -222,3 +222,31 @@ describe('страница со списком в таблице раздачи 
     ).toThrow();
   });
 });
+
+describe('страницы оформления в таблице раздачи (блок 10, часть 10а, Р10а-17)', () => {
+  // Находка проверки dev 25.10: /checkout — 404. Файлы checkout/index.html сборка пишет в каждой сборке, строк
+  // манифеста страниц у них нет (как у 404); адрес в таблице раздачи даёт файл index.html без строки страницы.
+  it('файл checkout/index.html без строки манифеста — адрес /checkout и /checkout-result в таблице', () => {
+    const { manifest } = buildOf([HOME], {
+      'checkout/index.html': '<h1>Оформление заказа</h1>',
+      'checkout-result/index.html': '<h1>Спасибо за заказ</h1>',
+    });
+    const table = buildRoutesTable({ manifest, build: 1, previous: null, now: NOW });
+    expect(table.files['/checkout']).toEqual({
+      h: hexOf(manifest.files['checkout/index.html']),
+      t: 'text/html; charset=utf-8',
+      c: 'revalidate',
+    });
+    expect(table.files['/checkout-result']).toEqual({
+      h: hexOf(manifest.files['checkout-result/index.html']),
+      t: 'text/html; charset=utf-8',
+      c: 'revalidate',
+    });
+  });
+
+  it('файл страницы из манифеста — адрес даёт строка страницы, дубля без слеша нет', () => {
+    const { table } = publish([HOME, SCARF], 1);
+    expect(table.files['/products/scarf']).toBeUndefined();
+    expect(table.files['/products/scarf/']).toBeDefined();
+  });
+});

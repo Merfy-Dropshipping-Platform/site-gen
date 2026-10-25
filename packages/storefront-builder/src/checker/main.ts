@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { collectPassport, loadReleaseRules, openPage } from '@merfy/stand-check';
 import { openBroker } from '../broker';
 import { jsonLog } from '../log';
-import { readCheckerSettings, startChecker } from './check';
+import { openWithCheckout, readCheckerSettings, startChecker } from './check';
 
 // Точка входа проверяющего процесса (design.md блока 10, П10-3 В): `pnpm --filter @merfy/storefront-builder checker`;
 // в образе — цель Dockerfile storefront-checker (Chromium), в Coolify — отдельное приложение с пределом памяти. Слушает
@@ -13,7 +13,9 @@ const log = jsonLog((line) => process.stdout.write(line), clock);
 const settings = readCheckerSettings(process.env);
 const broker = openBroker(settings.rabbitmqUrl, log);
 const rules = await loadReleaseRules();
-const open = (url: string) => openPage(url, { sabotage: [] }, (page) => collectPassport(page, 'dev'));
+// Ошибки страницы оформления — рядом с главной (openWithCheckout): на главной их не видно.
+const open = (url: string) =>
+  openWithCheckout((target) => openPage(target, { sabotage: [] }, (page) => collectPassport(page, 'dev')), url);
 await startChecker(broker, { open, rules, log });
 const server = createServer((request, response) => {
   response.writeHead(request.url === '/health' ? 200 : 404).end();

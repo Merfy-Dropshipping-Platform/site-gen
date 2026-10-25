@@ -1,7 +1,7 @@
 import { normalizePassport, type Collected } from '@merfy/stand-check';
 import { describe, expect, it } from 'vitest';
 import { StorefrontBuilderError } from '../src/errors';
-import { checkShop, readCheckerSettings, type CheckerDeps } from '../src/checker/check';
+import { checkShop, openWithCheckout, readCheckerSettings, type CheckerDeps } from '../src/checker/check';
 
 // Проверка магазина без браузера: «открыть страницу» подставная, правила — те, что в release-rules.json.
 const PASSPORT = normalizePassport({
@@ -69,5 +69,48 @@ describe('проверка магазина (блок 10)', () => {
   it('настройки: порт по умолчанию 8080; без RABBITMQ_URL — settings-invalid', () => {
     expect(readCheckerSettings({ RABBITMQ_URL: 'amqp://stand' })).toEqual({ rabbitmqUrl: 'amqp://stand', port: 8080 });
     expect(() => readCheckerSettings({})).toThrow(StorefrontBuilderError);
+  });
+});
+
+// Ошибки страницы оформления в паспорте главной (выпуск nova 0.7.1 №69: pageerror /checkout не дал красного).
+describe('ошибки страницы оформления', () => {
+  const passportAt = (path: string, errors: readonly string[]): Collected => ({
+    passport: normalizePassport({ ...PASSPORT, page: path, errors: [...errors] }),
+    sections: [],
+  });
+  const opened: string[] = [];
+  const open = (url: string): Promise<Collected> => {
+    opened.push(url);
+    const path = new URL(url).pathname;
+    if (path === '/checkout') return Promise.resolve(passportAt('/checkout', ['TypeError: window.__merfyRoot is not a function']));
+    return Promise.resolve(passportAt('/', []));
+  };
+
+  it('ошибки /checkout добавляются к паспорту главной; страница оформления открыта по своему адресу', async () => {
+    const merged = await openWithCheckout(open, 'https://a.dev.merfy.ru');
+    expect(opened.map((url) => new URL(url).pathname)).toEqual(['/', '/checkout']);
+    expect(merged.passport.errors).toEqual(['TypeError: window.__merfyRoot is not a function']);
+    expect(merged.passport.page).toBe('/');
+  });
+
+  it('новая ошибка оформления в «после» — красный', async () => {
+    const red = await checkShop(
+      { open: (url) => openWithCheckout(open, url), rules: RULES, log: () => undefined },
+      { ...JOB, phase: 'after', before: passportAt('/', []).passport },
+    );
+    expect(red.verdict).toBe('red');
+  });
+
+  it('страница оформления ушла редиректом или не открылась — паспорт главной без изменений', async () => {
+    const redirected = await openWithCheckout(
+      (url) => (new URL(url).pathname === '/checkout' ? Promise.resolve(passportAt('/login', ['ошибка входа'])) : open(url)),
+      'https://a.dev.merfy.ru',
+    );
+    expect(redirected.passport.errors).toEqual([]);
+    const unavailable = await openWithCheckout(
+      (url) => (new URL(url).pathname === '/checkout' ? Promise.reject(new Error('нет страницы')) : open(url)),
+      'https://a.dev.merfy.ru',
+    );
+    expect(unavailable.passport.errors).toEqual([]);
   });
 });

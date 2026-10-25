@@ -24,13 +24,20 @@
  *
  * Spec 102 (block-root-scoping).
  */
-export const BLOCK_ROOT_INLINE =
-  `<script>(function(){if(window.__merfyRoot)return;` +
+export const BLOCK_ROOT_INLINE_BODY =
+  `(function(){if(window.__merfyRoot)return;` +
   `window.__merfyRoot=function(blockId){` +
   `if(blockId){var el=document.querySelector('[data-puck-component-id="'+blockId+'"]');if(el)return el;}` +
   `var s=document.currentScript,p=s&&s.previousElementSibling;` +
   `while(p){if(p.nodeType===1&&p.hasAttribute('data-puck-component-id'))return p;p=p.previousElementSibling;}` +
-  `return null;};})();</script>`;
+  `return null;};})();`;
+
+/**
+ * Та же строка в теге <script> — для инжекта в <head> собранных страниц (build.service, превью).
+ * Страницы оформления новой темы (nova) пишут определение прямо в свой <head> (BLOCK_ROOT_INLINE_BODY):
+ * их собирает storefront-builder, мимо того инжекта.
+ */
+export const BLOCK_ROOT_INLINE = `<script>${BLOCK_ROOT_INLINE_BODY}</script>`;
 
 /**
  * Маркер идемпотентности. Присутствует ТОЛЬКО в определении хелпера

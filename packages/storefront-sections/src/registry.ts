@@ -5,6 +5,7 @@ import type { DoorFields } from './doors';
 import { SECTION_KINDS, type SectionFiles } from './format';
 import type { PreparedSection } from './prepare';
 import { sectionProblemSchema } from './problems';
+import type { SectionRole } from './roles';
 
 // Реестр секций (design.md блока 7, С7-10 Б «одна общая таблица», С7-20 Б) — таблица storefront_section базы sites
 // (drizzle/0024). Строка — принятая правка секции или глобального скрипта любого автора. Выпуск платформы, темы и
@@ -191,6 +192,31 @@ export async function currentDraft(db: Queryable, shopId: string, name: string):
   return first(await select(db, DRAFT_SQL, [shopId, name]));
 }
 
+// Одна секция на роль в магазине (блок 12 «Секций и SDK», 12.1, «Решил сам» п. 4): роль занимает текущая правка (draft)
+// другой секции магазина — и до публикации; публикация переносит на витрину все текущие правки разом. Новая версия той
+// же секции (то же имя) — не вторая секция. Проверка — под замком владельца: две секции с одной ролью разом не
+// сохранятся.
+export class RoleTakenError extends Error {
+  constructor(
+    readonly role: SectionRole,
+    readonly holder: string,
+  ) {
+    super(`role-taken: ${role} — ${holder}`);
+    this.name = 'RoleTakenError';
+  }
+}
+
+const ROLE_HOLDER_SQL = `SELECT name FROM storefront_section
+  WHERE author = 'shop' AND owner = $1 AND draft AND name <> $2 AND manifest->>'role' = $3 ORDER BY name LIMIT 1`;
+
+async function assertRoleFree(client: Queryable, owner: string, section: PreparedSection): Promise<void> {
+  const role = section.manifest.role;
+  if (role === undefined) return;
+  const { rows } = await client.query(ROLE_HOLDER_SQL, [owner, section.name, role]);
+  const holder = rows.map((item) => nameRow.parse(item).name).at(0);
+  if (holder !== undefined) throw new RoleTakenError(role, holder);
+}
+
 // Правка своей секции — новая текущая строка (С7-20 Б). Под замком — заново: правка с тем же исходником успела стать
 // текущей раньше — новой строки нет.
 export async function saveDraft(db: Database, row: NewSection): Promise<SavedDraft> {
@@ -198,6 +224,7 @@ export async function saveDraft(db: Database, row: NewSection): Promise<SavedDra
   return underOwnerLock(db, owner, async (client) => {
     const current = await currentDraft(client, owner, row.section.name);
     if (current?.sourceHash === row.sourceHash) return { row: current, created: false };
+    await assertRoleFree(client, owner, row.section);
     await client.query(CLEAR_DRAFT_SQL, [owner, row.section.name]);
     const [inserted] = await select(client, DRAFT_INSERT_SQL, insertParams(row, true));
     return { row: inserted, created: true };

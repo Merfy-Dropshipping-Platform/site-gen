@@ -8,6 +8,7 @@ import {
   currentDraft,
   findRelease,
   insertRelease,
+  RoleTakenError,
   saveDraft,
   type Database,
   type NewSection,
@@ -69,8 +70,15 @@ const DRAFT: Storage = {
   find: (db, door, name) => currentDraft(db, door.owner, name),
   known: (row, sourceHash) => (row.sourceHash === sourceHash ? { status: 'unchanged', row } : null),
   save: async (db, row) => {
-    const saved = await saveDraft(db, row);
-    return { status: saved.created ? 'accepted' : 'unchanged', row: saved.row };
+    try {
+      const saved = await saveDraft(db, row);
+      return { status: saved.created ? 'accepted' : 'unchanged', row: saved.row };
+    } catch (error) {
+      // Блок 12, часть 12а: роль занята другой секцией магазина — отказ приёма с её именем.
+      if (!(error instanceof RoleTakenError)) throw error;
+      const text = `в магазине уже есть секция с ролью ${error.role} — ${error.holder}, измени её`;
+      return refused([problem('role-taken', MANIFEST_FILE, text)]);
+    }
   },
 };
 

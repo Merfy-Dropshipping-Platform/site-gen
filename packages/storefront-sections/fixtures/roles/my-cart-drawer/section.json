@@ -1,0 +1,7 @@
+{
+  "sdk": 1,
+  "name": "my-cart-drawer",
+  "kind": "section",
+  "title": "Моя корзина-панель",
+  "role": "cart-drawer"
+}

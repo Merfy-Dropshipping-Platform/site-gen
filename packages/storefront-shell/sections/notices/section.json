@@ -1,0 +1,8 @@
+{
+  "sdk": 1,
+  "name": "notices",
+  "kind": "section",
+  "title": "Уведомления",
+  "groups": ["footer", "page"],
+  "limit": 1
+}

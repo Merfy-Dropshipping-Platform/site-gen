@@ -130,6 +130,9 @@ export interface EventMap {
   'merfy:catalog:page': { readonly page: number };
   'merfy:section:mount': { readonly section: string };
   'merfy:section:error': SectionFailureDetail;
+  // Превью конструктора (блок 6, часть 6в; В6-1 А): мерчант выбрал блок секции в панели слева или снял выбор — id блока.
+  'merfy:block:select': { readonly blockId: string };
+  'merfy:block:deselect': { readonly blockId: string };
   'merfy:notice:show': { readonly level: NoticeLevel; readonly message: string; readonly code?: ErrorCode };
   'merfy:consent:change': { readonly state: ConsentState };
 }

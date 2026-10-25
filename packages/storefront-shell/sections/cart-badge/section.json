@@ -3,5 +3,6 @@
   "name": "cart-badge",
   "kind": "section",
   "title": "Значок корзины",
+  "groups": ["header", "page"],
   "uses": ["cart"]
 }

@@ -28,6 +28,7 @@ import {
   resolveSectionBlocks,
   resolveSectionSettings,
   revisionMenusSchema,
+  roleKeysOf,
   sectionMenus,
   sectionRecordKeys,
   type CurrentSection,
@@ -348,6 +349,11 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
 // Блок 10 (часть 10б): themeSettings — поля «Настроек темы» в панели секции.
 const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage', 'themeSettings'] as const;
 
+// Блок 12, часть 12а (Р12а-14): у секции с ролью — role, place (список ревизии), groups и limit: 1 из таблицы ролей,
+// даже если в section.json их нет; договор с конструктором — план 12г.
 function placeKeys(manifest: CurrentSection['manifest']): Record<string, unknown> {
-  return Object.fromEntries(PLACE_KEYS.flatMap((key) => (manifest[key] === undefined ? [] : [[key, manifest[key]]])));
+  const declared = Object.fromEntries(
+    PLACE_KEYS.flatMap((key) => (manifest[key] === undefined ? [] : [[key, manifest[key]]])),
+  );
+  return manifest.role === undefined ? declared : { ...declared, ...roleKeysOf(manifest.role) };
 }

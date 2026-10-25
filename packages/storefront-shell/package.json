@@ -16,6 +16,7 @@
     "./actions": "./src/core/action-catalog.ts",
     "./counters": "./src/core/analytics/counters.ts",
     "./roles": "./src/core/roles.ts",
+    "./ext-points": "./src/core/ext-points.ts",
     "./core-parts.json": "./core-parts.json"
   },
   "scripts": {

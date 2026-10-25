@@ -169,6 +169,12 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: 'У блока в blocks.map нет одного корневого элемента; секция сохраняется.',
     fix: 'Оберни разметку блока одним элементом — тогда блок выбирается кликом в превью.',
   },
+  // Правка текста в превью (блок 1, часть 6): справка по текстам edit-marks.ts.
+  'inline-edit-unavailable': {
+    when: 'У настройки с "inlineEdit": true в template.astro нет места правки в превью.',
+    fix: 'Выдели значение отдельным элементом; у richtext — set:html и без другого содержимого.',
+    example: { before: '<h1>{settings.heading} — магазин шарфов</h1>', after: '<h1>{settings.heading}</h1>' },
+  },
   // Поведения и появления в шаблоне (блок 6 «Секций и SDK», часть 6б): справку дописал блок 14 по текстам проверки.
   'behavior-unknown': {
     when: 'Имени в data-behavior нет в каталоге поведений SDK.',

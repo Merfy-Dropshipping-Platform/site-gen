@@ -47,7 +47,9 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     + '[data-merfy-block][data-merfy-block-hint]{outline:2px solid #cfdff0 !important;outline-offset:2px}'
     + '[data-merfy-block][data-merfy-block-selected]{outline:2px solid #88b0da !important;outline-offset:2px}'
     + 'merfy-section[data-merfy-state="failed"]{outline:2px solid #dc2626 !important;outline-offset:-2px}'
-    + '[data-merfy-script-error]{border:2px solid #dc2626;padding:16px;color:#dc2626;font:14px/1.4 system-ui,sans-serif}';
+    + '[data-merfy-script-error]{border:2px solid #dc2626;padding:16px;color:#dc2626;font:14px/1.4 system-ui,sans-serif}'
+    // Часть 6: подсказка пустого редактируемого элемента — как на проде (цвет самого элемента, не --color-muted).
+    + '[data-merfy-edit]:empty:before,[data-merfy-edit-html]:empty:before{content:attr(data-merfy-placeholder);color:currentColor;opacity:.45;pointer-events:none}';
   var DELETE_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
   // «Скопировать» — значок подписи превью пяти тем (src/services/preview.service.ts, строки 2107–2109), 16 px.
   var COPY_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
@@ -257,6 +259,8 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         var old = byId(instance.id);
         var fresh = nodeOf(answer.html);
         if (tickets[instance.id] !== ticket || !old || !fresh) return;
+        // Часть 6: пока курсор в редактируемом элементе секции, ответ ждёт (holdWhileEditing).
+        if (holdWhileEditing(instance.id, answer)) return;
         setCss(instance.id, answer.css);
         if (handOver(old, answer.html, answer.script, false)) return;
         old.parentNode.replaceChild(fresh, old);
@@ -388,6 +392,87 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       event.stopPropagation();
       post({ type: 'select-block', blockId: node.getAttribute('data-section-id') });
       navigateTo(target);
+    },
+    true
+  );
+  // Правка текста в превью (часть 6 блока 1, design.md 3.18), как у пяти тем: элемент с data-merfy-edit (string, text) или
+  // data-merfy-edit-html (richtext) — contenteditable, правка начинается с первого клика. Enter и Esc не обрабатываются.
+  // Когда курсор ушёл с элемента и значение изменилось, в конструктор уходит edit-field: string и text — textContent без
+  // пробелов по краям, richtext — innerHTML; field — путь к настройке из атрибута («<id>» или «blocks/<id блока>/<id>»).
+  // Пока курсор в элементе секции, ответ update-block по ней ждёт: ушёл без правки — ответ применяется, с правкой —
+  // отбрасывается (конструктор запишет правку, и PreviewFrame пришлёт новый update-block со всеми данными секции).
+  var EDIT_SELECTOR = '[data-merfy-edit],[data-merfy-edit-html]';
+  var editing = null;
+  var held = {};
+  function editableOf(target) {
+    return target && target.closest ? target.closest(EDIT_SELECTOR) : null;
+  }
+  function editValueOf(node) {
+    return node.hasAttribute('data-merfy-edit-html') ? node.innerHTML : (node.textContent || '').trim();
+  }
+  function applyEditable() {
+    Array.prototype.forEach.call(document.querySelectorAll(EDIT_SELECTOR), function (node) {
+      if (node.getAttribute('contenteditable') !== 'true') node.setAttribute('contenteditable', 'true');
+    });
+  }
+  function isEditingIn(id) {
+    var section = editing === null ? null : sectionOf(editing.node);
+    return section !== null && section.getAttribute('data-section-id') === id;
+  }
+  function holdWhileEditing(id, answer) {
+    if (!isEditingIn(id)) return false;
+    held[id] = answer;
+    return true;
+  }
+  function releaseHeld() {
+    Object.keys(held).forEach(function (id) {
+      if (isEditingIn(id)) return;
+      var answer = held[id];
+      delete held[id];
+      var old = byId(id);
+      var fresh = old ? nodeOf(answer.html) : null;
+      if (!old || !fresh) return;
+      setCss(id, answer.css);
+      if (handOver(old, answer.html, answer.script, false)) return;
+      old.parentNode.replaceChild(fresh, old);
+      place();
+      showBlock();
+    });
+  }
+  applyEditable();
+  if (document.body) {
+    new MutationObserver(function () {
+      applyEditable();
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  document.addEventListener(
+    'focusin',
+    function (event) {
+      var node = editableOf(event.target);
+      editing = node ? { node: node, before: editValueOf(node) } : null;
+    },
+    true
+  );
+  document.addEventListener(
+    'focusout',
+    function (event) {
+      var node = editableOf(event.target);
+      if (!node || editing === null || editing.node !== node) return;
+      var before = editing.before;
+      var section = sectionOf(node);
+      var id = section ? section.getAttribute('data-section-id') : null;
+      var value = editValueOf(node);
+      editing = null;
+      if (id !== null && value !== before) {
+        delete held[id];
+        post({
+          type: 'edit-field',
+          blockId: id,
+          field: node.getAttribute('data-merfy-edit-html') || node.getAttribute('data-merfy-edit'),
+          value: value
+        });
+      }
+      setTimeout(releaseHeld, 0);
     },
     true
   );

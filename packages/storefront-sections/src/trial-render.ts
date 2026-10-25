@@ -40,12 +40,20 @@ function containerOf(): Promise<AstroContainer> {
   return container;
 }
 
-// Метка блока (data-merfy-block): в превью — id блока, на витрине — undefined, и Astro атрибут не выводит.
+// Правка текста в превью (часть 6): edit — путь к настройке («<id>» или «blocks/<id блока>/<id>»), hint — подпись пустого
+// элемента; на витрине оба undefined, атрибуты не выводятся.
 const marksOf = (preview: boolean) => ({
   block: (block: unknown): string | undefined => {
     const id: unknown = preview ? Reflect.get(Object(block), 'id') : undefined;
     return typeof id === 'string' ? id : undefined;
   },
+  edit: (first: unknown, second?: unknown): string | undefined => {
+    if (!preview) return undefined;
+    if (typeof first === 'string') return first;
+    const id: unknown = Reflect.get(Object(first), 'id');
+    return typeof id === 'string' && typeof second === 'string' ? `blocks/${id}/${second}` : undefined;
+  },
+  hint: (label: unknown): string | undefined => (preview && typeof label === 'string' ? label : undefined),
 });
 
 export async function renderTemplate(component: TemplateComponent, props: TemplateProps): Promise<string> {

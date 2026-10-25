@@ -12,6 +12,13 @@
 | `cart.open` | cart | открыть корзину: при «Сайдбар» и выезжающей корзине на странице — merfy:cart:open, иначе переход на /cart; ответ — { drawer } | — |
 | `cart.checkout` | cart | перейти в оформление заказа: номер корзины и копия строк для оформления, переход на /checkout | — |
 | `favorites.toggle` | favorites | отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added } | `data-product-id` |
+| `auth.requestCode` | auth | отправить письмо с кодом и ссылкой для входа; аргументы { email }, ответ — {} | только из script.ts |
+| `auth.verify` | auth | войти по коду { email, code } или ссылке { token }; ответ — { customer }, потом merfy:auth:signin; на «Входе» — переход по ?redirect или в кабинет | только из script.ts |
+| `auth.signout` | auth | выйти: токен и избранное браузера стёрты, merfy:auth:signout; в кабинете — переход на «Вход» | — |
+| `auth.updateProfile` | auth | сохранить имя и телефон; аргументы { name?, phone? }, ответ — { customer } | только из script.ts |
+| `orders.list` | orders | заказы покупательницы, новые сверху; ответ — { orders } | только из script.ts |
+| `orders.get` | orders | заказ по номеру; аргументы { number }, ответ — { order } | только из script.ts |
+| `orders.cancel` | orders | отменить заказ; аргументы { number, reason }, ответ — { order } | только из script.ts |
 | `consent.accept` | consent | покупатель принял cookie: счётчики мерчанта и «свой код» с ожиданием согласия запускаются; ответ — "accepted" | — |
 | `consent.decline` | consent | покупатель отклонил cookie: аналитика ничего не отправляет, счётчиков нет; ответ — "declined" | — |
 | `newsletter.subscribe` | newsletter | подписать на рассылку магазина; аргументы { email }, ответ — { alreadySubscribed }; e-mail — из поля формы | только из script.ts |

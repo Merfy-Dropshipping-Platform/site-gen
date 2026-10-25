@@ -50,9 +50,10 @@ function moduleWith(cartType: Record<string, string> | null = null, mode: Mode =
   const module: CartModule = cart.create(handle.core);
   return { module, ...handle };
 }
+// Блок 12, часть 12а: выезжающую корзину ядро находит по data-role на обёртке экземпляра.
 const placeDrawer = (): void => {
   document.body.innerHTML =
-    '<div data-behavior="dialog" data-open-on="cart-open"><dialog data-part="content"></dialog></div>';
+    '<merfy-section data-section="shop:cart-drawer" data-section-id="drawer-1" data-role="cart-drawer"><div data-behavior="dialog" data-open-on="cart-open"><dialog data-part="content"></dialog></div></merfy-section>';
 };
 
 describe('cart.open', () => {

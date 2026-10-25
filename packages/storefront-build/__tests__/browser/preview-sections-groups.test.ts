@@ -98,6 +98,13 @@ describe('группы в превью', () => {
     expect(await bodyOrder()).toEqual(['header-1', 'MAIN', 'footer-2', 'footer-1']);
     expect(await mainOrder()).toEqual(['hero-1']);
   });
+
+  it('reconcile: секция группы overlay (блок 12) — после подвала, в конце <body>', async () => {
+    const blocks = [block('header-1', 'header'), block('hero-1', 'page'), block('footer-1', 'footer'), block('search-1', 'overlay')];
+    await send({ type: 'reconcile', version: 3, blocks });
+    await expect.poll(async () => (await ofType('reconcile-ack')).at(-1)).toMatchObject({ version: 3, ok: true });
+    expect(await bodyOrder()).toEqual(['header-1', 'MAIN', 'footer-1', 'search-1']);
+  });
 });
 
 describe('переход по ссылке', () => {

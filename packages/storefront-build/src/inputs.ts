@@ -1,3 +1,4 @@
+import { SECTION_ROLES } from '@merfy/shell/roles';
 import { extUseSchema, storefrontExtensionsSchema } from '@merfy/storefront-config';
 import { z } from 'zod';
 import { hashSchema } from './canonical';
@@ -82,6 +83,9 @@ const codeSectionSchema = z.strictObject({
   script: hashSchema.nullable(),
   // Часть 4 (Р1-4-2): флаги section.json — только если объявлены, иначе входы и ключ прежние.
   removable: z.literal(false).optional(),
+  // Роль секции из section.json (блок 12 «Секций и SDK», 12.1) — только если объявлена: data-role на обёртке, ошибка
+  // рендера — ошибка сборки.
+  role: z.enum(SECTION_ROLES).optional(),
   // Блок 8 «Секций и SDK», часть 8г: поля с записями (id настройки → вид) и data для скрипта — только если объявлены.
   recordFields: z.record(z.string().min(1), z.enum(RECORD_FIELD_KINDS)).optional(),
   data: z.record(z.string().regex(DATA_NAME), sectionDataEntrySchema).optional(),
@@ -342,7 +346,7 @@ export function parseBuildInputs(raw: unknown): BuildInputs {
 // Свои страницы (часть 4, Р1-4-8): id — один раз и не главная, шапка или подвал (их списки секций); адрес — один раз
 // и не стенд темы (STAND_PAGE_PATH, renderer.ts). Первая ошибка — с путём.
 // Особые страницы платформы (блок 7, часть 7а) — тоже заняты: id и адреса из special-pages.json.
-const RESERVED_PAGE_IDS: ReadonlySet<string> = new Set(['header', 'footer', ...SPECIAL_PAGE_IDS]);
+const RESERVED_PAGE_IDS: ReadonlySet<string> = new Set(['header', 'footer', 'overlay', ...SPECIAL_PAGE_IDS]);
 const RESERVED_SLUGS: ReadonlySet<string> = new Set(['/theme-stand', ...SPECIAL_PAGE_SLUGS]);
 
 function checkPages(inputs: BuildInputs): void {

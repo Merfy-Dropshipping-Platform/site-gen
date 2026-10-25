@@ -297,4 +297,12 @@ describe('dialog: open-on', () => {
     await fire(plain.page, 'merfy:cart:add');
     expect(await isOpen(plain.page, '#panel')).toBe(false);
   });
+
+  it('секция со сбоем (блок 12): окно по событию SDK не открывается', async () => {
+    const failed = PANEL('cart-add').replace('data-section-id="drawer"', 'data-section-id="drawer" data-merfy-state="failed"');
+    const { page, errors } = await open(failed);
+    await fire(page, 'merfy:cart:add');
+    expect(await isOpen(page, '#panel')).toBe(false);
+    expect(errors).toEqual([]);
+  });
 });

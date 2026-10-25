@@ -170,3 +170,13 @@
 Формат секции, словарь, коды ошибок и примеры для людей и ИИ — пакет `packages/sdk-docs`: `generated/llms.txt` и
 страницы рядом; их раздаёт шлюз по `/api/storefront/sdk/llms.txt`. Описание формата выше — до блока 1, сверяй с
 документацией. Поменял данные проверки (код, имя словаря, событие) — `pnpm --dir packages/sdk-docs generate`.
+
+## Роли секций (блок 12 «Секций и SDK», часть 12а)
+
+- `role` в `section.json` — одна из семи ролей платформы (`src/roles.ts`, список — `@merfy/shell/roles`): `cart`,
+  `cart-drawer`, `cart-added`, `login`, `search`, `notices`, `cookie-banner`. Роль задаёт место — особая страница
+  (`page-cart`, `page-login`) или группа `overlay` «Поверх страницы» — и один экземпляр; `groups` и `limit` не нужны.
+- Отказы: `role-unknown` — роль не из списка; `role-place` — `groups`/`limit` не по роли или `overlay` без роли;
+  `role-not-allowed` — роль у секции расширения; `ext-foreign` — `ext:<чужой id>` в `uses` секции расширения;
+  `role-taken` — в магазине уже есть секция с этой ролью (приём, `registry.ts`): правят её новой версией.
+- Второй экземпляр секции с ролью в ревизии — ошибка записи `role-duplicate` в `sites` (`src/content/section-roles.ts`).

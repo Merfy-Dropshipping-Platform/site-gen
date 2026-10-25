@@ -3,6 +3,7 @@
   "name": "login",
   "kind": "section",
   "title": "Вход",
+  "role": "login",
   "groups": ["page"],
   "limit": 1,
   "uses": ["auth"],

@@ -7,7 +7,7 @@ import type { LogFields } from './log';
 // сборки идут id, адрес, имя и SEO своих страниц; строки главной и системных страниц — нет. Неверная строка, повтор
 // id или адреса, занятые id и адрес — без неё, причина — в журнал: сборка идёт, страница не рендерится.
 const PAGE_SLUG = /^\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const RESERVED_IDS: ReadonlySet<string> = new Set(['header', 'footer', ...SPECIAL_PAGE_IDS]);
+const RESERVED_IDS: ReadonlySet<string> = new Set(['header', 'footer', 'overlay', ...SPECIAL_PAGE_IDS]);
 const RESERVED_SLUGS: ReadonlySet<string> = new Set(['/theme-stand', ...SPECIAL_PAGE_SLUGS]);
 const storedPage = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),

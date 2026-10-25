@@ -13,7 +13,8 @@ import {
   resolveSectionBlocks,
   resolveSectionSettings,
   revisionMenusSchema,
-  sectionGroupsOf,
+  sectionLimitOf,
+  sectionListAllowed,
   sectionMenus,
   sectionRecordKeys,
   visibleSections,
@@ -21,7 +22,6 @@ import {
   type Queryable,
   type RevisionMenu,
   type Visibility,
-  type SectionGroup,
   type SectionRow,
   isDefaultWrapperView,
   resolveWrapperView,
@@ -220,6 +220,8 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   ...sectionRecordKeys(current.manifest),
   // Часть 4: флаги section.json — только если объявлены, иначе входы и ключ прежние.
   ...(current.manifest.removable === undefined ? {} : { removable: current.manifest.removable }),
+  // Блок 12, часть 12а: роль секции — только если объявлена, иначе входы и ключ прежние.
+  ...(current.manifest.role === undefined ? {} : { role: current.manifest.role }),
   // uses с модулями SDK (часть 5в блока 5): во входы сборки — только theme и shop, модули идут через script_meta.
   ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),
   // Свои токены секции (блок 4, Р4-10) — только если объявлены в section.json.
@@ -395,12 +397,10 @@ export async function readVisibleSections(deps: CodeDeps, shopId: string): Promi
   );
 }
 
-// Группа списка ревизии (часть 4, Р1-4-2): header — шапка, footer — подвал, остальные списки — страницы.
-const groupOf = (list: string): SectionGroup => (list === 'header' || list === 'footer' ? list : 'page');
-
-// Экземпляры списка, которые встают на страницу: видимая секция (не глобальный скрипт), её группы включают группу
-// списка, экземпляров секции в списке не больше limit — по порядку, скрытые считаются. Остальные — строка журнала
-// section-group-invalid или section-limit-exceeded; сборка идёт.
+// Экземпляры списка, которые встают на страницу: видимая секция (не глобальный скрипт), её место включает список
+// (sectionListAllowed: группы секции или список её роли, блок 12), экземпляров секции в списке не больше limit (у
+// секции с ролью — один) — по порядку, скрытые считаются. Остальные — строка журнала section-group-invalid или
+// section-limit-exceeded; сборка идёт.
 function allowedOn(
   list: string,
   instances: readonly SectionInstance[],
@@ -413,13 +413,13 @@ function allowedOn(
     if (entry === undefined || entry[0].kind !== 'section') return [];
     const [, current] = entry;
     const fields = { shopId: context.shopId, section: instance.section, id: instance.id, list };
-    if (!sectionGroupsOf(current.manifest).includes(groupOf(list))) {
+    if (!sectionListAllowed(current.manifest, list)) {
       context.log('section-group-invalid', fields);
       return [];
     }
     const count = (counts.get(instance.section) ?? 0) + 1;
     counts.set(instance.section, count);
-    if (count > (current.manifest.limit ?? Number.POSITIVE_INFINITY)) {
+    if (count > (sectionLimitOf(current.manifest) ?? Number.POSITIVE_INFINITY)) {
       context.log('section-limit-exceeded', fields);
       return [];
     }

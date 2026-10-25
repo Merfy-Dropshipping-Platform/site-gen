@@ -116,6 +116,18 @@ describe('старт: все секции разом', () => {
     expect(mounted).toEqual(['{"section":"shop:a"}']);
   });
 
+  it('секция пришла в HTML с data-merfy-state="failed" (блок 12): экземпляр не запускается, признак остаётся', async () => {
+    const log: string[] = [];
+    document.head.innerHTML = configTag('live');
+    const failed = placeSection('shop:a', 'a-1', '<p>Корзина</p>');
+    failed.setAttribute('data-merfy-state', 'failed');
+    core = start({ parts: [], sections: [entry('shop:a', recorder(log))] });
+    await tick();
+    expect(log).toEqual([]);
+    expect(failed.getAttribute('data-merfy-state')).toBe('failed');
+    expect(failures.details).toEqual([]);
+  });
+
   it('новый элемент после старта (превью) запускается сразу; page:ready и page:view — только его подписчикам', async () => {
     const log: string[] = [];
     let views = 0;

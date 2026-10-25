@@ -1,3 +1,4 @@
+import type { SectionRole } from '@merfy/shell/roles';
 import { classesOf, type Dictionary } from '@merfy/tokens';
 import type { CodeNoticed } from './bundle';
 import { sha256 } from './canonical';
@@ -140,6 +141,9 @@ export interface PlacedSection {
   // false — секцию нельзя пропустить (шапка, подвал): её ошибка — ошибка сборки, на сайте остаётся прежняя сборка (блок
   // 2, «Решил сам» п. 7). Флаг — "removable" из section.json (часть 4 блока 1); нет — секцию можно пропустить.
   removable?: boolean;
+  // Роль секции (блок 12 «Секций и SDK», 12.1): на обёртке — data-role, по нему ядро находит секцию; ошибка рендера —
+  // ошибка сборки, как у removable: false (12.4, п. 14).
+  role?: SectionRole;
   // Часть 4: деревья меню по id настройки вида menu; что шаблон читает сверх settings и blocks ("uses").
   menus?: Readonly<Record<string, MenuTree>>;
   uses?: readonly PropsUse[];
@@ -162,6 +166,8 @@ export interface PageContent {
   header?: string[];
   sections: string[];
   footer?: string[];
+  // Секции поверх страницы (блок 12 «Секций и SDK», 12.2): тема получает их в locals.footer сразу после подвала.
+  overlay?: string[];
   sectionsCss: string;
   mode: PageMode;
   // Тег бандла страницы для <head> (часть 5б); нет — без бандла.
@@ -216,7 +222,8 @@ const wrapper = (placed: PlacedSection, html: string): string => {
   const attributes = Object.entries(view.attributes)
     .map(([name, value]) => ` ${name}="${escapeHtml(value)}"`)
     .join('');
-  return `<merfy-section data-section="${escapeHtml(placed.name)}" data-section-id="${escapeHtml(placed.id)}"${classes}${attributes}>${html}</merfy-section>`;
+  const role = placed.role === undefined ? '' : ` data-role="${escapeHtml(placed.role)}"`;
+  return `<merfy-section data-section="${escapeHtml(placed.name)}" data-section-id="${escapeHtml(placed.id)}"${role}${classes}${attributes}>${html}</merfy-section>`;
 };
 
 // Ошибка рендера секции. На опубликованном сайте (В2-1 А, «Решил сам» п. 7) упавшей секции нет, об ошибке сообщается;
@@ -226,7 +233,9 @@ const ON_RENDER_ERROR: Record<PageMode, (placed: PlacedSection, error: unknown, 
   live: (placed, error, failed) => {
     const stage = stageOf(error);
     if (stage !== null) failed?.(failureOf(placed, stage, error));
-    if (stage !== null && placed.removable !== false) return '';
+    // Секция с ролью (блок 12, 12.4, п. 14) — как removable: false: магазин без корзины или входа хуже прежней сборки.
+        // Секция с ролью (блок 12, 12.4, п. 14) — как removable: false: магазин без корзины или входа хуже прежней сборки.
+    if (stage !== null && placed.removable !== false && placed.role === undefined) return '';
     throw new StorefrontBuildError('render-failed', `секция ${placed.name} не отрисовалась: ${errorText(error)}`, {
       path: placed.id,
       cause: error,

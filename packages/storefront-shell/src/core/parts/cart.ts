@@ -1,6 +1,6 @@
 import { messageOf } from '../../report';
 import { changeInModule, removeInModule } from '../cart-change';
-import { checkoutCart, openCart, watchPendingOrder } from '../cart-checkout';
+import { CHECKOUT_CART_KEY, checkoutCart, openCart, watchPendingOrder } from '../cart-checkout';
 import { previewCartStorage } from '../cart-preview';
 import { withLine } from '../cart-lines';
 import type { AddItemBody, AddedItem, CartApi, CreatedCart, ReadCart } from '../cart-server';
@@ -104,6 +104,19 @@ export const apiOf = (core: CoreHandle): CartApi | null => {
 
 export const cartIdOf = (page: KeyValue): string | null => page.getItem(CART_ID_KEY);
 
+// Номер корзины (блок 12 «Секций и SDK», п. 16): при каждом получении — и в CHECKOUT_CART_KEY нынешнего оформления, а не
+// только в cart.checkout(): «Оформить заказ» — ссылка, и из корзины с упавшим скриптом оформление получает номер.
+export function keepCartId(page: KeyValue, id: string): void {
+  page.setItem(CART_ID_KEY, id);
+  page.setItem(CHECKOUT_CART_KEY, id);
+}
+
+// Номер стёрт (корзины нет, заказ оплачен): номер оформления — тоже, если в нём тот же номер.
+export function dropCartId(page: KeyValue, id: string): void {
+  page.removeItem(CART_ID_KEY);
+  if (page.getItem(CHECKOUT_CART_KEY) === id) page.removeItem(CHECKOUT_CART_KEY);
+}
+
 // Итоги без корзины: нули; ready — прочитаны ли.
 export function emptyTotals(currency: string, ready: boolean): CartTotals {
   const zero: Money = { amount: 0, currency };
@@ -142,10 +155,12 @@ export async function readCartInto(rt: CartRuntime): Promise<Failure | null> {
   if (id === null) return markRead(rt, []);
   const outcome: ReadCart = await readCart(conf, id);
   if (outcome.kind === 'missing') {
-    rt.page.removeItem(CART_ID_KEY);
+    dropCartId(rt.page, id);
     return markRead(rt, []);
   }
   if (outcome.kind === 'failure') return outcome.failure;
+  // Корзина прошлого визита прочитана — её номер и для оформления (блок 12, п. 16).
+  rt.page.setItem(CHECKOUT_CART_KEY, id);
   return markRead(rt, outcome.lines, outcome.totals);
 }
 
@@ -189,7 +204,7 @@ const itemBodyOf = (args: AddArgs, n: number): AddItemBody =>
 async function retryOnNewCart(rt: CartRuntime, conf: CartApi, args: AddArgs, n: number): Promise<SettledItem> {
   const created: CreatedCart = await createCart(conf);
   if (created.kind === 'failure') return { kind: 'failure', failure: created.failure };
-  rt.page.setItem(CART_ID_KEY, created.id);
+  keepCartId(rt.page, created.id);
   const outcome = await addItem(conf, created.id, itemBodyOf(args, n));
   return outcome.kind === 'missing' ? { kind: 'failure', failure: failureOf('server', '') } : outcome;
 }
@@ -199,11 +214,11 @@ async function postItem(rt: CartRuntime, conf: CartApi, args: AddArgs, n: number
   const storedId = cartIdOf(rt.page);
   const fresh: CreatedCart = storedId === null ? await createCart(conf) : { kind: 'id', id: storedId };
   if (fresh.kind === 'failure') return { kind: 'failure', failure: fresh.failure };
-  if (storedId === null) rt.page.setItem(CART_ID_KEY, fresh.id);
+  if (storedId === null) keepCartId(rt.page, fresh.id);
   const outcome = await addItem(conf, fresh.id, itemBodyOf(args, n));
   if (outcome.kind !== 'missing') return outcome;
   if (storedId === null) return { kind: 'failure', failure: failureOf('server', '') };
-  rt.page.removeItem(CART_ID_KEY);
+  dropCartId(rt.page, storedId);
   markRead(rt, []);
   return retryOnNewCart(rt, conf, args, n);
 }

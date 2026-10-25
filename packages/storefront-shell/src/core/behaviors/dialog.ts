@@ -317,8 +317,10 @@ const OPEN_EVENTS: Readonly<Record<string, string>> = { 'cart-open': 'merfy:cart
 function listenOpenEvent(box: Box): void {
   const name = OPEN_EVENTS[String(box.host.params['open-on'])];
   if (name === undefined) return;
+  // Блок 12, часть 12а: у секции со сбоем (data-merfy-state="failed") окно по событию SDK не открывается — «Товар
+  // добавлен» со сломанным скриптом не показывает пустое окно, меняется только число в «Корзине».
   const open = (): void => {
-    if (box.state === 'closed') doOpen(box);
+    if (box.state === 'closed' && box.host.section.getAttribute('data-merfy-state') !== 'failed') doOpen(box);
   };
   document.addEventListener(name, open, { signal: box.host.signal });
 }

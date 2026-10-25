@@ -134,7 +134,7 @@ describe('search.open', () => {
     expect(await api.open()).toEqual({ ok: true, data: { panel: false } });
     expect(assign).toHaveBeenCalledWith('/catalog');
     document.body.innerHTML =
-      '<merfy-section data-section="shop:search" data-section-id="s-1"><div data-behavior="search"></div></merfy-section>';
+      '<merfy-section data-section="shop:search" data-section-id="s-1" data-role="search"><div data-behavior="search"></div></merfy-section>';
     expect(await api.open()).toEqual({ ok: true, data: { panel: true } });
     expect(fake.named('merfy:search:open')).toEqual([{}]);
     document.body.replaceChildren();

@@ -273,21 +273,21 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     var first = all()[0];
     return (first && first.parentNode) || document.querySelector('main') || document.body;
   }
-  // Место секции по группе (часть 4, Р1-4-11): header — перед <main>, page — в <main>, footer — сразу после <main>;
-  // внутри группы — порядок списка; группы нет — page. <main> нет — все в контейнер, как раньше.
+  // Место секции по группе (часть 4, Р1-4-11): header — перед <main>, page — в <main>, footer — сразу после <main>,
+  // overlay — в конец <body>; внутри группы — порядок списка; группы нет — page. <main> нет — все в контейнер, как раньше.
   function placeAll(blocks, nodes, container) {
     var main = document.querySelector('main');
-    var groups = { header: [], page: [], footer: [] };
+    var groups = { header: [], page: [], footer: [], overlay: [] };
     blocks.forEach(function (block) {
       var old = byId(block.id);
       var node = nodes[block.id] || old;
       if (!node) return;
       if (old && old !== node) old.parentNode.removeChild(old);
       var group = block.props && block.props.group;
-      groups[group === 'header' || group === 'footer' ? group : 'page'].push(node);
+      groups[group === 'header' || group === 'footer' || group === 'overlay' ? group : 'page'].push(node);
     });
     if (!main) {
-      groups.header.concat(groups.page, groups.footer).forEach(function (node) {
+      groups.header.concat(groups.page, groups.footer, groups.overlay).forEach(function (node) {
         container.appendChild(node);
       });
       return;
@@ -304,6 +304,10 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       .forEach(function (node) {
         main.parentNode.insertBefore(node, main.nextSibling);
       });
+    // Секции поверх страницы (блок 12, 12.2) — после подвала, в конец <body>.
+    groups.overlay.forEach(function (node) {
+      document.body.appendChild(node);
+    });
   }
   function reconcile(data) {
     var blocks = data.blocks || [];

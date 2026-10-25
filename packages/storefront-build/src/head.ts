@@ -240,6 +240,8 @@ export function pageLocals(
     year: inputs.year,
     header: content.header ?? [],
     sections: content.sections,
-    footer: content.footer ?? [],
+    // Секции поверх страницы (блок 12, Р12а-8) — сразу после подвала: тема печатает footer после <main>.
+        // Секции поверх страницы (блок 12, Р12а-8) — сразу после подвала: тема печатает footer после <main>.
+    footer: [...(content.footer ?? []), ...(content.overlay ?? [])],
   };
 }

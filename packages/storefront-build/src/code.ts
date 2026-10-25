@@ -112,11 +112,13 @@ export function placedSections(inputs: BuildInputs, pageId: string): PlacedSecti
 
 // removable и uses секции (часть 4 блока 1) и классы её скрипта (часть 5в блока 5) — из кода магазина по имени: у
 // секции без них ключей нет.
-function placeFlags(inputs: BuildInputs, name: string): Pick<PlacedSection, 'removable' | 'uses' | 'classes'> {
+function placeFlags(inputs: BuildInputs, name: string): Pick<PlacedSection, 'removable' | 'uses' | 'classes' | 'role'> {
   const section = inputs.code.sections.find((candidate) => candidate.name === name);
   const classes = section?.meta?.classes ?? [];
   return {
     ...(section?.removable === undefined ? {} : { removable: section.removable }),
+    // Роль секции (блок 12, 12.1): data-role на обёртке, ошибка рендера — ошибка сборки.
+    ...(section?.role === undefined ? {} : { role: section.role }),
     ...(section?.uses === undefined ? {} : { uses: section.uses }),
     ...(classes.length === 0 ? {} : { classes }),
   };
@@ -207,12 +209,12 @@ export async function pageBundle(
 // Поведения и анимации страницы (блок 6, часть 6б; Р6б-2, Р6б-5): что нужно — по HTML секций страницы и текстам их
 // скриптов. Флаг data-merfy-motion и запасной CSS — только у страницы с data-animate: часть behaviors снимает флаг по
 // merfy:page:ready, а через 3 с CSS показывает всё, если ядро не запустилось.
-type PageHtml = Pick<PageContent, 'header' | 'sections' | 'footer'>;
+type PageHtml = Pick<PageContent, 'header' | 'sections' | 'footer' | 'overlay'>;
 const NO_HTML: PageHtml = { sections: [] };
 const MOTION_HEAD = `<script>${MOTION_HEAD_SCRIPT}</script><style id="merfy-motion">${MOTION_CSS}</style>`;
 
 function kitOf(kit: ShellKit | undefined, content: PageHtml, scripts: readonly string[]): BundleKit | undefined {
   if (kit === undefined) return undefined;
-  const html = [...(content.header ?? []), ...content.sections, ...(content.footer ?? [])];
+  const html = [...(content.header ?? []), ...content.sections, ...(content.footer ?? []), ...(content.overlay ?? [])];
   return { files: kit.files, plan: kitPlanOf(kit.behaviors, html, scripts) };
 }

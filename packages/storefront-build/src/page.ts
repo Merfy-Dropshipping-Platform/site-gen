@@ -117,14 +117,15 @@ export function pagePropsOf(
   return { theme: settings, shop, page: HOME_PAGE };
 }
 
-// Разметка трёх списков одного прохода — обратно по спискам: шапка, страница, подвал.
-function splitContent(content: PageContent, [header = 0, own = 0]: readonly number[]): PageContent {
+// Разметка четырёх списков одного прохода — обратно по спискам: шапка, страница, подвал, поверх страницы (блок 12).
+function splitContent(content: PageContent, [header = 0, own = 0, footer = 0]: readonly number[]): PageContent {
   const { sections } = content;
   return {
     ...content,
     header: sections.slice(0, header),
     sections: sections.slice(header, header + own),
-    footer: sections.slice(header + own),
+    footer: sections.slice(header + own, header + own + footer),
+    overlay: sections.slice(header + own + footer),
   };
 }
 

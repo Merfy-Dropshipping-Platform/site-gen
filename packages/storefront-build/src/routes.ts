@@ -54,8 +54,8 @@ export const SHOP_ROUTES: readonly ShopRoute[] = [{ id: 'home', path: '/', file:
 // любой неизвестный адрес.
 export const NOT_FOUND_ROUTE: ShopRoute = { id: 'not-found', path: '/404', file: '404.html', entity: 'site' };
 
-// Списки секций страницы по порядку: шапка, страница, подвал.
-export const pageListsOf = (pageId: string): readonly string[] => [HEADER_LIST, pageId, FOOTER_LIST];
+// Списки секций страницы по порядку: шапка, страница, подвал и секции поверх страницы (блок 12).
+export const pageListsOf = (pageId: string): readonly string[] => [HEADER_LIST, pageId, FOOTER_LIST, OVERLAY_LIST];
 
 // Страница для секций (блок 7, часть 7а): id и адрес; у страницы 404 адреса нет — она отвечает на любой адрес.
 // Запись страницы (часть 8б) — только у страницы записи; у остальных ключа нет, процесс рендера даст секции null.

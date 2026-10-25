@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { renderSection, sha256, type PlacedSection, type SectionsRender } from '@merfy/storefront-build';
+import { renderSection, sha256, type PlacedSection, type SectionsRender, type SettingValues } from '@merfy/storefront-build';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { checkTemplate, templateOptionsOf } from '../src/compile';
 import { readManifest, type SectionManifest } from '../src/format';
@@ -73,7 +73,7 @@ interface Variant {
   settings?: Record<string, string>;
   page?: { id: string; path: string | null };
   blocks?: typeof BLOCKS;
-  theme?: Record<string, string>;
+  theme?: SettingValues;
 }
 
 const html = (variant: Variant = {}): Promise<string> =>
@@ -282,5 +282,29 @@ describe('«Шапка»: цветовая схема меню', () => {
     const page = await renderSection(placed, sections, 'live');
     expect(carriers(page, 'color-scheme-1')).toEqual(['merfy-section']);
     expect(carriers(page, 'color-scheme-2')).toEqual(['dialog', 'nav']);
+  });
+});
+
+describe('«Шапка»: «Избранное» включено и выключено (блок 10, часть 10б, Р10б-13)', () => {
+  // Находка проверки dev 25.10: при wishlist-enabled:false в ряду компьютера top-left ссылка /wishlist оставалась —
+  // ветка без условия. Здесь — каждый ряд шапки: выключено — ссылки нет нигде, включено — у каждой ссылки число.
+  it.each(POSITIONS)('положение %s: «Избранное» выключено — ссылки /wishlist нет нигде', async (position) => {
+    const source = await html({ settings: { 'logo-position': position }, theme: { 'wishlist-enabled': false } });
+    expect(source).not.toContain('/wishlist');
+    expect(source).not.toContain('aria-label="Избранное"');
+  });
+
+  it.each(POSITIONS)('положение %s: выключено — «Корзина» и «Профиль» на месте', async (position) => {
+    const source = await html({ settings: { 'logo-position': position }, theme: { 'wishlist-enabled': false } });
+    expect(source).toContain('href="/cart"');
+    expect(source).toContain('aria-label="Корзина"');
+    expect(source).toContain('aria-label="Профиль"');
+  });
+
+  it.each(POSITIONS)('положение %s: включено — у каждой ссылки /wishlist число favorites-count', async (position) => {
+    const source = await html({ settings: { 'logo-position': position } });
+    const links = source.match(/href="\/wishlist"/g) ?? [];
+    expect(links.length).toBeGreaterThan(0);
+    expect(source.match(/data-ref="favorites-count"/g)?.length).toBe(links.length);
   });
 });

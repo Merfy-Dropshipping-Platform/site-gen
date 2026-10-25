@@ -24,6 +24,11 @@ describe('скрипты фикстур при сохранении', () => {
       `${FIXTURES}/scripts/scarf-match`,
       { uses: [], parts: ['cart'], classes: ['bg-primary', 'text-primary-foreground'] },
     ],
+    // Вторая версия той же секции (часть 5г): кнопки круглые, в строке запусков «версия 2».
+    [
+      `${FIXTURES}/scripts/scarf-match-v2`,
+      { uses: [], parts: ['cart'], classes: ['bg-primary', 'text-primary-foreground'] },
+    ],
   ])('%s — принята, в модуле нет импорта, script_meta по коду', async (folder, meta) => {
     const result = await prepared(folder);
     expect(places(result)).toEqual([]);

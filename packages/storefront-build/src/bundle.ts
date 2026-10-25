@@ -54,6 +54,7 @@ export interface BundleSource {
   sections: readonly BundleSection[];
   modules: ReadonlyMap<string, string>; // текст модуля секции по 64 знакам hex
   kit?: BundleKit; // поведения и анимации страницы (блок 6, часть 6б); нет — страница без них
+  preview?: boolean; // бандл превью (блок 5, часть 5г): start получает preview: watchPreviewReplace
 }
 
 // Предупреждение сборки бандла — строка журнала сборщика; сборка идёт дальше.
@@ -117,7 +118,13 @@ function kitEntry(kit: KitPlan): { imports: string; part: string } | null {
   return { imports: `${lines.join('\n')}\n`, part: `kitBehaviors({ ${options.join(', ')} })` };
 }
 
-export function bundleEntry(parts: readonly string[], sections: readonly BundleSection[], kit?: KitPlan): string {
+// preview — бандл превью конструктора (часть 5г): ядро отдаёт watchPreviewReplace, start получает её в preview.
+export function bundleEntry(
+  parts: readonly string[],
+  sections: readonly BundleSection[],
+  kit?: KitPlan,
+  preview = false,
+): string {
   const imports = sections.map(
     (section, index) => `import s${index} from ${JSON.stringify(SECTION_IMPORT + section.script)};\n`,
   );
@@ -125,10 +132,11 @@ export function bundleEntry(parts: readonly string[], sections: readonly BundleS
     (section, index) =>
       `{ name: ${JSON.stringify(section.name)}, kind: ${JSON.stringify(section.kind)}, script: ${JSON.stringify(section.script)}, uses: ${JSON.stringify(section.uses)}, definition: s${index} }`,
   );
-  const names = ['start', ...parts].join(', ');
+  const names = ['start', ...parts, ...(preview ? ['watchPreviewReplace'] : [])].join(', ');
+  const tail = preview ? ', preview: watchPreviewReplace' : '';
   const kitCode = kit === undefined ? null : kitEntry(kit);
   const partList = [...parts, ...(kitCode === null ? [] : [kitCode.part])].join(', ');
-  return `import { ${names} } from ${CORE_SPECIFIER};\n${kitCode?.imports ?? ''}${imports.join('')}start({ parts: [${partList}], sections: [${entries.join(', ')}] });\n`;
+  return `import { ${names} } from ${CORE_SPECIFIER};\n${kitCode?.imports ?? ''}${imports.join('')}start({ parts: [${partList}], sections: [${entries.join(', ')}]${tail} });\n`;
 }
 
 // Импорт в бандле страницы: @merfy/shell и @merfy/shell/core — ядро, merfy-section:<hex> — модуль секции; иначе —
@@ -179,7 +187,7 @@ async function bundleText(source: BundleSource): Promise<string> {
   const result = await build({
     ...ESBUILD_OPTIONS,
     stdin: {
-      contents: bundleEntry(source.parts, source.sections, source.kit?.plan),
+      contents: bundleEntry(source.parts, source.sections, source.kit?.plan, source.preview === true),
       loader: 'js',
       sourcefile: 'merfy-page.js',
     },
@@ -244,4 +252,12 @@ export async function bundlePage(source: BundleSource): Promise<PageBundle> {
     return { tag: `<script type="module">${text}</script>`, file: null, brotliBytes, notices };
   const path = `${BUNDLE_DIR}/${sha256(content).slice(HASH_PREFIX.length)}.js`;
   return { tag: `<script type="module" src="/${path}"></script>`, file: { path, content }, brotliBytes, notices };
+}
+
+// Текст бандла без тега и файла — для превью конструктора (часть 5г, preview-bundle.ts): тот же esbuild и тот же
+// пропуск секций, на которых он упал.
+export async function bundleScript(source: BundleSource): Promise<{ text: string; notices: CodeNotice[] }> {
+  const notices: CodeNotice[] = [];
+  const text = await bundleSkipping(source, notices);
+  return { text, notices };
 }

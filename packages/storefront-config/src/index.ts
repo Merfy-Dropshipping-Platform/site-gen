@@ -14,6 +14,16 @@ export {
   type StorefrontConfig,
 } from './schema';
 export { buildStorefrontConfig, type StorefrontConfigInput } from './build';
+// Блок 9 «Секций и SDK», часть 9в: сторы и методы расширений для секций и "ext:<id>" в uses.
+export {
+  EXT_USE_PREFIX,
+  extUseSchema,
+  extensionStorefrontSchema,
+  storefrontExtensionsSchema,
+  type ExtUse,
+  type ExtensionStorefront,
+  type StorefrontExtensions,
+} from './extensions';
 export { CONFIG_TAG_ID, configTag, escapeScriptJson } from './tag';
 export { parseStorefrontConfig, readStorefrontConfig, type ConfigSource } from './read';
 export { rebuildEvents, type RebuildEvent } from './events';

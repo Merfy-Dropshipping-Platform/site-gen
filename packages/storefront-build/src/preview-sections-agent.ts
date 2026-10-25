@@ -1,3 +1,13 @@
+import {
+  MESSAGE_MAX_LENGTH,
+  PREVIEW_UPDATE_EVENT,
+  PREVIEW_UPDATED_EVENT,
+  SECTION_ERROR_EVENT,
+} from '@merfy/shell/preview';
+
+// Код секций (блок 5, часть 5г): правку секции с кодом получает скрипт превью (dist/preview.js) — событие
+// merfy:preview:update на узле секции, рамка выбора — по merfy:preview:updated; сбой скрипта секции — красная рамка и
+// подпись первым элементом секции; кнопки и поля секции её не выбирают, как в превью пяти тем.
 // Подпункты (часть 3): клик — select-subsection, выбранный — рамка #88b0da, наведение на секцию — #cfdff0 у её
 // подпунктов; подписи и кнопок у подпункта нет (Р59). Часть 4: место секции по группе из reconcile, navigate по
 // ссылке на свою страницу, меню и настройки темы — в запросе блока.
@@ -14,11 +24,22 @@
 // шрифт системный, значок «Удалить» — мусорная корзина.
 export const PREVIEW_SECTIONS_AGENT = `(function () {
   var blockUrl = new URL('preview/block', location.href).href;
+  // Часть 5г: имена событий — из протокола превью @merfy/shell/preview.
+  var UPDATE_EVENT = ${JSON.stringify(PREVIEW_UPDATE_EVENT)};
+  var UPDATED_EVENT = ${JSON.stringify(PREVIEW_UPDATED_EVENT)};
+  var ERROR_EVENT = ${JSON.stringify(SECTION_ERROR_EVENT)};
+  var MESSAGE_MAX = ${MESSAGE_MAX_LENGTH};
+  // Кнопки и поля секции — как в превью пяти тем (src/services/preview.service.ts): нажатие — коду секции, выбора нет.
+  var CONTROLS = 'button, input, select, textarea, label[for], [data-action]';
+  // «Ошибка в скрипте секции «» — escape-последовательностями, как подсказки кнопок рамки.
+  var SCRIPT_ERROR = '\\u041e\\u0448\\u0438\\u0431\\u043a\\u0430 \\u0432 \\u0441\\u043a\\u0440\\u0438\\u043f\\u0442\\u0435 \\u0441\\u0435\\u043a\\u0446\\u0438\\u0438 \\u00ab';
   var STYLE = '#merfy-selection{position:absolute;display:none;pointer-events:none;box-sizing:border-box;border:2px solid #88b0da;z-index:2147483646}'
     + '#merfy-selection [data-merfy-label]{position:absolute;left:-2px;top:-26px;display:flex;align-items:center;gap:8px;height:24px;padding:0 8px;border-radius:8px 8px 0 0;background:#181818;color:#c3c3c3;font:500 12px/24px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:auto;white-space:nowrap}'
     + '#merfy-selection [data-merfy-delete],#merfy-selection [data-merfy-duplicate]{display:flex;align-items:center;gap:4px;border:0;padding:0;background:none;color:inherit;font:inherit;cursor:pointer}'
     + '[data-merfy-block][data-merfy-block-hint]{outline:2px solid #cfdff0 !important;outline-offset:2px}'
-    + '[data-merfy-block][data-merfy-block-selected]{outline:2px solid #88b0da !important;outline-offset:2px}';
+    + '[data-merfy-block][data-merfy-block-selected]{outline:2px solid #88b0da !important;outline-offset:2px}'
+    + 'merfy-section[data-merfy-state="failed"]{outline:2px solid #dc2626 !important;outline-offset:-2px}'
+    + '[data-merfy-script-error]{border:2px solid #dc2626;padding:16px;color:#dc2626;font:14px/1.4 system-ui,sans-serif}';
   var DELETE_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
   // «Скопировать» — значок подписи превью пяти тем (src/services/preview.service.ts, строки 2107–2109), 16 px.
   var COPY_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
@@ -153,6 +174,13 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     holder.innerHTML = html;
     return holder.firstElementChild;
   }
+  // Правка секции — скрипту превью (часть 5г): событие на узле секции. Отменил — HTML меняет он, ядро сохраняет
+  // состояние экземпляра; не отменил или script нет в ответе (сборщик до 5г) — HTML меняет этот скрипт.
+  function handOver(node, html, script, codeOnly) {
+    if (script === undefined) return false;
+    var detail = { html: html, script: script, codeOnly: codeOnly };
+    return !node.dispatchEvent(new CustomEvent(UPDATE_EVENT, { bubbles: true, cancelable: true, detail: detail }));
+  }
   // Тело запроса блока: экземпляр; меню ревизии и правки настроек темы (часть 4) — если конструктор их прислал.
   function fetchBlock(instance, props) {
     var payload = { instance: instance };
@@ -192,6 +220,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         var fresh = nodeOf(answer.html);
         if (tickets[instance.id] !== ticket || !old || !fresh) return;
         setCss(instance.id, answer.css);
+        if (handOver(old, answer.html, answer.script, false)) return;
         old.parentNode.replaceChild(fresh, old);
         place();
         showBlock();
@@ -257,7 +286,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
           if (tickets[block.id] !== ticket) return { id: block.id, node: null };
           hashes[block.id] = block.propsHash;
           setCss(block.id, answer.css);
-          return { id: block.id, node: nodeOf(answer.html) };
+          return { id: block.id, node: nodeOf(answer.html), html: answer.html, script: answer.script };
         });
       })
     )
@@ -267,6 +296,10 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
           if (item.node) nodes[item.id] = item.node;
         });
         placeAll(blocks, nodes, container);
+        // Вставленные узлы — скрипту превью с codeOnly: true: HTML уже новый, ядро запускает код секции (часть 5г).
+        fresh.forEach(function (item) {
+          if (item.node && item.node.isConnected) handOver(item.node, item.html, item.script, true);
+        });
         place();
         showBlock();
         post({ type: 'reconcile-ack', version: data.version, ok: true, applied: changed.length });
@@ -295,6 +328,10 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         if (selected !== null) post({ type: 'delete-block', blockId: selected });
         return;
       }
+      // Кнопка или поле секции (часть 5г, как в превью пяти тем): нажатие — коду секции, выбора нет; кнопка внутри
+      // ссылки — как ссылка.
+      var control = target && target.closest ? target.closest(CONTROLS) : null;
+      if (control && sectionOf(control) && !control.closest('a[href]')) return;
       // Подпункт (Р60): select-subsection с местом блока среди разных id секции, выбора секции нет. Ссылка внутри
       // подпункта превью не уводит; остальное (раскрыть <details>) работает, как на проде.
       var blockNode = target && target.closest ? target.closest('[data-merfy-block]') : null;
@@ -317,6 +354,28 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   );
   window.addEventListener('scroll', place, true);
   window.addEventListener('resize', place);
+  // Часть 5г: замена секции закончилась — рамка выбора по новому размеру.
+  document.addEventListener(UPDATED_EVENT, function () {
+    place();
+    showBlock();
+  });
+  // Сбой скрипта секции (design.md блока 5, 3.7): красная рамка (STYLE) и подпись первым элементом секции, тем же видом,
+  // что ошибка рендера в превью. Сбой при снятии (unmount) подписи не даёт: секции уже нет или её меняют.
+  document.addEventListener(ERROR_EVENT, function (event) {
+    var detail = event.detail || {};
+    var section = typeof detail.id === 'string' && detail.stage !== 'unmount' ? byId(detail.id) : null;
+    if (!section) return;
+    ensureFrame();
+    var note = section.firstElementChild;
+    if (!note || !note.hasAttribute('data-merfy-script-error')) {
+      note = document.createElement('div');
+      note.setAttribute('data-merfy-script-error', '');
+      section.insertBefore(note, section.firstChild);
+    }
+    var name = labels[detail.section] || detail.section || '';
+    note.textContent = SCRIPT_ERROR + name + '\\u00bb: ' + String(detail.message || '').slice(0, MESSAGE_MAX);
+    place();
+  });
   // Наведение на секцию — подсветка всех её подпунктов, как на проде (Р59).
   document.addEventListener(
     'mouseover',

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { StorefrontConfigError, type StorefrontConfigErrorCode } from './errors';
+import { storefrontExtensionsSchema } from './extensions';
 
 // Схема конфига витрины v1 (design.md блока 3, 5.2) — единственное место правил. Строгая на всех уровнях:
 // незнакомый ключ — ошибка. Тип StorefrontConfig выводится из неё, JSON Schema пишет команда generate.
@@ -86,6 +87,8 @@ const configShape = z.strictObject({
   }),
   // null — магазин ничего не отправляет: превью и стенд (design.md блока 11, «решил сам» 8).
   analytics: analyticsSchema.nullable(),
+  // Сторы и методы расширений из uses секций страницы (блок 9 «Секций и SDK», часть 9в); нет таких секций — поля нет.
+  extensions: storefrontExtensionsSchema.optional(),
 });
 
 // У опубликованного магазина адрес обязателен: по нему строятся канонические адреса и ссылки.

@@ -16,6 +16,9 @@ export type { AnimateOptions, Animation, Bezier, EasingName, KeyframeValue, Keyf
 export { newsletter } from './parts/newsletter';
 // Часть 5б: аналитика магазина — часть SDK без API для секций (src/core/analytics/).
 export { analytics } from './analytics/part';
+// Блок 9, часть 9в: модули расширений ctx.ext — в бандле страниц, где секция объявила "ext:<id>" в uses.
+export { ext } from './parts/ext';
+export type { ExtMethod, ExtModule, ExtStore, ExtUse, ExtValue } from './types';
 export type { ConsentAnswer, ConsentModule, ConsentState, Money, NewsletterModule, NoticeLevel } from './types';
 export {
   EMPTY_INPUT,

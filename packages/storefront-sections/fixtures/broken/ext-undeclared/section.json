@@ -1,0 +1,6 @@
+{
+  "sdk": 1,
+  "name": "ext-undeclared",
+  "kind": "section",
+  "title": "Метод расширения без uses"
+}

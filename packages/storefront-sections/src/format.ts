@@ -60,7 +60,18 @@ export type SectionUse = (typeof SECTION_USES)[number];
 // скрипта секции (MODULE_NAMES ядра). В шаблон, превью и входы сборки идут только theme и shop — propsUsesOf.
 export const MANIFEST_USES = [...SECTION_USES, ...MODULE_NAMES] as const;
 export type ManifestUse = (typeof MANIFEST_USES)[number];
-const isSectionUse = (value: ManifestUse): value is SectionUse => SECTION_USES.some((use) => use === value);
+// "ext:<id>" (блок 9 «Секций и SDK», часть 9в; Р9в-7, Р9в-19): скрипту секции нужен ctx.ext.<id> — сторы и методы
+// расширения. В шаблон и входы сборки не идёт (propsUsesOf), в script_meta — с частью EXT_PART (script-meta.ts). То же
+// правило, что extUseSchema в @merfy/storefront-config: тесты обоих пакетов сверяют одни строки.
+export const EXT_USE_PREFIX = 'ext:';
+export const EXT_PART = 'ext' as const;
+export const extUseSchema = z.templateLiteral([EXT_USE_PREFIX, z.string().regex(/^[a-z][a-z0-9-]{2,31}$/)]);
+export type ExtUse = z.infer<typeof extUseSchema>;
+export const isExtUse = (value: string): value is ExtUse => extUseSchema.safeParse(value).success;
+const USES_LIMIT = 12;
+// Текст подсказки фиксированный (тест ext-uses.test.ts): 13а добавила consent в MANIFEST_USES, в текст его не добавляем.
+const USES_TEXT = 'нужно theme, shop, cart, favorites, auth, newsletter или ext:<id расширения>';
+const isSectionUse = (value: string): value is SectionUse => SECTION_USES.some((use) => use === value);
 export const propsUsesOf = (manifest: Pick<SectionManifest, 'uses'>): SectionUse[] =>
   (manifest.uses ?? []).filter(isSectionUse);
 const unique = (list: readonly string[]): boolean => new Set(list).size === list.length;
@@ -79,8 +90,8 @@ export const sectionManifestSchema = z.strictObject({
   limit: z.int().min(1).max(50).optional(),
   removable: z.literal(false).optional(),
   uses: z
-    .array(z.enum(MANIFEST_USES))
-    .max(MANIFEST_USES.length)
+    .array(z.union([z.enum(MANIFEST_USES), extUseSchema], { error: USES_TEXT }))
+    .max(USES_LIMIT)
     .refine(unique, { error: 'значение дважды' })
     .optional(),
   newPage: z.string().min(1).optional(),

@@ -246,3 +246,14 @@ describe('API части', () => {
     expect(behaviors({ list: [] }).create(core).animate).toBeNull();
   });
 });
+
+describe('ядро страницы в BehaviorHost (блок 11 «Секций и SDK», часть 11б-2)', () => {
+  it('поведение получает CoreHandle страницы: конфиг и режим', () => {
+    const quantity = spy('quantity');
+    placeSection('shop:qty', 'q1', '<div data-behavior="quantity"></div>');
+    started = start({ parts: [behaviors({ list: [quantity.behavior] })], sections: [entry('shop:qty', { mount: () => undefined })] });
+    const core = quantity.hosts[0]?.core;
+    expect(core?.mode).toBe('live');
+    expect(core?.config?.shop.name).toBe('Шарфы');
+  });
+});

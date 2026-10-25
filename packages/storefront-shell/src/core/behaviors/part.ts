@@ -33,6 +33,7 @@ type SavedItem = { readonly name: string; readonly state: Json };
 interface PageState {
   readonly rows: Map<string, SectionRow>;
   readonly reported: Set<string>;
+  core: CoreHandle | null; // ядро страницы — из create, до первого attach (блок 11, Р11б-13)
 }
 
 const SPEC_BY_NAME: ReadonlyMap<string, BehaviorSpec> = new Map(Object.entries(BEHAVIORS));
@@ -90,6 +91,7 @@ function tryAttach(
     params: readParams(root, SPEC_BY_NAME.get(name)?.params ?? {}),
     motion,
     signal: host.signal,
+    ...(state.core === null ? {} : { core: state.core }),
   };
   try {
     attachToRow(state, host, { name, instance: behavior.attach(behaviorHost) });
@@ -165,7 +167,7 @@ function restoreOf(state: PageState, sectionId: string, saved: Json): void {
 }
 
 const createOf = (options: BehaviorsOptions, state: PageState, core: CoreHandle): BehaviorsApi => {
-  void core;
+  state.core = core;
   document.addEventListener('merfy:page:ready', () => document.documentElement.removeAttribute(MOTION_FLAG), {
     once: true,
   });
@@ -184,7 +186,7 @@ const attachOf = (options: BehaviorsOptions, state: PageState, api: BehaviorsApi
 };
 
 export function behaviors(options: BehaviorsOptions): BehaviorsPart {
-  const state: PageState = { rows: new Map(), reported: new Set() };
+  const state: PageState = { rows: new Map(), reported: new Set(), core: null };
   return {
     name: 'behaviors',
     create: (core: CoreHandle): BehaviorsApi => createOf(options, state, core),

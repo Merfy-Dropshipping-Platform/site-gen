@@ -1,4 +1,4 @@
-import type { AnimateOptions, Animation, Json, Keyframes, Mode, SdkPart } from '../types';
+import type { AnimateOptions, Animation, CoreHandle, Json, Keyframes, Mode, SdkPart } from '../types';
 import type { BehaviorName } from './catalog';
 import type { Params } from './params';
 
@@ -18,6 +18,8 @@ export interface BehaviorHost {
   readonly params: Params; // readParams(root, BEHAVIORS[name].params)
   readonly motion: MotionPrefs;
   readonly signal: AbortSignal; // сигнал экземпляра: слушатели — с ним, Embla и анимации снимаются по нему
+  // Блок 11 (Р11б-13): ядро страницы — события, уведомления, модули SDK (core.part). Поведения блока 6 его не читают.
+  readonly core?: CoreHandle;
 }
 
 export interface BehaviorInstance {

@@ -29,3 +29,6 @@ export { quantity } from './quantity';
 export { cardPhotos } from './card-photos';
 export { stickyHeader } from './sticky-header';
 export { video } from './video';
+// Блок 11 «Секций и SDK», часть 11б-2. Файл сборки — catalog.js и search.js, имя экспорта — имя поведения.
+export { catalog } from './catalog-list';
+export { search } from './search';

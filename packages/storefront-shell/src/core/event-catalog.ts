@@ -65,6 +65,7 @@ export const EVENT_CATALOG = {
     about: 'покупатель поменял количество в корзине',
     fields: { ...LINE, previousQuantity: 'count' },
   },
+  'merfy:cart:open': { about: 'покупатель открыл выезжающую корзину (cart.open при «Сайдбар»)', fields: {} },
   'merfy:variant:change': { about: 'выбран вариант товара', fields: { productId: 'text', variantId: 'text' } },
   'merfy:favorites:add': { about: 'товар отмечен в избранном', fields: { productId: 'text' } },
   'merfy:favorites:remove': { about: 'отметка избранного снята', fields: { productId: 'text' } },
@@ -93,7 +94,6 @@ export const EVENT_CATALOG = {
       code: { oneOf: ERROR_CODES, optional: true },
     },
   },
-  'merfy:cart:open': { about: 'покупатель открыл выезжающую корзину (cart.open при «Сайдбар»)', fields: {} },
   'merfy:consent:change': { about: 'выбор в баннере cookie', fields: { state: { oneOf: ['accepted', 'declined'] } } },
 } as const satisfies { readonly [E in EventName]: EventSpec<EventMap[E]> };
 

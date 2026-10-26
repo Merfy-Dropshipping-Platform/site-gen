@@ -8,12 +8,12 @@ import { z } from 'zod';
 export const EXT_USE_PREFIX = 'ext:';
 const EXT_ID = /^[a-z][a-z0-9-]{2,31}$/;
 const EXT_MEMBER = /^[a-z][a-zA-Z0-9]{0,31}$/;
-const FUNCTION_NAME = /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/;
+export const FUNCTION_NAME = /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/;
 const STOREFRONT_EVENT = /^merfy:[a-z]+(?:-[a-z]+)*:[a-z]+(?:-[a-z]+)*$/;
 const MARKUP_PARAM = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const LIMITS = { stores: 20, methods: 20, refreshOn: 10, params: 10 } as const;
 
-const extIdSchema = z
+export const extIdSchema = z
   .string()
   .regex(EXT_ID, { error: 'id расширения: строчные латинские буквы, цифры и дефис, 3–32 знака' });
 

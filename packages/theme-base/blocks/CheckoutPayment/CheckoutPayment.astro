@@ -68,6 +68,10 @@ const enabledMethods = (methods || []).filter((m) => m.enabled);
       </label>
     ))}
   </div>
+  {/* Показывается скриптом ниже, когда billing вернул ПУСТОЙ действующий список
+      способов (выбор магазина ∩ возможности платёжки ∩ подключённое в её кабинете).
+      Пустой список — не «показать всё»: оплатить нельзя. */}
+  <p class={C.unavailable} data-checkout-payment-unavailable role="alert" hidden>Оплата сейчас недоступна</p>
 </section>
 
 <script is:inline define:vars={{ blockId: id }}>
@@ -129,10 +133,22 @@ const enabledMethods = (methods || []).filter((m) => m.enabled);
      * его считает billing для ЛЮБОЙ активной платёжки (декларация адаптера;
      * у ЮKassa ещё и подключённое у продавца, /v3/me) — фильтруем по нему.
      *
-     * Если поле undefined (бэк не смог проверить, fail/timeout) — оставляем
-     * все методы как есть (lenient fallback). Если есть list — скрываем
-     * disabled.
+     * Три случая:
+     *   - поле undefined / ответ не получен (сеть, ошибка, бэк не смог
+     *     проверить) — «нет данных»: оставляем все методы как есть (lenient
+     *     fallback), оплату не блокируем;
+     *   - список непустой — скрываем методы вне его;
+     *   - список ПУСТОЙ — «нечем платить»: скрываем все методы, пишем «Оплата
+     *     сейчас недоступна» и сообщаем CheckoutSubmit событием
+     *     checkout:payment-unavailable, чтобы он не давал оплатить.
      */
+    var unavailableEl = section.querySelector('[data-checkout-payment-unavailable]');
+    function setUnavailable(flag) {
+      if (unavailableEl) unavailableEl.hidden = !flag;
+      document.dispatchEvent(new CustomEvent('checkout:payment-unavailable', {
+        detail: { unavailable: flag },
+      }));
+    }
     function filterEnabledMethods() {
       var apiBase = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
       var shopId = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
@@ -141,7 +157,13 @@ const enabledMethods = (methods || []).filter((m) => m.enabled);
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (j) {
           var enabled = j && j.data && j.data.enabledMethods;
-          if (!Array.isArray(enabled) || enabled.length === 0) return;
+          if (!Array.isArray(enabled)) return; // нет данных — как раньше
+          if (enabled.length === 0) {
+            labels.forEach(function (lbl) { lbl.style.display = 'none'; });
+            setUnavailable(true);
+            return;
+          }
+          setUnavailable(false);
           var visibleKeys = [];
           labels.forEach(function (lbl) {
             var key = lbl.getAttribute('data-payment-key');

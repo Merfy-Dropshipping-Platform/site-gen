@@ -9,4 +9,6 @@ export const CheckoutPaymentClasses = {
   radio: 'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-[rgb(var(--color-input-border))]',
   label: 'flex-1 [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]',
   brand: 'h-4 w-auto',
+  // Действующий список способов пуст — платёжка магазина не откроет ни одного.
+  unavailable: '[font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-error))]',
 } as const;

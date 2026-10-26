@@ -56,6 +56,7 @@ const schemeClass = schemeClassOf(colorScheme);
     var state = {
       deliveryMethod: null,
       paymentMethod: 'bank_card',
+      paymentUnavailable: false,
       submitting: false,
       discountCents: 0,
       // PR-19 — скидка точки расширений «Оформление заказа» (см.
@@ -296,6 +297,10 @@ const schemeClass = schemeClassOf(colorScheme);
       }
 
       if (!state.paymentMethod) return false;
+      // Действующий список способов оплаты пуст (billing: «Оплата сейчас
+      // недоступна») — оплатить нечем. Только явный пустой список; «нет данных»
+      // (сеть, ошибка) флаг не ставит.
+      if (state.paymentUnavailable) return false;
       return true;
     }
 
@@ -385,6 +390,19 @@ const schemeClass = schemeClassOf(colorScheme);
     document.addEventListener('checkout:payment-method-changed', function (e) {
       var m = e && e.detail && e.detail.method;
       if (m) { state.paymentMethod = m; refresh(); }
+    });
+    // CheckoutPayment получил от billing пустой список способов → оплатить нельзя.
+    // Список снова непустой → снимаем блокировку и наше сообщение.
+    var PAYMENT_UNAVAILABLE_TEXT = 'Оплата сейчас недоступна';
+    document.addEventListener('checkout:payment-unavailable', function (e) {
+      var unavailable = !!(e && e.detail && e.detail.unavailable);
+      state.paymentUnavailable = unavailable;
+      if (unavailable) {
+        showError(PAYMENT_UNAVAILABLE_TEXT);
+      } else if (errorEl && errorEl.textContent === PAYMENT_UNAVAILABLE_TEXT) {
+        clearError();
+      }
+      refresh();
     });
 
     ['email','phone','firstName','lastName','fullName','city','postalCode','street','building','apartment'].forEach(function (f) {

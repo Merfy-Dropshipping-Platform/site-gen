@@ -4,6 +4,7 @@ export const CheckoutPaymentTokens = [
   '--color-heading',
   '--color-text',
   '--color-muted',
+  '--color-error',
   '--font-heading',
   '--font-body',
   '--size-h3',

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 import {
   DEFAULT_PAYMENT_METHODS,
+  PAYMENT_METHODS_AVAILABILITY_SOURCE,
   PAYMENT_METHOD_KEYS,
   PAYMENT_METHOD_OPTIONS,
 } from '../../runtime/payment-methods';
@@ -37,11 +38,14 @@ export const CheckoutPaymentPuckConfig: BlockPuckConfig<CheckoutPaymentProps> = 
     methods: {
       type: 'array',
       label: 'Методы оплаты',
+      // Конструктор помечает способы, которых нет у платёжки магазина: элемент и вариант в списке «Тип».
+      availability: { source: PAYMENT_METHODS_AVAILABILITY_SOURCE, itemKey: 'key' },
       itemFields: {
         key: {
           type: 'select',
           label: 'Тип',
           options: PAYMENT_METHOD_OPTIONS,
+          availability: PAYMENT_METHODS_AVAILABILITY_SOURCE,
         },
         enabled: { type: 'boolean', label: 'Включён' },
         label: { type: 'text', label: 'Подпись' },

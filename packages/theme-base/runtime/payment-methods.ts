@@ -45,6 +45,14 @@ export const PAYMENT_METHOD_CATALOG: Readonly<
   tinkoff_bank: { selectLabel: 'T-Pay', label: 'T-Pay' },
 };
 
+/**
+ * Источник доступности для полей способов в конструкторе (`availability` в puckConfig): список способов,
+ * которые поддерживает платёжка магазина (`enabledMethods` публичного payment-config billing). Имя
+ * зарегистрировано в реестре источников конструктора; конструктор помечает способы вне списка
+ * «Не поддерживается платёжкой магазина». Витрина и так показывает только поддерживаемые.
+ */
+export const PAYMENT_METHODS_AVAILABILITY_SOURCE = 'shop.paymentMethods';
+
 /** Варианты поля «Тип» в конструкторе — в порядке каталога. */
 export const PAYMENT_METHOD_OPTIONS = PAYMENT_METHOD_KEYS.map((key) => ({
   label: PAYMENT_METHOD_CATALOG[key].selectLabel,

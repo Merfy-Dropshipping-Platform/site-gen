@@ -7,6 +7,7 @@ import {
 import {
   DEFAULT_PAYMENT_METHODS,
   PAYMENT_METHOD_CATALOG,
+  PAYMENT_METHODS_AVAILABILITY_SOURCE,
   PAYMENT_METHOD_KEYS,
   PAYMENT_METHOD_OPTIONS,
 } from '../runtime/payment-methods';
@@ -44,6 +45,19 @@ describe('каталог способов оплаты — единственн�
       });
       expect(ok.success).toBe(true);
     }
+  });
+
+  it('поля способов объявляют источник доступности — конструктор помечает способы, которых нет у платёжки', () => {
+    const { fields } = CheckoutPaymentPuckConfig;
+    const methods = fields.methods as any;
+    expect(PAYMENT_METHODS_AVAILABILITY_SOURCE).toBe('shop.paymentMethods');
+    expect(methods.availability).toEqual({
+      source: PAYMENT_METHODS_AVAILABILITY_SOURCE,
+      itemKey: 'key',
+    });
+    expect(methods.itemFields.key.availability).toBe(PAYMENT_METHODS_AVAILABILITY_SOURCE);
+    // itemKey указывает на поле, чьи значения — ключи каталога.
+    expect(methods.itemFields[methods.availability.itemKey].options).toBe(PAYMENT_METHOD_OPTIONS);
   });
 
   it('по умолчанию включены все способы: решает настройка магазина и платёжка, не флаг темы', () => {

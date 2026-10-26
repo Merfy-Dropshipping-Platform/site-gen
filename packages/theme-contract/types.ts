@@ -81,6 +81,13 @@ export interface BlockConstraints {
 export interface PuckFieldDef {
   type: string;
   label?: string;
+  /**
+   * Источник доступности вариантов поля (реестр источников — в конструкторе, `lib/fieldAvailability.ts`).
+   * Строка — у `select`/`radio`: варианты, которых магазин не поддерживает, конструктор рисует помеченными.
+   * `{ source, itemKey }` — у `array`: помечается элемент, у которого значение `itemKey` вне списка источника.
+   * Нет данных у источника — поле рисуется как обычно. Витрина объявление не читает.
+   */
+  availability?: string | { source: string; itemKey?: string };
   [key: string]: unknown;
 }
 

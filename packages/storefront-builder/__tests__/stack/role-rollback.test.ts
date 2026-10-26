@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Handler } from '../../src/broker';
 import type { ContentEvent } from '../../src/events';
 import { roleRollback } from '../../src/role-rollback';
-import { consumeSectionErrors } from '../../src/section-error-store';
+import { consumeSectionErrors, sectionEditErrors } from '../../src/section-error-store';
 import { SECTION_ERRORS_PATTERN } from '../../src/section-errors';
 import { insertSite, openPool, type SiteFields } from './stack';
 
@@ -359,5 +359,35 @@ describe('откат секции с ролью по порогу ошибок',
     await expect(h.handle(site.id, DRAWER, second, 10)).resolves.toBeUndefined();
     expect([await liveId(site.id, DRAWER), h.events, h.activity.length]).toEqual([first.id, [], 1]);
     expect(h.logged).toContain('section-rollback-publish-failed');
+  });
+});
+
+describe('ошибки правок для «правок секции» (блок 14)', () => {
+  it('до трёх самых частых на отпечаток скрипта, со временем последней', async () => {
+    const site = await insertShop();
+    const live = await insertVersion(site.id, {
+      name: 'shop:hero',
+      title: 'Баннер',
+      draft: true,
+      published: true,
+      publishedAt: T1,
+      createdAt: T1,
+    });
+    const h = await harness();
+    for (const [n, message] of [
+      [4, 'a'],
+      [3, 'b'],
+      [2, 'c'],
+      [1, 'd'],
+    ] as const) {
+      await h.handle(site.id, 'shop:hero', live, n, { message });
+    }
+    const scriptHash = `sha256:${live.hex}`;
+    const lastAt = '2026-10-24T09:14:00.000Z';
+    expect(await sectionEditErrors(db, site.id, 'shop:hero')).toEqual([
+      { scriptHash, stage: 'runtime', message: 'a', count: 4, lastAt },
+      { scriptHash, stage: 'runtime', message: 'b', count: 3, lastAt },
+      { scriptHash, stage: 'runtime', message: 'c', count: 2, lastAt },
+    ]);
   });
 });

@@ -38,11 +38,11 @@ export const REQUESTS_MINE_TOKEN_KEY = 'merfy_requests_token';
 
 /** Фолбек-подписи статусов (если бэкенд не прислал statusText). */
 export const REQUEST_MINE_STATUS_LABELS: Record<string, string> = {
-  new: 'Новая',
-  disc: 'Обсуждается',
+  new: 'Новый',
+  disc: 'Обсуждаем',
   wait: 'Ждёт оплаты',
-  paid: 'Оплачена',
-  closed: 'Закрыта',
+  paid: 'Оплачен',
+  closed: 'Закрыт',
 };
 
 /** Строка списка «Мои заявки» (контракт fn/mineList). */
@@ -270,7 +270,7 @@ export function requestMineRowHTML(item: RequestMineListItem): string {
   const date = formatRequestMineDate(item.createdAt);
   return (
     '<div class="order-info">' +
-    '<span class="order-number">Заявка №' +
+    '<span class="order-number">Индивидуальный заказ И-' +
     escapeRequestHtml(no) +
     '</span>' +
     '<span class="order-date">' +
@@ -408,7 +408,7 @@ export function requestMineCardHTML(d: RequestMineDetail): string {
       '<button type="button" id="request-reply-send" class="account-button">Ответить</button>' +
       '<p id="request-reply-error" class="hidden" style="margin: 0; font-size: 0.75rem; color: rgb(var(--color-error, 255 148 148));"></p>' +
       '</div>'
-    : '<p style="margin: 0; color: rgb(var(--color-muted, 153 153 153)); font-size: 0.875rem;">Заявка закрыта для ответов.</p>';
+    : '<p style="margin: 0; color: rgb(var(--color-muted, 153 153 153)); font-size: 0.875rem;">Индивидуальный заказ закрыт для ответов.</p>';
 
   return (
     kv +
@@ -446,7 +446,7 @@ export function initRequestsMineList(): void {
     if (loadingEl) loadingEl.classList.add('hidden');
     if (!res.ok) {
       if (loadingEl) {
-        loadingEl.textContent = 'Не удалось загрузить заявки';
+        loadingEl.textContent = 'Не удалось загрузить индивидуальные заказы';
         loadingEl.classList.remove('hidden');
       }
       return;

@@ -112,10 +112,10 @@ export const VERSTAK_FORM: FormV2 = {
 };
 
 export const VERSTAK_FORM_VIEW: ProductFormView = {
-  title: "Оставить заявку",
-  submitLabel: "Оставить заявку",
+  title: "Индивидуальный заказ",
+  submitLabel: "Оформить индивидуальный заказ",
   hint: "Платить сейчас не нужно. Ответ придёт на почту и в «Мои заказы».",
-  priceNote: "точную цену назовём после заявки",
+  priceNote: "точную цену назовём после оформления заказа",
   form: VERSTAK_FORM,
 };
 
@@ -138,10 +138,10 @@ export const STAND_PHOTOS = {
 } as const;
 
 export const VERSTAK_SENT: ProductSubmitResult = {
-  title: "Заявка №2096 отправлена",
-  text: "Ответ придёт на почту, заявка видна в «Моих заказах».",
+  title: "Индивидуальный заказ И-2096 оформлен",
+  text: "Магазин рассчитает цену и срок и пришлёт предложение на почту",
   buttons: [
-    { label: "Открыть заявку", url: "/account/orders" },
+    { label: "Открыть заказ", url: "/account/orders" },
     { label: "В каталог", url: "/catalog" },
   ],
 };

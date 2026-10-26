@@ -1,15 +1,15 @@
-import { tokenOf } from '../customer-token';
-import type { Reply } from '../failures';
 import { EXT_POINT_ATTRIBUTE } from '../ext-points';
-import { requestJson, type JsonRequest } from '../requests';
-import { pageStorage } from '../storage';
+import { soldByFormOf, type SoldByForm } from '../sold-by-form';
 import type { CoreHandle, InstanceHost, SdkPart } from '../types';
 
 // Часть purchase (блок 12 «Секций и SDK», место — 12б, Р12б-12; без theme-base — 12д, Р12д-8): рантайма theme-base
 // здесь нет — форму покупки показывает секция расширения. Часть прячет детей места data-ext-point="product" с
-// data-product-id (кнопку «В корзину»), если функция формы точки product включённого расширения отдала форму для
-// товара места. Имён расширений часть не знает: список функций — из карты /store/extensions/storefront. В превью
-// конструктора блоков нет (Р12б-17). api — пустой замороженный объект: своих методов для секций нет.
+// data-product-id (кнопку «В корзину») и кнопки cart.add карточек без места (блок 15, часть 15г — как extension-sale.ts
+// пяти тем на dev), если функция формы точки product включённого расширения отдала форму для товара. Клик по кнопке
+// непроверенного товара ждёт ответа до SOLD_ANSWER_WAIT_MS: форма есть — клик поглощён, кнопка спрятана. Имён
+// расширений часть не знает: ответ — модуль sold-by-form, карта /store/extensions/storefront. В превью конструктора
+// блоков нет (Р12б-17). Сборка вшивает часть магазину с включённым расширением места product, даже без места на
+// странице: без расширения части в бандле нет. api — пустой замороженный объект: своих методов для секций нет.
 export const purchase: SdkPart<'purchase', Readonly<Record<string, never>>> = {
   name: 'purchase',
   create: (core): Readonly<Record<string, never>> => {
@@ -20,84 +20,93 @@ export const purchase: SdkPart<'purchase', Readonly<Record<string, never>>> = {
     if (host.mode === 'preview') return;
     const core = CORES.get(api);
     if (core === undefined) return;
-    void hideCartButtons(core, host);
+    const sold = soldByFormOf(core);
+    void hidePlaceChildren(sold, host);
+    hideSoldButtons(sold, host.element);
+    gateCartClicks(sold, host);
   },
 };
 
 const EMPTY_API: Readonly<Record<string, never>> = Object.freeze({});
 const CORES = new WeakMap<Readonly<Record<string, never>>, CoreHandle>();
 
-// Данные для запросов функций формы: адрес шлюза, магазин и токен покупательницы, если она вошла.
-interface FormApi {
-  readonly url: string;
-  readonly storeId: string;
-  readonly token: string | null;
-}
+// Кнопки «В корзину» карточек (блок 15, часть 15г): data-action="cart.add" с товаром, без места product.
+export const CART_ADD_BUTTONS = '[data-action~="cart.add"][data-product-id]';
+export const SOLD_ANSWER_WAIT_MS = 3000;
+// Кнопка, чей товар уже проверен и продаётся корзиной: её клики идут без задержки гейта.
+const PASSED = new WeakSet<HTMLElement>();
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-// Функция формы дала форму: успех и data — объект (не массив, не null).
-function hasForm(reply: Reply): boolean {
-  if (reply.status !== 200) return false;
-  const body = reply.body;
-  return isRecord(body) && body.success === true && isRecord(body.data);
-}
-
-// Пары «id расширения → функция формы точки product» из карты включённых расширений, по порядку ключей карты.
-function formPairsOf(body: unknown): readonly (readonly [string, string])[] {
-  if (!isRecord(body)) return [];
-  return Object.entries(body).flatMap(([id, entry]): readonly (readonly [string, string])[] => {
-    if (!isRecord(entry) || !isRecord(entry.product)) return [];
-    const form = entry.product.form;
-    return typeof form === 'string' && form !== '' ? [[id, form]] : [];
-  });
-}
-
-// Данные ответа шлюза: внутри конверт { success, data } — карта расширений или форма.
-const dataOf = (reply: Reply): unknown => {
-  const body = reply.body;
-  return isRecord(body) ? body.data : null;
-};
-
-function soldByForm(api: FormApi, pair: readonly [string, string], productId: string): Promise<boolean> {
-  const [id, form] = pair;
-  const path = `/store/extensions/${encodeURIComponent(id)}/fn/${encodeURIComponent(form)}`;
-  const url = `${api.url}${path}?store_id=${encodeURIComponent(api.storeId)}`;
-  const init: JsonRequest =
-    api.token === null
-      ? { method: 'POST', body: { productId } }
-      : { method: 'POST', body: { productId }, token: api.token };
-  return requestJson(url, init).then(hasForm);
-}
-
-// Дети места — кнопки товара: прячем, как только первая функция формы ответила формой; остальные пары не зовутся.
-async function hideIfSold(
-  api: FormApi,
-  pairs: readonly (readonly [string, string])[],
-  place: HTMLElement,
-): Promise<void> {
-  const productId = place.getAttribute('data-product-id');
-  if (productId === null) return;
-  for (const pair of pairs) {
-    if (!(await soldByForm(api, pair, productId))) continue;
+// Дети места — кнопки товара: прячем, если товар продаётся формой (12д, Р12д-8).
+async function hidePlaceChildren(sold: SoldByForm, host: InstanceHost): Promise<void> {
+  const places = host.element.querySelectorAll<HTMLElement>(`[${EXT_POINT_ATTRIBUTE}="product"][data-product-id]`);
+  for (const place of places) {
+    const productId = place.getAttribute('data-product-id');
+    if (productId === null || !(await sold.check(productId))) continue;
     for (const child of place.querySelectorAll<HTMLElement>(':scope > *')) {
       child.hidden = true;
       child.style.display = 'none';
     }
-    return;
   }
 }
 
-async function hideCartButtons(core: CoreHandle, host: InstanceHost): Promise<void> {
-  const config = core.config;
-  if (config === null) return;
-  const places = [...host.element.querySelectorAll<HTMLElement>(`[${EXT_POINT_ATTRIBUTE}="product"][data-product-id]`)];
-  if (places.length === 0) return;
-  const mapUrl = `${config.api.url}/store/extensions/storefront?store_id=${encodeURIComponent(config.shop.id)}`;
-  const map = await requestJson(mapUrl, { method: 'GET' });
-  const pairs = formPairsOf(dataOf(map));
-  if (pairs.length === 0) return;
-  const api: FormApi = { url: config.api.url, storeId: config.shop.id, token: tokenOf(pageStorage(window, core.mode)) };
-  for (const place of places) await hideIfSold(api, pairs, place);
+// Кнопки карточек экземпляра: известный «да» — спрятать сразу; неизвестный — check и спрятать по ответу.
+function hideSoldButtons(sold: SoldByForm, scope: ParentNode): void {
+  for (const button of scope.querySelectorAll<HTMLElement>(CART_ADD_BUTTONS)) {
+    void hideIfSold(sold, button);
+  }
+}
+
+async function hideIfSold(sold: SoldByForm, button: HTMLElement): Promise<void> {
+  const productId = button.getAttribute('data-product-id');
+  if (productId === null) return;
+  const known = sold.known(productId);
+  if (known === true || (known === undefined && (await sold.check(productId)))) hideButton(button);
+}
+
+// Клик по кнопке cart.add — до делегата действий ядра (capture): товар с формой — клик поглощён, кнопка спрятана;
+// непроверенный — ждём ответа до SOLD_ANSWER_WAIT_MS (как ANSWER_WAIT_MS на dev), обычный — клик повторяется свободно.
+function gateCartClicks(sold: SoldByForm, host: InstanceHost): void {
+  host.element.addEventListener(
+    'click',
+    (event) => gateClick(sold, host, event),
+    { capture: true, signal: host.signal },
+  );
+}
+
+function gateClick(sold: SoldByForm, host: InstanceHost, event: Event): void {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const button = target.closest<HTMLElement>(CART_ADD_BUTTONS);
+  if (button === null || !host.element.contains(button) || PASSED.has(button)) return;
+  const productId = button.getAttribute('data-product-id');
+  if (productId === null) return;
+  const known = sold.known(productId);
+  if (known === false) return; // обычный товар — клик без задержки
+  event.preventDefault();
+  event.stopPropagation();
+  if (known === true) {
+    hideButton(button);
+    return;
+  }
+  void withDeadline(sold.check(productId)).then((isSold) => passThrough(button, isSold));
+}
+
+// Ответ проверки пришёл: с формой — кнопка спрятана; без формы — клик повторяется, кнопка свободна до конца страницы.
+function passThrough(button: HTMLElement, isSold: boolean): void {
+  if (isSold) {
+    hideButton(button);
+    return;
+  }
+  PASSED.add(button);
+  button.click();
+}
+
+// Ответ за SOLD_ANSWER_WAIT_MS; тишина дольше — false, товар считается обычным (как ANSWER_WAIT_MS на dev).
+const withDeadline = (answer: Promise<boolean>): Promise<boolean> =>
+  Promise.race([answer, new Promise<boolean>((resolve) => setTimeout(() => resolve(false), SOLD_ANSWER_WAIT_MS))]);
+
+// У кнопок карточек бывают flex-классы: display — с important, как hideElement на dev.
+function hideButton(button: HTMLElement): void {
+  button.hidden = true;
+  button.style.setProperty('display', 'none', 'important');
 }

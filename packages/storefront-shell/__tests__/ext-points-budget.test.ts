@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 // свой код ядра, records и purchase — строки рантаймов theme-base, встают только на страницы, где шаблон дал место.
 const ENTRY = fileURLToPath(new URL('../src/core/index.ts', import.meta.url));
 const BASE_PARTS = ['auth', 'cart', 'favorites'];
-const BUDGET_BYTES = { points: 4 * 1024, records: 4 * 1024, purchase: 24 * 1024 } as const; // records — свой код (12е)
+const BUDGET_BYTES = { points: 4 * 1024, records: 4 * 1024, purchase: 2 * 1024 } as const; // purchase без рантайма theme-base (часть 12д, Р12д-8)
 
 async function bundleOf(parts: readonly string[]): Promise<string> {
   const contents = `import { start, ${parts.join(', ')} } from ${JSON.stringify(ENTRY)};\nstart({ parts: [${parts.join(', ')}], sections: [] });`;
@@ -32,6 +32,12 @@ describe('вес частей блоков расширений', () => {
     const base = brotliOf(await bundleOf(BASE_PARTS));
     const withPart = brotliOf(await bundleOf([...BASE_PARTS, part]));
     expect(withPart - base).toBeLessThanOrEqual(BUDGET_BYTES[part]);
+  });
+
+  it('purchase — без строки рантайма theme-base (часть 12д)', async () => {
+    const text = await bundleOf([...BASE_PARTS, 'purchase']);
+    expect(text).not.toContain('__merfyPurchase');
+    expect(text).not.toContain('data-merfy-ext-purchase');
   });
 
   it('без новых частей сборки theme-base в бандле нет', async () => {

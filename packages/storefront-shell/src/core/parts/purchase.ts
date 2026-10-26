@@ -1,22 +1,15 @@
-import { EXTENSION_PURCHASE_RUNTIME_SOURCE } from '@merfy/theme-base/runtime/extension-purchase.runtime';
-import { EXTENSION_PURCHASE_STYLES } from '@merfy/theme-base/runtime/extension-purchase.styles';
+import { tokenOf } from '../customer-token';
+import type { Reply } from '../failures';
 import { EXT_POINT_ATTRIBUTE } from '../ext-points';
+import { requestJson, type JsonRequest } from '../requests';
+import { pageStorage } from '../storage';
 import type { CoreHandle, InstanceHost, SdkPart } from '../types';
 
-// Глобальный объект рантайма theme-base (Р12б-16): ядро его только читает, ставит сам рантайм, своим не перезаписывает.
-interface PurchaseRuntime {
-  mount?: (place: HTMLElement, options: Record<string, unknown>) => unknown;
-}
-declare global {
-  interface Window {
-    __merfyPurchase?: PurchaseRuntime;
-  }
-}
-
-// Часть purchase (блок 12 «Секций и SDK», часть 12б, Р12б-16): блок расширения у кнопки «В корзину» товара —
-// data-ext-point="product" с data-product-id: дети места получают data-product-actions (их находит рантайм theme-base
-// и вешает обработчики), скрытый блок покупки — data-extension-purchase. Встраивается один раз на страницу, в превью
-// конструктора блока нет (Р12б-17). api — пустой замороженный объект: своих методов для секций нет.
+// Часть purchase (блок 12 «Секций и SDK», место — 12б, Р12б-12; без theme-base — 12д, Р12д-8): рантайма theme-base
+// здесь нет — форму покупки показывает секция расширения. Часть прячет детей места data-ext-point="product" с
+// data-product-id (кнопку «В корзину»), если функция формы точки product включённого расширения отдала форму для
+// товара места. Имён расширений часть не знает: список функций — из карты /store/extensions/storefront. В превью
+// конструктора блоков нет (Р12б-17). api — пустой замороженный объект: своих методов для секций нет.
 export const purchase: SdkPart<'purchase', Readonly<Record<string, never>>> = {
   name: 'purchase',
   create: (core): Readonly<Record<string, never>> => {
@@ -27,62 +20,84 @@ export const purchase: SdkPart<'purchase', Readonly<Record<string, never>>> = {
     if (host.mode === 'preview') return;
     const core = CORES.get(api);
     if (core === undefined) return;
-    const shopApi = shopApiOf(core);
-    if (shopApi !== null) mountPurchase(host, shopApi);
+    void hideCartButtons(core, host);
   },
 };
 
 const EMPTY_API: Readonly<Record<string, never>> = Object.freeze({});
 const CORES = new WeakMap<Readonly<Record<string, never>>, CoreHandle>();
-const STYLE_MARK = 'data-merfy-ext-purchase';
-const SCRIPT_MARK = 'data-merfy-ext-purchase-script';
 
-interface ShopApi {
+// Данные для запросов функций формы: адрес шлюза, магазин и токен покупательницы, если она вошла.
+interface FormApi {
   readonly url: string;
   readonly storeId: string;
+  readonly token: string | null;
 }
 
-const shopApiOf = (core: CoreHandle): ShopApi | null => {
-  const config = core.config;
-  if (config === null) return null;
-  return { url: config.api.url, storeId: config.shop.id };
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
-// Стили и рантайм — один раз на страницу: повторные места товара используют тот же глобальный объект.
-function oncePerPage(): void {
-  if (document.querySelector(`style[${STYLE_MARK}]`) === null) {
-    const style = document.createElement('style');
-    style.setAttribute(STYLE_MARK, '');
-    style.textContent = EXTENSION_PURCHASE_STYLES;
-    document.head.append(style);
-  }
-  if (document.querySelector(`script[${SCRIPT_MARK}]`) === null) {
-    const script = document.createElement('script');
-    script.setAttribute(SCRIPT_MARK, '');
-    script.textContent = EXTENSION_PURCHASE_RUNTIME_SOURCE;
-    document.head.append(script);
-  }
+// Функция формы дала форму: успех и data — объект (не массив, не null).
+function hasForm(reply: Reply): boolean {
+  if (reply.status !== 200) return false;
+  const body = reply.body;
+  return isRecord(body) && body.success === true && isRecord(body.data);
 }
 
-// Место товара (В12-2 А): рантайм theme-base показывает блок у кнопки «В корзину».
-function mountOne(runtime: PurchaseRuntime, place: HTMLElement, api: ShopApi): void {
-  for (const child of [...place.children]) child.setAttribute('data-product-actions', '');
-  const holder = document.createElement('div');
-  holder.setAttribute('data-extension-purchase', '');
-  holder.hidden = true;
-  place.append(holder);
-  void runtime.mount?.(place, {
-    productId: place.getAttribute('data-product-id'),
-    storeId: api.storeId,
-    apiBase: api.url,
+// Пары «id расширения → функция формы точки product» из карты включённых расширений, по порядку ключей карты.
+function formPairsOf(body: unknown): readonly (readonly [string, string])[] {
+  if (!isRecord(body)) return [];
+  return Object.entries(body).flatMap(([id, entry]): readonly (readonly [string, string])[] => {
+    if (!isRecord(entry) || !isRecord(entry.product)) return [];
+    const form = entry.product.form;
+    return typeof form === 'string' && form !== '' ? [[id, form]] : [];
   });
 }
 
-function mountPurchase(host: InstanceHost, api: ShopApi): void {
+// Данные ответа шлюза: внутри конверт { success, data } — карта расширений или форма.
+const dataOf = (reply: Reply): unknown => {
+  const body = reply.body;
+  return isRecord(body) ? body.data : null;
+};
+
+function soldByForm(api: FormApi, pair: readonly [string, string], productId: string): Promise<boolean> {
+  const [id, form] = pair;
+  const path = `/store/extensions/${encodeURIComponent(id)}/fn/${encodeURIComponent(form)}`;
+  const url = `${api.url}${path}?store_id=${encodeURIComponent(api.storeId)}`;
+  const init: JsonRequest =
+    api.token === null
+      ? { method: 'POST', body: { productId } }
+      : { method: 'POST', body: { productId }, token: api.token };
+  return requestJson(url, init).then(hasForm);
+}
+
+// Дети места — кнопки товара: прячем, как только первая функция формы ответила формой; остальные пары не зовутся.
+async function hideIfSold(
+  api: FormApi,
+  pairs: readonly (readonly [string, string])[],
+  place: HTMLElement,
+): Promise<void> {
+  const productId = place.getAttribute('data-product-id');
+  if (productId === null) return;
+  for (const pair of pairs) {
+    if (!(await soldByForm(api, pair, productId))) continue;
+    for (const child of place.querySelectorAll<HTMLElement>(':scope > *')) {
+      child.hidden = true;
+      child.style.display = 'none';
+    }
+    return;
+  }
+}
+
+async function hideCartButtons(core: CoreHandle, host: InstanceHost): Promise<void> {
+  const config = core.config;
+  if (config === null) return;
   const places = [...host.element.querySelectorAll<HTMLElement>(`[${EXT_POINT_ATTRIBUTE}="product"][data-product-id]`)];
   if (places.length === 0) return;
-  oncePerPage();
-  const runtime = window.__merfyPurchase;
-  if (runtime === undefined) return;
-  for (const place of places) mountOne(runtime, place, api);
+  const mapUrl = `${config.api.url}/store/extensions/storefront?store_id=${encodeURIComponent(config.shop.id)}`;
+  const map = await requestJson(mapUrl, { method: 'GET' });
+  const pairs = formPairsOf(dataOf(map));
+  if (pairs.length === 0) return;
+  const api: FormApi = { url: config.api.url, storeId: config.shop.id, token: tokenOf(pageStorage(window, core.mode)) };
+  for (const place of places) await hideIfSold(api, pairs, place);
 }

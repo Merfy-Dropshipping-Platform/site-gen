@@ -1,7 +1,6 @@
 import { EXT_POINT_CLASSES } from '@merfy/shell/ext-points';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { points } from '../src/core/parts/points';
-import { purchase } from '../src/core/parts/purchase';
 import type { CoreHandle, InstanceHost, Mode } from '../src/core/types';
 
 // Блоки расширений в местах data-ext-point (блок 12 «Секций и SDK», часть 12б, В12-2 А). Расширение — test-ext.
@@ -126,30 +125,4 @@ describe('points: место cart', () => {
   });
 });
 
-describe('purchase: место product', () => {
-  it('product: форма покупки расширения — рантайм theme-base получает место, товар, магазин и адрес API; кнопка помечена', () => {
-    const mount = vi.fn();
-    vi.stubGlobal('__merfyPurchase', { mount });
-    const host = hostOf(
-      '<div data-ext-point="product" data-product-id="p-1"><button data-action="cart.add">В корзину</button></div>',
-    );
-    purchase.attach?.(purchase.create(coreOf()), host);
-
-    const place = host.element.querySelector<HTMLElement>('[data-ext-point="product"]');
-    expect(place?.querySelector('button')?.hasAttribute('data-product-actions')).toBe(true);
-    expect(place?.querySelector('[data-extension-purchase]')?.hasAttribute('hidden')).toBe(true);
-    expect(mount).toHaveBeenCalledWith(place, { productId: 'p-1', storeId: SHOP, apiBase: API });
-  });
-
-  it('превью — рантайм не зовётся, разметка прежняя', () => {
-    const mount = vi.fn();
-    vi.stubGlobal('__merfyPurchase', { mount });
-    const host = hostOf(
-      '<div data-ext-point="product" data-product-id="p-1"><button>В корзину</button></div>',
-      'preview',
-    );
-    purchase.attach?.(purchase.create(coreOf('preview')), host);
-    expect(mount).not.toHaveBeenCalled();
-    expect(host.element.querySelector('[data-extension-purchase]')).toBeNull();
-  });
-});
+// purchase — __tests__/purchase-section.test.ts (блок 12, часть 12д, Р12д-8): рантайма theme-base в части нет.

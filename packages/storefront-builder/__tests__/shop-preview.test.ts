@@ -160,18 +160,33 @@ describe('превью одного блока', () => {
   it('секция с ролью — data-role на обёртке; без роли — атрибута нет (блок 12, как полный рендер)', async () => {
     const banner: CurrentSection = {
       name: 'shop:cookie-banner',
-      manifest: { sdk: 1, name: 'cookie-banner', kind: 'section', title: 'Баннер cookie', role: 'cookie-banner', settings: [] },
+      manifest: {
+        sdk: 1,
+        name: 'cookie-banner',
+        kind: 'section',
+        title: 'Баннер cookie',
+        role: 'cookie-banner',
+        settings: [],
+      },
       render: MODULE,
       renderHash: HASH,
     };
-    const { deps } = depsOf(new Map([
-      [banner.name, banner],
-      [HERO.name, HERO],
-    ]));
-    const withRole = await sectionPreview(deps, SHOP, block({ id: 'banner-1', section: 'shop:cookie-banner', settings: {} }));
+    const { deps } = depsOf(
+      new Map([
+        [banner.name, banner],
+        [HERO.name, HERO],
+      ]),
+    );
+    const withRole = await sectionPreview(
+      deps,
+      SHOP,
+      block({ id: 'banner-1', section: 'shop:cookie-banner', settings: {} }),
+    );
     expect(withRole.status).toBe(200);
     const html = blockAnswerSchema.parse(JSON.parse(withRole.body)).html;
-    expect(html).toMatch(/^<merfy-section data-section="shop:cookie-banner" data-section-id="banner-1" data-role="cookie-banner" class="py-section">/);
+    expect(html).toMatch(
+      /^<merfy-section data-section="shop:cookie-banner" data-section-id="banner-1" data-role="cookie-banner" class="py-section">/,
+    );
     const plain = await sectionPreview(deps, SHOP, block({ id: 'hero-1', section: 'shop:hero', settings: {} }));
     expect(plain.status).toBe(200);
     expect(blockAnswerSchema.parse(JSON.parse(plain.body)).html).not.toContain('data-role');
@@ -403,13 +418,24 @@ describe('общие настройки секции в превью (часть
     });
     const answer = await sectionPreview(deps, SHOP, body);
     expect(answer.status).toBe(200);
-    expect(blockAnswerSchema.parse(JSON.parse(answer.body)).html).toContain('class="color-scheme-2 pt-10 pb-20"');
+    // Без правки sticky — умолчание scroll-up (Р15в-2), поэтому классы закрепления тоже на обёртке.
+    expect(blockAnswerSchema.parse(JSON.parse(answer.body)).html).toContain(
+      'class="color-scheme-2 pt-10 pb-20 sticky top-0 z-50 transition-transform duration-300 motion-reduce:transition-none data-[hidden]:-translate-y-full"',
+    );
   });
 
-  it('блок без wrapper — class="py-section", как раньше', async () => {
+  it('блок без wrapper: sticky в списке — «При прокрутке вверх» (Р15в-2); без sticky — class="py-section", как раньше', async () => {
     const { deps } = depsOf(new Map([[WRAPPED.name, WRAPPED]]));
     const answer = await sectionPreview(deps, SHOP, block({ id: 'hero-1', section: 'shop:hero', settings: {} }));
-    expect(blockAnswerSchema.parse(JSON.parse(answer.body)).html).toContain('class="py-section"');
+    const html = blockAnswerSchema.parse(JSON.parse(answer.body)).html;
+    expect(html).toContain('class="py-section sticky top-0 z-50');
+    expect(html).toContain('data-behavior="sticky-header" data-mode="scroll-up"');
+    const plain = await sectionPreview(
+      depsOf().deps,
+      SHOP,
+      block({ id: 'hero-1', section: 'shop:hero', settings: {} }),
+    );
+    expect(blockAnswerSchema.parse(JSON.parse(plain.body)).html).toContain('class="py-section"');
   });
 
   it('список секций: wrapper у каждой секции и объявления общих настроек в ответе', async () => {

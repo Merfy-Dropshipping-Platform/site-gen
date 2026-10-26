@@ -56,7 +56,7 @@ describe('объявление общих настроек', () => {
     ]);
     expect(WRAPPER_FIELDS[1]?.setting).toMatchObject({ default: null, max: 120, step: 8 });
     expect(WRAPPER_FIELDS[2]?.setting).toMatchObject({
-      default: 'none',
+      default: 'scroll-up',
       options: [
         { value: 'none', label: 'Никогда' },
         { value: 'scroll-up', label: 'При прокрутке вверх' },

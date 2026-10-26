@@ -14,6 +14,7 @@ const ENV = {
   S3_SECRET_KEY: 'secret-value',
   STOREFRONT_API_URL: 'https://gateway.dev.merfy.ru/api',
   ANALYTICS_COLLECTOR_URL: 'https://analytics.dev.merfy.ru/',
+  STOREFRONT_UPLOAD_URL: 'https://minio.dev.merfy.ru/ext-files',
   SOURCE_COMMIT: 'a'.repeat(40),
 };
 
@@ -25,6 +26,7 @@ describe('настройки', () => {
       s3: { endpoint: ENV.S3_ENDPOINT, bucket: 'storefront', accessKeyId: 'key', secretAccessKey: 'secret-value' },
       apiUrl: ENV.STOREFRONT_API_URL,
       analyticsUrl: 'https://analytics.dev.merfy.ru',
+      uploadUrl: 'https://minio.dev.merfy.ru',
       commit: ENV.SOURCE_COMMIT,
       port: 8080,
       buildSlots: 1,
@@ -53,6 +55,10 @@ describe('настройки', () => {
     expect(() => readSettings({ ...ENV, STOREFRONT_STAND_PAGE: 'true', STOREFRONT_INDEXABLE: 'true' })).toThrow(
       'env#STOREFRONT_STAND_PAGE: стенд в сборке — только у магазинов не для поиска (STOREFRONT_INDEXABLE=false)',
     );
+  });
+
+  it('нет STOREFRONT_UPLOAD_URL — settings-invalid с именем переменной (часть 15е, И4: запасного адреса нет)', () => {
+    expect(() => readSettings({ ...ENV, STOREFRONT_UPLOAD_URL: undefined })).toThrow(/STOREFRONT_UPLOAD_URL/);
   });
 
   it('нет ANALYTICS_COLLECTOR_URL — settings-invalid с именем переменной (И4: запасного адреса нет)', () => {

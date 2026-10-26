@@ -1,6 +1,6 @@
 {
   "nova": {
-    "contentHash": "sha256:5bc5b8c20dd0eb664033b309622e26ab2cc90fee72bee184a5883c0758ae0a7c",
-    "version": "0.7.3"
+    "contentHash": "sha256:c30c253a1e02d3d63d20fc311592313c31ca49a6d1d034f10910eb68507c4fed",
+    "version": "0.7.4"
   }
 }

@@ -4,6 +4,7 @@ import type { CodeNoticed } from './bundle';
 import { NO_ASSETS, checkCodeAssets, type CodeAssets } from './code';
 import { countersOf } from './counters';
 import { storefrontCsp } from './csp';
+import { inlineScripts } from './inline-scripts';
 import { customCodesOf } from './custom-codes';
 import { entityHashes } from './entities';
 import { parseBuildInputs, type BuildInputs } from './inputs';
@@ -147,20 +148,31 @@ export async function buildStorefront(
   const fontFiles = shopFonts(inputs, theme.tokens, theme.migrations).files.map(
     (file) => [file.path, file.hash] as const,
   );
-  const manifest = manifestOf(inputs, references, files, fontFiles, pages);
+  // Встроенный код страниц оформления (блок 15, часть 15е, Р15е-4) — хешами в политику CSP.
+  const manifest = manifestOf(inputs, references, files, fontFiles, pages, checkoutScripts(checkout));
   return { manifest, files };
 }
 
 // Политика CSP магазина (блок 13 «Секций и SDK», часть 13б): по файлам сборки, адресам и аналитике; длиннее предела —
 // null, поля в манифесте нет.
-const cspOf = (inputs: BuildInputs, files: Readonly<Record<string, string>>): string | null =>
+const cspOf = (
+  inputs: BuildInputs,
+  files: Readonly<Record<string, string>>,
+  inline: readonly string[],
+): string | null =>
   storefrontCsp({
     files,
     apiUrl: inputs.env.apiUrl,
     analyticsUrl: inputs.env.analyticsUrl,
+    ...(inputs.env.uploadUrl === undefined ? {} : { uploadUrl: inputs.env.uploadUrl }),
     counters: countersOf(inputs.data.entities),
     custom: customCodesOf(inputs.data.entities),
+    inline,
   });
+
+// Тексты встроенных скриптов страниц оформления (часть 15е): блоки theme-base и конфиг nova.
+const checkoutScripts = (checkout: SpecialFiles): string[] =>
+  checkout.files.flatMap((file) => inlineScripts(Buffer.from(file.content).toString('utf8')));
 
 // Манифест сборки: ключи, версии, сущности и файлы — по списку файлов сборки и шрифтов.
 function manifestOf(
@@ -169,12 +181,13 @@ function manifestOf(
   files: readonly BuildFile[],
   fontFiles: readonly (readonly [string, string])[],
   pages: readonly RenderedPage[],
+  inline: readonly string[],
 ): ReturnType<typeof checkManifest> {
   const fileHashes = Object.fromEntries([
     ...files.map((file) => [file.path, sha256(file.content)] as const),
     ...fontFiles,
   ]);
-  const csp = cspOf(inputs, fileHashes);
+  const csp = cspOf(inputs, fileHashes, inline);
   return checkManifest({
     v: MANIFEST_VERSION,
     key: buildKey(inputs),

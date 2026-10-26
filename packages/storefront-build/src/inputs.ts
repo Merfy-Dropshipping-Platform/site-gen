@@ -152,6 +152,9 @@ const codeSchema = z.strictObject({
   globals: z.array(sectionNameSchema),
   // Сторы и методы включённых расширений из uses секций магазина (блок 9 «Секций и SDK», часть 9в); нет — ключа нет.
   extensions: storefrontExtensionsSchema.optional(),
+  // Части ядра по включённым местам расширений магазина (блок 15, часть 15г): место product — часть purchase в бандле
+  // каждой страницы, даже без места в разметке (карточки каталога). Магазин без расширений — ключа нет, бандл прежний.
+  extPointParts: z.array(partNameSchema).min(1).optional(),
 });
 
 const entitySchema = z.strictObject({

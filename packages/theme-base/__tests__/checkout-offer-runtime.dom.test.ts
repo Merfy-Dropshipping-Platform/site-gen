@@ -258,6 +258,17 @@ describe('режим предложения', () => {
     ]);
   });
 
+  it('адреса шлюза нет в конфиге страницы — shop_unknown и без запроса (боевой адрес по умолчанию не подставляется)', async () => {
+    (window as any).__MERFY_CONFIG__ = { shopId: 'shop1' };
+    (window as any).fetch = jest.fn();
+    const events = recordEvents();
+    await runLoader();
+    expect((window as any).fetch).not.toHaveBeenCalled();
+    expect(events).toEqual([
+      { name: 'checkout:offer-error', detail: { code: 'shop_unknown' } },
+    ]);
+  });
+
   it('тексты ошибок оформления: товар по названию, неизвестный код — общий текст', async () => {
     await runLoader();
     const { message } = (window as any).__merfyOffer;

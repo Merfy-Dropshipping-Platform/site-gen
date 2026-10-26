@@ -16,7 +16,15 @@ const rules = await loadReleaseRules();
 // Ошибки страницы оформления — рядом с главной (openWithCheckout): на главной их не видно.
 const open = (url: string) =>
   openWithCheckout((target) => openPage(target, { sabotage: [] }, (page) => collectPassport(page, 'dev')), url);
-await startChecker(broker, { open, rules, log });
+await startChecker(broker, {
+  open,
+  rules,
+  log,
+  // Ожидание новой сборки раздачи (№77): опрос ETag главной каждые 250 мс, предел — 30 с.
+  fetch: (address) => fetch(address),
+  homePollMs: 250,
+  homeWaitMs: 30_000,
+});
 const server = createServer((request, response) => {
   response.writeHead(request.url === '/health' ? 200 : 404).end();
 }).listen(settings.port);

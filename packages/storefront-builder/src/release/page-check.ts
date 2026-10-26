@@ -15,6 +15,10 @@ export interface PageCheckDeps {
 export interface PageExpectation {
   // Версия темы в конфиге страницы; null — не сравниваем (выпуск платформы или расширения).
   version: string | null;
+  // Отпечаток файла главной (hex, без префикса) из манифеста живой сборки — ETag ответа раздачи. Признак того, что
+  // витрина отдаёт новую сборку: указатель раздачи кэшируется ~1 с, и проверка со старого HTML ловит 404 бандлов,
+  // которых уже нет в новой таблице раздачи (выпуск платформы №77, 26.10). null — не ждём (манифеста нет).
+  home: string | null;
 }
 
 export interface PageCheck {
@@ -28,7 +32,7 @@ const TOKENS = /<style id="merfy-tokens">([\s\S]*?)<\/style>/;
 const LINKED = /<(?:link|script)\b[^>]*?\b(?:href|src)="([^"]+)"/g;
 const configSchema = z.object({ theme: z.object({ version: z.string() }) });
 
-type Home = { status: number; html: string };
+type Home = { status: number; html: string; etag: string | null };
 
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -49,10 +53,14 @@ const versionIn = (html: string): string | null => {
 
 async function readHome(deps: PageCheckDeps, url: string): Promise<Home> {
   const response = await deps.fetch(`${url}/`);
-  return { status: response.status, html: response.status === 200 ? await response.text() : '' };
+  return {
+    status: response.status,
+    html: response.status === 200 ? await response.text() : '',
+    etag: response.headers.get('etag'),
+  };
 }
 
-// Главная, пока версия в конфиге не станет новой (или пока не кончатся попытки).
+// Главная, пока версия в конфиге не станет новой и раздача не станет новой сборкой (или пока не кончатся попытки).
 async function homeOf(deps: PageCheckDeps, url: string, expected: PageExpectation): Promise<Home> {
   let home = await readHome(deps, url);
   for (let attempt = 1; attempt < deps.attempts && isStale(home, expected); attempt += 1) {
@@ -63,7 +71,9 @@ async function homeOf(deps: PageCheckDeps, url: string, expected: PageExpectatio
 }
 
 const isStale = (home: Home, expected: PageExpectation): boolean =>
-  home.status === 200 && expected.version !== null && versionIn(home.html) !== expected.version;
+  home.status === 200 &&
+  ((expected.version !== null && versionIn(home.html) !== expected.version) ||
+    (expected.home !== null && home.etag !== `"${expected.home}"`));
 
 // Адреса файлов того же магазина из <link href> и <script src>. Чужие адреса и data: не проверяем.
 function linkedPaths(html: string, url: string): string[] {
@@ -79,20 +89,28 @@ async function fileProblems(deps: PageCheckDeps, url: string, paths: readonly st
   return paths.flatMap((path, index) => (statuses[index] === 200 ? [] : [`${path} ответил ${statuses[index]}`]));
 }
 
-function headProblems(html: string, expected: PageExpectation): string[] {
-  const version = versionIn(html);
+function headProblems(home: Home, expected: PageExpectation): string[] {
+  const version = versionIn(home.html);
   const versionProblem =
     expected.version !== null && version !== expected.version
       ? [`в конфиге страницы версия темы ${version ?? 'не найдена'}, ждали ${expected.version}`]
       : [];
-  const tokens = TOKENS.exec(html)?.[1] ?? '';
+  const tokens = TOKENS.exec(home.html)?.[1] ?? '';
   return [...versionProblem, ...(tokens.trim() === '' ? ['CSS токенов пустой'] : [])];
 }
 
 export async function checkShopPages(deps: PageCheckDeps, url: string, expected: PageExpectation): Promise<PageCheck> {
   const home = await homeOf(deps, url, expected);
   if (home.status !== 200) return { ok: false, problems: [`главная ответила ${home.status}`], files: 0 };
+  // Раздача не стала новой сборкой: файлы старого HTML проверять бессмысленно — их и ловит гонка, вернём одну поломку.
+  if (expected.home !== null && home.etag !== `"${expected.home}"`) {
+    return {
+      ok: false,
+      problems: [`раздача не сменила главную на новую сборку: ETag ${home.etag ?? 'нет'}, ждали "${expected.home}"`],
+      files: 0,
+    };
+  }
   const paths = linkedPaths(home.html, url);
-  const problems = [...headProblems(home.html, expected), ...(await fileProblems(deps, url, paths))];
+  const problems = [...headProblems(home, expected), ...(await fileProblems(deps, url, paths))];
   return { ok: problems.length === 0, problems, files: paths.length };
 }

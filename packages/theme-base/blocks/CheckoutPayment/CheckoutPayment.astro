@@ -124,9 +124,10 @@ const enabledMethods = (methods || []).filter((m) => m.enabled);
     });
 
     /**
-     * Скрыть карточки методов которые не подключены в YooKassa-кабинете
-     * мерчанта. Backend /billing/.../payment-config/public возвращает
-     * enabledMethods из YooKassa /v3/me — фильтруем по нему.
+     * Скрыть карточки способов, которые платёжка магазина не откроет.
+     * Backend /billing/.../payment-config/public возвращает enabledMethods —
+     * его считает billing для ЛЮБОЙ активной платёжки (декларация адаптера;
+     * у ЮKassa ещё и подключённое у продавца, /v3/me) — фильтруем по нему.
      *
      * Если поле undefined (бэк не смог проверить, fail/timeout) — оставляем
      * все методы как есть (lenient fallback). Если есть list — скрываем

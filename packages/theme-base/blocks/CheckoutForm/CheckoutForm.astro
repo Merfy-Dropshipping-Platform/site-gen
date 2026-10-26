@@ -16,6 +16,9 @@ import CheckoutContactForm from '../CheckoutContactForm/CheckoutContactForm.astr
 import CheckoutDeliveryForm from '../CheckoutDeliveryForm/CheckoutDeliveryForm.astro';
 import CheckoutDeliveryMethod from '../CheckoutDeliveryMethod/CheckoutDeliveryMethod.astro';
 import CheckoutPayment from '../CheckoutPayment/CheckoutPayment.astro';
+// Способы оплаты — из каталога блока: включён ли способ, решают настройка
+// магазина и платёжка (enabledMethods из billing), а не флаг в коде темы.
+import { DEFAULT_PAYMENT_METHODS } from '../../runtime/payment-methods';
 import CheckoutSubmit from '../CheckoutSubmit/CheckoutSubmit.astro';
 import CheckoutTerms from '../CheckoutTerms/CheckoutTerms.astro';
 import { CHECKOUT_START_ANALYTICS_SOURCE } from '../../runtime/checkout-start-analytics';
@@ -115,12 +118,7 @@ const paddingStyle = padding
     id="checkout-payment"
     heading="Платёжная система"
     subheading="Все транзакции безопасны и зашифрованы"
-    methods={[
-      { key: 'bank_card', enabled: true, label: 'Банковская карта' },
-      { key: 'sbp', enabled: true, label: 'СБП (Система быстрых платежей)' },
-      { key: 'sberbank', enabled: false, label: 'Sber Pay' },
-      { key: 'tinkoff_bank', enabled: false, label: 'T-Pay' },
-    ]}
+    methods={DEFAULT_PAYMENT_METHODS}
     padding={{ top: 0, bottom: 0 }}
   />
 

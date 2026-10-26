@@ -309,47 +309,7 @@
           "control": "scheme",
           "visibleWhen": { "setting": "cookie-banner-enabled", "equals": true }
         }
-      ],
-      "sidebar": {
-        "title": "Баннер",
-        "fields": [
-          { "id": "cookie-banner-title", "label": "Заголовок", "setting": { "kind": "string", "default": "" } },
-          {
-            "id": "cookie-banner-text",
-            "label": "Текст",
-            "setting": {
-              "kind": "text",
-              "default": "Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием."
-            }
-          },
-          {
-            "id": "cookie-banner-primary-label",
-            "label": "Основная",
-            "section": "Кнопки",
-            "setting": { "kind": "string", "default": "Принять" }
-          },
-          {
-            "id": "cookie-banner-secondary-label",
-            "label": "Дополнительная",
-            "section": "Кнопки",
-            "setting": { "kind": "string", "default": "" }
-          },
-          {
-            "id": "cookie-banner-position",
-            "label": "Расположение",
-            "setting": {
-              "kind": "select",
-              "default": "bottom-left",
-              "options": [
-                { "value": "bottom-left", "label": "Снизу слева" },
-                { "value": "bottom-center", "label": "Снизу по центру" },
-                { "value": "bottom-right", "label": "Снизу справа" },
-                { "value": "bar", "label": "Полоса во всю ширину" }
-              ]
-            }
-          }
-        ]
-      }
+      ]
     }
 ,
     {

@@ -282,6 +282,9 @@ function previewPlaced(
     name: instance.section,
     hash,
     settings,
+    // Роль секции (блок 12, 12.1): data-role на обёртке и у одиночного блока — роль из манифеста секции, тот же
+    // источник, что у полного рендера страницы; без неё вставленную секцию не находит ядро витрины.
+    ...(current.manifest.role === undefined ? {} : { role: current.manifest.role }),
     ...wrapperOf(instance, current),
     ...sectionRecordKeys(current.manifest),
     ...blocks,

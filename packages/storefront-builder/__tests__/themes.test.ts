@@ -37,7 +37,7 @@ describe('темы новой архитектуры', () => {
   });
 
   // Превью конструктора (блок 8): схема панели платформы, файлы клиента по адресу, стенд рисуется тем же рисовальщиком.
-  it('nova для превью: 45 полей панели, CSS среди файлов клиента, стенд рисуется', async () => {
+  it('nova для превью: 40 полей панели, CSS среди файлов клиента, стенд рисуется', async () => {
     const loaded = await loadThemes(ROOT);
     const preview = loaded.previews.get('nova');
     expect(preview?.version).toBe(loaded.themes.get('nova')?.version);

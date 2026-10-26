@@ -207,6 +207,18 @@ export class RoleTakenError extends Error {
   }
 }
 
+// Текущая правка своей секции уже не та, что ждал вызывающий (блок 15, часть 15з, Р15з-2): мерчант или ИИ сохранили
+// свою между проверкой и сохранением — правка не записана. current — хеш исходника текущей правки, null — секции нет.
+export class DraftChangedError extends Error {
+  constructor(
+    readonly section: string,
+    readonly current: string | null,
+  ) {
+    super(`draft-changed: ${section}`);
+    this.name = 'DraftChangedError';
+  }
+}
+
 const ROLE_HOLDER_SQL = `SELECT name FROM storefront_section
   WHERE author = 'shop' AND owner = $1 AND draft AND name <> $2 AND manifest->>'role' = $3 ORDER BY name LIMIT 1`;
 
@@ -220,11 +232,15 @@ async function assertRoleFree(client: Queryable, owner: string, section: Prepare
 
 // Правка своей секции — новая текущая строка (С7-20 Б). Под замком — заново: правка с тем же исходником успела стать
 // текущей раньше — новой строки нет.
-export async function saveDraft(db: Database, row: NewSection): Promise<SavedDraft> {
+// expectDraft (часть 15з): undefined — без условия; строка или null — текущая правка должна быть с этим хешем исходника
+// (null — секции нет), иначе DraftChangedError. Тот же исходник — «без изменений» при любом условии.
+export async function saveDraft(db: Database, row: NewSection, expectDraft?: string | null): Promise<SavedDraft> {
   const { owner } = row.door;
   return underOwnerLock(db, owner, async (client) => {
     const current = await currentDraft(client, owner, row.section.name);
     if (current?.sourceHash === row.sourceHash) return { row: current, created: false };
+    if (expectDraft !== undefined && (current?.sourceHash ?? null) !== expectDraft)
+      throw new DraftChangedError(row.section.name, current?.sourceHash ?? null);
     await assertRoleFree(client, owner, row.section);
     await client.query(CLEAR_DRAFT_SQL, [owner, row.section.name]);
     const [inserted] = await select(client, DRAFT_INSERT_SQL, insertParams(row, true));
@@ -238,6 +254,37 @@ export async function publishDrafts(db: Database, shopId: string): Promise<strin
     await client.query(UNPUBLISH_SQL, [shopId]);
     const { rows } = await client.query(PUBLISH_SQL, [shopId]);
     return rows.map((row) => nameRow.parse(row).name).sort();
+  });
+}
+
+// Публикация одной своей секции магазина (блок 15, часть 15з, Р15з-5): выпуск нашей секции ставит на витрину только её
+// текущую правку с этим хешем исходника; другие текущие правки магазина остаются черновиками. already — на витрине уже
+// эта версия; changed — текущая правка с другим исходником (мерчант изменил секцию), витрина не меняется.
+export type SectionPublish = 'published' | 'already' | 'changed';
+
+const LIVE_SQL = `SELECT ${COLUMNS} ${SHOP_ROWS} AND published`;
+const UNPUBLISH_NAME_SQL = `UPDATE storefront_section SET published = false
+  WHERE author = 'shop' AND owner = $1 AND name = $2 AND published AND id <> $3`;
+const PUBLISH_ROW_SQL = `UPDATE storefront_section SET published = true, published_at = now()
+  WHERE author = 'shop' AND owner = $1 AND name = $2 AND id = $3`;
+
+export async function publishSection(
+  db: Database,
+  shopId: string,
+  name: string,
+  sourceHash: string,
+): Promise<SectionPublish> {
+  return underOwnerLock(db, shopId, async (client) => {
+    const draft = await currentDraft(client, shopId, name);
+    if (draft === null || draft.sourceHash !== sourceHash) {
+      const live = first(await select(client, LIVE_SQL, [shopId, name]));
+      return live?.sourceHash === sourceHash ? 'already' : 'changed';
+    }
+    if (draft.published) return 'already';
+    // Уникальный индекс «одна на витрине»: сначала снять прежнюю, потом поставить эту.
+    await client.query(UNPUBLISH_NAME_SQL, [shopId, name, draft.id]);
+    await client.query(PUBLISH_ROW_SQL, [shopId, name, draft.id]);
+    return 'published';
   });
 }
 
@@ -302,7 +349,6 @@ export type BrokenRollback =
 // без отката, запись мерчанту — не чаще раза в сутки (rollback_notice_at на правке, о которой записали).
 export const ROLE_ROLLBACK_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-const LIVE_SQL = `SELECT ${COLUMNS} ${SHOP_ROWS} AND published`;
 const PREVIOUS_SQL = `SELECT ${COLUMNS} ${SHOP_ROWS} AND id <> $3 AND published_at IS NOT NULL
   AND script_hash IS DISTINCT FROM $4 ORDER BY published_at DESC, created_at DESC, id LIMIT 1`;
 // Откат меняет витрину сразу: роль занимает и текущая правка, и правка на витрине другой секции.

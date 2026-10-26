@@ -36,7 +36,7 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
 >
   {heading && <h3 class={C.heading}>{heading}</h3>}
 
-  {/* Сообщение «Товар … продаётся по заявке» + ссылка на страницу товара. Наполняет
+  {/* Подпись расширения (или нейтральный текст) для товара, проданного формой, + ссылка на страницу товара. Наполняет
       runtime/checkout-request-items.ts (проверка строк корзины заново, Б16); пока
       сообщений нет — скрыт. */}
   <div data-checkout-request-notice hidden></div>
@@ -291,7 +291,7 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
       var items = checkoutItems();
 
       if (items.length === 0) {
-        // Корзину опустошила проверка «товар продаётся по заявке» (Б16): вместо
+        // Корзину опустошила проверка «товар продаётся формой» (Б16): вместо
         // «Ничего не выбрано» над списком стоит её сообщение со ссылкой.
         var lines = window.__merfyCheckoutLines;
         if (emptyEl) emptyEl.hidden = !!(lines && lines.notices && lines.notices.length);
@@ -470,7 +470,7 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
       }
       render();
     });
-    // Проверка строк нашла товар «по заявке» или закончилась — перерисовать состав.
+    // Проверка строк нашла товар, проданный формой, или закончилась — перерисовать состав.
     document.addEventListener('checkout:lines-changed', render);
     document.addEventListener('DOMContentLoaded', function () { setTimeout(render, 150); });
     if (document.readyState === 'complete' || document.readyState === 'interactive') {

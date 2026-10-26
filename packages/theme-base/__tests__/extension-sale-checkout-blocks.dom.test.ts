@@ -1,13 +1,14 @@
 /**
  * @jest-environment jsdom
  *
- * Баг тестировщика Б16 (спека 120 «Заявки»), блоки оформления:
- *  - «Сводка заказа»: корзина опустела из-за товара «по заявке» — вместо
+ * Баг тестировщика Б16 (спека 120), блоки оформления:
+ *  - «Сводка заказа»: корзина опустела из-за товара, проданного формой, — вместо
  *    «Ничего не выбрано» стоит сообщение, состав перерисовывается по событию;
  *  - «Кнопка оплаты»: пока идёт проверка товаров, не нажимается; в пустой
  *    корзине с таким товаром кнопки нет; отказ сервера (код
- *    PRODUCT_REQUIRES_REQUEST или любая 4xx без кода) запускает свежую проверку
- *    и показывает сообщение вместо общей ошибки.
+ *    PRODUCT_NOT_SOLD_BY_CART, прежний PRODUCT_REQUIRES_REQUEST или любая 4xx
+ *    без кода) запускает свежую проверку и показывает сообщение вместо общей
+ *    ошибки.
  * Состояние проверки блоки читают из `window.__merfyCheckoutLines`.
  */
 import { join } from "path";
@@ -81,7 +82,7 @@ describe("Сводка заказа: сообщение вместо «Ниче�
     expect((section.querySelector("[data-checkout-empty]") as HTMLElement).hidden).toBe(true);
     const link = section.querySelector("[data-checkout-request-notice] a") as HTMLAnchorElement;
     expect(link.getAttribute("href")).toBe("/products/p-form");
-    expect(link.textContent).toBe("Оставить заявку");
+    expect(link.textContent).toBe("Открыть товар");
   });
 
   it("корзина пуста и сообщений нет: «Ничего не выбрано» как прежде", () => {
@@ -114,7 +115,7 @@ describe("Сводка заказа: сообщение вместо «Ниче�
   });
 });
 
-describe("Кнопка оплаты: товары «по заявке»", () => {
+describe("Кнопка оплаты: товары, проданные формой", () => {
   const src = readFileSync(SUBMIT, "utf8");
 
   function mount(): HTMLElement {
@@ -218,7 +219,7 @@ describe("Кнопка оплаты: товары «по заявке»", () => 
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("в корзине остались только товары «по заявке»: кнопки с прочерком нет", () => {
+  it("в корзине остались только товары, проданные формой: кнопки с прочерком нет", () => {
     const section = mount();
     cart([]);
     linesState({ notices: [NOTICE] });
@@ -235,36 +236,39 @@ describe("Кнопка оплаты: товары «по заявке»", () => 
     expect(button(section).textContent?.trim()).toBe("Оплатить —");
   });
 
-  it("сервер ответил PRODUCT_REQUIRES_REQUEST: свежая проверка, сообщение вместо общей ошибки, оплата не создаётся", async () => {
-    const section = mount();
-    cart([item]);
-    const recheck = jest.fn(async () => true);
-    linesState({ recheck });
-    const fetchMock = gateway({
-      status: 400,
-      body: { statusCode: 400, message: "Товар продаётся не через корзину", code: "PRODUCT_REQUIRES_REQUEST" },
-    });
-    run(section);
-    await submit(section);
-    expect(recheck).toHaveBeenCalledTimes(1);
-    expect(errorText(section)).toBe("");
-    expect(paymentCalls(fetchMock)).toBe(0);
-    expect(button(section).textContent).not.toBe("Обработка…");
-  });
+  it.each(["PRODUCT_NOT_SOLD_BY_CART", "PRODUCT_REQUIRES_REQUEST"])(
+    "сервер ответил %s: свежая проверка, сообщение вместо общей ошибки, оплата не создаётся",
+    async (code) => {
+      const section = mount();
+      cart([item]);
+      const recheck = jest.fn(async () => true);
+      linesState({ recheck });
+      const fetchMock = gateway({
+        status: 400,
+        body: { statusCode: 400, message: "Этот товар нельзя купить через корзину", code },
+      });
+      run(section);
+      await submit(section);
+      expect(recheck).toHaveBeenCalledTimes(1);
+      expect(errorText(section)).toBe("");
+      expect(paymentCalls(fetchMock)).toBe(0);
+      expect(button(section).textContent).not.toBe("Обработка…");
+    },
+  );
 
   it("шлюз потерял code и отдал 400: тоже свежая проверка", async () => {
     const section = mount();
     cart([item]);
     const recheck = jest.fn(async () => true);
     linesState({ recheck });
-    gateway({ status: 400, body: { statusCode: 400, message: "Товар продаётся не через корзину — оставьте заявку" } });
+    gateway({ status: 400, body: { statusCode: 400, message: "Этот товар нельзя купить через корзину" } });
     run(section);
     await submit(section);
     expect(recheck).toHaveBeenCalledTimes(1);
     expect(errorText(section)).toBe("");
   });
 
-  it("4xx, а товаров «по заявке» не нашлось: общая ошибка, как прежде", async () => {
+  it("4xx, а товаров, проданных формой, не нашлось: общая ошибка, как прежде", async () => {
     const section = mount();
     cart([item]);
     const recheck = jest.fn(async () => false);
@@ -303,14 +307,18 @@ describe("Кнопка оплаты: товары «по заявке»", () => 
   it("без проверки на странице (превью): отказ показывается как раньше", async () => {
     const section = mount();
     cart([item]);
-    gateway({ status: 400, body: { message: "Товар продаётся не через корзину", code: "PRODUCT_REQUIRES_REQUEST" } });
+    gateway({
+      status: 400,
+      body: { message: "Этот товар нельзя купить через корзину", code: "PRODUCT_NOT_SOLD_BY_CART" },
+    });
     run(section);
     await submit(section);
-    expect(errorText(section)).toBe("Товар продаётся не через корзину");
+    expect(errorText(section)).toBe("Этот товар нельзя купить через корзину");
   });
 
-  it("исходник блока: кнопка зависит от события проверки", () => {
+  it("исходник блока: кнопка зависит от события проверки, коды отказа — новый и прежний", () => {
     expect(src).toContain("checkout:lines-changed");
+    expect(src).toContain("PRODUCT_NOT_SOLD_BY_CART");
     expect(src).toContain("PRODUCT_REQUIRES_REQUEST");
   });
 });

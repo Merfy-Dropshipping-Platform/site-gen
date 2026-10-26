@@ -1,16 +1,20 @@
 /**
  * @jest-environment jsdom
  *
- * Баг тестировщика Б16 (спека 120 «Заявки»): товар уже лежит в корзине, магазин
- * перевёл его на заявку, а оформление до пяти минут показывало его по цене
+ * Баг тестировщика Б16 (спека 120): товар уже лежит в корзине, магазин перевёл
+ * его на форму расширения, а оформление до пяти минут показывало его по цене
  * каталога с активной «Оплатить» (ответ «товар продаётся формой» хранится в
  * сессии пять минут). Здесь — рантайм оформления (runtime/checkout-request-items.ts):
  * свежая проверка мимо кэша, удаление строки и сообщение, запомненные корзиной
  * строки, повторная проверка после отказа сервера.
+ *
+ * Подпись сообщения — данные расширения (`saleNotice` в ответе функции формы);
+ * без неё ядро показывает нейтральный текст без слов предметной области.
  */
-import { createExtensionSale, extensionSaleOf } from "../runtime/extension-sale";
+import { SALE_NOTICE_LIMITS, createExtensionSale, extensionSaleOf } from "../runtime/extension-sale";
 import {
   CHECKOUT_LINES_WINDOW_KEY,
+  NEUTRAL_NOTICE_ACTION,
   REQUEST_ITEMS_KEY,
   createCheckoutGuard,
   installCheckoutRequestItems,
@@ -27,9 +31,13 @@ const FORM_FN = "formFn";
 const STORAGE_KEY = "test:cart:v1";
 const CACHE_KEY = "merfy:extension-sale:v1";
 
+/** Подпись, которую «расширение» кладёт в ответ формы; `undefined` — подписи нет. */
+const EXTENSION_NOTICE = { text: "Товар «{name}» оформляется через форму.", actionLabel: "Открыть форму" };
+
 let formProducts: string[] = [];
 let hung: string[] = [];
 let formCalls: string[] = [];
+let saleNotice: unknown;
 
 function mockFetch() {
   formCalls = [];
@@ -46,7 +54,9 @@ function mockFetch() {
         if (hung.includes(productId)) return new Promise(() => undefined);
         return respond(201, {
           success: true,
-          data: formProducts.includes(productId) ? { title: "Форма", form: { version: 2, items: [] } } : null,
+          data: formProducts.includes(productId)
+            ? { title: "Форма", form: { version: 2, items: [] }, ...(saleNotice === undefined ? {} : { saleNotice }) }
+            : null,
         });
       }
       return respond(404, null);
@@ -128,6 +138,7 @@ beforeEach(() => {
   delete (window as unknown as Record<string, unknown>)[CHECKOUT_LINES_WINDOW_KEY];
   formProducts = [];
   hung = [];
+  saleNotice = undefined;
   Object.assign(window, { __MERFY_CONFIG__: { apiUrl: API, shopId: STORE } });
   mockFetch();
 });
@@ -186,8 +197,8 @@ describe("Б16: свежая проверка мимо кэша (extension-sale)
   });
 });
 
-describe("Б16: оформление убирает товары «по заявке» и пишет об этом", () => {
-  it("кэш говорит «обычный», расширение — «заявка»: строка убрана, сообщение со ссылкой на товар", async () => {
+describe("Б16: оформление убирает товары, проданные формой, и пишет об этом", () => {
+  it("кэш говорит «обычный», расширение — «форма»: строка убрана, нейтральное сообщение со ссылкой на товар", async () => {
     sessionStorage.setItem(
       CACHE_KEY,
       JSON.stringify({ storeId: STORE, at: Date.now(), ids: { "p-form": false, "p-cart": false } }),
@@ -198,10 +209,87 @@ describe("Б16: оформление убирает товары «по заяв
     await flush();
     expect(cart.current()).toEqual(["p-cart"]);
     expect(guard.notices).toEqual([{ productId: "p-form", name: "Сумка", href: "/products/p-form" }]);
-    expect(noticeText()).toBe("Товар «Сумка» продаётся по заявке.Оставить заявку");
+    expect(noticeText()).toBe("Товар «Сумка» нельзя купить через корзину.Открыть товар");
+    expect(NEUTRAL_NOTICE_ACTION).toBe("Открыть товар");
     const link = document.querySelector("[data-checkout-request-notice] a") as HTMLAnchorElement;
     expect(link.getAttribute("href")).toBe("/products/p-form");
     expect((document.querySelector("[data-checkout-request-notice]") as HTMLElement).hidden).toBe(false);
+  });
+
+  it("расширение дало подпись: сообщение и ссылка — её слова, {name} заменён названием товара", async () => {
+    sessionStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ storeId: STORE, at: Date.now(), ids: { "p-form": false } }),
+    );
+    formProducts = ["p-form"];
+    saleNotice = EXTENSION_NOTICE;
+    const guard = guardOf(localCart([line("p-form", "Сумка")]));
+    await flush();
+    expect(guard.notices).toEqual([
+      { productId: "p-form", name: "Сумка", href: "/products/p-form", ...EXTENSION_NOTICE },
+    ]);
+    expect(noticeText()).toBe("Товар «Сумка» оформляется через форму.Открыть форму");
+    const link = document.querySelector("[data-checkout-request-notice] a") as HTMLAnchorElement;
+    expect(link.textContent).toBe("Открыть форму");
+    expect(link.getAttribute("href")).toBe("/products/p-form");
+  });
+
+  it("подпись без одного поля: недостающее берётся из нейтрального текста", async () => {
+    formProducts = ["p-form"];
+    saleNotice = { actionLabel: "Заполнить форму" };
+    guardOf(localCart([line("p-form", "Сумка")]));
+    await flush();
+    expect(noticeText()).toBe("Товар «Сумка» нельзя купить через корзину.Заполнить форму");
+  });
+
+  it("кривая подпись (не объект, пустые и нестроковые поля) — нейтральный текст", async () => {
+    formProducts = ["p-form"];
+    saleNotice = { text: 5, actionLabel: "   " };
+    guardOf(localCart([line("p-form", "Сумка")]));
+    await flush();
+    expect(noticeText()).toBe("Товар «Сумка» нельзя купить через корзину.Открыть товар");
+  });
+
+  it("подпись расширения проходит предел длины", async () => {
+    formProducts = ["p-form"];
+    saleNotice = { text: "я".repeat(SALE_NOTICE_LIMITS.text + 50), actionLabel: "ы".repeat(SALE_NOTICE_LIMITS.actionLabel + 20) };
+    guardOf(localCart([line("p-form", "Сумка")]));
+    await flush();
+    const link = document.querySelector("[data-checkout-request-notice] a") as HTMLAnchorElement;
+    expect(link.textContent).toHaveLength(SALE_NOTICE_LIMITS.actionLabel);
+    expect(noticeText()).toHaveLength(SALE_NOTICE_LIMITS.text + SALE_NOTICE_LIMITS.actionLabel);
+  });
+
+  it("подпись приходит из сессии вкладки: ответ другой страницы виден без запроса", async () => {
+    formProducts = ["p-form"];
+    saleNotice = EXTENSION_NOTICE;
+    await createExtensionSale(window).check("p-form");
+    // Новая страница: память пуста, подпись лежит только в sessionStorage.
+    const sale = createExtensionSale(window);
+    expect(sale.notice("p-form")).toEqual(EXTENSION_NOTICE);
+    expect(JSON.parse(sessionStorage.getItem(CACHE_KEY) ?? "{}").notices).toEqual({ "p-form": EXTENSION_NOTICE });
+  });
+
+  it("свежее «нет» убирает подпись товара из кэша", async () => {
+    formProducts = ["p-form"];
+    saleNotice = EXTENSION_NOTICE;
+    const sale = createExtensionSale(window);
+    await sale.check("p-form", { fresh: true });
+    expect(sale.notice("p-form")).toEqual(EXTENSION_NOTICE);
+    formProducts = [];
+    await sale.check("p-form", { fresh: true });
+    expect(sale.notice("p-form")).toBeUndefined();
+    expect(JSON.parse(sessionStorage.getItem(CACHE_KEY) ?? "{}").notices).toEqual({});
+  });
+
+  it("старая запись кэша без поля notices читается: подписи нет, ответ тот же", async () => {
+    sessionStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ storeId: STORE, at: Date.now(), ids: { "p-form": true } }),
+    );
+    const sale = createExtensionSale(window);
+    expect(sale.known("p-form")).toBe(true);
+    expect(sale.notice("p-form")).toBeUndefined();
   });
 
   it("обычные товары: сообщения нет, блок скрыт, строки на месте", async () => {
@@ -288,7 +376,7 @@ describe("Б16: оформление убирает товары «по заяв
     expect(formCalls.slice(asks)).toEqual(["p-cart"]);
   });
 
-  it("«Купить сейчас»: запись товара «по заявке» удаляется из sessionStorage", async () => {
+  it("«Купить сейчас»: запись товара, проданного формой, удаляется из sessionStorage", async () => {
     formProducts = ["p-form"];
     sessionStorage.setItem("test:buynow", JSON.stringify({ productId: "p-form", quantity: 1 }));
     const guard = guardOf(localCart([]));
@@ -346,13 +434,19 @@ describe("Б16: строки, убранные корзиной на други�
     rememberRequestItem(window, { productId: "p-old", name: "Платье", href: "/products/p-old" });
     const guard = guardOf(localCart([]));
     expect(guard.notices).toEqual([{ productId: "p-old", name: "Платье", href: "/products/p-old" }]);
-    expect(noticeText()).toContain("Товар «Платье» продаётся по заявке.");
+    expect(noticeText()).toContain("Товар «Платье» нельзя купить через корзину.");
     expect(sessionStorage.getItem(REQUEST_ITEMS_KEY)).toBeNull();
 
     // Второй заход на оформление: запись уже забрана.
     document.body.innerHTML = NOTICE_HTML;
     const again = guardOf(localCart([]));
     expect(again.notices).toEqual([]);
+  });
+
+  it("запомненная строка несёт подпись расширения: оформление показывает её слова", async () => {
+    rememberRequestItem(window, { productId: "p-old", name: "Платье", href: "/products/p-old", ...EXTENSION_NOTICE });
+    guardOf(localCart([]));
+    expect(noticeText()).toBe("Товар «Платье» оформляется через форму.Открыть форму");
   });
 
   it("строку, убранную прямо на странице оформления, сообщение подхватывает сразу", async () => {
@@ -376,6 +470,21 @@ describe("Б16: строки, убранные корзиной на други�
     ]);
   });
 
+  it("корзина темы запоминает вместе со строкой и подпись расширения", async () => {
+    formProducts = ["p-form"];
+    saleNotice = EXTENSION_NOTICE;
+    const cart = createNtCart({
+      storageKey: STORAGE_KEY,
+      eventPrefix: "test:cart",
+      renderDrawerItem: (l) => `<li data-line-id="${l.id}"></li>`,
+    });
+    cart.addToCart({ productId: "p-form", name: "Сумка", price: 100, image: "", quantity: 1 });
+    await flush();
+    expect(JSON.parse(sessionStorage.getItem(REQUEST_ITEMS_KEY) ?? "[]")).toEqual([
+      { productId: "p-form", name: "Сумка", href: "/products/p-form", ...EXTENSION_NOTICE },
+    ]);
+  });
+
   it("одна запись на товар: повторное запоминание не дублирует", () => {
     rememberRequestItem(window, { productId: "p", name: "A", href: "/products/p" });
     rememberRequestItem(window, { productId: "p", name: "A", href: "/products/p" });
@@ -384,7 +493,7 @@ describe("Б16: строки, убранные корзиной на други�
 });
 
 describe("Б16: отказ сервера — свежая проверка всех строк", () => {
-  it("recheck находит товар, переведённый на заявку после первой проверки", async () => {
+  it("recheck находит товар, переведённый на форму после первой проверки", async () => {
     const cart = localCart([line("p-form", "Сумка"), line("p-cart", "Шарф")]);
     const guard = guardOf(cart);
     await flush();
@@ -394,7 +503,7 @@ describe("Б16: отказ сервера — свежая проверка вс
     expect(await guard.recheck()).toBe(true);
     expect(cart.current()).toEqual(["p-cart"]);
     expect(guard.notices.map((n) => n.productId)).toEqual(["p-form"]);
-    expect(noticeText()).toContain("Товар «Сумка» продаётся по заявке.");
+    expect(noticeText()).toContain("Товар «Сумка» нельзя купить через корзину.");
   });
 
   it("recheck ничего не нашёл — false, состав не тронут", async () => {

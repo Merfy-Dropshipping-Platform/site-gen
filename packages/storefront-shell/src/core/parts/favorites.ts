@@ -333,7 +333,7 @@ async function fetchChunk(rt: FavoritesRuntime, ids: readonly string[]): Promise
   const reply = await requestJson(`${conf.url}/store/products?${params.toString()}`, { method: 'GET' });
   const body: unknown = reply.body;
   const list: unknown = typeof body === 'object' && body !== null ? Reflect.get(body, 'products') : undefined;
-  const items = reply.status === 200 ? storeItemsOf(list, conf.currency) : null;
+  const items = reply.status >= 200 && reply.status < 300 ? storeItemsOf(list, conf.currency) : null;
   if (items === null) return false;
   for (const item of items) rt.cards.set(item.id, item);
   return true;

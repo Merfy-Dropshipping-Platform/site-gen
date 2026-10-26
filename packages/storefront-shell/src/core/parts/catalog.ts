@@ -63,7 +63,7 @@ function productsOf(
   currency: string,
 ): ProductsResult | null {
   const body = reply.body;
-  if (reply.status !== 200 || !isRecord(body)) return null;
+  if (reply.status < 200 || reply.status > 299 || !isRecord(body)) return null;
   const items = storeItemsOf(body.products, currency);
   const pagination = isRecord(body.pagination) ? body.pagination : null;
   const total = countOf(body.total);
@@ -86,7 +86,7 @@ function filtersOf(
   currency: string,
 ): Result<CatalogFilters> | null {
   const body = reply.body;
-  if (reply.status !== 200 || !isRecord(body) || body.success !== true || !isRecord(body.data)) return null;
+  if (reply.status < 200 || reply.status > 299 || !isRecord(body) || body.success !== true || !isRecord(body.data)) return null;
   const data = body.data;
   if (!Array.isArray(data.groups)) return null;
   const groups = data.groups.flatMap((raw: unknown): readonly CatalogFilters['groups'][number][] => {

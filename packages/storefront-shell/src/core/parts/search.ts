@@ -22,7 +22,7 @@ type QueryOptions = { readonly limit?: number } & ActionOptions;
 // Ответ шлюза → { items, hasMore }; не по форме — null.
 function answerOf(reply: { readonly status: number; readonly body: unknown }, currency: string): SearchAnswer | null {
   const body = reply.body;
-  if (reply.status !== 200 || typeof body !== 'object' || body === null) return null;
+  if (reply.status < 200 || reply.status > 299 || typeof body !== 'object' || body === null) return null;
   const products: unknown = Reflect.get(body, 'products');
   const hasMore: unknown = Reflect.get(body, 'hasMore');
   if (!Array.isArray(products) || typeof hasMore !== 'boolean') return null;

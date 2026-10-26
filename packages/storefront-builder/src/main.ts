@@ -100,6 +100,7 @@ const platform = {
   renderHash: await platformRenderHash(ROOT),
   apiUrl: settings.apiUrl,
   analyticsUrl: settings.analyticsUrl,
+  uploadUrl: settings.uploadUrl,
 };
 const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 // Код магазина (блок 7): реестр секций, места из ревизии, включённые расширения; тайм-аут — как у товаров.

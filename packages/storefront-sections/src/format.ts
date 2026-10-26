@@ -20,7 +20,7 @@ export const SCRIPT_ENTRIES = ['script.ts', 'script.js'] as const;
 // Пределы исходника — допущение плана: число файлов, байты UTF-8 одного файла и всех вместе.
 export const SOURCE_LIMITS = { files: 50, fileBytes: 64 * 1024, totalBytes: 256 * 1024 } as const;
 // Имя секции без приставки и id темы или расширения: строчные латинские буквы и цифры через одиночный дефис. Полное
-// имя «приставка:имя» проходит список модулей ядра (@merfy/shell, src/modules.ts).
+// имя «префикс:имя» проверяют входы сборки (@merfy/storefront-build, src/inputs.ts, SECTION_NAME).
 export const SECTION_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SCRIPT_PATH = /^(?:[a-z0-9_-]+\/)*[a-z0-9_-]+(?:\.[a-z0-9_-]+)*\.(?:ts|js)$/;
 const FIXED_FILES: ReadonlySet<string> = new Set([MANIFEST_FILE, TEMPLATE_FILE]);

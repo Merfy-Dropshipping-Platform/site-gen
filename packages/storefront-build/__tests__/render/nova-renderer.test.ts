@@ -155,4 +155,31 @@ describe('рисовальщик темы nova: оформление', () => {
       expect(html.indexOf('window.__merfyRoot(blockId)')).toBeGreaterThan(marker);
     }
   });
+
+  // Блок 15, часть 15е (Р15е-1, И4): адрес шлюза и магазин — только из конфига сборки и в <head>, до скриптов блоков
+  // theme-base: «Спасибо за заказ» читает адрес сразу при разборе HTML. Запасного адреса прода у nova нет.
+  it('/checkout и /checkout-result: адрес из конфига в <head>, до скриптов блоков; адреса прода у nova нет', async () => {
+    for (const path of ['/checkout', '/checkout-result']) {
+      const html = await renderer.render(path, {
+        ...probeLocals,
+        checkout: { ...checkout, result: path === '/checkout-result' },
+      });
+      const body = html.indexOf('<body');
+      const config = html.indexOf('"apiUrl":"https://gateway.dev.merfy.ru/api"');
+      const assign = html.indexOf('window.__MERFY_CONFIG__.apiUrl = config.apiUrl;');
+      expect(config).toBeGreaterThanOrEqual(0);
+      expect(config).toBeLessThan(body);
+      expect(assign).toBeGreaterThanOrEqual(0);
+      expect(assign).toBeLessThan(body);
+      expect(html).not.toContain('config.apiUrl || "https://gateway.merfy.ru/api"');
+      expect(html.slice(body)).not.toContain('window.__MERFY_CONFIG__.apiUrl = config.apiUrl');
+    }
+  });
+
+  it('пустой адрес API в конфиге оформления — страница не рендерится, запасного адреса нет', async () => {
+    const empty = { ...checkout, config: { ...checkout.config, apiUrl: '' } };
+    await expect(renderer.render('/checkout', { ...probeLocals, checkout: empty })).rejects.toMatchObject({
+      code: 'render-failed',
+    });
+  });
 });

@@ -20,6 +20,9 @@ const envSchema = z.object({
   // Сборщик аналитики для конфига витрины (блок 11, И4): https://analytics.dev.merfy.ru на dev. Запасного адреса нет:
   // переменной нет — сборщик не стартует и называет её.
   ANALYTICS_COLLECTOR_URL: z.url(),
+  // Хранилище файлов покупательницы для CSP витрин (блок 15, часть 15е, Р15е-5): origin MINIO_URL extensions контура —
+  // https://minio.dev.merfy.ru на dev. Запасного адреса нет: переменной нет — сборщик не стартует.
+  STOREFRONT_UPLOAD_URL: z.url(),
   // Коммит образа: справка в манифесте сборки (блок 4, В4-1 В). Coolify отдаёт его приложению сам.
   SOURCE_COMMIT: z.string().regex(/^[0-9a-f]{40}$/),
   PORT: count(8080),
@@ -61,6 +64,7 @@ export interface Settings {
   s3: { endpoint: string; bucket: string; accessKeyId: string; secretAccessKey: string };
   apiUrl: string;
   analyticsUrl: string;
+  uploadUrl: string;
   commit: string;
   port: number;
   buildSlots: number;
@@ -100,9 +104,10 @@ type Env = z.infer<typeof envSchema>;
 
 // Адреса сервисов и сборщик аналитики (блок 11). Косую черту в конце адреса сборщика срезаем: модуль шлёт на
 // <адрес>/collect, «//collect» конфиг не пропустит.
-function servicesOf(value: Env): Pick<Settings, 'apiUrl' | 'analyticsUrl' | 'analyticsTimeoutMs'> {
+function servicesOf(value: Env): Pick<Settings, 'apiUrl' | 'analyticsUrl' | 'uploadUrl' | 'analyticsTimeoutMs'> {
   return {
     apiUrl: value.STOREFRONT_API_URL,
+    uploadUrl: new URL(value.STOREFRONT_UPLOAD_URL).origin,
     analyticsUrl: value.ANALYTICS_COLLECTOR_URL.replace(/\/+$/, ''),
     analyticsTimeoutMs: value.ANALYTICS_TIMEOUT_MS,
   };

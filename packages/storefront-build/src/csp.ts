@@ -5,8 +5,9 @@ import type { Counter, CounterKind, CustomCode } from '@merfy/storefront-config'
 
 // Политика CSP магазина новой темы (блок 13 «Секций и SDK», часть 13б; design.md блока 13, 13.5, «Решил сам» 8): поле
 // csp манифеста → таблица раздачи → заголовок раздачи у HTML (режим — STOREFRONT_CSP образа storefront-proxy). Хеши —
-// только встроенного кода, который пишет платформа: флаг движения (часть 6б) и шаблоны счётчиков с номером
-// (@merfy/shell/counters). HTML не разбирается. Две политики: обычная и для магазина со «своим кодом» —
+// только встроенного кода, который пишет платформа: флаг движения (часть 6б), шаблоны счётчиков с номером
+// (@merfy/shell/counters) и встроенные скрипты страниц оформления — их тексты даёт сборка (блок 15, часть 15е, Р15е-4);
+// HTML страниц магазина не разбирается. Две политики: обычная и для магазина со «своим кодом» —
 // 'strict-dynamic': скрипты, которые создаёт ядро, проходят сами, адреса чатов и виджетов мерчанта заранее неизвестны.
 const METRIKA_ZONES = [
   'ru',
@@ -66,6 +67,10 @@ export interface CspSource {
   analyticsUrl: string;
   counters: readonly Counter[];
   custom: readonly CustomCode[];
+  // Тексты встроенных скриптов страниц оформления (часть 15е, Р15е-4) — хешами в script-src обеих политик.
+  inline: readonly string[];
+  // Хранилище файлов покупательницы (часть 15е, Р15е-5): STOREFRONT_UPLOAD_URL сборщика; нет — в connect-src его нет.
+  uploadUrl?: string;
 }
 
 const quoted = (base64: string): string => `'sha256-${base64}'`;
@@ -77,6 +82,17 @@ function fileHash(hash: string): string | null {
 }
 
 const unique = (values: readonly string[]): string[] => [...new Set(values)];
+
+// Хеши встроенных скриптов страниц оформления (часть 15е, Р15е-4).
+const pageHashes = (source: CspSource): string[] => source.inline.map(textHash);
+
+// Свои источники запросов: шлюз, сборщик аналитики и хранилище файлов покупательницы, если оно есть (часть 15е).
+const ownOrigins = (source: CspSource): string[] =>
+  unique(
+    [new URL(source.apiUrl).origin, new URL(source.analyticsUrl).origin, source.uploadUrl].flatMap((origin) =>
+      origin === undefined ? [] : [new URL(origin).origin],
+    ),
+  );
 
 interface CounterParts {
   hashes: string[];
@@ -99,11 +115,11 @@ function counterParts(counters: readonly Counter[]): CounterParts {
 const directives = (rows: readonly (readonly string[])[]): string => rows.map((row) => row.join(' ')).join('; ');
 
 function normalPolicy(source: CspSource, counters: CounterParts): string {
-  const own = unique([new URL(source.apiUrl).origin, new URL(source.analyticsUrl).origin]);
+  const hashes = unique([textHash(MOTION_HEAD_SCRIPT), ...counters.hashes, ...pageHashes(source)]);
   return directives([
     ['default-src', "'self'"],
-    ['script-src', "'self'", textHash(MOTION_HEAD_SCRIPT), ...counters.hashes, ...counters.script],
-    ['connect-src', "'self'", ...own, ...counters.connect],
+    ['script-src', "'self'", ...hashes, ...counters.script],
+    ['connect-src', "'self'", ...ownOrigins(source), ...counters.connect],
     ['img-src', "'self'", 'data:', 'https:'],
     ['media-src', "'self'", 'https:'],
     ['style-src', "'self'", "'unsafe-inline'"],
@@ -122,7 +138,10 @@ function strictPolicy(source: CspSource, counters: CounterParts): string {
       .filter(([path]) => BUNDLE_FILE.test(path))
       .flatMap(([, hash]) => fileHash(hash) ?? []),
   ).sort();
-  const script = ["'strict-dynamic'", textHash(MOTION_HEAD_SCRIPT), ...bundles, ...counters.hashes];
+  const script = [
+    "'strict-dynamic'",
+    ...unique([textHash(MOTION_HEAD_SCRIPT), ...bundles, ...counters.hashes, ...pageHashes(source)]),
+  ];
   return directives([
     ['script-src', ...script, "'unsafe-inline'", 'https:'],
     ['connect-src', "'self'", 'https:', 'wss:'],

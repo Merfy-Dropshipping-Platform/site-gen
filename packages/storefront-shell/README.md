@@ -67,7 +67,7 @@
   `<merfy-section>`: `{ settings, blocks, data }`, до 32 КБ (`src/core/input.ts`).
 - Сбой — на экземпляр: `data-merfy-state="failed"`, элементам с `data-action` — `aria-disabled`, событие
   `merfy:section:error` на `document` с `{ section, id, script, stage, message }`, строка в консоли; на витрине —
-  запись в журнал ошибок шлюза (`src/error-log.ts`, `CORE_ERRORS`).
+  запись в журнал ошибок шлюза (`src/error-log.ts`; событие старого каркаса на `window` не читается — часть 15е).
 - Части SDK `cart`, `favorites`, `auth`, `newsletter` (`src/core/parts/`) — сторы `{ get }` и действия с `Result`.
   Корзина — на сервере (блок 9); избранное и вход — в памяти страницы до блока 10. Действия разметки: `cart.add` —
   `data-product-id`, `data-variant-id`, `data-quantity`; `favorites.toggle` — `data-product-id`.

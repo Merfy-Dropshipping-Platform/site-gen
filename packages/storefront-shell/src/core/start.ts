@@ -122,6 +122,7 @@ const MODULE_NAMES: readonly string[] = [
   'search',
   'catalog',
   'orders',
+  'files',
 ];
 
 // Модуль расширения по uses: ["ext:<id>"] (блок 9, часть 9в) — у части ext на странице, по id из конфига. Нет части или

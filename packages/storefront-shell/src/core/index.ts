@@ -47,6 +47,9 @@ export type { NoData, Order, OrderLine, OrderSummary, OrdersModule, VerifyArgs }
 // Блок 9, часть 9в: модули расширений ctx.ext — в бандле страниц, где секция объявила "ext:<id>" в uses.
 export { ext } from './parts/ext';
 export type { ExtMethod, ExtModule, ExtStore, ExtUse, ExtValue } from './types';
+// Блок 12, часть 12е: файлы покупательницы — ctx.files; в бандле страниц, где секция объявила "files" в uses.
+export { files } from './parts/files';
+export type { ChosenFile, FileKind, FilesModule, UploadArgs, UploadDone } from './types';
 export type { ConsentAnswer, ConsentModule, ConsentState, Money, NewsletterModule, NoticeLevel } from './types';
 export {
   EMPTY_INPUT,

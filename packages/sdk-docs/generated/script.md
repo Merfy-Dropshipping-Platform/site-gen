@@ -63,3 +63,8 @@ export default defineSection<State>({
 
 Модули SDK по `uses` — корзина, избранное, вход — [modules.md](modules.md).
 
+Файлы покупательницы для форм расширений — модуль `files`: `ctx.files.chosen(поле)` — файлы `<input type="file">`
+(ключ, имя, размер, тип, картинка ли), `ctx.files.upload({ key, extension, kind })` — загрузка в хранилище расширения
+(`kind` — `photo`, `video`, `file`; ответ `ready` с `fileId` или `rejected` с причиной `format`, `size`, `empty`),
+`ctx.files.preview(img, key)` и `ctx.files.forget(key)` — превью картинки и отказ от файла. В превью файлов нет.
+

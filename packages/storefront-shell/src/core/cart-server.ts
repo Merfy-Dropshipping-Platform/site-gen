@@ -32,29 +32,29 @@ export type AddItemBody = {
   readonly variant_id?: string;
 };
 
-// Чтение корзины: 404 или cart_not_found — корзины нет; неуспех и ответ не по форме — Failure.
+// Чтение корзины: 404 или cart_not_found — корзины нет; успех — любой 2xx (запрос ядра к шлюзу), не по форме — Failure.
 export async function readCart(api: CartApi, cartId: string): Promise<ReadCart> {
   const reply = await requestJson(`${api.url}/store/carts/${cartId}`, { method: 'GET' });
   if (reply.status === 404 || serverCodeOf(reply) === CART_MISSING_CODE) return { kind: 'missing' };
-  if (reply.status !== 200) return { kind: 'failure', failure: failureOf(reasonOf(reply), readText(reply)) };
+  if (reply.status < 200 || reply.status > 299) return { kind: 'failure', failure: failureOf(reasonOf(reply), readText(reply)) };
   const lines = linesOf(reply.body, api.currency);
   if (lines === null) return { kind: 'failure', failure: failureOf('server', 'cart: ответ корзины не по форме') };
   return { kind: 'lines', lines, totals: totalsOf(reply.body, api.currency) };
 }
 
-// Создание корзины: 201 с номером — она, остальное — Failure.
+// Создание корзины: успех — любой 2xx с номером в теле, остальное — Failure.
 export async function createCart(api: CartApi): Promise<CreatedCart> {
   const reply = await requestJson(`${api.url}/store/carts`, { method: 'POST', body: { store_id: api.storeId } });
-  const id = reply.status === 201 ? cartIdOf(reply.body) : null;
+  const id = reply.status >= 200 && reply.status < 300 ? cartIdOf(reply.body) : null;
   if (id !== null) return { kind: 'id', id };
   return { kind: 'failure', failure: failureOf(reasonOf(reply), `cart: создание корзины — статус ${reply.status}`) };
 }
 
-// Добавление строки: cart_not_found — missing; неуспех — Failure (у invalid текст автору — про товар).
+// Добавление строки: cart_not_found — missing; успех — любой 2xx, иначе Failure (у invalid текст автору — про товар).
 export async function addItem(api: CartApi, cartId: string, body: AddItemBody): Promise<AddedItem> {
   const reply = await requestJson(`${api.url}/store/carts/${cartId}/items`, { method: 'POST', body });
   if (serverCodeOf(reply) === CART_MISSING_CODE) return { kind: 'missing' };
-  if (reply.status !== 201)
+  if (reply.status < 200 || reply.status > 299)
     return { kind: 'failure', failure: failureOf(reasonOf(reply), invalidText(body.product_id)) };
   const line = lineOf(reply.body, api.currency);
   if (line === null) return { kind: 'failure', failure: failureOf('server', 'cart: ответ добавления не по форме') };
@@ -67,13 +67,13 @@ const invalidText = (productId: string): string => `cart.add: товара ${pro
 
 export type ChangedItem = { readonly kind: 'done' } | { readonly kind: 'failure'; readonly failure: Failure };
 
-// PATCH или DELETE строки: 200 — сделано; иначе — Failure по reasonOf (блок 10, Р10а-3).
+// PATCH или DELETE строки: успех — любой 2xx; иначе — Failure по reasonOf (блок 10, Р10а-3).
 const changedOf = (reply: Reply, what: string): ChangedItem =>
-  reply.status === 200
+  reply.status >= 200 && reply.status < 300
     ? { kind: 'done' }
     : { kind: 'failure', failure: failureOf(reasonOf(reply), `cart: ${what} — статус ${reply.status}`) };
 
-// PATCH /store/carts/:id/items/:itemId { quantity } → 200; DELETE → 200. Иначе — Failure по reasonOf.
+// PATCH /store/carts/:id/items/:itemId { quantity }; DELETE. Успех — любой 2xx, иначе Failure по reasonOf.
 export async function changeItem(api: CartApi, cartId: string, lineId: string, quantity: number): Promise<ChangedItem> {
   const reply = await requestJson(`${api.url}/store/carts/${cartId}/items/${lineId}`, {
     method: 'PATCH',

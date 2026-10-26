@@ -42,8 +42,9 @@ export const newsletter: SdkPart<'newsletter', NewsletterModule> = {
         body: { store_id: config.shop.id, email },
       });
       const already = alreadyOf(reply.body);
-      if (reply.status !== 200 || already === null) {
-        const reason = already === null && reply.status === 200 ? 'server' : reasonOf(reply, STATUS_REASON);
+      const ok = reply.status >= 200 && reply.status < 300;
+      if (!ok || already === null) {
+        const reason = already === null && ok ? 'server' : reasonOf(reply, STATUS_REASON);
         return fail(core, failureOf(reason, invalidText(reply.status), reply), options);
       }
       return { ok: true, data: { alreadySubscribed: already } };

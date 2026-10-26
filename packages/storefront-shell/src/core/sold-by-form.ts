@@ -93,9 +93,10 @@ function writeCache(state: SoldState): void {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-// Функция формы дала форму: успех и data — объект (не массив, не null).
+// Функция формы дала форму: успех — любой 2xx (шлюз отвечает на POST функций расширения статусом 201, как ext.ts),
+// data — объект (не массив, не null).
 function hasForm(reply: Reply): boolean {
-  if (reply.status !== 200) return false;
+  if (reply.status < 200 || reply.status > 299) return false;
   const body = reply.body;
   return isRecord(body) && body.success === true && isRecord(body.data);
 }

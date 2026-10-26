@@ -122,6 +122,32 @@ describe('sold-by-form', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('успех функции формы — любой 2xx: 201 с формой — да, кнопка «В корзину» прячется', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response(JSON.stringify({ success: true, data: { title: 'Заявка' } }), { status: 201 }))),
+    );
+    const sold = soldByFormOf(coreOf());
+    expect(await sold.check('p-1')).toBe(true);
+    expect(sold.known('p-1')).toBe(true);
+  });
+
+  it('не 2xx — нет: 204, 500 и обрыв не считаются формой', async () => {
+    for (const status of [204, 500]) {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve(
+            new Response(status === 204 ? null : JSON.stringify({ success: true, data: { title: 'Заявка' } }), { status }),
+          ),
+        ),
+      );
+      const sold = soldByFormOf(coreOf());
+      expect(await sold.check('p-1')).toBe(false);
+      expect(sold.known('p-1')).toBe(false);
+    }
+  });
+
   it('сбой сети — нет и без запоминания: следующий вызов спрашивает снова', async () => {
     vi.stubGlobal(
       'fetch',

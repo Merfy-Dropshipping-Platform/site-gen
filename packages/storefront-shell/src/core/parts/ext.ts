@@ -1,9 +1,11 @@
 import type { StorefrontConfig } from '@merfy/storefront-config';
 import { ShellError } from '../../errors';
 import { messageOf } from '../../report';
+import { tokenOf } from '../customer-token';
 import { EXT_PART_NAME, registerExtModules } from '../ext-registry';
 import { failureOf, failed, reasonOf, reportFailure, type Reply } from '../failures';
-import { requestJson } from '../requests';
+import { requestJson, type JsonRequest } from '../requests';
+import { pageStorage, type KeyValue } from '../storage';
 import { atom, batch, onMount, registerFacade, type Atom } from '../stores';
 import type {
   ActionOptions,
@@ -61,6 +63,7 @@ interface ExtensionState {
   readonly plain: Map<string, PlainStore>;
   readonly product: Map<string, ProductStore>;
   readonly methods: Readonly<Record<string, MethodSpec>>;
+  readonly page: KeyValue; // хранилище страницы: токен покупательницы (блок 12, часть 12е)
   module: ExtModule | null;
 }
 
@@ -94,6 +97,13 @@ const listenersOf = (store: Atom<ExtValue>): number => {
 function fnUrl(config: StorefrontConfig, id: string, fn: string): string {
   const path = `/store/extensions/${encodeURIComponent(id)}/fn/${encodeURIComponent(fn)}`;
   return `${config.api.url}${path}?store_id=${encodeURIComponent(config.shop.id)}`;
+}
+
+// Запрос функции расширения (блок 12, часть 12е, Р12е-1): POST с телом и токеном покупательницы, если она вошла, — как у
+// orders и auth. В превью хранилище страницы — память, токена там нет.
+function fnRequest(state: ExtensionState, body: Json): JsonRequest {
+  const token = tokenOf(state.page);
+  return token === null ? { method: 'POST', body } : { method: 'POST', body, token };
 }
 
 // Гость: покупательницы нет или части auth на странице нет (вход — блок 10); сервер такому запросу всё равно откажет.
@@ -139,7 +149,7 @@ function listenRefresh(events: readonly string[], onEvent: () => void): () => vo
 
 async function readPlain(state: ExtensionState, name: string, store: PlainStore): Promise<void> {
   if (store.spec.customer === true && isGuest(state.core)) return;
-  const reply = await requestJson(fnUrl(state.config, state.id, store.spec.fn), { method: 'POST', body: {} });
+  const reply = await requestJson(fnUrl(state.config, state.id, store.spec.fn), fnRequest(state, {}));
   if (okReply(reply)) {
     writeAll([[store.atom, dataOf(reply)]]);
     return;
@@ -152,10 +162,10 @@ async function readProducts(state: ExtensionState, store: ProductStore, ids: rea
   if (store.spec.customer === true && isGuest(state.core)) return;
   for (let at = 0; at < ids.length; at += EXT_PRODUCT_BATCH) {
     const chunk = ids.slice(at, at + EXT_PRODUCT_BATCH);
-    const reply = await requestJson(fnUrl(state.config, state.id, store.spec.fn), {
-      method: 'POST',
-      body: { productIds: chunk },
-    });
+    const reply = await requestJson(
+      fnUrl(state.config, state.id, store.spec.fn),
+      fnRequest(state, { productIds: [...chunk] }),
+    );
     if (!okReply(reply)) continue;
     const data = dataOf(reply);
     writeAll(
@@ -321,7 +331,7 @@ async function callMethod(
     reportFailure(state.core, failure, options);
     return failed(failure);
   }
-  const reply = await requestJson(fnUrl(state.config, state.id, spec.fn), { method: 'POST', body: input ?? {} });
+  const reply = await requestJson(fnUrl(state.config, state.id, spec.fn), fnRequest(state, input ?? {}));
   if (!okReply(reply)) {
     const failure = failureOf(reasonOf(reply), author, reply);
     reportFailure(state.core, failure, options);
@@ -374,6 +384,7 @@ function statesOf(core: CoreHandle): Map<string, ExtensionState> {
   const config = core.config;
   const states = new Map<string, ExtensionState>();
   if (config === null) return states; // конфиг не прочитан: расширений на странице нет (start.ts — part-unknown)
+  const page = pageStorage(window, core.mode);
   for (const [id, entry] of Object.entries(config.extensions ?? {})) {
     states.set(id, {
       core,
@@ -383,6 +394,7 @@ function statesOf(core: CoreHandle): Map<string, ExtensionState> {
       plain: new Map(),
       product: new Map(),
       methods: entry.methods,
+      page,
       module: null,
     });
   }

@@ -1,4 +1,10 @@
-import type { AcceptResult, PrepareResult, SectionProblem, SectionRow } from '@merfy/storefront-sections';
+import {
+  RoleTakenError,
+  type AcceptResult,
+  type PrepareResult,
+  type SectionProblem,
+  type SectionRow,
+} from '@merfy/storefront-sections';
 import { describe, expect, it, vi } from 'vitest';
 import type { DrawAnswer } from '../src/draw';
 import { sectionTool, sectionUploadsOpen, type SectionToolsDeps } from '../src/section-tools';
@@ -52,6 +58,7 @@ function depsOf(over: Partial<SectionToolsDeps> = {}): SectionToolsDeps & { logg
     history: (_shop, name) =>
       Promise.resolve(name === 'shop:reviews' ? [row(E0, false, true), row(E1, true, false)] : []),
     rollback: (_shop, _name, id) => Promise.resolve(id === E0 ? row(E0, true, true) : null),
+    errors: () => Promise.resolve([]),
     log: (event) => {
       logged.push(event);
     },
@@ -228,5 +235,54 @@ describe('отчёт песочницы', () => {
     expect(sectionUploadsOpen({ ...closed, neighbour: 'missing' })).toBe(false);
     expect(sectionUploadsOpen({ ...closed, user: 'same' })).toBe(false);
     expect(sectionUploadsOpen(null)).toBe(false);
+  });
+});
+
+// Блок 12 «Секций и SDK», часть 12в: ошибки правки из браузеров — в «правках секции»; откат к правке, чья роль занята
+// другой секцией магазина, — 409 role-taken.
+describe('правки с ошибками и откат с занятой ролью', () => {
+  const H0 = `sha256:${'a'.repeat(64)}`;
+  const H1 = `sha256:${'b'.repeat(64)}`;
+  const withScript = (id: string, draft: boolean, published: boolean, scriptHash: string): SectionRow => ({
+    ...row(id, draft, published),
+    script: 'export default {};',
+    scriptHash,
+  });
+  const ERROR = { stage: 'runtime', message: 'cart is not defined', count: 12, lastAt: '2026-10-24T09:14:00.000Z' };
+
+  it('у правки с ошибками — errors её скрипта; у правки без ошибок ключа нет', async () => {
+    const deps = depsOf({
+      history: () => Promise.resolve([withScript(E0, true, true, H0), withScript(E1, false, false, H1)]),
+      errors: () => Promise.resolve([{ scriptHash: H1, ...ERROR }]),
+    });
+    expect(json(await call(deps, 'GET', `/sections/history?shop=${SHOP}&name=reviews`))).toEqual({
+      name: 'shop:reviews',
+      edits: [
+        { id: E0, createdAt: '2026-10-20T09:00:00.000Z', draft: true, published: true },
+        { id: E1, createdAt: '2026-10-21T09:00:00.000Z', draft: false, published: false, errors: [ERROR] },
+      ],
+    });
+  });
+
+  it('роль правки занята другой секцией — 409 role-taken с ролью и именем секции', async () => {
+    const deps = depsOf({ rollback: () => Promise.reject(new RoleTakenError('cart-drawer', 'shop:my-cart-drawer')) });
+    const answer = await call(deps, 'POST', `/sections/rollback?shop=${SHOP}&name=reviews`, JSON.stringify({ id: E0 }));
+    expect([answer.status, json(answer)]).toEqual([
+      409,
+      {
+        ok: false,
+        error: {
+          code: 'role-taken',
+          message:
+            'роль cart-drawer у этой правки занята секцией shop:my-cart-drawer: сначала измени shop:my-cart-drawer или сними с неё роль',
+        },
+      },
+    ]);
+  });
+
+  it('другой сбой отката — 500 tool-failed, как в 14б', async () => {
+    const deps = depsOf({ rollback: () => Promise.reject(new Error('база недоступна')) });
+    const answer = await call(deps, 'POST', `/sections/rollback?shop=${SHOP}&name=reviews`, JSON.stringify({ id: E0 }));
+    expect([answer.status, json(answer)]).toMatchObject([500, { ok: false, error: { code: 'tool-failed' } }]);
   });
 });

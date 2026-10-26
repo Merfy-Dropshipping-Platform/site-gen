@@ -3,7 +3,7 @@ import { rewriteHtmlAssets } from '../themes/asset-resolver';
 import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
 import { buildTokensCss, previewTokensCssWithFonts, siteTokensCss, CHECKOUT_SCHEME_ID } from '../themes/tokens-css';
 import { parityOn } from '../themes/parity-switch';
-import { getThemeManifest } from '../themes/theme-manifest-loader';
+import { bareThemeKey, getThemeManifest } from '../themes/theme-manifest-loader';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
 import { CHROME_REORDER_INLINE } from '../common/chrome-reorder';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
@@ -600,7 +600,7 @@ export class PreviewService {
 
   /** Bare-ключ темы как в tryLoadBuiltThemeHtml: 'rose-1.0' → 'rose'. */
   static bareThemeKey(templateId: string): string {
-    return templateId.replace(/[-@].*$/, '');
+    return bareThemeKey(templateId);
   }
 
   async hasV2Sections(templateId: string | null | undefined): Promise<boolean> {

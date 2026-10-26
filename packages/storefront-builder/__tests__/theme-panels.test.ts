@@ -9,16 +9,16 @@ const platformRaw: unknown = JSON.parse(readFileSync(PANEL_URL, 'utf8'));
 const idsOf = (panel: ThemePanels['panel']): string[] => settingFields(panel).map((field) => field.id);
 
 describe('панели темы: показанная мерчанту и полная', () => {
-  it('тема ничего не скрывает — в обеих панелях одни и те же 15 настроек', () => {
+  it('тема ничего не скрывает — в обеих панелях одни и те же 10 настроек', () => {
     const { panel, platformPanel } = themePanels(platformRaw, platformDictionary, undefined);
     expect(idsOf(panel)).toEqual(idsOf(platformPanel));
-    expect(idsOf(platformPanel)).toHaveLength(15);
+    expect(idsOf(platformPanel)).toHaveLength(10);
   });
 
   it('тема скрыла поля — из показанной панели они убраны, из полной нет', () => {
     const hidden = ['cart-type', 'social-telegram'];
     const { panel, platformPanel } = themePanels(platformRaw, platformDictionary, { hidden });
-    expect(idsOf(panel)).toHaveLength(13);
+    expect(idsOf(panel)).toHaveLength(8);
     expect(idsOf(panel)).not.toEqual(expect.arrayContaining(hidden));
     expect(idsOf(platformPanel)).toEqual(expect.arrayContaining(hidden));
   });

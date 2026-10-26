@@ -21,7 +21,7 @@
  * __tests__/extension-theme-look.test.ts). Ошибки (`--xp-err`, `--xp-bad`)
  * и цвета экрана «отправлена» — не темы: статусы остаются читаемыми.
  */
-export const EXTENSION_PURCHASE_STYLES = `
+export const EXTENSION_PURCHASE_STYLES = /* @__PURE__ */ `
 .xp {
   --xp-ink: #141414;
   --xp-label: #222222;

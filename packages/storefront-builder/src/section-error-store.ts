@@ -243,6 +243,41 @@ export async function recordCounted(db: Database, batch: SectionErrorBatch): Pro
   }
 }
 
+// Ошибки своей секции магазина из браузеров по отпечатку скрипта — для «правок секции» (блок 14, Р12в-10): до трёх
+// самых частых на отпечаток, за всё время, что строки лежат в таблице.
+export interface SectionEditError {
+  scriptHash: string;
+  stage: string;
+  message: string;
+  count: number;
+  lastAt: string;
+}
+
+const EDIT_ERRORS_SQL = `
+SELECT script_hash AS "scriptHash", stage, message, total AS count, last_at AS "lastAt" FROM (
+  SELECT script_hash, stage, message, sum(count)::int AS total,
+    to_char(max(minute) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS last_at,
+    row_number() OVER (PARTITION BY script_hash ORDER BY sum(count) DESC, message COLLATE "C") AS place
+  FROM storefront_section_error
+  WHERE site_id = $1 AND section = $2 AND stage = ANY($3::text[])
+  GROUP BY script_hash, stage, message
+) ranked
+WHERE place <= 3
+ORDER BY script_hash COLLATE "C", total DESC, message COLLATE "C"`;
+
+const editErrorRow = z.object({
+  scriptHash: z.string(),
+  stage: z.string(),
+  message: z.string(),
+  count: z.number().int(),
+  lastAt: z.string(),
+});
+
+export async function sectionEditErrors(db: Queryable, shopId: string, name: string): Promise<SectionEditError[]> {
+  const { rows } = await db.query(EDIT_ERRORS_SQL, [shopId, name, BROWSER_STAGES]);
+  return editErrorRow.array().parse(rows);
+}
+
 // Потребитель очереди шлюза. Негодное сообщение — message-invalid: брокер пишет строку журнала и подтверждает его;
 // база недоступна — сообщение вернётся в очередь (broker.ts, deliver).
 export async function consumeSectionErrors(deps: SectionErrorDeps): Promise<void> {

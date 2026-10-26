@@ -72,7 +72,14 @@ const ORDER = {
   shippingAddress: { city: 'Москва', street: 'Тверская', building: '7' },
   deliveryStatus: null,
   items: [
-    { name: 'Шарф «Нова»', imageUrl: null, options: { Цвет: 'Красный' }, quantity: 2, totalCents: 498000, isBonus: false },
+    {
+      name: 'Шарф «Нова»',
+      imageUrl: null,
+      options: { Цвет: 'Красный' },
+      quantity: 2,
+      totalCents: 498000,
+      isBonus: false,
+    },
     { name: 'Платок', imageUrl: null, options: null, quantity: 1, totalCents: 0, isBonus: true },
   ],
 };
@@ -85,10 +92,14 @@ const settle = async (): Promise<void> => {
 };
 const hidden = (root: Element, ref: string): boolean | undefined =>
   root.querySelector(`[data-ref="${ref}"]`)?.hasAttribute('hidden');
-const text = (root: Element, ref: string): string => root.querySelector(`[data-ref="${ref}"]`)?.textContent?.trim() ?? '';
+const text = (root: Element, ref: string): string =>
+  root.querySelector(`[data-ref="${ref}"]`)?.textContent?.trim() ?? '';
 const texts = (root: Element, ref: string): string[] =>
-  [...root.querySelectorAll(`[data-ref="${ref}"]`)].filter((el) => !el.closest('template')).map((el) => el.textContent?.trim() ?? '');
-const valueOf = (root: Element, ref: string): string => root.querySelector<HTMLInputElement>(`[data-ref="${ref}"]`)?.value ?? '';
+  [...root.querySelectorAll(`[data-ref="${ref}"]`)]
+    .filter((el) => !el.closest('template'))
+    .map((el) => el.textContent?.trim() ?? '');
+const valueOf = (root: Element, ref: string): string =>
+  root.querySelector<HTMLInputElement>(`[data-ref="${ref}"]`)?.value ?? '';
 const type = (root: Element, ref: string, value: string): void => {
   const input = root.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-ref="${ref}"]`);
   if (input) input.value = value;
@@ -102,7 +113,11 @@ function openAccount(mode: 'live' | 'preview' = 'live') {
   const gateway = fakeGateway();
   document.head.innerHTML = pageTag(mode, 'page-profile', '/account/profile');
   const page = placeSection('shop:account', 'account-1', ACCOUNT);
-  return { gateway, page, run: () => (core = start({ parts: [auth], sections: [entry('shop:account', accountScript, { uses: ['auth'] })] })) };
+  return {
+    gateway,
+    page,
+    run: () => (core = start({ parts: [auth], sections: [entry('shop:account', accountScript, { uses: ['auth'] })] })),
+  };
 }
 
 function openOrders(address = '/account/orders', mode: 'live' | 'preview' = 'live') {
@@ -110,7 +125,12 @@ function openOrders(address = '/account/orders', mode: 'live' | 'preview' = 'liv
   const gateway = fakeGateway();
   document.head.innerHTML = pageTag(mode, 'page-orders', '/account/orders');
   const page = placeSection('shop:orders', 'orders-1', ORDERS);
-  return { gateway, page, run: () => (core = start({ parts: [auth, orders], sections: [entry('shop:orders', ordersScript, { uses: ['orders'] })] })) };
+  return {
+    gateway,
+    page,
+    run: () =>
+      (core = start({ parts: [auth, orders], sections: [entry('shop:orders', ordersScript, { uses: ['orders'] })] })),
+  };
 }
 
 beforeEach(() => {
@@ -138,8 +158,14 @@ describe('шаблоны кабинета', () => {
   it('ссылки разметки и тексты flux', () => {
     for (const part of ACCOUNT.match(/data-(?:ref|action)="[^"]+"/g) ?? []) expect(ACCOUNT_TEMPLATE).toContain(part);
     for (const part of ORDERS.match(/data-(?:ref|action)="[^"]+"/g) ?? []) expect(ORDERS_TEMPLATE).toContain(part);
-    for (const part of ['Основные данные', 'Мои заказы', 'Выйти из аккаунта', '+7 (000) 000-00-00']) expect(ACCOUNT_TEMPLATE).toContain(part);
-    for (const part of ['У вас пока нет заказов', 'Вернуться к заказам', 'После отмены восстановить заказ невозможно.', 'Нет, оставить'])
+    for (const part of ['Основные данные', 'Мои заказы', 'Выйти из аккаунта', '+7 (000) 000-00-00'])
+      expect(ACCOUNT_TEMPLATE).toContain(part);
+    for (const part of [
+      'У вас пока нет заказов',
+      'Вернуться к заказам',
+      'После отмены восстановить заказ невозможно.',
+      'Нет, оставить',
+    ])
       expect(ORDERS_TEMPLATE).toContain(part);
   });
 });
@@ -147,17 +173,27 @@ describe('шаблоны кабинета', () => {
 describe('«Личный кабинет»', () => {
   it('до ответа — «Загрузка...»; потом форма с e-mail, именем и телефоном', async () => {
     const { gateway, page, run } = openAccount();
-    gateway.answer('GET /store/auth/me', { status: 200, body: { success: true, data: { customer: ANNA, session: {} } } });
+    gateway.answer('GET /store/auth/me', {
+      status: 200,
+      body: { success: true, data: { customer: ANNA, session: {} } },
+    });
     run();
     expect([hidden(page, 'loading'), hidden(page, 'form')]).toEqual([false, true]);
     await settle();
     expect([hidden(page, 'loading'), hidden(page, 'form')]).toEqual([true, false]);
-    expect([valueOf(page, 'email'), valueOf(page, 'name'), valueOf(page, 'phone')]).toEqual(['anna@example.ru', 'Анна', '+79001234567']);
+    expect([valueOf(page, 'email'), valueOf(page, 'name'), valueOf(page, 'phone')]).toEqual([
+      'anna@example.ru',
+      'Анна',
+      '+79001234567',
+    ]);
   });
 
   it('«Сохранить» — PATCH profile, «Сохранено!»; сбой — «Не удалось сохранить», сбоя секции нет', async () => {
     const { gateway, page, run } = openAccount();
-    gateway.answer('GET /store/auth/me', { status: 200, body: { success: true, data: { customer: ANNA, session: {} } } });
+    gateway.answer('GET /store/auth/me', {
+      status: 200,
+      body: { success: true, data: { customer: ANNA, session: {} } },
+    });
     gateway.answer(
       'PATCH /store/auth/profile',
       { status: 200, body: { success: true, data: { ...ANNA, name: 'Анна К.' } } },
@@ -168,7 +204,10 @@ describe('«Личный кабинет»', () => {
     type(page, 'name', ' Анна К. ');
     click(page, '[data-action="save"]');
     await settle();
-    expect(gateway.calls.at(-1)).toEqual({ key: 'PATCH /store/auth/profile', body: { name: 'Анна К.', phone: '+79001234567' } });
+    expect(gateway.calls.at(-1)).toEqual({
+      key: 'PATCH /store/auth/profile',
+      body: { name: 'Анна К.', phone: '+79001234567' },
+    });
     expect([hidden(page, 'status'), text(page, 'status')]).toEqual([false, 'Сохранено!']);
     click(page, '[data-action="save"]');
     await settle();
@@ -178,7 +217,10 @@ describe('«Личный кабинет»', () => {
 
   it('«Выйти из аккаунта» — POST logout, переход на «Вход»', async () => {
     const { gateway, page, run } = openAccount();
-    gateway.answer('GET /store/auth/me', { status: 200, body: { success: true, data: { customer: ANNA, session: {} } } });
+    gateway.answer('GET /store/auth/me', {
+      status: 200,
+      body: { success: true, data: { customer: ANNA, session: {} } },
+    });
     gateway.answer('POST /store/auth/logout', { status: 200, body: { success: true } });
     run();
     await settle();
@@ -267,7 +309,11 @@ describe('«Заказы»', () => {
     click(page, '[data-action="cancel-confirm"]');
     await settle();
     expect(gateway.calls.at(-2)).toEqual({ key: 'POST /store/orders/1042/cancel', body: { reason: 'Передумала' } });
-    expect([text(page, 'order-status'), hidden(page, 'cancel-open'), hidden(page, 'cancel-form')]).toEqual(['Отменён', true, true]);
+    expect([text(page, 'order-status'), hidden(page, 'cancel-open'), hidden(page, 'cancel-form')]).toEqual([
+      'Отменён',
+      true,
+      true,
+    ]);
   });
 
   it('нет заказа — «Заказ не найден»; превью — без запросов', async () => {
@@ -314,7 +360,10 @@ describe('«Шапка»: «Профиль»', () => {
 
   it('вошедшая — /account; гостья — /login', async () => {
     const first = openHeader();
-    first.gateway.answer('GET /store/auth/me', { status: 200, body: { success: true, data: { customer: ANNA, session: {} } } });
+    first.gateway.answer('GET /store/auth/me', {
+      status: 200,
+      body: { success: true, data: { customer: ANNA, session: {} } },
+    });
     first.gateway.answer('GET /storefront/wishlist', { status: 200, body: { success: true, data: [] } });
     await settle();
     expect(first.header.querySelector('[data-ref="profile"]')?.getAttribute('href')).toBe('/account');
@@ -324,5 +373,26 @@ describe('«Шапка»: «Профиль»', () => {
     const second = openHeader();
     await settle();
     expect(second.header.querySelector('[data-ref="profile"]')?.getAttribute('href')).toBe('/login');
+  });
+});
+
+describe('места блоков расширений (блок 12, часть 12б)', () => {
+  it('кабинет — data-ext-point="account"', () => {
+    expect(ACCOUNT_TEMPLATE).toContain('<div data-ext-point="account"></div>');
+  });
+
+  it('заказы — место сразу после list-view', () => {
+    expect(ORDERS_TEMPLATE).toContain('<div data-ext-point="orders"></div>');
+    expect(ORDERS_TEMPLATE.indexOf('data-ext-point="orders"')).toBeGreaterThan(
+      ORDERS_TEMPLATE.indexOf('data-ref="list-view"'),
+    );
+  });
+
+  it('?ext= — список заказов скрыт и не грузится', async () => {
+    const { gateway, page, run } = openOrders('/account/orders?ext=test-ext');
+    run();
+    await settle();
+    expect(hidden(page, 'list-view')).toBe(true);
+    expect(gateway.keys().filter((key) => key.includes('/store/orders'))).toEqual([]);
   });
 });

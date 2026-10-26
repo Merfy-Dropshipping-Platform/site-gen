@@ -88,6 +88,14 @@ function readSourceManifest(themeId: string): ThemeManifest | null {
   }
 }
 
+/**
+ * Голый ключ темы: идентификатор сайта может нести версию
+ * (`rose-1.0`, `satin@2`), а манифест, сборка и ассеты лежат по `rose` / `satin`.
+ */
+export function bareThemeKey(themeId: string): string {
+  return themeId.replace(/[-@].*$/, '');
+}
+
 export function getThemeManifest(themeId: string): ThemeManifest | null {
   const compiled = MANIFESTS[themeId] ?? null;
   if (process.env.NODE_ENV === 'production') return compiled;

@@ -1,6 +1,7 @@
 import {
   DEFAULT_SANDBOX,
   SECTION_ID,
+  RoleTakenError,
   acceptSection,
   draftSource,
   prepareInWorker,
@@ -25,6 +26,7 @@ import { z } from 'zod';
 import type { DrawAnswer } from './draw';
 import { errorText } from './errors';
 import type { Log } from './log';
+import { sectionEditErrors, type SectionEditError } from './section-error-store';
 import { jsonAnswer } from './stand-preview';
 
 // Инструменты секций для ИИ и мерчанта (блок 14 «Секций и SDK», 14.7, В14-1 А; договор — plan-14b.md, «Договор»):
@@ -41,6 +43,7 @@ export type ToolErrorCode =
   | 'uploads-closed'
   | 'section-not-found'
   | 'edit-not-found'
+  | 'role-taken'
   | 'tool-failed';
 
 export interface ToolError {
@@ -59,9 +62,18 @@ export interface SourceAnswer {
   files: SectionFiles;
 }
 
+// Ошибка скрипта правки из браузеров покупателей (блок 12 «Секций и SDK», часть 12в, Р12в-10) — в «правках секции».
+export interface HistoryEditError {
+  stage: string;
+  message: string;
+  count: number;
+  lastAt: string;
+}
+
 export interface HistoryAnswer {
   name: string;
-  edits: { id: string; createdAt: string; draft: boolean; published: boolean }[];
+  // errors — только у правки, у скрипта которой есть ошибки из браузеров (sectionEditErrors, до трёх).
+  edits: { id: string; createdAt: string; draft: boolean; published: boolean; errors?: HistoryEditError[] }[];
 }
 
 export interface RollbackAnswer {
@@ -80,6 +92,8 @@ export interface SectionToolsDeps {
   accept: (door: Door, files: SectionFiles) => Promise<AcceptResult>;
   source: (shopId: string, name: string) => Promise<DraftSource | null>;
   history: (shopId: string, name: string) => Promise<SectionRow[]>;
+  // Ошибки скрипта правки из браузеров — для «правок секции» (Р12в-10).
+  errors: (shopId: string, name: string) => Promise<SectionEditError[]>;
   rollback: (shopId: string, name: string, id: string) => Promise<SectionRow | null>;
   log: Log;
 }
@@ -96,6 +110,8 @@ const TEXT = {
   closed: 'загрузка секций на этом контуре выключена: песочница процессов рендера не закрыта',
   section: (name: string) => `секции ${name} у магазина нет`,
   edit: (id: string) => `правки ${id} у секции нет`,
+  role: (role: string, holder: string) =>
+    `роль ${role} у этой правки занята секцией ${holder}: сначала измени ${holder} или сними с неё роль`,
   failed: 'инструмент секций упал: повтори запрос; повторяется — покажи ответ мерчанту',
 } as const;
 
@@ -172,22 +188,46 @@ async function source(deps: SectionToolsDeps, request: ToolRequest): Promise<Dra
   return jsonAnswer(200, answer);
 }
 
-// Правки своей секции по времени, текущая и витринная — флагами.
+// Правки своей секции по времени, текущая и витринная — флагами; у правки с ошибками скрипта — errors.
 async function history(deps: SectionToolsDeps, request: ToolRequest): Promise<DrawAnswer> {
   const rows = await deps.history(request.shopId, request.name);
   if (rows.length === 0) return toolError(404, 'section-not-found', TEXT.section(request.name));
+  const errors = await deps.errors(request.shopId, request.name);
   const answer: HistoryAnswer = {
     name: request.name,
-    edits: rows.map((row) => ({ id: row.id, createdAt: row.createdAt, draft: row.draft, published: row.published })),
+    edits: rows.map((row) => editWithErrors(row, errors)),
   };
   return jsonAnswer(200, answer);
 }
 
-// Вернуть прежнюю правку: она снова текущая, новых строк нет.
+// Правка с ошибками своего отпечатка скрипта (порядок — как пришёл); у правки без ошибок ключа errors нет.
+function editWithErrors(row: SectionRow, errors: SectionEditError[]): HistoryAnswer['edits'][number] {
+  const edit: HistoryAnswer['edits'][number] = {
+    id: row.id,
+    createdAt: row.createdAt,
+    draft: row.draft,
+    published: row.published,
+  };
+  if (row.scriptHash === null) return edit;
+  const own = errors.filter((error) => error.scriptHash === row.scriptHash);
+  if (own.length === 0) return edit;
+  return {
+    ...edit,
+    errors: own.map(({ stage, message, count, lastAt }) => ({ stage, message, count, lastAt })),
+  };
+}
+
+// Вернуть прежнюю правку: она снова текущая, новых строк нет. Роль прежней правки занята другой секцией — 409.
 async function rollback(deps: SectionToolsDeps, request: ToolRequest): Promise<DrawAnswer> {
   const parsed = rollbackBodySchema.safeParse(readJson(request.body));
   if (!parsed.success) return toolError(400, 'body-invalid', TEXT.rollback);
-  const row = await deps.rollback(request.shopId, request.name, parsed.data.id);
+  let row: SectionRow | null;
+  try {
+    row = await deps.rollback(request.shopId, request.name, parsed.data.id);
+  } catch (error) {
+    if (error instanceof RoleTakenError) return toolError(409, 'role-taken', TEXT.role(error.role, error.holder));
+    throw error;
+  }
   if (row === null) return toolError(404, 'edit-not-found', TEXT.edit(parsed.data.id));
   const answer: RollbackAnswer = { name: request.name, id: row.id, draft: row.draft, published: row.published };
   return jsonAnswer(200, answer);
@@ -262,6 +302,7 @@ export function sectionToolsDeps(base: SectionToolsBase): SectionToolsDeps {
     accept: (door, files) => acceptSection({ db: base.db, store: base.store }, door, files),
     source: (shopId, name) => draftSource(base.db, shopId, name),
     history: (shopId, name) => sectionHistory(base.db, shopId, name),
+    errors: (shopId, name) => sectionEditErrors(base.db, shopId, name),
     rollback: (shopId, name, id) => rollbackSection(base.db, shopId, name, id),
     log: base.log,
   };

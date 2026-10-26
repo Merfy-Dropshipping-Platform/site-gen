@@ -159,6 +159,17 @@
 Счёт для автостопа выпуска (блок 10) — `sectionErrorSummary(db, since)`: строка на выпуск секции — `shops` (магазинов) и
 `errors` (ошибок) с минуты `since`.
 
+Откат секции с ролью (блок 12 «Секций и SDK», часть 12в): пачка пишется и считается под замком магазина
+(`recordCounted`); у своей секции с ролью на витрине `SECTION_ERROR_LIMIT` (10) и больше ошибок её скрипта за
+`SECTION_ERROR_WINDOW_MINUTES` (15) минут — `rollbackBroken` под замком владельца ставит на витрину прежнюю
+опубликованную правку (`published_at`), событие `section-rollback` пересобирает магазин, запись `site.section_rolled_back`
+уходит в журнал платформы. Откат на магазин и роль — не чаще раза в сутки (`rolled_back_at`); в эти сутки — запись
+`site.section_broken` с `reason: "cooldown"`, тоже раз в сутки (`rollback_notice_at`). Отката нет по другой причине
+(прежней правки нет, у неё другая роль, роль занята) — запись `site.section_broken`, один раз, на пачке, которая перешла
+порог (`src/role-rollback.ts`). Строки журнала сборщика — `section-rolled-back`, `section-broken`,
+`section-rollback-stale`, `section-rollback-publish-failed`. Ошибки правок для «правок секции» —
+`sectionEditErrors(db, shopId, name)`: до трёх самых частых на отпечаток скрипта.
+
 ## Каталог во входах (блок 8 «Секций и SDK», часть 8а-2)
 
 - Товары (`product.list`) и коллекции (`product.collections.storefront`) — у сервиса product; во входы — только

@@ -230,6 +230,6 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   'ext-foreign': {
     when: 'Секция расширения подключает в uses чужое расширение.',
     fix: 'Оставь в uses только "ext:<id своего расширения>".',
-    example: { before: '"uses": ["ext:loyalty"]', after: '"uses": ["ext:reviews"]' },
+    example: { before: '"uses": ["ext:foreign"]', after: '"uses": ["ext:own"]' },
   },
 };

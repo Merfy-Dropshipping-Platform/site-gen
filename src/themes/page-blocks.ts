@@ -1,5 +1,5 @@
 import type { Logger } from '@nestjs/common';
-import { getThemeManifest, type ThemeManifest } from './theme-manifest-loader';
+import { bareThemeKey, getThemeManifest, type ThemeManifest } from './theme-manifest-loader';
 import { applyPageBinding } from '../render/page-transclude';
 import { getPageResolver } from './page-resolver-instance';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
@@ -228,11 +228,11 @@ export function applyProductThemeFeatures(
   themeId: string | null | undefined,
 ): void {
   // Идентификатор темы сайта может нести версию (`rose-1.0`, `satin@2`): манифест
-  // лежит по голому ключу, как у PreviewService.bareThemeKey.
+  // лежит по голому ключу.
   const manifest =
     themeId == null
       ? null
-      : (getThemeManifest(themeId) ?? getThemeManifest(themeId.replace(/[-@].*$/, '')));
+      : (getThemeManifest(themeId) ?? getThemeManifest(bareThemeKey(themeId)));
   const features = manifest?.features;
   if (features?.requests === true || props.requestsEnabled === true) {
     props.requestsEnabled = true;

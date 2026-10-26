@@ -39,7 +39,9 @@ const { settings } = Astro.props;
             </div>
           </div>
         ))}
-        <button type="button" class="h-11 rounded-button bg-primary px-6 text-primary-foreground md:self-start" data-ref="buy" data-action="cart.add" data-product-id={settings.product.id}>В корзину</button>
+        <div class="md:self-start" data-ext-point="product" data-product-id={settings.product.id}>
+          <button type="button" class="h-11 rounded-button bg-primary px-6 text-primary-foreground" data-ref="buy" data-action="cart.add" data-product-id={settings.product.id}>В корзину</button>
+        </div>
         <p class="m-0 text-foreground">{settings.product.description}</p>
       </div>
     </div>

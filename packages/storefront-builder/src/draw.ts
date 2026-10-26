@@ -21,6 +21,7 @@ import { readSnapshot, type SnapshotDeps } from './snapshot';
 import type { ThemeCatalog } from './theme-catalog';
 import { sectionPreview, shopPreview, shopPreviewDeps, shopSections } from './shop-preview';
 import { standTokens, themePanel, type PreviewDeps } from './stand-preview';
+import { EXTENSION_SECTION_ROUTE, extensionSection } from './extension-section';
 import type { SdkDocs } from './sdk-docs';
 import { SECTION_BODY_LIMIT_BYTES, SECTION_TOOL_ROUTES, sectionTool, type SectionToolsDeps } from './section-tools';
 
@@ -234,6 +235,11 @@ async function route(deps: DrawDeps, request: IncomingMessage): Promise<DrawAnsw
   const url = new URL(request.url ?? '/', 'http://builder');
   if (url.pathname === '/health') return { status: 200, body: 'ok\n' };
   if (url.pathname in PREVIEW_ROUTES && deps.preview) return previewRoute(deps.preview, request, url);
+  // Секция версии расширения от сервиса extensions через sites (блок 12 «Секций и SDK», 12.6).
+  if (url.pathname === EXTENSION_SECTION_ROUTE && deps.sections) {
+    const read = (): Promise<string> => bodyOf(request, SECTION_BODY_LIMIT_BYTES);
+    return extensionSection(deps.sections, request.method ?? '', url, read);
+  }
   if (url.pathname in SECTION_TOOL_ROUTES && deps.sections) {
     const read = (): Promise<string> => bodyOf(request, SECTION_BODY_LIMIT_BYTES);
     return sectionTool(deps.sections, request.method ?? '', url, read);

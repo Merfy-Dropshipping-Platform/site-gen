@@ -142,7 +142,7 @@ const schemeClass = schemeClassOf(colorScheme);
       }
       return [];
     }
-    // Проверка «товар продаётся по заявке» (runtime/checkout-request-items.ts, Б16):
+    // Проверка «товар продаётся формой, а не корзиной» (runtime/checkout-request-items.ts, Б16):
     // пока она идёт (не дольше 3 с), оплата не нажимается; найденные товары уже
     // убраны из корзины, а сообщение о них стоит над составом заказа.
     function requestLines() {
@@ -318,7 +318,7 @@ const schemeClass = schemeClassOf(colorScheme);
       // Пустая корзина (покупатель ушёл со всем, либо проверка товаров расширения
       // убрала строки): суммы нет — прочерк, как до загрузки корзины, а не «0₽».
       var emptyCart = !offerMode() && getCartItems().length === 0;
-      // В корзине остались только товары «по заявке»: вместо «Оплатить —» кнопки нет,
+      // В корзине остались только товары, проданные формой: вместо «Оплатить —» кнопки нет,
       // объяснение со ссылкой на товар стоит над составом заказа.
       button.style.display = emptyCart && hasRequestNotices() ? 'none' : '';
       var label = buttonText.replace('{total}', emptyCart ? '—' : fmtRub(getTotalCents()));
@@ -335,7 +335,7 @@ const schemeClass = schemeClassOf(colorScheme);
     }
 
     document.addEventListener('cart:updated', refresh);
-    // Проверка товаров «по заявке» началась, закончилась или нашла такой товар.
+    // Проверка товаров, проданных формой, началась, закончилась или нашла такой товар.
     document.addEventListener('checkout:lines-changed', refresh);
     document.addEventListener('checkout:address-changed', refresh);
     // Настройки чекаута прилетают ПОСЛЕ init — пере-оцениваем гейт по событию.
@@ -419,7 +419,7 @@ const schemeClass = schemeClassOf(colorScheme);
       if (errorEl) { errorEl.hidden = true; errorEl.textContent = ''; }
     }
 
-    // Оплата предложения расширения: одна заявка на /pay/<токен>/offer/checkout.
+    // Оплата предложения расширения: один запрос на /pay/<токен>/offer/checkout.
     // Серверу уходят версия предложения, имя, телефон, адрес и ВЫБОР доставки
     // (идентификаторы варианта и пункт выдачи); цен и итогов в запросе нет —
     // доставку и итог считает сервер. Корзину и localStorage не трогаем.
@@ -660,11 +660,14 @@ const schemeClass = schemeClassOf(colorScheme);
           body: JSON.stringify(checkoutBody),
         });
         var checkoutJson = await checkoutRes.json();
-        // Сервер отказал: товар продаётся по заявке (code PRODUCT_REQUIRES_REQUEST)
-        // либо шлюз потерял code и отдал общую 4xx. Спрашиваем расширение заново по
-        // всем строкам; нашёлся такой товар — он убран из заказа, сообщение стоит над
-        // составом, общая ошибка не нужна. 403 — вход покупателя, его разбирает ниже.
-        var refusedByRequest = !!(checkoutJson && checkoutJson.code === 'PRODUCT_REQUIRES_REQUEST');
+        // Сервер отказал: товар продаётся формой расширения, а не корзиной (code
+        // PRODUCT_NOT_SOLD_BY_CART; прежний PRODUCT_REQUIRES_REQUEST отдавал orders до
+        // смены кода) либо шлюз потерял code и отдал общую 4xx. Спрашиваем расширение
+        // заново по всем строкам; нашёлся такой товар — он убран из заказа, сообщение
+        // стоит над составом, общая ошибка не нужна. 403 — вход покупателя, его
+        // разбирает ниже.
+        var refusedCode = checkoutJson && checkoutJson.code;
+        var refusedByRequest = refusedCode === 'PRODUCT_NOT_SOLD_BY_CART' || refusedCode === 'PRODUCT_REQUIRES_REQUEST';
         if (refusedByRequest || (checkoutRes.status >= 400 && checkoutRes.status < 500 && checkoutRes.status !== 403)) {
           var guardLines = requestLines();
           var removedNow = false;

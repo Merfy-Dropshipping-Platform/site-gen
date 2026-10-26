@@ -664,6 +664,8 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 				productId,
 				name: dropped?.name || "Товар",
 				href: requestItemHref(productPathPrefix, productId),
+				// Подпись расширения (если оно её дало) едет на страницу оформления вместе с товаром.
+				...extensionSaleOf(window).notice(productId),
 			});
 		}
 		saveCart(kept);

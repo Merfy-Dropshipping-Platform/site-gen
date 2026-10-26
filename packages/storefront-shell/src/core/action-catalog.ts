@@ -134,6 +134,7 @@ export function markupParams(name: ActionName): readonly string[] {
 export const MODULE_NAMES = [
   'cart',
   'favorites',
+  'customer',
   'auth',
   'newsletter',
   'consent',

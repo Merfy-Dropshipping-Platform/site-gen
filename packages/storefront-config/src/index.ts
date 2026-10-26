@@ -26,6 +26,16 @@ export {
   type ExtensionStorefront,
   type StorefrontExtensions,
 } from './extensions';
+// Блок 15 «Секций и SDK», часть 15д: места блоков расширений — поле extPoints конфига и читатель манифеста.
+export {
+  EXT_POINT_NAMES,
+  extensionPointsOf,
+  storefrontExtPointsSchema,
+  type ExtPointName,
+  type ExtensionPoints,
+  type ExtensionPointsRead,
+  type StorefrontExtPoints,
+} from './ext-points';
 export { CONFIG_TAG_ID, configTag, escapeScriptJson } from './tag';
 export { parseStorefrontConfig, readStorefrontConfig, type ConfigSource } from './read';
 export { rebuildEvents, type RebuildEvent } from './events';

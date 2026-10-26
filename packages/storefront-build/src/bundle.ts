@@ -38,6 +38,9 @@ const ESBUILD_OPTIONS = {
   minify: true,
   write: false,
   logLevel: 'silent',
+  // Тексты — UTF-8 (блок 15 «Секций и SDK», часть 15ж, Р15ж-8): модуль браузер читает только как UTF-8, буква — 2 байта
+  // вместо шести знаков \uXXXX. Та же опция — у сборки ядра (storefront-shell/build/core.ts).
+  charset: 'utf8',
 } as const;
 
 // Строка списка секций бандла: имя, вид, sha256 модуля (64 знака hex) и модули SDK для ctx.

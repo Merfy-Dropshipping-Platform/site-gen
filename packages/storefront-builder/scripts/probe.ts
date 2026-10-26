@@ -35,6 +35,7 @@ const env = {
   S3_ACCESS_KEY: STACK.s3.accessKeyId,
   S3_SECRET_KEY: STACK.s3.secretAccessKey,
   STOREFRONT_API_URL: 'https://gateway.dev.merfy.ru/api',
+  STOREFRONT_UPLOAD_URL: 'https://minio.dev.merfy.ru',
   SOURCE_COMMIT: commit,
   PORT: String(PORT),
   BUILD_LEASE_MS: '5000',

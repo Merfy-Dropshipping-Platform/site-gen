@@ -7,6 +7,7 @@ describe('API пакета (design.md блока 3, раздел 6)', () => {
       'CONFIG_TAG_ID',
       'COUNTER_KINDS',
       'COUNTER_NUMBERS',
+      'EXT_POINT_NAMES',
       'EXT_USE_PREFIX',
       'StorefrontConfigError',
       'THEME_SETTING_NAMES',
@@ -14,12 +15,14 @@ describe('API пакета (design.md блока 3, раздел 6)', () => {
       'configTag',
       'escapeScriptJson',
       'extUseSchema',
+      'extensionPointsOf',
       'extensionStorefrontSchema',
       'isCounterNumber',
       'parseStorefrontConfig',
       'readStorefrontConfig',
       'rebuildEvents',
       'storefrontConfigSchema',
+      'storefrontExtPointsSchema',
       'storefrontExtensionsSchema',
     ]);
   });

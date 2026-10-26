@@ -223,6 +223,10 @@ export interface CustomerState {
 // Вход покупательницы (блок 10, часть 10в, Р10в-1…Р10в-6): по коду из письма; токен — merfy_customer_token.
 export type NoData = Readonly<Record<string, never>>;
 export type VerifyArgs = { readonly email: string; readonly code: string } | { readonly token: string };
+// Кто вошёл (блок 15, часть 15ж, Р15ж-1): часть customer ядра — на каждой странице; тот же стор, что auth.$customer.
+export interface CustomerModule {
+  readonly $customer: ReadableStore<CustomerState>; // читается, когда стор впервые читает секция
+}
 export interface AuthModule {
   readonly $customer: ReadableStore<CustomerState>; // читается, когда стор впервые читает секция
   requestCode(args: { readonly email: string }, options?: ActionOptions): Promise<Result<NoData>>;
@@ -396,6 +400,7 @@ export interface Modules {
   readonly cart: CartModule;
   readonly consent: ConsentModule;
   readonly favorites: FavoritesModule;
+  readonly customer: CustomerModule;
   readonly auth: AuthModule;
   readonly orders: OrdersModule;
   readonly newsletter: NewsletterModule;

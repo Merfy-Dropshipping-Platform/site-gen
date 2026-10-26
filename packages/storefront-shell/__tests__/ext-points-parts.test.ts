@@ -1,4 +1,5 @@
 import { EXT_POINT_CLASSES } from '@merfy/shell/ext-points';
+import type { StorefrontConfig } from '@merfy/storefront-config';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { points } from '../src/core/parts/points';
 import type { CoreHandle, InstanceHost, Mode } from '../src/core/types';
@@ -6,11 +7,11 @@ import type { CoreHandle, InstanceHost, Mode } from '../src/core/types';
 // Блоки расширений в местах data-ext-point (блок 12 «Секций и SDK», часть 12б, В12-2 А). Расширение — test-ext.
 const SHOP = '3a9626f7-390d-4a66-bca5-a3b806ca6c1b';
 const API = 'https://gateway.dev.merfy.ru/api';
-const DESCRIPTIONS = {
-  'test-ext': { cart: { note: { from: 'view', text: 'Отзывов к товарам: {reviews}', when: 'reviews' } } },
+const EXT_POINTS: NonNullable<StorefrontConfig['extPoints']> = {
+  'test-ext': { cart: { note: { text: 'Отзывов к товарам: {reviews}', when: 'reviews' } } },
 };
 
-// Конфиг страницы целиком (тип строгий), часть читает из него только api.url и shop.id.
+// Конфиг страницы целиком (тип строгий), часть читает из него api.url, shop.id и места extPoints.
 function configOf(): CoreHandle['config'] {
   return {
     v: 1,
@@ -22,6 +23,7 @@ function configOf(): CoreHandle['config'] {
     theme: { id: 'nova', version: '0.1.0' },
     page: { id: 'home', path: '/' },
     analytics: null,
+    extPoints: EXT_POINTS,
   };
 }
 
@@ -63,13 +65,10 @@ afterEach(() => {
 });
 
 function stubFetch(view: Record<string, unknown>) {
-  const fetchMock = vi.fn((url: string) =>
-    Promise.resolve(
-      url.includes('/store/extensions/storefront')
-        ? answer({ success: true, data: DESCRIPTIONS })
-        : answer({ success: true, data: { extensions: { 'test-ext': { view } } } }),
-    ),
-  );
+  const fetchMock = vi.fn((url: string) => {
+    void url; // тесту нужен только список адресов
+    return Promise.resolve(answer({ success: true, data: { extensions: { 'test-ext': { view } } } }));
+  });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
@@ -86,10 +85,7 @@ describe('points: место cart', () => {
     expect(block?.textContent).toBe('Отзывов к товарам: 3');
     const used = [...host.element.querySelectorAll('[class]')].flatMap((node) => [...node.classList]);
     for (const name of used) expect(EXT_POINT_CLASSES.points).toContain(name);
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      `${API}/store/extensions/storefront?store_id=${SHOP}`,
-      `${API}/store/carts/cart-1?store_id=${SHOP}`,
-    ]);
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([`${API}/store/carts/cart-1?store_id=${SHOP}`]);
   });
 
   it('заметка корзины: when ложно — блока нет', async () => {

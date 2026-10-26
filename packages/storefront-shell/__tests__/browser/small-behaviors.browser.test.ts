@@ -42,14 +42,42 @@ afterAll(async () => {
 const src = (page: Page) => page.getAttribute('#img', 'src');
 const disabled = (page: Page, id: string) => page.$eval(`#${id}`, (el) => el.matches(':disabled'));
 
-// Свайп пальцем: pointerdown, pointermove, pointerup с pointerType touch.
-async function swipe(page: Page, dx: number, dy: number): Promise<void> {
+// Свайп: pointerdown, pointermove, pointerup с нужным pointerType; cancel — жест отдан прокрутке.
+async function swipe(page: Page, dx: number, dy: number, pointerType: 'touch' | 'mouse' = 'touch'): Promise<void> {
+  await page.evaluate(
+    ([x, y, type]) => {
+      const target = document.getElementById('img');
+      const send = (kind: string, clientX: number, clientY: number): void => {
+        target?.dispatchEvent(
+          new PointerEvent(kind, {
+            bubbles: true,
+            cancelable: true,
+            pointerType: type,
+            isPrimary: true,
+            pointerId: 7,
+            clientX,
+            clientY,
+            buttons: type === 'mouse' ? 1 : 0,
+          }),
+        );
+      };
+      send('pointerdown', 200, 200);
+      send('pointermove', 200 + x / 2, 200 + y / 2);
+      send('pointermove', 200 + x, 200 + y);
+      send('pointerup', 200 + x, 200 + y);
+    },
+    [dx, dy, pointerType] as const,
+  );
+}
+
+// Прокрутка забрала жест: pointercancel, палец отпущен позже — pointerup.
+async function swipeCancelled(page: Page, dx: number, dy: number): Promise<void> {
   await page.evaluate(
     ([x, y]) => {
       const target = document.getElementById('img');
-      const send = (type: string, clientX: number, clientY: number): void => {
+      const send = (kind: string, clientX: number, clientY: number): void => {
         target?.dispatchEvent(
-          new PointerEvent(type, {
+          new PointerEvent(kind, {
             bubbles: true,
             cancelable: true,
             pointerType: 'touch',
@@ -62,7 +90,7 @@ async function swipe(page: Page, dx: number, dy: number): Promise<void> {
       };
       send('pointerdown', 200, 200);
       send('pointermove', 200 + x / 2, 200 + y / 2);
-      send('pointermove', 200 + x, 200 + y);
+      send('pointercancel', 200 + x / 2, 200 + y / 2);
       send('pointerup', 200 + x, 200 + y);
     },
     [dx, dy] as const,
@@ -142,6 +170,28 @@ describe('card-photos', () => {
     const { page } = await openPage(browser, { body: card('/p/1.jpg javascript:alert(1)'), behaviors: ['cardPhotos'] });
     await page.hover('#img');
     await swipe(page, -60, 0);
+    expect(await src(page)).toBe('/p/1.jpg');
+    await page.close();
+  });
+
+  it('мышью с зажатием: свайп листает фото, после него нажатие 400 мс не срабатывает', async () => {
+    const { page } = await openPage(browser, { body: card('/p/1.jpg /p/2.jpg'), behaviors: ['cardPhotos'] });
+    await swipe(page, -60, 0, 'mouse');
+    expect(await src(page)).toBe('/p/2.jpg');
+    await page.evaluate(() => document.getElementById('card')?.click());
+    expect(await page.evaluate(() => location.hash)).toBe('');
+    await page.close();
+  });
+
+  it('горизонтальный жест отдан фото: touch-action: pan-y, вертикальная прокрутка остаётся браузеру', async () => {
+    const { page } = await openPage(browser, { body: card('/p/1.jpg /p/2.jpg'), behaviors: ['cardPhotos'] });
+    expect(await page.$eval('#img', (el) => getComputedStyle(el).touchAction)).toBe('pan-y');
+    await page.close();
+  });
+
+  it('прокрутка забрала жест: pointercancel отменяет свайп, фото не меняется', async () => {
+    const { page } = await openPage(browser, { body: card('/p/1.jpg /p/2.jpg'), behaviors: ['cardPhotos'] });
+    await swipeCancelled(page, -60, 0);
     expect(await src(page)).toBe('/p/1.jpg');
     await page.close();
   });

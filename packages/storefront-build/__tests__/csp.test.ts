@@ -20,6 +20,7 @@ const SOURCE: CspSource = {
   analyticsUrl: 'https://analytics.dev.merfy.ru',
   counters: [],
   custom: [],
+  inline: [],
 };
 const METRIKA: Counter = { kind: 'metrika', number: '12345678' };
 const GOOGLE: Counter = { kind: 'google', number: 'G-ABCDEF12' };
@@ -32,6 +33,28 @@ const directive = (policy: string | null, name: string): string[] =>
     .find((part) => part.startsWith(`${name} `))
     ?.split(' ')
     .slice(1) ?? [];
+
+// Блок 15, часть 15е (Р15е-4, Р15е-5): встроенный код страниц оформления и хранилище файлов покупательницы.
+describe('storefrontCsp: встроенный код оформления и хранилище файлов (часть 15е)', () => {
+  it('встроенные скрипты — хешами в обеих политиках, по порядку и без повторов', () => {
+    const inline = ['window.__merfyRoot = 1;', 'checkout()', 'window.__merfyRoot = 1;'];
+    const hashes = [textHash('window.__merfyRoot = 1;'), textHash('checkout()')];
+    const normal = directive(storefrontCsp({ ...SOURCE, inline }), 'script-src');
+    const strict = directive(storefrontCsp({ ...SOURCE, inline, custom: CUSTOM }), 'script-src');
+    expect(normal.filter((source) => hashes.includes(source))).toEqual(hashes);
+    expect(strict.filter((source) => hashes.includes(source))).toEqual(hashes);
+  });
+
+  it('адрес хранилища файлов покупательницы — в connect-src обычной политики, только origin', () => {
+    const policy = storefrontCsp({ ...SOURCE, uploadUrl: 'https://minio.dev.merfy.ru/ext-files' });
+    expect(directive(policy, 'connect-src')).toEqual([
+      "'self'",
+      'https://gateway.dev.merfy.ru',
+      'https://analytics.dev.merfy.ru',
+      'https://minio.dev.merfy.ru',
+    ]);
+  });
+});
 
 describe('storefrontCsp (блок 13 «Секций и SDK», часть 13б)', () => {
   it('обычная политика: флаг движения по хешу, файлы — свои, запросы — шлюз и сборщик аналитики, отчёты — /csp', () => {

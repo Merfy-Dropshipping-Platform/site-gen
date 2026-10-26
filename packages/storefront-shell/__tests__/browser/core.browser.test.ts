@@ -48,6 +48,9 @@ beforeAll(async () => {
     outDir: DIST_DIR,
     core: ['auth', 'cart', 'favorites'],
     version: '0.0.0-test',
+    // Страница этого стенда объявляет auth, как «Вход» (блок 15, часть 15ж): вход — вне ядра, у страницы с ним бюджет
+    // по поправке владельца 25.10 — 18 КБ, а не 16 КБ ядра.
+    budgetBytes: 18 * 1024,
   });
   const page = await build({
     stdin: { contents: pageEntry(), resolveDir: PACKAGE_DIR, loader: 'js' },

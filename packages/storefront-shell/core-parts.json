@@ -1,3 +1,3 @@
 {
-  "core": ["auth", "cart", "consent", "favorites"]
+  "core": ["cart", "consent", "customer", "favorites"]
 }

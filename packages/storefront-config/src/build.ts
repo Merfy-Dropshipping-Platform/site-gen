@@ -1,4 +1,5 @@
 import { themeSettingsOf } from './theme-settings';
+import type { StorefrontExtPoints } from './ext-points';
 import type { StorefrontExtensions } from './extensions';
 import { CONFIG_VERSION, CURRENCY, LOCALE, checkStorefrontConfig, type Counter, type StorefrontConfig } from './schema';
 
@@ -24,11 +25,17 @@ export interface StorefrontConfigInput {
   analytics?: { url: string; counters: readonly Counter[]; custom?: CustomCodes } | null;
   // Сторы и методы расширений для секций страницы (блок 9 «Секций и SDK», часть 9в); нет или пусто — поля нет.
   extensions?: StorefrontExtensions;
+  // Места блоков расширений для частей бандла страницы (блок 15, часть 15д); нет или пусто — поля нет.
+  extPoints?: StorefrontExtPoints;
 }
 
 // Пустые описания в конфиг не идут: у страницы без ctx.ext конфиг прежний.
 const extensionsOf = (extensions: StorefrontExtensions | undefined): Pick<StorefrontConfig, 'extensions'> =>
   extensions === undefined || Object.keys(extensions).length === 0 ? {} : { extensions };
+
+// Пустые места в конфиг не идут: у магазина без расширений с местами конфиг прежний (часть 15д).
+const extPointsField = (extPoints: StorefrontExtPoints | undefined): Pick<StorefrontConfig, 'extPoints'> =>
+  extPoints === undefined || Object.keys(extPoints).length === 0 ? {} : { extPoints };
 
 // Поле за полем: лишнее из входа (строка счётчика у сборщика аналитики) в конфиг не уходит. «Свой код» — только
 // непустым списком: у магазина без него конфиг прежний.
@@ -63,5 +70,6 @@ export function buildStorefrontConfig(input: StorefrontConfigInput): StorefrontC
     page: pageOf(page),
     analytics: analyticsOf(input.analytics),
     ...extensionsOf(input.extensions),
+    ...extPointsField(input.extPoints),
   });
 }

@@ -313,6 +313,8 @@ export interface Platform {
   apiUrl: string;
   // Сборщик аналитики для конфига витрины (блок 11): ANALYTICS_COLLECTOR_URL без косой черты в конце.
   analyticsUrl: string;
+  // Хранилище файлов покупательницы для CSP (часть 15е): STOREFRONT_UPLOAD_URL, origin. Нет — во входах нет.
+  uploadUrl?: string;
 }
 
 export interface InputsParts {
@@ -411,7 +413,11 @@ export const buildInputsOf = (parts: InputsParts) => ({
     logoUrl: parts.shop.logoUrl,
     updatedAt: parts.shop.updatedAt,
   },
-  env: { apiUrl: parts.platform.apiUrl, analyticsUrl: parts.platform.analyticsUrl },
+  env: {
+    apiUrl: parts.platform.apiUrl,
+    analyticsUrl: parts.platform.analyticsUrl,
+    ...(parts.platform.uploadUrl === undefined ? {} : { uploadUrl: parts.platform.uploadUrl }),
+  },
   year: parts.year,
   data: { status: parts.received ? 'received' : 'failed', entities: parts.entities },
 });

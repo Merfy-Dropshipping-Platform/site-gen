@@ -20,7 +20,8 @@ export default defineSection({
     // Вход читается при первой подписке ($customer): подписываемся после первого прохода страницы, чтобы чтение me
     // не шло раньше готовности страницы; до ответа me ссылка ведёт на «Вход», как в HTML.
     ctx.after(0, () => {
-      ctx.watch(ctx.auth.$customer, (state) => {
+      // Кто вошёл — часть customer ядра (блок 15, часть 15ж): код входа «Шапка» на страницу не приносит.
+      ctx.watch(ctx.customer.$customer, (state) => {
         const href = state.customer === null ? '/login' : '/account';
         for (const profile of ctx.refs('profile')) profile.attr('href', href);
       });

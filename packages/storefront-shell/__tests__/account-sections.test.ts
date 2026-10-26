@@ -9,6 +9,7 @@ import { cart } from '../src/core/parts/cart';
 import { favorites } from '../src/core/parts/favorites';
 import { navigation } from '../src/core/navigation';
 import { auth } from '../src/core/parts/auth';
+import { customer } from '../src/core/parts/customer';
 import { ORDER_MISSING_TEXT, orders } from '../src/core/parts/orders';
 import { start, type StartedCore } from '../src/core/start';
 import { configTag, entry, placeSection, watchFailures } from './core-support';
@@ -345,8 +346,8 @@ function openHeader() {
       '<a href="/cart" data-action="cart.open">Корзина <span data-ref="cart-count" hidden>0</span></a>',
   );
   core = start({
-    parts: [cart, favorites, auth],
-    sections: [entry('shop:header', headerScript, { uses: ['cart', 'favorites', 'auth'] })],
+    parts: [cart, favorites, customer],
+    sections: [entry('shop:header', headerScript, { uses: ['cart', 'favorites', 'customer'] })],
   });
   return { gateway, header };
 }

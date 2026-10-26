@@ -76,7 +76,7 @@ export const isExtUse = (value: string): value is ExtUse => extUseSchema.safePar
 const USES_LIMIT = 12;
 // Текст подсказки фиксированный (тест ext-uses.test.ts): список модулей — как в MANIFEST_USES (consent — отдельной строкой).
 const USES_TEXT =
-  'нужно theme, shop, cart, favorites, auth, newsletter, variants, search, catalog или ext:<id расширения>';
+  'нужно theme, shop, cart, favorites, customer, auth, newsletter, variants, search, catalog или ext:<id расширения>';
 const isSectionUse = (value: string): value is SectionUse => SECTION_USES.some((use) => use === value);
 export const propsUsesOf = (manifest: Pick<SectionManifest, 'uses'>): SectionUse[] =>
   (manifest.uses ?? []).filter(isSectionUse);

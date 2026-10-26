@@ -87,6 +87,8 @@ export { sectionAnswer, type AnswerProblem, type SectionAnswer } from './answer'
 export { AI_FILES, isAiFile, withoutAiFiles } from './ai-files';
 export { PROBLEM_CODES, isWarning } from './problems';
 export { SECTION_ID, SECTION_USES, SOURCE_LIMITS, sectionManifestSchema } from './format';
+// Место по умолчанию секции расширения (блок 12, часть 12д).
+export { AUTO_PLACES, autoPlacePart, type AutoPlace } from './format';
 // Роли секций (блок 12 «Секций и SDK», часть 12а): таблица ролей и место секции с учётом роли.
 export {
   OVERLAY_LIST,

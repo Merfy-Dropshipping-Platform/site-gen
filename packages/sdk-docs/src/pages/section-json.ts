@@ -20,6 +20,7 @@ const KEY_NOTES: Readonly<Record<string, string>> = {
   removable: 'false — секцию нельзя удалить',
   uses: 'открывает данные: theme, shop',
   newPage: 'id поля вида string: имя новой страницы, куда ставится секция',
+  autoPlace: 'только у секций расширений, значение `product`: при включении расширения секция сама встаёт на страницу после секции с местом блоков product',
   role: 'Роль секции: `cart`, `cart-drawer`, `cart-added`, `login`, `search`, `notices`, `cookie-banner`. Роль задаёт место — страница корзины или входа, группа `overlay` поверх страницы — и один экземпляр; в магазине одна секция на роль. Только у секций магазина.',
   tokens: 'свои токены секции; имя с меткой custom',
   wrapper: 'общие настройки секции; нет ключа — scheme и padding',

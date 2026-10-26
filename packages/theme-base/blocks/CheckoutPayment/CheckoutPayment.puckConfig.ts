@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
+import {
+  DEFAULT_PAYMENT_METHODS,
+  PAYMENT_METHOD_KEYS,
+  PAYMENT_METHOD_OPTIONS,
+} from '../../runtime/payment-methods';
 
-const PaymentMethodKey = z.enum(['bank_card', 'sbp', 'sberbank', 'tinkoff_bank']);
+const PaymentMethodKey = z.enum(PAYMENT_METHOD_KEYS);
 
 const PaymentMethodSchema = z.object({
   key: PaymentMethodKey,
@@ -36,12 +41,7 @@ export const CheckoutPaymentPuckConfig: BlockPuckConfig<CheckoutPaymentProps> = 
         key: {
           type: 'select',
           label: 'Тип',
-          options: [
-            { label: 'Банковская карта', value: 'bank_card' },
-            { label: 'СБП', value: 'sbp' },
-            { label: 'Sber Pay', value: 'sberbank' },
-            { label: 'T-Pay', value: 'tinkoff_bank' },
-          ],
+          options: PAYMENT_METHOD_OPTIONS,
         },
         enabled: { type: 'boolean', label: 'Включён' },
         label: { type: 'text', label: 'Подпись' },
@@ -52,12 +52,9 @@ export const CheckoutPaymentPuckConfig: BlockPuckConfig<CheckoutPaymentProps> = 
   defaults: {
     heading: 'Платёжная система',
     subheading: 'Все транзакции безопасны и зашифрованы',
-    methods: [
-      { key: 'bank_card', enabled: true, label: 'Банковская карта' },
-      { key: 'sbp', enabled: true, label: 'СБП (Система быстрых платежей)' },
-      { key: 'sberbank', enabled: false, label: 'Sber Pay' },
-      { key: 'tinkoff_bank', enabled: false, label: 'T-Pay' },
-    ],
+    // Все способы каталога включены: покупателю витрина покажет только те,
+    // что открывает платёжка магазина (enabledMethods из billing).
+    methods: DEFAULT_PAYMENT_METHODS,
     padding: { top: 0, bottom: 0 },
   },
   schema: CheckoutPaymentSchema,

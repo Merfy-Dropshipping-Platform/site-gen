@@ -45,6 +45,7 @@ const CARD = {
   compareAtPrice: null,
   image: 'https://s3.merfy.ru/p/2.jpg',
   available: true,
+  images: [],
 } satisfies ProductCard;
 const COLLECTION = {
   id: 'c-1',

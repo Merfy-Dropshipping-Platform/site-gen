@@ -23,7 +23,8 @@ export type BehaviorExport =
   | 'quantity'
   | 'cardPhotos'
   | 'stickyHeader'
-  | 'video';
+  | 'video'
+  | 'zoom';
 
 export interface SectionModule {
   readonly name: string;

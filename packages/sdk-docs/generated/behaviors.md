@@ -38,7 +38,7 @@
 
 Части: `data-part="image"`.
 
-Параметры: `data-photos` — список через запятую; по умолчанию ``; `data-hover-next` — да или нет; по умолчанию `true`.
+Параметры: `data-photos` — список через пробел; по умолчанию ``; `data-hover-next` — да или нет; по умолчанию `true`.
 ## sticky-header
 
 Части: —.
@@ -59,6 +59,11 @@
 Части: `data-part="input"`, `data-part="results"`, `data-part="item"`, `data-part="link"`, `data-part="image"`, `data-part="title"`, `data-part="price"`, `data-part="compare"`, `data-part="empty"`, `data-part="all"`.
 
 Параметры: `data-limit` — целое от 1 до 20; по умолчанию `8`.
+## zoom
+
+Части: `data-part="image"`.
+
+Параметры: `data-mode` — одно из: hover, click; по умолчанию `hover`; `data-photos` — список через пробел; по умолчанию ``.
 
 ## Пресеты data-animate
 

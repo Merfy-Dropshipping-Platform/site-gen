@@ -4,10 +4,10 @@
 
 Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
 
-| `uses` | Что в `Astro.props` | Что в нём |
-|---|---|---|
-| `"theme"` | `theme` | значения [сквозных настроек темы](theme-settings.md) |
-| `"shop"` | `shop` | публичные данные магазина: название, контакты, адрес |
+| `uses`    | Что в `Astro.props` | Что в нём                                            |
+| --------- | ------------------- | ---------------------------------------------------- |
+| `"theme"` | `theme`             | значения [сквозных настроек темы](theme-settings.md) |
+| `"shop"`  | `shop`              | публичные данные магазина: название, контакты, адрес |
 
 ```astro
 ---
@@ -41,12 +41,12 @@ const { settings } = Astro.props;
 
 Публичные поля по виду (`null`-запись не ломает шаблон — проверьте поле на `null`):
 
-| Вид | Публичные поля записи |
-|---|---|
-| `product` | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `options`, `variants`, `collections`, `updatedAt` |
-| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `available`) |
-| `blog` | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `cover`, `excerpt`) |
-| `policy` | `type`, `title`, `url`, `html` |
+| Вид          | Публичные поля записи                                                                                                                                                                                                                                                                                             |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `product`    | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `options`, `variants`, `collections`, `updatedAt`                                                                                                                                                                  |
+| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `images`, `available`; `image` — первое фото, `images` — первые два, для `data-photos` поведения `card-photos`: `{product.images.join(' ')}`) |
+| `blog`       | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `cover`, `excerpt`)                                                                                                                                                                    |
+| `policy`     | `type`, `title`, `url`, `html`                                                                                                                                                                                                                                                                                    |
 
 ### `data` — записи для `script.ts`
 

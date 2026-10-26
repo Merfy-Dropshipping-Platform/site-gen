@@ -42,11 +42,19 @@ describe('закрепление в виде обёртки', () => {
     });
   });
 
-  it('none, правки без sticky и отсутствие правок — вид по умолчанию, замечаний нет', () => {
-    for (const edits of [{ sticky: 'none' }, {}, undefined]) {
-      const resolved = viewOf(edits);
-      expect(isDefaultWrapperView(resolved.view)).toBe(true);
-      expect(resolved.invalid).toEqual([]);
+  it('none — вид по умолчанию без закрепления, замечаний нет', () => {
+    const resolved = viewOf({ sticky: 'none' });
+    expect(isDefaultWrapperView(resolved.view)).toBe(true);
+    expect(resolved.invalid).toEqual([]);
+  });
+
+  // Блок 15, часть 15в (Р15в-2): умолчание — «При прокрутке вверх», как конструктор и генератор пяти тем на проде.
+  it('правки без sticky и отсутствие правок — «При прокрутке вверх», замечаний нет', () => {
+    for (const edits of [{}, undefined]) {
+      expect(viewOf(edits)).toEqual({
+        view: { classes: ['py-section', ...PINNED, ...SLIDING], attributes: BEHAVIOR },
+        invalid: [],
+      });
     }
   });
 
@@ -68,10 +76,10 @@ describe('закрепление в виде обёртки', () => {
     }
   });
 
-  it('значение не из none / scroll-up / always — вид по умолчанию, замечание про sticky', () => {
+  it('значение не из none / scroll-up / always — вид по умолчанию («При прокрутке вверх»), замечание про sticky', () => {
     for (const edits of [{ sticky: 'sometimes' }, { sticky: 5 }]) {
       const resolved = viewOf(edits);
-      expect(isDefaultWrapperView(resolved.view)).toBe(true);
+      expect(resolved.view).toEqual(viewOf({ sticky: 'scroll-up' }).view);
       expect(keysOf(resolved.invalid)).toEqual(['sticky']);
     }
   });
@@ -94,10 +102,14 @@ const wrapped = (classes: string, attributes = ''): string =>
   `<merfy-section data-section="shop:header" data-section-id="header-1" class="${classes}"${attributes}><nav class="flex">Меню</nav></merfy-section>`;
 
 describe('закрепление на странице', () => {
-  it('none и нет правки — прежняя обёртка с одним классом py-section', async () => {
-    for (const edits of [undefined, { sticky: 'none' }]) {
-      expect(await renderSection(placedOf(edits), SECTIONS, 'live')).toBe(wrapped('py-section'));
-    }
+  it('none — прежняя обёртка с одним классом py-section', async () => {
+    expect(await renderSection(placedOf({ sticky: 'none' }), SECTIONS, 'live')).toBe(wrapped('py-section'));
+  });
+
+  it('нет правки — как scroll-up: классы перехода и сдвига, data-behavior и data-mode', async () => {
+    expect(await renderSection(placedOf(undefined), SECTIONS, 'live')).toBe(
+      await renderSection(placedOf({ sticky: 'scroll-up' }), SECTIONS, 'live'),
+    );
   });
 
   it('always — sticky top-0 z-50, без поведения', async () => {

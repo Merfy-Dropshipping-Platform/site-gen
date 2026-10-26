@@ -1,5 +1,5 @@
-import { checkAttributeWrite } from '../attributes';
 import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
+import { safePhotos } from './photos';
 
 // Фото карточки (design.md блока 6, раздел 8; Р6-15): мышь — второе фото при наведении, телефон — свайп от 30 px
 // по горизонтали (в 1,5 раза больше, чем по вертикали), после свайпа нажатие 400 мс гасится. Адрес проходит ту же
@@ -12,18 +12,6 @@ const CLICK_SUPPRESS_MS = 400;
 
 const partOf = (host: BehaviorHost, name: string): HTMLElement | null =>
   host.root.querySelector<HTMLElement>(`[data-part="${name}"]`);
-
-// Граница src картинки: адрес, который её не проходит, из списка выпадает.
-function safePhotos(photos: readonly string[]): readonly string[] {
-  return photos.filter((photo) => {
-    try {
-      checkAttributeWrite('img', 'src', photo);
-      return true;
-    } catch {
-      return false;
-    }
-  });
-}
 
 interface Swipe {
   x: number;

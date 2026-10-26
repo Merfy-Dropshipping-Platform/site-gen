@@ -14,9 +14,10 @@ const problemsOf = (run: () => unknown): string[] => {
 };
 
 describe('словарь имён полей', () => {
-  it('файлы пакета читаются: 45 имён в трёх группах, 8 отказов, 10 сквозных', () => {
+  it('файлы пакета читаются: 46 имён в трёх группах, 8 отказов, 10 сквозных', () => {
     // Блок 11 «Секций и SDK», часть 11б: per-page, paging, filter-position, next-photo, quick-add, sold-out.
-    expect(NAMES.names).toHaveLength(45);
+    // Блок 15, часть 15в: zoom.
+    expect(NAMES.names).toHaveLength(46);
     expect(NAMES.groups.map((group) => group.title)).toEqual(['Содержимое', 'Вид', 'Поведение']);
     expect(NAMES.refusals.map((refusal) => refusal.id)).toEqual([
       'section-view',

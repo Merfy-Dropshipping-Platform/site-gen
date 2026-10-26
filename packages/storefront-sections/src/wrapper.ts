@@ -12,6 +12,8 @@ export type WrapperId = (typeof WRAPPER_IDS)[number];
 export const DEFAULT_WRAPPER_IDS: readonly WrapperId[] = ['scheme', 'padding'];
 export const STICKY_VALUES = ['none', 'scroll-up', 'always'] as const;
 export type StickyValue = (typeof STICKY_VALUES)[number];
+// Блок 15, часть 15в (Р15в-2): умолчание объявления — «При прокрутке вверх», как на проде.
+const STICKY_DEFAULT: StickyValue = 'scroll-up';
 
 const SCHEME_FIELD: SectionField = {
   id: 'scheme',
@@ -28,7 +30,8 @@ const STICKY_FIELD: SectionField = {
   label: 'Статичность',
   setting: {
     kind: 'select',
-    default: 'none',
+    // Блок 15, часть 15в (Р15в-2): как конструктор и генератор пяти тем на проде — «При прокрутке вверх».
+    default: STICKY_DEFAULT,
     options: [
       { value: 'none', label: 'Никогда' },
       { value: 'scroll-up', label: 'При прокрутке вверх' },
@@ -50,7 +53,8 @@ export const DEFAULT_WRAPPER_VIEW: WrapperView = { classes: ['py-section'], attr
 
 // Закрепление (Р1-5-7; часть 7б блока 7, Р7б-1). Классы стоят на самой <merfy-section>: закрепляется обёртка, а не элемент
 // внутри неё. none ничего не добавляет; always закрепляет; scroll-up закрепляет и добавляет переход, сдвиг по data-hidden и
-// поведение sticky-header (оно ставит и снимает data-hidden, режим читает из data-mode).
+// поведение sticky-header (оно ставит и снимает data-hidden, режим читает из data-mode). Без правки у секции со sticky
+// в списке — scroll-up (Р15в-2).
 const PINNED = ['sticky', 'top-0', 'z-50'];
 
 export const STICKY_VIEW: Readonly<Record<StickyValue, WrapperView>> = {
@@ -127,7 +131,8 @@ export function wrapperView(listed: readonly WrapperId[], values: WrapperValues)
         ? ['py-section']
         : [`pt-${values.padding.top / PADDING_UNIT}`, `pb-${values.padding.bottom / PADDING_UNIT}`]),
     );
-  const sticky = values.sticky === undefined ? STICKY_VIEW.none : STICKY_VIEW[values.sticky];
+  // Нет правки: sticky в списке секции — умолчание объявления (scroll-up), нет в списке — без закрепления.
+  const sticky = STICKY_VIEW[values.sticky ?? (listed.includes('sticky') ? STICKY_DEFAULT : 'none')];
   return { classes: [...classes, ...sticky.classes], attributes: { ...sticky.attributes } };
 }
 

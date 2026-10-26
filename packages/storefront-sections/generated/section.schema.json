@@ -4393,6 +4393,108 @@
           {
             "type": "object",
             "properties": {
+              "id": {
+                "type": "string",
+                "const": "zoom",
+                "description": "Увеличение главного фото товара: `hover` — лупа при наведении, `click` — окно по нажатию; значение — параметр `data-mode` поведения `zoom`"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sublabel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visibleWhen": {
+                "type": "object",
+                "properties": {
+                  "setting": {
+                    "type": "string"
+                  },
+                  "equals": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "setting",
+                  "equals"
+                ],
+                "additionalProperties": false
+              },
+              "setting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "radio"
+                      },
+                      "default": {
+                        "type": "string"
+                      },
+                      "options": {
+                        "minItems": 2,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "label"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default",
+                      "options"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "control": {
+                "type": "string",
+                "const": "segment"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "setting"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
               "wrapper": {
                 "type": "string",
                 "enum": [
@@ -8775,6 +8877,108 @@
                             "min",
                             "max",
                             "step"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "control": {
+                      "type": "string",
+                      "const": "segment"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "setting"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "zoom",
+                      "description": "Увеличение главного фото товара: `hover` — лупа при наведении, `click` — окно по нажатию; значение — параметр `data-mode` поведения `zoom`"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sublabel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "section": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "row": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "visibleWhen": {
+                      "type": "object",
+                      "properties": {
+                        "setting": {
+                          "type": "string"
+                        },
+                        "equals": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "setting",
+                        "equals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "setting": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "radio"
+                            },
+                            "default": {
+                              "type": "string"
+                            },
+                            "options": {
+                              "minItems": 2,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default",
+                            "options"
                           ],
                           "additionalProperties": false
                         }

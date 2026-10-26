@@ -5,7 +5,7 @@ import type { Bezier, EasingName } from '../types';
 // Пресет data-animate: что движется, когда и как — значения пяти тем «один в один» (таблица раздела 9, факт 22).
 // По каталогу ядро читает параметры (params.ts), проверка секции при сохранении (часть 6б) находит ошибки в разметке,
 // сборка (часть 6б) выбирает библиотеки, документация для ИИ (блок 14) строит список. Данные — договор: добавить можно,
-// менять нельзя. search — блок 11 (функция поиска SDK), zoom — блок 8 (галерея товара).
+// менять нельзя. search — блок 11 (функция поиска SDK), zoom — блок 15, часть 15в (увеличение фото товара).
 
 export type BehaviorName =
   | 'accordion'
@@ -19,7 +19,9 @@ export type BehaviorName =
   | 'video'
   // Блок 11 «Секций и SDK», часть 11б-2: листание и фильтры списка, подсказки поиска.
   | 'catalog'
-  | 'search';
+  | 'search'
+  // Блок 15, часть 15в (Р15в-3): увеличение фото товара — лупа при наведении или окно по нажатию.
+  | 'zoom';
 
 export type Library = 'embla' | 'motion';
 
@@ -103,6 +105,16 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
     libraries: [],
     parts: ['input', 'results', 'item', 'link', 'image', 'title', 'price', 'compare', 'empty', 'all'],
     params: { limit: { kind: 'int', min: 1, max: 20, default: 8 } },
+    onSection: false,
+  },
+  // Блок 15, часть 15в (Р15в-3): mode — поле «Увеличение» (на проде zoomMode, по умолчанию hover); photos — фото окна.
+  zoom: {
+    libraries: [],
+    parts: ['image'],
+    params: {
+      mode: { kind: 'enum', values: ['hover', 'click'], default: 'hover' },
+      photos: { kind: 'list', default: [] },
+    },
     onSection: false,
   },
 };

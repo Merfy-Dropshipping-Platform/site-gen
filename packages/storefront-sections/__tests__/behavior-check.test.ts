@@ -28,7 +28,7 @@ describe('поведения в шаблоне', () => {
     const [found] = await behaviorProblems(`${FRONT}<div>\n  <div data-behavior="carosel"></div>\n</div>`);
     expect(found).toMatchObject({ code: 'behavior-unknown', file: 'template.astro', line: 5, column: 8 });
     expect(found?.message).toBe(
-      'поведения carosel нет в каталоге SDK; есть: accordion, dialog, carousel, tabs, nav-menu, quantity, card-photos, sticky-header, video, catalog, search',
+      'поведения carosel нет в каталоге SDK; есть: accordion, dialog, carousel, tabs, nav-menu, quantity, card-photos, sticky-header, video, catalog, search, zoom',
     );
   });
 

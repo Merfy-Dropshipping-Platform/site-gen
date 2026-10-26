@@ -32,3 +32,5 @@ export { video } from './video';
 // Блок 11 «Секций и SDK», часть 11б-2. Файл сборки — catalog.js и search.js, имя экспорта — имя поведения.
 export { catalog } from './catalog-list';
 export { search } from './search';
+// Блок 15, часть 15в: увеличение фото товара.
+export { zoom } from './zoom';

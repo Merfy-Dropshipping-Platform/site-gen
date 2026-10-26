@@ -139,6 +139,43 @@ describe('наши секции блока 11', () => {
     expect(withPhoto).toContain('src="https://s3.merfy.ru/p/1.jpg"');
     expect(withPhoto).not.toMatch(/<img[^>]*\bhidden\b/);
   }, 30_000);
+
+  // Блок 15, часть 15в (Р15в-4, Р15в-5): главное фото в рамке zoom, лента миниатюр — кнопки действия pick.
+  it('«Товар»: миниатюры и увеличение — рамка zoom с режимом из поля, кнопка на каждое фото, текущая — первая', async () => {
+    const renderer = startSectionRenderer();
+    opened.push(renderer);
+    const request = await requestOf('product');
+    const photos = ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg', 'https://s3.merfy.ru/p/3.jpg'];
+    const scarf = {
+      id: 'p-1',
+      title: 'Шарф «Нова»',
+      price: money(190000),
+      compareAtPrice: null,
+      available: true,
+      images: photos,
+      description: '',
+      options: [],
+    };
+    const page = { id: 'product', path: '/product/sharf-nova' };
+    const html = await renderer.render({
+      ...request,
+      settings: { product: 'p-1', 'sold-out': 'show', zoom: 'click' },
+      records: { product: scarf },
+      page,
+    });
+    expect(html).toContain(`data-behavior="zoom" data-mode="click" data-photos="${photos.join(' ')}"`);
+    expect(html.match(/data-action="pick"/g)).toHaveLength(3);
+    expect(html).toContain(`data-src="${photos[1]}"`);
+    expect(html.match(/aria-current="true"/g)).toHaveLength(1);
+    const single = await renderer.render({
+      ...request,
+      settings: { product: 'p-1', 'sold-out': 'show', zoom: 'hover' },
+      records: { product: { ...scarf, images: [photos[0]] } },
+      page,
+    });
+    expect(single).toContain('data-behavior="zoom" data-mode="hover"');
+    expect(single).not.toContain('data-action="pick"');
+  }, 30_000);
 });
 
 it('место блоков расширений — data-ext-point="product" у кнопки «В корзину» (блок 12, часть 12б)', () => {

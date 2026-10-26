@@ -27,6 +27,18 @@
           { "value": "hide", "label": "Прятать" }
         ]
       }
+    },
+    {
+      "id": "zoom",
+      "label": "Увеличение",
+      "setting": {
+        "kind": "radio",
+        "default": "hover",
+        "options": [
+          { "value": "click", "label": "Нажатие" },
+          { "value": "hover", "label": "Наведение" }
+        ]
+      }
     }
   ]
 }

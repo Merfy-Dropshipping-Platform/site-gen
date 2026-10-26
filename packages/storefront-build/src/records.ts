@@ -116,6 +116,8 @@ export interface ProductCard {
   compareAtPrice: Money | null;
   image: string | null;
   available: boolean;
+  // Первые два фото — «второе фото при наведении» у карточек секций (поведение card-photos); image — первое.
+  images: string[];
 }
 export interface CollectionRecord {
   id: string;
@@ -465,6 +467,7 @@ function productCardOf(item: Placed<ProductItem>): ProductCard {
     compareAtPrice: compareAtOf(data.compareAtPrice),
     image: firstImage(data.images),
     available: data.available,
+    images: data.images.slice(0, 2),
   };
 }
 

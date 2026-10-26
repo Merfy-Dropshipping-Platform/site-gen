@@ -117,7 +117,9 @@ function attachCart(
   const draw = (): void => {
     const api = shopApiOf(core);
     if (api !== null)
-      void cartViewsOf(api, host).then((views) => places.forEach((place) => paintCartNotes(place, notes, views)));
+      void cartViewsOf(api, host)
+        .then((views) => places.forEach((place) => paintCartNotes(place, notes, views)))
+        .catch(() => undefined); // сбой запроса корзины — место остаётся пустым
   };
   draw();
   for (const name of CART_EVENTS) host.element.addEventListener(name, draw, { signal: host.signal });

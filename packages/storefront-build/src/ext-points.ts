@@ -4,10 +4,13 @@ import type { StorefrontExtPoints } from '@merfy/storefront-config';
 // Части мест блоков расширений по местам, которые объявили включённые расширения магазина (блок 15 «Секций и SDK»,
 // часть 15д, Р15д-4): место → часть — EXT_POINTS ядра. Без повторов, по алфавиту; мест нет — пусто. По ней сборщик
 // пишет вход code.extPointParts (15г) рядом с code.extPoints.
+// Места всех расширений карты одним списком.
+const placeNamesOf = (points: StorefrontExtPoints): string[] =>
+  Object.values(points).flatMap((places) => Object.keys(places));
+
 export function partsOfExtPoints(points: StorefrontExtPoints | undefined): ExtPointPart[] {
-  const parts = new Set<ExtPointPart>();
-  for (const places of Object.values(points ?? {}))
-    for (const place of Object.keys(places)) if (isExtPoint(place)) parts.add(EXT_POINTS[place]);
+  const names = placeNamesOf(points ?? {}).filter(isExtPoint);
+  const parts = new Set(names.map((place) => EXT_POINTS[place]));
   return [...parts].sort();
 }
 

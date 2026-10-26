@@ -16,7 +16,8 @@ import { StoreContentService } from "../content/store-content.service";
 import { toStoreContentSite } from "../content/store-content.port";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
-import type { StorefrontBuilderClient } from "../storefront-preview/storefront-builder.client";
+// Значение, не type: класс — токен внедрения Nest, type-импорт выпадает из сборки (dev-деплой 26.10 упал на DI).
+import { StorefrontBuilderClient } from "../storefront-preview/storefront-builder.client";
 
 export const PLACES_PATH = "/sections/places";
 

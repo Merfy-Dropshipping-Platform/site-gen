@@ -1,5 +1,5 @@
 import { SECTION_ROLES } from '@merfy/shell/roles';
-import { extUseSchema, storefrontExtensionsSchema } from '@merfy/storefront-config';
+import { extUseSchema, storefrontExtPointsSchema, storefrontExtensionsSchema } from '@merfy/storefront-config';
 import { z } from 'zod';
 import { hashSchema } from './canonical';
 import { entityKey } from './entities';
@@ -152,9 +152,14 @@ const codeSchema = z.strictObject({
   globals: z.array(sectionNameSchema),
   // Сторы и методы включённых расширений из uses секций магазина (блок 9 «Секций и SDK», часть 9в); нет — ключа нет.
   extensions: storefrontExtensionsSchema.optional(),
-  // Части ядра по включённым местам расширений магазина (блок 15, часть 15г): место product — часть purchase в бандле
-  // каждой страницы, даже без места в разметке (карточки каталога). Магазин без расширений — ключа нет, бандл прежний.
+  // Части мест, включённые у магазина (блок 15, части 15г и 15д): по местам включённых расширений — cart и account →
+  // points, orders → records, product → purchase. points и records встают на страницы, где место есть в разметке секции,
+  // purchase — на каждую (карточки каталога). Магазин без расширений с местами — ключа нет, частей мест в бандле нет.
   extPointParts: z.array(partNameSchema).min(1).optional(),
+  // Описания этих мест (часть 15д): в конфиг страницы идут места частей её бандла. Пишутся вместе с extPointParts.
+  extPoints: storefrontExtPointsSchema
+    .refine((points) => Object.keys(points).length > 0, { error: 'пустые места пишутся без ключа extPoints' })
+    .optional(),
 });
 
 const entitySchema = z.strictObject({

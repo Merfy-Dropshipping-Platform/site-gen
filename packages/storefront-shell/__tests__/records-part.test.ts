@@ -1,4 +1,5 @@
 import { EXT_POINT_CLASSES } from '@merfy/shell/ext-points';
+import type { StorefrontConfig } from '@merfy/storefront-config';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CUSTOMER_TOKEN_KEY } from '../src/core/customer-token';
 import { records } from '../src/core/parts/records';
@@ -8,10 +9,9 @@ import type { CoreHandle, InstanceHost, Mode } from '../src/core/types';
 // свой код ядра, рантайма theme-base нет; поведение и тексты — extension-orders theme-base. Расширение — test-ext.
 const SHOP = '3a9626f7-390d-4a66-bca5-a3b806ca6c1b';
 const API = 'https://gateway.dev.merfy.ru/api';
-const MAP_URL = `${API}/store/extensions/storefront?store_id=${SHOP}`;
 const LIST_URL = `${API}/store/extensions/test-ext/fn/mineList?store_id=${SHOP}`;
 const GET_URL = `${API}/store/extensions/test-ext/fn/mineGet?store_id=${SHOP}`;
-const MAP = {
+const EXT_POINTS: NonNullable<StorefrontConfig['extPoints']> = {
   'other-ext': { cart: { note: { text: 'x' } } },
   'test-ext': { orders: { list: 'mineList', get: 'mineGet' } },
 };
@@ -45,7 +45,7 @@ const ENTRY = {
 };
 type Routes = Readonly<Record<string, () => Response>>;
 
-function configOf(mode: Mode): CoreHandle['config'] {
+function configOf(mode: Mode, extPoints: StorefrontConfig['extPoints'] = EXT_POINTS): CoreHandle['config'] {
   return {
     v: 1,
     mode,
@@ -56,6 +56,7 @@ function configOf(mode: Mode): CoreHandle['config'] {
     theme: { id: 'nova', version: '0.1.0' },
     page: { id: 'page-orders', path: '/account/orders' },
     analytics: null,
+    ...(extPoints === undefined ? {} : { extPoints }),
   };
 }
 
@@ -124,7 +125,7 @@ afterEach(() => {
 describe('records: список записей', () => {
   it('строки — новые сверху, неполная пропущена; ссылка, дата, статус и тон; токен; классы словаря; theme-base нет', async () => {
     localStorage.setItem(CUSTOMER_TOKEN_KEY, 'token-12e');
-    const fetchMock = stub({ [MAP_URL]: ok(MAP), [LIST_URL]: ok({ items: ITEMS }) });
+    const fetchMock = stub({ [LIST_URL]: ok({ items: ITEMS }) });
     const place = attach();
     await settle();
     expect(hrefsIn(place)).toEqual(['/account/orders?ext=test-ext&id=r-2', '/account/orders?ext=test-ext&id=r-1']);
@@ -135,8 +136,8 @@ describe('records: список записей', () => {
     expect(place.querySelector('img')).toBeNull();
     expect(place.querySelector('[data-tone="success"]')?.textContent).toBe('Готово');
     for (const name of classesIn(place)) expect(EXT_POINT_CLASSES.records).toContain(name);
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([MAP_URL, LIST_URL]);
-    const init = fetchMock.mock.calls[1]?.[1];
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([LIST_URL]);
+    const init = fetchMock.mock.calls[0]?.[1];
     expect(new Headers(init?.headers).get('authorization')).toBe('Bearer token-12e');
     expect(JSON.parse(bodyText(init))).toEqual({});
     expect(document.querySelector('script, style')).toBeNull();
@@ -145,12 +146,12 @@ describe('records: список записей', () => {
 
   it('функция списка упала — строк нет, без console.error; превью — ни запросов, ни строк', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    stub({ [MAP_URL]: ok(MAP), [LIST_URL]: failed });
+    stub({ [LIST_URL]: failed });
     const place = attach();
     await settle();
     expect(place.childElementCount).toBe(0);
     expect(error).not.toHaveBeenCalled();
-    const fetchMock = stub({ [MAP_URL]: ok(MAP) });
+    const fetchMock = stub({});
     const preview = attach('preview');
     await settle();
     expect([fetchMock.mock.calls.length, preview.childElementCount]).toEqual([0, 0]);
@@ -160,7 +161,7 @@ describe('records: список записей', () => {
 describe('records: страница записи (?ext=&id=)', () => {
   it('блоки: абзацы и строки текста, пары, строки с итогом, только безопасная кнопка; неизвестный блок пропущен', async () => {
     history.replaceState(null, '', '/account/orders?ext=test-ext&id=r-2');
-    const fetchMock = stub({ [MAP_URL]: ok(MAP), [GET_URL]: ok(ENTRY) });
+    const fetchMock = stub({ [GET_URL]: ok(ENTRY) });
     const place = attach();
     await settle();
     expect(hrefsIn(place)).toEqual(['/account/orders', '/contacts']);
@@ -173,23 +174,23 @@ describe('records: страница записи (?ext=&id=)', () => {
       expect(place.textContent).toContain(text);
     expect(place.textContent).not.toContain('Чужой');
     for (const name of classesIn(place)) expect(EXT_POINT_CLASSES.records).toContain(name);
-    expect(fetchMock.mock.calls[1]?.[0]).toBe(GET_URL);
-    expect(JSON.parse(bodyText(fetchMock.mock.calls[1]?.[1]))).toEqual({ id: 'r-2' });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(GET_URL);
+    expect(JSON.parse(bodyText(fetchMock.mock.calls[0]?.[1]))).toEqual({ id: 'r-2' });
   });
 
   it.each<[string, string, Routes, string]>([
-    ['data: null', '?ext=test-ext&id=r-9', { [MAP_URL]: ok(MAP), [GET_URL]: ok(null) }, 'Запись не найдена'],
-    ['расширения нет в карте', '?ext=gone-ext&id=r-1', { [MAP_URL]: ok(MAP) }, 'Запись не найдена'],
+    ['data: null', '?ext=test-ext&id=r-9', { [GET_URL]: ok(null) }, 'Запись не найдена'],
+    ['расширения нет в конфиге', '?ext=gone-ext&id=r-1', {}, 'Запись не найдена'],
     [
       'ответ не той формы',
       '?ext=test-ext&id=r-2',
-      { [MAP_URL]: ok(MAP), [GET_URL]: ok({ number: '№2' }) },
+      { [GET_URL]: ok({ number: '№2' }) },
       'Не удалось загрузить. Обновите страницу.',
     ],
     [
       'функция упала',
       '?ext=test-ext&id=r-2',
-      { [MAP_URL]: ok(MAP), [GET_URL]: failed },
+      { [GET_URL]: failed },
       'Не удалось загрузить. Обновите страницу.',
     ],
   ])('%s — «← Мои заказы» и текст', async (_name, search, routes, text) => {

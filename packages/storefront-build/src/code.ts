@@ -1,5 +1,12 @@
 import { MOTION_CSS, MOTION_HEAD_SCRIPT } from '@merfy/shell/behaviors/motion-css';
-import { EXT_USE_PREFIX, type StorefrontExtensions } from '@merfy/storefront-config';
+import { EXT_POINTS, EXT_POINT_PARTS, type ExtPointPart } from '@merfy/shell/ext-points';
+import {
+  EXT_USE_PREFIX,
+  type ExtensionPoints,
+  type StorefrontExtPoints,
+  type StorefrontExtensions,
+} from '@merfy/storefront-config';
+import { EVERY_PAGE_EXT_POINT_PARTS } from './ext-points';
 import { bundlePage, type BundleKit, type BundleSection, type PageBundle } from './bundle';
 import { kitPlanOf } from './features';
 import { sha256 } from './canonical';
@@ -35,6 +42,50 @@ export function pageExtensions(inputs: BuildInputs, pageId: string): StorefrontE
     Object.entries(inputs.code.extensions ?? {})
       .filter(([id]) => ids.has(id))
       .sort(([left], [right]) => (left < right ? -1 : 1)),
+  );
+}
+
+const POINT_PARTS: ReadonlySet<string> = new Set(EXT_POINT_PARTS);
+
+// Части мест в бандле страницы (блок 15, часть 15д, Р15д-2, Р15д-3): часть включена у магазина (code.extPointParts) и
+// место есть в разметке секции страницы (meta.parts) или часть ставится на каждую страницу. По порядку EXT_POINT_PARTS.
+export function pageExtPointParts(inputs: BuildInputs, pageId: string): ExtPointPart[] {
+  const enabled = new Set(inputs.code.extPointParts ?? []);
+  if (enabled.size === 0) return [];
+  const placed = new Set(pageCode(inputs, pageId).flatMap((section) => section.meta?.parts ?? []));
+  return EXT_POINT_PARTS.filter(
+    (part) => enabled.has(part) && (placed.has(part) || EVERY_PAGE_EXT_POINT_PARTS.includes(part)),
+  );
+}
+
+// Места расширения, чьи части есть в бандле страницы.
+function placesOn(places: ExtensionPoints, parts: ReadonlySet<string>): ExtensionPoints {
+  const kept: ExtensionPoints = {};
+  if (places.cart !== undefined && parts.has(EXT_POINTS.cart)) kept.cart = places.cart;
+  if (places.account !== undefined && parts.has(EXT_POINTS.account)) kept.account = places.account;
+  if (places.orders !== undefined && parts.has(EXT_POINTS.orders)) kept.orders = places.orders;
+  if (places.product !== undefined && parts.has(EXT_POINTS.product)) kept.product = places.product;
+  return kept;
+}
+
+// Места для конфига страницы (Р15д-1): у расширения — только места частей бандла этой страницы, расширение без них —
+// без ключа. По алфавиту id, как pageExtensions.
+export function pageExtPoints(inputs: BuildInputs, pageId: string): StorefrontExtPoints {
+  const parts: ReadonlySet<string> = new Set(pageExtPointParts(inputs, pageId));
+  if (parts.size === 0) return {};
+  const kept = Object.entries(inputs.code.extPoints ?? {})
+    .map(([id, places]): [string, ExtensionPoints] => [id, placesOn(places, parts)])
+    .filter(([, places]) => Object.keys(places).length > 0)
+    .sort(([left], [right]) => (left < right ? -1 : 1));
+  return Object.fromEntries(kept);
+}
+
+// meta.parts секций без частей мест: их ставит pageExtPointParts (Р15д-2).
+function withoutExtPointParts(sections: readonly CodeSection[]): CodeSection[] {
+  return sections.map((section) =>
+    section.meta === undefined
+      ? section
+      : { ...section, meta: { ...section.meta, parts: section.meta.parts.filter((part) => !POINT_PARTS.has(part)) } },
   );
 }
 
@@ -200,10 +251,10 @@ export async function pageBundle(
   );
   const modules = new Map(scripts.map(({ hash }): [string, string] => [hexOf(hash), moduleText(hash, assets.modules)]));
   const kit = kitOf(built.kit, content, [...modules.values()]);
-  // Части по включённым местам расширений магазина (блок 15, 15г) — на каждой странице с бандлом, вместе с частями
-  // самой страницы: дубль pageParts убирает сам.
-  const parts = [...(inputs.code.extPointParts ?? []), ...additionalParts];
-  const source = { core, parts: pageParts(shell.parts, code, parts), sections, modules };
+  // Части мест расширений (части 15г, 15д, Р15д-2, Р15д-3): не из meta.parts секций напрямую, а по pageExtPointParts —
+  // только включённые у магазина; вместе с частями самой страницы, дубль pageParts убирает сам.
+  const parts = [...pageExtPointParts(inputs, pageId), ...additionalParts];
+  const source = { core, parts: pageParts(shell.parts, withoutExtPointParts(code), parts), sections, modules };
   const bundle = await bundlePage(kit === undefined ? source : { ...source, kit });
   bundle.notices.forEach((notice) => page.notice?.(pageId, notice));
   return kit?.plan.reveal === true ? { ...bundle, tag: `${MOTION_HEAD}${bundle.tag}` } : bundle;

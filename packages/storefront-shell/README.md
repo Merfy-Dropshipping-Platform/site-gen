@@ -261,3 +261,7 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 `points`, `orders` — `records`, `product` — `purchase`. Части показывают блоки включённых расширений по описаниям
 `GET /store/extensions/storefront`, как у пяти тем; в превью конструктора блоков нет. Имён расширений в ядре нет —
 тест `__tests__/extension-vocabulary.test.ts`.
+
+`records` (часть 12е) — свой код ядра, как `points`: записи расширений в «Моих заказах» отдельным списком в месте
+`orders`, страница записи — `/account/orders?ext=<id>&id=<запись>`; функции — `orders.list` и `orders.get` карты, с
+токеном покупательницы. Рантайма theme-base нет.

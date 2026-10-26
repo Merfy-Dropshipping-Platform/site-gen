@@ -8868,7 +8868,8 @@
               "variants",
               "search",
               "catalog",
-              "orders"
+              "orders",
+              "files"
             ]
           },
           {

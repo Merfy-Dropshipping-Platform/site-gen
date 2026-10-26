@@ -231,7 +231,7 @@ async function upload(state: FilesState, args: UploadArgs, options?: ActionOptio
   return uploadFile(state, args, file, options);
 }
 
-// Превью: blob-ссылка один раз на ключ, узел — картинка; forget отзывает ссылку и прячет превью.
+// Превью: blob-ссылка один раз на ключ; forget отменяет ссылку и скрывает картинку.
 function previewImage(state: FilesState, img: El, key: string): void {
   if (state.mode === 'preview') return;
   const node = elementOf(img);

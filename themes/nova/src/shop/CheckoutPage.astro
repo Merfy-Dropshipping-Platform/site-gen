@@ -5,6 +5,7 @@
 // (packages/storefront-build/src/checkout-pages.ts). Настройки формы оформления (факт 33) ядро тоже тянет само —
 // исходники темы без сети (сторк рендера блока 4). Страницу рендерит только сборщик: данные — из
 // Astro.locals.merfy.checkout.
+// Адрес шлюза — из конфига сборки, скриптом в <head> (часть 15е).
 import OrderConfirmation from "../../../../packages/theme-base/blocks/OrderConfirmation/OrderConfirmation.astro";
 import CheckoutForm from "../../../../packages/theme-base/blocks/CheckoutForm/CheckoutForm.astro";
 import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
@@ -22,6 +23,12 @@ const page = Astro.locals.merfy;
 if (page === undefined) throw new Error("Страницу магазина рендерит только сборщик: нет Astro.locals.merfy");
 const checkout = page.checkout;
 if (checkout === undefined) throw new Error("Оформление рендерит только сборщик: нет locals.merfy.checkout");
+// Блок 15, часть 15е (Р15е-1, И4): адрес шлюза — только из конфига сборки; запасного адреса нет. Ранний выход со
+// статусом 500: throw в середине потока рвёт соединение, а до потока Astro 7 отвечает 404 — тест ждёт render-failed.
+if (!checkout.config.apiUrl) {
+	Astro.response.status = 500;
+	return;
+}
 
 // Свойства «Спасибо за заказ» — страница flux пяти тем (packages/theme-flux/pages/checkout-result.json), как есть.
 const RESULT_PROPS = {
@@ -52,6 +59,14 @@ const RESULT_PROPS = {
 <html lang={page.head.lang} {...page.head.attributes}>
 	<head>
 		<ShopHead head={page.head} />
+		<script is:inline define:vars={{ config: checkout.config }}>
+			// Адрес шлюза и магазин для блоков theme-base (Р10а-17; часть 15е, Р15е-1): только из конфига сборки и до скриптов
+			// блоков — «Спасибо за заказ» читает адрес сразу. Объект не пересоздаём: window.__MERFY_CONFIG__.checkout пишет ядро.
+			window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
+			window.__MERFY_CONFIG__.shopId = config.shopId;
+			window.__MERFY_CONFIG__.apiUrl = config.apiUrl;
+			if (config.dadataToken) window.__DADATA_TOKEN__ = config.dadataToken;
+		</script>
 		<script is:inline set:html={BLOCK_ROOT_INLINE_BODY}></script>
 		<style id="merfy-checkout" is:inline set:html={checkout.varsCss}></style>
 	</head>
@@ -83,16 +98,7 @@ const RESULT_PROPS = {
 			</div>
 		)}
 
-		<script is:inline define:vars={{ config: checkout.config }}>
-			// НЕ клоббер: превью может выставить window.__MERFY_CONFIG__.checkout ДО этого скрипта (шаблон пяти тем).
-			window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
-			if (!window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = config.shopId || "";
-			if (!window.__MERFY_CONFIG__.apiUrl)
-				window.__MERFY_CONFIG__.apiUrl = config.apiUrl || "https://gateway.merfy.ru/api";
-			if (config.dadataToken) {
-				window.__DADATA_TOKEN__ = config.dadataToken;
-			}
-		</script>
+		{/* Адрес шлюза и магазин — скриптом в <head> (часть 15е, Р15е-1). */}
 
 	</body>
 </html>

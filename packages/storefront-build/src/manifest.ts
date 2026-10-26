@@ -55,6 +55,8 @@ const manifestShape = z.strictObject({
   shell: z.strictObject({ version: versionSchema }).nullable(),
   // Включённые расширения магазина и их версии (блок 10): по ним выпуск расширения видит, дошёл ли магазин.
   extensions: z.array(z.strictObject({ id: z.string().min(1), version: z.string().min(1) })).optional(),
+  // Секции входов сборки и хеши их правок (блок 15, часть 15з): по ним выпуск нашей секции видит, дошёл ли магазин.
+  sections: z.array(z.strictObject({ name: z.string().min(1), hash: hashSchema })).optional(),
   shop: z.strictObject({ id: z.uuid() }),
   entities: z.record(entityKeySchema, hashSchema),
   files: z.record(filePathSchema, hashSchema),

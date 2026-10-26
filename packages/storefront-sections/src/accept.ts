@@ -27,6 +27,12 @@ export interface AcceptDeps {
   sandbox?: SandboxOptions;
 }
 
+// Условие сохранения своей секции (часть 15з, Р15з-2): текущая правка магазина — с этим хешем исходника (null —
+// секции нет), иначе DraftChangedError таблицы секций, ничего не записано. У выпуска расширения условия нет.
+export interface AcceptOptions {
+  expectDraft?: string | null;
+}
+
 export type AcceptResult =
   | { status: 'accepted'; row: SectionRow }
   | { status: 'unchanged'; row: SectionRow }
@@ -42,7 +48,7 @@ interface Storage {
   find: (db: Database, door: DoorFields, name: string) => Promise<SectionRow | null>;
   // Строка с этим именем уже есть: ответ приёма или null — принимать как новую правку.
   known: (row: SectionRow, sourceHash: string) => AcceptResult | null;
-  save: (db: Database, row: NewSection) => Promise<AcceptResult>;
+  save: (db: Database, row: NewSection, options: AcceptOptions) => Promise<AcceptResult>;
 }
 
 function knownRelease(row: SectionRow, sourceHash: string): AcceptResult {
@@ -69,9 +75,9 @@ const RELEASE: Storage = {
 const DRAFT: Storage = {
   find: (db, door, name) => currentDraft(db, door.owner, name),
   known: (row, sourceHash) => (row.sourceHash === sourceHash ? { status: 'unchanged', row } : null),
-  save: async (db, row) => {
+  save: async (db, row, options) => {
     try {
-      const saved = await saveDraft(db, row);
+      const saved = await saveDraft(db, row, options.expectDraft);
       return { status: saved.created ? 'accepted' : 'unchanged', row: saved.row };
     } catch (error) {
       // Блок 12, часть 12а: роль занята другой секцией магазина — отказ приёма с её именем.
@@ -133,7 +139,12 @@ export function newRow(
   };
 }
 
-export async function acceptSection(deps: AcceptDeps, door: Door, files: SectionFiles): Promise<AcceptResult> {
+export async function acceptSection(
+  deps: AcceptDeps,
+  door: Door,
+  files: SectionFiles,
+  options: AcceptOptions = {},
+): Promise<AcceptResult> {
   const fields = doorFields(door);
   const manifest = readManifest(files);
   if (!manifest.ok) return refused(manifest.problems);
@@ -144,5 +155,5 @@ export async function acceptSection(deps: AcceptDeps, door: Door, files: Section
   const prepared = await prepareInWorker({ prefix: fields.prefix, files }, deps.sandbox ?? DEFAULT_SANDBOX);
   if (!prepared.ok) return refused(prepared.problems);
   const scriptHash = await uploadScript(deps.store, prepared.section.script);
-  return storage.save(deps.db, newRow(fields, prepared.section, files, scriptHash));
+  return storage.save(deps.db, newRow(fields, prepared.section, files, scriptHash), options);
 }

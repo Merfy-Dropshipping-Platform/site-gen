@@ -668,7 +668,7 @@ export const storefrontRelease = pgTable(
   (table) => ({
     kindCheck: check(
       "storefront_release_kind_check",
-      sql`${table.kind} IN ('theme', 'platform', 'extension')`,
+      sql`${table.kind} IN ('theme', 'platform', 'extension', 'section')`,
     ),
     statusCheck: check(
       "storefront_release_status_check",

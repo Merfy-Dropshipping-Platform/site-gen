@@ -159,7 +159,9 @@ async function recordFailures(deps: BuilderDeps, job: ClaimedJob, failures: Sect
 
 async function buildWithSections(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, theme: ThemeBuild) {
   // Справки сборки: коммит образа и включённые расширения магазина (блок 10, задача 11) — в манифест, не в ключ.
-  const references = { platformCommit: deps.platformCommit, extensions: snapshot.extensions };
+  // Секции входов и хеши их правок (часть 15з): по ним выпуск нашей секции видит, дошёл ли магазин.
+  const sections = snapshot.inputs.code.sections.map(({ name, hash }) => ({ name, hash }));
+  const references = { platformCommit: deps.platformCommit, extensions: snapshot.extensions, sections };
   const failures: SectionFailure[] = [];
   // Секции рисует процесс рендера (storefront-sections): он запускается при первой секции и закрывается после сборки.
   try {

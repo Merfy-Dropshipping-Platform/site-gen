@@ -239,6 +239,13 @@
       "when": 1792454400000,
       "tag": "0033_storefront_section_published_at",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792540800000,
+      "tag": "0034_storefront_release_section",
+      "breakpoints": true
     }
   ]
 }

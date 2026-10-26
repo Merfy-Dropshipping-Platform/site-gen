@@ -1,3 +1,4 @@
+import { publishSection } from '@merfy/storefront-sections';
 import { changePointer, hexOf, readPointer, type ObjectStore, type Pointer } from '@merfy/storefront-storage';
 import { z } from 'zod';
 import { raiseReleaseStopped } from './alert';
@@ -102,6 +103,8 @@ const SKIP = {
   build: 'у магазина нет живой сборки',
   paused: 'магазин на паузе',
   unchanged: 'сборка не изменилась: новый код платформы этот магазин не меняет',
+  // Выпуск нашей секции (часть 15з): текущая правка секции магазина — уже не та, что записала команда.
+  sectionChanged: 'мерчант изменил секцию после записи: его правка остаётся, выпуск её не трогает',
 } as const;
 const keyOf = (shop: ReleaseShopRow) => ({ releaseId: shop.releaseId, siteId: shop.siteId });
 const skipped = (reason: string): Target => ({ url: '', label: '', pointer: null, skip: reason });
@@ -360,6 +363,11 @@ async function startBuild(step: Step, release: ReleaseRow, shop: ReleaseShopRow)
   const { deps } = step;
   const rules = KINDS[release.kind];
   if (rules.pin) await pinVersion(deps, release, shop.siteId, release.toVersion, 'release');
+  // Выпуск нашей секции (часть 15з, Р15з-5): на витрину — только её правка, до события сборки; повтор шага — already.
+  if (release.kind === 'section') {
+    const published = await publishSection(deps.db, shop.siteId, release.subject, release.toVersion);
+    if (published === 'changed') return leaveWave(step, release, shop, SKIP.sectionChanged);
+  }
   await deps.publishEvent(event(deps, rules.event, shop.siteId));
   deps.log('release-shop-building', { release: release.id, shopId: shop.siteId, wave: shop.wave });
 }

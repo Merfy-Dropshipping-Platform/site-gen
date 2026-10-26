@@ -24,6 +24,7 @@ import { revertShop } from './conductor';
 import { dryRun, type DryRun, type ShopEdits, type VersionFiles } from './dry-run';
 import { KINDS } from './kinds';
 import { renderReleaseReport, type ReleaseReport, type ShotLink } from './report';
+import { resaveSection, reportLines, type SectionSources } from './section';
 import {
   createRelease,
   notifyRelease,
@@ -65,6 +66,8 @@ export interface CommandDeps {
   versions: (themeId: string, version: string) => Promise<VersionFiles>;
   pollMs: number;
   waitMs: number;
+  // Блок 15, часть 15з: источники версий нашей секции — только подкоманде section.
+  sections?: SectionSources;
 }
 
 export interface CommandSettings {
@@ -165,6 +168,25 @@ const commandSchema = z.union([
       rest: z.tuple([z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/), z.string().regex(/^\d+\.\d+\.\d+$/)]),
     })
     .transform((value) => ({ name: value.name, extension: value.rest[0], version: value.rest[1] })),
+  // Блок 15, часть 15з: новая версия нашей секции во всех магазинах; без --write — сухой прогон.
+  z
+    .object({
+      name: z.literal('section'),
+      rest: z.tuple([z.string().min(1)]),
+      write: z.boolean(),
+      'test-shop': z.string().min(1).optional(),
+      theme: z
+        .string()
+        .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
+        .optional(),
+    })
+    .transform((value) => ({
+      name: value.name,
+      folder: value.rest[0],
+      write: value.write,
+      testShop: value['test-shop'] ?? null,
+      theme: value.theme ?? 'nova',
+    })),
 ]);
 
 export type Command = z.output<typeof commandSchema>;
@@ -175,6 +197,8 @@ const OPTIONS = {
   version: { type: 'string' },
   'no-shots': { type: 'boolean', default: false },
   'expect-hash': { type: 'string' },
+  write: { type: 'boolean', default: false },
+  theme: { type: 'string' },
 } as const;
 
 function argsOf(argv: readonly string[]) {
@@ -541,11 +565,24 @@ async function extensionRelease(deps: CommandDeps, extension: string, version: s
   return EXIT.done;
 }
 
+// Блок 15, часть 15з: новая версия нашей секции во всех магазинах с её копией (theme-release section). Сама работа —
+// section.ts (стек-тесты), разбор команды — command.test.ts; сюда стенд не заходит.
+async function sectionRelease(
+  deps: CommandDeps,
+  command: Extract<Command, { name: 'section' }>,
+): Promise<number> {
+  if (deps.sections === undefined) throw refuse('section: команде не переданы источники версий секции');
+  const report = await resaveSection({ ...deps, ...deps.sections }, command);
+  for (const line of reportLines(report)) deps.say(line);
+  return report.counts.failed > 0 ? EXIT.refused : EXIT.done;
+}
+
 export function runCommand(deps: CommandDeps, command: Command): Promise<number> {
   if (command.name === 'start') return start(deps, command);
   if (command.name === 'approve') return approve(deps, command.release);
   if (command.name === 'status') return status(deps, command.release);
   if (command.name === 'skip') return skip(deps, command.release, command.shop);
   if (command.name === 'extension') return extensionRelease(deps, command.extension, command.version);
+  if (command.name === 'section') return sectionRelease(deps, command);
   return revertAll(deps, command.release);
 }

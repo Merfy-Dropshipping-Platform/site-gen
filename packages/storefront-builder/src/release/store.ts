@@ -6,7 +6,8 @@ import type { PlannedShop } from './waves';
 // Журнал выпуска в базе sites (design.md блока 10, «Автостоп и журнал выпуска»; drizzle/*_storefront_release.sql). Переходы состояний —
 // условные: «из каких состояний» в WHERE. Повтор и гонка двух обработчиков ничего не портят: второй получает false.
 
-export type ReleaseKind = 'theme' | 'platform' | 'extension';
+// section — выпуск нашей секции (блок 15, часть 15з)
+export type ReleaseKind = 'theme' | 'platform' | 'extension' | 'section';
 export type ReleaseStatus =
   | 'planning'
   | 'queued'
@@ -24,7 +25,7 @@ const UNIQUE_VIOLATION = '23505';
 
 const releaseRowSchema = z.object({
   id: z.number(),
-  kind: z.enum(['theme', 'platform', 'extension']),
+  kind: z.enum(['theme', 'platform', 'extension', 'section']),
   subject: z.string(),
   from_version: z.string(),
   to_version: z.string(),

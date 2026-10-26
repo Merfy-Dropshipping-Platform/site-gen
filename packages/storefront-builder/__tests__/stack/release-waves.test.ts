@@ -1,6 +1,15 @@
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import amqplib from 'amqplib';
+import { hashOf } from '@merfy/storefront-build';
+import {
+  acceptSection,
+  publishDrafts,
+  readSectionFolder,
+  visibleSections,
+  type SectionFiles,
+  type SectionRow,
+} from '@merfy/storefront-sections';
 import { changePointer, readPointer } from '@merfy/storefront-storage';
 import type { Pool } from 'pg';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -478,6 +487,71 @@ describe('выпуск волнами на стенде (design.md блока 10
       const oldLines = old.harness.lines.slice(mark);
       const work = ['build-start', 'release-shop-before', 'release-shop-building', 'release-shop-done'];
       expect(work.flatMap((message) => logged(oldLines, message))).toEqual([]);
+    },
+    LONG,
+  );
+});
+
+// Блок 15, часть 15з (Р15з-5): выпуск нашей секции — волна ставит на витрину только её правку и пересобирает магазин;
+// мерчант изменил копию после записи — магазин уходит из волны пропуском, его витрина прежняя.
+describe('выпуск нашей секции волнами (часть 15з)', () => {
+  const OURS = fileURLToPath(new URL('../../../storefront-shell/sections/cart-badge', import.meta.url));
+  const NAME = 'shop:cart-badge';
+  const withText = (files: SectionFiles, text: string): SectionFiles => ({
+    ...files,
+    'template.astro': (files['template.astro'] ?? '').replace('Корзина', text),
+  });
+
+  async function saved(harness: Harness, siteId: string, files: SectionFiles): Promise<SectionRow> {
+    const result = await acceptSection({ db: harness.db, store: harness.store }, { author: 'shop', shopId: siteId }, files);
+    if (result.status === 'refused') throw new Error(`секция не прошла проверку: ${result.problems.length}`);
+    return result.row;
+  }
+
+  const liveHash = async (harness: Harness, siteId: string): Promise<string | undefined> =>
+    (await visibleSections(harness.db, { shopId: siteId, extensions: [] })).find((row) => row.name === NAME)?.sourceHash;
+
+  it(
+    'волна публикует правку и пересобирает; правка мерчанта после записи — пропуск, его витрина прежняя',
+    async () => {
+      const { harness } = await startStack();
+      await harness.db.query('TRUNCATE storefront_section');
+      const [test, other] = await publishedShops(harness, 2);
+      const v1 = await readSectionFolder(OURS);
+      for (const site of [test, other]) {
+        await saved(harness, site.id, v1);
+        await publishDrafts(harness.db, site.id);
+      }
+      const next = await saved(harness, test.id, withText(v1, 'Корзина · 15з'));
+      await saved(harness, other.id, withText(v1, 'Корзина · 15з'));
+      await saved(harness, other.id, withText(v1, 'Корзинка'));
+      const release = await createRelease(
+        harness.db,
+        {
+          kind: 'section',
+          subject: NAME,
+          fromVersion: 'seed',
+          toVersion: next.sourceHash,
+          toHash: next.contentHash,
+          contour: 'dev',
+          startedBy: 'тест',
+          status: 'testing',
+        },
+        (id) => planWaves([test.id, other.id], test.id, id),
+      );
+      await statusIs(harness, release.id, 'finished');
+      const shops = await releaseShops(harness.db, release.id);
+      expect(shops.map((shop) => [shop.siteId === test.id ? 'test' : 'other', shop.status])).toEqual([
+        ['test', 'done'],
+        ['other', 'skipped'],
+      ]);
+      expect(shops.find((shop) => shop.siteId === other.id)?.error).toContain('мерчант');
+      expect([await liveHash(harness, test.id), await liveHash(harness, other.id)]).toEqual([
+        next.sourceHash,
+        hashOf(v1),
+      ]);
+      expect((await liveManifest(harness.store, labelOf(test)))?.sections).toEqual([]);
+      expect(logged(harness.lines, 'ALERT')).toEqual([]);
     },
     LONG,
   );

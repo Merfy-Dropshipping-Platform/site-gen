@@ -132,7 +132,6 @@ export function wrapperView(listed: readonly WrapperId[], values: WrapperValues)
         : [`pt-${values.padding.top / PADDING_UNIT}`, `pb-${values.padding.bottom / PADDING_UNIT}`]),
     );
   // Нет правки: sticky в списке секции — умолчание объявления (scroll-up), нет в списке — без закрепления.
-  // Нет правки: sticky в списке секции — умолчание объявления (scroll-up), нет в списке — без закрепления.
   const sticky = STICKY_VIEW[values.sticky ?? (listed.includes('sticky') ? STICKY_DEFAULT : 'none')];
   return { classes: [...classes, ...sticky.classes], attributes: { ...sticky.attributes } };
 }

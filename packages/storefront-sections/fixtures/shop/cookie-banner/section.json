@@ -7,20 +7,21 @@
   "wrapper": [],
   "uses": ["shop", "consent"],
   "settings": [
-    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "" } },
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "", "ai": "title" } },
     {
       "id": "text",
       "label": "Текст",
       "setting": {
         "kind": "text",
-        "default": "Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием."
+        "default": "Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием.",
+        "ai": "description"
       }
     },
-    { "id": "button-label", "label": "Основная кнопка", "setting": { "kind": "string", "default": "Принять" } },
+    { "id": "button-label", "label": "Основная", "section": "Кнопки", "setting": { "kind": "string", "default": "Принять" } },
     {
       "id": "label",
-      "label": "Дополнительная кнопка",
-      "sublabel": "Пусто — кнопки нет",
+      "label": "Дополнительная",
+      "section": "Кнопки",
       "setting": { "kind": "string", "default": "" }
     },
     {

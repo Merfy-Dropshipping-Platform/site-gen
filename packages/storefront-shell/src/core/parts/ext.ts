@@ -76,7 +76,10 @@ function isJsonValue(value: unknown): value is Json {
   return isRecord(value) && Object.values(value).every(isJsonValue);
 }
 
-const okReply = (reply: Reply): boolean => reply.status === 200 && isRecord(reply.body) && reply.body.success === true;
+// Успех — любой 2xx: шлюз отвечает на POST функций расширения статусом 201, а не 200
+// (как в theme-base extension-call.ts, «Успех — любой 2xx»).
+const okReply = (reply: Reply): boolean =>
+  reply.status >= 200 && reply.status < 300 && isRecord(reply.body) && reply.body.success === true;
 
 const dataOf = (reply: Reply): ExtValue => {
   const data: unknown = isRecord(reply.body) ? reply.body.data : undefined;

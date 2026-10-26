@@ -246,6 +246,14 @@ describe('методы расширения', () => {
     expect(extCalls(gateway).find((call) => call.key === FN('voteReview'))?.body).toEqual({ reviewId: 'r-1' });
   });
 
+  it('ответ 201 на POST метода — успех: шлюз отвечает 201, а не 200 (секция «Заявка» 12д)', async () => {
+    const gateway = fakeGateway();
+    gateway.answer(FN('voteReview'), { status: 201, body: { success: true, data: { votes: 2 } } });
+    const results = callMethod('vote', { reviewId: 'r-2' });
+    await settle();
+    expect(results.map((result) => (result.ok ? 'ok' : result.error.code))).toEqual(['ok']);
+  });
+
   it.each<[number, string, string, string | null]>([
     [422, 'refused', 'refused', 'Отзыв уже отмечен'],
     [502, 'invalid_output', 'server', NOTICE_TEXT.server],

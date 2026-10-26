@@ -11,7 +11,7 @@ import {
   type TokenEdits,
   type TokenMigrations,
 } from '@merfy/tokens';
-import { codeHead, pageExtensions } from './code';
+import { codeHead, pageExtPoints, pageExtensions } from './code';
 import { shopSectionTokensCss } from './section-tokens';
 import { themeFonts, themeTokensCss } from './fonts';
 import { countersOf } from './counters';
@@ -210,6 +210,8 @@ function headOf(
     mode: content.mode,
     analytics: ANALYTICS_BY_MODE[content.mode](inputs),
     extensions: pageExtensions(inputs, route.id),
+    // Места блоков расширений для частей бандла страницы (блок 15, часть 15д, Р15д-1).
+    extPoints: pageExtPoints(inputs, route.id),
   });
   const canonical = new URL(route.path, inputs.site.publicUrl).href;
   return {

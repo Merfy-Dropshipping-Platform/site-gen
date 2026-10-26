@@ -329,6 +329,224 @@
         ],
         "additionalProperties": false
       }
+    },
+    "extPoints": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{2,31}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "cart": {
+            "type": "object",
+            "properties": {
+              "note": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "when": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "note"
+            ],
+            "additionalProperties": false
+          },
+          "account": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "source": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+              },
+              "fields": {
+                "minItems": 1,
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "kind": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "input": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "required": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "key"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "copy": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "key"
+                ],
+                "additionalProperties": false
+              },
+              "list": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+                  },
+                  "columns": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
+                  }
+                },
+                "required": [
+                  "source",
+                  "columns"
+                ],
+                "additionalProperties": false
+              },
+              "form": {
+                "type": "object",
+                "properties": {
+                  "fn": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+                  },
+                  "fields": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "kind": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 32
+                        },
+                        "input": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 32
+                        },
+                        "required": {
+                          "type": "boolean",
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "key"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "fn"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "orders": {
+            "type": "object",
+            "properties": {
+              "list": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+              },
+              "get": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+              }
+            },
+            "required": [
+              "list",
+              "get"
+            ],
+            "additionalProperties": false
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "form": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+              }
+            },
+            "required": [
+              "form"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "required": [

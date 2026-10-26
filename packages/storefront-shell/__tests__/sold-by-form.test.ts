@@ -1,16 +1,19 @@
+import type { StorefrontConfig } from '@merfy/storefront-config';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SOLD_CACHE_KEY, soldByFormOf } from '../src/core/sold-by-form';
 import type { CoreHandle, Mode } from '../src/core/types';
 
-// Товар продаётся формой расширения (блок 15, часть 15г, Р15г-1; extension-sale.ts пяти тем на dev): карта — раз на ядро,
-// функция формы точки product, кэш вкладки на 5 минут, до 4 запросов разом, сбой — «нет» без запоминания.
+// Товар продаётся формой расширения (блок 15, часть 15г, Р15г-1; extension-sale.ts пяти тем на dev): места — из конфига
+// страницы, функция формы точки product, кэш вкладки на 5 минут, до 4 запросов разом, сбой — «нет» без запоминания.
 const SHOP = '3a9626f7-390d-4a66-bca5-a3b806ca6c1b';
 const API = 'https://gateway.dev.merfy.ru/api';
-const MAP_URL = `${API}/store/extensions/storefront?store_id=${SHOP}`;
 const FORM_URL = `${API}/store/extensions/test-ext/fn/productForm?store_id=${SHOP}`;
-const MAP = { 'other-ext': { cart: {} }, 'test-ext': { product: { form: 'productForm' } } };
+const MAP: NonNullable<StorefrontConfig['extPoints']> = {
+  'other-ext': { cart: { note: { text: 'x' } } },
+  'test-ext': { product: { form: 'productForm' } },
+};
 
-function coreOf(mode: Mode = 'live'): CoreHandle {
+function coreOf(mode: Mode = 'live', extPoints: StorefrontConfig['extPoints'] = MAP): CoreHandle {
   return {
     config: {
       v: 1,
@@ -22,6 +25,7 @@ function coreOf(mode: Mode = 'live'): CoreHandle {
       theme: { id: 'nova', version: '0.1.0' },
       page: { id: 'catalog', path: '/catalog' },
       analytics: null,
+      ...(extPoints === undefined ? {} : { extPoints }),
     },
     mode,
     emit: vi.fn(),
@@ -53,9 +57,9 @@ function cacheEntryOf(raw: string | null): { storeId: string; at: number } {
 }
 
 // Форма — у товаров из sold; остальным — null.
-function stub(sold: readonly string[], map: unknown = MAP) {
+function stub(sold: readonly string[]) {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-    if (url === MAP_URL) return Promise.resolve(answer({ success: true, data: map }));
+    void url;
     return Promise.resolve(answer({ success: true, data: sold.includes(productIdOf(init)) ? { title: 'Заявка' } : null }));
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -73,12 +77,12 @@ afterEach(() => {
 });
 
 describe('sold-by-form', () => {
-  it('товар с формой — да, без формы — нет; карта — один раз на ядро; ответ запомнен', async () => {
+  it('товар с формой — да, без формы — нет; запроса карты нет; ответ запомнен', async () => {
     const fetchMock = stub(['p-1']);
     const sold = soldByFormOf(coreOf());
     expect(sold.known('p-1')).toBeUndefined();
     expect(await Promise.all([sold.check('p-1'), sold.check('p-2'), sold.check('p-1')])).toEqual([true, false, true]);
-    expect(fetchMock.mock.calls.filter(([url]) => url === MAP_URL)).toHaveLength(1);
+    expect(fetchMock.mock.calls.every(([url]) => url === FORM_URL)).toBe(true);
     expect(fetchMock.mock.calls.filter(([url]) => url === FORM_URL)).toHaveLength(2);
     expect([sold.known('p-1'), sold.known('p-2')]).toEqual([true, false]);
     expect(soldByFormOf(coreOf()).known('p-1')).toBe(true); // кэш вкладки: новое ядро той же вкладки знает ответ
@@ -99,8 +103,7 @@ describe('sold-by-form', () => {
     let peak = 0;
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (url: string) => {
-        if (url === MAP_URL) return answer({ success: true, data: MAP });
+      vi.fn(async () => {
         open += 1;
         peak = Math.max(peak, open);
         await new Promise((resolve) => setTimeout(resolve, 5));
@@ -113,10 +116,10 @@ describe('sold-by-form', () => {
     expect(peak).toBe(4);
   });
 
-  it('у включённых расширений нет функции формы — нет, запрос только к карте', async () => {
-    const fetchMock = stub(['p-1'], { 'other-ext': { cart: {} } });
-    expect(await soldByFormOf(coreOf()).check('p-1')).toBe(false);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+  it('мест product в конфиге нет — нет, без запросов', async () => {
+    const fetchMock = stub(['p-1']);
+    expect(await soldByFormOf(coreOf('live', { 'other-ext': { cart: { note: { text: 'x' } } } })).check('p-1')).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('сбой сети — нет и без запоминания: следующий вызов спрашивает снова', async () => {

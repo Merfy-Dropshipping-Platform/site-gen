@@ -37,15 +37,21 @@ interface SoldState {
   readonly known: Map<string, boolean>;
   readonly pending: Map<string, Promise<boolean>>;
   readonly queue: (() => Promise<void>)[]; // запуск отложенных запросов функции формы
-  map: Promise<readonly Pair[] | null> | null; // null — карту ещё не спрашивали; внутри null — карта недоступна
+  readonly pairs: readonly Pair[]; // функции формы мест product из config.extPoints (часть 15д, Р15д-1)
   active: number; // запросов функции формы идёт сейчас
 }
+
+// Пары «id расширения → функция формы места product» из конфига страницы, по порядку ключей (по алфавиту id).
+const pairsOfConfig = (core: CoreHandle): readonly Pair[] =>
+  Object.entries(core.config?.extPoints ?? {}).flatMap(([id, places]): readonly Pair[] =>
+    places.product === undefined ? [] : [[id, places.product.form]],
+  );
 
 function createState(core: CoreHandle): SoldState {
   const config = core.config;
   const storeId = config === null ? '' : config.shop.id;
   const apiUrl = config === null ? '' : config.api.url;
-  return { storeId, apiUrl, token: tokenOf(pageStorage(window, core.mode)), known: knownFromCache(storeId), pending: new Map(), queue: [], map: null, active: 0 };
+  return { storeId, apiUrl, token: tokenOf(pageStorage(window, core.mode)), known: knownFromCache(storeId), pending: new Map(), queue: [], pairs: pairsOfConfig(core), active: 0 };
 }
 
 // Ответы вкладки: свежие и своего магазина; иначе — пусто, ядро спросит заново.
@@ -94,35 +100,6 @@ function hasForm(reply: Reply): boolean {
   return isRecord(body) && body.success === true && isRecord(body.data);
 }
 
-// Пары «id расширения → функция формы точки product» из карты включённых расширений, по порядку ключей карты.
-function formPairsOf(body: unknown): readonly Pair[] {
-  if (!isRecord(body)) return [];
-  return Object.entries(body).flatMap(([id, entry]): readonly Pair[] => {
-    if (!isRecord(entry) || !isRecord(entry.product)) return [];
-    const form = entry.product.form;
-    return typeof form === 'string' && form !== '' ? [[id, form] as const] : [];
-  });
-}
-
-// Данные ответа шлюза: внутри конверт { success, data } — карта расширений или форма.
-const dataOf = (reply: Reply): unknown => {
-  const body = reply.body;
-  return isRecord(body) ? body.data : null;
-};
-
-// Карта расширений — один раз на ядро; недоступна (status 0) — null, это сбой без запоминания.
-function pairsOf(state: SoldState): Promise<readonly Pair[] | null> {
-  if (state.map === null) state.map = fetchPairs(state);
-  return state.map;
-}
-
-async function fetchPairs(state: SoldState): Promise<readonly Pair[] | null> {
-  if (state.apiUrl === '') return null;
-  const url = `${state.apiUrl}/store/extensions/storefront?store_id=${encodeURIComponent(state.storeId)}`;
-  const reply = await requestJson(url, { method: 'GET' });
-  return reply.status === 0 ? null : formPairsOf(dataOf(reply));
-}
-
 function askForm(state: SoldState, pair: Pair, productId: string): Promise<Reply> {
   const [id, form] = pair;
   const path = `/store/extensions/${encodeURIComponent(id)}/fn/${encodeURIComponent(form)}`;
@@ -155,9 +132,7 @@ function pump(state: SoldState): void {
 
 // Ответ по товару: true — первая функция формы дала форму, false — форм нет; null — сбой, не запоминаем.
 async function answerOf(state: SoldState, productId: string): Promise<boolean | null> {
-  const pairs = await pairsOf(state);
-  if (pairs === null) return null;
-  for (const pair of pairs) {
+  for (const pair of state.pairs) {
     const reply = await limited(state, () => askForm(state, pair, productId));
     if (reply.status === 0) return null;
     if (hasForm(reply)) return true;

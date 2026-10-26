@@ -108,6 +108,8 @@ export {
 
 // Код секций (блок 7) и бандл страницы (блок 5 «Секций и SDK», часть 5б)
 export { NO_ASSETS, type CodeAssets } from './code';
+// Блок 15 «Секций и SDK», часть 15д: части мест блоков расширений по местам включённых расширений — для сборщика.
+export { EVERY_PAGE_EXT_POINT_PARTS, partsOfExtPoints } from './ext-points';
 export {
   BUNDLE_DIR,
   BUNDLE_INLINE_MAX_BYTES,

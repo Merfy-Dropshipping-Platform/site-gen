@@ -1,3 +1,4 @@
+import type { StorefrontConfig } from '@merfy/storefront-config';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CUSTOMER_TOKEN_KEY } from '../src/core/customer-token';
 import { purchase } from '../src/core/parts/purchase';
@@ -7,13 +8,15 @@ import type { CoreHandle, InstanceHost, Mode } from '../src/core/types';
 // показывает секция расширения; часть прячет кнопку, если функция формы точки product дала форму. Расширение — test-ext.
 const SHOP = '3a9626f7-390d-4a66-bca5-a3b806ca6c1b';
 const API = 'https://gateway.dev.merfy.ru/api';
-const MAP = { 'other-ext': { cart: { note: { text: 'x' } } }, 'test-ext': { product: { form: 'productForm' } } };
-const MAP_URL = `${API}/store/extensions/storefront?store_id=${SHOP}`;
+const MAP: NonNullable<StorefrontConfig['extPoints']> = {
+  'other-ext': { cart: { note: { text: 'x' } } },
+  'test-ext': { product: { form: 'productForm' } },
+};
 const FORM_URL = `${API}/store/extensions/test-ext/fn/productForm?store_id=${SHOP}`;
 const PLACE =
   '<div data-ext-point="product" data-product-id="p-1"><button data-action="cart.add">В корзину</button></div>';
 
-function configOf(mode: Mode): CoreHandle['config'] {
+function configOf(mode: Mode, extPoints: StorefrontConfig['extPoints'] = MAP): CoreHandle['config'] {
   return {
     v: 1,
     mode,
@@ -24,6 +27,7 @@ function configOf(mode: Mode): CoreHandle['config'] {
     theme: { id: 'nova', version: '0.1.0' },
     page: { id: 'product', path: '/product/stol' },
     analytics: null,
+    ...(extPoints === undefined ? {} : { extPoints }),
   };
 }
 
@@ -31,7 +35,7 @@ const partOf = (): CoreHandle['part'] => () => {
   throw new Error('part не нужен этому тесту');
 };
 
-function attach(mode: Mode = 'live'): HTMLElement {
+function attach(mode: Mode = 'live', extPoints: StorefrontConfig['extPoints'] = MAP): HTMLElement {
   const element = document.createElement('section');
   element.innerHTML = PLACE;
   document.body.append(element);
@@ -42,17 +46,17 @@ function attach(mode: Mode = 'live'): HTMLElement {
     mode,
     signal: new AbortController().signal,
   };
-  purchase.attach?.(purchase.create({ config: configOf(mode), mode, emit: vi.fn(), part: partOf() }), host);
+  purchase.attach?.(purchase.create({ config: configOf(mode, extPoints), mode, emit: vi.fn(), part: partOf() }), host);
   return element;
 }
 
 const answer = (body: unknown): Response =>
   new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
 
-function stub(form: unknown, map: unknown = MAP) {
+function stub(form: unknown) {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     void init; // requestJson всегда передаёт init; тесту нужны адрес, тело и заголовок
-    return Promise.resolve(answer({ success: true, data: url === MAP_URL ? map : form }));
+    return Promise.resolve(answer({ success: true, data: form }));
   });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
@@ -86,18 +90,18 @@ describe('purchase: кнопка «В корзину» и форма расши�
     expect([button?.hidden, button?.style.display]).toEqual([true, 'none']);
     expect(document.querySelector('script, style, [data-extension-purchase], [data-product-actions]')).toBeNull();
     expect(Reflect.has(window, '__merfyPurchase')).toBe(false);
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([MAP_URL, FORM_URL]);
-    const init = fetchMock.mock.calls[1]?.[1];
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([FORM_URL]);
+    const init = fetchMock.mock.calls[0]?.[1];
     expect(JSON.parse(bodyText(init))).toEqual({ productId: 'p-1' });
     expect(new Headers(init?.headers).get('authorization')).toBe('Bearer token-12d');
   });
 
-  it.each<[string, unknown, unknown, number]>([
-    ['формы для товара нет (null)', null, MAP, 2],
-    ['у включённых расширений нет функции формы точки product', { title: 'x' }, { 'other-ext': { cart: {} } }, 1],
-  ])('%s — кнопка на месте', async (_name, form, map, requests) => {
-    const fetchMock = stub(form, map);
-    const element = attach();
+  it.each<[string, unknown, NonNullable<StorefrontConfig['extPoints']>, number]>([
+    ['формы для товара нет (null)', null, MAP, 1],
+    ['у включённых расширений нет функции формы точки product', { title: 'x' }, { 'other-ext': { cart: { note: { text: 'x' } } } }, 0],
+  ])('%s — кнопка на месте', async (_name, form, extPoints, requests) => {
+    const fetchMock = stub(form);
+    const element = attach('live', extPoints);
     await settle();
     expect(element.querySelector('button')?.hidden).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(requests);

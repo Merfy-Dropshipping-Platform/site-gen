@@ -1,12 +1,21 @@
 import {
   NO_ASSETS,
+  partsOfExtPoints,
   type BuildInputs,
   type CodeAssets,
   type CodeInstance,
   type CodeSection,
   type ShellBuild,
 } from '@merfy/storefront-build';
-import { EXT_USE_PREFIX, extensionStorefrontSchema, type ExtensionStorefront } from '@merfy/storefront-config';
+import {
+  EXT_USE_PREFIX,
+  extensionPointsOf,
+  extensionStorefrontSchema,
+  storefrontExtPointsSchema,
+  type ExtensionPoints,
+  type ExtensionStorefront,
+  type StorefrontExtPoints,
+} from '@merfy/storefront-config';
 import {
   currentSection,
   propsUsesOf,
@@ -224,29 +233,38 @@ export interface CodeContext {
   shopId: string;
   // Сторы и методы включённых расширений по id (блок 9 «Секций и SDK», часть 9в): из них codeOf пишет code.extensions.
   extensions?: ReadonlyMap<string, ExtensionStorefront>;
-  // Части ядра по включённым местам расширений (блок 15, часть 15г): extPointPartsOf — их пишет readShopCode.
+  // Части мест, включённые у магазина (блок 15, части 15г и 15д): extPointPartsOf — их пишет readShopCode.
   extPointParts?: readonly string[];
+  // Места блоков расширений по id (часть 15д): из них codeOf пишет code.extPoints; их пишет readShopCode.
+  extPoints?: StorefrontExtPoints;
 }
 
-// Место storefront → часть ядра, которую оно добавляет в бандл каждой страницы магазина (блок 15, часть 15г):
-// карточки каталога места product не имеют, но «В корзину» у товара с формой прячет часть purchase.
-export const EXT_POINT_PARTS: Readonly<Record<string, string>> = { product: 'purchase' };
+const QUIET: Pick<CodeContext, 'log' | 'shopId'> = { log: () => undefined, shopId: '' };
 
-// Функция формы места включённого расширения: storefront.<place>.form — непустая строка, как в карте
-// /store/extensions/storefront; нет — null.
-function formFnOf(storefront: unknown, place: string): string | null {
-  if (typeof storefront !== 'object' || storefront === null) return null;
-  const point: unknown = Reflect.get(storefront, place);
-  if (typeof point !== 'object' || point === null) return null;
-  const form: unknown = Reflect.get(point, 'form');
-  return typeof form === 'string' && form !== '' ? form : null;
+// Места блоков расширений магазина (блок 15, часть 15д, Р15д-1, Р15д-5, Р15д-6): места cart, account, orders и product
+// из storefront манифеста включённых расширений, по алфавиту id; расширение без мест — без ключа. Место не той формы —
+// его нет, строка журнала extension-point-invalid на каждое; id не по правилу конфига — расширения нет, та же строка с
+// place: 'id'. Сборка идёт (как Р9в-8).
+export function extPointsOf(
+  list: readonly EnabledExtension[],
+  context: Pick<CodeContext, 'log' | 'shopId'>,
+): StorefrontExtPoints {
+  const kept: [string, ExtensionPoints][] = [];
+  for (const extension of [...list].sort((left, right) => (left.id < right.id ? -1 : 1))) {
+    const { points, invalid } = extensionPointsOf(extension.storefront);
+    for (const place of invalid)
+      context.log('extension-point-invalid', { shopId: context.shopId, extension: extension.id, place });
+    if (Object.keys(points).length === 0) continue;
+    if (storefrontExtPointsSchema.safeParse({ [extension.id]: points }).success) kept.push([extension.id, points]);
+    else context.log('extension-point-invalid', { shopId: context.shopId, extension: extension.id, place: 'id' });
+  }
+  return Object.fromEntries(kept);
 }
 
-// Части ядра по включённым местам расширений магазина, по алфавиту; расширений с местами нет — пусто.
+// Части мест, включённые у магазина (части 15г, 15д, Р15д-4): по местам extPointsOf, место → часть — partsOfExtPoints
+// сборки (EXT_POINTS ядра). Журнал пишет extPointsOf в readShopCode; здесь — без журнала.
 export function extPointPartsOf(list: readonly EnabledExtension[]): readonly string[] {
-  const has = (place: string): boolean => list.some((extension) => formFnOf(extension.storefront, place) !== null);
-  const parts = Object.keys(EXT_POINT_PARTS).filter(has).map((place) => EXT_POINT_PARTS[place] ?? '');
-  return [...new Set(parts)].sort();
+  return partsOfExtPoints(extPointsOf(list, QUIET));
 }
 
 const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
@@ -376,16 +394,18 @@ function blocksOf(
   return { blocks: resolved.blocks };
 }
 
-// Необязательные ключи code входов: описания расширений (Р9в-21) и части по включённым местам (блок 15, 15г) —
-// пишутся, только когда есть; магазинов без них входы не меняют.
+// Необязательные ключи code входов: описания расширений (Р9в-21) и части по включённым местам (блок 15, 15г) и места
+// (15д) — пишутся, только когда есть; магазинов без них входы не меняют.
 function codeExtras(
   extensions: BuildInputs['code']['extensions'],
   context: CodeContext,
-): Pick<BuildInputs['code'], 'extensions' | 'extPointParts'> {
+): Pick<BuildInputs['code'], 'extensions' | 'extPointParts' | 'extPoints'> {
   const empty = context.extPointParts === undefined || context.extPointParts.length === 0;
+  const points = context.extPoints ?? {};
   return {
     ...(extensions === undefined || Object.keys(extensions).length === 0 ? {} : { extensions }),
     ...(empty ? {} : { extPointParts: [...(context.extPointParts ?? [])] }),
+    ...(Object.keys(points).length === 0 ? {} : { extPoints: points }),
   };
 }
 
@@ -430,8 +450,9 @@ export async function readShopCode(deps: CodeDeps, shopId: string): Promise<Shop
   const visibility = { shopId, extensions };
   const rows = await (deps.rows ?? visibleSections)(deps.db, visibility);
   const storefronts = storefrontsOf(enabled, { log: deps.log, shopId });
-  const extPointParts = extPointPartsOf(enabled);
-  const context = { shell: deps.shell, log: deps.log, shopId, extensions: storefronts, extPointParts };
+  const extPoints = extPointsOf(enabled, { log: deps.log, shopId });
+  const extPointParts = partsOfExtPoints(extPoints);
+  const context = { shell: deps.shell, log: deps.log, shopId, extensions: storefronts, extPointParts, extPoints };
   return { ...codeOf(rows, read.placement, context, read.menus), extensions };
 }
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { StorefrontConfigError, type StorefrontConfigErrorCode } from './errors';
+import { storefrontExtPointsSchema } from './ext-points';
 import { storefrontExtensionsSchema } from './extensions';
 import { themeSettingsSchema } from './theme-settings';
 
@@ -92,6 +93,8 @@ const configShape = z.strictObject({
   analytics: analyticsSchema.nullable(),
   // Сторы и методы расширений из uses секций страницы (блок 9 «Секций и SDK», часть 9в); нет таких секций — поля нет.
   extensions: storefrontExtensionsSchema.optional(),
+  // Места блоков расширений для частей бандла страницы (блок 15 «Секций и SDK», часть 15д); нет — поля нет.
+  extPoints: storefrontExtPointsSchema.optional(),
 });
 
 // У опубликованного магазина адрес обязателен: по нему строятся канонические адреса и ссылки.

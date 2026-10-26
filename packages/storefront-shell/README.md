@@ -10,7 +10,7 @@
 ## Команды
 
 - `pnpm build` — ядро секций: `dist/core.js` (ES-библиотека: `start`, `defineSection`, части SDK) и `dist/core.json` —
-  версия, вес brotli бандла страницы без секций (бюджет 12 КБ, `build/build.ts`) и части страницы из `core-parts.json`;
+  версия, вес brotli бандла страницы без секций (бюджет 16 КБ, `build/build.ts`) и части страницы из `core-parts.json`;
   поведения блока 6 — в `dist/behaviors/`. Образ site-gen собирает их в `Dockerfile`; сборщик витрин читает
   `dist/core.json` и `dist/core.js` (`readShellBuild` пакета `@merfy/storefront-build`).
 - `pnpm test`, `pnpm test:coverage` — jsdom; `pnpm test:browser` — Chromium.
@@ -232,6 +232,8 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 
 ## Вход и кабинет (часть 10в, план 1)
 
+- С 15ж: в ядре — `customer` (`src/core/parts/customer.ts`, `$customer`); `auth` — в бандле страниц, где секция объявила
+  `"auth"` в `uses`; состояние у обеих одно на страницу (`customerRuntimeOf`).
 - Модуль `auth` (`src/core/parts/auth.ts`): вход по коду из письма — `requestCode`, `verify` (код или ссылка `/verify?token=`),
   `signout`, `updateProfile`; токен — `merfy_customer_token`; вход сливает избранное до `merfy:auth:signin`; на странице
   «Вход» — переход по `?redirect` (только адрес этого сайта) или в кабинет.
@@ -243,7 +245,7 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 
 - Секции `login` «Вход» (`page-login`, адреса `/login` и `/verify`), `account` «Личный кабинет» (`page-profile`,
   `/account/profile` и `/account`), `orders` «Заказы» (`page-orders`, `/account/orders`, заказ — `?n=<номер>`).
-- «Шапка»: «Профиль» — `/login`, вошедшей — `/account` (`data-ref="profile"`, `ctx.auth.$customer`).
+- «Шапка»: «Профиль» — `/login`, вошедшей — `/account` (`data-ref="profile"`, `ctx.customer.$customer`, с части 15ж).
 
 ## Секции с ролью (блок 12 «Секций и SDK», часть 12а)
 

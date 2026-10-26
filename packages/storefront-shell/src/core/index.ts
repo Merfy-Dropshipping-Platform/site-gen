@@ -5,6 +5,8 @@ export { defineSection } from './define';
 export { SECTION_FAILURE_EVENT } from './events';
 export { start, type CoreEnv, type StartedCore } from './start';
 export { auth } from './parts/auth';
+// Блок 15, часть 15ж: кто вошёл — ctx.customer.$customer, в ядре; вход по коду, выход и профиль — часть auth по uses.
+export { customer } from './parts/customer';
 export { cart } from './parts/cart';
 export { favorites } from './parts/favorites';
 // Блок 13: согласие на cookie — ctx.consent и действия consent.accept, consent.decline.
@@ -71,6 +73,7 @@ export type {
   CoreHandle,
   Ctx,
   Customer,
+  CustomerModule,
   CustomerState,
   El,
   ErrorCode,

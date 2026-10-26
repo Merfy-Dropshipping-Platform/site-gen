@@ -109,13 +109,19 @@ function fnRequest(state: ExtensionState, body: Json): JsonRequest {
   return token === null ? { method: 'POST', body } : { method: 'POST', body, token };
 }
 
-// Гость: покупательницы нет или части auth на странице нет (вход — блок 10); сервер такому запросу всё равно откажет.
+// Гость (Р15ж-5): покупательницы нет — по части customer ядра, нет её — по части auth; нет обеих — гость. Сервер
+// такому запросу всё равно откажет.
+const SIGNED_IN_PARTS = ['customer', 'auth'] as const;
+
 function isGuest(core: CoreHandle): boolean {
-  try {
-    return core.part('auth').$customer.get().customer === null;
-  } catch {
-    return true;
+  for (const name of SIGNED_IN_PARTS) {
+    try {
+      return core.part(name).$customer.get().customer === null;
+    } catch {
+      // части нет на странице — следующая
+    }
   }
+  return true;
 }
 
 // Очередь чтений одного стора: новое чтение идёт после прежнего, не параллельно (Р9в-11).

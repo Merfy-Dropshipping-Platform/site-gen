@@ -5,6 +5,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { CORE_BUDGET_BYTES } from '../build/build';
 import { buildCore } from '../build/core';
+import { parseCoreParts } from '../build/core-parts';
+import coreParts from '../core-parts.json';
 
 // Сборка ядра секций (design.md блока 5, раздел 3.10): ESM-библиотека dist/core.js — start, defineSection и части
 // отдельными экспортами, без splitting и без запуска при загрузке. Бюджет 8 КБ brotli — на бандле страницы без секций
@@ -12,7 +14,8 @@ import { buildCore } from '../build/core';
 // там package.json с "type": "module", и Node загружает core.js как модуль.
 const PACKAGE_DIR = fileURLToPath(new URL('..', import.meta.url));
 const OUT_ROOT = fileURLToPath(new URL('../dist-test/core-build', import.meta.url));
-const ALL_PARTS = ['auth', 'cart', 'consent', 'favorites'] as const;
+// Бюджет — на настоящем составе ядра из core-parts.json (блок 15, часть 15ж): вернули часть в ядро — тест это видит.
+const ALL_PARTS = parseCoreParts(coreParts);
 
 beforeAll(async () => {
   await rm(OUT_ROOT, { recursive: true, force: true });
@@ -29,7 +32,7 @@ describe('сборка ядра секций', () => {
     expect(manifest.version).toBe('0.1.0');
     expect(manifest.brotliBytes).toBeGreaterThan(0);
     // Части страницы — в core.json: их читает сборка магазина (storefront-build/src/shell.ts).
-    expect(manifest.parts).toEqual(['auth', 'cart', 'consent', 'favorites']);
+    expect(manifest.parts).toEqual(['cart', 'consent', 'customer', 'favorites']);
     expect(manifest.brotliBytes).toBeLessThanOrEqual(CORE_BUDGET_BYTES);
     expect((await readdir(outDir)).sort()).toEqual(['core.js', 'core.json']);
     const written: unknown = JSON.parse(await readFile(join(outDir, 'core.json'), 'utf8'));
@@ -44,7 +47,7 @@ describe('сборка ядра секций', () => {
     await buildCore({ packageDir: PACKAGE_DIR, outDir, core: ALL_PARTS, version: '0.1.0' });
     const module: unknown = await import(pathToFileURL(join(outDir, 'core.js')).href);
     const names = typeof module === 'object' && module !== null ? Object.keys(module) : [];
-    expect(names).toEqual(expect.arrayContaining(['auth', 'cart', 'defineSection', 'favorites', 'start']));
+    expect(names).toEqual(expect.arrayContaining(['auth', 'cart', 'customer', 'defineSection', 'favorites', 'start']));
   });
 
   it('тяжелее бюджета — core-too-heavy, файлы не пишутся', async () => {

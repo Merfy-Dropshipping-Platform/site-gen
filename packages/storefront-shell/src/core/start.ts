@@ -116,6 +116,7 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
 const MODULE_NAMES: readonly string[] = [
   'cart',
   'favorites',
+  'customer',
   'auth',
   'newsletter',
   'variants',

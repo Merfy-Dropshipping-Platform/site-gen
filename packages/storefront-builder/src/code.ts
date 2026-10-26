@@ -224,6 +224,29 @@ export interface CodeContext {
   shopId: string;
   // Сторы и методы включённых расширений по id (блок 9 «Секций и SDK», часть 9в): из них codeOf пишет code.extensions.
   extensions?: ReadonlyMap<string, ExtensionStorefront>;
+  // Части ядра по включённым местам расширений (блок 15, часть 15г): extPointPartsOf — их пишет readShopCode.
+  extPointParts?: readonly string[];
+}
+
+// Место storefront → часть ядра, которую оно добавляет в бандл каждой страницы магазина (блок 15, часть 15г):
+// карточки каталога места product не имеют, но «В корзину» у товара с формой прячет часть purchase.
+export const EXT_POINT_PARTS: Readonly<Record<string, string>> = { product: 'purchase' };
+
+// Функция формы места включённого расширения: storefront.<place>.form — непустая строка, как в карте
+// /store/extensions/storefront; нет — null.
+function formFnOf(storefront: unknown, place: string): string | null {
+  if (typeof storefront !== 'object' || storefront === null) return null;
+  const point: unknown = Reflect.get(storefront, place);
+  if (typeof point !== 'object' || point === null) return null;
+  const form: unknown = Reflect.get(point, 'form');
+  return typeof form === 'string' && form !== '' ? form : null;
+}
+
+// Части ядра по включённым местам расширений магазина, по алфавиту; расширений с местами нет — пусто.
+export function extPointPartsOf(list: readonly EnabledExtension[]): readonly string[] {
+  const has = (place: string): boolean => list.some((extension) => formFnOf(extension.storefront, place) !== null);
+  const parts = Object.keys(EXT_POINT_PARTS).filter(has).map((place) => EXT_POINT_PARTS[place] ?? '');
+  return [...new Set(parts)].sort();
 }
 
 const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
@@ -353,6 +376,19 @@ function blocksOf(
   return { blocks: resolved.blocks };
 }
 
+// Необязательные ключи code входов: описания расширений (Р9в-21) и части по включённым местам (блок 15, 15г) —
+// пишутся, только когда есть; магазинов без них входы не меняют.
+function codeExtras(
+  extensions: BuildInputs['code']['extensions'],
+  context: CodeContext,
+): Pick<BuildInputs['code'], 'extensions' | 'extPointParts'> {
+  const empty = context.extPointParts === undefined || context.extPointParts.length === 0;
+  return {
+    ...(extensions === undefined || Object.keys(extensions).length === 0 ? {} : { extensions }),
+    ...(empty ? {} : { extPointParts: [...(context.extPointParts ?? [])] }),
+  };
+}
+
 // Код из видимых строк: экземпляры секций на страницах (экземпляр без видимой секции пропускается: расширение
 // выключили, своя секция ещё не опубликована) и все глобальные скрипты. Ядро секций — всегда (часть 5б): аналитика — в
 // бандле каждой страницы опубликованного сайта.
@@ -377,12 +413,11 @@ export function codeOf(
   const renders = new Map(used.flatMap(renderOf));
   const { shell } = context;
   const input = { version: shell.version, hash: shell.hash, parts: shell.parts };
-  const extensions = usedExtensions(used, context);
   const code = {
     sections: used.map(sectionOf),
     pages,
     globals,
-    ...(Object.keys(extensions).length === 0 ? {} : { extensions }),
+    ...codeExtras(usedExtensions(used, context), context),
   };
   return { shell: input, code, assets: { shell, modules, renders } };
 }
@@ -395,7 +430,8 @@ export async function readShopCode(deps: CodeDeps, shopId: string): Promise<Shop
   const visibility = { shopId, extensions };
   const rows = await (deps.rows ?? visibleSections)(deps.db, visibility);
   const storefronts = storefrontsOf(enabled, { log: deps.log, shopId });
-  const context = { shell: deps.shell, log: deps.log, shopId, extensions: storefronts };
+  const extPointParts = extPointPartsOf(enabled);
+  const context = { shell: deps.shell, log: deps.log, shopId, extensions: storefronts, extPointParts };
   return { ...codeOf(rows, read.placement, context, read.menus), extensions };
 }
 

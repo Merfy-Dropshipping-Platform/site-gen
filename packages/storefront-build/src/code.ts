@@ -200,7 +200,10 @@ export async function pageBundle(
   );
   const modules = new Map(scripts.map(({ hash }): [string, string] => [hexOf(hash), moduleText(hash, assets.modules)]));
   const kit = kitOf(built.kit, content, [...modules.values()]);
-  const source = { core, parts: pageParts(shell.parts, code, additionalParts), sections, modules };
+  // Части по включённым местам расширений магазина (блок 15, 15г) — на каждой странице с бандлом, вместе с частями
+  // самой страницы: дубль pageParts убирает сам.
+  const parts = [...(inputs.code.extPointParts ?? []), ...additionalParts];
+  const source = { core, parts: pageParts(shell.parts, code, parts), sections, modules };
   const bundle = await bundlePage(kit === undefined ? source : { ...source, kit });
   bundle.notices.forEach((notice) => page.notice?.(pageId, notice));
   return kit?.plan.reveal === true ? { ...bundle, tag: `${MOTION_HEAD}${bundle.tag}` } : bundle;

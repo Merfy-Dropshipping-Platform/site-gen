@@ -47,6 +47,9 @@ const dataCode = ({ code }: BuildInputs) => ({
   sections: code.sections.map(dataSection),
   pages: code.pages,
   globals: code.globals,
+  // Части по включённым местам расширений (блок 15, 15г): включили или выключили расширение с местом — витрина
+  // другая, сверка видит расхождение, как по секциям расширения.
+  ...(code.extPointParts === undefined ? {} : { extPointParts: code.extPointParts }),
 });
 
 export const dataKey = (inputs: BuildInputs): string =>

@@ -1,4 +1,5 @@
 import { MODULE_NAMES } from '@merfy/shell/actions';
+import { EXT_POINTS } from '@merfy/shell/ext-points';
 import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
 import { sectionFieldShape, settingFieldsOf, settingsEntryShape } from './fields';
@@ -81,6 +82,12 @@ export const propsUsesOf = (manifest: Pick<SectionManifest, 'uses'>): SectionUse
   (manifest.uses ?? []).filter(isSectionUse);
 const unique = (list: readonly string[]): boolean => new Set(list).size === list.length;
 
+// Места блоков, рядом с которыми секция расширения встаёт сама: только места со своей частью ядра — по части в
+// script_meta видно место (cart и account — обе points, их здесь нет).
+export const AUTO_PLACES = ['product'] as const;
+export type AutoPlace = (typeof AUTO_PLACES)[number];
+export const autoPlacePart = (place: AutoPlace): string => EXT_POINTS[place];
+
 export const sectionManifestSchema = z.strictObject({
   // путь к generated/section.schema.json для редактора (блок 3 «Секций и SDK», Р3.12); проверка его не читает
   $schema: z.string().optional(),
@@ -112,6 +119,9 @@ export const sectionManifestSchema = z.strictObject({
   // Роль секции (блок 12 «Секций и SDK», 12.1): место и один экземпляр — из таблицы ролей (roles.ts); неизвестную роль
   // раньше схемы ловит role-unknown, место — role-place.
   role: z.enum(SECTION_ROLES).optional(),
+  // Место по умолчанию (блок 12 «Секций и SDK», часть 12д, Р12д-12): секция расширения встаёт сама при включении
+  // расширения — сразу после секции с этим местом блоков. У секций магазина сборщик поле не учитывает.
+  autoPlace: z.enum(AUTO_PLACES).optional(),
 });
 export type SectionManifest = z.infer<typeof sectionManifestSchema>;
 export type SectionFiles = Readonly<Record<string, string>>;
@@ -394,7 +404,7 @@ export const sectionListAllowed = (manifest: SectionManifest, list: string): boo
     ? sectionGroupsOf(manifest).includes(listGroupOf(list))
     : ROLE_PLACES[manifest.role].list === list;
 
-const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage', 'wrapper', 'role'] as const;
+const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage', 'wrapper', 'role', 'autoPlace'] as const;
 
 // newPage — настройка вида string секции, которую ставят на страницу.
 function newPageProblems(manifest: SectionManifest): string[] {
@@ -406,10 +416,16 @@ function newPageProblems(manifest: SectionManifest): string[] {
   return sectionGroupsOf(manifest).includes('page') ? [] : ['newPage: секция ставится на страницу — нужна группа page'];
 }
 
+// autoPlace — место на странице: секция встаёт сама, значит страница ей нужна (часть 12д, Р12д-12).
+function autoPlaceProblems(manifest: SectionManifest): string[] {
+  if (manifest.autoPlace === undefined) return [];
+  return sectionGroupsOf(manifest).includes('page') ? [] : ['autoPlace: секция встаёт на страницу — нужна группа page'];
+}
+
 // У глобального скрипта места на странице нет — ключи места ему не нужны; uses — только модули SDK: шаблона у него нет,
 // theme и shop читать негде (часть 5в).
 function placeProblems(manifest: SectionManifest): string[] {
-  if (manifest.kind !== 'global') return newPageProblems(manifest);
+  if (manifest.kind !== 'global') return [...newPageProblems(manifest), ...autoPlaceProblems(manifest)];
   return [
     ...PLACE_KEYS.filter((key) => key !== 'uses' && manifest[key] !== undefined).map(
       (key) => `${key}: у глобального скрипта нет места на странице`,

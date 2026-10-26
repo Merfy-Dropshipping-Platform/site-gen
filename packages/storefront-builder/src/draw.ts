@@ -20,6 +20,7 @@ import type { Slots } from './slots';
 import { readSnapshot, type SnapshotDeps } from './snapshot';
 import type { ThemeCatalog } from './theme-catalog';
 import { sectionPreview, shopPreview, shopPreviewDeps, shopSections } from './shop-preview';
+import { EXTENSION_PLACES_ROUTE, extensionPlaces } from './extension-places';
 import { standTokens, themePanel, type PreviewDeps } from './stand-preview';
 import { EXTENSION_SECTION_ROUTE, extensionSection } from './extension-section';
 import type { SdkDocs } from './sdk-docs';
@@ -204,6 +205,11 @@ const PREVIEW_ROUTES: Readonly<Record<string, PreviewRoute>> = {
   '/sections': {
     method: 'GET',
     handle: (preview, url) => shopSections(shopPreviewDeps(preview), url.searchParams.get('shop')),
+  },
+  // Места по умолчанию секций расширений для sites (блок 12, часть 12д, Р12д-12).
+  [EXTENSION_PLACES_ROUTE]: {
+    method: 'GET',
+    handle: (preview, url) => extensionPlaces(shopPreviewDeps(preview), url.searchParams.get('shop')),
   },
   '/preview/tokens': {
     method: 'POST',

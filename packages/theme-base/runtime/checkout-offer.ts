@@ -103,20 +103,25 @@ export const CHECKOUT_OFFER_SOURCE = `(function () {
     });
   } catch (e) { window.cartStore = store; }
 
-  var cfg = (window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {});
-  cfg.checkout = {
-    contactMethod: 'email-phone',
-    customerNameMode: 'name-surname',
-    addressRequired: true,
-    requireCustomerAuth: false
-  };
+  // Регистрация не требуется: гость по ссылке не должен уйти на /login.
+  function setCheckoutConfig(addressRequired) {
+    var c = (window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {});
+    c.checkout = {
+      contactMethod: 'email-phone',
+      customerNameMode: 'name-surname',
+      addressRequired: addressRequired,
+      requireCustomerAuth: false
+    };
+  }
+  setCheckoutConfig(true);
 
   function emit(name, detail) {
     document.dispatchEvent(new CustomEvent(name, { detail: detail }));
   }
+  // Адрес шлюза даёт страница магазина (apiUrl); своего адреса по умолчанию нет,
+  // иначе dev-витрина ушла бы на боевой шлюз.
   function base() {
-    var c = window.__MERFY_CONFIG__ || {};
-    return c.apiUrl || 'https://gateway.merfy.ru/api';
+    return (window.__MERFY_CONFIG__ || {}).apiUrl || '';
   }
   function lineOf(i) {
     var unit = i.unitPriceCents || 0;
@@ -147,20 +152,14 @@ export const CHECKOUT_OFFER_SOURCE = `(function () {
     offer.data = data;
     offer.loaded = true;
     lines = (data.items || []).map(lineOf);
-    var c = (window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {});
-    c.checkout = {
-      contactMethod: 'email-phone',
-      customerNameMode: 'name-surname',
-      addressRequired: data.deliveryRequired !== false,
-      requireCustomerAuth: false
-    };
+    setCheckoutConfig(data.deliveryRequired !== false);
     emit('checkout:config-ready');
     emit('cart:updated', { items: lines });
     emit('checkout:offer-ready', data);
   }
   function load() {
     var shopId = (window.__MERFY_CONFIG__ || {}).shopId || '';
-    if (!shopId) { fail('shop_unknown'); return; }
+    if (!shopId || !base()) { fail('shop_unknown'); return; }
     fetch(base() + '/pay/' + token + '/offer?store_id=' + encodeURIComponent(shopId), {
       headers: { Accept: 'application/json' }
     })

@@ -367,6 +367,31 @@ export interface CatalogModule {
     options?: ActionOptions,
   ): Promise<Result<CatalogFilters>>;
 }
+// Файлы покупательницы (блок 12 «Секций и SDK», часть 12е, Р12е-2): ctx.files — выбор из поля, загрузка в хранилище
+// расширения в три шага (шлюз → хранилище → шлюз), превью картинки. Имён расширений ядро не знает: id передаёт секция.
+export type FileKind = 'photo' | 'video' | 'file';
+export interface ChosenFile {
+  readonly key: string; // номер файла на странице: f1, f2, …
+  readonly name: string;
+  readonly size: number; // байты
+  readonly type: string; // по расширению имени, иначе тип браузера
+  readonly image: boolean; // превью в браузере: jpeg, png, webp, gif
+}
+export interface UploadArgs {
+  readonly key: string;
+  readonly extension: string; // id расширения
+  readonly kind: FileKind;
+}
+export type UploadDone =
+  | { readonly status: 'ready'; readonly fileId: string }
+  | { readonly status: 'rejected'; readonly reason: 'format' | 'size' | 'empty' };
+export interface FilesModule {
+  chosen(input: El): readonly ChosenFile[];
+  upload(args: UploadArgs, options?: ActionOptions): Promise<Result<UploadDone>>;
+  preview(img: El, key: string): void;
+  forget(key: string): void;
+}
+
 export interface Modules {
   readonly cart: CartModule;
   readonly consent: ConsentModule;
@@ -378,6 +403,8 @@ export interface Modules {
   readonly variants: VariantsModule;
   readonly search: SearchModule;
   readonly catalog: CatalogModule;
+  // Блок 12 «Секций и SDK», часть 12е.
+  readonly files: FilesModule;
 }
 export type ModuleName = keyof Modules;
 

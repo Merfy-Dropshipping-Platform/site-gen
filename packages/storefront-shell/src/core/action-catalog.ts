@@ -141,6 +141,7 @@ export const MODULE_NAMES = [
   'search',
   'catalog',
   'orders',
+  'files',
 ] as const satisfies readonly ModuleName[];
 type MissingModule = Exclude<ModuleName, (typeof MODULE_NAMES)[number]>;
 export const MODULE_NAMES_COMPLETE: [MissingModule] extends [never] ? true : never = true;

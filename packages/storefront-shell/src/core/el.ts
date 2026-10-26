@@ -22,6 +22,11 @@ interface ScopeState {
 }
 
 const refSelector = (name: string): string => `[data-ref="${name}"]`;
+
+// Узлы обёрток всех секций страницы (блок 12, часть 12е): часть files получает узел обёртки, которую передала секция.
+// Из index.ts не экспортируется — у секций только обёртки.
+const ELEMENTS = new WeakMap<El, Element>();
+export const elementOf = (el: El): Element | null => ELEMENTS.get(el) ?? null;
 const freeButtonTypes: ReadonlySet<string> = new Set(['button', 'submit', 'reset']);
 const EMPTY_FORM: Readonly<Record<string, string | boolean>> = Object.freeze({});
 
@@ -273,6 +278,7 @@ export function createElScope(root: HTMLElement, signal: AbortSignal): ElScope {
     const el = buildEl(node, state);
     cache.set(node, el);
     nodes.set(el, node);
+    ELEMENTS.set(el, node);
     return el;
   }
 

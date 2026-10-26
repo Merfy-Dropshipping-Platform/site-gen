@@ -17,8 +17,8 @@ export const EXT_POINT_PARTS = ['points', 'purchase', 'records'] as const satisf
 
 export const isExtPoint = (value: string): value is ExtPoint => Object.hasOwn(EXT_POINTS, value);
 
-// Классы разметки части points — из словаря (те же, что у секции cookie-banner фикстур). records и purchase оформлены
-// стилями theme-base (.xo-*, --xp-*), классов словаря им не нужно.
+// Классы разметки частей — из словаря (те же, что у секции cookie-banner фикстур). records (часть 12е) — подмножество
+// классов points: тест ext-points-meta сверяет классы мест с points. purchase своей разметки не ставит.
 export const EXT_POINT_CLASSES: Readonly<Record<ExtPointPart, readonly string[]>> = {
   points: [
     'flex',
@@ -49,6 +49,32 @@ export const EXT_POINT_CLASSES: Readonly<Record<ExtPointPart, readonly string[]>
     'px-6',
     'text-primary-foreground',
   ],
-  records: [],
+  records: [
+    'flex',
+    'flex-col',
+    'gap-2',
+    'gap-4',
+    'm-0',
+    'p-5',
+    'border',
+    'border-border',
+    'rounded-card',
+    'text-foreground',
+    'text-sm',
+    'text-base',
+    'font-heading',
+    'weight-heading',
+    'text-heading',
+    'underline',
+    'inline-flex',
+    'h-11',
+    'items-center',
+    'justify-center',
+    'rounded-button',
+    'border-primary-border',
+    'bg-primary',
+    'px-6',
+    'text-primary-foreground',
+  ],
   purchase: [],
 };

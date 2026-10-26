@@ -370,17 +370,26 @@ const isCheckoutPage = (doc: Document): boolean =>
   doc.querySelector("[data-checkout-summary], [data-block='checkout-submit']") !== null;
 
 /**
+ * Чекаут оплачивает заказ по ссылке на оплату (`?offer=<токен>`, checkout-offer.ts):
+ * признак режима — `window.__merfyOffer`. Позиции такого заказа расширение уже
+ * согласовало с покупателем, а корзины в нём нет, поэтому проверка «нельзя купить
+ * через корзину» к ним не применяется.
+ */
+const isPayLinkCheckout = (win: Window): boolean =>
+  (win as unknown as { __merfyOffer?: unknown }).__merfyOffer !== undefined;
+
+/**
  * Включает проверку на странице оформления. Повторный вызов на той же странице
  * ничего не делает; после перехода (новый `body`) состояние начинается заново.
  * В превью конструктора (iframe) не включается: это просмотр мерчанта, корзину
- * он трогать не должен.
+ * он трогать не должен. В чекауте по ссылке на оплату не включается тоже.
  */
 export function installCheckoutRequestItems(
   win: Window,
   doc: Document,
   deps: CheckoutGuardDeps,
 ): CheckoutLinesState | null {
-  if (win.self !== win.top || !isCheckoutPage(doc)) return null;
+  if (win.self !== win.top || !isCheckoutPage(doc) || isPayLinkCheckout(win)) return null;
   const installed = GUARDS.get(doc);
   if (installed !== undefined && installed.body === doc.body) return installed.state;
   installed?.state.dispose();

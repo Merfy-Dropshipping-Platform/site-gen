@@ -14,6 +14,7 @@ import { Controller, Logger } from "@nestjs/common";
 import { EventPattern, MessagePattern, Payload } from "@nestjs/microservices";
 import { z } from "zod";
 import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
+import { ExtensionPlaces } from "./extension-places";
 import {
   StorefrontBuilderClient,
   type BuilderAnswer,
@@ -114,6 +115,7 @@ export class ExtensionSectionsController {
   constructor(
     private readonly builder: StorefrontBuilderClient,
     private readonly handoff: StorefrontHandoff,
+    private readonly places: ExtensionPlaces,
   ) {}
 
   @MessagePattern(SECTION_ACCEPT_PATTERN)
@@ -147,6 +149,13 @@ export class ExtensionSectionsController {
       return;
     }
     const { shopId, extensionId, state } = message.data;
+    // Включили — секции расширения с autoPlace встают на страницы до пересборки (блок 12, часть 12д, Р12д-12).
+    if (state === "enabled" && (await this.handoff.isNewTheme(shopId))) {
+      const outcome = await this.places.place(shopId, extensionId);
+      this.logger.log(
+        `места секций ${extensionId} у магазина ${shopId}: ${JSON.stringify(outcome)}`,
+      );
+    }
     this.logger.log(
       `расширение ${extensionId} ${state} у магазина ${shopId} — пересборка`,
     );

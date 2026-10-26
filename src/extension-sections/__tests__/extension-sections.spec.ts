@@ -15,6 +15,7 @@ import {
   ExtensionSectionsController,
   replyOf,
 } from "../extension-sections.controller";
+import type { ExtensionPlaces } from "../extension-places";
 
 // Договор extensions ↔ sites (блок 12 «Секций и SDK», часть 12б): тот же набор
 // примеров проходит копия договора в extensions (src/sites/).
@@ -41,9 +42,12 @@ const json = (status: number, body: unknown): BuilderAnswer => ({
 function controllerWith(answer: BuilderAnswer) {
   const call = jest.fn().mockResolvedValue(answer);
   const notify = jest.fn().mockResolvedValue(undefined);
+  // Место по умолчанию (часть 12д) — в extension-places.spec.ts; здесь магазин нынешней темы: place не зовётся.
+  const isNewTheme = jest.fn().mockResolvedValue(false);
   const controller = new ExtensionSectionsController(
     { call } as unknown as StorefrontBuilderClient,
-    { notify } as unknown as StorefrontHandoff,
+    { notify, isNewTheme } as unknown as StorefrontHandoff,
+    { place: jest.fn() } as unknown as ExtensionPlaces,
   );
   return { controller, call, notify };
 }

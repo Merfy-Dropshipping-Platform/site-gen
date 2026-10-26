@@ -1,6 +1,10 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { DatabaseModule } from "../db/database.module";
+import { DocumentAdapter } from "../content/document.adapter";
+import { StoreContentService } from "../content/store-content.service";
 import { StorefrontBuilderClient } from "../storefront-preview/storefront-builder.client";
+import { ExtensionPlaces } from "./extension-places";
 import { ExtensionSectionsController } from "./extension-sections.controller";
 
 // Секции и глобальные скрипты расширений от сервиса extensions (блок 12
@@ -8,8 +12,14 @@ import { ExtensionSectionsController } from "./extension-sections.controller";
 // StorefrontPreviewModule он не экспортируется. StorefrontHandoff — из
 // глобального модуля блока 6.
 @Module({
-  imports: [ConfigModule],
+  imports: [DatabaseModule, ConfigModule],
   controllers: [ExtensionSectionsController],
-  providers: [StorefrontBuilderClient],
+  // Место по умолчанию (часть 12д): ревизию пишет порт StoreContent.
+  providers: [
+    StorefrontBuilderClient,
+    DocumentAdapter,
+    StoreContentService,
+    ExtensionPlaces,
+  ],
 })
 export class ExtensionSectionsModule {}

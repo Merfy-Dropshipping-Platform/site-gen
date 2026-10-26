@@ -1,6 +1,6 @@
 {
   "name": "nova",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "tokens": {
     "root": {
       "font-body": "Onest, system-ui, sans-serif",

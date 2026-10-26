@@ -16,6 +16,10 @@ export type { AnimateOptions, Animation, Bezier, EasingName, KeyframeValue, Keyf
 export { newsletter } from './parts/newsletter';
 export { variants } from './parts/variants';
 export { search } from './parts/search';
+// Блоки расширений (блок 12 «Секций и SDK», часть 12б, В12-2 А): места data-ext-point в шаблонах ролей.
+export { points } from './parts/points';
+export { records } from './parts/records';
+export { purchase } from './parts/purchase';
 export { catalog } from './parts/catalog';
 // Блок 11 «Секций и SDK», часть 11б: типы модулей вариантов, поиска и каталога; части — в задачах Б11б-3…Б11б-5.
 export type {

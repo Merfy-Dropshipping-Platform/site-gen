@@ -11,6 +11,8 @@ export const REBUILD_EVENT_INPUTS: Readonly<Record<string, readonly string[]>> =
   // Выпуски блока 10: платформа меняет код рендера, ядро и секции платформы, расширение — код своих секций.
   'platform-release': ['platform', 'shell', 'code'],
   'extension-release': ['code'],
+  // Блок 12 «Секций и SDK», часть 12б: включение и выключение расширения меняет код его секций на витрине.
+  'extension-toggle': ['code'],
   // Блок 12 «Секций и SDK», часть 12в: откат секции с ролью меняет код своей секции магазина.
   'section-rollback': ['code'],
   'domain-change': ['site.publicUrl'],

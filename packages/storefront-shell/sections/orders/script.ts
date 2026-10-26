@@ -109,6 +109,12 @@ export default defineSection({
       return;
     }
     const number = ctx.page.query.n;
+    const ext = ctx.page.query.ext;
+    // Заказ расширения (?ext=<id>, блок 12 «Секций и SDK»): список скрыт, страницу показывает часть records.
+    if (typeof ext === 'string' && ext !== '') {
+      ctx.ref('list-view')?.hide();
+      return;
+    }
     if (typeof number === 'string' && number !== '') {
       ctx.ref('list-view')?.hide();
       ctx.ref('order-view')?.show();

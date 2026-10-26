@@ -16,6 +16,7 @@
     "./actions": "./src/core/action-catalog.ts",
     "./counters": "./src/core/analytics/counters.ts",
     "./roles": "./src/core/roles.ts",
+    "./ext-points": "./src/core/ext-points.ts",
     "./core-parts.json": "./core-parts.json"
   },
   "scripts": {
@@ -30,6 +31,7 @@
   },
   "dependencies": {
     "@merfy/storefront-config": "workspace:*",
+    "@merfy/theme-base": "workspace:*",
     "embla-carousel": "8.6.0",
     "embla-carousel-autoplay": "8.6.0",
     "embla-carousel-fade": "8.6.0",

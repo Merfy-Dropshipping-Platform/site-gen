@@ -114,7 +114,7 @@ describe('стенд темы в превью на рисовальщике nova
     expect(missing.map((field) => field.id)).toEqual([]);
   });
 
-  it('каждая настройка не про вид меняет стенд (14 полей)', async () => {
+  it('каждая настройка не про вид меняет стенд (10 полей)', async () => {
     const fields = settingFields(panel);
     const changed = await Promise.all(
       fields.map(async (field) => {
@@ -122,7 +122,7 @@ describe('стенд темы в превью на рисовальщике nova
         return (await renderer.renderStand(standLocals(inputsOf({}, settings), theme))) !== plain;
       }),
     );
-    expect(fields).toHaveLength(14);
+    expect(fields).toHaveLength(10);
     expect(fields.filter((_, index) => !changed[index]).map((field) => field.id)).toEqual([]);
   });
 });

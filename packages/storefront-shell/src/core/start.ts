@@ -1,7 +1,7 @@
 import type { StorefrontConfig } from '@merfy/storefront-config';
 import { readStorefrontConfig } from '@merfy/storefront-config/read';
 import { SECTION_TAG, IDLE_HOOKS, useSectionElement, type ElementHooks } from '../element';
-import { CORE_ERRORS, watchSectionErrors } from '../error-log';
+import { watchSectionErrors } from '../error-log';
 import { ShellError } from '../errors';
 import { messageOf } from '../report';
 import { createEventBus, type EventBus } from './events';
@@ -250,7 +250,7 @@ export function start(options: StartOptions, env: CoreEnv = { window }): Started
   if (leavePrivatePage(win, read.config, read.mode, page))
     return { config: read.config, mode: read.mode, stop: (): void => controller.abort() };
   if (read.config !== null && read.mode === 'live')
-    watchSectionErrors(win, read.config, controller.signal, CORE_ERRORS); // до запуска секций: сбой старта — в пачке
+    watchSectionErrors(win, read.config, controller.signal); // до запуска секций: сбой старта — в пачке
   const parts = createCoreParts(read.config, read.mode, bus, options);
   const runtime = runtimeOf(win, read.mode, bus, page, parts);
   addGlobals(win, options.sections);

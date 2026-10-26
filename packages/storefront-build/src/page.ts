@@ -312,7 +312,7 @@ export async function renderShopPage(
   // Превью конструктора (часть 8б-2) — маршруты превью: страницы всех шаблонов и примеры; сборка — только записи с
   // показанным шаблоном.
   const route = routeOf(path, inputs, page.mode);
-  // Скрытые экземпляры убираются здесь, до рендера (п. 22): разметка, CSS секций и список модулей — по видимым.
+  // Скрытые экземпляры убираются здесь, до рендера (п. 22): разметка, CSS секций и скрипты бандла — по видимым.
   const shown = withoutHidden(inputs);
   const lists = pageListsOf(route.id).map((list) => placedSections(shown, list));
   const state = await renderSectionsOf(shown, route, theme, page, lists, list);

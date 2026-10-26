@@ -47,7 +47,8 @@ export async function themeStores(db: Queryable, themeIds: readonly string[]): P
 export const testShopOf = (ids: readonly string[], testShop: string | null): string | null =>
   testShop !== null && ids.includes(testShop) ? testShop : null;
 
-async function createOrQueue(
+// Общая для выпусков платформы и нашей секции (часть 15з).
+export async function createOrQueue(
   db: Database,
   release: NewRelease,
   plan: (id: number) => PlannedShop[],

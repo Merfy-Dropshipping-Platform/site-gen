@@ -12,6 +12,8 @@ export interface ReachedManifest {
   platform: { renderHash: string };
   // Включённые расширения и их версии (задача 11); в манифестах сборок до неё поля нет.
   extensions?: readonly { id: string; version: string }[];
+  // Секции входов сборки и хеши их правок (блок 15, часть 15з); в манифестах сборок до неё поля нет.
+  sections?: readonly { name: string; hash: string }[];
 }
 
 export interface KindRules {
@@ -57,6 +59,19 @@ export const KINDS: Record<ReleaseKind, KindRules> = {
       (manifest.extensions ?? []).some((item) => item.id === release.subject && item.version === release.toVersion),
     expectedVersion: () => null,
     leaveUnchanged: false,
+  },
+  // Наша секция (блок 15, часть 15з, Р15з-6, Р15з-7): toVersion — хеш исходника, toHash — хеш правки. Дошёл: в манифесте
+  // нет этой секции с другим хешем — она с новым или её нет на страницах. Манифест без sections — ждём новой сборки.
+  section: {
+    event: 'section-release',
+    approval: false,
+    pin: false,
+    pauseOnRevert: true,
+    reached: (manifest, release) =>
+      manifest.sections !== undefined &&
+      !manifest.sections.some((item) => item.name === release.subject && item.hash !== release.toHash),
+    expectedVersion: () => null,
+    leaveUnchanged: true,
   },
 };
 

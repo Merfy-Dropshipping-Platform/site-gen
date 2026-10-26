@@ -12,6 +12,11 @@
  * для товара расширения она отдаёт форму, для остальных — пусто. Нет точки в
  * карте — запросов по товарам нет вовсе.
  *
+ * ПОДПИСЬ. Расширение может приложить к форме подпись для корзины и оформления
+ * (`saleNotice: { text, actionLabel }` в том же ответе); `notice(productId)`
+ * отдаёт её. Своих слов у ядра нет: без подписи оформление показывает нейтральный
+ * текст (checkout-request-items.ts).
+ *
  * ТИШИНА. Нет конфига магазина, нет точки, сеть или ошибка — товар считается
  * обычным: кнопка остаётся, как будто фичи нет. Сбой не запоминается.
  *
@@ -49,9 +54,20 @@ const STEPPER_SELECTOR = "[data-qa-stepper]";
 /** Сколько клик ждёт ответа расширения: дольше — товар считается обычным. */
 const ANSWER_WAIT_MS = 3000;
 
+/** Подпись расширения: сообщение (`{name}` — название товара) и текст ссылки на товар. Каждое поле необязательно. */
+export interface SaleNotice {
+  text?: string;
+  actionLabel?: string;
+}
+
+/** Пределы подписи: витрина не доверяет данным расширения. */
+export const SALE_NOTICE_LIMITS = { text: 300, actionLabel: 60 } as const;
+
 export interface ExtensionSale {
   /** Ответ уже известен: `true` — товар продаётся формой; `undefined` — ещё не спрашивали. */
   known(productId: string): boolean | undefined;
+  /** Подпись расширения к товару, который продаётся формой; нет ответа или подписи — `undefined`. */
+  notice(productId: string): SaleNotice | undefined;
   /** Есть кого спросить: конфиг магазина на странице и id товара. Нет — ждать ответа нечего. */
   canAsk(productId: string): boolean;
   /**
@@ -66,6 +82,14 @@ interface SessionCache {
   storeId: string;
   at: number;
   ids: Record<string, boolean>;
+  /** Подписи расширения по товарам; в записях до подписей поля нет. */
+  notices?: Record<string, SaleNotice>;
+}
+
+/** То, что хранит сессия вкладки: ответы по товарам и подписи. */
+interface SessionEntries {
+  ids: Record<string, boolean>;
+  notices: Record<string, SaleNotice>;
 }
 
 interface ConfigWindow {
@@ -84,21 +108,45 @@ function channelOf(win: Window): ExtensionChannel | null {
   return storeId !== "" && apiBase !== "" ? { storeId, apiBase } : null;
 }
 
-function readSession(win: Window, storeId: string): Record<string, boolean> {
+/** Подпись из ответа расширения: только непустые строки в пределах; ничего годного — `undefined`. */
+export function saleNoticeOf(raw: unknown): SaleNotice | undefined {
+  if (!isRecord(raw)) return undefined;
+  const pick = (value: unknown, limit: number): string | undefined => {
+    if (typeof value !== "string") return undefined;
+    const trimmed = value.trim();
+    return trimmed !== "" ? trimmed.slice(0, limit) : undefined;
+  };
+  const text = pick(raw.text, SALE_NOTICE_LIMITS.text);
+  const actionLabel = pick(raw.actionLabel, SALE_NOTICE_LIMITS.actionLabel);
+  if (text === undefined && actionLabel === undefined) return undefined;
+  return { ...(text !== undefined ? { text } : {}), ...(actionLabel !== undefined ? { actionLabel } : {}) };
+}
+
+function readSession(win: Window, storeId: string): SessionEntries {
+  const empty: SessionEntries = { ids: {}, notices: {} };
   try {
     const raw = win.sessionStorage.getItem(CACHE_KEY);
     const parsed: unknown = raw === null ? null : JSON.parse(raw);
-    if (!isRecord(parsed) || parsed.storeId !== storeId) return {};
+    if (!isRecord(parsed) || parsed.storeId !== storeId) return empty;
     const fresh = typeof parsed.at === "number" && Date.now() - parsed.at < CACHE_TTL_MS;
-    return fresh && isRecord(parsed.ids) ? (parsed.ids as Record<string, boolean>) : {};
+    if (!fresh || !isRecord(parsed.ids)) return empty;
+    const notices: Record<string, SaleNotice> = {};
+    if (isRecord(parsed.notices)) {
+      for (const [productId, value] of Object.entries(parsed.notices)) {
+        // Запись из сессии проходит ту же проверку, что и ответ расширения.
+        const notice = saleNoticeOf(value);
+        if (notice !== undefined) notices[productId] = notice;
+      }
+    }
+    return { ids: parsed.ids as Record<string, boolean>, notices };
   } catch {
     // Хранилище закрыто или запись битая: спросим заново.
-    return {};
+    return empty;
   }
 }
 
-function writeSession(win: Window, storeId: string, ids: Record<string, boolean>): void {
-  const entry: SessionCache = { storeId, at: Date.now(), ids };
+function writeSession(win: Window, storeId: string, entries: SessionEntries): void {
+  const entry: SessionCache = { storeId, at: Date.now(), ids: entries.ids, notices: entries.notices };
   try {
     win.sessionStorage.setItem(CACHE_KEY, JSON.stringify(entry));
   } catch {
@@ -134,6 +182,7 @@ const isFormReply = (data: unknown): boolean => isRecord(data) && isRecord(data.
 
 export function createExtensionSale(win: Window): ExtensionSale {
   const memory = new Map<string, boolean>();
+  const notices = new Map<string, SaleNotice>();
   const asked = new Map<string, Promise<boolean>>();
   const limited = createLimiter(MAX_PARALLEL);
   let pointOnce: Promise<PurchasePoint | null> | null = null;
@@ -143,16 +192,42 @@ export function createExtensionSale(win: Window): ExtensionSale {
     if (hit !== undefined) return hit;
     const channel = channelOf(win);
     if (channel === null) return undefined;
-    const stored = readSession(win, channel.storeId)[productId];
-    if (typeof stored === "boolean") memory.set(productId, stored);
-    return typeof stored === "boolean" ? stored : undefined;
+    const session = readSession(win, channel.storeId);
+    const stored = session.ids[productId];
+    if (typeof stored !== "boolean") return undefined;
+    memory.set(productId, stored);
+    const storedNotice = session.notices[productId];
+    if (storedNotice !== undefined) notices.set(productId, storedNotice);
+    return stored;
   };
 
-  const remember = (channel: ExtensionChannel, productId: string, value: boolean): void => {
+  const notice = (productId: string): SaleNotice | undefined => {
+    const hit = notices.get(productId);
+    if (hit !== undefined) return hit;
+    // Ответ мог прийти на другой странице: он лежит в сессии вкладки.
+    const channel = channelOf(win);
+    if (channel === null) return undefined;
+    const stored = readSession(win, channel.storeId).notices[productId];
+    if (stored !== undefined) notices.set(productId, stored);
+    return stored;
+  };
+
+  const remember = (
+    channel: ExtensionChannel,
+    productId: string,
+    value: boolean,
+    saleNotice: SaleNotice | undefined,
+  ): void => {
     memory.set(productId, value);
+    if (saleNotice !== undefined) notices.set(productId, saleNotice);
+    else notices.delete(productId);
+    const session = readSession(win, channel.storeId);
+    const nextNotices = { ...session.notices };
+    if (saleNotice !== undefined) nextNotices[productId] = saleNotice;
+    else delete nextNotices[productId];
     writeSession(win, channel.storeId, {
-      ...readSession(win, channel.storeId),
-      [productId]: value,
+      ids: { ...session.ids, [productId]: value },
+      notices: nextNotices,
     });
   };
 
@@ -174,7 +249,7 @@ export function createExtensionSale(win: Window): ExtensionSale {
     // Не 2xx или без обёртки успеха — это сбой, а не «товар обычный».
     if (data === undefined) return false;
     const value = isFormReply(data);
-    remember(channel, productId, value);
+    remember(channel, productId, value, value && isRecord(data) ? saleNoticeOf(data.saleNotice) : undefined);
     return value;
   }
 
@@ -197,7 +272,7 @@ export function createExtensionSale(win: Window): ExtensionSale {
   const canAsk = (productId: string): boolean =>
     productId !== "" && channelOf(win) !== null;
 
-  return { known, canAsk, check };
+  return { known, notice, canAsk, check };
 }
 
 /** Один объект на окно: кэш и карта общие для каталога и корзины. */

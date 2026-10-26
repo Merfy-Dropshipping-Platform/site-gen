@@ -1,9 +1,9 @@
 /**
  * checkout-request-items — оформление не принимает товары, которые продаются
- * по заявке (баг тестировщика Б16, спека 120 «Заявки»).
+ * формой расширения, а не корзиной (баг тестировщика Б16, спека 120).
  *
  * ПРОБЛЕМА. Ответ «товар продаётся формой» живёт в сессии вкладки пять минут
- * (extension-sale.ts). Магазин перевёл товар на заявку, а он уже лежит в корзине:
+ * (extension-sale.ts). Магазин перевёл товар на форму, а он уже лежит в корзине:
  * до пяти минут оформление показывало его по цене каталога с активной «Оплатить»,
  * потом строка пропадала без объяснения.
  *
@@ -13,21 +13,23 @@
  *      пока идёт проверка, «Оплатить» не нажимается, но не дольше 3 с — дальше
  *      товар считается обычным (сервер всё равно откажет);
  *   2. найденные строки убирает отовсюду, где их читают блоки оформления, и
- *      показывает над составом заказа: «Товар «…» продаётся по заявке» со ссылкой
- *      «Оставить заявку» на страницу товара;
+ *      показывает над составом заказа подпись расширения (`saleNotice` в ответе
+ *      его функции формы) со ссылкой на страницу товара; нет подписи — нейтральный
+ *      текст «Товар «…» нельзя купить через корзину» и ссылка «Открыть товар»;
  *   3. забирает строки, которые корзина убрала раньше на других страницах
  *      (`rememberRequestItem`), и показывает их один раз;
- *   4. при отказе сервера (`PRODUCT_REQUIRES_REQUEST` или любая 4xx) кнопка
- *      оплаты зовёт `recheck()` — свежая проверка всех строк и то же сообщение.
+ *   4. при отказе сервера (`PRODUCT_NOT_SOLD_BY_CART`, прежний
+ *      `PRODUCT_REQUIRES_REQUEST` или любая 4xx) кнопка оплаты зовёт
+ *      `recheck()` — свежая проверка всех строк и то же сообщение.
  *
  * ГДЕ ЧИТАЮТ БЛОКИ. `window.__merfyCheckoutLines` = `{ notices, checking, recheck }`;
  * событие `checkout:lines-changed` на document сообщает об изменении. Само
  * сообщение рисует этот файл в каждый `[data-checkout-request-notice]`.
  *
  * Слов предметной области в файле нет: так работает любое расширение с точкой
- * `product` (решение Р8).
+ * `product` (решение Р8). Свои слова расширение отдаёт данными (`saleNotice`).
  */
-import type { ExtensionSale } from "./extension-sale";
+import type { ExtensionSale, SaleNotice } from "./extension-sale";
 
 /** Строки, убранные корзиной на других страницах: ждут показа на оформлении. */
 export const REQUEST_ITEMS_KEY = "merfy:request-items:v1";
@@ -43,18 +45,42 @@ export const CHECKOUT_CHECK_WAIT_MS = 3000;
 const NOTICE_SELECTOR = "[data-checkout-request-notice]";
 const BUYNOW_SUFFIX = ":buynow";
 
-export interface RequestItemNotice {
+/** Сообщение, если у расширения нет подписи: `{name}` — название товара. */
+export const NEUTRAL_NOTICE_TEXT = "Товар «{name}» нельзя купить через корзину.";
+/** Ссылка на товар, если у расширения нет подписи. */
+export const NEUTRAL_NOTICE_ACTION = "Открыть товар";
+
+export interface RequestItemNotice extends SaleNotice {
   productId: string;
   name: string;
-  /** Страница товара: там форма заявки. */
+  /** Страница товара: там форма расширения. */
   href: string;
+}
+
+/** Подпись расширения к товару → поля сообщения; без подписи полей нет. */
+const noticeFieldsOf = (notice: SaleNotice | undefined): SaleNotice => ({
+  ...(notice?.text !== undefined ? { text: notice.text } : {}),
+  ...(notice?.actionLabel !== undefined ? { actionLabel: notice.actionLabel } : {}),
+});
+
+/** Текст сообщения: подпись расширения или нейтральный текст; `{name}` — название товара. */
+export function noticeTextOf(notice: RequestItemNotice): string {
+  const template = typeof notice.text === "string" && notice.text !== "" ? notice.text : NEUTRAL_NOTICE_TEXT;
+  return template.split("{name}").join(notice.name);
+}
+
+/** Текст ссылки на товар: подпись расширения или нейтральный. */
+export function noticeActionOf(notice: RequestItemNotice): string {
+  return typeof notice.actionLabel === "string" && notice.actionLabel !== ""
+    ? notice.actionLabel
+    : NEUTRAL_NOTICE_ACTION;
 }
 
 /** Состояние, которое читают блоки «Сводка заказа» и «Кнопка оплаты». */
 export interface CheckoutLinesState {
   notices: RequestItemNotice[];
   checking: boolean;
-  /** Свежая проверка всех строк; `true` — нашлись новые товары «по заявке». */
+  /** Свежая проверка всех строк; `true` — нашлись новые товары, проданные формой. */
   recheck(): Promise<boolean>;
   /** Снять подписки: страница оформления закрыта (переход без перезагрузки). */
   dispose(): void;
@@ -113,8 +139,9 @@ function readRemembered(win: Window): RequestItemNotice[] {
 }
 
 /**
- * Корзина убрала строку товара «по заявке» — запоминаем название и адрес, чтобы
- * оформление объяснило это покупателю. Один товар — одна запись.
+ * Корзина убрала строку товара, проданного формой, — запоминаем название, адрес
+ * и подпись расширения, чтобы оформление объяснило это покупателю. Один товар —
+ * одна запись.
  */
 export function rememberRequestItem(win: Window, notice: RequestItemNotice): void {
   const kept = readRemembered(win).filter((entry) => entry.productId !== notice.productId);
@@ -155,11 +182,11 @@ export function renderRequestNotices(doc: Document, notices: readonly RequestIte
     for (const notice of notices) {
       const line = doc.createElement("p");
       line.setAttribute("data-request-notice-line", notice.productId);
-      line.append(`Товар «${notice.name}» продаётся по заявке.`);
+      line.append(noticeTextOf(notice));
       const link = doc.createElement("a");
       link.setAttribute("href", notice.href);
       link.setAttribute("style", LINK_STYLE);
-      link.textContent = "Оставить заявку";
+      link.textContent = noticeActionOf(notice);
       line.append(link);
       box.append(line);
     }
@@ -187,7 +214,7 @@ export function createCheckoutGuard(win: Window, doc: Document, deps: CheckoutGu
   const notices = new Map<string, RequestItemNotice>();
   /** Товары, уже отправленные на проверку на этой странице оформления. */
   const asked = new Set<string>();
-  /** Товары «по заявке»: их строки убираем отовсюду, и сколько бы раз источники ни пополнялись. */
+  /** Товары, проданные формой: их строки убираем отовсюду, и сколько бы раз источники ни пополнялись. */
   const removed = new Set<string>();
   /** Серверные строки, на удаление которых уже отправлен запрос: не повторять при сбое. */
   const requested = new Set<string>();
@@ -262,6 +289,7 @@ export function createCheckoutGuard(win: Window, doc: Document, deps: CheckoutGu
       productId,
       name: names.get(productId) ?? (fallbackName || "Товар"),
       href: requestItemHref(deps.productPathPrefix, productId),
+      ...noticeFieldsOf(deps.sale.notice(productId)),
     });
     purge();
     // Локальная корзина изменилась без cartStore: сводка и итог перечитывают её по этому событию.

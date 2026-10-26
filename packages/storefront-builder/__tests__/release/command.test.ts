@@ -76,3 +76,23 @@ describe('разбор команды выпуска', () => {
     expect(readCommandSettings(ENV)).toMatchObject({ publicUrl: 'https://minio.example/merfy', contour: 'dev' });
   });
 });
+
+// Блок 15, часть 15з: новая версия нашей секции во всех магазинах — сухой прогон по умолчанию.
+describe('разбор команды section', () => {
+  it('без флагов — сухой прогон, тема nova; запись — только с --write', () => {
+    expect(parseCommand(['section', '../storefront-shell/sections/cart-drawer'])).toEqual({
+      name: 'section',
+      folder: '../storefront-shell/sections/cart-drawer',
+      write: false,
+      testShop: null,
+      theme: 'nova',
+    });
+    expect(parseCommand(['section', 'x', '--write', '--test-shop', 's1', '--theme', 'nova'])).toEqual({
+      name: 'section',
+      folder: 'x',
+      write: true,
+      testShop: 's1',
+      theme: 'nova',
+    });
+  });
+});

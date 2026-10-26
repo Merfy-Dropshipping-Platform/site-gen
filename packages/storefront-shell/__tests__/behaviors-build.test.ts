@@ -23,6 +23,7 @@ const NAMES: readonly BundleName[] = [
   'video',
   'catalog',
   'search',
+  'zoom',
   'animate',
   'part',
   'reveal',
@@ -44,7 +45,7 @@ describe('buildBehaviors', () => {
     const dir = await outDir();
     const manifest = await buildBehaviors({ packageDir: PACKAGE_DIR, outDir: dir, version: '0.1.0' });
     expect(Object.keys(manifest.entries).sort()).toEqual([...NAMES].sort());
-    expect(NAMES.slice(0, 11)).toEqual(Object.keys(BEHAVIORS));
+    expect(NAMES.slice(0, 12)).toEqual(Object.keys(BEHAVIORS));
     expect(manifest.version).toBe('0.1.0');
     expect(JSON.parse(await readFile(join(dir, 'behaviors.json'), 'utf8'))).toEqual(manifest);
     const carousel = await readFile(join(dir, manifest.entries.carousel.file), 'utf8');

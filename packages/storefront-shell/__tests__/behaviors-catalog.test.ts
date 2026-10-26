@@ -19,7 +19,7 @@ const using = (library: Library): string[] =>
     .sort();
 
 describe('каталог поведений', () => {
-  it('одиннадцать поведений: catalog и search — блок 11, zoom — в блоке 8', () => {
+  it('двенадцать поведений: catalog и search — блок 11, zoom — блок 15 (часть 15в)', () => {
     expect(Object.keys(BEHAVIORS).sort()).toEqual([
       'accordion',
       'card-photos',
@@ -32,7 +32,20 @@ describe('каталог поведений', () => {
       'sticky-header',
       'tabs',
       'video',
+      'zoom',
     ]);
+  });
+
+  it('zoom: часть image, режим hover или click (по умолчанию hover), список фото; без библиотек', () => {
+    expect(BEHAVIORS.zoom).toEqual({
+      libraries: [],
+      parts: ['image'],
+      params: {
+        mode: { kind: 'enum', values: ['hover', 'click'], default: 'hover' },
+        photos: { kind: 'list', default: [] },
+      },
+      onSection: false,
+    });
   });
 
   it('Embla — только у слайдера; Motion — у слайдера, аккордеона и окна; на самой секции — только шапка', () => {

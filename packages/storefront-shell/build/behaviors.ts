@@ -42,7 +42,9 @@ export const BEHAVIOR_BUDGETS: Readonly<Record<BundleName | 'total', number>> = 
   // Блок 11, часть 11б-2 — решение основного треда 23.10 (Р6-12).
   catalog: 4096,
   search: 3072,
-  total: 34816,
+  // Блок 15, часть 15в (Р15в-3) — решение основного треда (Р6-12).
+  zoom: 2048,
+  total: 36864,
 };
 
 const BUNDLE_NAMES: readonly BundleName[] = [
@@ -57,6 +59,7 @@ const BUNDLE_NAMES: readonly BundleName[] = [
   'video',
   'catalog',
   'search',
+  'zoom',
   'part',
   'reveal',
   'animate',
@@ -74,6 +77,7 @@ const ENTRY_OF: Readonly<Record<BundleName, string>> = {
   video: 'video.ts',
   catalog: 'catalog-list.ts',
   search: 'search.ts',
+  zoom: 'zoom.ts',
   part: 'part.ts',
   reveal: 'reveal.ts',
   animate: 'motion.ts',
@@ -174,6 +178,7 @@ function entriesOf(metafile: Metafile, sizes: Sizes): Record<BundleName, BundleI
     video: of('video'),
     catalog: of('catalog'),
     search: of('search'),
+    zoom: of('zoom'),
     part: of('part'),
     reveal: of('reveal'),
     animate: of('animate'),

@@ -22,6 +22,8 @@ export interface BuildReferences {
   platformCommit: string;
   // Включённые расширения магазина и их версии (блок 10, задача 11) — в манифест, не в ключ.
   extensions?: readonly { id: string; version: string }[];
+  // Секции входов сборки и хеши их правок (блок 15, часть 15з) — в манифест, не в ключ.
+  sections?: readonly { name: string; hash: string }[];
 }
 
 // Тема для сборки магазина: токены, рисовальщик и файлы клиента её серверной сборки.
@@ -181,6 +183,7 @@ function manifestOf(
     dataKey: dataKey(inputs),
     platform: { commit: references.platformCommit, renderHash: inputs.platform.renderHash },
     ...(references.extensions === undefined ? {} : { extensions: references.extensions }),
+    ...(references.sections === undefined ? {} : { sections: references.sections }),
     theme: inputs.theme,
     shell: inputs.shell === null ? null : { version: inputs.shell.version },
     shop: { id: inputs.site.id },

@@ -26,6 +26,8 @@ const PRIORITY_OF_EVENT: Readonly<Record<string, number>> = {
   'theme-release': PRIORITY.release,
   'platform-release': PRIORITY.release,
   'extension-release': PRIORITY.release,
+  // Блок 15, часть 15з: выпуск нашей секции
+  'section-release': PRIORITY.release,
 };
 
 export const priorityOf = (type: string): number => PRIORITY_OF_EVENT[type] ?? PRIORITY.edit;

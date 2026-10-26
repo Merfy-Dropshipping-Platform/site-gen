@@ -65,6 +65,15 @@
       "status": "works"
     },
     {
+      "id": "section-release",
+      "title": "Выпуск нашей секции волнами: команда theme-release section, магазины с её копией (блок 15)",
+      "trigger": { "file": "packages/storefront-builder/src/release/kinds.ts", "name": "section-release" },
+      "themes": "new",
+      "scope": "theme-stores",
+      "delayMs": 0,
+      "status": "works"
+    },
+    {
       "id": "section-rollback",
       "title": "Откат секции с ролью по ошибкам из браузеров: прежняя опубликованная правка снова на витрине (блок 12)",
       "trigger": { "file": "packages/storefront-builder/src/role-rollback.ts", "name": "section-rollback" },

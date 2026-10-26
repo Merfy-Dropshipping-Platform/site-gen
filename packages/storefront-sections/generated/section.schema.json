@@ -9066,6 +9066,7 @@
               "shop",
               "cart",
               "favorites",
+              "customer",
               "auth",
               "newsletter",
               "consent",

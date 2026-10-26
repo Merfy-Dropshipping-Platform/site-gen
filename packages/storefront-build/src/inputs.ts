@@ -222,6 +222,9 @@ const buildInputsSchema = z.strictObject({
     analyticsUrl: z
       .url({ protocol: /^https?$/, error: 'нужен адрес http:// или https://' })
       .refine((url) => !url.endsWith('/'), { error: 'адрес сборщика — без косой черты в конце' }),
+    // Хранилище файлов покупательницы для CSP (блок 15, часть 15е, Р15е-5): STOREFRONT_UPLOAD_URL сборщика витрин.
+    // Нет — политика без него (входы до 15е и фикстуры).
+    uploadUrl: z.url({ protocol: /^https?$/, error: 'нужен адрес http:// или https://' }).optional(),
   }),
   // Год копирайта — явный вход (В4-5 Б): 1 января магазины пересобираются волной, часов в рендере нет.
   year: z.int().min(YEAR_MIN).max(YEAR_MAX),

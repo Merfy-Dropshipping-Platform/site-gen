@@ -49,10 +49,21 @@ const paramsOf = (params: Readonly<Record<string, unknown>>): string => {
   return entries.length === 0 ? '—' : entries.join('; ');
 };
 
+// Дополнение к поведению, которого нет в каталоге: как ведёт себя на телефоне и мышью.
+const BEHAVIOR_NOTES: Readonly<Record<string, string>> = {
+  'card-photos':
+    'Свайп по фото (палец или мышь с зажатием) от 30 px по горизонтали листает фото: влево — следующее, вправо — ' +
+    'предыдущее; горизонтальный сдвиг должен быть в 1,5 раза больше вертикального, с последнего фото на первое ' +
+    'листание не переходит. После свайпа нажатие по карточке 400 мс гасится — переход в товар не срабатывает. ' +
+    'Горизонтальный жест закреплён за фото (`touch-action: pan-y` на части `image`), вертикальная прокрутка ' +
+    'остаётся браузеру; если прокрутка забрала жест (`pointercancel`), свайп отменяется.',
+};
+
 export function behaviorsPage(): string {
   const behaviors = Object.entries(BEHAVIORS).map(([name, spec]) => {
     const parts = spec.parts.length === 0 ? '—' : spec.parts.map((part) => `\`data-part="${part}"\``).join(', ');
-    return `## ${name}\n\nЧасти: ${parts}.\n\nПараметры: ${paramsOf(spec.params)}.`;
+    const note = BEHAVIOR_NOTES[name] === undefined ? '' : `\n\n${BEHAVIOR_NOTES[name]}`;
+    return `## ${name}\n\nЧасти: ${parts}.\n\nПараметры: ${paramsOf(spec.params)}.${note}`;
   });
   const presetNames = Object.keys(PRESETS)
     .map((name) => `\`${name}\``)

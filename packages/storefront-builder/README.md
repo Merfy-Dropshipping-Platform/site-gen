@@ -51,7 +51,10 @@
 
 Обязательные: `DATABASE_URL` (база sites), `RABBITMQ_URL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`,
 `S3_SECRET_KEY`, `STOREFRONT_API_URL`, `ANALYTICS_COLLECTOR_URL` (адрес сборщика аналитики для конфига витрины, блок 11:
-`https://analytics.dev.merfy.ru` на dev; запасного адреса нет — без переменной сборщик не стартует), `SOURCE_COMMIT`
+`https://analytics.dev.merfy.ru` на dev; запасного адреса нет — без переменной сборщик не стартует),
+`STOREFRONT_UPLOAD_URL` (хранилище файлов покупательницы для CSP витрин, блок 15, часть 15е, Р15е-5: origin
+`MINIO_URL` extensions контура — `https://minio.dev.merfy.ru` на dev; запасного адреса нет — без переменной сборщик не
+стартует), `SOURCE_COMMIT`
 (40 знаков; Coolify задаёт сам). Счётчики мерчанта сборщик берёт у сборщика аналитики RPC `analytics.pixels.list`
 (`ANALYTICS_TIMEOUT_MS=5000`); не ответил — снимок «не получен», как с товарами.
 По умолчанию: `PORT=8080`, `BUILD_SLOTS=1`, `DRAW_SLOTS=1`, `DRAW_TIMEOUT_MS=3000`, `BUILD_LEASE_MS=300000`,

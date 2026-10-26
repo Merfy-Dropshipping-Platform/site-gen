@@ -34,6 +34,7 @@ const ESBUILD_BASE = {
   minify: true,
   write: false,
   logLevel: 'silent',
+  charset: 'utf8', // как у бандла страницы (storefront-build/src/bundle.ts; блок 15, часть 15ж, Р15ж-8)
 } as const;
 
 // Пробный бандл страницы без секций: вход — строка, как её соберёт бандл страницы (часть 5б).

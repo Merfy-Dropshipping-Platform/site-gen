@@ -4,6 +4,7 @@ import standInputsJson from '../../fixtures/stand-inputs.json';
 import { buildStorefront, type StorefrontBuild } from '../../src/build';
 import { readClientFiles } from '../../src/client-files';
 import { startRenderer, type Renderer } from '../../src/renderer';
+import { textHash } from '../../src/csp';
 import { buildRendererBundle } from '../../src/theme-build';
 import { novaTokens } from '../support-theme';
 
@@ -46,5 +47,25 @@ describe('магазин-стенд на рисовальщике nova', () => {
     const links = [...html.matchAll(SITE_LINK)].map((match) => match[1]);
     expect(links.length).toBeGreaterThan(0);
     expect(links.filter((link) => !(link in build.manifest.files))).toEqual([]);
+  });
+
+  // Часть 15е (Р15е-4): каждый исполняемый встроенный скрипт каждого HTML сборки — с хешем в script-src политики
+  // манифеста. Разбор свой, не inlineScripts: тест не зависит от проверяемого кода.
+  it('CSP: у каждого встроенного скрипта страниц сборки есть хеш в script-src', () => {
+    const policy = build.manifest.csp ?? '';
+    const script = policy.split('; ').find((part) => part.startsWith('script-src '))?.split(' ') ?? [];
+    const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+    const runs = (attrs: string): boolean =>
+      !/\bsrc=/i.test(attrs) && !/type="application\/(?:ld\+)?json"/i.test(attrs);
+    const missing = build.files
+      .filter((file) => file.path.endsWith('.html'))
+      .flatMap((file) =>
+        [...Buffer.from(file.content).toString('utf8').matchAll(SCRIPT)]
+          .filter((match) => runs(match[1] ?? '') && (match[2] ?? '') !== '')
+          .filter((match) => !script.includes(textHash(match[2] ?? '')))
+          .map((match) => `${file.path}: ${(match[2] ?? '').trim().slice(0, 60)}`),
+      );
+    expect(policy).not.toBe('');
+    expect(missing).toEqual([]);
   });
 });

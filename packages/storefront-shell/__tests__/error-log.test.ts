@@ -7,15 +7,19 @@ import {
   recordOf,
   type ErrorLogDeps,
 } from '../src/error-log';
-import { SECTION_ERROR_EVENT, type SectionFailure } from '../src/report';
+import { SECTION_FAILURE_EVENT } from '../src/core/events';
+import type { SectionFailureDetail } from '../src/core/types';
+
+// Часть 15е (Р15е-3): только событие ядра merfy:section:error на document, хеш — поле script.
 
 const HASH = 'a'.repeat(64);
 const SHOP_ID = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
 const ENDPOINT = 'https://gateway.dev.merfy.ru/api/storefront/section-errors';
 
-const failure = (fields: Partial<SectionFailure> = {}): SectionFailure => ({
+const failure = (fields: Partial<SectionFailureDetail> = {}): SectionFailureDetail => ({
   section: 'nova:scarf-colors',
-  src: `/_merfy/m/${HASH}.js`,
+  id: 'scarf-1',
+  script: HASH,
   stage: 'mount',
   message: 'сломалась при запуске',
   ...fields,
@@ -33,13 +37,11 @@ class Page extends EventTarget {
 
 // Канал с подставными отправкой и таймером: тест сам решает, когда «прошли» 2 с.
 function openChannel() {
-  const target = new EventTarget();
   const page = new Page();
   const sent: Array<{ url: string; body: unknown }> = [];
   const timers: Array<{ run: () => void; ms: number }> = [];
   const controller = new AbortController();
   const deps: ErrorLogDeps = {
-    target,
     document: page,
     send: (url, body) => {
       sent.push({ url, body: JSON.parse(body) });
@@ -52,29 +54,27 @@ function openChannel() {
     signal: controller.signal,
   };
   listenSectionErrors(deps);
-  const report = (fields: Partial<SectionFailure> = {}): void => {
-    target.dispatchEvent(new CustomEvent(SECTION_ERROR_EVENT, { detail: failure(fields) }));
+  const report = (fields: Partial<SectionFailureDetail> = {}, event = SECTION_FAILURE_EVENT): void => {
+    page.dispatchEvent(new CustomEvent(event, { detail: failure(fields) }));
   };
   const runTimers = (): void => timers.splice(0).forEach((timer) => timer.run());
   return { sent, timers, page, report, runTimers, stop: () => controller.abort() };
 }
 
 describe('запись об ошибке секции', () => {
-  it.each([[`/_merfy/m/${HASH}.js`], [`https://shop.example/_merfy/m/${HASH}.js?merfy-retry=1`]])(
-    'отпечаток скрипта — из адреса модуля %s',
-    (src) => {
-      expect(recordOf(failure({ src }))).toEqual({
-        section: 'nova:scarf-colors',
-        script: HASH,
-        stage: 'mount',
-        message: 'сломалась при запуске',
-      });
-    },
-  );
+  it('хеш — из поля script; id экземпляра в запись не идёт', () => {
+    expect(recordOf(failure())).toEqual({
+      section: 'nova:scarf-colors',
+      script: HASH,
+      stage: 'mount',
+      message: 'сломалась при запуске',
+    });
+  });
 
   it.each([
-    ['адрес не по отпечатку', { ...failure(), src: '/m/scarf.js' }],
-    ['адреса нет', { ...failure(), src: '' }],
+    ['хеш из адреса старого каркаса', { section: 'nova:a', src: `/_merfy/m/${HASH}.js`, stage: 'mount', message: 'x' }],
+    ['стадия старого каркаса load', { ...failure(), stage: 'load' }],
+    ['стадия старого каркаса define', { ...failure(), stage: 'define' }],
     ['чужая стадия', { ...failure(), stage: 'boot' }],
     ['не объект', null],
   ])('%s — записи нет', (_case, detail) => {
@@ -108,6 +108,14 @@ describe('канал ошибок', () => {
         },
       },
     ]);
+  });
+
+  it('событие старого каркаса merfy:section-error — не читается', () => {
+    const channel = openChannel();
+    channel.report({}, 'merfy:section-error');
+    channel.runTimers();
+    expect(channel.sent).toEqual([]);
+    expect(channel.timers).toEqual([]);
   });
 
   it('повтор той же ошибки не шлётся', () => {

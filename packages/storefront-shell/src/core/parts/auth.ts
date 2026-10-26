@@ -1,16 +1,14 @@
 import { ShellError } from '../../errors';
-import { CUSTOMER_TOKEN_KEY, dropToken, saveToken, tokenOf } from '../customer-token';
+import { dropToken, saveToken, tokenOf } from '../customer-token';
 import { type Failure, type Reply, failed, failureOf, reasonOf, reportFailure } from '../failures';
 import { navigation } from '../navigation';
 import { requestJson } from '../requests';
-import { pageStorage, type KeyValue } from '../storage';
-import { type Atom, atom, onMount, readable } from '../stores';
+import { type CustomerRuntime, customerOf, customerRuntimeOf, isOkReply, setCustomer, setGuest } from './customer';
 import type {
   ActionOptions,
   AuthModule,
   CoreHandle,
   Customer,
-  CustomerState,
   ErrorCode,
   NoData,
   Result,
@@ -46,13 +44,7 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const textOrNull = (value: unknown): string | null => (typeof value === 'string' && value !== '' ? value : null);
 
-// Покупательница из ответа шлюза: me и verify — data.customer; profile — data целиком (user, updateProfile).
-export function customerOf(body: unknown): Customer | null {
-  const data = isRecord(body) ? body.data : null;
-  const raw = isRecord(data) && isRecord(data.customer) ? data.customer : data;
-  if (!isRecord(raw) || typeof raw.email !== 'string' || raw.email === '') return null;
-  return { email: raw.email, name: textOrNull(raw.name), phone: textOrNull(raw.phone) };
-}
+// Покупательница из ответа шлюза (customerOf) и успех ответа (isOkReply) — в части customer (15ж).
 
 export const sessionTokenOf = (body: unknown): string | null =>
   isRecord(body) && isRecord(body.data) ? textOrNull(body.data.sessionToken) : null;
@@ -63,13 +55,15 @@ const authFailure = (code: ErrorCode, text: string): Failure => ({ code, message
 // Статусы → причина (reasonOf(reply, byStatus)) и тексты: 429 — limit, отказы — refused со своим текстом.
 const REQUEST_BY_STATUS: Readonly<Record<number, 'refused'>> = { 422: 'refused' };
 const VERIFY_BY_STATUS: Readonly<Record<number, 'refused'>> = { 400: 'refused', 410: 'refused', 423: 'refused' };
-const REQUEST_TEXT: Readonly<Record<number, string>> = { 422: AUTH_TEXT.email, 429: AUTH_TEXT.tooMany };
-const VERIFY_TEXT: Readonly<Record<number, string>> = {
+// Тексты по статусу — функции, а не значения модуля (Р15ж-7): таблица с AUTH_TEXT.* осталась бы в бандле любой
+// страницы, даже без части auth, — esbuild не убирает чтение свойства при загрузке модуля.
+const requestTexts = (): Readonly<Record<number, string>> => ({ 422: AUTH_TEXT.email, 429: AUTH_TEXT.tooMany });
+const verifyTexts = (): Readonly<Record<number, string>> => ({
   400: AUTH_TEXT.code,
   410: AUTH_TEXT.expired,
   423: AUTH_TEXT.blocked,
   429: AUTH_TEXT.tooMany,
-};
+});
 
 // Неудачный ответ входа: знакомый статус — свой текст, остальное — по причине ответа.
 function replyFailure(
@@ -84,12 +78,6 @@ function replyFailure(
   if (text !== undefined && reason === 'rate-limit') return authFailure('limit', text);
   return failureOf(reason, author, reply);
 }
-
-// Договор RPC платформы: успех — любой 2xx с success: true (шлюз отвечает POST-ам 201, проверка dev 25.10).
-const isOkReply = (reply: Reply): boolean => {
-  const body = reply.body;
-  return reply.status >= 200 && reply.status < 300 && typeof body === 'object' && body !== null && Reflect.get(body, 'success') === true;
-};
 
 interface ShopApi {
   readonly url: string;
@@ -107,66 +95,8 @@ const shopApiOf = (core: CoreHandle): ShopApi | null => {
 // Адрес шлюза входа (Р10в-1).
 const authUrl = (conf: ShopApi, path: string): string => `${conf.url}/store/auth/${path}`;
 
-interface AuthRuntime {
-  readonly core: CoreHandle;
-  readonly state: Atom<CustomerState>;
-  readonly page: KeyValue;
-}
-
-const GUEST: CustomerState = { ready: true, customer: null };
-
-const setCustomer = (rt: AuthRuntime, customer: Customer | null): void => rt.state.set({ ready: true, customer });
-const setGuest = (rt: AuthRuntime): void => rt.state.set(GUEST);
-
-// 401 при сохранённом токене (Р10в-2): токен удалён, событие merfy:auth:signout, гостья; уведомления нет.
-const expireToken = (rt: AuthRuntime): void => {
-  dropToken(rt.page);
-  rt.core.emit('merfy:auth:signout', {});
-  setGuest(rt);
-};
-
-// Чтение покупательницы: GET me с токеном; обрыв и 5xx — гостья, токен остаётся (сеть не разлогинивает).
-async function readCustomer(rt: AuthRuntime): Promise<null> {
-  const conf = shopApiOf(rt.core);
-  const token = tokenOf(rt.page);
-  if (conf === null || token === null) {
-    setGuest(rt);
-    return null;
-  }
-  const reply = await requestJson(authUrl(conf, 'me'), { method: 'GET', token });
-  if (reply.status === 401) {
-    expireToken(rt);
-    return null;
-  }
-  setCustomer(rt, isOkReply(reply) ? customerOf(reply.body) : null);
-  return null;
-}
-
-// Другая вкладка вошла или вышла (storage) и «Назад» из кеша (pageshow, блок 13): перечитать, пока подписаны.
-function listenPage(rt: AuthRuntime): () => void {
-  const signal = new AbortController();
-  const reread = (): void => {
-    if (tokenOf(rt.page) === null) return void setGuest(rt);
-    void readCustomer(rt);
-  };
-  const onStorage = (event: StorageEvent): void => {
-    if (event.key === CUSTOMER_TOKEN_KEY) reread();
-  };
-  const onShow = (event: Event): void => {
-    if (Reflect.get(event, 'persisted') === true) reread();
-  };
-  window.addEventListener('storage', onStorage, { signal: signal.signal });
-  window.addEventListener('pageshow', onShow, { signal: signal.signal });
-  return () => signal.abort();
-}
-
-// Первая подписка на $customer: токен есть, а стор ещё не готов — чтение me; дальше — события страницы (Р10в-2).
-function mountState(rt: AuthRuntime): void {
-  onMount(rt.state, () => {
-    if (rt.core.mode !== 'preview' && !rt.state.get().ready && tokenOf(rt.page) !== null) void readCustomer(rt);
-    return listenPage(rt);
-  });
-}
+// Состояние покупательницы — общее с частью customer ядра (Р15ж-4): customerRuntimeOf(core), одно на страницу.
+type AuthRuntime = CustomerRuntime;
 
 // Части избранного нет на странице — ShellError part-unknown: слияние и очистка пропускаются (Р10в-4, Р10в-6).
 async function mergeGuestFavorites(rt: AuthRuntime): Promise<void> {
@@ -203,7 +133,7 @@ async function requestCodeOf(
     body: { store_id: conf.storeId, email, shopName: conf.shopName },
   });
   if (isOkReply(reply)) return { ok: true, data: {} };
-  const failure = replyFailure(reply, REQUEST_BY_STATUS, REQUEST_TEXT, 'auth.requestCode: письмо с кодом');
+  const failure = replyFailure(reply, REQUEST_BY_STATUS, requestTexts(), 'auth.requestCode: письмо с кодом');
   reportFailure(rt.core, failure, options);
   return failed(failure);
 }
@@ -245,7 +175,7 @@ async function verifyOf(
   const customer = isOkReply(reply) ? customerOf(reply.body) : null;
   const token = isOkReply(reply) ? sessionTokenOf(reply.body) : null;
   if (customer === null || token === null) {
-    const failure = replyFailure(reply, VERIFY_BY_STATUS, VERIFY_TEXT, 'auth.verify: вход по коду');
+    const failure = replyFailure(reply, VERIFY_BY_STATUS, verifyTexts(), 'auth.verify: вход по коду');
     reportFailure(rt.core, failure, options);
     return failed(failure);
   }
@@ -302,20 +232,14 @@ async function updateProfileOf(
   return { ok: true, data: { customer } };
 }
 
-// Начальное состояние (Р10в-2): превью — всегда гостья; токен есть — покупательница ещё не прочитана.
-function initialStateOf(mode: 'live' | 'preview', page: KeyValue): CustomerState {
-  if (mode === 'preview' || tokenOf(page) === null) return GUEST;
-  return { ready: false, customer: null };
-}
-
+// Часть auth — не в ядре (Р15ж-2): в бандле страниц, где секция объявила "auth" в uses или поставила auth.signout в
+// разметке. $customer — тот же стор, что у части customer.
 export const auth: SdkPart<'auth', AuthModule> = {
   name: 'auth',
   create: (core: CoreHandle): AuthModule => {
-    const page = pageStorage(window, core.mode);
-    const rt: AuthRuntime = { core, state: atom<CustomerState>(initialStateOf(core.mode, page)), page };
-    mountState(rt);
+    const rt: AuthRuntime = customerRuntimeOf(core);
     return {
-      $customer: readable(rt.state),
+      $customer: rt.$customer,
       requestCode: (args, options) => requestCodeOf(rt, args, options),
       verify: (args, options) => verifyOf(rt, args, options),
       signout: (options) => signoutOf(rt, options),

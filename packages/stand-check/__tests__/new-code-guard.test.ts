@@ -5,7 +5,8 @@ import { packagePath } from '../src/paths';
 
 // Сторож нового кода (design.md блока 12, «решил сам» 2): новые темы, каркас и данные платформы не опираются на то, что
 // уйдёт с миграцией нынешних тем. Не импортируют React-пакет витрины packages/storefront и старые шаблоны
-// templates/astro, не ходят за шрифтами к Google и не зовут сервер островов. Сам старый код в этапе не трогаем
+// templates/astro, не ходят за шрифтами к Google и не зовут сервер островов. С части 15е — адреса сервисов прода и
+// глобалы `__MERFY_*__` (И4, И9), разрешённые места — `ALLOWED`. Сам старый код в этапе не трогаем
 // (У12-1…У12-3 — В). Устроен как сторож литералов nova: правила — таблицей, образцы — рядом.
 
 // Папки нового кода от корня site-gen. Тесты не смотрим: в них образцы нарушений.
@@ -31,6 +32,10 @@ const NEW_CODE = [
   'packages/storefront-sections/scripts',
   'packages/stand-check/src',
   'packages/stand-check/scripts',
+  // Часть 15е: код и примеры документации SDK (тексты guide/ и template/ — документация, адрес подставляет сборщик).
+  'packages/sdk-docs/src',
+  'packages/sdk-docs/scripts',
+  'packages/sdk-docs/examples',
 ];
 const SOURCE_FILE = /\.(?:ts|tsx|mts|mjs|js|astro|json|css|html)$/;
 const SKIPPED_DIRS = new Set(['node_modules', 'dist', 'dist-renderer', 'generated', 'coverage', '.astro']);
@@ -47,7 +52,30 @@ const RULES: readonly GuardRule[] = [
   { id: 'old-templates', pattern: /templates\/astro/g },
   { id: 'google-fonts', pattern: /fonts\.(?:googleapis|gstatic)\.com/g },
   { id: 'islands', pattern: /ISLANDS_SERVER_URL|islands\.(?:dev\.)?merfy\.ru|<merfy-island|\/islands\/batch/g },
+  // Часть 15е (И4, И9): адреса сервисов прода и глобалы __MERFY_*__ — только в местах из ALLOWED.
+  { id: 'prod-address', pattern: /\b(?:gateway|api|admin|customize|analytics|minio)\.merfy\.ru\b/g },
+  { id: 'merfy-global', pattern: /__MERFY_\w*/g },
 ];
+
+// Разрешённые места (часть 15е): правило, файл от корня site-gen, причина. Место без нарушения — красный тест ниже.
+const STAND_GLOBALS = ['browser/page-facts.ts', 'passport/schema.ts', 'report/report.ts', 'run/sabotage.ts', 'scenario/checks.ts'];
+const ALLOWED: readonly { rule: string; file: string; why: string }[] = [
+  { rule: 'merfy-global', file: 'themes/nova/src/shop/CheckoutPage.astro', why: 'Р10а-17: адрес и магазин для theme-base (И10)' },
+  {
+    rule: 'merfy-global',
+    file: 'packages/storefront-shell/src/core/parts/checkout.ts',
+    why: 'Р10а-17, факт 33: настройки оформления для theme-base',
+  },
+  ...STAND_GLOBALS.map((file) => ({
+    rule: 'merfy-global',
+    file: `packages/stand-check/src/${file}`,
+    why: 'паспорт стенда ищет глобалы — проверка И9',
+  })),
+  { rule: 'prod-address', file: 'packages/sdk-docs/src/meta.ts', why: 'Р14-6: адрес документации, сборщик подставляет свой' },
+];
+
+const isAllowed = (violation: string): boolean =>
+  ALLOWED.some((place) => violation.startsWith(`${place.rule} ${place.file}:`));
 
 const lineOf = (text: string, index: number): number => text.slice(0, index).split('\n').length;
 
@@ -78,6 +106,13 @@ const SAMPLES: { text: string; found: string[] }[] = [
   { text: "const url = process.env.ISLANDS_SERVER_URL ?? 'https://islands.merfy.ru';", found: ['islands', 'islands'] },
   { text: '<merfy-island data-block="ProductGrid"></merfy-island>', found: ['islands'] },
   { text: '// packages/storefront/testing/mock-data — откуда цены стенда', found: [] },
+  {
+    text: 'window.__MERFY_CONFIG__.apiUrl = config.apiUrl || "https://gateway.merfy.ru/api";',
+    found: ['prod-address', 'merfy-global'],
+  },
+  { text: "fetch('https://api.merfy.ru/store')", found: ['prod-address'] },
+  { text: "const api = 'https://gateway.dev.merfy.ru/api';", found: [] },
+  { text: "const media = 'https://minio.dev.merfy.ru/storefront';", found: [] },
 ];
 
 describe('сторож нового кода (блок 12)', () => {
@@ -91,6 +126,12 @@ describe('сторож нового кода (блок 12)', () => {
 
   it('в новом коде нет ни одного нарушения', () => {
     const violations = NEW_CODE.flatMap(sourcesOf).flatMap(({ file, text }) => findViolations(file, text));
-    expect(violations).toEqual([]);
+    expect(violations.filter((violation) => !isAllowed(violation))).toEqual([]);
+  });
+
+  it('у каждого разрешённого места есть нарушение — устаревших исключений нет (часть 15е)', () => {
+    const violations = NEW_CODE.flatMap(sourcesOf).flatMap(({ file, text }) => findViolations(file, text));
+    const stale = ALLOWED.filter((place) => !violations.some((line) => line.startsWith(`${place.rule} ${place.file}:`)));
+    expect(stale.map((place) => `${place.rule} ${place.file}`)).toEqual([]);
   });
 });

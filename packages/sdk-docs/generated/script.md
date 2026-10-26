@@ -61,7 +61,7 @@ export default defineSection<State>({
 | `list(items, fill)` | список по шаблону первого ребёнка |
 | `focus()` | фокус |
 
-Модули SDK по `uses` — корзина, избранное, вход — [modules.md](modules.md).
+Модули SDK по `uses` — корзина, избранное, кто вошёл (`customer`), вход и кабинет (`auth`) — [modules.md](modules.md).
 
 Подписка на рассылку — `ctx.newsletter.subscribe({ email })` из скрипта. Тексты ответов — как у пяти тем: `ok` и
 `alreadySubscribed: false` — «Спасибо! Мы отправим вам приветственное письмо.», `alreadySubscribed: true` —

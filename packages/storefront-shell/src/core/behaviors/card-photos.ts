@@ -18,7 +18,8 @@ interface Swipe {
   y: number;
 }
 
-// Свайп пальцем: pointerdown — старт, pointerup — сдвиг; решает nextBySwipe, применяет apply.
+// Свайп пальцем или мышью с зажатием: pointerdown — старт, pointerup — сдвиг; решает nextBySwipe, применяет apply.
+// Прокрутка, забравшая жест, присылает pointercancel — свайп отменяется.
 function listenSwipe(
   host: BehaviorHost,
   nextBySwipe: (from: Swipe, to: Swipe) => number | null,
@@ -28,7 +29,6 @@ function listenSwipe(
   host.root.addEventListener(
     'pointerdown',
     (event) => {
-      if (event.pointerType === 'mouse') return;
       start = { x: event.clientX, y: event.clientY };
     },
     { signal: host.signal },
@@ -43,6 +43,7 @@ function listenSwipe(
     },
     { signal: host.signal },
   );
+  host.root.addEventListener('pointercancel', () => (start = null), { signal: host.signal });
 }
 
 // Смена по наведению — только мышь (pointerType: 'mouse').
@@ -83,6 +84,9 @@ export const cardPhotos: Behavior<'card-photos'> = {
     const photos = safePhotos(host.params.photos instanceof Array ? host.params.photos : []);
     const image = partOf(host, 'image');
     if (image === null || photos.length < 2) return {};
+    // Горизонтальный жест по фото — странице, вертикальная прокрутка — браузеру: без pan-y телефон отдаёт
+    // свайп прокрутке или своему жесту «назад», и фото не листается (прод card-photo-swipe.ts, lockHorizontalGesture).
+    image.style.touchAction = 'pan-y';
     let at = 0;
     let suppressedUntil = 0;
     const show = (index: number): void => {

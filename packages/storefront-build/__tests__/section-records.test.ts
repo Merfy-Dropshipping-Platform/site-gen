@@ -85,6 +85,7 @@ const cardOf = (found: RecordEntry | null) =>
         compareAtPrice: found.record.compareAtPrice,
         image: found.record.images[0] ?? null,
         available: found.record.available,
+        images: found.record.images.slice(0, 2),
       }
     : null;
 const jsonOf = (tag: string): unknown => JSON.parse(tag.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, ''));

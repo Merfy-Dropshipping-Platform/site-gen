@@ -53,6 +53,7 @@ const productCard = (found: RecordEntryOf<'product'>): ProductCard => ({
   compareAtPrice: found.record.compareAtPrice,
   image: found.record.images[0] ?? null,
   available: found.record.available,
+  images: found.record.images.slice(0, 2),
 });
 
 // Карточка статьи — те же поля, что у статей блога записей (records.ts).

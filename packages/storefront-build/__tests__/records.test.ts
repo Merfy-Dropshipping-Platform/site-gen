@@ -242,6 +242,7 @@ describe('коллекция', () => {
           compareAtPrice: null,
           image: null,
           available: false,
+          images: [],
         },
         {
           id: P1,
@@ -251,6 +252,7 @@ describe('коллекция', () => {
           compareAtPrice: money(250000),
           image: 'https://s3.merfy.ru/p/1.jpg',
           available: true,
+          images: ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg'],
         },
       ],
     });
@@ -267,6 +269,15 @@ describe('коллекция', () => {
     expect(record).toMatchObject({ productsCount: 30 });
     const cards = record !== undefined && 'products' in record ? record.products : [];
     expect(cards.map((card) => card.id)).toEqual(ids.slice(0, COLLECTION_PRODUCTS_MAX));
+  });
+
+  it('карточка товара — первые два фото, image — первое', () => {
+    const images = ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg', 'https://s3.merfy.ru/p/3.jpg'];
+    const index = recordIndexOf([product(P1, { images }), collection(C1, { productIds: [P1] })]);
+    const record = index.find('collection', C1)?.record;
+    const card = record !== undefined && 'products' in record ? record.products[0] : undefined;
+    expect(card?.images).toEqual(['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg']);
+    expect(card?.image).toBe('https://s3.merfy.ru/p/1.jpg');
   });
 });
 

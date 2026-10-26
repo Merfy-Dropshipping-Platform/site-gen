@@ -50,7 +50,7 @@ export default defineSection<State>({
 | `text()` / `text(value)` | текст элемента |
 | `attr(name)` / `attr(name, value)` | атрибут; `null` — убрать |
 | `hasClass(name)` / `toggleClass(name, on)` | класс словаря |
-| `show()` / `hide()` / `toggle(on)` / `visible()` | показать и скрыть |
+| `show()` / `hide()` / `toggle(on)` / `visible()` | показать и скрыть — атрибут `hidden`. Элемент, скрытый при загрузке (сообщение «Спасибо», ошибка), — с атрибутом `hidden`, не классом `hidden`: класс `show()` не снимает |
 | `value()` / `checked()` / `form()` | поля формы |
 | `cssVar(name, value)` | переменная CSS элемента |
 | `ref(name)` / `refs(name)` / `closest(name)` | элементы `data-ref` внутри и снаружи |
@@ -58,6 +58,11 @@ export default defineSection<State>({
 | `focus()` | фокус |
 
 Модули SDK по `uses` — корзина, избранное, вход — [modules.md](modules.md).
+
+Подписка на рассылку — `ctx.newsletter.subscribe({ email })` из скрипта. Тексты ответов — как у пяти тем: `ok` и
+`alreadySubscribed: false` — «Спасибо! Мы отправим вам приветственное письмо.», `alreadySubscribed: true` —
+«Вы уже подписаны на рассылку.», отказ с кодом `limit` (не больше 5 запросов за 5 минут с одного адреса) —
+«Слишком много попыток. Попробуйте позже.».
 
 Файлы покупательницы для форм расширений — модуль `files`: `ctx.files.chosen(поле)` — файлы `<input type="file">`
 (ключ, имя, размер, тип, картинка ли), `ctx.files.upload({ key, extension, kind })` — загрузка в хранилище расширения

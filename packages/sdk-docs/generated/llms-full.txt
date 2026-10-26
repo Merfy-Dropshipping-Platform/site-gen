@@ -258,7 +258,7 @@ const { settings } = Astro.props;
 | `kind` | вид: section или global |
 | `title` | название секции в конструкторе, до 80 знаков |
 | `settings` | поля секции; имя каждого — из словаря имён (names.md) |
-| `blocks` | типы блоков: свои поля у каждого типа |
+| `blocks` | типы блоков: свои поля у каждого типа; виды `product`, `collection`, `blog`, `policy`, `menu` и `hint` — только у полей секции, в блоках их нет (проверка: `setting-invalid`) |
 | `defaultBlocks` | блоки, с которыми секция появляется в конструкторе |
 | `groups` | куда можно ставить секцию: header, page, footer, overlay — поверх страницы, только у секций с ролью; нет ключа — только page |
 | `limit` | сколько экземпляров секции в одном списке, от 1 до 50 |
@@ -297,6 +297,8 @@ const { settings } = Astro.props;
 | `blog` | — | `default` |
 | `policy` | — | `default` |
 | `hint` | `title`, `text` | `default`, `link` |
+
+У вида `toggle` ключ `labels` — объект `{ "on": "…", "off": "…" }`: подписи двух положений переключателя.
 
 
 ---
@@ -368,6 +370,7 @@ const { settings } = Astro.props;
 | `open-first` | `toggle` | Первый открыт | Первый вопрос раскрыт при загрузке |
 | `autoplay` | `toggle` | Листать сами | Слайды меняются без нажатия |
 | `interval` | `range` | Интервал | Секунд между слайдами; поле показано при `autoplay` |
+| `zoom` | `radio` | Увеличение | Увеличение главного фото товара: `hover` — лупа при наведении, `click` — окно по нажатию; значение — параметр `data-mode` поведения `zoom` |
 
 ## Нет в словаре
 
@@ -426,6 +429,9 @@ const { settings, blocks } = Astro.props;
 - Атрибуты `data-*` — для скрипта (`data-ref`, `data-action`) и поведений (`data-behavior`, `data-part`,
   `data-animate`).
 - Пустое значение: мерчант может стереть любое поле — `{settings.heading && <h2>…</h2>}`.
+- Один `<h1>` на странице. Секция для своей страницы («Контакты», «О нас» — мерчант так и просит) — заголовок `<h1>`;
+  секции главной и секции, которые стоят рядом с другими, — `<h2>`.
+- Поле формы — с `<label>`: подпись из настроек — в `<label for="…">` или `<label>` вокруг поля; одного `placeholder` мало.
 
 ## Что нельзя
 
@@ -601,7 +607,7 @@ export default defineSection<State>({
 | `text()` / `text(value)` | текст элемента |
 | `attr(name)` / `attr(name, value)` | атрибут; `null` — убрать |
 | `hasClass(name)` / `toggleClass(name, on)` | класс словаря |
-| `show()` / `hide()` / `toggle(on)` / `visible()` | показать и скрыть |
+| `show()` / `hide()` / `toggle(on)` / `visible()` | показать и скрыть — атрибут `hidden`. Элемент, скрытый при загрузке (сообщение «Спасибо», ошибка), — с атрибутом `hidden`, не классом `hidden`: класс `show()` не снимает |
 | `value()` / `checked()` / `form()` | поля формы |
 | `cssVar(name, value)` | переменная CSS элемента |
 | `ref(name)` / `refs(name)` / `closest(name)` | элементы `data-ref` внутри и снаружи |
@@ -609,6 +615,11 @@ export default defineSection<State>({
 | `focus()` | фокус |
 
 Модули SDK по `uses` — корзина, избранное, вход — [modules.md](modules.md).
+
+Подписка на рассылку — `ctx.newsletter.subscribe({ email })` из скрипта. Тексты ответов — как у пяти тем: `ok` и
+`alreadySubscribed: false` — «Спасибо! Мы отправим вам приветственное письмо.», `alreadySubscribed: true` —
+«Вы уже подписаны на рассылку.», отказ с кодом `limit` (не больше 5 запросов за 5 минут с одного адреса) —
+«Слишком много попыток. Попробуйте позже.».
 
 Файлы покупательницы для форм расширений — модуль `files`: `ctx.files.chosen(поле)` — файлы `<input type="file">`
 (ключ, имя, размер, тип, картинка ли), `ctx.files.upload({ key, extension, kind })` — загрузка в хранилище расширения
@@ -784,7 +795,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 Части: `data-part="image"`.
 
-Параметры: `data-photos` — список через запятую; по умолчанию ``; `data-hover-next` — да или нет; по умолчанию `true`.
+Параметры: `data-photos` — список через пробел; по умолчанию ``; `data-hover-next` — да или нет; по умолчанию `true`.
 ## sticky-header
 
 Части: —.
@@ -805,6 +816,11 @@ document.addEventListener('merfy:cart:add', (event) => {
 Части: `data-part="input"`, `data-part="results"`, `data-part="item"`, `data-part="link"`, `data-part="image"`, `data-part="title"`, `data-part="price"`, `data-part="compare"`, `data-part="empty"`, `data-part="all"`.
 
 Параметры: `data-limit` — целое от 1 до 20; по умолчанию `8`.
+## zoom
+
+Части: `data-part="image"`.
+
+Параметры: `data-mode` — одно из: hover, click; по умолчанию `hover`; `data-photos` — список через пробел; по умолчанию ``.
 
 ## Пресеты data-animate
 
@@ -903,10 +919,10 @@ const { settings, theme } = Astro.props;
 
 Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
 
-| `uses` | Что в `Astro.props` | Что в нём |
-|---|---|---|
-| `"theme"` | `theme` | значения [сквозных настроек темы](theme-settings.md) |
-| `"shop"` | `shop` | публичные данные магазина: название, контакты, адрес |
+| `uses`    | Что в `Astro.props` | Что в нём                                            |
+| --------- | ------------------- | ---------------------------------------------------- |
+| `"theme"` | `theme`             | значения [сквозных настроек темы](theme-settings.md) |
+| `"shop"`  | `shop`              | публичные данные магазина: название, контакты, адрес |
 
 ```astro
 ---
@@ -940,12 +956,12 @@ const { settings } = Astro.props;
 
 Публичные поля по виду (`null`-запись не ломает шаблон — проверьте поле на `null`):
 
-| Вид | Публичные поля записи |
-|---|---|
-| `product` | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `options`, `variants`, `collections`, `updatedAt` |
-| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `available`) |
-| `blog` | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `cover`, `excerpt`) |
-| `policy` | `type`, `title`, `url`, `html` |
+| Вид          | Публичные поля записи                                                                                                                                                                                                                                                                                             |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `product`    | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `options`, `variants`, `collections`, `updatedAt`                                                                                                                                                                  |
+| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `images`, `available`; `image` — первое фото, `images` — первые два, для `data-photos` поведения `card-photos`: `{product.images.join(' ')}`) |
+| `blog`       | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `cover`, `excerpt`)                                                                                                                                                                    |
+| `policy`     | `type`, `title`, `url`, `html`                                                                                                                                                                                                                                                                                    |
 
 ### `data` — записи для `script.ts`
 

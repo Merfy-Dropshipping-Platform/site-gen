@@ -37,7 +37,7 @@ const paramText = (spec: ParamSpec): string => {
   if (spec.kind === 'enum') return `одно из: ${(spec.values ?? []).join(', ')}; по умолчанию \`${def}\``;
   if (spec.kind === 'int') return `целое от ${spec.min ?? 0} до ${spec.max ?? 0}; по умолчанию \`${def}\``;
   if (spec.kind === 'bool') return `да или нет; по умолчанию \`${def}\``;
-  if (spec.kind === 'list') return `список через запятую; по умолчанию \`${def}\``;
+  if (spec.kind === 'list') return `список через пробел; по умолчанию \`${def}\``;
   return `строка${spec.default === null ? '' : `; по умолчанию \`${def}\``}`;
 };
 

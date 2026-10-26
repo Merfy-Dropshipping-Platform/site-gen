@@ -5,12 +5,25 @@ const { settings } = Astro.props;
   {settings.product && (
     <div class="grid gap-8 md:grid-cols-2">
       <div class="flex flex-col gap-4">
-        {settings.product.images.length > 0 ? (
-          settings.product.images.map((src, index) => (
-            <img class="h-auto w-full rounded-button" data-ref={index === 0 ? 'photo' : undefined} src={src} alt={settings.product.title} />
-          ))
-        ) : (
-          <img class="h-auto w-full rounded-button" data-ref="photo" alt={settings.product.title} hidden />
+        <div class="overflow-hidden rounded-button" data-behavior="zoom" data-mode={settings.zoom} data-photos={settings.product.images.join(' ')}>
+          <img class="h-auto w-full" data-part="image" data-ref="photo" src={settings.product.images[0]} alt={settings.product.title} hidden={settings.product.images.length === 0} />
+        </div>
+        {settings.product.images.length > 1 && (
+          <div class="grid grid-cols-4 gap-2">
+            {settings.product.images.map((src, index) => (
+              <button
+                type="button"
+                class="rounded-button border border-border p-0 aria-[current=true]:border-primary-border"
+                data-ref="thumb"
+                data-action="pick"
+                data-src={src}
+                aria-label="Показать это фото"
+                aria-current={index === 0 ? 'true' : 'false'}
+              >
+                <img class="h-auto w-full rounded-button" src={src} alt="" loading="lazy" />
+              </button>
+            ))}
+          </div>
         )}
       </div>
       <div class="flex flex-col gap-4">

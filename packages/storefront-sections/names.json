@@ -231,6 +231,11 @@
       "kinds": ["range"], "label": "Интервал", "group": "behavior",
       "about": "Секунд между слайдами; поле показано при `autoplay`",
       "asks": ["интервал", "задержка", "delay", "speed", "seconds"]
+    },
+    "zoom": {
+      "kinds": ["radio"], "label": "Увеличение", "group": "behavior",
+      "about": "Увеличение главного фото товара: `hover` — лупа при наведении, `click` — окно по нажатию; значение — параметр `data-mode` поведения `zoom`",
+      "asks": ["увеличение", "лупа", "зум", "фото крупно", "zoom", "lightbox", "magnifier"]
     }
   }
 }

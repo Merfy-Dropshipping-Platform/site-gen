@@ -1,4 +1,4 @@
-import { changePointer, readPointer, type ObjectStore, type Pointer } from '@merfy/storefront-storage';
+import { changePointer, hexOf, readPointer, type ObjectStore, type Pointer } from '@merfy/storefront-storage';
 import { z } from 'zod';
 import { raiseReleaseStopped } from './alert';
 import type { CheckJob, CheckResult } from './checks';
@@ -173,14 +173,23 @@ const event = (deps: ConductorDeps, type: string, siteId: string): ContentEvent 
   source: 'storefront-release',
 });
 
-const afterJob = (release: ReleaseRow, shop: ReleaseShopRow, url: string): CheckJob => ({
+const afterJob = (release: ReleaseRow, shop: ReleaseShopRow, url: string, home: string | null): CheckJob => ({
   v: 1,
   release: release.id,
   siteId: shop.siteId,
   phase: 'after',
   url,
   before: shop.passportBefore,
+  ...(home === null ? {} : { expected: { home } }),
 });
+
+// Признак новой сборки для проверок: отпечаток файла главной из манифеста живой сборки (ETag раздачи). Главная — не
+// страница манифеста (платформенные 404/502, спецстраницы) или манифеста нет — null, ожидания не будет.
+async function homeHexOf(store: ObjectStore, label: string): Promise<string | null> {
+  const manifest = await liveManifest(store, label);
+  const hash = manifest?.pages.find((page) => page.path === '/')?.hash ?? null;
+  return hash === null ? null : hexOf(hash);
+}
 
 // Пропуск — из того состояния, в котором магазин прочитан: гонка с другим шагом даст false.
 async function skipShop(step: Step, release: ReleaseRow, shop: ReleaseShopRow, reason: string): Promise<void> {
@@ -356,7 +365,8 @@ async function startBuild(step: Step, release: ReleaseRow, shop: ReleaseShopRow)
 }
 
 // Живая сборка на новой версии → страницы без браузера → задание «после». Не на новой (склеенная или старая сборка) —
-// ждём следующей сборки: строка release-shop-not-reached.
+// ждём следующей сборки: строка release-shop-not-reached. Обе проверки ждут, пока раздача станет новой сборкой:
+// указатель кэшируется ~1 с, паспорт со старого HTML ловит 404 бандлов старой таблицы раздачи (№77, 26.10).
 async function checkReached(step: Step, release: ReleaseRow, shop: ReleaseShopRow): Promise<void> {
   const { deps } = step;
   const target = await targetOf(deps, release, shop.siteId);
@@ -365,11 +375,13 @@ async function checkReached(step: Step, release: ReleaseRow, shop: ReleaseShopRo
   const live = manifest?.theme.version ?? null;
   if (manifest === null || !KINDS[release.kind].reached(manifest, release))
     return deps.log('release-shop-not-reached', { release: release.id, shopId: shop.siteId, live });
-  const pages = await deps.pageCheck(target.url, { version: KINDS[release.kind].expectedVersion(release) });
+  const homeHash = manifest.pages.find((page) => page.path === '/')?.hash ?? null;
+  const home = homeHash === null ? null : hexOf(homeHash);
+  const pages = await deps.pageCheck(target.url, { version: KINDS[release.kind].expectedVersion(release), home });
   if (!pages.ok) return broken(step, release, shop, `страницы: ${pages.problems.join('; ')}`);
   const patch = { status: 'checking' as const, buildAfter: target.pointer?.build ?? null };
   if (await setShop(deps.db, keyOf(shop), ['building'], patch))
-    await deps.publishCheck(afterJob(release, shop, target.url));
+    await deps.publishCheck(afterJob(release, shop, target.url, home));
 }
 
 // Упала сборка: поломка версии — стоп; сбой данных — магазин ждёт повторов блока 6, волна ждёт магазин.
@@ -450,15 +462,21 @@ async function onCheckResult(step: Step, result: CheckResult): Promise<void> {
   await ON_RESULT[result.phase](step, release, shop, result);
 }
 
-type Resend = (step: Step, release: ReleaseRow, shop: ReleaseShopRow, url: string) => Promise<void>;
+type Resend = (step: Step, release: ReleaseRow, shop: ReleaseShopRow, target: Target) => Promise<void>;
 
 // Что отправить ещё раз магазину в работе: задание проверки или событие сборки.
 const RESEND: Partial<Record<ShopStatus, Resend>> = {
-  before: (step, release, shop, url) =>
-    step.deps.publishCheck({ v: 1, release: release.id, siteId: shop.siteId, phase: 'before', url }),
+  before: (step, release, shop, target) =>
+    step.deps.publishCheck({ v: 1, release: release.id, siteId: shop.siteId, phase: 'before', url: target.url }),
   building: (step, release, shop) => startBuild(step, release, shop),
-  checking: (step, release, shop, url) => step.deps.publishCheck(afterJob(release, shop, url)),
+  checking: async (step, release, shop, target) =>
+    step.deps.publishCheck(afterJob(release, shop, target.url, await homeHexAwaited(step, target))),
 };
+
+// Ожидание новой сборки для повторного задания «после»: манифест живой сборки знает отпечаток файла главной.
+function homeHexAwaited(step: Step, target: Target): Promise<string | null> {
+  return target.pointer === null ? Promise.resolve(null) : homeHexOf(step.deps.store, target.label);
+}
 
 async function resumeShop(step: Step, release: ReleaseRow, shop: ReleaseShopRow): Promise<void> {
   if (shop.status === 'broken') return stopOn(step, release, shop, shop.error ?? 'магазин сломан');
@@ -466,7 +484,7 @@ async function resumeShop(step: Step, release: ReleaseRow, shop: ReleaseShopRow)
   if (resend === undefined) return;
   const target = await targetOf(step.deps, release, shop.siteId);
   if (target.skip !== null) return skipShop(step, release, shop, target.skip);
-  await resend(step, release, shop, target.url);
+  await resend(step, release, shop, target);
 }
 
 // Перезапуск сборщика или сбой шага: задания, которые могли потеряться, — ещё раз (лишний ответ отбросит условный

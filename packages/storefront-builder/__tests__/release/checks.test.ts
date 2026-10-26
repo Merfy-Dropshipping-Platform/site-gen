@@ -27,6 +27,30 @@ describe('сообщения проверяющего процесса', () => {
     expect(job.before).toEqual({ errors: [] });
   });
 
+  it('задание «после» несёт ожидание новой сборки — отпечаток файла главной', () => {
+    const job = parseCheckJob({
+      v: 1,
+      release: 3,
+      siteId: 's1',
+      phase: 'after',
+      url: 'https://a.dev.merfy.ru',
+      before: { errors: [] },
+      expected: { home: 'd'.repeat(64) },
+    });
+    expect(job.expected).toEqual({ home: 'd'.repeat(64) });
+    expect(() =>
+      parseCheckJob({
+        v: 1,
+        release: 3,
+        siteId: 's1',
+        phase: 'after',
+        url: 'https://a.dev.merfy.ru',
+        before: {},
+        expected: {},
+      }),
+    ).toThrow(StorefrontBuilderError);
+  });
+
   it('ответ с вердиктом и ответ с ошибкой — оба по схеме', () => {
     expect(parseCheckResult({ ...RESULT, verdict: 'red', error: null }).verdict).toBe('red');
     expect(parseCheckResult({ ...RESULT, verdict: null, error: 'страница ответила 503' }).error).toBe(

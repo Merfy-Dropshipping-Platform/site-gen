@@ -29,7 +29,14 @@ const RULES: CheckerDeps['rules'] = [
 const JOB = { v: 1 as const, release: 4, siteId: 's1', url: 'https://a.dev.merfy.ru' };
 
 const opening = (collected: Collected) => (): Promise<Collected> => Promise.resolve(collected);
-const depsWith = (open: CheckerDeps['open']): CheckerDeps => ({ open, rules: RULES, log: () => undefined });
+const depsWith = (open: CheckerDeps['open'], fetch?: CheckerDeps['fetch']): CheckerDeps => ({
+  open,
+  rules: RULES,
+  log: () => undefined,
+  fetch: fetch ?? (() => Promise.resolve(new Response('', { status: 200 }))),
+  homePollMs: 0,
+  homeWaitMs: 5_000,
+});
 
 describe('проверка магазина (блок 10)', () => {
   it('«до» — паспорт без сравнения', async () => {
@@ -72,6 +79,71 @@ describe('проверка магазина (блок 10)', () => {
   });
 });
 
+// Гонка раздачи выпуска платформы №77 (26.10): указатель кэшируется ~1 с, паспорт «после» снимался со старого HTML —
+// его бандла нет в новой таблице раздачи, 404 объявлялся «новой ошибкой в консоли» и красным. Теперь паспорт снимается
+// только с новой сборки: признак — ETag главной равен отпечатку файла главной из манифеста живой сборки.
+describe('паспорт «после» снимается с новой сборки (гонка раздачи, выпуск №77)', () => {
+  const OLD_HOME = '1'.repeat(64);
+  const NEW_HOME = '2'.repeat(64);
+  const etagOf = (hex: string): Response => new Response('', { status: 200, headers: { ETag: `"${hex}"` } });
+
+  const PASSPORT_NEW = normalizePassport({ ...PASSPORT, scripts: [{ src: '/_merfy/b/new.js', kind: 'module', bytes: 9216, hash: '3f9a2c1e' }] });
+
+  it('раздача первые опросы отдаёт старую главную — ждём совпадения ETag, потом снимаем паспорт; не красный', async () => {
+    const etags = [OLD_HOME, OLD_HOME, NEW_HOME];
+    const asked: string[] = [];
+    const fetch = (url: string): Promise<Response> => {
+      asked.push(url);
+      return Promise.resolve(etagOf(etags.shift() ?? NEW_HOME));
+    };
+    let opened = 0;
+    const open = (): Promise<Collected> => {
+      opened += 1;
+      return Promise.resolve({ passport: PASSPORT_NEW, sections: [] });
+    };
+    const result = await checkShop(depsWith(open, fetch), {
+      ...JOB,
+      phase: 'after',
+      before: PASSPORT,
+      expected: { home: NEW_HOME },
+    });
+    expect(asked).toEqual([`${JOB.url}/`, `${JOB.url}/`, `${JOB.url}/`]);
+    expect(opened).toBe(1);
+    expect(result).toMatchObject({ verdict: 'clean', error: null });
+  });
+
+  it('новая сборка не пришла за предел — ошибка ожидания с понятным текстом, страница не открывается', async () => {
+    let opened = 0;
+    const open = (): Promise<Collected> => {
+      opened += 1;
+      return Promise.resolve({ passport: PASSPORT, sections: [] });
+    };
+    const result = await checkShop(
+      { ...depsWith(open, () => Promise.resolve(etagOf(OLD_HOME))), homeWaitMs: 20 },
+      { ...JOB, phase: 'after', before: PASSPORT, expected: { home: NEW_HOME } },
+    );
+    expect(opened).toBe(0);
+    expect(result.passport).toBeNull();
+    expect(result.verdict).toBeNull();
+    expect(result.error).toContain('раздача не сменила главную на новую сборку');
+    expect(result.error).toContain(`ждали "${NEW_HOME}"`);
+  });
+
+  it('задание без ожидания (проверка «до», старый ведущий) — страницу открываем сразу', async () => {
+    let opened = 0;
+    const open = (): Promise<Collected> => {
+      opened += 1;
+      return Promise.resolve({ passport: PASSPORT, sections: [] });
+    };
+    await checkShop(depsWith(open, () => Promise.reject(new Error('не должна зваться'))), {
+      ...JOB,
+      phase: 'after',
+      before: PASSPORT,
+    });
+    expect(opened).toBe(1);
+  });
+});
+
 // Ошибки страницы оформления в паспорте главной (выпуск nova 0.7.1 №69: pageerror /checkout не дал красного).
 describe('ошибки страницы оформления', () => {
   const passportAt = (path: string, errors: readonly string[]): Collected => ({
@@ -95,7 +167,7 @@ describe('ошибки страницы оформления', () => {
 
   it('новая ошибка оформления в «после» — красный', async () => {
     const red = await checkShop(
-      { open: (url) => openWithCheckout(open, url), rules: RULES, log: () => undefined },
+      { open: (url) => openWithCheckout(open, url), rules: RULES, log: () => undefined, fetch: () => Promise.resolve(new Response('', { status: 200 })), homePollMs: 0, homeWaitMs: 5_000 },
       { ...JOB, phase: 'after', before: passportAt('/', []).passport },
     );
     expect(red.verdict).toBe('red');

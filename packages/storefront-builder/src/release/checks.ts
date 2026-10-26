@@ -9,6 +9,10 @@ export const CHECK_RESULTS_QUEUE = 'storefront_check_results';
 
 const phaseSchema = z.enum(['before', 'after']);
 
+// Ожидание новой сборки в задании «после» (гонка раздачи, выпуск №77): отпечаток файла главной из манифеста живой
+// сборки. Проверяющий процесс ждёт совпадения ETag главной, прежде чем снимать паспорт.
+const expectedSchema = z.strictObject({ home: z.string().min(1) });
+
 const checkJobSchema = z.strictObject({
   v: z.literal(1),
   release: z.int().positive(),
@@ -16,6 +20,7 @@ const checkJobSchema = z.strictObject({
   phase: phaseSchema,
   url: z.url(),
   before: z.unknown().optional(),
+  expected: expectedSchema.optional(),
 });
 
 const checkResultSchema = z.strictObject({

@@ -15,6 +15,11 @@ export interface CheckerDeps {
   open: (url: string) => Promise<Collected>;
   rules: FieldRule[];
   log: Log;
+  // Ожидание новой сборки раздачи (гонка выпуска №77, 26.10): опрос ETag главной, пока не совпадёт с отпечатком файла
+  // главной из манифеста живой сборки. По событию — совпадением, не таймером; предел — сбой раздачи.
+  fetch: (url: string) => Promise<Response>;
+  homePollMs: number;
+  homeWaitMs: number;
 }
 
 export interface CheckerSettings {
@@ -61,10 +66,33 @@ export async function openWithCheckout(
   return { ...home, passport };
 }
 
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Паспорт «после» снимается только с новой сборки: раздача кэширует указатель ~1 с, и паспорт со старого HTML ловит
+// 404 бандлов, которых уже нет в новой таблице раздачи, — это становилось «новой ошибкой в консоли» и красным (№77).
+// Событие — ETag главной совпал с отпечатком файла главной из манифеста живой сборки. Предел истёк — сбой раздачи.
+async function homeWaitProblem(deps: CheckerDeps, job: CheckJob): Promise<string | null> {
+  if (job.phase !== 'after' || job.expected === undefined) return null;
+  const wanted = `"${job.expected.home}"`;
+  const deadline = Date.now() + deps.homeWaitMs;
+  for (;;) {
+    const response = await deps.fetch(`${job.url}/`).catch(() => null);
+    const etag = response?.headers.get('etag') ?? null;
+    if (response !== null && response.status === 200 && etag === wanted) return null;
+    if (Date.now() + deps.homePollMs >= deadline) {
+      const seconds = Math.round(deps.homeWaitMs / 1000);
+      return `раздача не сменила главную на новую сборку за ${seconds} с: ETag ${etag ?? 'нет'}, ждали ${wanted}`;
+    }
+    await wait(deps.homePollMs);
+  }
+}
+
 export async function checkShop(deps: CheckerDeps, job: CheckJob): Promise<CheckResult> {
   const base = { v: 1 as const, release: job.release, siteId: job.siteId, phase: job.phase };
   const fields = { release: job.release, shopId: job.siteId, phase: job.phase };
   try {
+    const stale = await homeWaitProblem(deps, job);
+    if (stale !== null) throw new Error(stale);
     const collected = await deps.open(job.url);
     const { differences, verdict } = compared(job, collected, deps.rules);
     deps.log('check-done', { ...fields, verdict, differences: differences.length });

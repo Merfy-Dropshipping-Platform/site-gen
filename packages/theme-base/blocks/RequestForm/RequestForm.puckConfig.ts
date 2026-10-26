@@ -28,7 +28,7 @@ export const RequestFormSchema = z.object({
 export type RequestFormProps = z.infer<typeof RequestFormSchema>;
 
 export const RequestFormPuckConfig: BlockPuckConfig<RequestFormProps> = {
-  label: 'Форма заявки',
+  label: 'Форма индивидуального заказа',
   category: 'form',
   fields: {
     requestsEnabled: { type: 'toggle', label: 'Включена' } as any,

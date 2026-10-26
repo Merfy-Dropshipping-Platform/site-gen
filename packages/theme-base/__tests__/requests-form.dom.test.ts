@@ -350,7 +350,7 @@ describe('requests-form отправка (T013b)', () => {
     ).toHaveBeenCalled();
   });
 
-  it('requests: успех → «Заявка №N отправлена», POST несёт productId/values/contacts/files', async () => {
+  it('requests: успех → «Индивидуальный заказ И-N оформлен», POST несёт productId/values/contacts/files', async () => {
     const root = await mounted();
     // фото загружено (мок-ответ даёт key)
     pickFileInput(root, 'f1');
@@ -375,7 +375,7 @@ describe('requests-form отправка (T013b)', () => {
       { fieldId: 'f1', key: 'minio-key-1', url: 'https://files/x.jpg', name: 'a.jpg', size: 1024, mime: 'image/jpeg' },
     ]);
     const form2 = root.querySelector('[data-request-form]') as HTMLElement;
-    expect(form2.innerHTML).toContain('Заявка №2099 отправлена');
+    expect(form2.innerHTML).toContain('Индивидуальный заказ И-2099 оформлен');
     expect(form2.innerHTML).toContain('Спасибо! Посмотрим фото и ответим');
     expect(form2.innerHTML).toContain('olga@example.ru');
   });
@@ -410,7 +410,7 @@ describe('requests-form отправка (T013b)', () => {
     await flush();
     const form2 = root.querySelector('[data-request-form]') as HTMLElement;
     expect(form2.querySelector('[data-request-note]')!.textContent).toContain(
-      'Не удалось отправить заявку',
+      'Не удалось оформить заказ',
     );
     expect(form2.querySelector('[data-request-submit]')).not.toBe(null);
   });

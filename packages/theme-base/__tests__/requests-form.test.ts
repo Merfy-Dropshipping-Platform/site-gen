@@ -190,7 +190,7 @@ describe('requests-form runtime (T013a)', () => {
       expect(html).toContain('Согласна(сен) на обработку персональных данных');
       expect(html).toContain('data-request-submit');
       expect(html).toContain(
-        'Ответ придёт на почту и в «Мои заявки». Платить сейчас не нужно.',
+        'Ответ придёт на почту и в «Мои заказы». Платить сейчас не нужно.',
       );
     });
 
@@ -281,7 +281,7 @@ describe('requests-form runtime (T013a)', () => {
 
     it('requests: пустой дескриптор — всё равно валидный каркас контактов', () => {
       const html = renderFormHTML(null);
-      expect(html).toContain('<h4>Оставить заявку</h4>');
+      expect(html).toContain('<h4>Оформить индивидуальный заказ</h4>');
       expect(html).toContain('data-sf="_name"');
     });
 
@@ -350,7 +350,8 @@ describe('requests-form runtime (T013a)', () => {
   describe('requests: requestSuccessHTML (T013b)', () => {
     it('requests: экран успеха — номер, done-текст, почта, кнопка сброса', () => {
       const html = requestSuccessHTML(BOOK, 2083, 'olga@example.ru');
-      expect(html).toContain('Заявка №2083 отправлена');
+      expect(html).toContain('Индивидуальный заказ И-2083 оформлен');
+      expect(html).not.toContain('№');
       expect(html).toContain('Спасибо! Посмотрим фото и ответим в течение дня.');
       expect(html).toContain('olga@example.ru');
       expect(html).toContain('data-request-again');

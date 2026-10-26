@@ -110,7 +110,7 @@ describe("строки записей в «Моих заказах»", () => {
     });
     expect(count).toBe(1);
     expect(order(list)[0]).toBe("Заказ 1");
-    expect(order(list)[1]).toContain("№2096 · Стол из массива по размеру");
+    expect(order(list)[1]).toContain("И-2096 · Стол из массива по размеру");
     expect(order(list)[2]).toBe("Заказ 2");
   });
 
@@ -194,7 +194,7 @@ describe("страница записи", () => {
     );
     const call = calls.find((item) => routeOf(item.url) === "get");
     expect(call?.init?.body).toBe(JSON.stringify({ id: STAND_RECORD_ID }));
-    expect(root.querySelector(".xo-number")?.textContent).toBe("№2096");
+    expect(root.querySelector(".xo-number")?.textContent).toBe("И-2096");
     expect(root.querySelector(".xo-badge")?.textContent).toBe("Ждёт оплаты");
     expect(root.querySelector(".xo-button")?.getAttribute("href")).toBe(
       "https://pay.example.ru/l/2096",

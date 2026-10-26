@@ -189,9 +189,9 @@ describe("разметка", () => {
     );
     expect(html).toContain('href="/account/entry?ext=test-ext&amp;id=r2096"');
     expect(html).toContain(`data-date="${AT_0746}"`);
-    expect(html).toContain("№2096 · Стол из массива по размеру");
+    expect(html).toContain("И-2096 · Стол из массива по размеру");
     expect(html).toContain("сегодня, 07:46");
-    expect(html).toContain('data-tone="info">Отправлена<');
+    expect(html).toContain('data-tone="info">Отправлен<');
   });
 
   it("строка без цвета статуса — нейтральная", () => {
@@ -232,11 +232,11 @@ describe("разметка", () => {
     expect(html).toContain(
       '<a class="xo-back" href="/account/orders">← Мои заказы</a>',
     );
-    expect(html).toContain('<h1 class="xo-number">№2096</h1>');
+    expect(html).toContain('<h1 class="xo-number">И-2096</h1>');
     expect(html).toContain('data-tone="info">Обсуждаем<');
     expect(html).toContain("Стол из массива по размеру · сегодня, 07:46");
     expect(html).toContain(
-      '<p class="xo-text"><span class="xo-line">Ваша заявка №2096 в магазине «Верстак»</span><span class="xo-line">сегодня, 07:50</span></p><p class="xo-text">',
+      '<p class="xo-text"><span class="xo-line">Ваш индивидуальный заказ И-2096 в магазине «Верстак»</span><span class="xo-line">сегодня, 07:50</span></p><p class="xo-text">',
     );
   });
 

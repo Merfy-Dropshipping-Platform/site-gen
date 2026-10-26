@@ -138,10 +138,11 @@ describe('requests-mine список (T014)', () => {
     await flush();
     const rows = document.querySelectorAll('.account-order-row');
     expect(rows.length).toBe(2);
-    expect(rows[0].innerHTML).toContain('Заявка №2083');
+    expect(rows[0].innerHTML).toContain('Индивидуальный заказ И-2083');
+    expect(rows[0].innerHTML).not.toContain('№');
     expect(rows[0].innerHTML).toContain('Фотокнига «Наша история»');
-    expect(rows[0].innerHTML).toContain('Новая');
-    expect(rows[1].innerHTML).toContain('Закрыта: не договорились');
+    expect(rows[0].innerHTML).toContain('Новый');
+    expect(rows[1].innerHTML).toContain('Закрыт: не договорились');
     expect(rows[0].innerHTML).toContain('href="/account/request?id=2083"');
     expect(fn.mock.calls[0][0]).toContain('/store/extensions/requests/fn/mineList?store_id=shop1');
     expect((fn.mock.calls[0][1] as RequestInit).headers).toMatchObject({
@@ -163,7 +164,7 @@ describe('requests-mine список (T014)', () => {
     (window as any).fetch = jest.fn(() => Promise.reject(new Error('net')));
     initRequestsMineList();
     await flush();
-    expect(document.getElementById('requests-loading')!.textContent).toBe('Не удалось загрузить заявки');
+    expect(document.getElementById('requests-loading')!.textContent).toBe('Не удалось загрузить индивидуальные заказы');
   });
 
   it('requests-mine: statusText данных важнее фолбека', () => {
@@ -186,7 +187,7 @@ describe('requests-mine карточка (T014)', () => {
     await flush();
     const content = document.getElementById('request-content')!;
     expect(content.classList.contains('hidden')).toBe(false);
-    expect(document.getElementById('request-subtitle')!.textContent).toContain('Обсуждается');
+    expect(document.getElementById('request-subtitle')!.textContent).toContain('Обсуждаем');
     expect(content.innerHTML).toContain('Формат');
     expect(content.innerHTML).toContain('30 × 30 см');
     expect(content.innerHTML).toContain('не заполнено');
@@ -276,7 +277,7 @@ describe('requests-mine карточка (T014)', () => {
   it('requests-mine: canReply=false — формы ответа нет, подпись про закрытость', () => {
     const html = requestMineCardHTML({ ...DETAIL, canReply: false });
     expect(html).not.toContain('request-reply-send');
-    expect(html).toContain('Заявка закрыта для ответов');
+    expect(html).toContain('Индивидуальный заказ закрыт для ответов');
   });
 
   it('requests-mine: разметка экранируется', () => {

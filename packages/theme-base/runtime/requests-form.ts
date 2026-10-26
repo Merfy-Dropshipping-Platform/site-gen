@@ -683,7 +683,7 @@ export function renderFormHTML(
   const vals = values || {};
   const o = opts || {};
   const prefix = 'sf-rq';
-  const btn = d.btn || 'Оставить заявку';
+  const btn = d.btn || 'Оформить индивидуальный заказ';
   const phone = d.phone;
   const errors = o.errors || {};
 
@@ -751,7 +751,7 @@ export function renderFormHTML(
   const submit =
     '<button type="button" class="sf-sub" data-request-submit>' +
     escapeRequestHtml(btn) +
-    '</button><p class="sf-note">Ответ придёт на почту и в «Мои заявки». Платить сейчас не нужно.</p>';
+    '</button><p class="sf-note">Ответ придёт на почту и в «Мои заказы». Платить сейчас не нужно.</p>';
 
   return (
     note +
@@ -773,15 +773,15 @@ export function requestSuccessHTML(
   email?: string,
 ): string {
   const d = descriptor && typeof descriptor === 'object' ? descriptor : {};
-  const done = d.done || 'Спасибо! Мы посмотрим заявку и ответим.';
+  const done = d.done || 'Спасибо! Мы посмотрим заказ и ответим.';
   return (
-    '<div class="sf"><div class="sf-box" data-request-success role="status"><h4>Заявка №' +
+    '<div class="sf"><div class="sf-box" data-request-success role="status"><h4>Индивидуальный заказ И-' +
     escapeRequestHtml(requestNo) +
-    ' отправлена</h4><p class="sf-h">' +
+    ' оформлен</h4><p class="sf-h">' +
     escapeRequestHtml(done) +
     ' Ответ придёт на ' +
     escapeRequestHtml(email || 'почту') +
-    ' и в «Мои заявки».</p>' +
+    ' и в «Мои заказы».</p>' +
     '<button type="button" class="sf-sub" data-request-again>Отправить ещё одну</button></div></div>'
   );
 }
@@ -1058,11 +1058,11 @@ export function mountRequestsForm(
           );
           return;
         }
-        note = 'Не удалось отправить заявку. Попробуйте ещё раз.';
+        note = 'Не удалось оформить заказ. Попробуйте ещё раз.';
         rerender();
       })
       .catch(() => {
-        note = 'Не удалось отправить заявку. Попробуйте ещё раз.';
+        note = 'Не удалось оформить заказ. Попробуйте ещё раз.';
         rerender();
       });
   }

@@ -21,15 +21,21 @@
 магазина, `<name>` — `name` из `section.json`. Тело запросов с файлами — `{ "files": { "<путь>": "<текст>" } }`, до
 512 КБ; `AGENTS.md` и `CLAUDE.md` в теле не нужны — проверка их пропускает.
 
-| Что | Запрос | Ответ |
-|---|---|---|
-| проверить, ничего не записывая | `POST https://gateway.merfy.ru/api/sites/<магазин>/sections/check` | `{ ok, name, problems, warnings }` |
-| сохранить черновиком | `POST https://gateway.merfy.ru/api/sites/<магазин>/sections` | то же и `status`, `id`; не прошла — 422 |
-| файлы текущей правки | `GET https://gateway.merfy.ru/api/sites/<магазин>/sections/<name>/source` | `{ name, id, files }` |
-| правки секции | `GET https://gateway.merfy.ru/api/sites/<магазин>/sections/<name>/history` | `{ name, edits: [{ id, createdAt, draft, published }] }` |
-| вернуть прежнюю правку | `POST https://gateway.merfy.ru/api/sites/<магазин>/sections/<name>/rollback` с `{ "id": "<id правки>" }` | `{ name, id, draft, published }` |
+| Что                            | Запрос                                                                                                   | Ответ                                                                                                                                                                                         |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| проверить, ничего не записывая | `POST https://gateway.merfy.ru/api/sites/<магазин>/sections/check`                                       | `{ ok, name, problems, warnings }`                                                                                                                                                            |
+| сохранить черновиком           | `POST https://gateway.merfy.ru/api/sites/<магазин>/sections`                                             | то же и `status`, `id`; не прошла — 422                                                                                                                                                       |
+| файлы текущей правки           | `GET https://gateway.merfy.ru/api/sites/<магазин>/sections/<name>/source`                                | `{ name, id, files }`                                                                                                                                                                         |
+| правки секции                  | `GET https://gateway.merfy.ru/api/sites/<магазин>/sections/<name>/history`                               | `{ name, edits: [{ id, createdAt, draft, published, errors? }] }`; `errors` — ошибки скрипта этой правки в браузерах покупателей: `[{ stage, message, count, lastAt }]`, до трёх самых частых |
+| вернуть прежнюю правку         | `POST https://gateway.merfy.ru/api/sites/<магазин>/sections/<name>/rollback` с `{ "id": "<id правки>" }` | `{ name, id, draft, published }`; роль правки занята другой секцией — 409 `role-taken`                                                                                                        |
 
 Проверок и сохранений — до 30 в минуту на магазин; больше — ответ 429, подожди минуту.
+
+Секция с ролью (`role` в `section.json`), у которой за 15 минут 10 и больше ошибок скрипта в браузерах покупателей,
+сама возвращается к прежней опубликованной правке: в «правках секции» у неё `published: true`, у правки с ошибкой —
+`published: false` и `errors`. Мерчант получает уведомление с текстом ошибки. Исправь новую правку и сохрани снова.
+Секцию с той же ролью сама она возвращает не чаще раза в сутки: в эти сутки ошибка новой правки остаётся на витрине,
+мерчант получает уведомление, правку исправляешь ты.
 
 ## Пример: «Подбор шарфа по цвету пальто»
 

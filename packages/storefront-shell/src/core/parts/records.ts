@@ -36,7 +36,7 @@ const BUTTON_CLASSES =
 const LIST_CLASSES = 'flex flex-col gap-2 p-5 border border-border rounded-card text-foreground underline';
 const ENTRY_CLASSES = 'flex flex-col gap-4';
 
-// Точка карты расширений с orders.list и orders.get (findOrdersPoints theme-base).
+// Место orders из конфига страницы с orders.list и orders.get (findOrdersPoints theme-base).
 interface OrdersPoint {
   readonly id: string;
   readonly list: string;
@@ -95,10 +95,6 @@ function toneOf(value: unknown): string {
   return tone !== null && KNOWN_TONES.includes(tone) ? tone : 'neutral';
 }
 
-function mapUrl(config: StorefrontConfig): string {
-  return `${config.api.url}/store/extensions/storefront?store_id=${encodeURIComponent(config.shop.id)}`;
-}
-
 function fnUrl(config: StorefrontConfig, id: string, fn: string): string {
   const path = `/store/extensions/${encodeURIComponent(id)}/fn/${encodeURIComponent(fn)}`;
   return `${config.api.url}${path}?store_id=${encodeURIComponent(config.shop.id)}`;
@@ -110,17 +106,12 @@ function fnRequest(page: KeyValue, body: Json): JsonRequest {
   return token === null ? { method: 'POST', body } : { method: 'POST', body, token };
 }
 
-// Карта расширений (Р12е-4): точки — по порядку ключей, у которых orders.list и orders.get — непустые строки.
-async function ordersPointsOf(config: StorefrontConfig): Promise<readonly OrdersPoint[]> {
-  const reply = await requestJson(mapUrl(config), { method: 'GET' });
-  const data = okData(reply);
-  if (!isRecord(data)) return [];
-  return Object.entries(data).flatMap(([id, entry]) => {
-    const orders = isRecord(entry) ? entry.orders : undefined;
-    const list = isRecord(orders) ? textOf(orders.list) : null;
-    const get = isRecord(orders) ? textOf(orders.get) : null;
-    return list === null || get === null ? [] : [{ id, list, get }];
-  });
+// Места orders из конфига страницы (часть 15д, Р15д-1; было — запрос карты расширений шлюза, Р12е-4): по порядку
+// ключей конфига — по алфавиту id, как их пишет сборка.
+function ordersPointsOf(config: StorefrontConfig): readonly OrdersPoint[] {
+  return Object.entries(config.extPoints ?? {}).flatMap(([id, places]) =>
+    places.orders === undefined ? [] : [{ id, list: places.orders.list, get: places.orders.get }],
+  );
 }
 
 // Строки одного расширения: неполные и с нечитаемой датой пропускаются, сбой расширения — строк нет.
@@ -355,7 +346,7 @@ async function entryOf(
 
 // Список или запись — по адресу страницы (Р12е-5): список заказов — разметка другой секции, часть его не трогает.
 async function showRecords(config: StorefrontConfig, page: KeyValue, places: readonly HTMLElement[]): Promise<void> {
-  const points = await ordersPointsOf(config);
+  const points = ordersPointsOf(config);
   if (points.length === 0) return;
   const params = new URLSearchParams(location.search);
   const ext = params.get('ext') ?? '';

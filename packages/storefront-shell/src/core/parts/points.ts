@@ -1,12 +1,14 @@
 import { CUSTOMER_TOKEN_KEY } from '../customer-token';
 import { EXT_POINT_ATTRIBUTE } from '../ext-points';
 import { pageStorage } from '../storage';
+import type { ExtensionPoints, StorefrontConfig } from '@merfy/storefront-config';
 import type { CoreHandle, InstanceHost, SdkPart } from '../types';
 import { cartIdOf } from './cart';
 
 // Часть points (блок 12 «Секций и SDK», часть 12б, Р12б-15): блоки включённых расширений в местах data-ext-point
 // «cart» и «account» — поведение theme-base (renderCartPoint и renderAccountPoint), но разметка — только классы
-// словаря EXT_POINT_CLASSES.points: theme-base в бандл не входит (Р12б-15). В превью конструктора блоков нет — данных
+// словаря EXT_POINT_CLASSES.points: theme-base в бандл не входит (Р12б-15). Описания мест — из конфига страницы
+// (config.extPoints): их вписывает сборка (блок 15, часть 15д). В превью конструктора блоков нет — данных
 // магазина и покупателя там нет (Р12б-17). Своих методов для секций нет: api — пустой замороженный объект.
 export const points: SdkPart<'points', Readonly<Record<string, never>>> = {
   name: 'points',
@@ -25,35 +27,13 @@ const EMPTY_API: Readonly<Record<string, never>> = Object.freeze({});
 const CORES = new WeakMap<Readonly<Record<string, never>>, CoreHandle>();
 
 const CART_EVENTS = ['merfy:cart:add', 'merfy:cart:change', 'merfy:cart:remove'] as const;
-const CACHE_MS = 60_000;
-const DESCRIPTION_CACHE = 'merfy:ext:storefront:';
 const BUTTON_CLASSES =
   'inline-flex h-11 w-full items-center justify-center rounded-button border border-primary-border bg-primary px-6 text-primary-foreground';
 
-interface NoteSpec {
-  readonly text?: string;
-  readonly when?: string;
-}
-interface AccountField {
-  readonly key: string;
-  readonly label?: string;
-  readonly kind?: string;
-  readonly input?: string;
-  readonly required?: boolean;
-}
-interface AccountSpec {
-  readonly title?: string;
-  readonly source?: string;
-  readonly fields?: readonly AccountField[];
-  readonly copy?: { readonly key: string; readonly label?: string };
-  readonly list?: { readonly source: string; readonly columns: readonly string[] };
-  readonly form?: { readonly fn: string; readonly fields?: readonly AccountField[] };
-}
-interface Description {
-  readonly cartNote?: NoteSpec;
-  readonly account?: AccountSpec;
-}
-type Descriptions = Record<string, Description>;
+// Описания мест — типы конфига страницы (часть 15д, Р15д-1): сборка вписала и проверила их схемой.
+type NoteSpec = NonNullable<ExtensionPoints['cart']>['note'];
+type AccountSpec = NonNullable<ExtensionPoints['account']>;
+type Descriptions = NonNullable<StorefrontConfig['extPoints']>;
 type Values = Readonly<Record<string, unknown>>;
 
 interface ShopApi {
@@ -69,73 +49,6 @@ const textOf = (value: unknown): string => {
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value);
   return JSON.stringify(value) ?? '';
 };
-
-const stringOf = (value: unknown): string | undefined =>
-  typeof value === 'string' && value !== '' ? value : undefined;
-
-const fieldOf = (value: unknown): AccountField | null => {
-  if (!isRecord(value)) return null;
-  const key = stringOf(value.key);
-  return key === undefined
-    ? null
-    : {
-        key,
-        label: stringOf(value.label),
-        kind: stringOf(value.kind),
-        input: stringOf(value.input),
-        required: value.required === true,
-      };
-};
-
-const fieldsOf = (value: unknown): readonly AccountField[] | undefined => {
-  if (!Array.isArray(value)) return undefined;
-  const fields = value.flatMap((item) => {
-    const field = fieldOf(item);
-    return field === null ? [] : [field];
-  });
-  return fields.length === 0 ? undefined : fields;
-};
-
-// Кабинет (В12-2 А) — заголовок, поля с источником, копирование, список и форма; описания — как у пяти тем.
-function accountOf(value: unknown): AccountSpec | undefined {
-  if (!isRecord(value)) return undefined;
-  const copyRecord = isRecord(value.copy) ? value.copy : undefined;
-  const copyKey = copyRecord === undefined ? undefined : stringOf(copyRecord.key);
-  const copy =
-    copyKey === undefined
-      ? undefined
-      : { key: copyKey, label: copyRecord === undefined ? undefined : stringOf(copyRecord.label) };
-  const list =
-    isRecord(value.list) && stringOf(value.list.source) !== undefined && Array.isArray(value.list.columns)
-      ? { source: stringOf(value.list.source) ?? '', columns: value.list.columns.map(textOf) }
-      : undefined;
-  const form =
-    isRecord(value.form) && stringOf(value.form.fn) !== undefined
-      ? { fn: stringOf(value.form.fn) ?? '', fields: fieldsOf(value.form.fields) }
-      : undefined;
-  const spec: AccountSpec = {
-    title: stringOf(value.title),
-    source: stringOf(value.source),
-    fields: fieldsOf(value.fields),
-  };
-  return {
-    ...spec,
-    ...(copy?.key === undefined ? {} : { copy }),
-    ...(list === undefined ? {} : { list }),
-    ...(form === undefined ? {} : { form }),
-  };
-}
-
-function descriptionOf(value: unknown): Description {
-  if (!isRecord(value)) return {};
-  return {
-    cartNote:
-      isRecord(value.cart) && isRecord(value.cart.note)
-        ? { text: stringOf(value.cart.note.text), when: stringOf(value.cart.note.when) }
-        : undefined,
-    account: accountOf(value.account),
-  };
-}
 
 const shopApiOf = (core: CoreHandle): ShopApi | null => {
   const config = core.config;
@@ -153,26 +66,8 @@ const dataOf = (reply: unknown): Values | null => {
   return reply.data;
 };
 
-// Описания блоков — как у пяти тем (Р12б-14): GET /store/extensions/storefront с общим кэшем sessionStorage на 60 с.
-async function descriptionsOf(api: ShopApi): Promise<Descriptions> {
-  const key = `${DESCRIPTION_CACHE}${api.storeId}`;
-  const cached = sessionStorage.getItem(key);
-  if (cached !== null) {
-    const parsed: unknown = JSON.parse(cached);
-    if (isRecord(parsed) && typeof parsed.at === 'number' && Date.now() - parsed.at < CACHE_MS && isRecord(parsed.data))
-      return Object.fromEntries(Object.entries(parsed.data).map(([id, value]) => [id, descriptionOf(value)]));
-  }
-  const data = dataOf(
-    await readJson(`${api.url}/store/extensions/storefront?store_id=${encodeURIComponent(api.storeId)}`),
-  );
-  const descriptions = Object.fromEntries(Object.entries(data ?? {}).map(([id, value]) => [id, descriptionOf(value)]));
-  try {
-    sessionStorage.setItem(key, JSON.stringify({ at: Date.now(), data: descriptions }));
-  } catch {
-    /* кэш недоступен — блоки всё равно показаны */
-  }
-  return descriptions;
-}
+// Описания мест из конфига страницы (часть 15д, Р15д-1; было — запрос карты расширений шлюза, Р12б-14).
+const descriptionsOf = (core: CoreHandle): Descriptions => core.config?.extPoints ?? {};
 
 // Вид корзины расширения: GET /store/carts/<id>?store_id=, id — из хранилища страницы части cart.
 async function cartViewsOf(api: ShopApi, host: InstanceHost): Promise<Values> {
@@ -187,13 +82,11 @@ async function cartViewsOf(api: ShopApi, host: InstanceHost): Promise<Values> {
   );
 }
 
-const noteShown = (note: NoteSpec, view: Values): boolean => {
-  if (note.text === undefined || note.text === '') return false;
-  return note.when === undefined || Boolean(view[note.when]);
-};
+const noteShown = (note: NoteSpec, view: Values): boolean =>
+  note.when === undefined || Boolean(view[note.when]);
 
 const noteText = (note: NoteSpec, view: Values): string =>
-  note.text?.replace(/\{(\w+)\}/g, (_match, key: string) => textOf(view[key])) ?? '';
+  note.text.replace(/\{(\w+)\}/g, (_match, key: string) => textOf(view[key]));
 
 function blockOf(id: string, className: string): HTMLElement {
   const block = document.createElement('div');
@@ -378,16 +271,13 @@ function attachPoints(core: CoreHandle, host: InstanceHost): void {
   const carts = [...host.element.querySelectorAll<HTMLElement>(`[${EXT_POINT_ATTRIBUTE}="cart"]`)];
   const accounts = [...host.element.querySelectorAll<HTMLElement>(`[${EXT_POINT_ATTRIBUTE}="account"]`)];
   if (carts.length === 0 && accounts.length === 0) return;
-  void descriptionsOf(api)
-    .then((descriptions) => {
-      const notes = new Map(
-        Object.entries(descriptions).flatMap(([id, description]) => {
-          const note = description.cartNote;
-          return note === undefined ? [] : [[id, note] as const];
-        }),
-      );
-      if (carts.length > 0) attachCart(core, host, carts, notes);
-      attachAccounts(api, accounts, descriptions);
-    })
-    .catch(() => undefined);
+  const descriptions = descriptionsOf(core);
+  const notes = new Map(
+    Object.entries(descriptions).flatMap(([id, description]) => {
+      const note = description.cart?.note;
+      return note === undefined ? [] : [[id, note] as const];
+    }),
+  );
+  if (carts.length > 0) attachCart(core, host, carts, notes);
+  attachAccounts(api, accounts, descriptions);
 }

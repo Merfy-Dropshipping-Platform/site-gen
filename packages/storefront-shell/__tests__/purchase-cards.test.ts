@@ -1,3 +1,4 @@
+import type { StorefrontConfig } from '@merfy/storefront-config';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SOLD_CACHE_KEY } from '../src/core/sold-by-form';
 import { purchase } from '../src/core/parts/purchase';
@@ -7,8 +8,7 @@ import type { CoreHandle, InstanceHost, Mode } from '../src/core/types';
 // тем на dev): attach части purchase прячет кнопки cart.add без места, клик по непроверенному товару ждёт ответа до 3 с.
 const SHOP = '3a9626f7-390d-4a66-bca5-a3b806ca6c1b';
 const API = 'https://gateway.dev.merfy.ru/api';
-const MAP_URL = `${API}/store/extensions/storefront?store_id=${SHOP}`;
-const MAP = { 'test-ext': { product: { form: 'productForm' } } };
+const MAP: NonNullable<StorefrontConfig['extPoints']> = { 'test-ext': { product: { form: 'productForm' } } };
 const CARDS = `<ul>
   <li><button data-action="cart.add" data-product-id="p-sold" id="sold">В корзину</button></li>
   <li><button data-action="cart.add" data-product-id="p-plain" id="plain">В корзину</button></li>
@@ -26,6 +26,7 @@ function coreOf(mode: Mode = 'live'): CoreHandle {
       theme: { id: 'nova', version: '0.1.0' },
       page: { id: 'catalog', path: '/catalog' },
       analytics: null,
+      extPoints: MAP,
     },
     mode,
     emit: vi.fn(),
@@ -39,10 +40,9 @@ const answer = (body: unknown): Response =>
   new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
 const bodyText = (init: RequestInit | undefined): string => (typeof init?.body === 'string' ? init.body : '');
 
-// Карта, форма у p-sold; корзина — POST /store/carts и /items отвечают пустой корзиной (запросы считаем).
+// Форма у p-sold (место product — в конфиге страницы); корзина — POST /store/carts и /items отвечают пустой корзиной.
 function stub(delayMs = 0) {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-    if (url === MAP_URL) return answer({ success: true, data: MAP });
     if (url.includes('/fn/productForm')) {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       return answer({ success: true, data: bodyText(init).includes('p-sold') ? { title: 'Заявка' } : null });

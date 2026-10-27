@@ -602,10 +602,10 @@ describe("CreateStore: магазин новой темы рождается п�
         siteId: id,
         complete: true,
         about: "created",
-        sections: { total: 25, kept: 0, skipped: [] },
+        sections: { total: 24, kept: 0, skipped: [] },
       },
     });
-    expect(shop).toHaveLength(25);
+    expect(shop).toHaveLength(24);
     // Сид, затем одна запись заготовки — и она текущая.
     expect(ref.harness.saves.map((s) => s.params.source)).toEqual([
       "seed",

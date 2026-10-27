@@ -15,9 +15,11 @@ const manifestOf = (name: string): Record<string, any> =>
   JSON.parse(library.get(name)!.files["section.json"]);
 
 describe("библиотека заготовки", () => {
-  it("25 секций из fixtures/shop и storefront-shell/sections; все секции раскладки в ней есть", () => {
+  it("25 секций из fixtures/shop и storefront-shell/sections; в раскладке 24 — без «Значка корзины», все есть в библиотеке", () => {
     expect(library.size).toBe(25);
-    expect(skeletonSectionNames()).toHaveLength(25);
+    expect(skeletonSectionNames()).toHaveLength(24);
+    expect(skeletonSectionNames()).not.toContain("cart-badge");
+    expect(library.has("cart-badge")).toBe(true);
     for (const name of skeletonSectionNames())
       expect(library.has(name)).toBe(true);
   });

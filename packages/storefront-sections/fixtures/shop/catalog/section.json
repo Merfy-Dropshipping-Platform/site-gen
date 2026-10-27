@@ -4,9 +4,23 @@
   "kind": "section",
   "title": "Каталог",
   "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Каталог" } },
     { "id": "collection", "label": "Выбор коллекции", "setting": { "kind": "collection" } },
     { "id": "per-page", "label": "Карточки", "setting": { "kind": "range", "default": 8, "min": 2, "max": 24, "step": 1 } },
     { "id": "columns", "label": "Колонки", "setting": { "kind": "range", "default": 3, "min": 2, "max": 4, "step": 1 } },
+    {
+      "id": "aspect-ratio",
+      "label": "Пропорции",
+      "setting": {
+        "kind": "select",
+        "default": "portrait",
+        "options": [
+          { "value": "portrait", "label": "Вертикальные 4:5" },
+          { "value": "square", "label": "Квадрат" },
+          { "value": "landscape", "label": "Горизонтальные 4:3" }
+        ]
+      }
+    },
     {
       "id": "paging",
       "label": "Как листать",

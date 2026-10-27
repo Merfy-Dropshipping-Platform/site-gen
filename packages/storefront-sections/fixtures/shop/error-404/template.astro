@@ -1,7 +1,11 @@
 ---
 const { settings } = Astro.props;
 ---
-<div class="mx-auto flex max-w-page flex-col items-center gap-4 px-4 text-center font-body">
-  <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h1>
-  <a class="rounded-button bg-primary px-4 py-2 text-primary-foreground no-underline" href={settings.link}>{settings.label}</a>
+<div class="mx-auto flex max-w-page flex-col items-center gap-5 px-4 py-12 text-center font-body text-foreground md:py-20">
+  <p class="m-0 font-heading weight-heading tracking-heading text-5xl text-muted-foreground" aria-hidden="true">404</p>
+  {settings.heading && <h1 class="m-0 max-w-2xl text-balance font-heading weight-heading tracking-heading text-3xl text-heading">{settings.heading}</h1>}
+  <p class="m-0 max-w-md text-base text-muted-foreground">Возможно, адрес набран с ошибкой или страницу убрали.</p>
+  {settings.label && (
+    <a class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href={settings.link}>{settings.label}</a>
+  )}
 </div>

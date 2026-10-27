@@ -1,53 +1,72 @@
+<!-- Значки — Lucide (x, shopping-bag, image, minus, plus), лицензия ISC, lucide.dev/license. -->
 <div data-behavior="dialog" data-transition="drawer" data-side="right" data-open-on="cart-open">
-  <dialog data-part="content" class="scheme-cart-drawer m-0 h-full max-h-none max-w-none w-full bg-background p-4 font-body md:w-114">
-    <div class="flex items-center justify-between gap-4">
-      <h2 class="m-0 font-heading weight-heading text-xl text-heading">Корзина</h2>
-      <button type="button" data-part="close" class="underline">Скрыть</button>
-    </div>
-    <div data-ref="empty" class="flex flex-col gap-3" hidden>
-      <a class="no-underline" href="/catalog">Продолжить покупки</a>
-      <a class="no-underline" href="/login">Есть аккаунт? Войти</a>
-    </div>
-    <div data-ref="lines" class="flex flex-1 flex-col gap-3 overflow-y-auto" hidden>
-      <template>
-        <div class="flex items-center gap-3">
-          <img data-ref="image" alt="" class="h-16 w-16 shrink-0 rounded-button object-cover" />
-          <div class="flex flex-1 flex-col gap-1">
-            <p data-ref="title" class="m-0 font-heading weight-heading"></p>
-            <p data-ref="options" class="m-0 text-sm text-muted-foreground"></p>
-            <p data-ref="price" class="m-0"></p>
+  <dialog data-part="content" class="scheme-cart-drawer my-0 ml-auto mr-0 h-full max-h-none w-full max-w-none border-0 bg-background p-0 font-body text-foreground shadow-drawer md:w-114">
+    <div class="flex h-full flex-col">
+      <div class="flex items-center justify-between gap-4 border-b border-border py-3 pl-5 pr-3">
+        <h2 class="m-0 font-heading weight-heading text-xl text-heading">Корзина</h2>
+        <button type="button" data-part="close" class="inline-flex size-11 cursor-pointer items-center justify-center rounded-button bg-transparent p-0 text-foreground hover:bg-accent hover:text-accent-foreground">
+          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+          <span class="sr-only">Скрыть</span>
+        </button>
+      </div>
+      <div data-ref="empty" class="flex flex-1 flex-col items-center justify-center gap-4 px-5 py-10 text-center" hidden>
+        <svg class="size-10 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
+        <p class="m-0 text-lg text-heading">В корзине пока пусто</p>
+        <a class="inline-flex h-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-sm text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" href="/catalog">Продолжить покупки</a>
+        <a class="text-sm text-foreground underline underline-offset-4" href="/login">Есть аккаунт? Войти</a>
+      </div>
+      <div data-ref="lines" class="flex flex-1 flex-col overflow-y-auto px-5" hidden>
+        <template>
+          <div class="flex gap-3 border-b border-border py-4">
+            <span class="relative flex size-18 shrink-0 items-center justify-center overflow-hidden rounded-media bg-muted text-muted-foreground">
+              <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+              <img data-ref="image" alt="" class="absolute inset-0 size-full object-cover" />
+            </span>
+            <div class="flex min-w-0 flex-1 flex-col gap-2">
+              <div class="flex items-start gap-2">
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                  <p data-ref="title" class="m-0 line-clamp-2 text-sm text-heading"></p>
+                  <p data-ref="options" class="m-0 text-xs text-muted-foreground"></p>
+                  <p data-ref="price" class="m-0 text-xs text-muted-foreground"></p>
+                </div>
+                <button type="button" data-ref="remove" data-action="cart.remove" class="-mr-2 -mt-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-button bg-transparent p-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground" aria-label="Удалить">
+                  <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                </button>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <div class="inline-flex h-11 shrink-0 items-center rounded-input border-width-input border-input bg-background" role="group" aria-label="Количество">
+                  <button
+                    type="button"
+                    data-ref="less"
+                    data-action="cart.change"
+                    aria-label="Меньше"
+                    class="inline-flex size-11 cursor-pointer items-center justify-center rounded-input bg-transparent p-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /></svg>
+                  </button>
+                  <span data-ref="quantity" class="min-w-6 text-center text-sm tabular-nums">0</span>
+                  <button
+                    type="button"
+                    data-ref="more"
+                    data-action="cart.change"
+                    aria-label="Больше"
+                    class="inline-flex size-11 cursor-pointer items-center justify-center rounded-input bg-transparent p-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                  </button>
+                </div>
+                <p data-ref="total" class="m-0 shrink-0 text-sm weight-heading text-price"></p>
+              </div>
+            </div>
           </div>
-          <div class="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              data-ref="less"
-              data-action="cart.change"
-              aria-label="Меньше"
-              class="h-8 w-8 rounded-button border-width-button border-border"
-            >
-              −
-            </button>
-            <span data-ref="quantity" class="min-w-6 text-center">0</span>
-            <button
-              type="button"
-              data-ref="more"
-              data-action="cart.change"
-              aria-label="Больше"
-              class="h-8 w-8 rounded-button border-width-button border-border"
-            >
-              +
-            </button>
-          </div>
-          <p data-ref="total" class="m-0 shrink-0 font-heading weight-heading"></p>
-          <button type="button" data-ref="remove" data-action="cart.remove" class="shrink-0 text-sm underline">Удалить</button>
-        </div>
-      </template>
-    </div>
-    <div class="flex flex-col gap-2">
-      <p class="m-0">Итого <span data-ref="total"></span></p>
-      <p class="m-0 text-sm text-muted-foreground">Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.</p>
-      <div data-ext-point="cart"></div>
-      <a href="/checkout" data-action="cart.checkout" class="no-underline">Оформить заказ</a>
+        </template>
+      </div>
+      <div class="flex flex-col gap-3 border-t border-border p-5">
+        <p class="m-0 flex items-baseline justify-between gap-4 text-lg weight-heading text-heading">Итого <span class="text-price" data-ref="total"></span></p>
+        <p class="m-0 text-xs text-muted-foreground">Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.</p>
+        <div data-ext-point="cart"></div>
+        <a href="/checkout" data-action="cart.checkout" class="inline-flex h-12 w-full items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Оформить заказ</a>
+      </div>
     </div>
   </dialog>
 </div>

@@ -18,7 +18,11 @@ import {
   type Menu,
 } from "../../pages/pages.service";
 import type { Library, LibrarySection } from "./skeleton-library";
-import { SHARED_LISTS, type SkeletonLayout } from "./skeleton-layout";
+import {
+  SHARED_LISTS,
+  type SkeletonLayout,
+  type SkeletonWrapper,
+} from "./skeleton-layout";
 
 const SHOP_PREFIX = "shop:";
 const ID_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -30,6 +34,8 @@ export interface SkeletonInstance {
   section: string;
   settings: Record<string, unknown>;
   blocks?: { id: string; type: string; settings: Record<string, unknown> }[];
+  /** Общие настройки экземпляра (`wrapper` ревизии) — только у экземпляров из `layout.wrappers`. */
+  wrapper?: SkeletonWrapper;
 }
 
 export interface ListRef {
@@ -137,11 +143,15 @@ function instanceOf(
   section: LibrarySection,
   ids: Ids,
   settings: Record<string, unknown> = {},
+  wrapper?: SkeletonWrapper,
 ): SkeletonInstance {
   return {
     id: ids.next(section.name),
     section: `${SHOP_PREFIX}${section.name}`,
     settings: { ...settings },
+    ...(wrapper === undefined
+      ? {}
+      : { wrapper: { padding: { ...wrapper.padding } } }),
     ...(section.hasBlocks
       ? {
           blocks: section.defaultBlocks.map((block, index) => ({
@@ -193,7 +203,9 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
       placement.waiting.push({ key, label, missing });
       continue;
     }
-    sections[key] = names.map((name) => instanceOf(library.get(name)!, ids));
+    sections[key] = names.map((name) =>
+      instanceOf(library.get(name)!, ids, {}, layout.wrappers?.[key]?.[name]),
+    );
     placement.filled.push({ key, label, sections: names.length });
     changed = true;
   }

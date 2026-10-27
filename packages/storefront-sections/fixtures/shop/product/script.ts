@@ -17,11 +17,31 @@ function markThumb(thumbs: readonly El[], src: string): void {
   thumbs.forEach((button) => button.attr('aria-current', button.attr('data-src') === src ? 'true' : 'false'));
 }
 
+// Количество: «−» и «+» меняют число и data-quantity кнопки «В корзину» (cart.add берёт штуки из него), от 1 до 99.
+const QUANTITY_MIN = 1;
+const QUANTITY_MAX = 99;
+
+function changeQuantity(ctx: Ctx, step: number): void {
+  const shown = Number(ctx.ref('quantity')?.text() ?? QUANTITY_MIN);
+  const current = Number.isInteger(shown) ? shown : QUANTITY_MIN;
+  const next = Math.min(QUANTITY_MAX, Math.max(QUANTITY_MIN, current + step));
+  ctx.ref('quantity')?.text(next);
+  ctx.ref('buy')?.attr('data-quantity', String(next));
+  ctx.ref('less')?.attr('disabled', next <= QUANTITY_MIN ? '' : null);
+  ctx.ref('more')?.attr('disabled', next >= QUANTITY_MAX ? '' : null);
+}
+
 export default defineSection({
   actions: {
     pick(button, ctx) {
       const src = button.attr('data-src');
       if (src !== null) showPhoto(ctx, src);
+    },
+    less(_button, ctx) {
+      changeQuantity(ctx, -1);
+    },
+    more(_button, ctx) {
+      changeQuantity(ctx, 1);
     },
   },
   mount(_el, ctx) {

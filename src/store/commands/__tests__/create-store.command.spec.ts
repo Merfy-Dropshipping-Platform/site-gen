@@ -462,7 +462,7 @@ describe("CreateStore: вход проверяется по схеме", () => {
   });
 });
 
-describe("CreateStore: магазин новой темы рождается с заготовкой (решение 7 спеки MCP «Секции и SDK»)", () => {
+describe("CreateStore: магазин новой темы рождается пустым, заготовка — по просьбе (skeleton:true)", () => {
   const summary = {
     siteId: "x",
     changed: true,
@@ -473,6 +473,38 @@ describe("CreateStore: магазин новой темы рождается с 
     about: "created",
   };
   const withNova = () => catalogOf([...THEMES, "nova"]);
+
+  it("nova по умолчанию (как у кнопки кабинета) — магазин пустой: заготовка не зовётся, ключа skeleton нет, в ревизиях только сид", async () => {
+    const skeleton = { execute: jest.fn() };
+    const { command, repo, saves } = setup({ catalog: withNova(), skeleton });
+
+    const result = await command.execute({
+      ...base,
+      themeId: "nova",
+      wait: true,
+    });
+    await command.settle();
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.effect.created).toBe(true);
+    expect(result.effect.ready).toBe(true);
+    expect(result.effect).not.toHaveProperty("skeleton");
+    expect(skeleton.execute).not.toHaveBeenCalled();
+    expect(saves.map((s) => s.params.source)).toEqual(["seed"]);
+    expect(repo.rows.get(result.effect.store!.id)!.currentRevisionId).toBe(
+      "rev-1",
+    );
+  });
+
+  it("nova, wait:false без skeleton — тоже без заготовки", async () => {
+    const skeleton = { execute: jest.fn() };
+    const { command } = setup({ catalog: withNova(), skeleton });
+    const result = await command.execute({ ...base, themeId: "nova" });
+    await command.settle();
+    expect(result.ok && result.effect).not.toHaveProperty("skeleton");
+    expect(skeleton.execute).not.toHaveBeenCalled();
+  });
 
   it("nova, wait:true — заготовка ставится после сида, в ответе её сводка", async () => {
     let revisionAtCall: string | null | undefined;
@@ -491,6 +523,7 @@ describe("CreateStore: магазин новой темы рождается с 
     const result = await command.execute({
       ...base,
       themeId: "nova",
+      skeleton: true,
       wait: true,
     });
 
@@ -556,6 +589,7 @@ describe("CreateStore: магазин новой темы рождается с 
     const result = await ref.harness.command.execute({
       ...base,
       themeId: "nova",
+      skeleton: true,
       wait: true,
     });
 
@@ -607,6 +641,7 @@ describe("CreateStore: магазин новой темы рождается с 
     const result = await command.execute({
       ...base,
       themeId: "nova",
+      skeleton: true,
       wait: true,
       waitTimeoutMs: 1000,
     });
@@ -622,7 +657,11 @@ describe("CreateStore: магазин новой темы рождается с 
       execute: jest.fn(async () => ({ ok: true, effect: summary })),
     };
     const { command } = setup({ catalog: withNova(), skeleton });
-    const result = await command.execute({ ...base, themeId: "nova" });
+    const result = await command.execute({
+      ...base,
+      themeId: "nova",
+      skeleton: true,
+    });
     expect(result.ok && result.effect.skeleton).toEqual({ status: "started" });
     await command.settle();
     expect(skeleton.execute).toHaveBeenCalledTimes(1);
@@ -639,6 +678,7 @@ describe("CreateStore: магазин новой темы рождается с 
     const result = await command.execute({
       ...base,
       themeId: "nova",
+      skeleton: true,
       wait: true,
     });
     expect(result.ok).toBe(true);
@@ -658,6 +698,7 @@ describe("CreateStore: магазин новой темы рождается с 
     const result = await command.execute({
       ...base,
       themeId: "nova",
+      skeleton: true,
       wait: true,
     });
     expect(result.ok && result.effect.skeleton).toEqual({

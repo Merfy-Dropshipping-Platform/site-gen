@@ -10,8 +10,18 @@
  * Ключ списка — ключ в `sections` ревизии: id особой страницы (packages/storefront-build/special-pages.json) или общий
  * список (`header`, `footer`, `overlay`). Имя секции — без префикса: в магазине она `shop:<имя>`.
  */
+/** Общие настройки экземпляра секции (ключ `wrapper` в ревизии): «Отступы» сверху и снизу в пикселях, шаг 8. */
+export interface SkeletonWrapper {
+  padding: { top: number; bottom: number };
+}
+
 export interface SkeletonLayout {
   lists: Readonly<Record<string, readonly string[]>>;
+  /**
+   * Общие настройки отдельных экземпляров: список → имя секции → значение `wrapper`. Остальные экземпляры — без ключа
+   * `wrapper`, с отступом темы `py-section` сверху и снизу.
+   */
+  wrappers?: Readonly<Record<string, Readonly<Record<string, SkeletonWrapper>>>>;
   about: {
     name: string;
     slug: string;
@@ -48,6 +58,15 @@ export const SKELETON_LAYOUT: SkeletonLayout = {
     "page-orders": ["orders"],
     "page-profile": ["account"],
     "page-wishlist": ["wishlist"],
+  },
+  // Страница корзины: «Корзина» и «Промежуточный итог» — две секции подряд, у каждой отступ темы сверху и снизу; между
+  // строками и итогом выходило два отступа секции (~170 px на компьютере). Строки — без отступа снизу, итог — 24 px
+  // сверху: итог читается сразу под строками. Мерчант меняет это в «Отступах» секции.
+  wrappers: {
+    "page-cart": {
+      cart: { padding: { top: 64, bottom: 0 } },
+      "cart-summary": { padding: { top: 24, bottom: 96 } },
+    },
   },
   about: {
     name: "О нас",

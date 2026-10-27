@@ -46,6 +46,17 @@ describe("planSkeleton: новый магазин nova", () => {
     expect(plan.placement.kept).toEqual([]);
   });
 
+  it("шапка — только «Шапка»; корзина: строки без отступа снизу, итог в 24 px под ними; у остальных wrapper нет", () => {
+    expect(doc.sections.header.map((i: Doc) => i.section)).toEqual(["shop:header"]);
+    const [cart, summary] = doc.sections["page-cart"];
+    expect(cart.wrapper).toEqual({ padding: { top: 64, bottom: 0 } });
+    expect(summary.wrapper).toEqual({ padding: { top: 24, bottom: 96 } });
+    const others = Object.entries(doc.sections as Record<string, Doc[]>)
+      .filter(([key]) => key !== "page-cart")
+      .flatMap(([, list]) => list);
+    expect(others.some((instance) => "wrapper" in instance)).toBe(false);
+  });
+
   it("экземпляр — как «Добавить секцию»: пустые настройки, блоки по умолчанию <тип>-<n>, id без повторов", () => {
     const [hero] = doc.sections.home;
     expect(hero.id).toMatch(/^hero-[a-z0-9]{8}$/);

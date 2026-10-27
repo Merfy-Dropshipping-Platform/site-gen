@@ -21,6 +21,11 @@
 | `theme-switch/set-theme.command.ts` | `SetTheme`: чтение документа, план, запись с CAS, тема в строке, переиздание | контроллер |
 | `theme-switch/theme-switch.plan.ts` | чистая функция: новый документ и отчёт о смене темы | `SetTheme` |
 | `theme-switch/canon-reference.ts` | канон прежней темы в том виде, в каком его отдаёт порт, — эталон для «что потеряно» | `SetTheme` |
+| `skeleton/place-skeleton.command.ts` | `PlaceSkeleton`: заготовка магазина новой темы — секции библиотеки в магазин, «О нас», секции в пустые списки одной записью ревизии; сводка | контроллер (`sites.cmd.place_skeleton`), `CreateStore` (nova) |
+| `skeleton/skeleton.plan.ts` | чистая функция: документ → документ с заготовкой и отчёт (заполнено, не тронуто, ждёт, нет страницы) | `PlaceSkeleton` |
+| `skeleton/skeleton-layout.ts` | раскладка заготовки (перенесена из merfy-mcp `knowledge/starter/layout.json`) | `PlaceSkeleton` |
+| `skeleton/skeleton-library.ts` | наша библиотека секций с диска: `packages/storefront-sections/fixtures/shop`, `packages/storefront-shell/sections` | `PlaceSkeleton` |
+| `skeleton/skeleton-sections.ts` | порты: свои секции магазина (реестр `storefront_section`, сохранение через сборщик витрин) и блокировка магазина | `PlaceSkeleton` |
 | `shared/*` | фоновая работа, текст ошибки, разбор ошибок zod | команды, доводчик |
 | `store.providers.ts` | список провайдеров и контроллеров для `AppModule` | `AppModule`, `store-module-wiring.spec.ts` |
 
@@ -36,6 +41,23 @@
 ## Смена темы: `SetTheme` → отчёт
 
 Команда проверяет тему по каталогу и читает документ через порт `StoreContent`. `planThemeSwitch` берёт канон новой темы и переносит в него свои страницы и меню мерчанта. Документ пишется с CAS. Только после записи в строке магазина меняется `themeId`, потом опубликованный магазин переиздаётся. В ответе отчёт: что перенесено, переименовано, приведено к полной форме, пересеяно, убрано и потеряно.
+
+## Заготовка магазина новой темы: `PlaceSkeleton`
+
+Решение 7 спеки MCP «Секции и SDK» (`merfy-mcp/docs/plans/mcp-sections/2026-10-26-mcp-sections-design.md`): заготовку
+нового магазина ставит платформа одной командой. RPC `sites.cmd.place_skeleton { tenantId, siteId, actorUserId? }`,
+шлюз — `POST /api/sites/:id/commands/skeleton`.
+
+1. Только магазин новой темы (`not_new_theme`) с ревизией (`no_revision`); под блокировкой магазина
+   (`skeleton_in_progress`, если заготовка уже идёт).
+2. Недостающие секции библиотеки — своими секциями магазина через сборщик витрин (`POST /sections/save?shop=`, без шлюза
+   и его лимита): сборка шаблона и пробные рендеры идут в песочнице сборщика, в образе sites её нет. Секция с тем же
+   именем уже есть — не трогаем; роль занята другой секцией — пропуск с причиной.
+3. «О нас» (если её нет) и секции в ПУСТЫЕ списки по раскладке — одной записью ревизии от прочитанной базы со сведением
+   `last-writer-wins`, как запись конструктора у nova. Список, для которого секций в магазине нет, ждёт повтора.
+
+Повтор ничего не меняет. `CreateStore` с новой темой зовёт заготовку сам сразу после сида, разом с поддоменом и
+маршрутом; в ответе `skeleton: done | started | failed`.
 
 ## Граница со старым кодом
 

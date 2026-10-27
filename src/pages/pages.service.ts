@@ -758,8 +758,9 @@ export type SectionInstance = {
   settings: Record<string, string>;
 };
 
-// Строка своей страницы в revision.pages — одна форма у пяти тем и у новой темы.
-function customPageOf(id: string, name: string, slug: string) {
+// Строка своей страницы в revision.pages — одна форма у пяти тем и у новой темы. Экспорт — для заготовки магазина
+// (src/store/skeleton): «О нас» рождается той же строкой, что страница из кабинета.
+export function customPageOf(id: string, name: string, slug: string) {
   return {
     id,
     name,
@@ -787,7 +788,7 @@ const menusOf = (revData: Record<string, any>): Menu[] =>
   Array.isArray(revData.menus) ? revData.menus : [];
 
 // Пункт — в конец меню main; там уже есть пункт с этим адресом — меню как есть; меню main нет — создаётся.
-function withMenuItem(menus: Menu[], item: MenuItem): Menu[] {
+export function withMenuItem(menus: Menu[], item: MenuItem): Menu[] {
   const main = menus.find((menu) => menu.id === MAIN_MENU);
   if (main === undefined)
     return [...menus, { id: MAIN_MENU, title: MAIN_MENU_TITLE, items: [item] }];

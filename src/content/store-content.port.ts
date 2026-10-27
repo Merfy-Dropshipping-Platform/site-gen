@@ -82,6 +82,8 @@ export type WriteSource =
   | "rollback"
   | "theme-switch"
   | "seed"
+  /** Заготовка магазина новой темы (`PlaceSkeleton`, src/store/skeleton). */
+  | "skeleton"
   | "draft"
   | "ops";
 

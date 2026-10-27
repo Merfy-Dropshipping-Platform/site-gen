@@ -4,6 +4,7 @@
  *   sites.cmd.create_store    — `CreateStore` (кусок 3.2)
  *   sites.cmd.set_theme       — `SetTheme` (кусок 3.3)
  *   sites.query.store_status  — вид магазина с состоянием рождения (И3)
+ *   sites.cmd.place_skeleton  — `PlaceSkeleton`: заготовка магазина новой темы (решение 7 спеки MCP «Секции и SDK»)
  *
  * Ответ команды — эффект (`{ success: true, data }`) или отказ с машинным
  * `code` и деталями (`{ success: false, code, message, …}`), см.
@@ -15,6 +16,7 @@ import { MessagePattern, Payload } from "@nestjs/microservices";
 import { z } from "zod";
 import { CreateStoreCommand } from "./commands/create-store.command";
 import { SetThemeCommand } from "./theme-switch/set-theme.command";
+import { PlaceSkeletonCommand } from "./skeleton/place-skeleton.command";
 import {
   ok,
   refused,
@@ -49,6 +51,11 @@ export class StoreCommandsController {
     private readonly setThemeCommand: Pick<SetThemeCommand, "execute">,
     @Inject(LIFECYCLE_REPOSITORY)
     private readonly lifecycle: Pick<LifecycleRepository, "readOwned">,
+    @Inject(PlaceSkeletonCommand)
+    private readonly placeSkeletonCommand: Pick<
+      PlaceSkeletonCommand,
+      "execute"
+    >,
   ) {}
 
   @MessagePattern("sites.cmd.create_store")
@@ -61,6 +68,13 @@ export class StoreCommandsController {
   @MessagePattern("sites.cmd.set_theme")
   async setTheme(@Payload() data: unknown) {
     return this.run("set_theme", () => this.setThemeCommand.execute(data));
+  }
+
+  @MessagePattern("sites.cmd.place_skeleton")
+  async placeSkeleton(@Payload() data: unknown) {
+    return this.run("place_skeleton", () =>
+      this.placeSkeletonCommand.execute(data),
+    );
   }
 
   @MessagePattern("sites.query.store_status")

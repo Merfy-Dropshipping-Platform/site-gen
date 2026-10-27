@@ -15,13 +15,42 @@ function makeController() {
   const createStore = { execute: jest.fn() };
   const setTheme = { execute: jest.fn() };
   const lifecycle = { readOwned: jest.fn() };
+  const placeSkeleton = { execute: jest.fn() };
   const controller = new StoreCommandsController(
     createStore as any,
     setTheme as any,
     lifecycle as any,
+    placeSkeleton as any,
   );
-  return { controller, createStore, setTheme, lifecycle };
+  return { controller, createStore, setTheme, lifecycle, placeSkeleton };
 }
+
+describe("sites.cmd.place_skeleton", () => {
+  it("сводка заготовки — в data; отказ — code (магазин не на новой теме)", async () => {
+    const { controller, placeSkeleton } = makeController();
+    placeSkeleton.execute.mockResolvedValueOnce({
+      ok: true,
+      effect: { siteId: "s1", changed: false, complete: true },
+    });
+    const payload = { tenantId: "t1", siteId: "s1", actorUserId: "u1" };
+    expect(await controller.placeSkeleton(payload)).toEqual({
+      success: true,
+      data: { siteId: "s1", changed: false, complete: true },
+    });
+    expect(placeSkeleton.execute).toHaveBeenCalledWith(payload);
+
+    placeSkeleton.execute.mockResolvedValueOnce({
+      ok: false,
+      error: { code: "not_new_theme", themeId: "rose" },
+    });
+    expect(await controller.placeSkeleton(payload)).toEqual({
+      success: false,
+      code: "not_new_theme",
+      message: "not_new_theme",
+      themeId: "rose",
+    });
+  });
+});
 
 describe("sites.cmd.create_store", () => {
   it("эффект команды — в data", async () => {

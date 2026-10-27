@@ -40,7 +40,12 @@ export type Entitlements = {
 };
 
 export function makeCreateStoreHarness(
-  opts: { entitlements?: Partial<Entitlements>; catalog?: ThemeCatalog } = {},
+  opts: {
+    entitlements?: Partial<Entitlements>;
+    catalog?: ThemeCatalog;
+    /** Команда заготовки (`PlaceSkeleton`); не задана — команда создаётся без неё. */
+    skeleton?: { execute: (raw: any) => Promise<any> };
+  } = {},
 ) {
   const clock = new FakeClock();
   const repo = new InMemoryLifecycleRepository(clock);
@@ -112,6 +117,7 @@ export function makeCreateStoreHarness(
     reconciler,
     repo,
     eventsService as any,
+    opts.skeleton,
   );
   return {
     command,

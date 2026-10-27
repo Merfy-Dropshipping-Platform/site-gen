@@ -47,6 +47,8 @@ export const PROBLEM_CODES = [
   'settings-limit',
   'visible-when-invalid',
   'render-empty-failed',
+  // В HTML пробного рендера объект вместо текста ([object Object]) или слова undefined и NaN (trial.ts, render-leak.ts).
+  'render-leak',
   'block-select-unavailable',
   // Правка текста в превью (блок 1, часть 6): у настройки с "inlineEdit": true в шаблоне нет места правки — ошибка.
   'inline-edit-unavailable',

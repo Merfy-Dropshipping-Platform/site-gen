@@ -1,11 +1,13 @@
+import { sampleRecordValues } from '@merfy/storefront-build';
 import { defaultLaunch, spawnIsolated, type IsolatedLaunch } from './isolation';
 import { prepareResultSchema, type PrepareInput, type PrepareResult } from './prepare';
 import { problem } from './problems';
 import { resolveSectionBlocks } from './blocks';
 import { sectionMenus } from './menus';
 import { settingFieldsOf } from './fields';
+import { sectionRecordKeys } from './section-data';
 import { defaultSettings, emptySettings } from './settings';
-import { emptyTrialRender, trialRender } from './trial';
+import { emptyTrialRender, sampleTrialRender, trialRender } from './trial';
 import { WORKER_FILES } from './worker-files';
 
 // Отдельный процесс для приёма (design.md блока 7, С7-11 А: код любого автора проверяет и собирает sites). Чужой код
@@ -89,5 +91,11 @@ export async function prepareInWorker(
   const empty = emptySettings(fields);
   const emptyMenus = sectionMenus(fields, empty, []);
   const blank = await emptyTrialRender(result.section.render, empty, { launch: options.launch }, emptyMenus);
-  return blank.length > 0 ? { ok: false, problems: blank } : result;
+  if (blank.length > 0) return { ok: false, problems: blank };
+  // Третий пробный рендер — на примерах данных магазина: ветки с ценой и карточками при умолчаниях не выполняются.
+  // Блоки и меню — как в первом.
+  const records = sampleRecordValues(sectionRecordKeys(result.section.manifest).recordFields);
+  const sample = { launch: options.launch };
+  const sampled = await sampleTrialRender(result.section.render, settings, { records }, sample, blocks, menus);
+  return sampled.length > 0 ? { ok: false, problems: sampled } : result;
 }

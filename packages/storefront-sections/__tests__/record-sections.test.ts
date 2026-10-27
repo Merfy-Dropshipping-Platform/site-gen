@@ -1,15 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import {
-  money,
-  sha256,
-  type ArticleCard,
-  type ArticleRecord,
-  type BlogRecord,
-  type CollectionRecord,
-  type PolicyRecord,
-  type ProductCard,
-  type ProductRecord,
-} from '@merfy/storefront-build';
+import { money, sampleRecord, sha256 } from '@merfy/storefront-build';
 import { afterEach, describe, expect, it } from 'vitest';
 import { checkTemplate, templateOptionsOf } from '../src/compile';
 import { readManifest } from '../src/format';
@@ -21,70 +11,12 @@ import { prepareInWorker } from '../src/sandbox';
 // «Блог», «Статья» и «Выбор страницы» у «Страницы». Проверка их принимает без предупреждений, процесс рендера
 // показывает записи; пустые значения — как у секций пяти тем на проде.
 const SHOP = fileURLToPath(new URL('../fixtures/shop', import.meta.url));
-const AT = '2026-10-20T10:00:00.000Z';
-const PRODUCT = {
-  id: 'p-2',
-  title: 'Плед «Нова»',
-  slug: 'pled',
-  url: '/product/pled',
-  description: 'Тёплый и мягкий',
-  price: money(350000),
-  compareAtPrice: money(420000),
-  images: ['https://s3.merfy.ru/p/2.jpg'],
-  available: true,
-  options: [],
-  variants: [],
-  collections: [],
-  updatedAt: AT,
-} satisfies ProductRecord;
-const CARD = {
-  id: 'p-2',
-  title: 'Плед «Нова»',
-  url: '/product/pled',
-  price: money(350000),
-  compareAtPrice: null,
-  image: 'https://s3.merfy.ru/p/2.jpg',
-  available: true,
-  images: [],
-} satisfies ProductCard;
-const COLLECTION = {
-  id: 'c-1',
-  title: 'Пледы',
-  slug: 'pledy',
-  url: '/collections/pledy',
-  description: 'Для холодных вечеров',
-  images: [],
-  productsCount: 1,
-  products: [CARD],
-} satisfies CollectionRecord;
-const POST = {
-  id: 'a-1',
-  title: 'Как стирать плед',
-  url: '/blogs/novosti/kak-stirat',
-  publishedAt: '2026-10-19T10:00:00.000Z',
-  cover: null,
-  excerpt: 'Вручную, при 30°',
-} satisfies ArticleCard;
-const BLOG = {
-  id: 'b-1',
-  title: 'Новости',
-  handle: 'novosti',
-  url: '/blogs/novosti',
-  articlesCount: 1,
-  articles: [POST],
-} satisfies BlogRecord;
-const ARTICLE = {
-  ...POST,
-  slug: 'kak-stirat',
-  html: '<p>Стирать вручную</p>',
-  blog: { title: 'Новости', url: '/blogs/novosti' },
-} satisfies ArticleRecord;
-const POLICY = {
-  type: 'privacy',
-  title: 'Политика конфиденциальности',
-  url: '/legal/privacy',
-  html: '<p>Мы бережём данные</p>',
-} satisfies PolicyRecord;
+// Записи — примеры магазина из storefront-build (section-samples.ts), те же, что у пробного рендера при сохранении.
+const PRODUCT = sampleRecord('product');
+const COLLECTION = sampleRecord('collection');
+const BLOG = sampleRecord('blog');
+const ARTICLE = sampleRecord('article');
+const POLICY = sampleRecord('policy');
 
 const opened: SectionRenderer[] = [];
 afterEach(async () => {

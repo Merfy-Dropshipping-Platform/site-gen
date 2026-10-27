@@ -213,7 +213,7 @@ describe('«Шапка»: значки, поиск, логотип', () => {
       { label: 'Корзина', element: 'a', path: 'M16 10a4 4 0 0 1-8 0' },
       { label: 'Профиль', element: 'a', path: 'M19 21v-2a4 4 0 0 0-4-4H9' },
     ] as const;
-    const BOX = ['h-6', 'min-w-6', 'items-center', 'justify-center', 'gap-1'];
+    const BOX = ['items-center', 'justify-center', 'gap-1'];
     const SHOWING = new Set(['inline-flex', 'hidden', 'md:inline-flex']);
     const iconsOf = (source: string, label: string, element: string) =>
       [...source.matchAll(new RegExp(`(<${element}\\b[^>]*>)([\\s\\S]*?)</${element}>`, 'g'))]

@@ -151,6 +151,15 @@
   (`src/record-preview.ts`); сборка и рендер по запросу — режим `live`, без примеров. `previewRecordPath` — адрес
   записи шаблона по id или адресу, иначе запись по умолчанию; `pageInfoById(inputs, id, record)` — превью одного блока.
 
+## Примеры данных магазина для пробного рендера секций
+
+- `src/section-samples.ts`: сущности-примеры (`SAMPLE_ENTITIES`: товары с ценой, старой ценой, вариантами и
+  картинками, коллекция, блог, статья, политика, контакты, онлайн-оплата) и всё, что из них строят функции сборки:
+  записи (`SAMPLE_RECORDS` — `recordIndexOf`; `sampleRecord(вид)`), значения полей с записями секции
+  (`sampleRecordValues(recordFields)` — `sectionRecords`), данные магазина (`SAMPLE_SHOP` — `shopPropsOf`), настройки
+  темы (`SAMPLE_THEME`), страницы каталога и записей со списками (`SAMPLE_PAGES` — `pageListOf`). Их берут пробный
+  рендер при сохранении секции (`storefront-sections`, `sampleTrialRender`) и тесты пакета секций. Сети и базы нет.
+
 ## Поля с записями в секциях (блок 8 «Секций и SDK», часть 8г)
 
 - `src/section-records.ts`: виды полей и правила `data` (их читает пакет секций); `sectionRecords(placed, props)` —

@@ -50,6 +50,29 @@ const { settings } = Astro.props;
 | `blog`       | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `cover`, `excerpt`)                                                                                                                                                                    |
 | `policy`     | `type`, `title`, `url`, `html`                                                                                                                                                                                                                                                                                    |
 
+### Цена — объект `Money`
+
+`price` и `compareAtPrice` записи, `price` и `compareAtPrice` карточек, `price` и `compareAtPrice` каждого варианта
+товара — не число и не строка, а объект `Money`: `{ amount, currency, text }`. `amount` — копейки (целое число),
+`currency` — `"RUB"`, `text` — готовая подпись «1 900 ₽». В шаблоне выводите `price.text`. Запись
+`{settings.product.price}` напечатает `[object Object]`: проверка при сохранении откажет такой секции кодом
+`render-leak` ([errors.md](errors.md#render-leak)). `compareAtPrice` у товара без скидки — `null`: проверьте его до
+вывода. Деньги в событиях корзины — другой объект, `{ amount, currency }` без `text` ([events.md](events.md)).
+
+```astro
+{settings.product && (
+  <p class="m-0">
+    {settings.product.price.text}
+    {settings.product.compareAtPrice && <s class="ml-2">{settings.product.compareAtPrice.text}</s>}
+  </p>
+)}
+```
+
+Проверка при сохранении рисует секцию ещё и на примерах данных магазина: товар с ценой, старой ценой, вариантами и
+картинками, коллекция, блог, статья, политика, контакты магазина, настройки темы, страницы каталога и записей. Если в
+HTML этого рендера в тексте или в `alt`, `title`, `aria-label`, `placeholder`, `value`, `href`, `src`, `content` есть
+`[object Object]`, `undefined` или `NaN`, секция не сохранится. В `ctx.data` скрипта деньги тоже объект `Money`.
+
 ### `data` — записи для `script.ts`
 
 Скрипт секции получает записи только через ключ `data` в `section.json`: имя → `from` и `fields` — публичные поля.

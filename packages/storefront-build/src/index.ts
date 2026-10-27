@@ -149,6 +149,17 @@ export {
 } from './sections-render';
 export { htmlClasses, sectionCss } from './section-css';
 export { type ShopProps } from './shop-props';
+// Примеры данных магазина для пробного рендера секций (блок 2 «Секций и SDK») и тестов пакета секций.
+export {
+  SAMPLE_ENTITIES,
+  SAMPLE_IDS,
+  SAMPLE_PAGES,
+  SAMPLE_RECORDS,
+  SAMPLE_SHOP,
+  SAMPLE_THEME,
+  sampleRecord,
+  sampleRecordValues,
+} from './section-samples';
 export { SHELL_DIST, readShellBuild, type ShellBuild, type ShellKit } from './shell';
 
 // Манифест, граф, build.json

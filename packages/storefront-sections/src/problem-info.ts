@@ -193,6 +193,11 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: 'Шаблон упал при рендере с пустыми значениями полей: мерчант может стереть любое поле.',
     fix: 'Покажи элемент только при непустом значении: {settings.heading && <h2>…</h2>}.',
   },
+  'render-leak': {
+    when: 'В HTML пробного рендера (на умолчаниях, на пустых значениях, на примерах данных магазина) в тексте или в alt, title, href и других атрибутах есть `[object Object]`, undefined или NaN.',
+    fix: 'Выводи поле объекта, а не сам объект: у цены записи — `price.text` (Money — `{ amount, currency, text }`); значения, которых может не быть, проверяй до вывода.',
+    example: { before: '{settings.product.price} ₽', after: '{settings.product.price.text}' },
+  },
   'block-select-unavailable': {
     when: 'У блока в blocks.map нет одного корневого элемента; секция сохраняется.',
     fix: 'Оберни разметку блока одним элементом — тогда блок выбирается кликом в превью.',

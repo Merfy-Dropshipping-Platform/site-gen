@@ -27,6 +27,8 @@ const { settings, blocks } = Astro.props;
 - `set:html` — только у поля вида `richtext`: `<div set:html={block.settings.answer}></div>`.
 - Атрибуты `data-*` — для скрипта (`data-ref`, `data-action`) и поведений (`data-behavior`, `data-part`,
   `data-animate`).
+- Деньги записей (`price`, `compareAtPrice`) — объект `Money`, не строка: выводите `price.text`, а не `price`
+  ([data.md](data.md#цена-объект-money)). Объект в тексте даст `[object Object]`, секция не сохранится (`render-leak`).
 - Пустое значение: мерчант может стереть любое поле — `{settings.heading && <h2>…</h2>}`.
 - Один `<h1>` на странице. Секция для своей страницы («Контакты», «О нас» — мерчант так и просит) — заголовок `<h1>`;
   секции главной и секции, которые стоят рядом с другими, — `<h2>`.

@@ -203,10 +203,13 @@ const listProductCardOf = (record: ProductRecord): ListProductCard => ({
 // Товары каталога (Р11а-8): RecordIndex.products — новые сверху, как product.list.
 const catalogProductsOf = (index: RecordIndex): ProductRecord[] => index.products.map((entry) => entry.record);
 
+// Список читает у входов сборки только сущности: пробный рендер секций (section-samples.ts) собирает его по примерам.
+export type ListInputs = { data: Pick<BuildInputs['data'], 'entities'> };
+
 // Товары коллекции (Р11а-8): productIds в порядке мерчанта, только товары с записью.
 const collectionDataSchema = z.object({ productIds: z.array(z.string()).catch([]) });
 
-function collectionProductsOf(index: RecordIndex, inputs: BuildInputs, collectionId: string): ProductRecord[] {
+function collectionProductsOf(index: RecordIndex, inputs: ListInputs, collectionId: string): ProductRecord[] {
   const entity = inputs.data.entities.find(
     (candidate) => candidate.type === 'collection' && candidate.id === collectionId,
   );
@@ -218,7 +221,7 @@ function collectionProductsOf(index: RecordIndex, inputs: BuildInputs, collectio
 
 const productsOf = (
   index: RecordIndex,
-  inputs: BuildInputs,
+  inputs: ListInputs,
   source: Extract<ListSource, { kind: 'products' }>,
 ): ProductRecord[] =>
   source.collectionId === null ? catalogProductsOf(index) : collectionProductsOf(index, inputs, source.collectionId);
@@ -235,7 +238,7 @@ interface PublicationSource {
   publishedAt: string | null;
 }
 
-const publicationsOf = (inputs: BuildInputs, blogId: string): PublicationSource[] =>
+const publicationsOf = (inputs: ListInputs, blogId: string): PublicationSource[] =>
   inputs.data.entities.flatMap((entity): PublicationSource[] => {
     if (entity.type !== 'publication') return [];
     const data = publicationDataSchema.safeParse(entity.data);
@@ -244,7 +247,7 @@ const publicationsOf = (inputs: BuildInputs, blogId: string): PublicationSource[
       : [];
   });
 
-function articleCardsOf(index: RecordIndex, inputs: BuildInputs, blogId: string): ArticleCard[] {
+function articleCardsOf(index: RecordIndex, inputs: ListInputs, blogId: string): ArticleCard[] {
   const newest = publicationsOf(inputs, blogId).sort((left, right) => {
     const leftDate = left.publishedAt ?? left.updatedAt;
     const rightDate = right.publishedAt ?? right.updatedAt;
@@ -388,7 +391,7 @@ function itemsOf(
 // записей сборки). Номер больше последнего — StorefrontBuildError('page-unknown').
 export function pageListOf(
   index: RecordIndex,
-  inputs: BuildInputs,
+  inputs: ListInputs,
   source: ListSource,
   query: ListQuery,
   listed: ListedPage | null,

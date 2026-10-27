@@ -4,7 +4,7 @@ import { sectionManifestSchema } from '../src/format';
 import { problemText } from '../src/problems';
 
 // Свои имена секции: раздел `names` в section.json (задача 6 proof of concept MCP).
-const SKU = { kinds: ['toggle'], label: 'Артикул', asks: ['артикул'] };
+const SKU = { kinds: ['toggle'], label: 'Артикул', about: 'Показать артикул товара в карточке', asks: ['артикул'] };
 const TOGGLE = { kind: 'toggle', default: false, labels: { on: 'Да', off: 'Нет' } };
 const SKU_FIELD = { id: 'sku', label: 'Показывать артикул', setting: TOGGLE };
 const manifestOf = (settings: object[], names?: object) => ({
@@ -26,7 +26,7 @@ const manyNames = (count: number) => {
   const ids = Array.from({ length: count }, (_, index) => `own-${index + 1}`);
   return manifestOf(
     ids.map((id) => ({ id, label: id, setting: { kind: 'string', default: '' } })),
-    Object.fromEntries(ids.map((id) => [id, { kinds: ['string'], label: id, asks: [id] }])),
+    Object.fromEntries(ids.map((id) => [id, { kinds: ['string'], label: id, about: `Поле ${id}`, asks: [id] }])),
   );
 };
 
@@ -62,7 +62,9 @@ describe('свои имена секции', () => {
     it.each([['Show_Sku'], ['sku--x'], ['артикул'], ['a'.repeat(33)]])('имя %s — отказ', (name) => {
       const lines = linesOf(manifestOf([], { [name]: SKU }));
       expect(lines).toHaveLength(1);
-      expect(lines[0]).toContain(`своё имя \`${name}\`: нужны строчные латинские буквы и цифры через одиночный дефис, до 32 знаков`);
+      expect(lines[0]).toContain(
+        `своё имя \`${name}\`: нужны строчные латинские буквы и цифры через одиночный дефис, до 32 знаков`,
+      );
       expect(lines[0]).toContain('[name-own-invalid]');
     });
 
@@ -85,13 +87,19 @@ describe('свои имена секции', () => {
   });
 
   it('name-own-in-dictionary — имя уже есть в словаре', () => {
-    expect(linesOf(manifestOf([], { heading: { kinds: ['string'], label: 'Заголовок', asks: ['заголовок'] } }))).toEqual([
+    expect(
+      linesOf(
+        manifestOf([], {
+          heading: { kinds: ['string'], label: 'Заголовок', about: 'Заголовок секции', asks: ['заголовок'] },
+        }),
+      ),
+    ).toEqual([
       'section.json:8:16 — своё имя `heading` уже есть в словаре: убери его из `names` — поле возьмёт имя, виды и подпись из словаря [name-own-in-dictionary]',
     ]);
   });
 
   it('поле с именем из словаря берёт вид из словаря, а не из names', () => {
-    const own = { kinds: ['richtext'], label: 'Заголовок', asks: ['заголовок'] };
+    const own = { kinds: ['richtext'], label: 'Заголовок', about: 'Заголовок секции', asks: ['заголовок'] };
     const field = { id: 'heading', label: 'Заголовок', setting: { kind: 'richtext', default: '' } };
     expect(codesOf(manifestOf([field], { heading: own }))).toEqual(['name-own-in-dictionary', 'setting-name-kind']);
   });
@@ -103,18 +111,33 @@ describe('свои имена секции', () => {
 
     it('11 своих имён — отказ, место — ключ names', () => {
       expect(linesOf(manyNames(11))).toEqual([
-        expect.stringMatching(/^section\.json:\d+:\d+ — своих имён в `names` — 11, можно не больше 10; .* \[names-limit\]$/),
+        expect.stringMatching(
+          /^section\.json:\d+:\d+ — своих имён в `names` — 11, можно не больше 10; .* \[names-limit\]$/,
+        ),
       ]);
     });
   });
 
-  it('форма значения: пустые kinds, лишний ключ или вид не из SDK — отказ схемы формата', () => {
-    const bad = [{ ...SKU, kinds: [] }, { ...SKU, kinds: ['switch'] }, { ...SKU, about: 'лишнее' }, { kinds: ['toggle'] }];
+  it('форма значения: пустые kinds, вид не из SDK, лишний ключ, неполная запись — отказ схемы формата', () => {
+    const bad = [
+      { ...SKU, kinds: [] },
+      { ...SKU, kinds: ['switch'] },
+      { ...SKU, group: 'content' },
+      { kinds: ['toggle'] },
+    ];
     expect(bad.map((own) => sectionManifestSchema.safeParse(manifestOf([], { sku: own })).success)).toEqual([
       false,
       false,
       false,
       false,
     ]);
+  });
+
+  it('about обязателен и от трёх знаков', () => {
+    const { about: _about, ...withoutAbout } = SKU;
+    const results = [withoutAbout, { ...SKU, about: 'ab' }, { ...SKU, about: 'abc' }].map(
+      (own) => sectionManifestSchema.safeParse(manifestOf([], { sku: own })).success,
+    );
+    expect(results).toEqual([false, false, true]);
   });
 });

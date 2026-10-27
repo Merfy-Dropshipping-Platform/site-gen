@@ -51,12 +51,13 @@ export const OWN_NAME_LIMITS = { names: 10, length: 32 } as const;
 export const ownNameShape = z.strictObject({
   kinds: z.array(z.enum(SDK_KINDS)).min(1),
   label: z.string().min(1).max(32),
+  about: z.string().min(3),
   asks: z.array(z.string().min(1)).min(1),
 });
 export type OwnName = z.infer<typeof ownNameShape>;
 export type OwnNames = Readonly<Record<string, OwnName>>;
 
-export const notNamesFileShape =z.array(
+export const notNamesFileShape = z.array(
   z.strictObject({ id: kebabShape, names: z.array(refusalNameShape).min(1), refusal: z.string().min(3) }),
 );
 

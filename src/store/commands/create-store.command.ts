@@ -18,10 +18,12 @@
  *   6. сид стартовой ревизии ВЫБРАННОЙ темы — синхронно (конструктор видит
  *      содержимое с первой секунды), дальше: `wait:true` — довести до `ready`
  *      с таймаутом, иначе — фоном; строку в любом случае дотянет доводчик;
- *   7. магазин новой темы (nova) сразу после сида получает заготовку
- *      (`PlaceSkeleton`: секции библиотеки, «О нас», секции на особых
- *      страницах) — разом с поддоменом и маршрутом. `wait:true` ждёт и её в
- *      том же таймауте; не успела — доходит фоном, в ответе `started`.
+ *   7. магазин новой темы (nova) рождается ПУСТЫМ (владелец 27.10: «по умолчанию
+ *      вообще не было секций, а была заглушка»): страница магазина показывает заглушку «работайте через
+ *      MCP». Заготовку (`PlaceSkeleton`: секции библиотеки, «О нас», секции на особых страницах) ставит
+ *      ИИ отдельным шагом; вход `skeleton:true` включает её здесь же (кабинет его не передаёт) — тогда
+ *      она идёт разом с поддоменом и маршрутом, `wait:true` ждёт и её в том же таймауте; не успела —
+ *      доходит фоном, в ответе `started`.
  *
  * Ответ — эффект: вид магазина с состоянием рождения и, у новой темы, статус
  * заготовки.
@@ -84,6 +86,8 @@ export const CreateStoreInputSchema = z.object({
   /** Создать, только если у тенанта ещё нет ни одного магазина (регистрация, cron). */
   ifNoStores: z.boolean().default(false),
   source: z.enum(CREATE_STORE_SOURCES).default("cabinet"),
+  /** Поставить заготовку сразу (только nova). По умолчанию магазин пустой; кабинет флаг не передаёт. */
+  skeleton: z.boolean().default(false),
 });
 export type CreateStoreInput = z.infer<typeof CreateStoreInputSchema>;
 
@@ -221,14 +225,14 @@ export class CreateStoreCommand {
     });
   }
 
-  /** Заготовка — только у новой темы и только когда команда заготовки подключена. */
+  /** Заготовка — только по просьбе (`skeleton:true`), у новой темы и когда команда заготовки подключена. */
   private skeletonRun(
     themeId: string,
     siteId: string,
     input: CreateStoreInput,
   ): SkeletonRun | undefined {
     const command = this.skeleton;
-    if (!command || !isNewThemeId(themeId)) return undefined;
+    if (!input.skeleton || !command || !isNewThemeId(themeId)) return undefined;
     return () =>
       command.execute({
         tenantId: input.tenantId,

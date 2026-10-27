@@ -8,6 +8,7 @@ import {
 import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
 import { pageBundle, placedSections, withoutHidden } from './code';
+import { emptyShopHtml, mcpUrlOf } from './empty-shop';
 import { entityKey } from './entities';
 import { pageLocals, shopName } from './head';
 import type { BuildInputs } from './inputs';
@@ -136,13 +137,17 @@ function pageContentOf(
   rendered: PageContent,
   lists: readonly (readonly PlacedSection[])[],
   route: ShopRoute,
+  inputs: BuildInputs,
 ): PageContent {
   const content = splitContent(
     rendered,
     lists.map((list) => list.length),
   );
-  if (route.record?.type !== 'policy' || (lists[1] ?? []).length > 0) return content;
-  return { ...content, sections: [policyTextHtml(route.record.record)] };
+  if (route.record?.type === 'policy' && (lists[1] ?? []).length === 0)
+    return { ...content, sections: [policyTextHtml(route.record.record)] };
+  // Ни одной секции на странице (ни шапки, ни подвала): заглушка «работайте через MCP» (empty-shop.ts).
+  if (lists.every((list) => list.length === 0)) return { ...content, sections: [emptyShopHtml(mcpUrlOf(inputs))] };
+  return content;
 }
 
 // Разметка страницы с бандлом (часть 5б): бандл — по тем же видимым экземплярам, его тег — в <head> после стилей
@@ -319,7 +324,7 @@ export async function renderShopPage(
   const { props, pageList, placed } = state;
   // Теги списка и JSON вариантов (блок 11, часть 11а) — в <head> перед бандлом.
   const pageContent = {
-    ...pageContentOf(state.rendered, lists, route),
+    ...pageContentOf(state.rendered, lists, route, inputs),
     headTags: headTagsOf(route, placed, props, list, page),
   };
   // Сквозные настройки темы — те же значения, что у секций в Astro.props.theme: с PageContent они идут в theme.settings

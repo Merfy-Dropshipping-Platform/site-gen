@@ -1,66 +1,81 @@
 ---
 const { settings, blocks } = Astro.props;
 ---
-<div
-  class:list={[
-    'relative flex overflow-hidden font-body',
-    { 'min-h-64': settings.height === 'small', 'min-h-96': settings.height === 'medium', 'min-h-screen': settings.height === 'large' },
-  ]}
->
-  {settings.images.url1 !== '' && (
-    <picture>
-      {settings.images.url2 !== '' && <source media="(max-width: 767px)" srcset={settings.images.url2} />}
-      <img src={settings.images.url1} alt="" class="absolute inset-0 h-full w-full object-cover" />
-    </picture>
-  )}
-  {settings.images.url1 !== '' && <div class={`absolute inset-0 bg-foreground opacity-${settings.overlay}`} />}
+<!-- Значок кнопки — Lucide (arrow-right), лицензия ISC, lucide.dev/license. -->
+<div class:list={['relative font-body', { 'mx-auto max-w-page px-4': settings.images.url1 === '' }]}>
   <div
     class:list={[
-      'relative mx-auto flex w-full max-w-page flex-col justify-center gap-4 px-4 py-10',
-      {
-        'items-start text-left': settings.align === 'left',
-        'items-center text-center': settings.align === 'center',
-        'items-end text-right': settings.align === 'right',
-      },
+      'relative flex overflow-hidden',
+      settings.images.url1 === ''
+        ? {
+            'rounded-card bg-muted': true,
+            'min-h-64': settings.height === 'small',
+            'min-h-96': settings.height === 'medium',
+            'min-h-112 md:min-h-136': settings.height === 'large',
+          }
+        : { 'min-h-64': settings.height === 'small', 'min-h-96': settings.height === 'medium', 'min-h-screen': settings.height === 'large' },
     ]}
   >
-    {blocks.map((block) => (
-      <div
-        class:list={[
-          'flex flex-col',
-          {
-            'items-start': settings.align === 'left',
-            'items-center': settings.align === 'center',
-            'items-end': settings.align === 'right',
-          },
-        ]}
-      >
-        {block.type === 'heading' && (
-          <h2
-            class:list={[
-              'm-0 font-heading weight-heading',
-              {
-                'text-2xl': settings['heading-size'] === 'small',
-                'text-3xl': settings['heading-size'] === 'medium',
-                'text-5xl': settings['heading-size'] === 'large',
-              },
-              settings.images.url1 !== '' ? 'text-background' : 'text-heading',
-            ]}
-          >
-            {block.settings.heading}
-          </h2>
-        )}
-        {block.type === 'text' && (
-          <p class:list={['m-0 text-lg', settings.images.url1 !== '' ? 'text-background' : 'text-foreground']}>
-            {block.settings.text}
-          </p>
-        )}
-        {block.type === 'button' && (
-          <a class="rounded-button bg-primary px-4 py-2 text-primary-foreground no-underline" href={block.settings.link}>
-            {block.settings.label}
-          </a>
-        )}
-      </div>
-    ))}
+    {settings.images.url1 !== '' && (
+      <picture>
+        {settings.images.url2 !== '' && <source media="(max-width: 767px)" srcset={settings.images.url2} />}
+        <img src={settings.images.url1} alt="" class="absolute inset-0 h-full w-full object-cover" />
+      </picture>
+    )}
+    {settings.images.url1 !== '' && <div class={`absolute inset-0 bg-foreground opacity-${settings.overlay}`} />}
+    <div
+      class:list={[
+        'relative mx-auto flex w-full max-w-page flex-col justify-center gap-5 px-6 py-16 md:px-12',
+        {
+          'items-start text-left': settings.align === 'left',
+          'items-center text-center': settings.align === 'center',
+          'items-end text-right': settings.align === 'right',
+        },
+      ]}
+    >
+      {blocks.map((block) => (
+        <div
+          class:list={[
+            'flex flex-col',
+            {
+              'items-start': settings.align === 'left',
+              'items-center': settings.align === 'center',
+              'items-end': settings.align === 'right',
+              'pt-2': block.type === 'button',
+            },
+          ]}
+        >
+          {block.type === 'heading' && (
+            <h2
+              class:list={[
+                'm-0 max-w-4xl text-balance font-heading weight-heading tracking-heading',
+                {
+                  'text-2xl': settings['heading-size'] === 'small',
+                  'text-3xl md:text-4xl': settings['heading-size'] === 'medium',
+                  'text-4xl md:text-5xl': settings['heading-size'] === 'large',
+                },
+                settings.images.url1 !== '' ? 'text-background' : 'text-heading',
+              ]}
+            >
+              {block.settings.heading}
+            </h2>
+          )}
+          {block.type === 'text' && (
+            <p class:list={['m-0 max-w-2xl text-pretty text-lg', settings.images.url1 !== '' ? 'text-background' : 'text-muted-foreground']}>
+              {block.settings.text}
+            </p>
+          )}
+          {block.type === 'button' && block.settings.label && (
+            <a
+              class="inline-flex h-12 items-center justify-center gap-2 rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              href={block.settings.link}
+            >
+              {block.settings.label}
+              <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
   </div>
 </div>

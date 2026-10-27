@@ -6,10 +6,12 @@
  *
  * Бриф: merfy-mcp/docs/plans/2026-09-23-wave1-content-port.md §1.1.
  */
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 import { DocumentAdapter } from "./document.adapter";
 import { buildThemeCanon } from "./canon";
+import { isNewThemeId } from "./new-theme-pages";
 import { assertSectionIds } from "./section-ids";
 import type * as schema from "../db/schema";
 import type {
@@ -34,7 +36,25 @@ import type {
 
 @Injectable()
 export class StoreContentService implements StoreContent {
-  constructor(private readonly documentAdapter: DocumentAdapter) {}
+  constructor(
+    private readonly documentAdapter: DocumentAdapter,
+    // Сигнал открытым редакторам о записи черновика (магазины новой темы). Нет в сборках вне Nest DI.
+    @Optional() private readonly handoff?: StorefrontHandoff,
+  ) {}
+
+  /**
+   * Запись сделала ревизию текущей — открытые редакторы магазина новой темы подтянут её по сигналу
+   * (`/sites/:id/preview/events`). Не ждём: сигнал записи не задерживает и не ломает.
+   */
+  private signalDraft(
+    siteId: string,
+    site: StoreContentSite,
+    revisionId: string,
+  ): void {
+    if (!this.handoff || !isNewThemeId(site.themeId)) return;
+    // signalDraft сбои брокера глотает сам; catch — страховка, запись важнее сигнала.
+    void this.handoff.signalDraft(siteId, revisionId).catch(() => undefined);
+  }
 
   async load(siteId: string, opts: LoadOptions): Promise<LoadResult> {
     return this.resolveAdapter(opts.site).load(siteId, opts);
@@ -52,7 +72,11 @@ export class StoreContentService implements StoreContent {
     // п. 10). Запись операциями (ops) документа целиком не несёт — её
     // проверяет save-on-base.ts после операций.
     assertSectionIds(params.document);
-    return this.resolveAdapter(params.site).save(siteId, params);
+    const saved = await this.resolveAdapter(params.site).save(siteId, params);
+    // Запись от базы всегда делает ревизию текущей; вслепую — только с setCurrent.
+    if (params.mode === "on-base" || params.setCurrent)
+      this.signalDraft(siteId, params.site, saved.version);
+    return saved;
   }
 
   async history(siteId: string, opts: HistoryOptions): Promise<HistoryPage> {
@@ -83,7 +107,14 @@ export class StoreContentService implements StoreContent {
     siteId: string,
     params: RollbackParams,
   ): Promise<RollbackResult> {
-    return this.resolveAdapter(params.site).rollback(siteId, params);
+    const restored = await this.resolveAdapter(params.site).rollback(
+      siteId,
+      params,
+    );
+    // Выбранная версия уже текущая — ничего не писалось, сигналить не о чем.
+    if (params.revisionId !== params.site.currentRevisionId)
+      this.signalDraft(siteId, params.site, restored.revisionId);
+    return restored;
   }
 
   async diff(

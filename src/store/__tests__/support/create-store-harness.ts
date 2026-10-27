@@ -44,7 +44,7 @@ export function makeCreateStoreHarness(
     entitlements?: Partial<Entitlements>;
     catalog?: ThemeCatalog;
     /** Команда заготовки (`PlaceSkeleton`); не задана — команда создаётся без неё. */
-    skeleton?: { execute: (raw: unknown) => Promise<any> };
+    skeleton?: { execute: (raw: any) => Promise<any> };
   } = {},
 ) {
   const clock = new FakeClock();

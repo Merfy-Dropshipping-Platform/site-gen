@@ -27,6 +27,7 @@ import { NO_FACTS, type ScriptFacts } from './script-facts';
 import { scriptMetaOf, scriptMetaSchema } from './script-meta';
 import { nameProblems } from './script-names';
 import { NO_MARKUP } from './template-markup';
+import { tasteProblems } from './taste-check';
 import { sectionTokensOf, tokenProblems } from './token-rules';
 import { NO_TEMPLATE_OPTIONS, checkTemplate, templateOptionsOf, type TemplateCheck } from './compile';
 
@@ -157,12 +158,14 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
   const manifest = readManifest(files);
   const template = files[TEMPLATE_FILE];
   const entry = scriptEntryOf(files);
-  const [checked, script, styles] = await Promise.all([
+  const [checked, script, styles, taste] = await Promise.all([
     template === undefined
       ? null
       : checkTemplate(template, manifest.ok ? templateOptionsOf(manifest.value) : NO_TEMPLATE_OPTIONS),
     entry === null ? null : buildScript(files, entry),
     manifest.ok && template !== undefined ? styleProblems(manifest.value, files, template) : [],
+    // Предупреждения вкуса: кнопки от 44 px, прокрутка вбок, «уменьшить движение» (taste-check.ts).
+    manifest.ok ? tasteProblems(files) : [],
   ]);
   const problems = [
     ...fileProblems(files),
@@ -171,6 +174,7 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
     ...problemsOf(script),
     ...namesOf(manifest, checked, script, entry),
     ...styles,
+    ...taste,
     // Блок 12, часть 12а: роль и ctx.ext секции расширения — по префиксу имени от двери.
     ...(manifest.ok ? authorProblems(manifest.value, input.prefix) : []),
   ];

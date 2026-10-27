@@ -66,11 +66,21 @@ export const PROBLEM_CODES = [
   'role-not-allowed',
   'role-taken',
   'ext-foreign',
+  // Проверки вкуса (кнопки от 44 px, прокрутка вбок, «уменьшить движение») — только предупреждения.
+  'taste-button-height',
+  'taste-overflow',
+  'taste-motion',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];
 
 // block-select-unavailable — подпункт выбирается только слева (часть 3, Р57): секция сохраняется.
-const WARNING_CODES: ReadonlySet<ProblemCode> = new Set(['script-heavy', 'block-select-unavailable']);
+const WARNING_CODES: ReadonlySet<ProblemCode> = new Set([
+  'script-heavy',
+  'block-select-unavailable',
+  'taste-button-height',
+  'taste-overflow',
+  'taste-motion',
+]);
 
 export const sectionProblemSchema = z.strictObject({
   code: z.enum(PROBLEM_CODES),

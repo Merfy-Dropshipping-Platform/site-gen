@@ -55,7 +55,7 @@ describe('наши секции с записями', () => {
     const html = await renderer.render({ ...request, settings, records: { product: PRODUCT } });
     expect(html).toContain('Плед «Нова»');
     expect(html).toContain(money(350000).text);
-    expect(html).toContain(`<s class="ml-2 text-base">${money(420000).text}</s>`);
+    expect(html).toContain(`<s class="text-lg text-price-old">${money(420000).text}</s>`);
     expect(html).toContain('В наличии');
     expect(await renderer.render({ ...request, settings, records: { product: null } })).not.toContain('<h1');
   }, 30_000);

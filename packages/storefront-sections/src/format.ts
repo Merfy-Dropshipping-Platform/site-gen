@@ -3,6 +3,7 @@ import { EXT_POINTS } from '@merfy/shell/ext-points';
 import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
 import { sectionFieldShape, settingFieldsOf, settingsEntryShape } from './fields';
+import { ownNameShape } from './names';
 import { problem, when, type Checked, type SectionProblem } from './problems';
 import { RECORD_SETTING_KINDS, sectionDataShape } from './record-fields';
 import { settingsTexts } from './settings';
@@ -96,6 +97,9 @@ export const sectionManifestSchema = z.strictObject({
   kind: z.enum(SECTION_KINDS),
   title: z.string().min(1).max(80),
   settings: z.array(settingsEntryShape).default([]),
+  // Свои имена полей секции и её блоков (задача 6 proof of concept MCP): имя → виды, подпись и слова просьбы; запись
+  // имени, повтор словаря и число имён проверяет name-check.ts.
+  names: z.record(z.string(), ownNameShape).optional(),
   blocks: z.record(z.string(), blockTypeSchema).optional(),
   defaultBlocks: z.array(defaultBlockSchema).max(50).optional(),
   groups: z.array(z.enum(SECTION_GROUPS)).min(1).max(3).refine(unique, { error: 'группа дважды' }).optional(),

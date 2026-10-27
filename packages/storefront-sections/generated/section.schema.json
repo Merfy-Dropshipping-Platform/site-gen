@@ -4512,6 +4512,64 @@
         ]
       }
     },
+    "names": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "kinds": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "string",
+                "text",
+                "richtext",
+                "url",
+                "image",
+                "image-pair",
+                "select",
+                "radio",
+                "toggle",
+                "range",
+                "alignment",
+                "color-scheme",
+                "padding",
+                "menu",
+                "product",
+                "collection",
+                "blog",
+                "policy",
+                "hint"
+              ]
+            }
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "asks": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "kinds",
+          "label",
+          "asks"
+        ],
+        "additionalProperties": false
+      }
+    },
     "blocks": {
       "type": "object",
       "propertyNames": {

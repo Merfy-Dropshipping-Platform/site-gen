@@ -1,5 +1,6 @@
+import type { ProblemCode } from './problems';
 import type { FieldIssue, FieldList, RuleSection } from './rule-types';
-import { NAMES, sharedSettingHint, type NameEntry } from './names';
+import { NAMES, OWN_NAME_LIMITS, sharedSettingHint, type NameEntry, type OwnName, type OwnNames } from './names';
 
 // Проверка имени поля по словарю (блок 3 «Секций и SDK», Р3.5–Р3.6): одно имя на одно назначение. Ошибка сразу
 // говорит, что вместо: подсказку формы, отказ, настройку «Настроек темы» или ближайшее имя.
@@ -133,11 +134,45 @@ const HINT_STEPS: readonly ((id: string, kebab: string, kind: string) => string 
   },
 ];
 
-// Имя и вид поля по словарю NAMES (Р3.5): проблемы нет — undefined.
-export function nameIssue(id: string, kind: string): NameProblem | undefined {
+const OWN_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+// Своё имя секции (раздел `names`): отказ или undefined. Имя из словаря — name-own-in-dictionary; запись не по
+// правилу или имя из not-names.json — name-own-invalid.
+function ownNameProblem(name: string): { code: ProblemCode; message: string } | undefined {
+  if (entryOf(name) !== undefined) {
+    return {
+      code: 'name-own-in-dictionary',
+      message: `своё имя \`${name}\` уже есть в словаре: убери его из \`names\` — поле возьмёт имя, виды и подпись из словаря`,
+    };
+  }
+  const shapeOk = OWN_NAME.test(name) && name.length <= OWN_NAME_LIMITS.length;
+  const refusal = refusalOf(name);
+  if (shapeOk && refusal === undefined) return undefined;
+  const rule = `своё имя \`${name}\`: нужны строчные латинские буквы и цифры через одиночный дефис, до ${OWN_NAME_LIMITS.length} знаков`;
+  return {
+    code: 'name-own-invalid',
+    message: refusal === undefined ? rule : `своё имя \`${name}\`: такое имя нельзя. ${refusal}`,
+  };
+}
+
+// Свои имена, которые можно применять к полям: без отказа.
+const usableOwnOf = (own: OwnNames): OwnNames =>
+  Object.fromEntries(Object.entries(own).filter(([name]) => ownNameProblem(name) === undefined));
+
+const ownKindProblem = (own: OwnName, id: string, kind: string): NameProblem => ({
+  code: 'setting-name-kind',
+  message: `поле \`${id}\`: в \`names\` секции это ${quoteList(own.kinds, ' или ')}, здесь \`${kind}\``,
+});
+
+// Имя и вид поля по словарю NAMES (Р3.5) и своим именам секции: проблемы нет — undefined.
+export function nameIssue(id: string, kind: string, own: OwnNames = {}): NameProblem | undefined {
   const entry = entryOf(id);
   if (entry !== undefined) {
-    return entry.kinds.some((own) => own === kind) ? undefined : kindProblem(entry, id, kind);
+    return entry.kinds.some((item) => item === kind) ? undefined : kindProblem(entry, id, kind);
+  }
+  const ownEntry = Object.hasOwn(own, id) ? own[id] : undefined;
+  if (ownEntry !== undefined) {
+    return ownEntry.kinds.some((item) => item === kind) ? undefined : ownKindProblem(ownEntry, id, kind);
   }
   const kebab = kebabOf(id);
   const hint = HINT_STEPS.map((step) => step(id, kebab, kind)).find((text) => text !== undefined);
@@ -146,13 +181,28 @@ export function nameIssue(id: string, kind: string): NameProblem | undefined {
 
 // Все поля всех списков по порядку; путь — [...list.path, индекс, 'id'], у setting-name-kind —
 // [...list.path, индекс, 'setting', 'kind'].
+// Сначала — свои имена секции: путь ['names', <имя>], число имён — ['names'].
 export function nameIssues(section: RuleSection): FieldIssue[] {
+  const ownNames = section.ownNames ?? {};
+  const usable = usableOwnOf(ownNames);
+  const ownIssues: FieldIssue[] = Object.keys(ownNames).flatMap((name) => {
+    const found = ownNameProblem(name);
+    return found === undefined ? [] : [{ code: found.code, path: ['names', name], message: found.message }];
+  });
+  const count = Object.keys(ownNames).length;
+  if (count > OWN_NAME_LIMITS.names) {
+    ownIssues.push({
+      code: 'names-limit',
+      path: ['names'],
+      message: `своих имён в \`names\` — ${count}, можно не больше ${OWN_NAME_LIMITS.names}; возьми имена из словаря (\`merfy section names\`) или объедини поля`,
+    });
+  }
   const issuesOf = (list: FieldList): FieldIssue[] =>
     list.fields.flatMap((field, index) => {
-      const issue = nameIssue(field.id, field.setting.kind);
+      const issue = nameIssue(field.id, field.setting.kind, usable);
       if (issue === undefined) return [];
       const key = issue.code === 'setting-name-kind' ? ['setting', 'kind'] : ['id'];
       return [{ code: issue.code, path: [...list.path, index, ...key], message: issue.message }];
     });
-  return section.lists.flatMap(issuesOf);
+  return [...ownIssues, ...section.lists.flatMap(issuesOf)];
 }

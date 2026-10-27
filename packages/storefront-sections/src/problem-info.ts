@@ -145,13 +145,26 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'setting-name-unknown': {
     when: 'Имени поля нет в словаре имён.',
-    fix: 'Возьми имя из подсказки «ближе всего» или из names.md; своё имя не придумывай.',
+    fix: 'Возьми имя из подсказки «ближе всего» или из names.md; подходящего нет — объяви своё в `names` секции (names.md, «Своё имя секции»).',
     example: { before: '"id": "title"', after: '"id": "heading"' },
   },
   'setting-name-kind': {
     when: 'Имя из словаря, но вид поля не из его столбца «Виды».',
     fix: 'Поставь вид из names.md или возьми другое имя.',
     example: { before: '"id": "heading", "kind": "text"', after: '"id": "heading", "kind": "string"' },
+  },
+  'name-own-invalid': {
+    when: 'Своё имя в `names` записано неверно: не строчная латиница через дефис, длиннее 32 знаков или из списка «Нет в словаре».',
+    fix: 'Назови по образцу `sku` или `show-sku`: строчные латинские буквы и цифры через одиночный дефис, до 32 знаков.',
+    example: { before: '"names": { "ShowSku": … }', after: '"names": { "show-sku": … }' },
+  },
+  'name-own-in-dictionary': {
+    when: 'Имя в `names` секции уже есть в словаре имён.',
+    fix: 'Убери его из `names`: поле возьмёт имя, виды и подпись из словаря (names.md).',
+  },
+  'names-limit': {
+    when: 'В `names` секции больше десяти своих имён.',
+    fix: 'Возьми часть имён из словаря (names.md) или объедини поля: своих имён в секции — не больше десяти.',
   },
   'settings-limit': {
     when: 'Полей, типов блоков, блоков или вариантов больше предела, или подпись длиннее предела.',

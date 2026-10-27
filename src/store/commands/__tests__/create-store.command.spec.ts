@@ -602,10 +602,10 @@ describe("CreateStore: магазин новой темы рождается п�
         siteId: id,
         complete: true,
         about: "created",
-        sections: { total: 24, kept: 0, skipped: [] },
+        sections: { total: 22, kept: 0, skipped: [] },
       },
     });
-    expect(shop).toHaveLength(24);
+    expect(shop).toHaveLength(22);
     // Сид, затем одна запись заготовки — и она текущая.
     expect(ref.harness.saves.map((s) => s.params.source)).toEqual([
       "seed",
@@ -621,6 +621,12 @@ describe("CreateStore: магазин новой темы рождается п�
     expect(doc.sections[about.id].map((i: any) => i.section)).toEqual([
       "shop:page",
     ]);
+    // В шапке нового магазина — «Каталог» и «О нас».
+    expect(
+      doc.menus
+        .find((menu: any) => menu.id === "main")
+        .items.map((item: any) => item.label),
+    ).toEqual(["Каталог", "О нас"]);
 
     // Повтор той же командой — ничего не меняет.
     const again = await skeleton.execute({ tenantId: "t1", siteId: id });

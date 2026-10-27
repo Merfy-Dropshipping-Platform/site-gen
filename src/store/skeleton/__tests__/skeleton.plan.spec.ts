@@ -46,22 +46,43 @@ describe("planSkeleton: новый магазин nova", () => {
     expect(plan.placement.kept).toEqual([]);
   });
 
-  it("шапка — только «Шапка»; корзина: строки без отступа снизу, итог в 24 px под ними; у остальных wrapper нет", () => {
-    expect(doc.sections.header.map((i: Doc) => i.section)).toEqual(["shop:header"]);
+  it("шапка — только «Шапка»; первая секция страницы — 32 px под шапкой; корзина: итог в 24 px под строками", () => {
+    expect(doc.sections.header.map((i: Doc) => i.section)).toEqual([
+      "shop:header",
+    ]);
+    const pageStart = { padding: { top: 32, bottom: 64 } };
+    for (const key of ["home", "catalog", "collection", "product", "not-found"])
+      expect(doc.sections[key][0].wrapper).toEqual(pageStart);
     const [cart, summary] = doc.sections["page-cart"];
-    expect(cart.wrapper).toEqual({ padding: { top: 64, bottom: 0 } });
-    expect(summary.wrapper).toEqual({ padding: { top: 24, bottom: 96 } });
-    const others = Object.entries(doc.sections as Record<string, Doc[]>)
-      .filter(([key]) => key !== "page-cart")
-      .flatMap(([, list]) => list);
-    expect(others.some((instance) => "wrapper" in instance)).toBe(false);
+    expect(cart.wrapper).toEqual({ padding: { top: 32, bottom: 0 } });
+    expect(summary.wrapper).toEqual({ padding: { top: 24, bottom: 64 } });
+    // Шапка, подвал, «Поверх страниц» и секции главной после первой — с отступом темы: ключа wrapper нет.
+    const themed = [
+      ...doc.sections.header,
+      ...doc.sections.footer,
+      ...doc.sections.overlay,
+      ...doc.sections.home.slice(1),
+    ];
+    expect(themed.some((instance: Doc) => "wrapper" in instance)).toBe(false);
+  });
+
+  it("главная — первый экран, товары магазина («Коллекция» без выбранной коллекции), один блок вопросов; «Поиск» — поверх страниц", () => {
+    expect(doc.sections.home.map((i: Doc) => i.section)).toEqual([
+      "shop:hero",
+      "shop:collection",
+      "shop:faq",
+    ]);
+    expect(doc.sections.home[1].settings).toEqual({});
+    expect(doc.sections.overlay.map((i: Doc) => i.section)).toContain(
+      "shop:search",
+    );
   });
 
   it("экземпляр — как «Добавить секцию»: пустые настройки, блоки по умолчанию <тип>-<n>, id без повторов", () => {
     const [hero] = doc.sections.home;
     expect(hero.id).toMatch(/^hero-[a-z0-9]{8}$/);
     expect(hero.settings).toEqual({});
-    const faq = doc.sections.home[1];
+    const faq = doc.sections.home[2];
     expect(faq.blocks.map((b: Doc) => b.id)).toEqual([
       "question-1",
       "question-2",
@@ -74,7 +95,7 @@ describe("planSkeleton: новый магазин nova", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("«О нас» — своя страница /o-nas с секцией «Страница», пустым деревом и пунктом в главном меню", () => {
+  it("«О нас» — своя страница /o-nas с секцией «Страница», пустым деревом; в главном меню «Каталог» и «О нас»", () => {
     expect(plan.placement.about).toBe("created");
     const about = doc.pages.find((p: Doc) => p.slug === "/o-nas");
     expect(about).toMatchObject({
@@ -86,6 +107,7 @@ describe("planSkeleton: новый магазин nova", () => {
       expect.objectContaining({
         section: "shop:page",
         settings: { heading: "О нас" },
+        wrapper: { padding: { top: 32, bottom: 64 } },
       }),
     ]);
     expect(doc.pagesData[about.id]).toEqual({
@@ -97,7 +119,10 @@ describe("planSkeleton: новый магазин nova", () => {
       {
         id: "main",
         title: "Главное меню",
-        items: [{ label: "О нас", url: "/o-nas" }],
+        items: [
+          { label: "Каталог", url: "/catalog" },
+          { label: "О нас", url: "/o-nas" },
+        ],
       },
     ]);
     expect(plan.placement.filled.map((l) => l.label)).toContain("О нас");
@@ -167,7 +192,7 @@ describe("planSkeleton: магазин, где уже что-то есть", () 
     expect(doc.sections["page-cart"]).toBeUndefined();
     expect(plan.placement.about).toBe("waiting");
     expect(doc.pages.some((p: Doc) => p.slug === "/o-nas")).toBe(false);
-    expect(doc.sections.home).toHaveLength(5);
+    expect(doc.sections.home).toHaveLength(3);
   });
 
   it("«О нас» уже есть (по адресу) с пустым списком — секция встаёт на неё, вторая страница не создаётся", () => {

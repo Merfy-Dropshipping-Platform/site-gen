@@ -13,13 +13,23 @@ import {
 const library = loadLibrary(process.cwd());
 const manifestOf = (name: string): Record<string, any> =>
   JSON.parse(library.get(name)!.files["section.json"]);
+// Особые страницы ролей — как ROLE_PLACES (packages/storefront-sections/src/roles.ts); остальные роли — «Поверх страниц».
+const ROLE_PAGES: Record<string, string> = {
+  cart: "page-cart",
+  login: "page-login",
+};
+// Список общих настроек секции: нет ключа wrapper — «Цветовая схема» и «Отступы» (DEFAULT_WRAPPER_IDS).
+const wrapperIdsOf = (name: string): string[] =>
+  manifestOf(name).wrapper ?? ["scheme", "padding"];
 
 describe("библиотека заготовки", () => {
-  it("25 секций из fixtures/shop и storefront-shell/sections; в раскладке 24 — без «Значка корзины», все есть в библиотеке", () => {
+  it("25 секций из fixtures/shop и storefront-shell/sections; в раскладке 22 — без «Значка корзины», «Слайд-шоу» и «Вопросов с плавным раскрытием», все есть в библиотеке", () => {
     expect(library.size).toBe(25);
-    expect(skeletonSectionNames()).toHaveLength(24);
-    expect(skeletonSectionNames()).not.toContain("cart-badge");
-    expect(library.has("cart-badge")).toBe(true);
+    expect(skeletonSectionNames()).toHaveLength(22);
+    for (const name of ["cart-badge", "slideshow", "questions"]) {
+      expect(skeletonSectionNames()).not.toContain(name);
+      expect(library.has(name)).toBe(true);
+    }
     for (const name of skeletonSectionNames())
       expect(library.has(name)).toBe(true);
   });
@@ -69,6 +79,9 @@ describe("раскладка заготовки", () => {
         // «Поверх страниц» — для секций с ролью; конструктор их туда сам не ставит, заготовка ставит.
         if (key === "overlay") expect(manifest.role).toBeDefined();
         else expect(manifest.groups ?? ["page"]).toContain(group);
+        // Секция с ролью вне «Поверх страниц» — только на своей особой странице, иначе сборка её отбрасывает.
+        if (manifest.role !== undefined && key !== "overlay")
+          expect(ROLE_PAGES[manifest.role]).toBe(key);
         if (manifest.limit !== undefined)
           expect(
             names.filter((other) => other === name).length,
@@ -81,6 +94,23 @@ describe("раскладка заготовки", () => {
       .map((name) => library.get(name)!.role)
       .filter(Boolean);
     expect(new Set(roles).size).toBe(roles.length);
+  });
+
+  it("«Отступы» заготовки — у секций своего списка, где эта общая настройка есть (иначе сборка отбросит правку)", () => {
+    for (const [key, wrappers] of Object.entries(
+      SKELETON_LAYOUT.wrappers ?? {},
+    ))
+      for (const name of Object.keys(wrappers)) {
+        expect(SKELETON_LAYOUT.lists[key]).toContain(name);
+        expect(wrapperIdsOf(name)).toContain("padding");
+      }
+    expect(wrapperIdsOf(SKELETON_LAYOUT.about.section)).toContain("padding");
+  });
+
+  it("шапка и служебные секции «Поверх страниц» — без «Отступов»: обёртка не даёт им пустых полос", () => {
+    expect(wrapperIdsOf("header")).toEqual(["scheme", "sticky"]);
+    for (const name of SKELETON_LAYOUT.lists.overlay)
+      expect(wrapperIdsOf(name)).toEqual([]);
   });
 
   it("«О нас»: секция с полем новой страницы, заголовок — в нём", () => {

@@ -1,7 +1,9 @@
 import { defineSection, type Money } from '@merfy/shell';
 
 // «Промежуточный итог» (блок 10 «Секций и SDK», 10.4, «Решил сам» п. 7; часть 10а, Р10а-11): суммы — ctx.cart.$totals;
-// кнопка «Оформить заказ» — только когда в корзине есть строка без подарка (п. 9), иначе cart.checkout откажет.
+// кнопка «Оформить заказ» — только когда в корзине есть строка без подарка (п. 9), иначе cart.checkout откажет. Итог
+// целиком — только когда корзина загружена и в ней есть строки, как строки в «Корзине»: у пустой корзины «Сумма 0 ₽» не
+// показывается.
 
 // Деньги — копейки целым числом; на витрине — рубли без копеек, знак рубля после числа.
 const priceOf = (money: Money): string =>
@@ -20,6 +22,7 @@ export default defineSection({
     });
     ctx.watch(ctx.cart.$cart, (cart) => {
       const sold = cart.lines.some((line) => !line.gift);
+      ctx.ref('summary')?.toggle(cart.ready && cart.lines.length > 0);
       ctx.ref('checkout')?.toggle(cart.ready && sold);
     });
   },

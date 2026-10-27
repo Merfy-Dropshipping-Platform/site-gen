@@ -180,12 +180,9 @@ describe("SitesDomainService.createRevision CAS", () => {
 });
 
 describe("SitesMicroserviceController.createRevision CAS", () => {
-  // Этап 2 «Безопасная запись» идёт ПОД ФЛАГОМ: шлюз ставит `mergeOnStale:
-  // true` только аккаунтам из списка NEW_LOGIC_EMAILS.
-  //   без флага — как до этапа 2: expectedCurrentRevisionId уходит в жёсткий
-  //     CAS домена, устаревшая база → revision_conflict → 409;
-  //   с флагом — тот же id становится БАЗОЙ записи, устаревшая база сливается
-  //     (побеждает последний), жёсткий CAS этим путём не зовётся.
+  // Контроллер только передаёт домену id, который видел клиент, и флаг шлюза
+  // (`mergeOnStale: true` — аккаунты из NEW_LOGIC_EMAILS). Слияние или жёсткий
+  // CAS выбирает домен по теме магазина — см. describe ниже.
   function makeController() {
     const domain = {
       createRevision: jest.fn().mockResolvedValue({ revisionId: "rev-new" }),
@@ -200,7 +197,7 @@ describe("SitesMicroserviceController.createRevision CAS", () => {
     ["revision id", "rev-a"],
     ["null", null],
   ])(
-    "без mergeOnStale: expected current %s уходит в жёсткий CAS, базы слияния нет",
+    "без mergeOnStale: expected current %s и флаг false уходят домену",
     async (_label, expectedCurrentRevisionId) => {
       const { domain, controller } = makeController();
 
@@ -215,17 +212,21 @@ describe("SitesMicroserviceController.createRevision CAS", () => {
       const params = domain.createRevision.mock.calls[0][0];
       expect(params).toMatchObject({
         setCurrent: true,
-        expectedCurrentRevisionId,
+        constructorBase: {
+          seen: expectedCurrentRevisionId,
+          mergeOnStale: false,
+        },
         actor: "merchant",
         source: "constructor",
       });
       expect(params).not.toHaveProperty("base");
       expect(params).not.toHaveProperty("mergePolicy");
+      expect(params).not.toHaveProperty("expectedCurrentRevisionId");
     },
   );
 
   it.each([false, "true", 1, undefined])(
-    "mergeOnStale = %p (не строго true) — старый путь",
+    "mergeOnStale = %p (не строго true) — флаг домену false",
     async (mergeOnStale) => {
       const { domain, controller } = makeController();
 
@@ -239,44 +240,31 @@ describe("SitesMicroserviceController.createRevision CAS", () => {
       });
 
       expect(domain.createRevision.mock.calls[0][0]).toMatchObject({
-        expectedCurrentRevisionId: "rev-a",
+        constructorBase: { seen: "rev-a", mergeOnStale: false },
       });
-      expect(domain.createRevision.mock.calls[0][0]).not.toHaveProperty(
-        "base",
-      );
     },
   );
 
-  it.each([
-    ["revision id", "rev-a"],
-    ["null", null],
-  ])(
-    "mergeOnStale: true — expected current %s становится базой слияния",
-    async (_label, expectedCurrentRevisionId) => {
-      const { domain, controller } = makeController();
+  it("mergeOnStale: true — флаг домену true", async () => {
+    const { domain, controller } = makeController();
 
-      await controller.createRevision({
-        tenantId: "tenant-1",
-        siteId: "site-1",
-        data: {},
-        setCurrent: true,
-        expectedCurrentRevisionId,
-        mergeOnStale: true,
-      });
+    await controller.createRevision({
+      tenantId: "tenant-1",
+      siteId: "site-1",
+      data: {},
+      setCurrent: true,
+      expectedCurrentRevisionId: "rev-a",
+      mergeOnStale: true,
+    });
 
-      expect(domain.createRevision).toHaveBeenCalledWith(
-        expect.objectContaining({
-          base: expectedCurrentRevisionId,
-          mergePolicy: "last-writer-wins",
-          actor: "merchant",
-          source: "constructor",
-        }),
-      );
-      expect(domain.createRevision.mock.calls[0][0]).not.toHaveProperty(
-        "expectedCurrentRevisionId",
-      );
-    },
-  );
+    expect(domain.createRevision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        constructorBase: { seen: "rev-a", mergeOnStale: true },
+        actor: "merchant",
+        source: "constructor",
+      }),
+    );
+  });
 
   it("returns a stable conflict envelope", async () => {
     const domain = {
@@ -299,5 +287,55 @@ describe("SitesMicroserviceController.createRevision CAS", () => {
       code: "REVISION_CONFLICT",
       message: "revision_conflict",
     });
+  });
+});
+
+describe("SitesDomainService.createRevision: сведение выбирает sites по теме", () => {
+  // nova — всегда слияние, без флага шлюза; остальные темы — слияние только
+  // при `mergeOnStale: true`, иначе жёсткий CAS (REVISION_CONFLICT → 409).
+  async function writeAs(themeId: string, mergeOnStale: boolean) {
+    const service = makeService(createDb("rev-a", true).db);
+    jest.spyOn(service, "get").mockResolvedValue({
+      id: "site-1",
+      tenantId: "tenant-1",
+      themeId,
+      currentRevisionId: "rev-a",
+    } as never);
+    const store = jest
+      .spyOn((service as any).storeContent, "createRevision")
+      .mockResolvedValue({ revisionId: "rev-new" } as never);
+    await service.createRevision({
+      tenantId: "tenant-1",
+      siteId: "site-1",
+      data: {},
+      constructorBase: { seen: "rev-a", mergeOnStale },
+    });
+    return store.mock.calls[0][1] as Record<string, unknown>;
+  }
+
+  it("nova без флага — слияние от базы", async () => {
+    const params = await writeAs("nova", false);
+    expect(params).toMatchObject({
+      base: "rev-a",
+      mergePolicy: "last-writer-wins",
+    });
+    expect(params).not.toHaveProperty("expectedCurrentRevisionId");
+    expect(params).not.toHaveProperty("constructorBase");
+  });
+
+  it("старая тема без флага — жёсткий CAS", async () => {
+    const params = await writeAs("rose", false);
+    expect(params).toMatchObject({ expectedCurrentRevisionId: "rev-a" });
+    expect(params).not.toHaveProperty("base");
+    expect(params).not.toHaveProperty("mergePolicy");
+  });
+
+  it("старая тема с флагом — слияние от базы", async () => {
+    const params = await writeAs("rose", true);
+    expect(params).toMatchObject({
+      base: "rev-a",
+      mergePolicy: "last-writer-wins",
+    });
+    expect(params).not.toHaveProperty("expectedCurrentRevisionId");
   });
 });

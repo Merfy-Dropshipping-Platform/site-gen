@@ -43,6 +43,7 @@ import { StorefrontHandoff } from "./storefront-handoff/storefront-handoff.servi
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
 import { rewriteCurrent } from "./content/rewrite-current";
 import { toStoreContentSite } from "./content/store-content.port";
+import { constructorStaleBase } from "./content/constructor-stale-base";
 import type {
   HistoryCursor,
   StaleBasePolicy,
@@ -2079,11 +2080,29 @@ export class SitesDomainService {
     actor?: WriteActor;
     source?: WriteSource;
     mergePolicy?: StaleBasePolicy;
+    /**
+     * Запись из конструктора/MCP: база — ревизия, которую видел клиент.
+     * Слияние или жёсткий CAS выбирает сам сервис по теме магазина (nova —
+     * всегда слияние; прочие — по флагу шлюза), см.
+     * `content/constructor-stale-base.ts`. Заменяет `base`/`expectedCurrentRevisionId`.
+     */
+    constructorBase?: {
+      seen: string | null | undefined;
+      mergeOnStale: boolean;
+    };
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
+    const { constructorBase, ...rest } = params;
     return this.storeContent.createRevision(params.siteId, {
-      ...params,
+      ...rest,
+      ...(constructorBase
+        ? constructorStaleBase(
+            site.themeId,
+            constructorBase.mergeOnStale,
+            constructorBase.seen,
+          )
+        : {}),
       site: toStoreContentSite(site),
     });
   }

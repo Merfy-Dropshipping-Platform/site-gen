@@ -61,25 +61,6 @@ function revisionWriteFailure(e: any) {
   return { success: false, message: e?.message ?? "internal_error" };
 }
 
-/**
- * Как сохранение из конструктора обходится с устаревшей базой. Выбирает шлюз:
- * `mergeOnStale: true` приходит только для аккаунтов из списка новой логики
- * (NEW_LOGIC_EMAILS в api-gateway); сам sites ничего не решает.
- *   merge — этап 2: id, который видел клиент, — база записи; устарела —
- *           слияние, одно и то же поле — побеждает последний (как в Figma);
- *   cas   — как до этапа 2: жёсткий CAS по тому же id, устарела —
- *           REVISION_CONFLICT (шлюз отдаёт 409).
- */
-const CONSTRUCTOR_STALE_BASE = {
-  merge: (seen: string | null | undefined) => ({
-    base: seen,
-    mergePolicy: "last-writer-wins" as const,
-  }),
-  cas: (seen: string | null | undefined) => ({
-    expectedCurrentRevisionId: seen,
-  }),
-};
-
 @Controller()
 export class SitesMicroserviceController {
   private readonly logger = new Logger(SitesMicroserviceController.name);
@@ -387,9 +368,13 @@ export class SitesMicroserviceController {
         meta,
         actorUserId,
         setCurrent,
-        ...CONSTRUCTOR_STALE_BASE[mergeOnStale === true ? "merge" : "cas"](
-          expectedCurrentRevisionId,
-        ),
+        // Как обойтись с устаревшей базой, решает сервис по теме магазина:
+        // nova — всегда слияние, прочие — слияние только при флаге шлюза
+        // (`content/constructor-stale-base.ts`).
+        constructorBase: {
+          seen: expectedCurrentRevisionId,
+          mergeOnStale: mergeOnStale === true,
+        },
         actor: "merchant",
         source: "constructor",
         // B17: внешний путь сохранения. Конструктор шлёт всю карту страниц,

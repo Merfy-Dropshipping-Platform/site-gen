@@ -11,9 +11,10 @@
  * тем самым уже идёт по своей «линии» — чужая правка не откатывается (И4)
  * даже до куска 2.4.
  *
- * Под флагом: слияние включает `mergeOnStale: true`, который шлюз ставит
- * только аккаунтам из NEW_LOGIC_EMAILS. Без флага — как до этапа 2 (последний
- * describe файла): жёсткий CAS, устаревшая база → REVISION_CONFLICT.
+ * Слияние включает `mergeOnStale: true`, который шлюз ставит аккаунтам из
+ * NEW_LOGIC_EMAILS, либо тема магазина nova (решает sites сам, без флага).
+ * Прочие темы без флага — как до этапа 2: жёсткий CAS, устаревшая база →
+ * REVISION_CONFLICT.
  */
 import { SitesMicroserviceController } from "../sites.microservice.controller";
 import { SitesDomainService } from "../sites.service";
@@ -290,5 +291,55 @@ describe("sites.revisions.create без mergeOnStale — как до этапа 
     const now = (await open()).doc;
     expect(homeBlock(now, "Hero-1").props.testField).toBe("B");
     expect(homeBlock(now, "Gallery-1").props.testField).not.toBe("A");
+  });
+});
+
+describe("магазин nova: слияние без флага шлюза", () => {
+  const block = (id: string) => ({ type: "Text", props: { id, text: "" } });
+
+  async function novaSetup() {
+    const s = await setup("nova");
+    // Стартовая ревизия nova пуста: кладём две секции на главную тем же
+    // путём записи, без базы.
+    const seeded = await s.createWithoutFlag({
+      ...(await s.open()).doc,
+      pagesData: {
+        ...(await s.open()).doc.pagesData,
+        home: {
+          content: [block("A-1"), block("B-1")],
+          root: { props: { title: "Главная" } },
+          zones: {},
+        },
+      },
+    });
+    expect(seeded.success).toBe(true);
+    return s;
+  }
+
+  it("устаревшая база без mergeOnStale сливается, а не REVISION_CONFLICT", async () => {
+    const { open, createWithoutFlag } = await novaSetup();
+    const tabA = await open();
+    const tabB = await open();
+
+    const b = await createWithoutFlag(
+      withProp(tabB.doc, "A-1", "text", "B"),
+      tabB.revisionId,
+    );
+    expect(b).toMatchObject({ success: true, merged: false });
+
+    const a = await createWithoutFlag(
+      withProp(tabA.doc, "B-1", "text", "A"),
+      tabA.revisionId,
+    );
+    expect(a).toMatchObject({
+      success: true,
+      merged: true,
+      overwritten: [],
+      conflicts: [],
+    });
+
+    const now = (await open()).doc;
+    expect(homeBlock(now, "A-1").props.text).toBe("B");
+    expect(homeBlock(now, "B-1").props.text).toBe("A");
   });
 });

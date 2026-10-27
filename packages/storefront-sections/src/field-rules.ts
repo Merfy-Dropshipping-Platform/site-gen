@@ -30,6 +30,7 @@ export function ruleSectionOf(manifest: SectionManifest): RuleSection {
   }));
   return {
     lists: [sectionList, ...blockLists],
+    ownNames: manifest.names ?? {},
     blocks: blockEntries.map(([type, block]) => ({ type, title: block.title, limit: block.limit })),
   };
 }

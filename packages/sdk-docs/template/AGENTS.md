@@ -6,7 +6,7 @@ SDK 1. Документация — https://gateway.merfy.ru/api/storefront/sdk/
 1. Новая секция — начни с этого шаблона. Меняешь секцию магазина — сначала прочитай её файлы
    (GET …/sections/<name>/source).
 2. section.json — поля и блоки. Имена полей — только из names.md. Нужного имени нет — возьми то,
-   что назвала проверка; своё не придумывай.
+   что назвала проверка. Подходящего имени нет — объяви своё в `names` секции (names.md, «Своё имя секции»).
 3. template.astro — разметка. Классы — только из словаря (styles.md). style, <style> и <script> нельзя.
 4. script.ts — только если на странице что-то меняется после загрузки. В нём — defineSection и ctx;
    window, document, fetch, setTimeout нельзя (script.md).

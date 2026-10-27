@@ -45,6 +45,18 @@ export const namesFileShape = z.strictObject({
   ),
 });
 
+// Свои имена секции (раздел `names` в section.json): имя, которого нет в словаре. Форму значения проверяет схема
+// формата, смысл имени (запись, длину, повтор словаря, число имён) — name-check.ts.
+export const OWN_NAME_LIMITS = { names: 10, length: 32 } as const;
+export const ownNameShape = z.strictObject({
+  kinds: z.array(z.enum(SDK_KINDS)).min(1),
+  label: z.string().min(1).max(32),
+  about: z.string().min(3),
+  asks: z.array(z.string().min(1)).min(1),
+});
+export type OwnName = z.infer<typeof ownNameShape>;
+export type OwnNames = Readonly<Record<string, OwnName>>;
+
 export const notNamesFileShape = z.array(
   z.strictObject({ id: kebabShape, names: z.array(refusalNameShape).min(1), refusal: z.string().min(3) }),
 );

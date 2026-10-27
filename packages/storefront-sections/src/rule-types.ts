@@ -1,3 +1,4 @@
+import type { OwnNames } from './names';
 import type { ProblemCode } from './problems';
 
 // Секция глазами правил полей (блок 3 «Секций и SDK»): списки полей — свой у секции и у каждого типа блока — и типы
@@ -30,6 +31,8 @@ export interface BlockType {
 
 export interface RuleSection {
   lists: readonly FieldList[];
+  // Раздел `names` из section.json: свои имена секции.
+  ownNames?: OwnNames;
   blocks: readonly BlockType[];
 }
 

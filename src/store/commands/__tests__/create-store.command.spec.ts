@@ -25,6 +25,9 @@ import {
   makeSiteRow,
 } from "../../__tests__/support/in-memory-lifecycle";
 import type { StoreRegistryTx } from "../../store-registry";
+import { newThemeStarterRevision } from "../../../content/new-theme-pages";
+import { PlaceSkeletonCommand } from "../../skeleton/place-skeleton.command";
+import { SKELETON_LAYOUT } from "../../skeleton/skeleton-layout";
 
 const setup = makeCreateStoreHarness;
 
@@ -457,4 +460,225 @@ describe("CreateStore: вход проверяется по схеме", () => {
     expect(registry.inserted).toHaveLength(0);
     expect(billing.readEntitlements).not.toHaveBeenCalled();
   });
+});
+
+describe("CreateStore: магазин новой темы рождается с заготовкой (решение 7 спеки MCP «Секции и SDK»)", () => {
+  const summary = {
+    siteId: "x",
+    changed: true,
+    complete: true,
+    revisionId: "rev-2",
+    sections: { total: 25, added: ["header"], kept: 0, skipped: [] },
+    lists: { filled: [], kept: [], waiting: [], absent: [] },
+    about: "created",
+  };
+  const withNova = () => catalogOf([...THEMES, "nova"]);
+
+  it("nova, wait:true — заготовка ставится после сида, в ответе её сводка", async () => {
+    let revisionAtCall: string | null | undefined;
+    const rows: { current?: ReturnType<typeof setup>["repo"] } = {};
+    const skeleton = {
+      execute: jest.fn(async (input: { siteId: string }) => {
+        revisionAtCall = rows.current!.rows.get(
+          input.siteId,
+        )!.currentRevisionId;
+        return { ok: true, effect: summary };
+      }),
+    };
+    const { command, repo } = setup({ catalog: withNova(), skeleton });
+    rows.current = repo;
+
+    const result = await command.execute({
+      ...base,
+      themeId: "nova",
+      wait: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const id = result.effect.store!.id;
+    expect(skeleton.execute).toHaveBeenCalledTimes(1);
+    expect(skeleton.execute).toHaveBeenCalledWith({
+      tenantId: "t1",
+      siteId: id,
+      actorUserId: "u1",
+    });
+    // Заготовке нужна ревизия: к её запуску сид уже записан.
+    expect(revisionAtCall).toBe("rev-1");
+    expect(result.effect.skeleton).toEqual({ status: "done", summary });
+    expect(result.effect.ready).toBe(true);
+  });
+
+  it("создать магазин nova → заготовка на месте: настоящая PlaceSkeleton, секции в магазине, списки и «О нас» в текущей ревизии", async () => {
+    const shop: { name: string; role: string | null }[] = [];
+    const sections = {
+      present: async () => shop.map((s) => ({ ...s })),
+      save: async (_siteId: string, files: Record<string, string>) => {
+        const manifest = JSON.parse(files["section.json"]);
+        shop.push({ name: manifest.name, role: manifest.role ?? null });
+        return { ok: true as const };
+      },
+    };
+    const lock = {
+      withSiteLock: async <T>(_siteId: string, work: () => Promise<T>) => ({
+        locked: true as const,
+        value: await work(),
+      }),
+    };
+    const ref: { harness?: ReturnType<typeof setup> } = {};
+    const latest = (siteId: string) =>
+      ref.harness!.saves.filter((s) => s.siteId === siteId).at(-1)!;
+    const sites = {
+      get: async (tenantId: string, siteId: string) => {
+        const row = ref.harness!.repo.rows.get(siteId);
+        return row && row.tenantId === tenantId ? { ...row } : null;
+      },
+    };
+    const content = {
+      load: async (siteId: string) => ({
+        version: ref.harness!.repo.rows.get(siteId)!.currentRevisionId!,
+        document: structuredClone(latest(siteId).params.document),
+      }),
+      save: (siteId: string, params: any) =>
+        ref.harness!.content.save(siteId, params),
+    };
+    const skeleton = new PlaceSkeletonCommand(
+      sites as any,
+      content as any,
+      sections,
+      lock,
+    );
+    ref.harness = setup({ catalog: withNova(), skeleton });
+    ref.harness.sites.buildInitialRevision.mockImplementation(
+      async () => newThemeStarterRevision() as any,
+    );
+
+    const result = await ref.harness.command.execute({
+      ...base,
+      themeId: "nova",
+      wait: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const id = result.effect.store!.id;
+    expect(result.effect.skeleton).toMatchObject({
+      status: "done",
+      summary: {
+        siteId: id,
+        complete: true,
+        about: "created",
+        sections: { total: 25, kept: 0, skipped: [] },
+      },
+    });
+    expect(shop).toHaveLength(25);
+    // Сид, затем одна запись заготовки — и она текущая.
+    expect(ref.harness.saves.map((s) => s.params.source)).toEqual([
+      "seed",
+      "skeleton",
+    ]);
+    expect(ref.harness.repo.rows.get(id)!.currentRevisionId).toBe("rev-2");
+    const doc = latest(id).params.document;
+    for (const [key, names] of Object.entries(SKELETON_LAYOUT.lists))
+      expect(doc.sections[key].map((i: any) => i.section)).toEqual(
+        names.map((name) => `shop:${name}`),
+      );
+    const about = doc.pages.find((p: any) => p.slug === "/o-nas");
+    expect(doc.sections[about.id].map((i: any) => i.section)).toEqual([
+      "shop:page",
+    ]);
+
+    // Повтор той же командой — ничего не меняет.
+    const again = await skeleton.execute({ tenantId: "t1", siteId: id });
+    expect(again.ok && again.effect.changed).toBe(false);
+    expect(ref.harness.saves).toHaveLength(2);
+  });
+
+  it("nova, заготовка не успела за таймаут — started, доходит фоном", async () => {
+    const gate = deferred();
+    const skeleton = {
+      execute: jest.fn(async () => {
+        await gate.promise;
+        return { ok: true, effect: summary };
+      }),
+    };
+    const { command } = setup({ catalog: withNova(), skeleton });
+
+    const result = await command.execute({
+      ...base,
+      themeId: "nova",
+      wait: true,
+      waitTimeoutMs: 1000,
+    });
+
+    expect(result.ok && result.effect.skeleton).toEqual({ status: "started" });
+    gate.resolve();
+    await command.settle();
+    expect(skeleton.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("nova, wait:false (регистрация, cron) — заготовка фоном, в ответе started", async () => {
+    const skeleton = {
+      execute: jest.fn(async () => ({ ok: true, effect: summary })),
+    };
+    const { command } = setup({ catalog: withNova(), skeleton });
+    const result = await command.execute({ ...base, themeId: "nova" });
+    expect(result.ok && result.effect.skeleton).toEqual({ status: "started" });
+    await command.settle();
+    expect(skeleton.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("отказ заготовки — failed с её кодом; магазин всё равно создан", async () => {
+    const skeleton = {
+      execute: jest.fn(async () => ({
+        ok: false,
+        error: { code: "skeleton_in_progress" },
+      })),
+    };
+    const { command } = setup({ catalog: withNova(), skeleton });
+    const result = await command.execute({
+      ...base,
+      themeId: "nova",
+      wait: true,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.effect.created).toBe(true);
+    expect(result.effect.skeleton).toEqual({
+      status: "failed",
+      code: "skeleton_in_progress",
+    });
+  });
+
+  it("заготовка упала исключением — failed internal_error, ответ не падает", async () => {
+    const skeleton = {
+      execute: jest.fn(async () => Promise.reject(new Error("builder down"))),
+    };
+    const { command } = setup({ catalog: withNova(), skeleton });
+    const result = await command.execute({
+      ...base,
+      themeId: "nova",
+      wait: true,
+    });
+    expect(result.ok && result.effect.skeleton).toEqual({
+      status: "failed",
+      code: "internal_error",
+    });
+  });
+
+  it.each(THEMES)(
+    "тема %s — заготовки нет, ключа skeleton в ответе нет",
+    async (theme) => {
+      const skeleton = { execute: jest.fn() };
+      const { command } = setup({ catalog: withNova(), skeleton });
+      const result = await command.execute({
+        ...base,
+        themeId: theme,
+        wait: true,
+      });
+      await command.settle();
+      expect(result.ok && result.effect).not.toHaveProperty("skeleton");
+      expect(skeleton.execute).not.toHaveBeenCalled();
+    },
+  );
 });

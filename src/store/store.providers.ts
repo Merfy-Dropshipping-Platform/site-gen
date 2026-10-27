@@ -22,6 +22,14 @@ import { DrizzleStoreRegistry, STORE_REGISTRY } from "./store-registry";
 import { DbThemeCatalog, THEME_CATALOG } from "./theme-catalog";
 import { StoreCommandsController } from "./store-commands.controller";
 import { SetThemeCommand } from "./theme-switch/set-theme.command";
+import { PlaceSkeletonCommand } from "./skeleton/place-skeleton.command";
+import {
+  BuilderSkeletonSections,
+  DrizzleSkeletonLock,
+  SKELETON_LOCK,
+  SKELETON_SECTIONS,
+} from "./skeleton/skeleton-sections";
+import { StorefrontBuilderClient } from "../storefront-preview/storefront-builder.client";
 
 export const STORE_PROVIDERS: Provider[] = [
   { provide: LIFECYCLE_REPOSITORY, useClass: DrizzleLifecycleRepository },
@@ -33,6 +41,12 @@ export const STORE_PROVIDERS: Provider[] = [
   StoreLifecycleScheduler,
   CreateStoreCommand,
   SetThemeCommand,
+  // Заготовка магазина новой темы: секции — через сборщик витрин (свой экземпляр клиента, как у ExtensionSectionsModule:
+  // StorefrontPreviewModule его не экспортирует).
+  StorefrontBuilderClient,
+  { provide: SKELETON_SECTIONS, useClass: BuilderSkeletonSections },
+  { provide: SKELETON_LOCK, useClass: DrizzleSkeletonLock },
+  PlaceSkeletonCommand,
 ];
 
 export const STORE_CONTROLLERS: Type<unknown>[] = [StoreCommandsController];

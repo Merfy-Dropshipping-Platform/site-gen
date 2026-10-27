@@ -30,6 +30,8 @@ import { UserListenerController } from "../../user/user.listener";
 import { SiteProvisioningScheduler } from "../../scheduler/site-provisioning.scheduler";
 import { ThemesService } from "../../themes.service";
 import { ThemesMicroserviceController } from "../../themes.microservice.controller";
+import { ConfigService } from "@nestjs/config";
+import { PlaceSkeletonCommand } from "../skeleton/place-skeleton.command";
 
 const EXTERNAL = [
   { provide: PG_CONNECTION, useValue: {} },
@@ -39,6 +41,8 @@ const EXTERNAL = [
   { provide: StoreContentService, useValue: {} },
   { provide: BillingClient, useValue: { readEntitlements: jest.fn() } },
   { provide: SitesEventsService, useValue: { emit: jest.fn() } },
+  // Адрес сборщика витрин для StorefrontBuilderClient заготовки (в сервисе ConfigModule глобальный).
+  { provide: ConfigService, useValue: new ConfigService({}) },
 ];
 
 describe("провода Nest: STORE_PROVIDERS + входы на команде", () => {
@@ -62,6 +66,7 @@ describe("провода Nest: STORE_PROVIDERS + входы на команде"
       StoreLifecycleScheduler,
       CreateStoreCommand,
       SetThemeCommand,
+      PlaceSkeletonCommand,
       StoreCommandsController,
       UserListenerController,
       SiteProvisioningScheduler,

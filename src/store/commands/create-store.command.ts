@@ -17,11 +17,16 @@
  *   5. событие `sites.site.created` — та же форма, что у старого `reserve()`;
  *   6. сид стартовой ревизии ВЫБРАННОЙ темы — синхронно (конструктор видит
  *      содержимое с первой секунды), дальше: `wait:true` — довести до `ready`
- *      с таймаутом, иначе — фоном; строку в любом случае дотянет доводчик.
+ *      с таймаутом, иначе — фоном; строку в любом случае дотянет доводчик;
+ *   7. магазин новой темы (nova) сразу после сида получает заготовку
+ *      (`PlaceSkeleton`: секции библиотеки, «О нас», секции на особых
+ *      страницах) — разом с поддоменом и маршрутом. `wait:true` ждёт и её в
+ *      том же таймауте; не успела — доходит фоном, в ответе `started`.
  *
- * Ответ — эффект: вид магазина с состоянием рождения.
+ * Ответ — эффект: вид магазина с состоянием рождения и, у новой темы, статус
+ * заготовки.
  */
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import {
@@ -46,6 +51,11 @@ import {
 import { storeSlugFromName } from "../store-slug";
 import { toStoreView, type StoreView } from "../store-view";
 import { THEME_CATALOG, type ThemeCatalog } from "../theme-catalog";
+import { isNewThemeId } from "../../content/new-theme-pages";
+import {
+  PlaceSkeletonCommand,
+  type PlaceSkeletonEffect,
+} from "../skeleton/place-skeleton.command";
 import { ok, refused, type CommandResult } from "./command-result";
 
 export const CREATE_STORE_SOURCES = [
@@ -101,7 +111,20 @@ export interface CreateStoreEffect {
   waited: boolean;
   /** Магазин готов на момент ответа. */
   ready: boolean;
+  /** Заготовка магазина новой темы; у остальных тем ключа нет. */
+  skeleton?: SkeletonStatus;
 }
+
+/**
+ * Заготовка при создании: `done` — сводка команды `PlaceSkeleton`; `started` — идёт фоном (не успела за таймаут или
+ * `wait:false`); `failed` — отказ команды с её кодом. Повтор `PlaceSkeleton` доставит недостающее.
+ */
+export type SkeletonStatus =
+  | { status: "done"; summary: PlaceSkeletonEffect }
+  | { status: "started" }
+  | { status: "failed"; code: string };
+
+type SkeletonRun = () => Promise<CommandResult<PlaceSkeletonEffect>>;
 
 type Reservation =
   | { kind: "created"; id: string; slug: string }
@@ -117,6 +140,10 @@ export class CreateStoreCommand {
     this.logger,
     "store lifecycle background advance failed",
   );
+  private readonly skeletonWork = new BackgroundWork(
+    this.logger,
+    "store skeleton failed",
+  );
 
   constructor(
     @Inject(STORE_REGISTRY) private readonly registry: StoreRegistry,
@@ -129,6 +156,10 @@ export class CreateStoreCommand {
     private readonly lifecycle: LifecycleRepository,
     @Inject(SitesEventsService)
     private readonly events: Pick<SitesEventsService, "emit">,
+    // Необязательна: без неё (тесты, собирающие команду руками) магазин новой темы создаётся без заготовки.
+    @Optional()
+    @Inject(PlaceSkeletonCommand)
+    private readonly skeleton?: Pick<PlaceSkeletonCommand, "execute">,
   ) {}
 
   async execute(raw: unknown): Promise<CommandResult<CreateStoreEffect>> {
@@ -174,22 +205,60 @@ export class CreateStoreCommand {
       publicUrl: null,
     });
 
-    const row = await this.bringUp(reservation.id, input);
+    const skeleton = this.skeletonRun(theme.id, reservation.id, input);
+    const { row, skeletonStatus } = await this.bringUp(
+      reservation.id,
+      input,
+      skeleton,
+    );
     const store = row ? toStoreView(row) : undefined;
     return ok({
       created: true,
       store,
       waited: input.wait,
       ready: store?.lifecycle.state === "ready",
+      ...(skeletonStatus ? { skeleton: skeletonStatus } : {}),
     });
+  }
+
+  /** Заготовка — только у новой темы и только когда команда заготовки подключена. */
+  private skeletonRun(
+    themeId: string,
+    siteId: string,
+    input: CreateStoreInput,
+  ): SkeletonRun | undefined {
+    const command = this.skeleton;
+    if (!command || !isNewThemeId(themeId)) return undefined;
+    return () =>
+      command.execute({
+        tenantId: input.tenantId,
+        siteId,
+        actorUserId: input.actorUserId,
+      });
+  }
+
+  /** Запустить заготовку фоном; статус читается в момент ответа. */
+  private startSkeleton(run: SkeletonRun): {
+    done: Promise<void>;
+    status: () => SkeletonStatus;
+  } {
+    let status: SkeletonStatus = { status: "started" };
+    const done = this.skeletonWork.start(run()).then((result) => {
+      status = !result
+        ? { status: "failed", code: "internal_error" }
+        : result.ok
+          ? { status: "done", summary: result.effect }
+          : { status: "failed", code: result.error.code };
+    });
+    return { done, status: () => status };
   }
 
   /**
    * Дождаться фоновых проходов, запущенных командой (тесты). Хук остановки
    * сервиса их не ждёт: брошенный проход подберёт тик доводчика после аренды.
    */
-  settle(): Promise<void> {
-    return this.background.settle();
+  async settle(): Promise<void> {
+    await Promise.all([this.background.settle(), this.skeletonWork.settle()]);
   }
 
   private async reserve(
@@ -253,7 +322,8 @@ export class CreateStoreCommand {
   private async bringUp(
     siteId: string,
     input: CreateStoreInput,
-  ): Promise<LifecycleRow | null> {
+    skeleton?: SkeletonRun,
+  ): Promise<{ row: LifecycleRow | null; skeletonStatus?: SkeletonStatus }> {
     if (!input.wait) {
       const seeded = await this.reconciler.driveHeld(siteId, {
         stopAfter: "seeded",
@@ -262,10 +332,32 @@ export class CreateStoreCommand {
       const row = await this.lifecycle.read(siteId);
       if (seeded.leaseKept)
         void this.background.start(this.reconciler.driveHeld(siteId));
-      return row;
+      if (!skeleton) return { row };
+      return { row, skeletonStatus: this.startSkeleton(skeleton).status() };
     }
-    const drive = this.background.start(this.reconciler.driveHeld(siteId));
-    await within(drive, input.waitTimeoutMs, undefined);
-    return this.lifecycle.read(siteId);
+    if (!skeleton) {
+      const drive = this.background.start(this.reconciler.driveHeld(siteId));
+      await within(drive, input.waitTimeoutMs, undefined);
+      return { row: await this.lifecycle.read(siteId) };
+    }
+    // Новая тема: заготовке нужна ревизия — сид синхронно, дальше поддомен и маршрут разом с заготовкой; ждём обоих в
+    // одном таймауте.
+    const seeded = await this.reconciler.driveHeld(siteId, {
+      stopAfter: "seeded",
+      keepLease: true,
+    });
+    const drive = seeded.leaseKept
+      ? this.background.start(this.reconciler.driveHeld(siteId))
+      : Promise.resolve(undefined);
+    const placing = this.startSkeleton(skeleton);
+    await within(
+      Promise.all([drive, placing.done]),
+      input.waitTimeoutMs,
+      undefined,
+    );
+    return {
+      row: await this.lifecycle.read(siteId),
+      skeletonStatus: placing.status(),
+    };
   }
 }

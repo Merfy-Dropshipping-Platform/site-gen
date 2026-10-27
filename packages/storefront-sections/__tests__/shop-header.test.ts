@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { renderSection, sha256, type PlacedSection, type SectionsRender, type SettingValues } from '@merfy/storefront-build';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -200,6 +201,59 @@ describe('«Шапка»: значки, поиск, логотип', () => {
     };
     expect(search.every(fromTablet)).toBe(true);
     expect(profile.every(fromTablet)).toBe(true);
+  });
+
+  // Значки — Lucide (search, heart, shopping-bag, user), у кнопки и ссылок одна обёртка: размер и выравнивание одни и те же,
+  // отличается только показ («hidden … md:inline-flex» у значков бокового меню). Кнопка поиска стоит в контейнере flex:
+  // в блочном контейнере строка поднимала её на 3,5 px выше ссылок.
+  describe('значки', () => {
+    const ICONS = [
+      { label: 'Поиск', element: 'button', path: 'm21 21-4.34-4.34' },
+      { label: 'Избранное', element: 'a', path: 'M2 9.5a5.5 5.5 0 0 1 9.591' },
+      { label: 'Корзина', element: 'a', path: 'M16 10a4 4 0 0 1-8 0' },
+      { label: 'Профиль', element: 'a', path: 'M19 21v-2a4 4 0 0 0-4-4H9' },
+    ] as const;
+    const BOX = ['h-6', 'min-w-6', 'items-center', 'justify-center', 'gap-1'];
+    const SHOWING = new Set(['inline-flex', 'hidden', 'md:inline-flex']);
+    const iconsOf = (source: string, label: string, element: string) =>
+      [...source.matchAll(new RegExp(`(<${element}\\b[^>]*>)([\\s\\S]*?)</${element}>`, 'g'))]
+        .filter((item) => attr(item[1] ?? '', 'aria-label') === label)
+        .map((item) => ({ classes: (attr(item[1] ?? '', 'class') ?? '').split(/\s+/), body: item[2] ?? '' }));
+    const VARIANTS = POSITIONS.flatMap((position) =>
+      TYPES.map((type) => ({ 'logo-position': position, 'menu-type': type })),
+    );
+
+    it.each(VARIANTS)('логотип %j: у всех четырёх значков одна обёртка и значок Lucide', async (settings) => {
+      const source = await html({ settings });
+      const boxes = new Set<string>();
+      for (const { label, element, path } of ICONS) {
+        const found = iconsOf(source, label, element);
+        expect(found.length, label).toBeGreaterThan(0);
+        for (const { classes, body } of found) {
+          expect(classes, label).toEqual(expect.arrayContaining(BOX));
+          expect(classes.includes('inline-flex') || classes.includes('md:inline-flex'), label).toBe(true);
+          expect(body, label).toContain('<svg class="size-6"');
+          expect(body, label).toContain(path);
+          boxes.add(classes.filter((name) => !SHOWING.has(name) && BOX.includes(name)).sort().join(' '));
+        }
+      }
+      expect([...boxes]).toEqual([[...BOX].sort().join(' ')]);
+    });
+
+    it('поиск: контейнер кнопки — flex, как у ссылок значков', async () => {
+      for (const settings of VARIANTS) {
+        const source = await html({ settings });
+        const hosts = tags(source, 'div\\b[^>]*data-transition="fade"');
+        expect(hosts.length).toBeGreaterThan(0);
+        for (const host of hosts) expect((attr(host, 'class') ?? '').split(/\s+/)).toContain('flex');
+      }
+    });
+
+    it('в шаблоне нет прежних рисованных значков', () => {
+      for (const path of ['M10 4a6 6 0 1 1', 'M12 20s-7-4.5', 'M6 7h12l-1 13H7L6 7Z', 'M12 12a4 4 0 1 0 0-8']) {
+        expect(readFileSync(`${FOLDER}/template.astro`, 'utf8')).not.toContain(path);
+      }
+    });
   });
 
   it('форма поиска: GET в /catalog, поле q, кнопка «Найти»', async () => {

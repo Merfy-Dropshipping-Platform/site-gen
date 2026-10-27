@@ -69,7 +69,7 @@ describe('наши секции с записями', () => {
       records: { collection: COLLECTION },
     });
     expect(html).toContain('Пледы');
-    expect(html).toContain('<a class="text-foreground no-underline" href="/product/pled">Плед «Нова»</a>');
+    expect(html).toMatch(/<a class="[^"]*" href="\/product\/pled">Плед «Нова»<\/a>/);
     const all = { ...COLLECTION, id: '', title: '', slug: '', url: '', description: '' };
     const allHtml = await renderer.render({ ...request, settings: { collection: null }, records: { collection: all } });
     expect(allHtml).not.toContain('<h1');

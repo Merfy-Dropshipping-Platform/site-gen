@@ -1,95 +1,262 @@
 ---
 const { settings, blocks, page } = Astro.props;
 ---
-<div class="mx-auto flex max-w-page flex-col gap-8 px-4 font-body" data-behavior="catalog" data-paging={settings.paging}>
+<!-- Значки — Lucide (image, plus, chevron-down, sliders-horizontal, search-x), лицензия ISC, lucide.dev/license. -->
+<div
+  class:list={[
+    'mx-auto grid max-w-page gap-6 px-4 font-body text-foreground md:gap-8',
+    { 'md:grid-cols-4': blocks.some((block) => block.type === 'filters' && block.settings['filter-position'] === 'side') },
+  ]}
+  data-behavior="catalog"
+  data-paging={settings.paging}
+>
+  {(settings.heading || page.list) && (
+    <div class="col-span-full flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+      {settings.heading && page.id === 'catalog' && (
+        <h1 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl">{settings.heading}</h1>
+      )}
+      {settings.heading && page.id !== 'catalog' && (
+        <h2 class="m-0 font-heading weight-heading tracking-heading text-2xl text-heading md:text-3xl">{settings.heading}</h2>
+      )}
+      {page.list && page.list.total > 0 && (
+        <p class="m-0 text-sm text-muted-foreground">
+          {page.list.total}{' '}
+          {page.list.total % 10 === 1 && page.list.total % 100 !== 11
+            ? 'товар'
+            : page.list.total % 10 >= 2 && page.list.total % 10 <= 4 && (page.list.total % 100 < 12 || page.list.total % 100 > 14)
+              ? 'товара'
+              : 'товаров'}
+        </p>
+      )}
+    </div>
+  )}
   {page.list && (
-    <form class="flex flex-col gap-4 md:flex-row" data-part="filters" method="get" action={page.list.url}>
+    <form
+      class:list={[
+        'm-0 flex min-w-0 flex-col gap-4 border-b border-border pb-5 md:flex-row md:flex-wrap md:items-center',
+        { 'md:col-span-1 md:flex-col md:items-stretch md:self-start md:border-b-0 md:pb-0': blocks.some((block) => block.type === 'filters' && block.settings['filter-position'] === 'side') },
+      ]}
+      data-part="filters"
+      method="get"
+      action={page.list.url}
+    >
       {blocks.map((block) => (
-        <div class:list={['flex gap-4', { 'flex-col': block.settings['filter-position'] !== 'top' }]}>
+        <div
+          class:list={[
+            'flex min-w-0 flex-col gap-3',
+            {
+              'md:flex-1 md:flex-row md:flex-wrap md:items-center': block.type === 'filters' && block.settings['filter-position'] !== 'side',
+              'md:ml-auto': block.type === 'sort' && !blocks.some((item) => item.type === 'filters' && item.settings['filter-position'] === 'side'),
+              'w-full': block.type === 'subheading',
+            },
+          ]}
+        >
           {block.type === 'subheading' && block.settings.heading && (
             <p class="m-0 text-lg text-heading">{block.settings.heading}</p>
           )}
           {block.type === 'sort' && (
-            <select class="h-10 rounded-input border border-border px-4 text-foreground" name="sort" aria-label="Сортировка">
-              {page.list.sorts.map((sort) => <option value={sort.value} selected={sort.selected}>{sort.label}</option>)}
-            </select>
+            <div class="relative md:min-w-56">
+              <select
+                class="h-11 w-full cursor-pointer appearance-none rounded-input border-width-input border-input bg-background pl-4 pr-11 text-sm text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                name="sort"
+                aria-label="Сортировка"
+              >
+                {page.list.sorts.map((sort) => <option value={sort.value} selected={sort.selected}>{sort.label}</option>)}
+              </select>
+              <svg class="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </div>
           )}
           {block.type === 'filters' && page.list.facets && (
-            <div class="flex flex-col gap-4">
-              <select class="h-10 rounded-input border border-border px-4 text-foreground" name="availability" aria-label="Наличие">
-                <option value="">Все товары</option>
-                <option value="in_stock" selected={page.list.query.availability === 'in_stock'}>В наличии</option>
-                <option value="sold_out" selected={page.list.query.availability === 'sold_out'}>Нет в наличии</option>
-              </select>
-              {page.list.facets.groups.map((group) => (
-                <fieldset class="m-0 flex flex-col gap-2 p-0">
-                  <legend class="text-sm text-heading">{group.name}</legend>
-                  {group.values.map((value) => (
-                    <label class="flex items-center gap-2 text-sm text-foreground">
-                      <input type="checkbox" name={`filter.${group.key}`} value={value.value} checked={value.selected} />
-                      {value.value}
+            <Fragment>
+              {page.list.facets.collections.length > 0 && (
+                <div
+                  class:list={[
+                    '-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0',
+                    { 'md:flex-col md:items-start': block.settings['filter-position'] === 'side' },
+                  ]}
+                  role="group"
+                  aria-label="Разделы"
+                >
+                  <a
+                    class:list={[
+                      'inline-flex h-11 shrink-0 items-center rounded-button border-width-input px-4 text-sm no-underline',
+                      page.list.facets.collections.some((collection) => collection.selected)
+                        ? 'border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground'
+                        : 'border-primary-border bg-primary text-primary-foreground',
+                    ]}
+                    href={page.list.url}
+                    aria-current={page.list.facets.collections.some((collection) => collection.selected) ? undefined : 'page'}
+                  >Все</a>
+                  {page.list.facets.collections.map((collection) => (
+                    <label class="relative inline-flex shrink-0 cursor-pointer">
+                      <input class="peer sr-only" type="checkbox" name="collection" value={collection.slug} checked={collection.selected} />
+                      <span class="inline-flex h-11 items-center rounded-button border-width-input border-border bg-background px-4 text-sm text-foreground hover:bg-accent hover:text-accent-foreground peer-checked:border-primary-border peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">{collection.title}</span>
                     </label>
                   ))}
-                </fieldset>
-              ))}
-              {page.list.facets.collections.map((collection) => (
-                <label class="flex items-center gap-2 text-sm text-foreground">
-                  <input type="checkbox" name="collection" value={collection.slug} checked={collection.selected} />
-                  {collection.title}
+                </div>
+              )}
+              <div
+                class:list={[
+                  'flex flex-wrap items-center gap-3',
+                  { 'md:ml-auto': block.settings['filter-position'] !== 'side' },
+                ]}
+              >
+                <label class="group inline-flex h-11 cursor-pointer items-center gap-3 text-sm text-foreground">
+                  <input class="peer sr-only" type="checkbox" name="availability" value="in_stock" checked={page.list.query.availability === 'in_stock'} />
+                  <span class="flex h-6 w-10 shrink-0 items-center rounded-full bg-border p-0.5 peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">
+                    <span class="size-5 rounded-full bg-background transition-transform group-has-checked:translate-x-4 motion-reduce:transition-none"></span>
+                  </span>
+                  Только в наличии
                 </label>
-              ))}
-            </div>
+                {page.list.facets.groups.length > 0 && block.settings['filter-position'] !== 'side' && (
+                  <details class="group/filters relative">
+                    <summary class="inline-flex h-11 cursor-pointer list-none items-center gap-2 rounded-button border-width-input border-border bg-background px-4 text-sm text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+                      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4h-7" /><path d="M10 4H3" /><path d="M21 12h-9" /><path d="M8 12H3" /><path d="M21 20h-5" /><path d="M12 20H3" /><path d="M14 2v4" /><path d="M8 10v4" /><path d="M16 18v4" /></svg>
+                      Фильтры
+                    </summary>
+                    <div class="absolute left-0 z-10 mt-2 flex w-72 max-w-full flex-col gap-5 rounded-popover border-width-popover border-border bg-popover p-5 text-popover-foreground shadow-popover md:left-auto md:right-0">
+                      {page.list.facets.groups.map((group) => (
+                        <fieldset class="m-0 flex flex-col gap-3 border-0 p-0">
+                          <legend class="mb-3 p-0 text-sm text-heading">{group.name}</legend>
+                          <div class="flex flex-wrap gap-2">
+                            {group.values.map((value) => (
+                              <label class="relative inline-flex cursor-pointer">
+                                <input class="peer sr-only" type="checkbox" name={`filter.${group.key}`} value={value.value} checked={value.selected} />
+                                <span class="inline-flex h-11 items-center rounded-button border-width-input border-border px-4 text-sm hover:bg-accent hover:text-accent-foreground peer-checked:border-primary-border peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">{value.value}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </fieldset>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+              {page.list.facets.groups.length > 0 && block.settings['filter-position'] === 'side' && (
+                <div class="flex flex-col gap-5">
+                  {page.list.facets.groups.map((group) => (
+                    <fieldset class="m-0 flex flex-col gap-3 border-0 border-t border-border p-0 pt-4">
+                      <legend class="float-left mb-3 w-full p-0 text-sm text-heading">{group.name}</legend>
+                      <div class="flex flex-wrap gap-2">
+                        {group.values.map((value) => (
+                          <label class="relative inline-flex cursor-pointer">
+                            <input class="peer sr-only" type="checkbox" name={`filter.${group.key}`} value={value.value} checked={value.selected} />
+                            <span class="inline-flex h-11 items-center rounded-button border-width-input border-border px-4 text-sm hover:bg-accent hover:text-accent-foreground peer-checked:border-primary-border peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">{value.value}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  ))}
+                </div>
+              )}
+            </Fragment>
           )}
         </div>
       ))}
     </form>
   )}
-  {page.list && page.list.prev && (
-    <a class="text-foreground underline" data-part="prev" href={page.list.prev}>Показать предыдущие</a>
-  )}
-  {page.list && page.list.items.length === 0 && <p class="m-0 text-foreground" data-part="empty">Ничего не нашли</p>}
   {page.list && (
-    <ul
-      class:list={['m-0 grid list-none gap-8 p-0', { 'md:grid-cols-2': settings.columns === 2, 'md:grid-cols-3': settings.columns === 3, 'md:grid-cols-4': settings.columns === 4 }]}
-      data-part="list"
-      data-page={page.list.page}
+    <div
+      class:list={[
+        'flex min-w-0 flex-col gap-8',
+        { 'md:col-span-3': blocks.some((block) => block.type === 'filters' && block.settings['filter-position'] === 'side') },
+      ]}
     >
-      {page.list.items.map((card) => (
-        <li class="flex flex-col gap-2">
-          {card.image && (
-            <div data-behavior="card-photos" data-photos={card.images.join(' ')} data-hover-next={settings['next-photo'] ? 'true' : 'false'}>
-              <img class="h-auto w-full rounded-button" data-part="image" src={card.image} alt={card.title} />
+      {page.list.prev && (
+        <a class="inline-flex h-11 items-center justify-center self-center rounded-button border-width-input border-border px-6 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground" data-part="prev" href={page.list.prev}>Показать предыдущие</a>
+      )}
+      {page.list.items.length === 0 && (
+        <div class="flex flex-col items-center gap-4 rounded-card bg-muted px-6 py-16 text-center" data-part="empty">
+          <svg class="size-10 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13.5 8.5-5 5" /><path d="m8.5 8.5 5 5" /><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+          <p class="m-0 font-heading weight-heading text-xl text-heading">Ничего не нашли</p>
+          <p class="m-0 max-w-sm text-sm text-muted-foreground">Попробуйте убрать часть фильтров или посмотрите все товары.</p>
+          <a class="inline-flex h-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-sm text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" href={page.list.url}>Показать все товары</a>
+        </div>
+      )}
+      <ul
+        class:list={[
+          'm-0 grid list-none grid-cols-2 gap-x-grid-column gap-y-grid-row p-0',
+          {
+            'md:grid-cols-2': settings.columns === 2,
+            'md:grid-cols-3': settings.columns === 3 || settings.columns === 4,
+            'lg:grid-cols-4': settings.columns === 4,
+          },
+        ]}
+        data-part="list"
+        data-page={page.list.page}
+      >
+        {page.list.items.map((card) => (
+          <li class="flex min-w-0 flex-col gap-3 border-border card-style-card:rounded-card card-style-card:border-width-card card-style-card:bg-card card-style-card:p-card card-style-card:text-card-foreground card-style-card:shadow-card card-align-center:text-center card-align-right:text-right motion-hover-lift:transition-transform motion-hover-lift:hover:-translate-y-1 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+            <div class="relative">
+              <a
+                class:list={[
+                  'block overflow-hidden rounded-media border-width-media border-border bg-muted shadow-media',
+                  { 'aspect-4/5': settings['aspect-ratio'] === 'portrait', 'aspect-square': settings['aspect-ratio'] === 'square', 'aspect-4/3': settings['aspect-ratio'] === 'landscape' },
+                ]}
+                href={card.url}
+                tabindex="-1"
+                aria-hidden="true"
+              >
+                {card.image ? (
+                  <div class="size-full" data-behavior="card-photos" data-photos={card.images.join(' ')} data-hover-next={settings['next-photo'] ? 'true' : 'false'}>
+                    <img class="size-full object-cover" data-part="image" src={card.image} alt={card.title} loading="lazy" />
+                  </div>
+                ) : (
+                  <span class="flex size-full items-center justify-center text-muted-foreground">
+                    <svg class="size-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+                  </span>
+                )}
+              </a>
+              {card.compareAtPrice && card.compareAtPrice.amount > card.price.amount && (
+                <span class="absolute left-2 top-2 rounded-badge bg-sale px-2 py-1 text-xs text-sale-foreground md:left-3 md:top-3">−{Math.round((1 - card.price.amount / card.compareAtPrice.amount) * 100)} %</span>
+              )}
+              {!card.available && (
+                <span class="absolute bottom-2 left-2 rounded-badge bg-background px-2 py-1 text-xs text-foreground md:bottom-3 md:left-3">Нет в наличии</span>
+              )}
+              {settings['quick-add'] === 'button' && card.available && (
+                <button
+                  type="button"
+                  class="absolute bottom-2 right-2 inline-flex size-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary p-0 text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:bottom-3 md:right-3"
+                  data-action="cart.add"
+                  data-product-id={card.id}
+                  data-variant-id={card.variantId ?? undefined}
+                  aria-label={`В корзину: ${card.title}`}
+                >
+                  <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                </button>
+              )}
             </div>
+            <div class="flex flex-col gap-1">
+              <a class="line-clamp-2 text-sm text-foreground no-underline hover:underline md:text-base" href={card.url}>{card.title}</a>
+              <p class="m-0 flex flex-wrap items-baseline gap-x-2 card-align-center:justify-center card-align-right:justify-end">
+                <span class:list={['text-base weight-heading md:text-lg', card.compareAtPrice ? 'text-sale' : 'text-price']}>{card.price.text}</span>
+                {card.compareAtPrice && <s class="text-sm text-price-old">{card.compareAtPrice.text}</s>}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {page.list.items.length > 0 && (
+        <div class="flex flex-col items-center gap-4 pt-4 text-center">
+          <p class="m-0 text-sm text-muted-foreground">Показано <span data-part="count">{page.list.items.length}</span> из {page.list.total}</p>
+          {page.list.next && (
+            <a class="inline-flex h-12 items-center justify-center rounded-button border-width-input border-foreground bg-background px-8 text-sm text-foreground no-underline hover:bg-foreground hover:text-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" data-part="next" href={page.list.next}>Показать ещё</a>
           )}
-          <a class="text-foreground no-underline" href={card.url}>{card.title}</a>
-          <p class="m-0 font-heading text-heading">
-            {card.price.text}
-            {card.compareAtPrice && <s class="ml-2 text-sm">{card.compareAtPrice.text}</s>}
-          </p>
-          {settings['quick-add'] === 'button' && card.available && (
-            <button type="button" class="h-10 rounded-button bg-primary px-4 text-primary-foreground" data-action="cart.add" data-product-id={card.id} data-variant-id={card.variantId ?? undefined}>В корзину</button>
+          {page.list.pages > 1 && (
+            <nav class="flex flex-wrap justify-center gap-1" data-part="pages" aria-label="Страницы">
+              {page.list.links.map((link) => link.url ? (
+                <a class="inline-flex size-11 items-center justify-center rounded-button text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground" href={link.url} aria-current={link.current ? 'page' : undefined}>{link.page}</a>
+              ) : (
+                <span class="inline-flex size-11 items-center justify-center text-sm text-muted-foreground">…</span>
+              ))}
+            </nav>
           )}
-        </li>
-      ))}
-    </ul>
+          {settings.collection && settings.collection.url && page.list.url !== settings.collection.url && (
+            <a class="text-sm text-foreground underline underline-offset-4" href={settings.collection.url}>Смотреть все</a>
+          )}
+        </div>
+      )}
+      <p class="sr-only" data-part="status" aria-live="polite"></p>
+    </div>
   )}
-  {page.list && (
-    <p class="m-0 text-sm text-foreground">Показано <span data-part="count">{page.list.items.length}</span> из {page.list.total}</p>
-  )}
-  {page.list && page.list.next && (
-    <a class="inline-flex h-11 items-center justify-center rounded-button border border-border px-6 text-foreground no-underline md:self-start" data-part="next" href={page.list.next}>Показать ещё</a>
-  )}
-  {page.list && page.list.pages > 1 && (
-    <nav class="flex gap-2" data-part="pages" aria-label="Страницы">
-      {page.list.links.map((link) => link.url ? (
-        <a class="px-4 py-2 text-foreground" href={link.url} aria-current={link.current ? 'page' : undefined}>{link.page}</a>
-      ) : (
-        <span class="px-4 py-2 text-foreground">…</span>
-      ))}
-    </nav>
-  )}
-  {page.list && settings.collection && settings.collection.url && page.list.url !== settings.collection.url && (
-    <a class="text-foreground underline" href={settings.collection.url}>Смотреть все</a>
-  )}
-  <p class="m-0 text-sm text-foreground" data-part="status" aria-live="polite"></p>
 </div>

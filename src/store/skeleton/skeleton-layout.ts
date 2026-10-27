@@ -29,7 +29,10 @@ export const SHARED_LISTS: Readonly<Record<string, string>> = {
 
 export const SKELETON_LAYOUT: SkeletonLayout = {
   lists: {
-    header: ["header", "cart-badge"],
+    // «Значок корзины» (cart-badge) в заготовку не ставится: значок корзины со счётчиком уже есть в «Шапке»
+    // (data-ref="cart-count", header/script.ts), отдельная секция давала лишнюю строку «Корзина» под шапкой.
+    // Сама секция остаётся в библиотеке: у старых магазинов она стоит.
+    header: ["header"],
     footer: ["footer"],
     overlay: ["notices", "cart-drawer", "cart-added", "cookie-banner"],
     home: ["hero", "faq", "slideshow", "questions", "search"],

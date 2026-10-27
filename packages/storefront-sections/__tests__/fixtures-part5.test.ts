@@ -33,23 +33,16 @@ describe('«Первый экран»', () => {
 });
 
 describe('«Шапка»', () => {
-  it('принимается; общие настройки в порядке прода: sticky, scheme, padding между «Положением логотипа» и «Цветовой схемой меню»', async () => {
+  // «Отступов» секции у шапки нет (28.10): отступ темы py-section давал пустую полосу под шапкой, свои отступы — в шаблоне.
+  it('принимается; общие настройки в порядке прода: sticky, scheme между «Положением логотипа» и «Цветовой схемой меню», без padding', async () => {
     const result = await prepareSection({ prefix: 'shop', files: await files('shop/header') });
     expect(result.ok ? result.section.warnings : result.problems).toEqual([]);
     if (!result.ok) return;
     const order = result.section.manifest.settings.map((entry) =>
       'wrapper' in entry ? `wrapper:${entry.wrapper}` : entry.id,
     );
-    expect(order).toEqual([
-      'logo-position',
-      'wrapper:sticky',
-      'wrapper:scheme',
-      'wrapper:padding',
-      'color-scheme',
-      'menu-type',
-      'menu',
-    ]);
-    expect(result.section.manifest.wrapper).toEqual(['scheme', 'padding', 'sticky']);
+    expect(order).toEqual(['logo-position', 'wrapper:sticky', 'wrapper:scheme', 'color-scheme', 'menu-type', 'menu']);
+    expect(result.section.manifest.wrapper).toEqual(['scheme', 'sticky']);
   });
 });
 

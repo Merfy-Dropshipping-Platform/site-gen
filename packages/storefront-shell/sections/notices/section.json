@@ -3,5 +3,6 @@
   "name": "notices",
   "kind": "section",
   "title": "Уведомления",
-  "role": "notices"
+  "role": "notices",
+  "wrapper": []
 }

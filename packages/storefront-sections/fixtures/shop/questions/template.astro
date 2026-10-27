@@ -1,12 +1,21 @@
 ---
 const { settings, blocks } = Astro.props;
 ---
-<div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body" data-behavior="accordion" data-animate="appear-group">
-  <h2 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h2>
-  {blocks.map((block, index) => (
-    <details class="rounded-button bg-card p-4 text-card-foreground" open={settings['open-first'] && index === 0}>
-      <summary class="cursor-pointer text-lg">{block.settings.question}</summary>
-      <div data-part="content" class="mt-2" set:html={block.settings.answer}></div>
-    </details>
-  ))}
+<!-- Вид — как «Вопросы и ответы» (faq); раскрытие плавное — поведение accordion по data-part="content".
+     Значок раскрытия — Lucide (chevron-down), лицензия ISC, lucide.dev/license. -->
+<div class="mx-auto grid max-w-page gap-6 px-4 font-body text-foreground md:grid-cols-3 md:gap-12" data-behavior="accordion" data-animate="appear-group">
+  {settings.heading && (
+    <h2 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading">{settings.heading}</h2>
+  )}
+  <div class:list={['flex flex-col border-t border-border', { 'md:col-span-2': settings.heading, 'md:col-span-3': !settings.heading }]}>
+    {blocks.map((block, index) => (
+      <details class="group border-b border-border" open={settings['open-first'] && index === 0}>
+        <summary class="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg text-heading hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+          {block.settings.question}
+          <svg class="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </summary>
+        <div data-part="content" class="max-w-prose pb-5 text-base text-muted-foreground" set:html={block.settings.answer}></div>
+      </details>
+    ))}
+  </div>
 </div>

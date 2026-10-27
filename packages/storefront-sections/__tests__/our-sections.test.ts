@@ -53,7 +53,9 @@ describe('наши секции блока 10 — проверка при сох
     // Блок 12, часть 12а: место секции с ролью — по таблице ролей, а не по ключам section.json.
     const manifest = section?.manifest;
     const place = manifest === undefined ? null : [sectionGroupsOf(manifest), sectionLimitOf(manifest)];
-    expect([section?.name, section?.warnings, place]).toEqual([name, [], [groups, 1]]);
+    // Предупреждения вкуса (taste-*) в счёт не идут: счётчик количества в корзине h-8 — отдельное решение по виду секций.
+    const warnings = section?.warnings.filter((item) => !item.code.startsWith('taste-'));
+    expect([section?.name, warnings, place]).toEqual([name, [], [groups, 1]]);
     expect(section?.scriptMeta.uses).toEqual(['cart']);
   });
 

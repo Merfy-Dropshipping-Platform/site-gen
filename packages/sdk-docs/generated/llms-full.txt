@@ -1429,6 +1429,30 @@ const { page } = Astro.props;
 Пример: было `"uses": ["ext:foreign"]` → стало `"uses": ["ext:own"]`.
 
 
+## taste-button-height
+
+Когда: У кнопки или ссылки-кнопки в шаблоне высота h-N или min-h-N ниже 44 px; секция сохраняется.
+
+Как исправить: Возьми h-11 или min-h-11 и больше: так по кнопке попадает палец..
+Пример: было `<button class="h-8 px-4">` → стало `<button class="h-11 px-4">`.
+
+
+## taste-overflow
+
+Когда: Класс может дать прокрутку вбок на телефоне (375 px): w-N шире экрана без max-w-*, w-screen, whitespace-nowrap; секция сохраняется.
+
+Как исправить: Добавь max-w-full к широкому блоку, возьми w-full вместо w-screen, дай тексту переноситься..
+Пример: было `class="w-150"` → стало `class="w-150 max-w-full"`.
+
+
+## taste-motion
+
+Когда: Класс animate-*, transition-*, scroll-smooth или animate( и requestAnimationFrame в скрипте не учитывают «уменьшить движение»; секция сохраняется.
+
+Как исправить: Поставь motion-safe: перед классом или motion-reduce:transition-none рядом; в скрипте — ctx.animate или matchMedia..
+Пример: было `class="animate-pulse"` → стало `class="motion-safe:animate-pulse"`.
+
+
 
 ---
 

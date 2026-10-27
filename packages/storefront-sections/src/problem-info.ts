@@ -139,6 +139,21 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: 'Процесс проверки упал — ошибка платформы, а не секции.',
     fix: 'Проверь ещё раз; повторяется — покажи ответ мерчанту целиком.',
   },
+  'taste-button-height': {
+    when: 'У кнопки или ссылки-кнопки в шаблоне высота h-N или min-h-N ниже 44 px; секция сохраняется.',
+    fix: 'Возьми h-11 или min-h-11 и больше: так по кнопке попадает палец.',
+    example: { before: '<button class="h-8 px-4">', after: '<button class="h-11 px-4">' },
+  },
+  'taste-overflow': {
+    when: 'Класс может дать прокрутку вбок на телефоне (375 px): w-N шире экрана без max-w-*, w-screen, whitespace-nowrap; секция сохраняется.',
+    fix: 'Добавь max-w-full к широкому блоку, возьми w-full вместо w-screen, дай тексту переноситься.',
+    example: { before: 'class="w-150"', after: 'class="w-150 max-w-full"' },
+  },
+  'taste-motion': {
+    when: 'Класс animate-*, transition-*, scroll-smooth или animate( и requestAnimationFrame в скрипте не учитывают «уменьшить движение»; секция сохраняется.',
+    fix: 'Поставь motion-safe: перед классом или motion-reduce:transition-none рядом; в скрипте — ctx.animate или matchMedia.',
+    example: { before: 'class="animate-pulse"', after: 'class="motion-safe:animate-pulse"' },
+  },
   'release-changed': {
     when: 'Выпуск расширения с этой версией уже сохранён с другими файлами.',
     fix: 'Новая версия файлов — новый номер выпуска.',

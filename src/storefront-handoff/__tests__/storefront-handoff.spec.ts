@@ -18,6 +18,7 @@ import {
 } from "../../generator/generator.service";
 import {
   CONTENT_EXCHANGE,
+  PREVIEW_EXCHANGE,
   REPLY_QUEUE,
   StorefrontHandoff,
   parseBuildReply,
@@ -115,6 +116,41 @@ describe("StorefrontHandoff", () => {
     expect(mockAssertExchange).toHaveBeenCalledWith(CONTENT_EXCHANGE, "topic", {
       durable: true,
     });
+  });
+
+  it("точка обмена сигналов превью объявляется fanout, как у сборщика", async () => {
+    handoff("nova");
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(mockAssertExchange).toHaveBeenCalledWith(
+      PREVIEW_EXCHANGE,
+      "fanout",
+      { durable: true },
+    );
+  });
+
+  it("запись черновика: сигнал { shopId, entities, revisionId } в storefront.preview, не в content.events", async () => {
+    const service = handoff("nova");
+    await service.signalDraft(NOVA_SITE, "rev-42");
+    expect(published()).toEqual([
+      {
+        exchange: PREVIEW_EXCHANGE,
+        key: "",
+        body: {
+          shopId: NOVA_SITE,
+          entities: ["revision"],
+          revisionId: "rev-42",
+        },
+      },
+    ]);
+  });
+
+  it("сбой брокера при сигнале — только лог, запись не ломается", async () => {
+    const service = handoff("nova");
+    mockPublish.mockRejectedValueOnce(new Error("channel closed"));
+    await expect(
+      service.signalDraft(NOVA_SITE, "rev-42"),
+    ).resolves.toBeUndefined();
+    expect(logs.some((line) => line.includes("draft signal"))).toBe(true);
   });
 
   it("магазин новой темы: событие сборщику по trigger и «отдано сборщику» в логе", async () => {

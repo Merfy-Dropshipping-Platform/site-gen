@@ -43,6 +43,11 @@ import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 
 export const CONTENT_EXCHANGE = "content.events";
+// Сигналы превью — та же точка обмена, что объявляет сборщик (fanout, durable): её читает шлюз
+// и отдаёт конструктору потоком /sites/:id/preview/events.
+export const PREVIEW_EXCHANGE = "storefront.preview";
+// Что поменялось для подписчика: сама ревизия магазина (черновик), не вход сборки.
+export const DRAFT_ENTITY = "revision";
 // Прямой ответ RabbitMQ: своей очереди нет, ответ приходит на канал, который
 // опубликовал событие (https://www.rabbitmq.com/docs/direct-reply-to).
 export const REPLY_QUEUE = "amq.rabbitmq.reply-to";
@@ -111,6 +116,7 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
       json: false,
       setup: async (ch: Channel) => {
         await ch.assertExchange(CONTENT_EXCHANGE, "topic", { durable: true });
+        await ch.assertExchange(PREVIEW_EXCHANGE, "fanout", { durable: true });
         // Прямой ответ — только без подтверждений и на том же канале.
         await ch.consume(REPLY_QUEUE, (msg) => this.onReply(msg), {
           noAck: true,
@@ -158,6 +164,35 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
   async notify(siteId: string, type: string, source: string): Promise<void> {
     if (!(await this.isNewTheme(siteId))) return;
     await this.publish(siteId, type, source);
+  }
+
+  /**
+   * Запись черновой ревизии (текущей) магазина новой темы: сигнал «данные магазина изменились» открытым
+   * редакторам — `{ shopId, entities: ["revision"], revisionId }` в точку обмена storefront.preview. Сборщик не
+   * участвует: черновик витрину не пересобирает. `revisionId` нужен редактору, чтобы узнать свою запись. Сбой
+   * брокера записи не ломает — пишется в лог; вызывающий проверяет тему сам (`isNewThemeId`).
+   */
+  async signalDraft(siteId: string, revisionId: string): Promise<void> {
+    if (!this.channel) {
+      this.logger.warn(`broker not ready, dropping draft signal for ${siteId}`);
+      return;
+    }
+    try {
+      await this.channel.publish(
+        PREVIEW_EXCHANGE,
+        "",
+        Buffer.from(
+          JSON.stringify({
+            shopId: siteId,
+            entities: [DRAFT_ENTITY],
+            revisionId,
+          }),
+        ),
+        { contentType: "application/json" },
+      );
+    } catch (e) {
+      this.logger.warn(`draft signal for ${siteId} failed: ${message(e)}`);
+    }
   }
 
   /**

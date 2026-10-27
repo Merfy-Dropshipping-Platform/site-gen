@@ -14,7 +14,14 @@ const names = readdirSync(EXAMPLES, { withFileTypes: true })
 
 describe('примеры документации', () => {
   it('есть рабочий пример и примеры с ошибкой', () => {
-    expect(names).toEqual(['bad-class-arbitrary', 'bad-setting-name-unknown', 'bad-template-forbidden', 'scarf-match']);
+    // hero-clean — пример страницы code.md: правила кода выполнены, предупреждений taste-* нет.
+    expect(names).toEqual([
+      'bad-class-arbitrary',
+      'bad-setting-name-unknown',
+      'bad-template-forbidden',
+      'hero-clean',
+      'scarf-match',
+    ]);
   });
 
   it.each(names)('%s', async (name) => {

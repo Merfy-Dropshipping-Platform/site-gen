@@ -19,6 +19,12 @@ export const PAGES: readonly PageSpec[] = [
     about: 'правила для ИИ и файлы, с которых начинать',
     section: 'Начать',
   },
+  {
+    file: 'code.md',
+    title: 'Как писать код секции',
+    about: 'декларативный шаблон и скрипт: правила «плохо → хорошо», предупреждения taste-*',
+    section: 'Начать',
+  },
   { file: 'section-json.md', title: 'section.json', about: 'ключи, виды полей, блоки, группы', section: 'Справочник' },
   {
     file: 'names.md',

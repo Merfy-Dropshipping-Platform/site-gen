@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { PROBLEM_CODES } from '@merfy/storefront-sections';
+import { PROBLEM_CODES, problemDoc } from '@merfy/storefront-sections';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { docsDate, docsFiles, type DocsFiles } from '../src/docs';
 import { DOCS_BASE, PACKAGE_DIR } from '../src/meta';
@@ -50,6 +50,22 @@ describe('документация SDK', () => {
   it('4. у каждого кода проверки — раздел в errors.md', () => {
     const anchors = anchorsOf(files['errors.md'] ?? '');
     for (const code of PROBLEM_CODES) expect(anchors.has(code), code).toBe(true);
+  });
+
+  it('doc ответа проверки ведёт на файл и якорь generated/: правила кода — разделы code.md', () => {
+    for (const code of PROBLEM_CODES) {
+      const [file = '', hash = ''] = problemDoc(code).split('#');
+      expect(anchorsOf(files[file] ?? '').has(hash), `${code} → ${problemDoc(code)}`).toBe(true);
+    }
+    expect(problemDoc('taste-class-branches')).toBe('code.md#значения-настройки');
+  });
+
+  it('code.md: в оглавлении llms.txt, пример подставлен, выжимка и ссылка — в template/AGENTS.md', () => {
+    expect(files['llms.txt']).toContain('- [Как писать код секции](code.md):');
+    expect(files['code.md']).not.toContain('<!-- example:');
+    expect(files['code.md']).toContain('hero-clean/');
+    expect(files['template/AGENTS.md']).toContain('code.md');
+    expect(files['template/AGENTS.md']).toContain('taste-*');
   });
 
   it('5. ссылки llms.txt и страниц ведут на файлы и якоря generated/', () => {

@@ -1,11 +1,12 @@
 # Merfy · SDK секций витрины
 
 > Как написать секцию магазина Merfy: section.json, template.astro, script.ts.
-> SDK 1 · документация 1.0.0 · 2026-10-24. Читай эту документацию, а не память: SDK новый.
+> SDK 1 · документация 1.1.0 · 2026-10-28. Читай эту документацию, а не память: SDK новый.
 
 ## Начать
 - [Как сделать секцию](start.md): порядок работы, адреса проверки и сохранения, разобранный пример
 - [Шаблон секции](template/AGENTS.md): правила для ИИ и файлы, с которых начинать
+- [Как писать код секции](code.md): декларативный шаблон и скрипт: правила «плохо → хорошо», предупреждения taste-*
 
 ## Справочник
 - [section.json](section-json.md): ключи, виды полей, блоки, группы
@@ -35,7 +36,7 @@
 
 # Как сделать секцию
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Секция — папка с файлами: `section.json` (поля), `template.astro` (разметка) и `script.ts` — только если на странице
 что-то меняется после загрузки. Секцию проверяют и сохраняют в магазин через шлюз Merfy с входом мерчанта; на витрину
@@ -47,10 +48,12 @@
    `name` — латиница и цифры через дефис — и `title` — название секции в конструкторе.
 2. Поля — в `section.json`. Имена — только из [словаря имён](names.md), вид поля — из его столбца «Виды». Ключи
    файла и формы полей — [section.json](section-json.md).
-3. Разметка — в `template.astro`: [что можно](template.md), классы — только из [словаря классов](styles.md).
+3. Разметка — в `template.astro`: [что можно](template.md), классы — только из [словаря классов](styles.md). Как
+   писать код шаблона и скрипта — [правила кода](code.md).
 4. Скрипт — [script.ts](script.md), только если он нужен. Готовые поведения — [data-behavior](behaviors.md).
 5. Проверь секцию — адрес «проверить» (ниже). Ответ: `ok`, `problems`, `warnings`; у проблемы — файл, строка,
-   колонка, код и `doc` — ссылка на [справку по коду](errors.md). Исправь место и проверь снова — до трёх попыток.
+   колонка, код и `doc` — ссылка на [справку по коду](errors.md) или на раздел [правил кода](code.md). Исправь место
+   и проверь снова — до трёх попыток.
 6. Сохрани — адрес «сохранить» с теми же файлами. `status: "accepted"` — секция в «Добавить секцию» конструктора;
    `"unchanged"` — такие файлы уже сохранены.
 
@@ -198,6 +201,8 @@ SDK 1. Документация — https://gateway.merfy.ru/api/storefront/sdk/
 2. section.json — поля и блоки. Имена полей — только из names.md. Нужного имени нет — возьми то,
    что назвала проверка. Подходящего имени нет — объяви своё в `names` секции (names.md, «Своё имя секции»).
 3. template.astro — разметка. Классы — только из словаря (styles.md). style, <style> и <script> нельзя.
+   Код — по code.md: значение настройки — в атрибут data-*, вид — вариантами классов data-[…]:; без ?: внутри ?:
+   и повторённых условий. Предупреждения taste-* исправь до сохранения.
 4. script.ts — только если на странице что-то меняется после загрузки. В нём — defineSection и ctx;
    window, document, fetch, setTimeout нельзя (script.md).
 5. Корзина, избранное, кто вошёл (customer), вход и кабинет (auth), данные магазина — модули SDK по uses (modules.md).
@@ -243,9 +248,327 @@ const { settings } = Astro.props;
 
 ---
 
+# Как писать код секции
+
+> SDK 1 · документация 1.1.0 · 2026-10-28
+
+Шаблон описывает вид секции, а не программу: значение настройки попадает в атрибут, вид по значению задают классы
+словаря. Ветвление остаётся там, где меняется сама разметка: есть блок или нет, есть фото или нет. Переменных и функций
+в шаблоне нет ([template.md](template.md)), поэтому то, что в программе посчитали бы один раз, здесь считают атрибутом
+`data-*` или берут из данных.
+
+Часть правил проверка ловит предупреждениями `taste-*` (таблица в конце): секция сохраняется, но исправь их до
+сохранения — у предупреждения есть `doc` со ссылкой на нужный раздел.
+
+## Значения настройки
+
+Настройка-выбор (`select`, `radio`, `alignment`, `toggle`) — один атрибут `data-<имя>` и классы с вариантом
+`data-[<имя>=<значение>]:`. Вложенным элементам — вариант `in-data-[<имя>=<значение>]:`: он срабатывает, если значение
+стоит у любого предка внутри секции. Так вид по каждому значению записан строкой классов, без выражения.
+
+Плохо — ветка на каждое значение, и та же таблица повторяется у каждого элемента:
+
+```astro
+<div class:list={['relative flex', {
+  'min-h-64': settings.height === 'small',
+  'min-h-96': settings.height === 'medium',
+  'min-h-112 md:min-h-136': settings.height === 'large',
+}]}>
+  <h2 class:list={['m-0', {
+    'text-2xl': settings['heading-size'] === 'small',
+    'text-3xl md:text-4xl': settings['heading-size'] === 'medium',
+    'text-4xl md:text-5xl': settings['heading-size'] === 'large',
+  }]}>
+```
+
+Хорошо — значение в атрибуте, вид в классах:
+
+```astro
+<div
+  class="relative flex data-[height=small]:min-h-64 data-[height=medium]:min-h-96 data-[height=large]:min-h-112 md:data-[height=large]:min-h-136"
+  data-height={settings.height}
+  data-heading-size={settings['heading-size']}
+>
+  <h2 class="m-0 in-data-[heading-size=small]:text-2xl in-data-[heading-size=medium]:text-3xl in-data-[heading-size=large]:text-4xl">
+```
+
+- Значение уже совпадает с частью класса — подставь его: `` class={`text-${settings.align}`} `` (`left`, `center`,
+  `right`), `` class={`opacity-${settings.overlay}`} `` (`range` с шагом). Проверка перебирает все значения поля.
+- Логическое значение Astro выводит строкой: `data-photo={settings.images.url1 !== ''}` даёт `data-photo="true"` или
+  `data-photo="false"`. Вариант — `data-[photo=true]:`, а не `data-photo:`: атрибут есть всегда.
+- Имя атрибута — как id поля (`data-heading-size`), чтобы по шаблону было видно, откуда значение.
+
+## Вложенные условия
+
+Условный оператор `?:` внутри другого `?:` не читается. Каждое значение — свой элемент со своим условием или вариант
+класса.
+
+Плохо — цепочка по виду блока и склонение в разметке:
+
+```astro
+{block.type === 'search' ? (<button>…</button>) : block.type === 'profile' ? (<a>…</a>) : (<a>…</a>)}
+
+{n % 10 === 1 && n % 100 !== 11 ? 'товар' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'товара' : 'товаров'}
+```
+
+Хорошо:
+
+```astro
+{block.type === 'search' && <button>…</button>}
+{block.type === 'profile' && <a>…</a>}
+{block.type === 'cart' && <a>…</a>}
+
+Товаров: {page.list.total}
+```
+
+Склонять по числу в шаблоне нечем: форма «Товаров: 12» читается при любом числе.
+
+## Длинные условия
+
+Условие из больше чем трёх частей через `&&` и `||` не охватить взглядом. Обычно оно значит, что одним условием закрыт
+блок из нескольких независимых частей. Разбей блок: у каждой части — своё короткое условие.
+
+Плохо — один блок на контакты и соцсети, условие из девяти частей:
+
+```astro
+{(shop.contacts.phone || shop.contacts.email || shop.contacts.fields.length > 0 || theme['social-telegram'] || theme['social-vk'] || …) && (
+  <div>…контакты…соцсети…</div>
+)}
+```
+
+Хорошо — два блока, у каждого своё условие:
+
+```astro
+{(shop.contacts.phone || shop.contacts.email) && <div>…контакты…</div>}
+{(theme['social-telegram'] || theme['social-vk']) && <div>…соцсети…</div>}
+```
+
+## Повтор условия
+
+Одно и то же сравнение в нескольких местах — признак того, что значение надо посчитать один раз. При правке одно место
+забудется.
+
+Плохо — условие «фильтры сбоку» посчитано у трёх элементов:
+
+```astro
+<div class:list={['grid gap-6', { 'md:grid-cols-4': blocks.some((block) => block.type === 'filters' && block.settings['filter-position'] === 'side') }]}>
+  <form class:list={['flex', { 'md:col-span-1': blocks.some((block) => block.type === 'filters' && block.settings['filter-position'] === 'side') }]}>
+  <div class:list={['flex', { 'md:col-span-3': blocks.some((block) => block.type === 'filters' && block.settings['filter-position'] === 'side') }]}>
+```
+
+Хорошо — один раз атрибутом на корне, ниже варианты:
+
+```astro
+<div
+  class="grid gap-6 md:data-[filters-side=true]:grid-cols-4"
+  data-filters-side={blocks.some((block) => block.type === 'filters' && block.settings['filter-position'] === 'side')}
+>
+  <form class="flex md:in-data-[filters-side=true]:col-span-1">
+  <div class="flex md:in-data-[filters-side=true]:col-span-3">
+```
+
+Текущая ссылка меню — `aria-current` один раз, вид — вариант `aria-[current=page]:`.
+
+Плохо:
+
+```astro
+<a aria-current={item.url === page.path ? 'page' : undefined} class:list={['no-underline', item.url === page.path ? 'text-heading' : 'text-muted-foreground']} href={item.url}>
+```
+
+Хорошо:
+
+```astro
+<a aria-current={item.url === page.path ? 'page' : undefined} class="text-muted-foreground no-underline aria-[current=page]:text-heading" href={item.url}>
+```
+
+## Повтор разметки
+
+Одинаковые элементы, которые отличаются текстом и адресом, — массив данных и `map`. `filter` убирает пустые.
+
+Плохо — шесть одинаковых строк:
+
+```astro
+{theme['social-telegram'] && <li><a class="inline-flex h-11 items-center px-4" href={theme['social-telegram']}>Telegram</a></li>}
+{theme['social-vk'] && <li><a class="inline-flex h-11 items-center px-4" href={theme['social-vk']}>ВКонтакте</a></li>}
+…
+```
+
+Хорошо:
+
+```astro
+{[
+  { url: theme['social-telegram'], label: 'Telegram' },
+  { url: theme['social-vk'], label: 'ВКонтакте' },
+].filter((link) => link.url).map((link) => (
+  <li><a class="inline-flex h-11 items-center px-4" href={link.url}>{link.label}</a></li>
+))}
+```
+
+Одна и та же разметка в двух местах, которая отличается только расположением (фильтры сверху и сбоку, меню в шапке и
+в боковой панели), — один экземпляр разметки и варианты классов: `md:`, `in-data-[…]:`.
+
+## Скрипт
+
+`script.ts` меняет состояние, а вид по состоянию задаёт шаблон.
+
+- Скрипт ставит атрибут, тексты и классы — в шаблоне. Плохо: «В наличии» и «Нет в наличии» записаны и в шаблоне, и в
+  скрипте (`stock.text(variant.available ? 'В наличии' : 'Нет в наличии')`). Хорошо: в шаблоне оба текста, скрипт
+  ставит `data-available`:
+
+  ```astro
+  <span data-ref="stock" data-available={settings.product.available}>
+    <span class="in-data-[available=false]:hidden">В наличии</span>
+    <span class="in-data-[available=true]:hidden">Нет в наличии</span>
+  </span>
+  ```
+
+  ```ts
+  ctx.ref('stock')?.attr('data-available', String(variant.available));
+  ```
+
+- Логическое значение в атрибут — `String(flag)`, а не `flag ? 'true' : 'false'`.
+- Одно действие — одна функция. Код показа фото, повторённый в `mount` и в действии, — вызов той же функции; два
+  одинаковых `ctx.watch` для счётчиков корзины и избранного — одна функция `showCount(badges, count)`.
+- Пределы и имена — константами вверху файла: `const QUANTITY_MAX = 99`, а не `99` в трёх местах.
+- Тот же запрет на `?:` внутри `?:` и на длинные условия, что в шаблоне. Вместо вложенных `if` — ранний выход:
+  `if (variant === null) return;`.
+
+## Пример целиком
+
+«Первый экран» по этим правилам: высота, выравнивание и размер заголовка — атрибутами `data-*` и вариантами, затемнение
+— классом из значения поля, фото — одним условием. Проверка принимает его без предупреждений.
+
+hero-clean/
+
+```json
+{
+  "sdk": 1,
+  "name": "hero-clean",
+  "kind": "section",
+  "title": "Первый экран",
+  "settings": [
+    { "id": "images", "label": "Изображения", "setting": { "kind": "image-pair", "default": { "url1": "", "url2": "" }, "maxBytes": 2097152 } },
+    {
+      "id": "height",
+      "label": "Высота",
+      "setting": {
+        "kind": "radio",
+        "default": "large",
+        "options": [
+          { "value": "small", "label": "Маленькая" },
+          { "value": "medium", "label": "Средняя" },
+          { "value": "large", "label": "Большая" }
+        ]
+      }
+    },
+    { "id": "overlay", "label": "Затемнение", "setting": { "kind": "range", "default": 30, "min": 0, "max": 100, "step": 5 } },
+    { "id": "align", "label": "Выравнивание", "setting": { "kind": "alignment", "default": "center" } },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "large",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "heading": {
+      "title": "Заголовок",
+      "limit": 1,
+      "settings": [{ "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Тёплые шарфы из кашемира" } }]
+    },
+    "text": {
+      "title": "Текст",
+      "limit": 1,
+      "settings": [{ "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "Мягкие, лёгкие и не колются." } }]
+    },
+    "button": {
+      "title": "Кнопка",
+      "limit": 1,
+      "settings": [
+        { "id": "label", "label": "Текст кнопки", "setting": { "kind": "string", "default": "Смотреть шарфы" } },
+        { "id": "link", "label": "Ссылка кнопки", "setting": { "kind": "url", "default": "/catalog" } }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "heading", "settings": {} },
+    { "type": "text", "settings": {} },
+    { "type": "button", "settings": {} }
+  ]
+}
+
+```
+
+```astro
+---
+const { settings, blocks } = Astro.props;
+---
+<div
+  class="relative flex overflow-hidden font-body data-[photo=false]:rounded-card data-[photo=false]:bg-muted data-[height=small]:min-h-64 data-[height=medium]:min-h-96 data-[height=large]:min-h-112 md:data-[height=large]:min-h-136"
+  data-photo={settings.images.url1 !== ''}
+  data-height={settings.height}
+  data-align={settings.align}
+  data-heading-size={settings['heading-size']}
+>
+  {settings.images.url1 !== '' && (
+    <Fragment>
+      <img src={settings.images.url1} alt="" class="absolute inset-0 size-full object-cover" />
+      <div class={`absolute inset-0 bg-foreground opacity-${settings.overlay}`}></div>
+    </Fragment>
+  )}
+  <div
+    class={`relative mx-auto flex w-full max-w-page flex-col justify-center gap-5 px-6 py-16 text-${settings.align} in-data-[align=left]:items-start in-data-[align=center]:items-center in-data-[align=right]:items-end`}
+  >
+    {blocks.map((block) => (
+      <div class="max-w-2xl">
+        {block.type === 'heading' && (
+          <h2 class="m-0 font-heading weight-heading tracking-heading text-heading in-data-[photo=true]:text-background in-data-[heading-size=small]:text-2xl in-data-[heading-size=medium]:text-4xl in-data-[heading-size=large]:text-5xl">
+            {block.settings.heading}
+          </h2>
+        )}
+        {block.type === 'text' && (
+          <p class="m-0 text-lg text-muted-foreground in-data-[photo=true]:text-background">{block.settings.text}</p>
+        )}
+        {block.type === 'button' && block.settings.label && (
+          <a
+            class="inline-flex h-12 items-center rounded-button bg-primary px-8 text-primary-foreground no-underline hover:bg-primary-hover"
+            href={block.settings.link}
+          >
+            {block.settings.label}
+          </a>
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+
+```
+
+## Что ловит проверка
+
+| Код | Когда | Раздел |
+| --- | --- | --- |
+| `taste-nested-ternary` | `?:` внутри `?:` | [Вложенные условия](#вложенные-условия) |
+| `taste-long-condition` | условие из больше чем трёх частей через `&&` и `\|\|` | [Длинные условия](#длинные-условия) |
+| `taste-class-branches` | в `class` или `class:list` одно поле сравнивается с тремя значениями и больше | [Значения настройки](#значения-настройки) |
+| `taste-repeated-condition` | одно сравнение или вызов вроде `blocks.some(…)` в трёх местах и больше | [Повтор условия](#повтор-условия) |
+
+Остальные `taste-*` — кнопки от 44 px, прокрутка вбок, «уменьшить движение» — в [errors.md](errors.md#taste-button-height).
+
+
+
+---
+
 # section.json
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Ключи файла `section.json` и формы полей каждого вида. Формат хранит та же схема, по которой работает проверка при сохранении.
 
@@ -307,7 +630,7 @@ const { settings } = Astro.props;
 
 # Имена полей
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 # Имена полей секций
 
@@ -424,7 +747,7 @@ const { settings } = Astro.props;
 
 # template.astro
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 `template.astro` — разметка секции на Astro. Сборка рендерит её на сервере со значениями полей мерчанта.
 
@@ -475,7 +798,7 @@ const { settings, blocks } = Astro.props;
 
 # Классы и токены
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Своего CSS у секции нет. Только классы Tailwind из словаря магазина — так секция выглядит в цветах и шрифтах любой
 темы и меняется вместе с «Настройками темы».
@@ -578,7 +901,7 @@ const { settings, blocks } = Astro.props;
 
 # script.ts
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 `script.ts` — поведение секции в браузере. Нужен, только если на странице что-то меняется после загрузки: выбор,
 фильтр, счётчик. Открыть, переключить, прокрутить — готовые [поведения](behaviors.md) без скрипта.
@@ -657,7 +980,7 @@ export default defineSection<State>({
 
 # Модули SDK
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Ключ `uses` в `section.json` открывает секции данные и модули SDK. Значения:
 
@@ -731,7 +1054,7 @@ export default defineSection<State>({
 
 # События
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 События витрины отправляет ядро SDK; секция слушает их через `ctx.listen`, свой код мерчанта — на `document`.
 
@@ -785,7 +1108,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 # Действия
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Действия SDK вызывает ядро по `data-action="<имя>"` в разметке секции — без скрипта. Ответ каждого действия — в его описании; при сбое секция получает ошибку, покупатель — уведомление.
 
@@ -817,7 +1140,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 # Поведения и анимации
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Готовое поведение вешается на элемент атрибутом `data-behavior="<имя>"` — без скрипта. Части поведения отмечаются `data-part`, параметры — своими `data-…` на том же элементе.
 
@@ -895,7 +1218,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 # Настройки темы
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Сквозные настройки общие у всех секций: их задаёт мерчант в «Настройках темы», секция читает значения. Список — из общих настроек платформы.
 
@@ -946,7 +1269,7 @@ const { settings, theme } = Astro.props;
 
 # Страницы
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 ## Группы страницы
 
@@ -977,7 +1300,7 @@ const { settings, theme } = Astro.props;
 
 # Данные магазина
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
 
@@ -1098,7 +1421,7 @@ const { page } = Astro.props;
 
 # Коды ошибок
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Справка по кодам проверки секции: когда бывает код и как исправить.
 
@@ -1486,12 +1809,52 @@ const { page } = Astro.props;
 Пример: было `class="animate-pulse"` → стало `class="motion-safe:animate-pulse"`.
 
 
+## taste-nested-ternary
+
+Когда: В выражении шаблона условный оператор ?: стоит внутри другого ?:; секция сохраняется.
+
+Как исправить: Класс по значению поля задай вариантом data-[…]:, текст по числу или виду — данными или отдельными элементами со своим условием..
+Пример: было `{n === 1 ? 'товар' : n < 5 ? 'товара' : 'товаров'}` → стало `Товаров: {n}`.
+
+Правило с примерами: [code.md#вложенные-условия](code.md#вложенные-условия).
+
+
+## taste-long-condition
+
+Когда: Условие в разметке собрано из больше чем трёх частей через && и ||; секция сохраняется.
+
+Как исправить: Разбей разметку на элементы со своим условием или посчитай значение один раз — атрибутом data-* у общего предка..
+Пример: было `{(phone || email || vk || telegram) && <div>контакты и соцсети</div>}` → стало `{(phone || email) && <div>контакты</div>} {(vk || telegram) && <div>соцсети</div>}`.
+
+Правило с примерами: [code.md#длинные-условия](code.md#длинные-условия).
+
+
+## taste-class-branches
+
+Когда: В class или class:list одно поле сравнивается с тремя и больше значениями — ветка на каждое значение; секция сохраняется.
+
+Как исправить: Передай значение атрибутом `data-<поле>` и задай классы вариантами `data-[<поле>=<значение>]:` на элементе и `in-data-[…]:` внутри него..
+Пример: было `class:list={[{ 'min-h-64': settings.height === 'small', 'min-h-96': settings.height === 'medium', … }]}` → стало `data-height={settings.height} class="data-[height=small]:min-h-64 data-[height=medium]:min-h-96"`.
+
+Правило с примерами: [code.md#значения-настройки](code.md#значения-настройки).
+
+
+## taste-repeated-condition
+
+Когда: Одно и то же сравнение или вызов вроде blocks.some(…) стоит в условиях шаблона три раза и больше; секция сохраняется.
+
+Как исправить: Посчитай условие один раз — атрибутом data-* у общего предка и вариантами in-data-[…]:; выбранную ссылку отметь aria-current и вариантом aria-[current=page]:..
+Пример: было `class:list={[item.url === page.path ? 'text-heading' : 'text-muted-foreground']}` → стало `class="text-muted-foreground aria-[current=page]:text-heading"`.
+
+Правило с примерами: [code.md#повтор-условия](code.md#повтор-условия).
+
+
 
 ---
 
 # Лимиты
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
 
 Пределы, которые проверка секции применяет при сохранении. Числа — из констант проверки.
 
@@ -1524,7 +1887,14 @@ const { page } = Astro.props;
 
 # Что нового
 
-> SDK 1 · документация 1.0.0 · 2026-10-24
+> SDK 1 · документация 1.1.0 · 2026-10-28
+
+## 1.1.0 — 2026-10-28
+
+- Страница [Как писать код секции](code.md): значения настроек — атрибутами `data-*` и вариантами классов, без `?:`
+  внутри `?:`, длинных и повторённых условий; правила для `script.ts`.
+- Четыре предупреждения проверки: `taste-nested-ternary`, `taste-long-condition`, `taste-class-branches`,
+  `taste-repeated-condition`. Секция с ними сохраняется; `doc` предупреждения ведёт на раздел code.md.
 
 ## 1.0.0 — 2026-10-24
 

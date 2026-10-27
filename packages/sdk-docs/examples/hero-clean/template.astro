@@ -1,0 +1,41 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<div
+  class="relative flex overflow-hidden font-body data-[photo=false]:rounded-card data-[photo=false]:bg-muted data-[height=small]:min-h-64 data-[height=medium]:min-h-96 data-[height=large]:min-h-112 md:data-[height=large]:min-h-136"
+  data-photo={settings.images.url1 !== ''}
+  data-height={settings.height}
+  data-align={settings.align}
+  data-heading-size={settings['heading-size']}
+>
+  {settings.images.url1 !== '' && (
+    <Fragment>
+      <img src={settings.images.url1} alt="" class="absolute inset-0 size-full object-cover" />
+      <div class={`absolute inset-0 bg-foreground opacity-${settings.overlay}`}></div>
+    </Fragment>
+  )}
+  <div
+    class={`relative mx-auto flex w-full max-w-page flex-col justify-center gap-5 px-6 py-16 text-${settings.align} in-data-[align=left]:items-start in-data-[align=center]:items-center in-data-[align=right]:items-end`}
+  >
+    {blocks.map((block) => (
+      <div class="max-w-2xl">
+        {block.type === 'heading' && (
+          <h2 class="m-0 font-heading weight-heading tracking-heading text-heading in-data-[photo=true]:text-background in-data-[heading-size=small]:text-2xl in-data-[heading-size=medium]:text-4xl in-data-[heading-size=large]:text-5xl">
+            {block.settings.heading}
+          </h2>
+        )}
+        {block.type === 'text' && (
+          <p class="m-0 text-lg text-muted-foreground in-data-[photo=true]:text-background">{block.settings.text}</p>
+        )}
+        {block.type === 'button' && block.settings.label && (
+          <a
+            class="inline-flex h-12 items-center rounded-button bg-primary px-8 text-primary-foreground no-underline hover:bg-primary-hover"
+            href={block.settings.link}
+          >
+            {block.settings.label}
+          </a>
+        )}
+      </div>
+    ))}
+  </div>
+</div>

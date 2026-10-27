@@ -1,0 +1,62 @@
+{
+  "sdk": 1,
+  "name": "hero-clean",
+  "kind": "section",
+  "title": "Первый экран",
+  "settings": [
+    { "id": "images", "label": "Изображения", "setting": { "kind": "image-pair", "default": { "url1": "", "url2": "" }, "maxBytes": 2097152 } },
+    {
+      "id": "height",
+      "label": "Высота",
+      "setting": {
+        "kind": "radio",
+        "default": "large",
+        "options": [
+          { "value": "small", "label": "Маленькая" },
+          { "value": "medium", "label": "Средняя" },
+          { "value": "large", "label": "Большая" }
+        ]
+      }
+    },
+    { "id": "overlay", "label": "Затемнение", "setting": { "kind": "range", "default": 30, "min": 0, "max": 100, "step": 5 } },
+    { "id": "align", "label": "Выравнивание", "setting": { "kind": "alignment", "default": "center" } },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "large",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "heading": {
+      "title": "Заголовок",
+      "limit": 1,
+      "settings": [{ "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Тёплые шарфы из кашемира" } }]
+    },
+    "text": {
+      "title": "Текст",
+      "limit": 1,
+      "settings": [{ "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "Мягкие, лёгкие и не колются." } }]
+    },
+    "button": {
+      "title": "Кнопка",
+      "limit": 1,
+      "settings": [
+        { "id": "label", "label": "Текст кнопки", "setting": { "kind": "string", "default": "Смотреть шарфы" } },
+        { "id": "link", "label": "Ссылка кнопки", "setting": { "kind": "url", "default": "/catalog" } }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "heading", "settings": {} },
+    { "type": "text", "settings": {} },
+    { "type": "button", "settings": {} }
+  ]
+}

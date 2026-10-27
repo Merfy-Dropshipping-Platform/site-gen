@@ -1,15 +1,26 @@
+<!-- Значки — Lucide (circle-check, image), лицензия ISC, lucide.dev/license. -->
 <div data-behavior="dialog" data-transition="fade" data-open-on="cart-add">
-  <dialog data-part="content" class="scheme-cart-drawer flex flex-col gap-3 p-4 font-body">
-    <h2 class="m-0 font-heading weight-heading text-xl text-heading">Товар добавлен в корзину</h2>
-    <div class="flex items-center gap-3">
-      <img data-ref="image" alt="" class="h-16 w-16 shrink-0 rounded-button object-cover" hidden />
-      <div class="flex flex-1 flex-col gap-1">
-        <p data-ref="title" class="m-0 font-heading weight-heading"></p>
-        <p data-ref="price" class="m-0"></p>
+  <dialog data-part="content" class="scheme-cart-drawer mx-0 mb-0 mt-auto w-full max-w-none rounded-t-popover border-width-popover md:m-auto md:max-w-md md:rounded-popover border-border bg-background p-0 font-body text-foreground shadow-popover">
+    <div class="flex flex-col gap-5 p-5">
+      <h2 class="m-0 flex items-center gap-2 font-heading weight-heading text-lg text-heading">
+        <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
+        Товар добавлен в корзину
+      </h2>
+      <div class="flex items-center gap-3">
+        <span class="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-media bg-muted text-muted-foreground">
+          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+          <img data-ref="image" alt="" class="absolute inset-0 size-full object-cover" hidden />
+        </span>
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <p data-ref="title" class="m-0 line-clamp-2 text-sm text-heading"></p>
+          <p data-ref="price" class="m-0 text-sm weight-heading text-price"></p>
+        </div>
+      </div>
+      <div class="flex flex-col gap-2">
+        <a class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" href="/cart" data-ref="go-cart">В корзину (<span data-ref="count">0</span>)</a>
+        <a class="inline-flex h-12 items-center justify-center rounded-button border-width-input border-border bg-background px-6 text-base text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href="/checkout" data-action="cart.checkout">Купить сейчас</a>
+        <button type="button" data-part="close" class="inline-flex h-11 cursor-pointer items-center justify-center bg-transparent p-0 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">Продолжить покупки</button>
       </div>
     </div>
-    <a class="no-underline" href="/cart" data-ref="go-cart">В корзину (<span data-ref="count">0</span>)</a>
-    <a class="no-underline" href="/checkout" data-action="cart.checkout">Купить сейчас</a>
-    <button type="button" data-part="close" class="underline">Продолжить покупки</button>
   </dialog>
 </div>

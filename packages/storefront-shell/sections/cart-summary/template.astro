@@ -1,21 +1,30 @@
 ---
 const { blocks } = Astro.props;
 ---
-<div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body">
-  {blocks.map((block) => (
-    <div class="flex flex-col gap-3">
-      {block.type === 'total' ? (
-        <div class="flex flex-col gap-3">
-          <p class="m-0">Сумма <span data-ref="subtotal"></span></p>
-          <p data-ref="discount" class="m-0" hidden>
-            <span data-ref="discount-name">Скидка</span> <span data-ref="discount-value"></span>
-          </p>
-          <p class="m-0">Итого <span data-ref="total"></span></p>
-          <p class="m-0 text-sm text-muted-foreground">Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.</p>
-        </div>
-      ) : (
-        <a href="/checkout" data-action="cart.checkout" data-ref="checkout" class="no-underline">Оформить заказ</a>
-      )}
-    </div>
-  ))}
+<div class="mx-auto flex max-w-page flex-col px-4 font-body text-foreground">
+  {blocks.length > 0 && (
+  <div class="flex w-full flex-col gap-5 rounded-card bg-muted p-6 md:ml-auto md:max-w-md">
+    {blocks.map((block) => (
+      <div class="flex flex-col gap-3">
+        {block.type === 'total' ? (
+          <div class="flex flex-col gap-3">
+            <p class="m-0 flex items-baseline justify-between gap-4 text-sm"><span class="text-muted-foreground">Сумма</span> <span data-ref="subtotal"></span></p>
+            <p data-ref="discount" class="m-0 flex items-baseline justify-between gap-4 text-sm text-sale" hidden>
+              <span data-ref="discount-name">Скидка</span> <span data-ref="discount-value"></span>
+            </p>
+            <p class="m-0 flex items-baseline justify-between gap-4 border-t border-border pt-3 text-lg weight-heading text-heading">Итого <span class="text-price" data-ref="total"></span></p>
+            <p class="m-0 text-sm text-muted-foreground">Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.</p>
+          </div>
+        ) : (
+          <a
+            href="/checkout"
+            data-action="cart.checkout"
+            data-ref="checkout"
+            class="inline-flex h-12 w-full items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >Оформить заказ</a>
+        )}
+      </div>
+    ))}
+  </div>
+  )}
 </div>

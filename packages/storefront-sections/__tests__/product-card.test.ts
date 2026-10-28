@@ -319,6 +319,22 @@ describe.each(SECTIONS)('«%s»: параметры карточки', (name) =>
     expect(none).not.toContain('fill="#1d4ed8"');
   });
 
+  // Проверка вёрстки look: ссылка короче 44 px на телефоне — находка tap-small.
+  it('название товара — ссылка не ниже 44 px на телефоне', async () => {
+    const source = await html(name);
+    const links = source.match(/<a class="line-clamp-2[^"]*"/g) ?? [];
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) expect(link).toContain('min-h-11');
+  });
+
+  // Квадрат — без скругления: радиус «бейджа» у темы бывает 12 px, на образце 20 px это уже круг.
+  it('образцы цветов: кружок — rounded-full, у квадрата нет класса скругления', async () => {
+    const source = await html(name, { settings: { swatches: 'square' } });
+    const swatch = source.match(/<span class="[^"]*size-5[^"]*" role="listitem"/)?.[0] ?? '';
+    expect(swatch).toContain('in-data-[swatches=circle]:rounded-full');
+    expect(swatch).not.toContain('rounded-badge');
+  });
+
   it('сердечко: действие favorites.toggle с id товара, aria-pressed="false" до скрипта', async () => {
     const source = await html(name, { theme: { 'wishlist-enabled': true } });
     const hearts = buttons(source, 'favorites.toggle');

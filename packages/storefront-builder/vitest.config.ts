@@ -20,7 +20,7 @@ export default defineConfig({
         'src/preview-code.ts',
         // Снимок черновика (28.10): задание, вес снимков, фильтр адресов. Браузерная часть (look-browser, look-page)
         // проверяется настоящим Chromium в __tests__/look-browser.test.ts — без браузера тест пропускается.
-        'src/look/{look-job,look-fit,look-guard,look-queue}.ts',
+        'src/look/{look-job,look-fit,look-guard,look-queue,look-layout}.ts',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },

@@ -3,7 +3,8 @@ import type { Broker } from '../broker';
 import { errorText } from '../errors';
 import type { Log } from '../log';
 import { MAX_CONCURRENT_RENDERS } from './look-browser';
-import { fitShots, type DeviceShots } from './look-fit';
+import { BUDGET_BYTES, fitShots, type DeviceShots } from './look-fit';
+import { runLayoutChecks } from './look-layout';
 import { LOOK_PATTERN, LOOKS_QUEUE } from './look-queue';
 import {
   LookError,
@@ -72,6 +73,9 @@ export interface LookSnapshot {
   full: boolean;
   devices: LookDeviceShots[];
   detector: { ok: true } | { ok: false; reason: string };
+  // Проверки вёрстки (`look-layout.ts`): отказ одного устройства не мешает остальным, причина — сюда.
+  layout: { ok: true } | { ok: false; reason: string };
+  // Сначала находки детектора, потом проверок вёрстки (телефон первым).
   findings: LookFinding[];
 }
 
@@ -142,6 +146,7 @@ async function detectOn(
       device: session.device,
       section: null,
       clip: null,
+      image: null,
     }));
     return { detector: { ok: true }, findings };
   } catch (error) {
@@ -168,12 +173,23 @@ function deviceShots(session: PageSession, shots: DeviceShots): LookDeviceShots 
 async function snapshotOf(sessions: PageSession[], job: LookJob): Promise<LookSnapshot> {
   const [first] = sessions;
   if (first === undefined) throw new Error('отрисовщик не открыл ни одного экрана');
-  const shots = await fitShots(sessions, job.full);
+  // Вырезки мест идут в тот же предел веса, что и экраны: сначала они, экранам остаётся остальное.
+  const checks = await runLayoutChecks(sessions);
+  const shots = await fitShots(sessions, job.full, BUDGET_BYTES - checks.clipBytes);
   const { detector, findings } = await detectOn(first);
   const devices = sessions.map((session, index) =>
     deviceShots(session, shots[index] ?? { device: session.device, total: 1, shots: [] }),
   );
-  return { v: 1, siteId: job.siteId, page: job.page, full: job.full, devices, detector, findings };
+  return {
+    v: 1,
+    siteId: job.siteId,
+    page: job.page,
+    full: job.full,
+    devices,
+    detector,
+    layout: checks.status,
+    findings: [...findings, ...checks.findings],
+  };
 }
 
 function renderFailure(error: unknown): LookReply {
@@ -216,10 +232,14 @@ function logOutcome(deps: LookDeps, body: unknown, reply: LookReply, startedAt: 
     deps.log('look-failed', { ...fields, code: reply.error.code, error: reply.error.message });
     return;
   }
-  const images = reply.snapshot.devices.flatMap((device) => device.images);
+  const { findings, layout } = reply.snapshot;
+  const clips = findings.flatMap((finding) => (finding.image === null ? [] : [finding.image]));
+  const images = [...reply.snapshot.devices.flatMap((device) => device.images), ...clips];
   const kb = Math.round(images.reduce((sum, image) => sum + image.length, 0) / 1024);
   const devices = reply.snapshot.devices.map((device) => device.device).join(',');
-  deps.log('look-done', { ...fields, devices, full: reply.snapshot.full, images: images.length, kb });
+  const checks = findings.filter((finding) => finding.source === 'layout').length;
+  deps.log('look-done', { ...fields, devices, full: reply.snapshot.full, images: images.length, kb, checks });
+  if (!layout.ok) deps.log('look-layout-failed', { ...fields, error: layout.reason });
 }
 
 // Ответ в формате ClientProxy Nest: его разбирает и наш клиент шлюза, и любой ClientProxy.send.

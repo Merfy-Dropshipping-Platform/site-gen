@@ -3,6 +3,7 @@
 import {
   VIEWPORTS,
   type DetectorFinding,
+  type LayoutFinding,
   type LookDevice,
   type PageFacts,
   type PageRenderer,
@@ -18,6 +19,11 @@ export interface FakeSessionOptions {
   findings?: DetectorFinding[];
   detectError?: Error;
   shootError?: Error;
+  // Находки проверок вёрстки, которые вернёт страница; `layoutError` — проверки падают.
+  layout?: LayoutFinding[];
+  layoutError?: Error;
+  // Вес вырезки в байтах.
+  clipBytes?: number;
 }
 
 export interface ShootCall {
@@ -47,6 +53,13 @@ export function fakeSession(device: LookDevice, options: FakeSessionOptions, cal
     detect() {
       if (options.detectError) return Promise.reject(options.detectError);
       return Promise.resolve(options.findings ?? []);
+    },
+    layout() {
+      if (options.layoutError) return Promise.reject(options.layoutError);
+      return Promise.resolve(options.layout ?? []);
+    },
+    shootClip(finding) {
+      return Promise.resolve(new Uint8Array(options.clipBytes ?? 500).fill(finding.mark + 1));
     },
   };
 }

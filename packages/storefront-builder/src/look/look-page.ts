@@ -11,7 +11,16 @@ import { readFileSync } from 'node:fs';
 import type { BrowserContext, Page, Route } from 'playwright';
 import { z } from 'zod';
 import { isAllowedRequest } from './look-guard';
-import { VIEWPORTS, type DetectorFinding, type LookDevice, type PageFacts, type PageSession } from './look-types';
+import { layoutSource, parseLayout } from './look-layout';
+import {
+  VIEWPORTS,
+  type DetectorFinding,
+  type LayoutFinding,
+  type LookDevice,
+  type PageFacts,
+  type PageSession,
+  type Viewport,
+} from './look-types';
 
 // Запасной адрес для превью без разбираемого `merfy-config`: имя в зоне `.invalid` никогда не разрешается в сеть.
 const FALLBACK_ORIGIN = 'https://preview.merfy.invalid';
@@ -155,6 +164,39 @@ async function runDetector(page: Page): Promise<DetectorFinding[]> {
   );
 }
 
+// Проверки вёрстки (`browser/layout-checks.js`) на отрисованной странице нужного устройства.
+async function runLayout(page: Page, device: LookDevice): Promise<LayoutFinding[]> {
+  // Строку Playwright только вычисляет, функцию из неё с аргументом не зовёт — вызов пишем сами.
+  const raw: unknown = await page.evaluate(`(${layoutSource()})(${JSON.stringify({ device })})`);
+  return parseLayout(raw);
+}
+
+// Вырезка места находки: страница прокручивается так, чтобы место было в середине экрана (липкая шапка его не закроет),
+// элементы находки обводятся на время снимка. `clip` Playwright без `fullPage` считается от верха экрана.
+async function shootClip(page: Page, viewport: Viewport, finding: LayoutFinding, quality: number): Promise<Uint8Array> {
+  const { clip } = finding;
+  const top = Math.max(0, Math.round(clip.y - (viewport.height - clip.height) / 2));
+  const scrolled = await page.evaluate(
+    ([y, mark]) => {
+      window.scrollTo({ top: y, left: 0, behavior: 'instant' });
+      const show: unknown = Reflect.get(window, '__lookMark');
+      if (typeof show === 'function') show.call(window, mark);
+      return window.scrollY;
+    },
+    [top, finding.mark],
+  );
+  try {
+    await page.waitForTimeout(SHOT_SETTLE_MS);
+    const area = { x: clip.x, y: clip.y - scrolled, width: clip.width, height: clip.height };
+    return await page.screenshot({ type: 'jpeg', quality, animations: 'disabled', clip: area });
+  } finally {
+    await page.evaluate(() => {
+      const hide: unknown = Reflect.get(window, '__lookUnmark');
+      if (typeof hide === 'function') hide.call(window);
+    });
+  }
+}
+
 // Открывает страницу под нужный экран и возвращает её готовой к снимкам. Контекст закрывает вызывающий.
 export async function openPage(context: BrowserContext, device: LookDevice, html: string): Promise<PageSession> {
   const viewport = VIEWPORTS[device];
@@ -180,5 +222,7 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
       return page.screenshot({ type: 'jpeg', quality, animations: 'disabled' });
     },
     detect: () => runDetector(page),
+    layout: () => runLayout(page, device),
+    shootClip: (finding, quality) => shootClip(page, viewport, finding, quality),
   };
 }

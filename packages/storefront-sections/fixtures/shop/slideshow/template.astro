@@ -28,7 +28,7 @@ const { settings, blocks } = Astro.props;
           {block.settings.image !== '' && (
             <Fragment>
               <img src={block.settings.image} alt="" class="absolute inset-0 size-full object-cover" />
-              <div class={`absolute inset-0 bg-foreground opacity-${block.settings.overlay}`}></div>
+              <div class={`absolute inset-0 bg-custom-scrim opacity-${block.settings.overlay}`}></div>
             </Fragment>
           )}
           <div class="relative z-10 flex flex-1 flex-col items-center justify-center px-4 pb-16 pt-10 in-data-[position^=top]:justify-start in-data-[position^=bottom]:justify-end in-data-[position$=left]:items-start in-data-[position$=right]:items-end md:px-12 lg:px-20">
@@ -38,14 +38,14 @@ const { settings, blocks } = Astro.props;
             >
               {block.settings.heading && (
                 <h2
-                  class="m-0 text-balance font-heading weight-heading tracking-heading text-heading data-[heading-size=small]:text-xl md:data-[heading-size=small]:text-2xl data-[heading-size=medium]:text-2xl md:data-[heading-size=medium]:text-4xl data-[heading-size=large]:text-4xl md:data-[heading-size=large]:text-5xl"
+                  class="m-0 text-balance font-heading weight-heading tracking-heading text-heading data-[heading-size=small]:text-xl data-[heading-size=medium]:text-3xl data-[heading-size=large]:text-5xl"
                   data-heading-size={block.settings['heading-size']}
                   set:html={block.settings.heading}
                 />
               )}
               {block.settings.text && (
                 <p
-                  class="m-0 text-pretty text-foreground data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg md:data-[text-size=large]:text-xl"
+                  class="m-0 text-pretty text-foreground data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg"
                   data-text-size={block.settings['text-size']}
                   set:html={block.settings.text}
                 />

@@ -65,12 +65,13 @@ describe('wrapperView', () => {
   it('закрепление (часть 7б блока 7): таблица заполнена, none ничего не добавляет', () => {
     expect(STICKY_VIEW).toEqual({
       none: { classes: [], attributes: {} },
-      always: { classes: ['sticky', 'top-0', 'z-50'], attributes: {} },
+      always: { classes: ['sticky', 'top-0', 'z-50', 'bg-background'], attributes: {} },
       'scroll-up': {
         classes: [
           'sticky',
           'top-0',
           'z-50',
+          'bg-background',
           'transition-transform',
           'duration-300',
           'motion-reduce:transition-none',

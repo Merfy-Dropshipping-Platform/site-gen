@@ -56,8 +56,9 @@ export const DEFAULT_WRAPPER_VIEW: WrapperView = { classes: ['py-section'], attr
 // Закрепление (Р1-5-7; часть 7б блока 7, Р7б-1). Классы стоят на самой <merfy-section>: закрепляется обёртка, а не элемент
 // внутри неё. none ничего не добавляет; always закрепляет; scroll-up закрепляет и добавляет переход, сдвиг по data-hidden и
 // поведение sticky-header (оно ставит и снимает data-hidden, режим читает из data-mode). Без правки у секции со sticky
-// в списке — scroll-up (Р15в-2).
-const PINNED = ['sticky', 'top-0', 'z-50'];
+// в списке — scroll-up (Р15в-2). Закреплённая обёртка непрозрачна — фон своей схемы (bg-background): иначе при прокрутке
+// под ней видно страницу, в том числе сквозь её отступы (базовые секции, 28.10).
+const PINNED = ['sticky', 'top-0', 'z-50', 'bg-background'];
 
 export const STICKY_VIEW: Readonly<Record<StickyValue, WrapperView>> = {
   none: { classes: [], attributes: {} },

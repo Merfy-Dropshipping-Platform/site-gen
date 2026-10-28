@@ -1,668 +1,172 @@
 ---
 const { settings, blocks, theme, shop, page } = Astro.props;
 ---
-
+<!-- Шапка пяти тем одной разметкой: настройки — атрибутами корня, раскладка — вариантами классов; от 768 px — сетка
+     в три колонки. Значки — Lucide (menu, x, search, heart, shopping-bag, user), лицензия ISC. -->
 <div
-  class:list={['mx-auto max-w-page bg-background font-body', 'py-3 md:py-6']}
+  class="font-body text-foreground"
   data-logo-position={settings['logo-position']}
+  data-logo-center={settings['logo-position'] === 'top-center' || settings['logo-position'] === 'center-absolute'}
+  data-two-rows={settings['logo-position'] === 'top-left' || settings['logo-position'] === 'top-center'}
   data-menu-type={settings['menu-type']}
+  data-active-link={settings['active-link']}
+  data-capitals={settings.capitals}
 >
-  <!-- Значки поиска, избранного, корзины и профиля — Lucide (search, heart, shopping-bag, user), лицензия ISC, lucide.dev/license.
-       У кнопки и ссылок значка одна обёртка (inline-flex items-center justify-center gap-1: высоту даёт значок size-6), а
-       контейнер кнопки поиска — flex: в блочном контейнере строка поднимает кнопку на 3,5 px выше ссылок. -->
-  <!-- Ряд телефона (до 768 px): бургер, название по центру, «Избранное», «Корзина»; положение логотипа не влияет. -->
-  <div class:list={['flex items-center gap-4 px-4', settings['menu-type'] === 'sidebar' ? '' : 'md:hidden']}>
-    {settings['menu-type'] === 'sidebar' ? (
-      <div data-behavior="dialog" data-side="left" data-transition="drawer">
-        <button aria-label="Меню" class="group text-heading" data-part="open">
-          <svg class="size-6 group-aria-expanded:hidden" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-          <svg class="hidden size-6 group-aria-expanded:block" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+  {settings.announcement && (
+    <div class="bg-foreground text-background">
+      {settings.link ? (
+        <a class="mx-auto flex min-h-12 max-w-page items-center justify-center px-4 py-2 text-center text-sm text-background no-underline hover:underline" href={settings.link} set:html={settings.announcement} />
+      ) : (
+        <p class="m-0 mx-auto flex min-h-12 max-w-page items-center justify-center px-4 py-2 text-center text-sm" set:html={settings.announcement} />
+      )}
+    </div>
+  )}
+
+  <div class="relative mx-auto flex min-h-16 max-w-page items-center justify-between gap-3 px-4 md:grid md:min-h-0 md:grid-cols-3 md:gap-x-6 md:gap-y-5 md:py-4 md:in-data-[menu-type=sidebar]:flex">
+    <div class="md:hidden md:in-data-[menu-type=sidebar]:block" data-behavior="dialog" data-modal={String(settings['menu-type'] === 'sidebar')} data-side="left" data-transition={settings['menu-type'] === 'sidebar' ? 'drawer' : 'drop'}>
+      <button aria-label="Меню" class="group inline-flex size-11 items-center justify-center text-heading" data-part="open" type="button">
+        <svg class="size-6 group-aria-expanded:hidden" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        <svg class="hidden size-6 group-aria-expanded:block" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+      <dialog
+        class:list={['m-0 w-full max-w-none bg-background p-4 text-foreground backdrop:bg-transparent in-data-[menu-type=sidebar]:h-full in-data-[menu-type=sidebar]:max-h-none md:in-data-[menu-type=sidebar]:w-90', settings['color-scheme'] && `color-${settings['color-scheme']}`]}
+        data-part="content"
+      >
+        <button aria-label="Закрыть меню" class="hidden size-11 items-center justify-center text-heading in-data-[menu-type=sidebar]:inline-flex" data-part="close" type="button">
+          <svg class="size-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-        <dialog
-          class:list={['m-0 h-full max-h-none max-w-none w-full backdrop:bg-transparent bg-background p-0 md:w-90', settings['color-scheme'] && `color-${settings['color-scheme']}`]}
-          data-part="content"
-        >
-          <div class="flex items-center justify-between gap-4 px-4 py-3">
-            <button aria-label="Закрыть меню" class="text-heading" data-part="close">
-              <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
-            </button>
-            {blocks.some((block) => block.type === 'cart') && (
-              <a aria-label="Корзина" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" href="/cart" data-action="cart.open">
-                <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><g stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></g></svg>
-                <span data-ref="cart-count" class="text-sm" hidden>0</span>
-              </a>
-            )}
-          </div>
-          <ul class="m-0 list-none p-0">
-            {settings.menu.items.map((item) => (
-              <li class="border-b border-border py-3">
-                {item.items.length === 0 ? (
-                  <a
-                    aria-current={item.url === page.path ? 'page' : undefined}
-                    class:list={['font-body no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                    href={item.url}
-                  >
-                    {item.label}
-                  </a>
-                ) : (
-                  <details open={item.items.some((child) => child.url === page.path || child.items.some((leaf) => leaf.url === page.path))}>
-                    <summary class:list={['cursor-pointer list-none font-body', item.items.some((child) => child.url === page.path || child.items.some((leaf) => leaf.url === page.path)) ? 'text-heading' : 'text-muted-foreground']}>{item.label}</summary>
-                  <ul class="m-0 list-none p-0">
+        {blocks.some((placed) => placed.type === 'search') && (
+          <form action="/catalog" class="flex items-center gap-2 py-2" method="get" role="search">
+            <label class="sr-only" for="header-menu-search">Поиск</label>
+            <input
+              class="h-11 w-full min-w-0 rounded-input border-width-input border-input bg-background px-4 text-base text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              id="header-menu-search"
+              name="q"
+              placeholder="Поиск"
+              type="search"
+            />
+            <button class="h-11 shrink-0 cursor-pointer rounded-button border-width-button border-primary-border bg-primary px-5 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" type="submit">Найти</button>
+          </form>
+        )}
+        <ul class="m-0 list-none p-0">
+          {settings.menu.items.map((item) => (
+            <li class="border-b border-border">
+              {item.items.length === 0 ? (
+                <a aria-current={item.url === page.path ? 'page' : undefined} class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:text-heading aria-[current=page]:text-heading in-data-[capitals=all]:uppercase" href={item.url}>{item.label}</a>
+              ) : (
+                <details>
+                  <summary class="flex min-h-11 cursor-pointer list-none items-center text-base text-muted-foreground hover:text-heading in-data-[capitals=all]:uppercase">{item.label}</summary>
+                  <ul class="m-0 list-none pb-2 pl-4">
                     {item.items.map((child) => (
-                      <li class="py-2">
-                        {child.items.length > 0 ? (
-                          <details open={child.items.some((leaf) => leaf.url === page.path)}>
-                            <summary class:list={['cursor-pointer list-none pl-4 font-body', child.items.some((leaf) => leaf.url === page.path) ? 'text-heading' : 'text-muted-foreground']}>{child.label}</summary>
-                            <ul class="m-0 list-none p-0">
-                              {child.items.map((leaf) => (
-                                <li class="py-2 pl-8">
-                                  <a
-                                    aria-current={leaf.url === page.path ? 'page' : undefined}
-                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                    href={leaf.url}
-                                  >
-                                    {leaf.label}
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </details>
-                        ) : (
-                          <a
-                            aria-current={child.url === page.path ? 'page' : undefined}
-                            class:list={['pl-4 no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                            href={child.url}
-                          >
-                            {child.label}
-                          </a>
+                      <li>
+                        <a aria-current={child.url === page.path ? 'page' : undefined} class="flex min-h-11 items-center text-muted-foreground no-underline hover:text-heading aria-[current=page]:text-heading" href={child.url}>{child.label}</a>
+                        {child.items.length > 0 && (
+                          <ul class="m-0 list-none pl-4">
+                            {child.items.map((leaf) => (
+                              <li>
+                                <a aria-current={leaf.url === page.path ? 'page' : undefined} class="flex min-h-11 items-center text-sm text-muted-foreground no-underline hover:text-heading aria-[current=page]:text-heading" href={leaf.url}>{leaf.label}</a>
+                              </li>
+                            ))}
+                          </ul>
                         )}
                       </li>
                     ))}
                   </ul>
-                  </details>
-                )}
-              </li>
-            ))}
-          </ul>
-          <div class="hidden items-center gap-4 px-4 py-3 md:flex">
-            {blocks.some((block) => block.type === 'search') && <button type="button" class="no-underline hover:text-heading" data-action="search.open">Поиск</button>}
-            {blocks.some((block) => block.type === 'profile') && <a class="no-underline hover:text-heading" data-ref="profile" href="/login">Профиль</a>}
-          </div>
-        </dialog>
-      </div>
-    ) : (
-      <div class="md:hidden" data-behavior="dialog" data-modal="false" data-transition="drop">
-        <button aria-label="Меню" class="group text-heading" data-part="open">
-          <svg class="size-6 group-aria-expanded:hidden" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-          <svg class="hidden size-6 group-aria-expanded:block" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
-        </button>
-        <dialog
-          class:list={['m-0 w-full max-w-none bg-background p-4', settings['color-scheme'] && `color-${settings['color-scheme']}`]}
-          data-part="content"
-        >
-          {blocks.some((block) => block.type === 'search') && (
-            <form action="/catalog" class="flex items-center gap-2" method="get">
-              <input
-                aria-label="Поиск"
-                class="h-11 w-full min-w-0 rounded-input border-width-input border-input bg-background px-4 font-body text-base text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                name="q"
-                type="search"
-              />
-              <button class="h-11 shrink-0 cursor-pointer rounded-button border-width-button border-primary-border bg-primary px-5 font-body text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" type="submit">Найти</button>
-            </form>
-          )}
-          {blocks.some((block) => block.type === 'profile') && <a class="block py-2 no-underline hover:text-heading" data-ref="profile" href="/login">Профиль</a>}
-          <ul class="m-0 list-none p-0">
-            {settings.menu.items.map((item) => (
-              <li class="border-b border-border py-3">
-                {item.items.length === 0 ? (
-                  <a
-                    aria-current={item.url === page.path ? 'page' : undefined}
-                    class:list={['font-body no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                    href={item.url}
-                  >
-                    {item.label}
-                  </a>
-                ) : (
-                  <details open={item.items.some((child) => child.url === page.path || child.items.some((leaf) => leaf.url === page.path))}>
-                    <summary class:list={['cursor-pointer list-none font-body', item.items.some((child) => child.url === page.path || child.items.some((leaf) => leaf.url === page.path)) ? 'text-heading' : 'text-muted-foreground']}>{item.label}</summary>
-                  <ul class="m-0 list-none p-0">
-                    {item.items.map((child) => (
-                      <li class="py-2">
-                        {child.items.length > 0 ? (
-                          <details open={child.items.some((leaf) => leaf.url === page.path)}>
-                            <summary class:list={['cursor-pointer list-none pl-4 font-body', child.items.some((leaf) => leaf.url === page.path) ? 'text-heading' : 'text-muted-foreground']}>{child.label}</summary>
-                            <ul class="m-0 list-none p-0">
-                              {child.items.map((leaf) => (
-                                <li class="py-2 pl-8">
-                                  <a
-                                    aria-current={leaf.url === page.path ? 'page' : undefined}
-                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                    href={leaf.url}
-                                  >
-                                    {leaf.label}
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </details>
-                        ) : (
-                          <a
-                            aria-current={child.url === page.path ? 'page' : undefined}
-                            class:list={['pl-4 no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                            href={child.url}
-                          >
-                            {child.label}
-                          </a>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                  </details>
-                )}
-              </li>
-            ))}
-          </ul>
-        </dialog>
-      </div>
-    )}
-    <a class="mx-auto truncate font-heading weight-heading tracking-heading text-xl text-heading no-underline" href="/">
-      {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
+                </details>
+              )}
+            </li>
+          ))}
+        </ul>
+        {blocks.some((placed) => placed.type === 'profile') && (
+          <a class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:text-heading" data-ref="profile" href="/login">Профиль</a>
+        )}
+      </dialog>
+    </div>
+
+    <a
+      class="absolute left-1/2 flex min-h-11 max-w-1/2 -translate-x-1/2 items-center font-heading weight-heading tracking-heading text-2xl text-heading no-underline in-data-[capitals=all]:uppercase in-data-[capitals=logo]:uppercase md:static md:col-start-1 md:row-start-1 md:max-w-full md:translate-x-0 md:justify-self-start md:in-data-[logo-center=true]:col-start-2 md:in-data-[logo-center=true]:justify-self-center md:in-data-[menu-type=sidebar]:absolute md:in-data-[menu-type=sidebar]:-translate-x-1/2"
+      href="/"
+    >
+      {theme['logo-image'] ? <img alt={shop.name} class="block h-10 w-auto max-w-logo" src={theme['logo-image']} /> : <span class="truncate">{shop.name}</span>}
     </a>
-    <div class="flex items-center gap-4">
+
+    <nav
+      aria-label="Основное меню"
+      class:list={['relative hidden md:col-span-3 md:row-start-2 md:block md:in-data-[menu-type=sidebar]:hidden md:in-data-[two-rows=false]:col-span-1 md:in-data-[two-rows=false]:row-start-1 md:in-data-[logo-position=center-left]:col-start-2 md:in-data-[logo-position=center-left]:justify-self-center md:in-data-[logo-position=center-absolute]:col-start-1 md:in-data-[logo-position=center-absolute]:justify-self-start in-data-[menu-type=mega-menu]:static', settings['color-scheme'] && `color-${settings['color-scheme']}`]}
+      data-behavior="nav-menu"
+    >
+      <ul class="m-0 flex list-none flex-wrap gap-x-8 gap-y-2 p-0 in-data-[logo-position=top-center]:justify-center" data-part="list">
+        {settings.menu.items.map((item) => (
+          <li class="relative in-data-[menu-type=mega-menu]:static" data-part="item">
+            {item.items.length === 0 ? (
+              <a
+                aria-current={item.url === page.path ? 'page' : undefined}
+                class="text-base text-muted-foreground no-underline underline-offset-8 hover:text-heading aria-[current=page]:text-heading in-data-[active-link=underline]:aria-[current=page]:underline in-data-[capitals=all]:uppercase"
+                data-part="link"
+                href={item.url}
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Fragment>
+                <button class="cursor-pointer text-base text-muted-foreground hover:text-heading aria-expanded:text-heading in-data-[capitals=all]:uppercase" data-part="trigger" type="button">{item.label}</button>
+                <div
+                  class="absolute left-0 top-full z-10 mt-2 flex min-w-56 flex-col gap-1 rounded-popover border-width-popover border-border bg-popover p-3 text-popover-foreground shadow-popover in-data-[menu-type=mega-menu]:inset-x-0 in-data-[menu-type=mega-menu]:mt-0 in-data-[menu-type=mega-menu]:grid in-data-[menu-type=mega-menu]:grid-cols-4 in-data-[menu-type=mega-menu]:gap-8 in-data-[menu-type=mega-menu]:rounded-none in-data-[menu-type=mega-menu]:px-4 in-data-[menu-type=mega-menu]:py-8"
+                  data-part="content"
+                >
+                  {item.items.map((child) => (
+                    <div class="flex flex-col gap-1 in-data-[menu-type=mega-menu]:gap-3">
+                      <a aria-current={child.url === page.path ? 'page' : undefined} class="rounded-popover px-3 py-2 text-sm text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground aria-[current=page]:text-heading in-data-[menu-type=mega-menu]:px-0 in-data-[menu-type=mega-menu]:py-0 in-data-[menu-type=mega-menu]:text-heading in-data-[menu-type=mega-menu]:hover:bg-transparent in-data-[menu-type=mega-menu]:hover:underline in-data-[capitals=all]:uppercase" data-part="link" href={child.url}>{child.label}</a>
+                      {child.items.length > 0 && (
+                        <ul class="m-0 flex list-none flex-col gap-1 p-0 pl-3 in-data-[menu-type=mega-menu]:gap-2 in-data-[menu-type=mega-menu]:pl-0">
+                          {child.items.map((leaf) => (
+                            <li>
+                              <a aria-current={leaf.url === page.path ? 'page' : undefined} class="flex rounded-popover px-3 py-1 text-sm text-muted-foreground no-underline hover:text-heading aria-[current=page]:text-heading in-data-[menu-type=mega-menu]:px-0" data-part="link" href={leaf.url}>{leaf.label}</a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Fragment>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="flex items-center gap-1 md:col-start-3 md:row-start-1 md:justify-self-end md:gap-4">
       {blocks.map((block) => (
-        <div class="flex items-center">
-          {block.type === 'search' ? (
-            settings['menu-type'] === 'sidebar' && (
-              <div class="flex items-center" data-behavior="dialog" data-modal="false" data-transition="fade">
-                <button aria-label="Поиск" class="hidden items-center justify-center gap-1 text-muted-foreground hover:text-heading md:inline-flex" data-part="open">
-                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><g stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></g></svg>
-                </button>
-                <dialog class="left-0 m-0 w-full max-w-none border-0 border-b border-border bg-background p-4 shadow-popover" data-part="content">
-                  <form action="/catalog" class="flex items-center gap-2" method="get">
-                    <input
-                      aria-label="Поиск"
-                      autofocus
-                      class="h-11 w-full min-w-0 rounded-input border-width-input border-input bg-background px-4 font-body text-base text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                      name="q"
-                      type="search"
-                    />
-                    <button class="h-11 shrink-0 cursor-pointer rounded-button border-width-button border-primary-border bg-primary px-5 font-body text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" type="submit">Найти</button>
-                  </form>
-                </dialog>
-              </div>
-            )
-          ) : block.type === 'profile' ? (
-            settings['menu-type'] === 'sidebar' && (
-              <a aria-label="Профиль" class="hidden items-center justify-center gap-1 text-muted-foreground hover:text-heading md:inline-flex" data-ref="profile" href="/login">
-                <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><g stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></g></svg>
-              </a>
-            )
-          ) : block.type === 'wishlist' ? (
-            theme['wishlist-enabled'] !== false && (
-              <a aria-label="Избранное" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" href="/wishlist">
-                <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                  <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span class="font-body text-xs" data-ref="favorites-count" hidden>0</span>
-              </a>
-            )
-          ) : (
-            <a aria-label="Корзина" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" href="/cart" data-action="cart.open">
-              <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <g stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></g>
-              </svg>
-              <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
+        <div
+          class="flex data-[off=true]:hidden data-[type=profile]:hidden data-[type=search]:hidden md:data-[type=profile]:flex md:data-[type=search]:flex"
+          data-off={String(block.type === 'wishlist' && theme['wishlist-enabled'] === false)}
+          data-type={block.type}
+        >
+          {block.type === 'search' && (
+            <button aria-label="Поиск" class="inline-flex size-11 items-center justify-center text-heading hover:opacity-70" data-action="search.open" type="button">
+              <svg class="size-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg>
+            </button>
+          )}
+          {block.type === 'wishlist' && theme['wishlist-enabled'] !== false && (
+            <a aria-label="Избранное" class="relative inline-flex size-11 items-center justify-center text-heading hover:opacity-70" href="/wishlist">
+              <svg class="size-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" /></svg>
+              <span class="absolute right-0 top-0 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-xs text-primary-foreground" data-ref="favorites-count" hidden>0</span>
+            </a>
+          )}
+          {block.type === 'cart' && (
+            <a aria-label="Корзина" class="relative inline-flex size-11 items-center justify-center text-heading hover:opacity-70" data-action="cart.open" href="/cart">
+              <svg class="size-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></svg>
+              <span class="absolute right-0 top-0 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-xs text-primary-foreground" data-ref="cart-count" hidden>0</span>
+            </a>
+          )}
+          {block.type === 'profile' && (
+            <a aria-label="Профиль" class="inline-flex size-11 items-center justify-center text-heading hover:opacity-70" data-ref="profile" href="/login">
+              <svg class="size-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
             </a>
           )}
         </div>
       ))}
     </div>
-  </div>
-
-  <!-- Компьютер (от 768 px): ряды по положению логотипа; у бокового меню ряд телефона и на компьютере — с поиском
-       и «Профилем» с 768 px, как у flux, — и ряды компьютера не выводятся. -->
-  <div class:list={['px-4', settings['menu-type'] === 'sidebar' ? 'hidden' : 'hidden md:block']}>
-    {(settings['logo-position'] === 'top-left' || settings['logo-position'] === 'top-center') && settings['menu-type'] !== 'sidebar' && (
-      <div>
-        <div class:list={['relative flex items-center py-2', settings['logo-position'] === 'top-center' ? 'justify-center' : 'justify-start']}>
-          <a class="font-heading weight-heading tracking-heading text-xl text-heading no-underline" href="/">
-            {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
-          </a>
-          <div class="absolute right-0 flex items-center gap-4">
-            {blocks.map((block) => (
-              <div class="flex items-center">
-                {block.type === 'search' ? (
-                  <div class="flex items-center" data-behavior="dialog" data-modal="false" data-transition="fade">
-                    <button aria-label="Поиск" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" data-part="open">
-                      <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><g stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></g></svg>
-                    </button>
-                    <dialog class="left-0 m-0 w-full max-w-none border-0 border-b border-border bg-background p-4 shadow-popover" data-part="content">
-                      <form action="/catalog" class="flex items-center gap-2" method="get">
-                        <input
-                          aria-label="Поиск"
-                          autofocus
-                          class="h-11 w-full min-w-0 rounded-input border-width-input border-input bg-background px-4 font-body text-base text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                          name="q"
-                          type="search"
-                        />
-                        <button class="h-11 shrink-0 cursor-pointer rounded-button border-width-button border-primary-border bg-primary px-5 font-body text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" type="submit">Найти</button>
-                      </form>
-                    </dialog>
-                  </div>
-                ) : block.type === 'wishlist' ? (
-                  theme['wishlist-enabled'] !== false && (
-                    <a aria-label="Избранное" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" href="/wishlist">
-                      <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                      <span class="font-body text-xs" data-ref="favorites-count" hidden>0</span>
-                    </a>
-                  )
-                ) : block.type === 'cart' ? (
-                  <a aria-label="Корзина" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" href="/cart" data-action="cart.open">
-                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                      <g stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></g>
-                    </svg>
-                    <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
-                  </a>
-                ) : (
-                  <a aria-label="Профиль" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" data-ref="profile" href="/login">
-                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                      <g stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></g>
-                    </svg>
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-        {settings['menu-type'] !== 'sidebar' && (
-          <div class:list={['flex py-2', settings['logo-position'] === 'top-center' ? 'justify-center' : 'justify-start']}>
-            <nav
-              aria-label="Основное меню"
-              class:list={[settings['color-scheme'] && `color-${settings['color-scheme']}`]}
-              data-behavior="nav-menu"
-            >
-              <ul class="m-0 flex list-none gap-6 p-0" data-part="list">
-                {settings.menu.items.map((item) => (
-                  <li class="relative" data-part="item">
-                    {item.items.length === 0 ? (
-                      <a
-                        aria-current={item.url === page.path ? 'page' : undefined}
-                        class:list={['no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                        data-part="link"
-                        href={item.url}
-                      >
-                        {item.label}
-                      </a>
-                    ) : (
-                      <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{item.label}</button>
-                    )}
-                    {item.items.length > 0 && settings['menu-type'] === 'mega-menu' && (
-                      <div class="absolute inset-x-0 top-full bg-background p-6 md:grid md:grid-cols-3 md:gap-8" data-part="content">
-                        {item.items.map((child) => (
-                          <div data-part="item">
-                            <p class="font-body uppercase tracking-widest text-muted-foreground">{child.label}</p>
-                            <ul class="m-0 list-none p-0">
-                              {child.items.map((leaf) => (
-                                <li class="py-1">
-                                  <a
-                                    aria-current={leaf.url === page.path ? 'page' : undefined}
-                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                    data-part="link"
-                                    href={leaf.url}
-                                  >
-                                    {leaf.label}
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {item.items.length > 0 && settings['menu-type'] !== 'mega-menu' && (
-                      <div class="absolute left-0 top-full bg-background p-4" data-part="content">
-                        <ul class="m-0 list-none p-0">
-                          {item.items.map((child) => (
-                            <li class="relative py-1" data-part="item">
-                              {child.items.length === 0 ? (
-                                <a
-                                  aria-current={child.url === page.path ? 'page' : undefined}
-                                  class:list={['no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                  data-part="link"
-                                  href={child.url}
-                                >
-                                  {child.label}
-                                </a>
-                              ) : (
-                                <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{child.label}</button>
-                              )}
-                              {child.items.length > 0 && (
-                                <div class="absolute left-full top-0 bg-background p-4" data-part="content">
-                                  <ul class="m-0 list-none p-0">
-                                    {child.items.map((leaf) => (
-                                      <li class="py-1">
-                                        <a
-                                          aria-current={leaf.url === page.path ? 'page' : undefined}
-                                          class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                          data-part="link"
-                                          href={leaf.url}
-                                        >
-                                          {leaf.label}
-                                        </a>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-        )}
-      </div>
-    )}
-    {settings['logo-position'] === 'center-left' && settings['menu-type'] !== 'sidebar' && (
-      <div class="flex items-center justify-between py-2">
-        <a class="font-heading weight-heading tracking-heading text-xl text-heading no-underline" href="/">
-          {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
-        </a>
-        <div class="flex flex-1 justify-center">
-          {settings['menu-type'] !== 'sidebar' && (
-            <nav
-              aria-label="Основное меню"
-              class:list={[settings['color-scheme'] && `color-${settings['color-scheme']}`]}
-              data-behavior="nav-menu"
-            >
-              <ul class="m-0 flex list-none gap-6 p-0" data-part="list">
-                {settings.menu.items.map((item) => (
-                  <li class="relative" data-part="item">
-                    {item.items.length === 0 ? (
-                      <a
-                        aria-current={item.url === page.path ? 'page' : undefined}
-                        class:list={['no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                        data-part="link"
-                        href={item.url}
-                      >
-                        {item.label}
-                      </a>
-                    ) : (
-                      <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{item.label}</button>
-                    )}
-                    {item.items.length > 0 && settings['menu-type'] === 'mega-menu' && (
-                      <div class="absolute inset-x-0 top-full bg-background p-6 md:grid md:grid-cols-3 md:gap-8" data-part="content">
-                        {item.items.map((child) => (
-                          <div data-part="item">
-                            <p class="font-body uppercase tracking-widest text-muted-foreground">{child.label}</p>
-                            <ul class="m-0 list-none p-0">
-                              {child.items.map((leaf) => (
-                                <li class="py-1">
-                                  <a
-                                    aria-current={leaf.url === page.path ? 'page' : undefined}
-                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                    data-part="link"
-                                    href={leaf.url}
-                                  >
-                                    {leaf.label}
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {item.items.length > 0 && settings['menu-type'] !== 'mega-menu' && (
-                      <div class="absolute left-0 top-full bg-background p-4" data-part="content">
-                        <ul class="m-0 list-none p-0">
-                          {item.items.map((child) => (
-                            <li class="relative py-1" data-part="item">
-                              {child.items.length === 0 ? (
-                                <a
-                                  aria-current={child.url === page.path ? 'page' : undefined}
-                                  class:list={['no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                  data-part="link"
-                                  href={child.url}
-                                >
-                                  {child.label}
-                                </a>
-                              ) : (
-                                <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{child.label}</button>
-                              )}
-                              {child.items.length > 0 && (
-                                <div class="absolute left-full top-0 bg-background p-4" data-part="content">
-                                  <ul class="m-0 list-none p-0">
-                                    {child.items.map((leaf) => (
-                                      <li class="py-1">
-                                        <a
-                                          aria-current={leaf.url === page.path ? 'page' : undefined}
-                                          class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                          data-part="link"
-                                          href={leaf.url}
-                                        >
-                                          {leaf.label}
-                                        </a>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
-        </div>
-        <div class="flex items-center gap-4">
-          {blocks.map((block) => (
-            <div class="flex items-center">
-              {block.type === 'search' ? (
-                <div class="flex items-center" data-behavior="dialog" data-modal="false" data-transition="fade">
-                  <button aria-label="Поиск" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" data-part="open">
-                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><g stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></g></svg>
-                  </button>
-                  <dialog class="left-0 m-0 w-full max-w-none border-0 border-b border-border bg-background p-4 shadow-popover" data-part="content">
-                    <form action="/catalog" class="flex items-center gap-2" method="get">
-                      <input
-                        aria-label="Поиск"
-                        autofocus
-                        class="h-11 w-full min-w-0 rounded-input border-width-input border-input bg-background px-4 font-body text-base text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                        name="q"
-                        type="search"
-                      />
-                      <button class="h-11 shrink-0 cursor-pointer rounded-button border-width-button border-primary-border bg-primary px-5 font-body text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" type="submit">Найти</button>
-                    </form>
-                  </dialog>
-                </div>
-              ) : (
-                block.type === 'wishlist' ? (
-                theme['wishlist-enabled'] !== false && (
-                  <a aria-label="Избранное" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" href="/wishlist">
-                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                      <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <span class="font-body text-xs" data-ref="favorites-count" hidden>0</span>
-                  </a>
-                )
-                ) : block.type === 'cart' ? (
-                <a aria-label="Корзина" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" href="/cart" data-action="cart.open">
-                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <g stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></g>
-                  </svg>
-                  <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
-                </a>
-                ) : (
-                <a aria-label="Профиль" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" data-ref="profile" href="/login">
-                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <g stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></g>
-                  </svg>
-                </a>
-                )
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
-    {settings['logo-position'] === 'center-absolute' && settings['menu-type'] !== 'sidebar' && (
-      <div class="grid grid-cols-3 items-center py-2">
-        <div class="justify-self-start">
-          {settings['menu-type'] !== 'sidebar' && (
-            <nav
-              aria-label="Основное меню"
-              class:list={[settings['color-scheme'] && `color-${settings['color-scheme']}`]}
-              data-behavior="nav-menu"
-            >
-              <ul class="m-0 flex list-none gap-6 p-0" data-part="list">
-                {settings.menu.items.map((item) => (
-                  <li class="relative" data-part="item">
-                    {item.items.length === 0 ? (
-                      <a
-                        aria-current={item.url === page.path ? 'page' : undefined}
-                        class:list={['no-underline hover:text-heading', item.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                        data-part="link"
-                        href={item.url}
-                      >
-                        {item.label}
-                      </a>
-                    ) : (
-                      <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{item.label}</button>
-                    )}
-                    {item.items.length > 0 && settings['menu-type'] === 'mega-menu' && (
-                      <div class="absolute inset-x-0 top-full bg-background p-6 md:grid md:grid-cols-3 md:gap-8" data-part="content">
-                        {item.items.map((child) => (
-                          <div data-part="item">
-                            <p class="font-body uppercase tracking-widest text-muted-foreground">{child.label}</p>
-                            <ul class="m-0 list-none p-0">
-                              {child.items.map((leaf) => (
-                                <li class="py-1">
-                                  <a
-                                    aria-current={leaf.url === page.path ? 'page' : undefined}
-                                    class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                    data-part="link"
-                                    href={leaf.url}
-                                  >
-                                    {leaf.label}
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {item.items.length > 0 && settings['menu-type'] !== 'mega-menu' && (
-                      <div class="absolute left-0 top-full bg-background p-4" data-part="content">
-                        <ul class="m-0 list-none p-0">
-                          {item.items.map((child) => (
-                            <li class="relative py-1" data-part="item">
-                              {child.items.length === 0 ? (
-                                <a
-                                  aria-current={child.url === page.path ? 'page' : undefined}
-                                  class:list={['no-underline hover:text-heading', child.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                  data-part="link"
-                                  href={child.url}
-                                >
-                                  {child.label}
-                                </a>
-                              ) : (
-                                <button class="cursor-pointer font-body text-muted-foreground hover:text-heading" data-part="trigger">{child.label}</button>
-                              )}
-                              {child.items.length > 0 && (
-                                <div class="absolute left-full top-0 bg-background p-4" data-part="content">
-                                  <ul class="m-0 list-none p-0">
-                                    {child.items.map((leaf) => (
-                                      <li class="py-1">
-                                        <a
-                                          aria-current={leaf.url === page.path ? 'page' : undefined}
-                                          class:list={['no-underline hover:text-heading', leaf.url === page.path ? 'text-heading' : 'text-muted-foreground']}
-                                          data-part="link"
-                                          href={leaf.url}
-                                        >
-                                          {leaf.label}
-                                        </a>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
-        </div>
-        <a class="justify-self-center font-heading text-xl text-heading no-underline" href="/">
-          {theme['logo-image'] ? <img alt={shop.name} class="h-10 w-auto max-w-logo" src={theme['logo-image']} /> : shop.name}
-        </a>
-        <div class="flex items-center gap-4 justify-self-end">
-          {blocks.map((block) => (
-            <div class="flex items-center">
-              {block.type === 'search' ? (
-                <div class="flex items-center" data-behavior="dialog" data-modal="false" data-transition="fade">
-                  <button aria-label="Поиск" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" data-part="open">
-                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><g stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></g></svg>
-                  </button>
-                  <dialog class="left-0 m-0 w-full max-w-none border-0 border-b border-border bg-background p-4 shadow-popover" data-part="content">
-                    <form action="/catalog" class="flex items-center gap-2" method="get">
-                      <input
-                        aria-label="Поиск"
-                        autofocus
-                        class="h-11 w-full min-w-0 rounded-input border-width-input border-input bg-background px-4 font-body text-base text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                        name="q"
-                        type="search"
-                      />
-                      <button class="h-11 shrink-0 cursor-pointer rounded-button border-width-button border-primary-border bg-primary px-5 font-body text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" type="submit">Найти</button>
-                    </form>
-                  </dialog>
-                </div>
-              ) : (
-                block.type === 'wishlist' ? (
-                theme['wishlist-enabled'] !== false && (
-                  <a aria-label="Избранное" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" href="/wishlist">
-                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                      <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <span class="font-body text-xs" data-ref="favorites-count" hidden>0</span>
-                  </a>
-                )
-                ) : block.type === 'cart' ? (
-                <a aria-label="Корзина" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" href="/cart" data-action="cart.open">
-                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <g stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></g>
-                  </svg>
-                  <span class="font-body text-xs" data-ref="cart-count" hidden>0</span>
-                </a>
-                ) : (
-                <a aria-label="Профиль" class="inline-flex items-center justify-center gap-1 text-muted-foreground hover:text-heading" data-ref="profile" href="/login">
-                  <svg class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <g stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></g>
-                  </svg>
-                </a>
-                )
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
   </div>
 </div>

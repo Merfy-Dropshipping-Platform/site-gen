@@ -98,6 +98,11 @@ export const SKELETON_LAYOUT: SkeletonLayout = {
   // Первые секции страниц — PAGE_START. У «Личного кабинета» и «Заказов» «Отступов» нет (wrapper: ["scheme"]), им
   // значение не ставится. Мерчант меняет всё это в «Отступах» секции.
   wrappers: {
+    // Шапка и подвал — сводные секции пяти тем, вид flux (базовые секции, 28.10). Шапка: свой ряд 64 px на телефоне и
+    // 16 px сверху и снизу на компьютере плюс «Отступы» 8 — 80 и 136 px, как у flux; без правки был бы отступ темы.
+    // Подвал: 80 px сверху, снизу 0 — внизу полоса «Разработано на Merfy» своей высоты.
+    header: { header: { padding: { top: 8, bottom: 8 } } },
+    footer: { footer: { padding: { top: 80, bottom: 0 } } },
     home: { hero: PAGE_START },
     catalog: { catalog: PAGE_START },
     collection: { collection: PAGE_START },

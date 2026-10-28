@@ -20,10 +20,12 @@ const SCHEME_FIELD: SectionField = {
   label: 'Цветовая схема',
   setting: { kind: 'color-scheme', default: '' },
 };
+// Отступы до 160 на шаге 8 — как у секций пяти тем на проде (подвал: Footer.puckConfig.ts, constraints.padding), этап 0
+// базовых секций (E15).
 const PADDING_FIELD: SectionField = {
   id: 'padding',
   label: 'Отступы',
-  setting: { kind: 'padding', default: null, max: 120, step: 8 },
+  setting: { kind: 'padding', default: null, max: 160, step: 8 },
 };
 const STICKY_FIELD: SectionField = {
   id: 'sticky',

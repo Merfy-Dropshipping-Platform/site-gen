@@ -1,6 +1,7 @@
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
 import { bindingNames, type Found } from './expressions';
-import { settingFieldsOf } from './fields';
+import { settingFieldsOf, type SectionField } from './fields';
+import { isInlineTextSpec } from './inline-text';
 import type { SectionManifest } from './format';
 
 // set:html в шаблоне секции (блок 1 «Секций и SDK», часть 3, Р58): Astro вставляет значение как HTML, без
@@ -8,7 +9,8 @@ import type { SectionManifest } from './format';
 // секции или <блок>.settings.<id>, где <блок> — первый параметр стрелки в blocks.map(...), а <id> — richtext у каждого
 // типа блока, где он есть. Запрет консервативный: имя settings, связанное параметром стрелки, или имя блока, связанное
 // ещё где-то, — отказ: по дереву не видно, что за значение под этим именем. Блок 8, часть 8г-2: ещё HTML записи —
-// page.record.html и settings.<id>.html поля вида policy (recordHtmlAllowed).
+// page.record.html и settings.<id>.html поля вида policy (recordHtmlAllowed). Базовые секции, этап 0 (E14): так же — поле
+// с начертаниями (string и text с ai): его значение очищено до <em> и <strong> (inline-text.ts). В RichtextIds — id обоих.
 export interface RichtextIds {
   section: ReadonlySet<string>;
   block: ReadonlySet<string>;
@@ -18,21 +20,25 @@ export interface RichtextIds {
 
 export const NO_RICHTEXT: RichtextIds = { section: new Set(), block: new Set() };
 export const SET_HTML_TEXT =
-  'set:html можно только с настройкой вида richtext, page.record.html или settings.<id>.html поля вида policy';
+  'set:html можно только с настройкой вида richtext, string или text с ai, page.record.html или settings.<id>.html поля вида policy';
 
 type Fields = SectionManifest['settings'];
 
+// Значение поля — очищенный HTML: richtext (richtext.ts) или текст с начертаниями (inline-text.ts).
+const isHtmlField = (field: SectionField): boolean =>
+  field.setting.kind === 'richtext' || isInlineTextSpec(field.setting);
+
 const richtextOf = (fields: Fields): string[] =>
   settingFieldsOf(fields)
-    .filter((field) => field.setting.kind === 'richtext')
+    .filter(isHtmlField)
     .map((field) => field.id);
 
-// id richtext: у секции; у блоков — id, который во всех типах блока, где он есть, вида richtext.
+// id полей с HTML: у секции; у блоков — id, который во всех типах блока, где он есть, — поле с HTML.
 export function richtextIdsOf(manifest: Pick<SectionManifest, 'settings' | 'blocks'>): RichtextIds {
   const types = Object.values(manifest.blocks ?? {});
   const ids = new Set(types.flatMap((type) => type.settings.map((field) => field.id)));
   const block = [...ids].filter((id) =>
-    types.every((type) => type.settings.every((field) => field.id !== id || field.setting.kind === 'richtext')),
+    types.every((type) => type.settings.every((field) => field.id !== id || isHtmlField(field))),
   );
   const html = settingFieldsOf(manifest.settings)
     .filter((field) => field.setting.kind === 'policy')

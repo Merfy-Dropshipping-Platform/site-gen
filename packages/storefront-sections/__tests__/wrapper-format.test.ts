@@ -54,7 +54,7 @@ describe('объявление общих настроек', () => {
       ['padding', 'Отступы', 'padding'],
       ['sticky', 'Статичность', 'select'],
     ]);
-    expect(WRAPPER_FIELDS[1]?.setting).toMatchObject({ default: null, max: 120, step: 8 });
+    expect(WRAPPER_FIELDS[1]?.setting).toMatchObject({ default: null, max: 160, step: 8 });
     expect(WRAPPER_FIELDS[2]?.setting).toMatchObject({
       default: 'scroll-up',
       options: [

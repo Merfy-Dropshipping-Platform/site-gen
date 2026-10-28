@@ -56,14 +56,14 @@ const { settings, blocks } = Astro.props;
                 },
                 settings.images.url1 !== '' ? 'text-background' : 'text-heading',
               ]}
-            >
-              {block.settings.heading}
-            </h2>
+              set:html={block.settings.heading}
+            />
           )}
           {block.type === 'text' && (
-            <p class:list={['m-0 max-w-2xl text-pretty text-lg', settings.images.url1 !== '' ? 'text-background' : 'text-muted-foreground']}>
-              {block.settings.text}
-            </p>
+            <p
+              class:list={['m-0 max-w-2xl text-pretty text-lg', settings.images.url1 !== '' ? 'text-background' : 'text-muted-foreground']}
+              set:html={block.settings.text}
+            />
           )}
           {block.type === 'button' && block.settings.label && (
             <a

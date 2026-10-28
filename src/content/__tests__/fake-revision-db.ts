@@ -78,8 +78,9 @@ export function makeFakeRevisionDb(
   const revisions = new Map<string, FakeRevision>();
   const inPlaceUpdates: Array<{ id: unknown; data: unknown }> = [];
   const hooks: { beforeCas?: () => void } = {};
-  // Роли секций магазина (блок 12, часть 12а): строки storefront_section, которые читает DocumentAdapter.sectionRoles.
-  const sectionRoles: Array<{ name: string; role: string | null }> = [];
+  // Секции магазина: строки storefront_section (имя и manifest), которые читает DocumentAdapter.sectionManifests —
+  // роли (блок 12, часть 12а) и поля с начертаниями (этап 0 базовых секций).
+  const shopSections: Array<{ name: string; manifest: unknown }> = [];
   let clock = 0;
 
   /**
@@ -188,7 +189,7 @@ export function makeFakeRevisionDb(
             table === schema.site
               ? selectSites(cond)
               : table === schema.storefrontSection
-                ? structuredClone(sectionRoles)
+                ? structuredClone(shopSections)
                 : selectRevisions(cond),
           ),
       }),
@@ -231,7 +232,11 @@ export function makeFakeRevisionDb(
     hooks,
     /** Роль секции магазина в storefront_section (блок 12, часть 12а); null — секция без роли. */
     seedSectionRole(name: string, role: string | null) {
-      sectionRoles.push({ name, role });
+      shopSections.push({ name, manifest: role === null ? {} : { role } });
+    },
+    /** Секция магазина в storefront_section с manifest текущей правки. */
+    seedSection(name: string, manifest: unknown) {
+      shopSections.push({ name, manifest });
     },
     /**
      * Положить ревизию напрямую (стартовое состояние магазина). `siteId` —

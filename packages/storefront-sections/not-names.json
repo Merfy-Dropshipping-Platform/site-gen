@@ -1,7 +1,7 @@
 [
   {
-    "id": "section-view", "names": ["layout", "variant", "mode", "view", "design", "style"],
-    "refusal": "Секция другого вида — новая секция: её делает ИИ или автор. Мелкие отличия — поля `image-position`, `columns`, `height`"
+    "id": "section-view", "names": ["variant", "mode", "view", "design", "style"],
+    "refusal": "Другая раскладка той же секции — поле `layout`; секция другого назначения — новая секция. Мелкие отличия — поля `image-position`, `columns`, `height`"
   },
   {
     "id": "own-color", "names": ["color", "colour", "background", "background-color", "text-color"],

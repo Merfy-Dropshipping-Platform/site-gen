@@ -49,6 +49,19 @@ export function placedShopSections(document: unknown): string[] {
   return [...names];
 }
 
+// Роли по manifest секций магазина (storefront_section): «имя секции → роль», секции без роли не входят.
+export function sectionRolesOf(
+  manifests: ReadonlyMap<string, unknown>,
+): ReadonlyMap<string, string> {
+  return new Map(
+    [...manifests].flatMap(([name, manifest]): [string, string][] =>
+      isRecord(manifest) && typeof manifest.role === "string"
+        ? [[name, manifest.role]]
+        : [],
+    ),
+  );
+}
+
 // Повторы ролей документа по карте «имя секции → роль».
 export function roleDuplicates(
   document: unknown,

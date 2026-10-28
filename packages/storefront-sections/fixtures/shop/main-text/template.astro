@@ -1,0 +1,42 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<!-- Колонка заголовка, текста и кнопки. «Позиция» ставит колонку слева, по центру или справа и выравнивает по ней текст;
+     стиль текста и кнопки — по data-* на корне. -->
+<div
+  class="mx-auto w-full max-w-page px-4 font-body md:px-8"
+  data-position={settings['content-position']}
+  data-text-style={settings['text-style']}
+  data-button-style={settings['button-style']}
+>
+  <div
+    class="flex w-full max-w-4xl flex-col gap-3 md:gap-4 in-data-[position=left]:mr-auto in-data-[position=left]:items-start in-data-[position=left]:text-left in-data-[position=center]:mx-auto in-data-[position=center]:items-center in-data-[position=center]:text-center in-data-[position=right]:ml-auto in-data-[position=right]:items-end in-data-[position=right]:text-right"
+  >
+    {blocks.map((block) => (
+      <div class="w-full data-[block=button]:mt-3 data-[block=button]:w-auto md:data-[block=button]:mt-4" data-block={block.type}>
+        {block.type === 'heading' && (
+          <h2
+            class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[text-style=italic]:italic data-[heading-size=small]:text-lg data-[heading-size=medium]:text-xl data-[heading-size=large]:text-2xl"
+            data-heading-size={block.settings['heading-size']}
+            set:html={block.settings.heading}
+          />
+        )}
+        {block.type === 'text' && (
+          <p
+            class="m-0 text-pretty text-foreground in-data-[text-style=italic]:italic data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg"
+            data-text-size={block.settings['text-size']}
+            set:html={block.settings.text}
+          />
+        )}
+        {block.type === 'button' && block.settings['button-label'] && (
+          <a
+            class="inline-flex h-12 items-center justify-center rounded-button px-6 text-base no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[button-style=primary]:border-width-button in-data-[button-style=primary]:border-primary-border in-data-[button-style=primary]:bg-primary in-data-[button-style=primary]:text-primary-foreground in-data-[button-style=primary]:shadow-button in-data-[button-style=primary]:hover:bg-primary-hover in-data-[button-style=primary]:hover:text-primary-hover-foreground in-data-[button-style=secondary]:border in-data-[button-style=secondary]:border-foreground in-data-[button-style=secondary]:bg-transparent in-data-[button-style=secondary]:text-foreground in-data-[button-style=secondary]:hover:bg-foreground in-data-[button-style=secondary]:hover:text-background"
+            href={block.settings['button-link']}
+          >
+            {block.settings['button-label']}
+          </a>
+        )}
+      </div>
+    ))}
+  </div>
+</div>

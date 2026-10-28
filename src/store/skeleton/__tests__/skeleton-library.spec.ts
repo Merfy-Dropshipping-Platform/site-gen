@@ -126,8 +126,10 @@ describe("раскладка заготовки", () => {
       }
   });
 
-  it("шапка и служебные секции «Поверх страниц» — без «Отступов»: обёртка не даёт им пустых полос", () => {
-    expect(wrapperIdsOf("header")).toEqual(["scheme", "sticky"]);
+  // Шапка с «Отступами», как на проде (базовые секции, 28.10): значение по умолчанию ставит заготовка (wrappers.header).
+  it("шапка — «Цветовая схема», «Отступы», «Статичность»; служебные секции «Поверх страниц» — без «Отступов»", () => {
+    expect(wrapperIdsOf("header")).toEqual(["scheme", "padding", "sticky"]);
+    expect(SKELETON_LAYOUT.wrappers?.header?.header).toEqual({ padding: { top: 8, bottom: 8 } });
     for (const name of SKELETON_LAYOUT.lists.overlay)
       expect(wrapperIdsOf(name)).toEqual([]);
   });

@@ -420,7 +420,7 @@ describe('общие настройки секции в превью (часть
     expect(answer.status).toBe(200);
     // Без правки sticky — умолчание scroll-up (Р15в-2), поэтому классы закрепления тоже на обёртке.
     expect(blockAnswerSchema.parse(JSON.parse(answer.body)).html).toContain(
-      'class="color-scheme-2 pt-10 pb-20 sticky top-0 z-50 transition-transform duration-300 motion-reduce:transition-none data-[hidden]:-translate-y-full"',
+      'class="color-scheme-2 pt-10 pb-20 sticky top-0 z-50 bg-background transition-transform duration-300 motion-reduce:transition-none data-[hidden]:-translate-y-full"',
     );
   });
 
@@ -428,7 +428,7 @@ describe('общие настройки секции в превью (часть
     const { deps } = depsOf(new Map([[WRAPPED.name, WRAPPED]]));
     const answer = await sectionPreview(deps, SHOP, block({ id: 'hero-1', section: 'shop:hero', settings: {} }));
     const html = blockAnswerSchema.parse(JSON.parse(answer.body)).html;
-    expect(html).toContain('class="py-section sticky top-0 z-50');
+    expect(html).toContain('class="py-section sticky top-0 z-50 bg-background');
     expect(html).toContain('data-behavior="sticky-header" data-mode="scroll-up"');
     const plain = await sectionPreview(
       depsOf().deps,

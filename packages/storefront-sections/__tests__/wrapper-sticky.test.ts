@@ -7,7 +7,7 @@ import { STICKY_VALUES, STICKY_VIEW, isDefaultWrapperView, resolveWrapperView } 
 // разметка и CSS страницы. Полные виды закреплены и в тесте входов сборки (storefront-build, sections-wrapper-sticky.test.ts):
 // меняешь таблицу STICKY_VIEW — меняй оба теста.
 const ALL = ['scheme', 'padding', 'sticky'] as const;
-const PINNED = ['sticky', 'top-0', 'z-50'];
+const PINNED = ['sticky', 'top-0', 'z-50', 'bg-background'];
 const SLIDING = [
   'transition-transform',
   'duration-300',
@@ -112,15 +112,15 @@ describe('закрепление на странице', () => {
     );
   });
 
-  it('always — sticky top-0 z-50, без поведения', async () => {
+  it('always — sticky top-0 z-50 с фоном схемы, без поведения', async () => {
     expect(await renderSection(placedOf({ sticky: 'always' }), SECTIONS, 'live')).toBe(
-      wrapped('py-section sticky top-0 z-50'),
+      wrapped('py-section sticky top-0 z-50 bg-background'),
     );
   });
 
   it('scroll-up — классы перехода и сдвига, data-behavior и data-mode; в превью то же', async () => {
     const classes =
-      'py-section sticky top-0 z-50 transition-transform duration-300 motion-reduce:transition-none data-[hidden]:-translate-y-full';
+      'py-section sticky top-0 z-50 bg-background transition-transform duration-300 motion-reduce:transition-none data-[hidden]:-translate-y-full';
     const attributes = ' data-behavior="sticky-header" data-mode="scroll-up"';
     for (const mode of ['live', 'preview'] as const) {
       expect(await renderSection(placedOf({ sticky: 'scroll-up' }), SECTIONS, mode)).toBe(wrapped(classes, attributes));

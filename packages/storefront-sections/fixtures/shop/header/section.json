@@ -3,12 +3,57 @@
   "name": "header",
   "kind": "section",
   "title": "Шапка",
-  "groups": ["header"],
+  "groups": [
+    "header"
+  ],
   "limit": 1,
   "removable": false,
-  "uses": ["theme", "shop", "cart", "favorites", "customer"],
-  "themeSettings": ["wishlist-enabled"],
-  "wrapper": ["scheme", "sticky"],
+  "uses": [
+    "theme",
+    "shop",
+    "cart",
+    "favorites",
+    "customer"
+  ],
+  "themeSettings": [
+    "wishlist-enabled"
+  ],
+  "wrapper": [
+    "scheme",
+    "padding",
+    "sticky"
+  ],
+  "names": {
+    "capitals": {
+      "kinds": [
+        "select"
+      ],
+      "label": "Заглавные буквы",
+      "about": "Что в шапке набрано заглавными: логотип-название, логотип и пункты меню или ничего",
+      "asks": [
+        "заглавные",
+        "капс",
+        "прописные",
+        "uppercase",
+        "caps"
+      ]
+    },
+    "announcement": {
+      "kinds": [
+        "text"
+      ],
+      "label": "Объявление",
+      "about": "Строка объявления над шапкой: доставка, акция; пусто — строки нет",
+      "asks": [
+        "объявление",
+        "промо",
+        "полоса над шапкой",
+        "бегущая строка",
+        "announcement",
+        "promo bar"
+      ]
+    }
+  },
   "settings": [
     {
       "id": "logo-position",
@@ -41,6 +86,9 @@
     },
     {
       "wrapper": "scheme"
+    },
+    {
+      "wrapper": "padding"
     },
     {
       "id": "color-scheme",
@@ -78,6 +126,65 @@
       "setting": {
         "kind": "menu",
         "default": "main"
+      }
+    },
+    {
+      "id": "active-link",
+      "label": "Активный пункт меню",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "color",
+        "options": [
+          {
+            "value": "color",
+            "label": "Цветом"
+          },
+          {
+            "value": "underline",
+            "label": "Подчёркиванием"
+          }
+        ]
+      }
+    },
+    {
+      "id": "capitals",
+      "label": "Заглавные буквы",
+      "setting": {
+        "kind": "select",
+        "default": "logo",
+        "options": [
+          {
+            "value": "none",
+            "label": "Нет"
+          },
+          {
+            "value": "logo",
+            "label": "Логотип"
+          },
+          {
+            "value": "all",
+            "label": "Логотип и меню"
+          }
+        ]
+      }
+    },
+    {
+      "id": "announcement",
+      "label": "Текст",
+      "section": "Объявление",
+      "setting": {
+        "kind": "text",
+        "default": "",
+        "ai": "description"
+      }
+    },
+    {
+      "id": "link",
+      "label": "Ссылка",
+      "setting": {
+        "kind": "url",
+        "default": ""
       }
     }
   ],

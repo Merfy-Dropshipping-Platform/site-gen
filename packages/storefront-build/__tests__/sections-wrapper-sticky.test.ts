@@ -6,7 +6,7 @@ import { codeInputs } from './support-code';
 // Полные виды закрепления (блок 7, часть 7б, Р7б-1) проходят строгую схему входов сборки: классы — безопасные токены,
 // атрибуты — data-* с простыми значениями. Те же значения закреплены в wrapper-sticky.test.ts пакета секций (STICKY_VIEW):
 // меняешь таблицу — меняй оба теста.
-const PINNED = ['sticky', 'top-0', 'z-50'];
+const PINNED = ['sticky', 'top-0', 'z-50', 'bg-background'];
 const VIEWS: Record<string, WrapperView> = {
   always: { classes: ['py-section', ...PINNED], attributes: {} },
   'scroll-up': {

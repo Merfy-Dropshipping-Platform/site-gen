@@ -56,10 +56,11 @@ describe("planSkeleton: новый магазин nova", () => {
     const [cart, summary] = doc.sections["page-cart"];
     expect(cart.wrapper).toEqual({ padding: { top: 32, bottom: 0 } });
     expect(summary.wrapper).toEqual({ padding: { top: 24, bottom: 64 } });
-    // Шапка, подвал, «Поверх страниц» и секции главной после первой — с отступом темы: ключа wrapper нет.
+    // Шапка и подвал — вид flux (базовые секции, 28.10): шапка 8 px сверху и снизу, подвал 80 px сверху, снизу 0.
+    expect(doc.sections.header[0].wrapper).toEqual({ padding: { top: 8, bottom: 8 } });
+    expect(doc.sections.footer[0].wrapper).toEqual({ padding: { top: 80, bottom: 0 } });
+    // «Поверх страниц» и секции главной после первой — с отступом темы: ключа wrapper нет.
     const themed = [
-      ...doc.sections.header,
-      ...doc.sections.footer,
       ...doc.sections.overlay,
       ...doc.sections.home.slice(1),
     ];

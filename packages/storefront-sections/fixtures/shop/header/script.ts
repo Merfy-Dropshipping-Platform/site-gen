@@ -1,26 +1,23 @@
-import { defineSection } from '@merfy/shell';
+import { defineSection, type El } from '@merfy/shell';
 
-// «Шапка» (блок 10 «Секций и SDK», 10.9, «Решил сам» п. 21; часть 10а, Р10а-12): число штук в корзине у ссылки /cart —
-// ctx.watch(ctx.cart.$count) у каждого data-ref="cart-count"; переход по ссылке — cart.open в разметке. Число
-// отмеченных у «Избранного» — так же (часть 10б, Р10б-13); адрес «Профиля» — по входу (часть 10в, Р10в-14).
+// «Шапка»: число штук в корзине и отмеченных в «Избранном» — на значках (data-ref="cart-count", "favorites-count"),
+// пустой счётчик скрыт; адрес «Профиля» — по входу. Переход в корзину — действие cart.open в разметке, поиск —
+// search.open.
+
+const showCount = (badges: El[], count: number): void => {
+  for (const badge of badges) {
+    badge.text(count);
+    badge.toggle(count > 0);
+  }
+};
+
 export default defineSection({
   mount(_el, ctx) {
-    ctx.watch(ctx.cart.$count, (count) => {
-      for (const badge of ctx.refs('cart-count')) {
-        badge.text(count);
-        badge.toggle(count > 0);
-      }
-    });
-    ctx.watch(ctx.favorites.$count, (count) => {
-      for (const badge of ctx.refs('favorites-count')) {
-        badge.text(count);
-        badge.toggle(count > 0);
-      }
-    });
+    ctx.watch(ctx.cart.$count, (count) => showCount(ctx.refs('cart-count'), count));
+    ctx.watch(ctx.favorites.$count, (count) => showCount(ctx.refs('favorites-count'), count));
     // Вход читается при первой подписке ($customer): подписываемся после первого прохода страницы, чтобы чтение me
     // не шло раньше готовности страницы; до ответа me ссылка ведёт на «Вход», как в HTML.
     ctx.after(0, () => {
-      // Кто вошёл — часть customer ядра (блок 15, часть 15ж): код входа «Шапка» на страницу не приносит.
       ctx.watch(ctx.customer.$customer, (state) => {
         const href = state.customer === null ? '/login' : '/account';
         for (const profile of ctx.refs('profile')) profile.attr('href', href);

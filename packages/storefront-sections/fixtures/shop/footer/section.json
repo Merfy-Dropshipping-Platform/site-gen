@@ -6,16 +6,35 @@
   "groups": ["footer"],
   "limit": 1,
   "removable": false,
-  "uses": ["theme", "shop"],
+  "uses": ["theme", "shop", "newsletter"],
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "payment-icons": {
+      "kinds": ["toggle"],
+      "label": "Значки оплаты",
+      "about": "Значки карт МИР, Visa и Mastercard в подвале, когда у магазина есть оплата онлайн",
+      "asks": ["значки оплаты", "платёжные системы", "карты", "мир", "visa", "mastercard", "payment icons"]
+    },
+    "capitals": {
+      "kinds": ["select"],
+      "label": "Заглавные буквы",
+      "about": "Какие заголовки подвала набраны заглавными: заголовки колонок, все заголовки или никакие",
+      "asks": ["заглавные", "капс", "прописные", "uppercase", "caps"]
+    }
+  },
   "settings": [
     { "id": "logo", "label": "Логотип", "setting": { "kind": "image", "default": "", "maxBytes": 512000 } },
-    { "id": "menu", "label": "Изменить пункты меню", "setting": { "kind": "menu", "default": "main" } },
     {
       "id": "newsletter",
-      "label": "Рассылка",
-      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Показать", "off": "Скрыть" } }
+      "label": "Скрыть/показать",
+      "section": "Рассылка",
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Показать", "off": "Скрыть" } }
     },
-    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "" } },
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "setting": { "kind": "string", "default": "Подпишитесь на нашу рассылку", "ai": "title" }
+    },
     {
       "id": "heading-size",
       "label": "Размер заголовка",
@@ -29,7 +48,15 @@
         ]
       }
     },
-    { "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "" } },
+    {
+      "id": "text",
+      "label": "Текст",
+      "setting": {
+        "kind": "text",
+        "default": "Введите электронную почту и получайте информацию нашего бренда",
+        "ai": "description"
+      }
+    },
     {
       "id": "text-size",
       "label": "Размер текста",
@@ -40,6 +67,42 @@
           { "value": "small", "label": "Маленький" },
           { "value": "medium", "label": "Средний" },
           { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "layout",
+      "label": "Раскладка",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "3-col",
+        "options": [
+          { "value": "3-col", "label": "Колонки" },
+          { "value": "2-part", "label": "Две части" },
+          { "value": "2-part-asymmetric", "label": "Друг под другом" },
+          { "value": "minimal", "label": "Одна строка" }
+        ]
+      }
+    },
+    { "id": "menu", "label": "Изменить пункты меню", "setting": { "kind": "menu", "default": "main" } },
+    {
+      "id": "payment-icons",
+      "label": "Значки оплаты",
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    {
+      "id": "capitals",
+      "label": "Заглавные буквы",
+      "setting": {
+        "kind": "select",
+        "default": "columns",
+        "options": [
+          { "value": "none", "label": "Нет" },
+          { "value": "columns", "label": "Заголовки колонок" },
+          { "value": "all", "label": "Все заголовки" }
         ]
       }
     }

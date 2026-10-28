@@ -1,93 +1,127 @@
 ---
 const { settings, theme, shop } = Astro.props;
 ---
-<div data-footer class="mx-auto flex max-w-page flex-col gap-10 px-4 font-body text-sm text-foreground">
-  {settings.newsletter && (
-    <section class="flex flex-col gap-4 border-b border-border pb-10 md:flex-row md:items-end md:justify-between md:gap-10">
-      <div class="flex max-w-xl flex-col gap-2">
-        <h2 class:list={['m-0 font-heading weight-heading tracking-heading text-heading', { 'text-xl': settings['heading-size'] === 'small', 'text-2xl': settings['heading-size'] === 'medium', 'text-3xl': settings['heading-size'] === 'large' }]}>{settings.heading || 'Подпишитесь на рассылку'}</h2>
-        {settings.text && <p class:list={['m-0 text-muted-foreground', { 'text-sm': settings['text-size'] === 'small', 'text-base': settings['text-size'] === 'medium', 'text-lg': settings['text-size'] === 'large' }]}>{settings.text}</p>}
-      </div>
-      <div class="flex w-full flex-col gap-2 md:max-w-md">
-        <form class="m-0 flex gap-2">
-          <input
-            aria-label="Email"
-            class="h-11 min-w-0 flex-1 rounded-input border-width-input border-input bg-background px-4 text-base text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            name="email"
-            placeholder="Ваш e-mail"
-            required
-            type="email"
-          />
-          <button aria-label="Подписаться" class="h-11 shrink-0 rounded-button border-width-button border-primary-border bg-primary px-5 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground disabled:opacity-60" disabled type="submit">Подписаться</button>
+<!-- Подвал пяти тем одной разметкой: раскладка (3-col — flux и rose, 2-part — satin и bloom, 2-part-asymmetric —
+     vanilla, minimal) — атрибутом корня и вариантами классов; ссылки — из меню и данных магазина. -->
+<div class="font-body text-sm text-foreground" data-capitals={settings.capitals} data-layout={settings.layout}>
+  <div class="mx-auto flex max-w-page flex-col gap-10 px-4 in-data-[layout=2-part-asymmetric]:items-center in-data-[layout=2-part-asymmetric]:text-center md:in-data-[layout=2-part-asymmetric]:items-start md:in-data-[layout=2-part-asymmetric]:text-left">
+    {settings.newsletter && (
+      <section aria-label="Рассылка" class="flex w-full flex-col gap-6 md:in-data-[layout=2-part]:flex-row md:in-data-[layout=2-part]:items-center md:in-data-[layout=2-part]:justify-between">
+        <div class="flex flex-col gap-2">
+          {settings.heading && (
+            <h2
+              class="m-0 font-heading weight-body tracking-heading text-heading in-data-[capitals=all]:uppercase data-[heading-size=small]:text-base md:data-[heading-size=small]:text-lg data-[heading-size=medium]:text-xl md:data-[heading-size=medium]:text-2xl data-[heading-size=large]:text-2xl md:data-[heading-size=large]:text-3xl"
+              data-heading-size={settings['heading-size']}
+              set:html={settings.heading}
+            />
+          )}
+          {settings.text && (
+            <p
+              class="m-0 text-muted-foreground data-[text-size=small]:text-xs md:data-[text-size=small]:text-sm data-[text-size=medium]:text-sm md:data-[text-size=medium]:text-base data-[text-size=large]:text-base md:data-[text-size=large]:text-lg"
+              data-text-size={settings['text-size']}
+              set:html={settings.text}
+            />
+          )}
+        </div>
+        <form class="m-0 flex w-full flex-col gap-2 md:max-w-108" data-action="subscribe" novalidate>
+          <label class="sr-only" for="footer-newsletter-email">Электронная почта</label>
+          <div class="flex h-14 items-center gap-2 rounded-input border-width-input border-input bg-background pl-4 pr-1 shadow-input focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
+            <input
+              autocomplete="email"
+              class="h-11 min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
+              data-ref="email"
+              id="footer-newsletter-email"
+              name="email"
+              placeholder="Электронная почта"
+              required
+              type="email"
+            />
+            <button aria-label="Подписаться" class="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center text-heading hover:opacity-70 disabled:opacity-50" data-ref="submit" type="submit">
+              <svg class="size-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" viewBox="0 0 24 24"><path d="M3 12h18" /><path d="m15 6 6 6-6 6" /></svg>
+            </button>
+          </div>
+          <p class="m-0 text-sm text-foreground" data-ref="subscribed" hidden role="status">Спасибо! Мы отправим вам приветственное письмо.</p>
+          <p class="m-0 text-sm text-foreground" data-ref="already-subscribed" hidden role="status">Вы уже подписаны на рассылку.</p>
+          <p class="m-0 text-sm text-destructive" data-ref="too-many" hidden role="alert">Слишком много попыток. Попробуйте позже.</p>
+          <p class="m-0 text-sm text-destructive" data-ref="invalid" hidden role="alert">Проверьте адрес электронной почты.</p>
+          <p class="m-0 text-sm text-destructive" data-ref="failed" hidden role="alert">Не получилось подписаться. Попробуйте позже.</p>
         </form>
-        <p class:list={['m-0', { 'text-sm': settings['text-size'] === 'small', 'text-base': settings['text-size'] === 'medium', 'text-lg': settings['text-size'] === 'large' }, 'text-foreground']} role="status"></p>
-      </div>
-    </section>
-  )}
-  <div class="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
-    <div class="col-span-2 flex flex-col gap-3 md:col-span-1">
+      </section>
+    )}
+
+    <div class="flex w-full flex-col gap-10 md:grid md:grid-cols-4 md:gap-4 md:in-data-[layout=2-part]:flex md:in-data-[layout=2-part]:flex-row md:in-data-[layout=2-part]:justify-between md:in-data-[layout=2-part-asymmetric]:flex md:in-data-[layout=minimal]:flex md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:flex-wrap md:in-data-[layout=minimal]:items-center md:in-data-[layout=minimal]:justify-between">
       {settings.logo ? (
-        <img alt={shop.name} class="h-10 w-auto max-w-logo self-start object-contain" src={settings.logo} />
+        <a class="inline-flex self-start no-underline in-data-[layout=2-part-asymmetric]:self-center md:col-span-4 md:in-data-[layout=2-part-asymmetric]:self-start" href="/">
+          <img alt={shop.name} class="block h-10 w-auto max-w-logo object-contain" src={settings.logo} />
+        </a>
       ) : (
-        shop.name && <p class="m-0 font-heading weight-heading text-lg text-heading">{shop.name}</p>
+        <a class="inline-flex min-h-11 items-center self-start font-heading weight-heading tracking-heading text-xl text-heading no-underline in-data-[capitals=all]:uppercase in-data-[layout=2-part-asymmetric]:self-center in-data-[layout=3-col]:hidden md:min-h-0 md:in-data-[layout=2-part-asymmetric]:self-start" href="/">{shop.name}</a>
+      )}
+      <div class="contents md:in-data-[layout=2-part]:flex md:in-data-[layout=2-part]:gap-16 md:in-data-[layout=minimal]:flex md:in-data-[layout=minimal]:flex-wrap md:in-data-[layout=minimal]:gap-x-8">
+        {settings.menu.items.some((item) => item.items.length === 0) && (
+          <nav aria-label="Навигация" class="flex flex-col gap-2 md:gap-4">
+            <h3 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">Навигация</h3>
+            <ul class="m-0 flex list-none flex-col p-0 md:gap-3 md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:gap-6">
+              {settings.menu.items.filter((item) => item.items.length === 0).map((item) => (
+                <li><a class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={item.url}>{item.label}</a></li>
+              ))}
+            </ul>
+          </nav>
+        )}
+        {settings.menu.items.filter((item) => item.items.length > 0).map((item) => (
+          <nav aria-label={item.label} class="flex flex-col gap-2 md:gap-4">
+            <h3 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">{item.label}</h3>
+            <ul class="m-0 flex list-none flex-col p-0 md:gap-3 md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:gap-6">
+              {item.items.map((child) => (
+                <li><a class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={child.url}>{child.label}</a></li>
+              ))}
+            </ul>
+          </nav>
+        ))}
+        {shop.policies.length > 0 && (
+          <nav aria-label="Информация" class="flex flex-col gap-2 md:gap-4">
+            <h3 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">Информация</h3>
+            <ul class="m-0 flex list-none flex-col p-0 md:gap-3 md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:gap-6">
+              {shop.policies.map((policy) => (
+                <li><a class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={policy.url}>{policy.title}</a></li>
+              ))}
+            </ul>
+          </nav>
+        )}
+        {(shop.contacts.phone || shop.contacts.email || shop.contacts.fields.length > 0) && (
+          <div class="flex flex-col gap-2 md:gap-4">
+            <h3 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">Контакты</h3>
+            <ul class="m-0 flex list-none flex-col p-0 text-base text-muted-foreground md:gap-3 md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:gap-6">
+              {shop.contacts.phone && <li><a class="flex min-h-11 items-center text-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={`tel:${shop.contacts.phone}`}>{shop.contacts.phone}</a></li>}
+              {shop.contacts.email && <li><a class="flex min-h-11 items-center break-all text-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={`mailto:${shop.contacts.email}`}>{shop.contacts.email}</a></li>}
+              {shop.contacts.fields.map((field) => <li class="py-2 md:py-0">{field.label}: {field.value}</li>)}
+            </ul>
+          </div>
+        )}
+      </div>
+      {settings['payment-icons'] && shop.payments.online && (
+        <ul aria-label="Способы оплаты" class="m-0 flex list-none flex-wrap items-start gap-3 p-0 in-data-[layout=2-part-asymmetric]:justify-center md:col-start-4 md:justify-end md:justify-self-end md:in-data-[layout=2-part-asymmetric]:justify-start">
+          {['МИР', 'Visa', 'Mastercard'].map((card) => (
+            <li class="inline-flex h-6 items-center rounded-badge bg-background px-2 text-xs weight-heading text-heading shadow-input">{card}</li>
+          ))}
+        </ul>
       )}
     </div>
-    {settings.menu.items.length > 0 && (
-      <nav class="flex flex-col gap-3" aria-label="Навигация">
-        <h3 class="m-0 text-sm weight-heading text-heading">Навигация</h3>
-        <ul class="m-0 flex list-none flex-col gap-2 p-0">
-          {settings.menu.items.map((item) => (
-            <li><a class="text-muted-foreground no-underline hover:text-foreground" href={item.url}>{item.label}</a></li>
-          ))}
-        </ul>
-      </nav>
-    )}
-    {shop.policies.length > 0 && (
-      <nav class="flex flex-col gap-3" aria-label="Информация">
-        <h3 class="m-0 text-sm weight-heading text-heading">Информация</h3>
-        <ul class="m-0 flex list-none flex-col gap-2 p-0">
-          {shop.policies.map((policy) => (
-            <li><a class="text-muted-foreground no-underline hover:text-foreground" href={policy.url}>{policy.title}</a></li>
-          ))}
-        </ul>
-      </nav>
-    )}
-    {(shop.contacts.phone || shop.contacts.email || shop.contacts.fields.length > 0 || theme['social-telegram'] || theme['social-vk'] || theme['social-dzen'] || theme['social-youtube'] || theme['social-tiktok'] || theme['social-max']) && (
-      <div class="col-span-2 flex flex-col gap-6 md:col-span-1">
-        {(shop.contacts.phone || shop.contacts.email || shop.contacts.fields.length > 0) && (
-          <div class="flex flex-col gap-3">
-            <h3 class="m-0 text-sm weight-heading text-heading">Контакты</h3>
-            <ul class="m-0 flex list-none flex-col gap-2 p-0 text-muted-foreground">
-              {shop.contacts.phone && <li><a class="text-foreground no-underline hover:underline" href={`tel:${shop.contacts.phone}`}>{shop.contacts.phone}</a></li>}
-              {shop.contacts.email && <li><a class="break-all text-foreground no-underline hover:underline" href={`mailto:${shop.contacts.email}`}>{shop.contacts.email}</a></li>}
-              {shop.contacts.fields.map((field) => <li>{field.label}: {field.value}</li>)}
-            </ul>
-          </div>
-        )}
-        {(theme['social-telegram'] || theme['social-vk'] || theme['social-dzen'] || theme['social-youtube'] || theme['social-tiktok'] || theme['social-max']) && (
-          <div class="flex flex-col gap-3">
-            <h3 class="m-0 text-sm weight-heading text-heading">Социальные сети</h3>
-            <ul class="m-0 flex list-none flex-wrap gap-2 p-0">
-              {theme['social-telegram'] && <li><a class="inline-flex h-11 items-center rounded-badge border-width-input border-border px-4 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href={theme['social-telegram']} rel="noopener noreferrer" target="_blank">Telegram</a></li>}
-              {theme['social-vk'] && <li><a class="inline-flex h-11 items-center rounded-badge border-width-input border-border px-4 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href={theme['social-vk']} rel="noopener noreferrer" target="_blank">ВКонтакте</a></li>}
-              {theme['social-dzen'] && <li><a class="inline-flex h-11 items-center rounded-badge border-width-input border-border px-4 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href={theme['social-dzen']} rel="noopener noreferrer" target="_blank">Дзен</a></li>}
-              {theme['social-youtube'] && <li><a class="inline-flex h-11 items-center rounded-badge border-width-input border-border px-4 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href={theme['social-youtube']} rel="noopener noreferrer" target="_blank">YouTube</a></li>}
-              {theme['social-tiktok'] && <li><a class="inline-flex h-11 items-center rounded-badge border-width-input border-border px-4 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href={theme['social-tiktok']} rel="noopener noreferrer" target="_blank">TikTok</a></li>}
-              {theme['social-max'] && <li><a class="inline-flex h-11 items-center rounded-badge border-width-input border-border px-4 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href={theme['social-max']} rel="noopener noreferrer" target="_blank">MAX</a></li>}
-            </ul>
-          </div>
-        )}
-      </div>
-    )}
   </div>
-  <div class="flex flex-col gap-4 border-t border-border pt-6 md:flex-row md:items-center md:justify-between">
-    <p class="m-0 text-xs text-muted-foreground">© {shop.name}. <a class="text-muted-foreground no-underline hover:text-foreground" href="https://merfy.ru/" rel="noopener noreferrer" target="_blank">Разработано на Merfy</a></p>
-    {shop.payments.online && (
-      <ul class="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Способы оплаты">
-        <li class="inline-flex h-8 items-center rounded-badge border-width-input border-border bg-background px-3 text-xs weight-heading text-foreground">МИР</li>
-        <li class="inline-flex h-8 items-center rounded-badge border-width-input border-border bg-background px-3 text-xs weight-heading text-foreground">Visa</li>
-        <li class="inline-flex h-8 items-center rounded-badge border-width-input border-border bg-background px-3 text-xs weight-heading text-foreground">Mastercard</li>
-      </ul>
-    )}
+
+  <ul class="m-0 flex list-none flex-wrap justify-center gap-2 px-4 pb-6 empty:hidden">
+    {[
+      { url: theme['social-telegram'], label: 'Telegram' },
+      { url: theme['social-vk'], label: 'ВКонтакте' },
+      { url: theme['social-dzen'], label: 'Дзен' },
+      { url: theme['social-youtube'], label: 'YouTube' },
+      { url: theme['social-tiktok'], label: 'TikTok' },
+      { url: theme['social-max'], label: 'MAX' },
+    ].filter((link) => link.url).map((link) => (
+      <li><a class="inline-flex h-11 items-center rounded-badge border-width-input border-border px-4 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href={link.url} rel="noopener noreferrer" target="_blank">{link.label}</a></li>
+    ))}
+  </ul>
+  <div class="flex min-h-16 items-center justify-center px-4">
+    <a class="inline-flex min-h-11 items-center text-sm text-foreground no-underline hover:text-heading md:text-base" href="https://merfy.ru/" rel="noopener noreferrer" target="_blank">Разработано на Merfy</a>
   </div>
 </div>

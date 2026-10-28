@@ -24,12 +24,12 @@ const { settings, blocks } = Astro.props;
             {settings.images.url2 !== '' && <source media="(max-width: 767px)" srcset={settings.images.url2} />}
             <img src={settings.images.url1} alt="" class="absolute inset-0 size-full object-cover" />
           </picture>
-          <div class={`absolute inset-0 bg-foreground opacity-${settings.overlay}`}></div>
+          <div class={`absolute inset-0 bg-custom-scrim opacity-${settings.overlay}`}></div>
         </Fragment>
       )}
     </div>
     <div
-      class="relative z-10 flex w-full flex-col items-center justify-center px-4 py-10 in-data-[position^=top]:justify-start in-data-[position^=bottom]:justify-end in-data-[position$=left]:items-start in-data-[position$=right]:items-end md:px-12 md:py-16 md:in-data-[layout=split]:w-1/2 lg:in-data-[layout=overlay]:px-20"
+      class="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-4 py-10 in-data-[position^=top]:justify-start in-data-[position^=bottom]:justify-end in-data-[position$=left]:items-start in-data-[position$=right]:items-end md:px-12 md:py-16 md:in-data-[layout=split]:w-1/2 lg:in-data-[layout=overlay]:px-20"
     >
       <div
         class="flex w-fit max-w-xl flex-wrap gap-x-3 gap-y-4 in-data-[align=left]:justify-start in-data-[align=center]:justify-center in-data-[align=right]:justify-end in-data-[text-box=true]:rounded-card in-data-[text-box=true]:bg-background in-data-[text-box=true]:p-6 in-data-[text-box=true]:shadow-card md:in-data-[text-box=true]:p-8"
@@ -38,14 +38,14 @@ const { settings, blocks } = Astro.props;
           <div class="data-[block=heading]:w-full data-[block=text]:w-full" data-block={block.type}>
             {block.type === 'heading' && (
               <h2
-                class={`m-0 w-full text-balance font-heading weight-heading tracking-heading text-heading text-${settings.align} data-[heading-size=small]:text-xl md:data-[heading-size=small]:text-2xl data-[heading-size=medium]:text-2xl md:data-[heading-size=medium]:text-4xl data-[heading-size=large]:text-4xl md:data-[heading-size=large]:text-5xl`}
+                class={`m-0 w-full text-balance font-heading weight-heading tracking-heading text-heading text-${settings.align} data-[heading-size=small]:text-xl data-[heading-size=medium]:text-3xl data-[heading-size=large]:text-5xl`}
                 data-heading-size={block.settings['heading-size']}
                 set:html={block.settings.heading}
               />
             )}
             {block.type === 'text' && (
               <p
-                class={`m-0 w-full text-pretty text-foreground text-${settings.align} data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg md:data-[text-size=large]:text-xl`}
+                class={`m-0 w-full text-pretty text-foreground text-${settings.align} data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg`}
                 data-text-size={block.settings['text-size']}
                 set:html={block.settings.text}
               />

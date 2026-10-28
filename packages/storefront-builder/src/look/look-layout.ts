@@ -59,6 +59,7 @@ const LayoutOutput = z.array(
     text: z.string(),
     clip: ClipShape,
     mark: z.int().nonnegative(),
+    fixed: z.boolean(),
   }),
 );
 

@@ -373,6 +373,41 @@ describe.skipIf(!hasChromium)('проверки вёрстки · настоящ
     }
   }, 60_000);
 
+  it('выход за экран: виновник — блок страницы, а не содержимое плавающего баннера (оно страницу не прокручивает)', async () => {
+    const html = page(
+      '<div style="width:500px;height:30px;background:#c00">Акция</div><div style="position:fixed;left:0;bottom:0;width:100%;padding:16px;background:#fff"><div style="width:420px;height:30px;background:#ccc">Мы используем cookie</div></div><div style="height:2000px"></div>',
+    );
+    const rendered = await renderer.open({ html, devices: ['mobile'] });
+    try {
+      const found = (await rendered.sessions[0]?.layout()) ?? [];
+      const overflow = found.filter((finding) => finding.code === 'overflow-x');
+      expect(overflow).toHaveLength(1);
+      expect(overflow[0]?.text).toContain('на 110 px');
+      expect(overflow[0]?.fixed).toBe(false);
+    } finally {
+      await rendered.close();
+    }
+  }, 60_000);
+
+  it('находка внутри плавающего баннера: вырезка снимается без прокрутки, на самом баннере', async () => {
+    const orange = png(80, 40, [230, 120, 0]);
+    const html = page(
+      `<div style="height:3000px"></div><div style="position:fixed;left:0;bottom:0;width:100%;height:120px;background:#fff"><img src="${orange}" style="width:200px;height:200px;margin:0 20px;position:absolute;bottom:0" alt=""></div>`,
+    );
+    const rendered = await renderer.open({ html, devices: ['mobile'] });
+    try {
+      const result = await runLayoutChecks(rendered.sessions);
+      const finding = result.findings.find((item) => item.code === 'image-distorted');
+      expect(finding?.image).not.toBeNull();
+      const center = await pixelAtCenter(finding?.image ?? '');
+      expect(center.red).toBeGreaterThan(150);
+      expect(center.green).toBeGreaterThan(70);
+      expect(center.blue).toBeLessThan(80);
+    } finally {
+      await rendered.close();
+    }
+  }, 60_000);
+
   it('страница с сотнями элементов проверяется быстро', async () => {
     const cards = Array.from(
       { length: 400 },

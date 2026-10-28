@@ -127,6 +127,7 @@ const layoutFinding = (code: LayoutFinding['code'], mark: number, section = 'her
   text: `${code} · чинить`,
   clip: { x: 0, y: 100 * mark, width: 390, height: 200 },
   mark,
+  fixed: false,
 });
 
 describe('снимок черновика · проверки вёрстки', () => {

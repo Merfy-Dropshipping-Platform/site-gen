@@ -1,6 +1,6 @@
 # template.astro
 
-> SDK 1 · документация 1.2.0 · 2026-10-28
+> SDK 1 · документация 1.3.0 · 2026-10-28
 
 `template.astro` — разметка секции на Astro. Сборка рендерит её на сервере со значениями полей мерчанта.
 
@@ -24,7 +24,10 @@ const { settings, blocks } = Astro.props;
 
 - Выражения `{…}`: поля (`settings.heading`, `settings['heading-size']`), сравнения, `&&`, `?:`, `blocks.map`.
 - `class:list` — классы по условию: `class:list={['m-0', { 'text-5xl': settings['heading-size'] === 'large' }]}`.
-- `set:html` — только у поля вида `richtext`: `<div set:html={block.settings.answer}></div>`.
+- `set:html` — только у поля вида `richtext` и у `string` и `text` с `ai`: `<div set:html={block.settings.answer}></div>`,
+  `<h2 set:html={block.settings.heading} />`. Значение поля с `ai` — текст с начертаниями: кнопки «К» и «Ж» конструктора
+  ставят `<em>` и `<strong>`; другие теги и атрибуты платформа вырезает при сохранении и при выводе. Такое поле выводите
+  через `set:html`, иначе теги видны текстом.
 - Атрибуты `data-*` — для скрипта (`data-ref`, `data-action`) и поведений (`data-behavior`, `data-part`,
   `data-animate`).
 - Деньги записей (`price`, `compareAtPrice`) — объект `Money`, не строка: выводите `price.text`, а не `price`
@@ -39,9 +42,10 @@ const { settings, blocks } = Astro.props;
 - Теги: `<script>`, `<style>`, `<link>`, `<meta>`, `<base>`, `<html>`, `<head>`, `<body>`, `<title>`, `<iframe>`, `<frame>`, `<object>`, `<embed>`, `<merfy-section>`.
 - Компоненты (имя с большой буквы), кроме `<Fragment>`.
 - Обработчики `on…`, адреса `javascript:`, `{...}` в атрибутах, директивы `set:text`, `is:inline`, `is:raw`,
-  `define:vars`, `client:*`, `server:*`, `transition:*`; `set:html` у поля не вида `richtext`.
+  `define:vars`, `client:*`, `server:*`, `transition:*`; `set:html` у других полей.
 - Атрибут `style` и свой CSS: только [классы словаря](styles.md).
 - Имена с префиксом `__merfy` — служебные.
 
-Отступы сверху и снизу секции задаёт обёртка `<merfy-section>` — в шаблоне их нет.
+Отступы сверху и снизу секции задаёт обёртка `<merfy-section>` (общая настройка «Отступы», 0–160 px на шаге 8) — в
+шаблоне их нет.
 

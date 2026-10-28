@@ -72,9 +72,13 @@ describe("planSkeleton: новый магазин nova", () => {
       "shop:catalog",
       "shop:faq",
     ]);
-    expect(doc.sections.home[1].settings).toEqual({ heading: "Товары" });
-    // На странице каталога — заголовок по умолчанию, правок нет.
-    expect(doc.sections.catalog[0].settings).toEqual({});
+    const products = doc.sections.home[1];
+    expect(products.settings).toEqual({ heading: "Товары", columns: 4 });
+    expect(products.blocks).toEqual([]);
+    // На странице каталога — как из «Добавить секцию»: правок нет, фильтры и сортировка.
+    const [catalog] = doc.sections.catalog;
+    expect(catalog.settings).toEqual({});
+    expect(catalog.blocks.map((b: Doc) => b.type)).toEqual(["filters", "sort"]);
     expect(doc.sections.overlay.map((i: Doc) => i.section)).toContain(
       "shop:search",
     );

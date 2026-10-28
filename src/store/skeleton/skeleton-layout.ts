@@ -12,6 +12,7 @@
  * список (`header`, `footer`, `overlay`). Имя секции — без префикса: в магазине она `shop:<имя>`.
  */
 import type { MenuItem } from "../../pages/pages.service";
+import type { LibraryBlock } from "./skeleton-library";
 
 /** Общие настройки экземпляра секции (ключ `wrapper` в ревизии): «Отступы» сверху и снизу в пикселях, шаг 8. */
 export interface SkeletonWrapper {
@@ -33,6 +34,10 @@ export interface SkeletonLayout {
    */
   settings?: Readonly<
     Record<string, Readonly<Record<string, Readonly<Record<string, unknown>>>>>
+  >;
+  /** Свои блоки отдельных экземпляров вместо блоков по умолчанию: список → имя секции → блоки; `[]` — без блоков. */
+  blocks?: Readonly<
+    Record<string, Readonly<Record<string, readonly LibraryBlock[]>>>
   >;
   /** Пункты главного меню перед «О нас»: заготовка ставит их, когда создаёт «О нас». */
   menu: readonly MenuItem[];
@@ -111,9 +116,13 @@ export const SKELETON_LAYOUT: SkeletonLayout = {
     "page-login": { login: PAGE_START },
     "page-wishlist": { wishlist: PAGE_START },
   },
-  // Заголовок «Каталога» по умолчанию — «Каталог»; на главной это блок товаров магазина.
+  // «Каталог» на главной — блок товаров магазина: свой заголовок, 4 колонки на компьютере, без фильтров и сортировки
+  // (они нужны странице каталога). На /catalog — как из «Добавить секцию».
   settings: {
-    home: { catalog: { heading: "Товары" } },
+    home: { catalog: { heading: "Товары", columns: 4 } },
+  },
+  blocks: {
+    home: { catalog: [] },
   },
   menu: [{ label: "Каталог", url: "/catalog" }],
   about: {

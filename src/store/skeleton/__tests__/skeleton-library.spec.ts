@@ -107,7 +107,7 @@ describe("раскладка заготовки", () => {
     expect(wrapperIdsOf(SKELETON_LAYOUT.about.section)).toContain("padding");
   });
 
-  it("правки настроек заготовки — у секций своего списка и только объявленные в section.json", () => {
+  it("правки настроек и блоков заготовки — у секций своего списка и только объявленные в section.json", () => {
     for (const [key, sections] of Object.entries(
       SKELETON_LAYOUT.settings ?? {},
     ))
@@ -117,6 +117,12 @@ describe("раскладка заготовки", () => {
           (field: Record<string, unknown>) => field.id,
         );
         for (const id of Object.keys(settings)) expect(declared).toContain(id);
+      }
+    for (const [key, sections] of Object.entries(SKELETON_LAYOUT.blocks ?? {}))
+      for (const [name, blocks] of Object.entries(sections)) {
+        expect(SKELETON_LAYOUT.lists[key]).toContain(name);
+        for (const block of blocks)
+          expect(manifestOf(name).blocks).toHaveProperty(block.type);
       }
   });
 

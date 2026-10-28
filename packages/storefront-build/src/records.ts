@@ -108,6 +108,11 @@ export interface ProductRecord {
   collections: RecordLink[];
   updatedAt: string;
 }
+// Образец цвета на карточке: значение группы вариантов с заливкой (swatch) — название и цвет `#rrggbb`.
+export interface ProductColor {
+  title: string;
+  swatch: string;
+}
 export interface ProductCard {
   id: string;
   title: string;
@@ -118,6 +123,10 @@ export interface ProductCard {
   available: boolean;
   // Первые два фото — «второе фото при наведении» у карточек секций (поведение card-photos); image — первое.
   images: string[];
+  // Сочетание по умолчанию (defaultVariantId): его кладёт в корзину «В корзину» на карточке; без вариантов — null.
+  variantId: string | null;
+  // Образцы цвета: первая группа вариантов, у значений которой есть заливка; до COLOR_SWATCHES_MAX; цветов нет — [].
+  colors: ProductColor[];
 }
 export interface CollectionRecord {
   id: string;
@@ -456,20 +465,50 @@ function productRecordOf(item: Placed<ProductItem>, collections: readonly Record
   };
 }
 
-// Карточка товара для списка коллекции.
-function productCardOf(item: Placed<ProductItem>): ProductCard {
-  const { entity, data, slug } = item;
+// Сочетание по умолчанию — правило прода (site-gen origin/prod, packages/theme-base/runtime/variant-default.ts,
+// pickDefaultCombination): сочетание первых значений групп — в наличии, иначе любое; нет — первое в наличии; нет —
+// первое; вариантов нет — null.
+export function defaultVariantId(product: ProductRecord): string | null {
+  const firsts = product.options
+    .filter((group) => group.values.length > 0)
+    .map((group) => ({ name: group.name, value: group.values[0]?.value ?? '' }));
+  const byFirst = product.variants.find((variant) =>
+    firsts.every(({ name, value }) => variant.options[name] === value),
+  );
+  if (byFirst !== undefined) return byFirst.id;
+  const inStock = product.variants.find((variant) => variant.available);
+  return (inStock ?? product.variants[0])?.id ?? null;
+}
+
+export const COLOR_SWATCHES_MAX = 6;
+
+// Образцы цвета карточки: первая группа, у значений которой есть заливка; значения без заливки в образцы не идут.
+function colorsOf(product: ProductRecord): ProductColor[] {
+  const group = product.options.find((option) => option.values.some((value) => value.swatch !== null));
+  if (group === undefined) return [];
+  return group.values
+    .flatMap((value) => (value.swatch === null ? [] : [{ title: value.value, swatch: value.swatch }]))
+    .slice(0, COLOR_SWATCHES_MAX);
+}
+
+// Карточка товара — одна на все места, где секция показывает список: товары коллекции записи, список страницы
+// (page-list.ts) и поля с записями секции (section-records.ts).
+export function cardOfRecord(record: ProductRecord): ProductCard {
   return {
-    id: entity.id,
-    title: data.title,
-    url: recordPath.product(slug),
-    price: priceOf(data.price),
-    compareAtPrice: compareAtOf(data.compareAtPrice),
-    image: firstImage(data.images),
-    available: data.available,
-    images: data.images.slice(0, 2),
+    id: record.id,
+    title: record.title,
+    url: record.url,
+    price: record.price,
+    compareAtPrice: record.compareAtPrice,
+    image: firstImage(record.images),
+    available: record.available,
+    images: record.images.slice(0, 2),
+    variantId: defaultVariantId(record),
+    colors: colorsOf(record),
   };
 }
+
+const productCardOf = (item: Placed<ProductItem>): ProductCard => cardOfRecord(productRecordOf(item, []));
 
 // Коллекция: товары по порядку мерчанта, только с записью; в записи — первые COLLECTION_PRODUCTS_MAX.
 function collectionOf(

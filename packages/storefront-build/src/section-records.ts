@@ -2,6 +2,7 @@ import type { CodeSection } from './inputs';
 import {
   BLOG_ARTICLES_MAX,
   COLLECTION_PRODUCTS_MAX,
+  cardOfRecord,
   recordPath,
   type ArticleCard,
   type ProductCard,
@@ -44,17 +45,8 @@ export interface SectionRecords {
   data: SectionRecordValues;
 }
 
-// Карточка товара — те же поля, что у товаров коллекции записей (records.ts).
-const productCard = (found: RecordEntryOf<'product'>): ProductCard => ({
-  id: found.record.id,
-  title: found.record.title,
-  url: found.record.url,
-  price: found.record.price,
-  compareAtPrice: found.record.compareAtPrice,
-  image: found.record.images[0] ?? null,
-  available: found.record.available,
-  images: found.record.images.slice(0, 2),
-});
+// Карточка товара — та же, что у товаров коллекции записей (records.ts).
+const productCard = (found: RecordEntryOf<'product'>): ProductCard => cardOfRecord(found.record);
 
 // Карточка статьи — те же поля, что у статей блога записей (records.ts).
 const articleCard = (found: RecordEntryOf<'article'>): ArticleCard => ({

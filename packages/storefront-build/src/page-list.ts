@@ -5,6 +5,7 @@ import { LIST_SORTS, listQueryIsEmpty, listQueryString, type ListQuery } from '.
 import {
   BLOG_ARTICLES_MAX,
   COLLECTION_PRODUCTS_MAX,
+  cardOfRecord,
   money,
   type ArticleCard,
   type Money,
@@ -32,10 +33,6 @@ export const SORT_LABELS = {
 } as const;
 
 export interface ListProductCard extends ProductCard {
-  // Первые два фото — «Следующее фото при наведении».
-  images: string[];
-  // Сочетание по умолчанию (defaultVariantId); у товара без вариантов — null.
-  variantId: string | null;
   hasVariants: boolean;
 }
 export interface PageListLink {
@@ -173,31 +170,8 @@ function sectionListSourceOf(route: ShopRoute, placed: readonly PlacedSection[],
   return null;
 }
 
-// Сочетание по умолчанию — правило прода (site-gen origin/prod, packages/theme-base/runtime/variant-default.ts,
-// pickDefaultCombination): сочетание первых значений групп — в наличии, иначе любое; нет — первое в наличии; нет —
-// первое; вариантов нет — null.
-export function defaultVariantId(product: ProductRecord): string | null {
-  const firsts = product.options
-    .filter((group) => group.values.length > 0)
-    .map((group) => ({ name: group.name, value: group.values[0]?.value ?? '' }));
-  const byFirst = product.variants.find((variant) =>
-    firsts.every(({ name, value }) => variant.options[name] === value),
-  );
-  if (byFirst !== undefined) return byFirst.id;
-  const inStock = product.variants.find((variant) => variant.available);
-  return (inStock ?? product.variants[0])?.id ?? null;
-}
-
 const listProductCardOf = (record: ProductRecord): ListProductCard => ({
-  id: record.id,
-  title: record.title,
-  url: record.url,
-  price: record.price,
-  compareAtPrice: record.compareAtPrice,
-  image: record.images[0] ?? null,
-  available: record.available,
-  images: record.images.slice(0, 2),
-  variantId: defaultVariantId(record),
+  ...cardOfRecord(record),
   hasVariants: record.variants.length > 0,
 });
 

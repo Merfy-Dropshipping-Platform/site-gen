@@ -3,21 +3,21 @@
   "name": "catalog",
   "kind": "section",
   "title": "Каталог",
+  "uses": ["theme", "favorites"],
+  "themeSettings": ["wishlist-enabled"],
   "settings": [
-    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Каталог" } },
     { "id": "collection", "label": "Выбор коллекции", "setting": { "kind": "collection" } },
-    { "id": "per-page", "label": "Карточки", "setting": { "kind": "range", "default": 8, "min": 2, "max": 24, "step": 1 } },
-    { "id": "columns", "label": "Колонки", "setting": { "kind": "range", "default": 3, "min": 2, "max": 4, "step": 1 } },
+    { "id": "per-page", "label": "Карточки", "setting": { "kind": "range", "default": 12, "min": 2, "max": 24, "step": 1 } },
+    { "id": "columns", "label": "Колонки", "setting": { "kind": "range", "default": 3, "min": 1, "max": 6, "step": 1 } },
     {
-      "id": "aspect-ratio",
-      "label": "Пропорции",
+      "id": "columns-mobile",
+      "label": "Колонки на телефоне",
       "setting": {
-        "kind": "select",
-        "default": "portrait",
+        "kind": "radio",
+        "default": "2",
         "options": [
-          { "value": "portrait", "label": "Вертикальные 4:5" },
-          { "value": "square", "label": "Квадрат" },
-          { "value": "landscape", "label": "Горизонтальные 4:3" }
+          { "value": "1", "label": "Одна" },
+          { "value": "2", "label": "Две" }
         ]
       }
     },
@@ -34,29 +34,90 @@
         ]
       }
     },
+    { "id": "heading", "label": "Заголовок", "section": "Содержание", "setting": { "kind": "string", "default": "Каталог", "ai": "title" } },
+    {
+      "id": "button-style",
+      "label": "Стиль кнопки",
+      "section": "Карточка товара",
+      "setting": {
+        "kind": "select",
+        "default": "primary",
+        "options": [
+          { "value": "primary", "label": "Основная" },
+          { "value": "secondary", "label": "Дополнительная" },
+          { "value": "link", "label": "Ссылка" }
+        ]
+      }
+    },
+    {
+      "id": "aspect-ratio",
+      "label": "Вид изображения",
+      "setting": {
+        "kind": "select",
+        "default": "square",
+        "options": [
+          { "value": "portrait", "label": "Портрет" },
+          { "value": "square", "label": "Квадрат" },
+          { "value": "landscape", "label": "Широкий" }
+        ]
+      }
+    },
+    {
+      "id": "image-fit",
+      "label": "Подгонка фото",
+      "setting": {
+        "kind": "select",
+        "default": "cover",
+        "options": [
+          { "value": "cover", "label": "Заполнить рамку" },
+          { "value": "contain", "label": "Целиком" }
+        ]
+      }
+    },
     {
       "id": "next-photo",
       "label": "Следующее фото при наведении",
-      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Да", "off": "Нет" } }
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Вкл", "off": "Выкл" } }
     },
     {
       "id": "quick-add",
       "label": "Быстрое добавление",
       "setting": {
         "kind": "select",
-        "default": "none",
+        "default": "standard",
         "options": [
           { "value": "none", "label": "Нет" },
-          { "value": "button", "label": "Кнопка «В корзину»" }
+          { "value": "standard", "label": "Стандарт" },
+          { "value": "count", "label": "Количество" },
+          { "value": "hover", "label": "На фото при наведении" },
+          { "value": "button", "label": "Плюс на фото" }
         ]
       }
+    },
+    {
+      "id": "swatches",
+      "label": "Образцы цветов",
+      "setting": {
+        "kind": "select",
+        "default": "square",
+        "options": [
+          { "value": "none", "label": "Нет" },
+          { "value": "square", "label": "Квадраты" },
+          { "value": "circle", "label": "Кружки" }
+        ]
+      }
+    },
+    {
+      "id": "favorite",
+      "label": "Избранное",
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Показать", "off": "Скрыть" } }
     }
   ],
   "blocks": {
     "subheading": {
       "title": "Подзаголовок",
       "limit": 1,
-      "settings": [{ "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "" } }]
+      "settings": [{ "id": "heading", "label": "Подзаголовок", "setting": { "kind": "string", "default": "", "ai": "description" } }]
     },
     "filters": {
       "title": "Фильтры",
@@ -67,7 +128,7 @@
           "label": "Вид фильтра",
           "setting": {
             "kind": "radio",
-            "default": "top",
+            "default": "side",
             "options": [
               { "value": "top", "label": "Сверху" },
               { "value": "side", "label": "Сбоку" }

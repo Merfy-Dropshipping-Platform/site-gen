@@ -22,6 +22,7 @@ const CARD = {
   available: true,
   images: ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg'],
   variantId: 'v-1',
+  colors: [],
   hasVariants: true,
 } satisfies ListProductCard;
 const LIST = {

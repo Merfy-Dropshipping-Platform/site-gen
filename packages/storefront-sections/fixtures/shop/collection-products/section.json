@@ -1,0 +1,153 @@
+{
+  "sdk": 1,
+  "name": "collection-products",
+  "kind": "section",
+  "title": "Коллекция товаров",
+  "uses": ["theme", "favorites"],
+  "themeSettings": ["wishlist-enabled"],
+  "settings": [
+    { "id": "collection", "label": "Выбор коллекции", "setting": { "kind": "collection" } },
+    { "id": "cards", "label": "Карточки", "setting": { "kind": "range", "default": 4, "min": 2, "max": 24, "step": 1 } },
+    { "id": "heading", "label": "Заголовок", "section": "Содержание", "setting": { "kind": "string", "default": "Популярные товары", "ai": "title" } },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "", "ai": "description" } },
+    {
+      "id": "text-size",
+      "label": "Размер текста",
+      "setting": {
+        "kind": "select",
+        "default": "small",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "button-style",
+      "label": "Стиль кнопки",
+      "section": "Карточка товара",
+      "setting": {
+        "kind": "select",
+        "default": "primary",
+        "options": [
+          { "value": "primary", "label": "Основная" },
+          { "value": "secondary", "label": "Дополнительная" },
+          { "value": "link", "label": "Ссылка" }
+        ]
+      }
+    },
+    {
+      "id": "aspect-ratio",
+      "label": "Вид изображения",
+      "setting": {
+        "kind": "select",
+        "default": "square",
+        "options": [
+          { "value": "portrait", "label": "Портрет" },
+          { "value": "square", "label": "Квадрат" },
+          { "value": "landscape", "label": "Широкий" }
+        ]
+      }
+    },
+    {
+      "id": "image-fit",
+      "label": "Подгонка фото",
+      "setting": {
+        "kind": "select",
+        "default": "cover",
+        "options": [
+          { "value": "cover", "label": "Заполнить рамку" },
+          { "value": "contain", "label": "Целиком" }
+        ]
+      }
+    },
+    {
+      "id": "next-photo",
+      "label": "Следующее фото при наведении",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Вкл", "off": "Выкл" } }
+    },
+    {
+      "id": "quick-add",
+      "label": "Быстрое добавление",
+      "setting": {
+        "kind": "select",
+        "default": "none",
+        "options": [
+          { "value": "none", "label": "Нет" },
+          { "value": "standard", "label": "Стандарт" },
+          { "value": "count", "label": "Количество" },
+          { "value": "hover", "label": "На фото при наведении" },
+          { "value": "button", "label": "Плюс на фото" }
+        ]
+      }
+    },
+    {
+      "id": "swatches",
+      "label": "Образцы цветов",
+      "setting": {
+        "kind": "select",
+        "default": "square",
+        "options": [
+          { "value": "none", "label": "Нет" },
+          { "value": "square", "label": "Квадраты" },
+          { "value": "circle", "label": "Кружки" }
+        ]
+      }
+    },
+    {
+      "id": "favorite",
+      "label": "Избранное",
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    { "id": "columns", "label": "Колонки", "setting": { "kind": "range", "default": 4, "min": 1, "max": 6, "step": 1 } },
+    {
+      "id": "columns-mobile",
+      "label": "Колонки на телефоне",
+      "setting": {
+        "kind": "radio",
+        "default": "2",
+        "options": [
+          { "value": "1", "label": "Одна" },
+          { "value": "2", "label": "Две" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "view-all": {
+      "title": "Смотреть все",
+      "limit": 1,
+      "settings": [
+        { "id": "button-label", "label": "Текст кнопки", "setting": { "kind": "string", "default": "Смотреть все товары" } },
+        {
+          "id": "button-style",
+          "label": "Стиль кнопки",
+          "setting": {
+            "kind": "select",
+            "default": "primary",
+            "options": [
+              { "value": "primary", "label": "Основная" },
+              { "value": "secondary", "label": "Дополнительная" },
+              { "value": "link", "label": "Ссылка" }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [{ "type": "view-all", "settings": {} }]
+}

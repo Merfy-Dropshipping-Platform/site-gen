@@ -23,8 +23,8 @@ const wrapperIdsOf = (name: string): string[] =>
   manifestOf(name).wrapper ?? ["scheme", "padding"];
 
 describe("библиотека заготовки", () => {
-  it("25 секций из fixtures/shop и storefront-shell/sections; в раскладке 22 — без «Значка корзины», «Слайд-шоу» и «Вопросов с плавным раскрытием», все есть в библиотеке", () => {
-    expect(library.size).toBe(25);
+  it("26 секций из fixtures/shop и storefront-shell/sections (с 29.10 — «Коллекция товаров»); в раскладке 22 — без «Значка корзины», «Слайд-шоу» и «Вопросов с плавным раскрытием», все есть в библиотеке", () => {
+    expect(library.size).toBe(26);
     expect(skeletonSectionNames()).toHaveLength(22);
     for (const name of ["cart-badge", "slideshow", "questions"]) {
       expect(skeletonSectionNames()).not.toContain(name);
@@ -56,7 +56,7 @@ describe("библиотека заготовки", () => {
       "packages/storefront-sections/fixtures/shop",
       "packages/storefront-sections/fixtures/shop",
     ]);
-    expect(twice.size).toBe(15);
+    expect(twice.size).toBe(16);
   });
 });
 

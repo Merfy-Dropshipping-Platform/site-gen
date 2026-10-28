@@ -1,5 +1,4 @@
-import { defaultVariantId } from './page-list';
-import type { Money, ProductRecord } from './records';
+import { defaultVariantId, type Money, type ProductRecord } from './records';
 
 // Варианты товаров страницы (блок 11 «Секций и SDK», часть 11а; design.md 11.6, 14г А): один JSON на страницу — товар
 // страницы и товары полей вида product её секций. Читает модуль «Варианты» ядра секций (план 11б,

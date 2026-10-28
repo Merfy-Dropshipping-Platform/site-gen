@@ -3,6 +3,7 @@ import type { Entity } from '../src/inputs';
 import {
   BLOG_ARTICLES_MAX,
   COLLECTION_PRODUCTS_MAX,
+  COLOR_SWATCHES_MAX,
   POLICY_PAGES,
   RECORD_FIELDS,
   money,
@@ -243,6 +244,8 @@ describe('коллекция', () => {
           image: null,
           available: false,
           images: [],
+          variantId: 'v-1',
+          colors: [{ title: 'Синий', swatch: '#1d4ed8' }],
         },
         {
           id: P1,
@@ -253,6 +256,8 @@ describe('коллекция', () => {
           image: 'https://s3.merfy.ru/p/1.jpg',
           available: true,
           images: ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg'],
+          variantId: 'v-1',
+          colors: [{ title: 'Синий', swatch: '#1d4ed8' }],
         },
       ],
     });
@@ -278,6 +283,38 @@ describe('коллекция', () => {
     const card = record !== undefined && 'products' in record ? record.products[0] : undefined;
     expect(card?.images).toEqual(['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg']);
     expect(card?.image).toBe('https://s3.merfy.ru/p/1.jpg');
+  });
+
+  it('карточка товара — образцы цвета: группа с заливкой, значения без заливки и лишние отпадают; сочетание — по умолчанию', () => {
+    const swatch = (id: string, value: string, hex: string | null) => ({ id, value, images: [], swatch: hex });
+    const options = [
+      { id: 'g-size', name: 'Размер', values: [swatch('s-1', 'S', null), swatch('s-2', 'M', null)] },
+      {
+        id: 'g-color',
+        name: 'Цвет',
+        values: [
+          swatch('c-1', 'Синий', '#1d4ed8'),
+          swatch('c-2', 'Без заливки', null),
+          ...Array.from({ length: COLOR_SWATCHES_MAX }, (_, n) => swatch(`c-${n + 3}`, `Цвет ${n}`, '#000000')),
+        ],
+      },
+    ];
+    const variants = [
+      { id: 'v-s', title: 'S', price: 190000, compareAtPrice: null, available: false, options: { Размер: 'S' } },
+      { id: 'v-m', title: 'M', price: 190000, compareAtPrice: null, available: true, options: { Размер: 'M' } },
+    ];
+    const index = recordIndexOf([product(P1, { options, variants }), collection(C1, { productIds: [P1] })]);
+    const record = index.find('collection', C1)?.record;
+    const card = record !== undefined && 'products' in record ? record.products[0] : undefined;
+    expect(card?.colors).toHaveLength(COLOR_SWATCHES_MAX);
+    expect(card?.colors[0]).toEqual({ title: 'Синий', swatch: '#1d4ed8' });
+    expect(card?.colors.map((color) => color.title)).not.toContain('Без заливки');
+    // Сочетания из первых значений групп (S и Синий) нет — берётся первое в наличии.
+    expect(card?.variantId).toBe('v-m');
+    const plain = recordIndexOf([product(P1, { options: [], variants: [] }), collection(C1, { productIds: [P1] })]);
+    const plainRecord = plain.find('collection', C1)?.record;
+    const plainCard = plainRecord !== undefined && 'products' in plainRecord ? plainRecord.products[0] : undefined;
+    expect(plainCard).toMatchObject({ variantId: null, colors: [] });
   });
 });
 

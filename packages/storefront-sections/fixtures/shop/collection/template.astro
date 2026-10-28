@@ -97,7 +97,7 @@ const { settings, theme } = Astro.props;
                 ))}
               </div>
             )}
-            <a class="line-clamp-2 text-sm text-foreground no-underline hover:underline md:text-base" href={card.url}>{card.title}</a>
+            <a class="line-clamp-2 min-h-11 text-sm text-foreground no-underline hover:underline md:min-h-0 md:text-base" href={card.url}>{card.title}</a>
             <p class="m-0 flex flex-wrap items-baseline gap-x-2 card-align-center:justify-center card-align-right:justify-end">
               <span class:list={['text-base weight-heading md:text-lg', card.compareAtPrice ? 'text-sale' : 'text-price']}>{card.price.text}</span>
               {card.compareAtPrice && <s class="text-sm text-price-old">{card.compareAtPrice.text}</s>}

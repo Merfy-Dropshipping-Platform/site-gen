@@ -78,8 +78,8 @@ const { settings, blocks, page, theme } = Astro.props;
                 {page.list.facets.price && (
                   <fieldset class="m-0 flex items-center gap-2 border-0 p-0">
                     <legend class="sr-only">Цена, ₽</legend>
-                    <input class="h-11 w-28 rounded-input border-width-input border-input bg-background px-3 text-sm text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" type="number" inputmode="numeric" min="0" name="min_price" value={page.list.query.minPrice ?? ''} placeholder={`от ${Math.floor(page.list.facets.price.min.amount / 100)}`} aria-label="Цена от, ₽" />
-                    <input class="h-11 w-28 rounded-input border-width-input border-input bg-background px-3 text-sm text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" type="number" inputmode="numeric" min="0" name="max_price" value={page.list.query.maxPrice ?? ''} placeholder={`до ${Math.ceil(page.list.facets.price.max.amount / 100)}`} aria-label="Цена до, ₽" />
+                    <input class="h-11 w-28 rounded-input border-width-input border-input bg-background px-3 text-sm text-foreground shadow-input placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" type="number" inputmode="numeric" min="0" name="min_price" value={page.list.query.minPrice ?? ''} placeholder={`от ${Math.floor(page.list.facets.price.min.amount / 100)}`} aria-label="Цена от, ₽" />
+                    <input class="h-11 w-28 rounded-input border-width-input border-input bg-background px-3 text-sm text-foreground shadow-input placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" type="number" inputmode="numeric" min="0" name="max_price" value={page.list.query.maxPrice ?? ''} placeholder={`до ${Math.ceil(page.list.facets.price.max.amount / 100)}`} aria-label="Цена до, ₽" />
                   </fieldset>
                 )}
               </div>
@@ -200,7 +200,7 @@ const { settings, blocks, page, theme } = Astro.props;
                   ))}
                 </div>
               )}
-              <a class="line-clamp-2 text-sm text-foreground no-underline hover:underline md:text-base" href={card.url}>{card.title}</a>
+              <a class="line-clamp-2 min-h-11 text-sm text-foreground no-underline hover:underline md:min-h-0 md:text-base" href={card.url}>{card.title}</a>
               <p class="m-0 flex flex-wrap items-baseline gap-x-2 card-align-center:justify-center card-align-right:justify-end">
                 <span class:list={['text-base weight-heading md:text-lg', card.compareAtPrice ? 'text-sale' : 'text-price']}>{card.price.text}</span>
                 {card.compareAtPrice && <s class="text-sm text-price-old">{card.compareAtPrice.text}</s>}

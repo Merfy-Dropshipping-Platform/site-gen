@@ -27,6 +27,13 @@ export interface SkeletonLayout {
   wrappers?: Readonly<
     Record<string, Readonly<Record<string, SkeletonWrapper>>>
   >;
+  /**
+   * Правки настроек отдельных экземпляров: список → имя секции → настройки. Остальные — с пустыми настройками, как из
+   * «Добавить секцию».
+   */
+  settings?: Readonly<
+    Record<string, Readonly<Record<string, Readonly<Record<string, unknown>>>>>
+  >;
   /** Пункты главного меню перед «О нас»: заготовка ставит их, когда создаёт «О нас». */
   menu: readonly MenuItem[];
   about: {
@@ -66,11 +73,10 @@ export const SKELETON_LAYOUT: SkeletonLayout = {
       "cart-added",
       "cookie-banner",
     ],
-    // Главная: первый экран, товары магазина и один блок вопросов. Товары — «Коллекция» с пустым полем коллекции: она
-    // показывает все товары магазина (правило пустого поля, storefront-build/src/section-records.ts). «Слайд-шоу» и
-    // «Вопросы с плавным раскрытием» остаются в библиотеке, в заготовку не ставятся: второй блок вопросов подряд и
-    // слайды без картинок новому магазину не нужны.
-    home: ["hero", "collection", "faq"],
+    // Главная: первый экран, товары магазина и один блок вопросов. Товары — «Каталог» без выбранной коллекции: список
+    // всех товаров магазина с заголовком. «Слайд-шоу» и «Вопросы с плавным раскрытием» остаются в библиотеке, в
+    // заготовку не ставятся: второй блок вопросов подряд и слайды без картинок новому магазину не нужны.
+    home: ["hero", "catalog", "faq"],
     catalog: ["catalog"],
     collection: ["collection"],
     product: ["product"],
@@ -104,6 +110,10 @@ export const SKELETON_LAYOUT: SkeletonLayout = {
     },
     "page-login": { login: PAGE_START },
     "page-wishlist": { wishlist: PAGE_START },
+  },
+  // Заголовок «Каталога» по умолчанию — «Каталог»; на главной это блок товаров магазина.
+  settings: {
+    home: { catalog: { heading: "Товары" } },
   },
   menu: [{ label: "Каталог", url: "/catalog" }],
   about: {

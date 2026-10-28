@@ -107,6 +107,19 @@ describe("раскладка заготовки", () => {
     expect(wrapperIdsOf(SKELETON_LAYOUT.about.section)).toContain("padding");
   });
 
+  it("правки настроек заготовки — у секций своего списка и только объявленные в section.json", () => {
+    for (const [key, sections] of Object.entries(
+      SKELETON_LAYOUT.settings ?? {},
+    ))
+      for (const [name, settings] of Object.entries(sections)) {
+        expect(SKELETON_LAYOUT.lists[key]).toContain(name);
+        const declared = manifestOf(name).settings.map(
+          (field: Record<string, unknown>) => field.id,
+        );
+        for (const id of Object.keys(settings)) expect(declared).toContain(id);
+      }
+  });
+
   it("шапка и служебные секции «Поверх страниц» — без «Отступов»: обёртка не даёт им пустых полос", () => {
     expect(wrapperIdsOf("header")).toEqual(["scheme", "sticky"]);
     for (const name of SKELETON_LAYOUT.lists.overlay)

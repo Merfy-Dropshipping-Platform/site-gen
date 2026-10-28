@@ -66,13 +66,15 @@ describe("planSkeleton: новый магазин nova", () => {
     expect(themed.some((instance: Doc) => "wrapper" in instance)).toBe(false);
   });
 
-  it("главная — первый экран, товары магазина («Коллекция» без выбранной коллекции), один блок вопросов; «Поиск» — поверх страниц", () => {
+  it("главная — первый экран, товары магазина («Каталог» с заголовком «Товары»), один блок вопросов; «Поиск» — поверх страниц", () => {
     expect(doc.sections.home.map((i: Doc) => i.section)).toEqual([
       "shop:hero",
-      "shop:collection",
+      "shop:catalog",
       "shop:faq",
     ]);
-    expect(doc.sections.home[1].settings).toEqual({});
+    expect(doc.sections.home[1].settings).toEqual({ heading: "Товары" });
+    // На странице каталога — заголовок по умолчанию, правок нет.
+    expect(doc.sections.catalog[0].settings).toEqual({});
     expect(doc.sections.overlay.map((i: Doc) => i.section)).toContain(
       "shop:search",
     );

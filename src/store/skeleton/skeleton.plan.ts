@@ -6,9 +6,9 @@
  * - Список заполняется, только когда в магазине есть все его секции: иначе он ждёт (`waiting`), и повтор после
  *   докопирования секций его заполнит.
  * - Экземпляр — как «Добавить секцию» в конструкторе: пустые настройки, блоки по умолчанию с id `<тип>-<n>`, id —
- *   имя секции и 8 случайных знаков; у экземпляров из `layout.wrappers` — ещё «Отступы». Секции с ролью
- *   («Уведомления», «Поиск», «Корзина-панель», «Баннер cookie») конструктор в «Поверх страниц» не предлагает, но
- *   заготовка кладёт их туда сама — так они стоят на эталоне.
+ *   имя секции и 8 случайных знаков; у экземпляров из `layout.settings` и `layout.wrappers` — их правки настроек и
+ *   «Отступы». Секции с ролью («Уведомления», «Поиск», «Корзина-панель», «Баннер cookie») конструктор в «Поверх
+ *   страниц» не предлагает, но заготовка кладёт их туда сама — так они стоят на эталоне.
  * - «О нас» — своя страница (строка `customPageOf`, пустое дерево), как из кабинета; на ней секция «Страница» с
  *   заголовком. Вместе с ней в главное меню встают пункты `layout.menu` («Каталог») и «О нас».
  */
@@ -143,7 +143,7 @@ class Ids {
 function instanceOf(
   section: LibrarySection,
   ids: Ids,
-  settings: Record<string, unknown> = {},
+  settings: Readonly<Record<string, unknown>> = {},
   wrapper?: SkeletonWrapper,
 ): SkeletonInstance {
   return {
@@ -205,7 +205,12 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
       continue;
     }
     sections[key] = names.map((name) =>
-      instanceOf(library.get(name)!, ids, {}, layout.wrappers?.[key]?.[name]),
+      instanceOf(
+        library.get(name)!,
+        ids,
+        layout.settings?.[key]?.[name],
+        layout.wrappers?.[key]?.[name],
+      ),
     );
     placement.filled.push({ key, label, sections: names.length });
     changed = true;

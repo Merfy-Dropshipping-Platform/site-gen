@@ -1,7 +1,8 @@
 import { defineSection, type CartLine, type El, type Money } from '@merfy/shell';
 
 // «Корзина-панель» (блок 10 «Секций и SDK», 10.2, «Решил сам» п. 8; часть 10а, Р10а-11): окно открывает поведение
-// dialog по open-on="cart-open"; строки — ответ шлюза через El.list по <template>, итог — ctx.cart.$totals.
+// dialog по open-on="cart-open"; строки — ответ шлюза через El.list по <template>, итог — ctx.cart.$totals. Низ с
+// «Итого» и «Оформить заказ» — только когда в корзине есть строки, как «Промежуточный итог» на странице корзины.
 
 // Деньги — копейки целым числом; на витрине — рубли без копеек, знак рубля после числа.
 const priceOf = (money: Money): string =>
@@ -55,6 +56,7 @@ export default defineSection({
       const hasLines = cart.lines.length > 0;
       empty?.toggle(!hasLines);
       lines?.toggle(hasLines);
+      ctx.ref('summary')?.toggle(hasLines);
       if (hasLines) lines?.list(cart.lines, fillRow);
     });
     ctx.watch(ctx.cart.$totals, (totals) => {

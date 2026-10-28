@@ -130,12 +130,14 @@ describe('скрипты окон', () => {
     expect(failures.details).toEqual([]);
   });
 
-  it('пустая панель — «Продолжить покупки» и «Есть аккаунт? Войти»', async () => {
+  it('пустая панель — «Продолжить покупки» и «Есть аккаунт? Войти», без «Итого 0 ₽» и «Оформить заказ»', async () => {
     localStorage.setItem(CART_ID_KEY, 'c-gone');
     const { gateway, drawer } = openPage();
     gateway.answer('GET /store/carts/c-gone', { status: 404, body: { message: 'Cart not found' } });
     await settle();
     expect(drawer.querySelector('[data-ref="empty"]')?.hasAttribute('hidden')).toBe(false);
     expect(shown(drawer, 'title')).toEqual([]);
+    expect(drawer.querySelector('[data-ref="summary"]')?.hasAttribute('hidden')).toBe(true);
+    expect(shown(drawer, 'total')).toEqual([]);
   });
 });

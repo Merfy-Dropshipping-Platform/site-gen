@@ -58,13 +58,15 @@ export const LAYOUT_CODES = [
 export type LayoutCode = (typeof LAYOUT_CODES)[number];
 
 // Находка проверки вёрстки, как её отдаёт страница. `clip` — место на странице, уже с полями и обрезанное по экрану;
-// `mark` — номер, по которому страница обводит элементы находки на время снимка вырезки.
+// `mark` — номер, по которому страница обводит элементы находки на время снимка вырезки; `fixed` — место прибито к
+// экрану (баннер, плавающая кнопка): координаты `clip` тогда от экрана, и вырезка снимается без прокрутки.
 export interface LayoutFinding {
   code: LayoutCode;
   section: string | null;
   text: string;
   clip: Clip;
   mark: number;
+  fixed: boolean;
 }
 
 // Находка в ответе снимка. Источники: детектор Impeccable (`section`, `clip` и `image` у него null) и проверки вёрстки

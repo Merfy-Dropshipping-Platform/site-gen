@@ -197,7 +197,9 @@ async (options) => {
   // Находки: на код — до MAX_PER_CODE, по одной на секцию в первую очередь; важнее — больший `score`.
   const collected = [];
   const report = (code, el, text, rects, elements, score) => {
-    collected.push({ code, section: sectionOf(el), text, clip: unionOf(rects), elements, score });
+    // fixed: место прибито к экрану (плавающая кнопка, баннер) — вырезка снимается без прокрутки, в координатах экрана.
+    const fixed = elements.some(insideFixed);
+    collected.push({ code, section: sectionOf(el), text, clip: unionOf(rects), elements, score, fixed });
   };
 
   // ---- ряды: общий разбор для row-unequal и columns-many -------------------------------------------------------
@@ -340,7 +342,7 @@ async (options) => {
     const limit = viewportWidth + RULES.overflowX.tolerance;
     const culprits = [];
     for (const el of all) {
-      if (!isVisible(el) || styleOf(el).position === 'fixed') continue;
+      if (!isVisible(el) || insideFixed(el)) continue;
       const right = rightEdge(el);
       if (right <= limit || clippedByAncestor(el, limit)) continue;
       culprits.push({ el, right, depth: depthOf(el) });
@@ -695,5 +697,6 @@ async (options) => {
     text: item.text,
     clip: item.clip,
     mark: index,
+    fixed: item.fixed,
   }));
 };

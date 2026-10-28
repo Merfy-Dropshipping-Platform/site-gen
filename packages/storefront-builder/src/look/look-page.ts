@@ -175,7 +175,8 @@ async function runLayout(page: Page, device: LookDevice): Promise<LayoutFinding[
 // элементы находки обводятся на время снимка. `clip` Playwright без `fullPage` считается от верха экрана.
 async function shootClip(page: Page, viewport: Viewport, finding: LayoutFinding, quality: number): Promise<Uint8Array> {
   const { clip } = finding;
-  const top = Math.max(0, Math.round(clip.y - (viewport.height - clip.height) / 2));
+  const centered = Math.max(0, Math.round(clip.y - (viewport.height - clip.height) / 2));
+  const top = finding.fixed ? 0 : centered;
   const scrolled = await page.evaluate(
     ([y, mark]) => {
       window.scrollTo({ top: y, left: 0, behavior: 'instant' });

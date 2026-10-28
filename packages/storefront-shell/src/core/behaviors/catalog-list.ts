@@ -216,11 +216,16 @@ function formUrlOf(form: HTMLFormElement): URL {
 function listenFilters(session: Session): void {
   const form = partOf(session.host, 'filters');
   if (!(form instanceof HTMLFormElement)) return;
-  const submit = form.querySelector('button[type="submit"], input[type="submit"], button:not([type])');
   const run = (): void => load(session, 'replace', formUrlOf(form));
-  form.addEventListener('submit', (event) => event.preventDefault());
-  if (submit !== null) submit.addEventListener('click', run);
-  else form.addEventListener('change', run);
+  // Выбор в поле применяется сразу; в открытом окне (фильтры на телефоне) — по кнопке отправки формы: замена секции
+  // закрыла бы окно после первого же выбора. Отправка формы (кнопка, Enter в поле) применяет всегда.
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    run();
+  });
+  form.addEventListener('change', () => {
+    if (form.closest('dialog[open]') === null) run();
+  });
 }
 
 export const catalog: Behavior<'catalog'> = {

@@ -408,6 +408,24 @@ describe('«Каталог»: список страницы', () => {
     expect(attr(tags(top, 'div\\b[^>]*data-behavior="catalog"')[0] ?? '', 'data-filters-side')).toBe('false');
   });
 
+  it('фильтры на телефоне — шторка dialog: кнопка открытия, окно с крестиком и «Показать» внутри формы filters', async () => {
+    const source = await html('catalog');
+    const form = source.indexOf('data-part="filters"');
+    const wrapper = source.indexOf('data-behavior="dialog"');
+    const dialog = source.indexOf('<dialog');
+    expect(form).toBeGreaterThan(-1);
+    expect(form).toBeLessThan(wrapper);
+    expect(wrapper).toBeLessThan(dialog);
+    expect(tags(source, 'button\\b[^>]*data-part="open"')).toHaveLength(1);
+    expect(tags(source, 'button\\b[^>]*data-part="close"')).toHaveLength(1);
+    expect(tags(source, 'button\\b[^>]*type="submit"')).toHaveLength(1);
+    expect(source).toContain('data-transition="drawer"');
+    expect(source).toContain('data-side="left"');
+    // На компьютере кнопка, заголовок шторки и «Показать» скрыты, окно стоит в потоке.
+    expect(attr(tags(source, 'button\\b[^>]*data-part="open"')[0] ?? '', 'class')).toContain('md:hidden');
+    expect(attr(tags(source, 'dialog\\b[^>]*')[0] ?? '', 'class')).toContain('md:static');
+  });
+
   it('без блоков «Фильтры» и «Сортировка» формы нет — как «Каталог» на главной заготовки', async () => {
     const source = await html('catalog', { blocks: [] });
     expect(source).not.toContain('data-part="filters"');

@@ -319,6 +319,14 @@ describe.each(SECTIONS)('«%s»: параметры карточки', (name) =>
     expect(none).not.toContain('fill="#1d4ed8"');
   });
 
+  // Квадрат — без скругления: радиус «бейджа» у темы бывает 12 px, на образце 20 px это уже круг.
+  it('образцы цветов: кружок — rounded-full, у квадрата нет класса скругления', async () => {
+    const source = await html(name, { settings: { swatches: 'square' } });
+    const swatch = source.match(/<span class="[^"]*size-5[^"]*" role="listitem"/)?.[0] ?? '';
+    expect(swatch).toContain('in-data-[swatches=circle]:rounded-full');
+    expect(swatch).not.toContain('rounded-badge');
+  });
+
   it('сердечко: действие favorites.toggle с id товара, aria-pressed="false" до скрипта', async () => {
     const source = await html(name, { theme: { 'wishlist-enabled': true } });
     const hearts = buttons(source, 'favorites.toggle');

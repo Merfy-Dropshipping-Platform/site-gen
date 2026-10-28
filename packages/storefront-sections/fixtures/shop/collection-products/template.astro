@@ -90,7 +90,7 @@ const { settings, blocks, theme } = Astro.props;
             {settings.swatches !== 'none' && card.colors.length > 0 && (
               <div class="flex flex-wrap items-center gap-1" role="list" aria-label="Цвета">
                 {card.colors.map((color) => (
-                  <span class="inline-flex size-5 overflow-hidden border border-border in-data-[swatches=circle]:rounded-full in-data-[swatches=square]:rounded-badge" role="listitem" title={color.title}>
+                  <span class="inline-flex size-5 overflow-hidden border border-border in-data-[swatches=circle]:rounded-full" role="listitem" title={color.title}>
                     <svg class="size-full" viewBox="0 0 20 20" role="img" aria-label={color.title}><rect width="20" height="20" fill={color.swatch} /></svg>
                   </span>
                 ))}

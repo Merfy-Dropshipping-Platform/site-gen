@@ -13,7 +13,7 @@ import {
   type LookDeps,
   type LookReply,
 } from '../src/look/look-job';
-import { LookError } from '../src/look/look-types';
+import { LookError, type LayoutFinding } from '../src/look/look-types';
 import { fakeRenderer, type FakeRendererOptions } from './look-fixture';
 
 const NOW = 1_800_000_000_000;
@@ -80,8 +80,10 @@ describe('снимок черновика · успех', () => {
         device: 'mobile',
         section: null,
         clip: null,
+        image: null,
       },
     ]);
+    expect(snapshot.layout).toEqual({ ok: true });
     expect(snapshot).toMatchObject({ v: 1, siteId: SITE, page: 'home', full: false });
     expect(fake.state.closed).toBe(1);
   });
@@ -116,6 +118,99 @@ describe('снимок черновика · успех', () => {
     expect(snapshot.detector).toEqual({ ok: false, reason: 'WASM не загрузился' });
     expect(snapshot.findings).toEqual([]);
     expect(snapshot.devices[0]?.images).toHaveLength(1);
+  });
+});
+
+const layoutFinding = (code: LayoutFinding['code'], mark: number, section = 'hero-1'): LayoutFinding => ({
+  code,
+  section,
+  text: `${code} · чинить`,
+  clip: { x: 0, y: 100 * mark, width: 390, height: 200 },
+  mark,
+});
+
+describe('снимок черновика · проверки вёрстки', () => {
+  it('находки с устройством, секцией и вырезкой; вырезок не больше четырёх, телефон первым', async () => {
+    const { deps } = setup({
+      mobile: {
+        pageHeight: 844,
+        layout: [
+          layoutFinding('row-unequal', 0),
+          layoutFinding('row-unequal', 1, 'cards-1'),
+          layoutFinding('overflow-x', 2),
+          layoutFinding('tap-small', 3),
+          layoutFinding('text-small', 4),
+        ],
+      },
+      desktop: { pageHeight: 900, layout: [layoutFinding('overlap', 0), layoutFinding('image-distorted', 1)] },
+    });
+
+    const snapshot = snapshotOf(await runLookJob(deps, job()));
+
+    const found = snapshot.findings.filter((finding) => finding.source === 'layout');
+    expect(found.map((finding) => `${finding.device}:${finding.code}`)).toEqual([
+      'mobile:row-unequal',
+      'mobile:row-unequal',
+      'mobile:overflow-x',
+      'mobile:tap-small',
+      'mobile:text-small',
+      'desktop:overlap',
+      'desktop:image-distorted',
+    ]);
+    expect(found.every((finding) => finding.clip !== null && finding.section !== null)).toBe(true);
+    // Первыми получают вырезку разные коды: сначала по одной на пару «устройство, код» (телефон первым), потом остальные.
+    expect(found.map((finding) => finding.image !== null)).toEqual([true, false, true, true, true, false, false]);
+    expect(found.filter((finding) => finding.image !== null)).toHaveLength(4);
+    expect(snapshot.layout).toEqual({ ok: true });
+  });
+
+  it('не больше трёх находок одного кода на устройство', async () => {
+    const many = [0, 1, 2, 3, 4].map((mark) => layoutFinding('overlap', mark, `s-${mark}`));
+    const { deps } = setup({ mobile: { layout: many } });
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ devices: 'mobile' })));
+
+    expect(snapshot.findings.map((finding) => finding.code)).toEqual(['overlap', 'overlap', 'overlap']);
+  });
+
+  it('вырезки вычитаются из предела 1,5 МБ: вместе с экранами ответ в пределе', async () => {
+    const { deps } = setup({
+      mobile: {
+        pageHeight: 844 * 12,
+        shotBytes: 400_000,
+        clipBytes: 55_000,
+        layout: [0, 1, 2, 3].map((mark) => layoutFinding('overlap', mark, `s-${mark}`)),
+      },
+    });
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ devices: 'mobile', full: true })));
+
+    const images = [
+      ...snapshot.devices.flatMap((entry) => entry.images),
+      ...snapshot.findings.flatMap((finding) => (finding.image === null ? [] : [finding.image])),
+    ];
+    expect(snapshot.findings.filter((finding) => finding.image !== null)).toHaveLength(3);
+    expect(images.reduce((sum, image) => sum + image.length, 0)).toBeLessThanOrEqual(1_500_000);
+  });
+
+  it('проверки упали — снимки и детектор есть, причина в ответе', async () => {
+    const { deps } = setup({ mobile: { layoutError: new Error('страница закрылась\nстек') } });
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ devices: 'mobile' })));
+
+    expect(snapshot.layout).toEqual({ ok: false, reason: 'страница закрылась' });
+    expect(snapshot.findings).toEqual([]);
+    expect(snapshot.devices[0]?.images).toHaveLength(1);
+  });
+
+  it('срок вышел во время проверок — отказ timeout, а не причина в ответе', async () => {
+    const { deps } = setup({
+      mobile: { layoutError: new LookError('timeout', 'Не успел отрисовать страницу за 30 с') },
+    });
+
+    const reply = await runLookJob(deps, job({ devices: 'mobile' }));
+
+    expect(errorOf(reply)).toMatchObject({ code: 'timeout' });
   });
 });
 

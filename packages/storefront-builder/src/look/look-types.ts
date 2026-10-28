@@ -42,17 +42,44 @@ export interface Clip {
   height: number;
 }
 
-// Находка в ответе снимка. Сейчас источник один — детектор Impeccable; сюда же лягут проверки вёрстки (карточки разной
-// высоты и т. п.) со своим `source`. `section` — имя экземпляра секции на странице, `clip` — вырезка места на снимке;
-// у детектора их пока нет (null), проверки вёрстки будут заполнять.
+// Коды проверок вёрстки (28.10), в порядке важности: по нему отбираются находки и вырезки. Правила и пороги — в
+// `browser/layout-checks.js`. `overflow-x`, `columns-many`, `tap-small`, `text-small` запускаются только на телефоне.
+export const LAYOUT_CODES = [
+  'row-unequal',
+  'row-not-filling',
+  'overflow-x',
+  'text-clipped',
+  'overlap',
+  'image-distorted',
+  'columns-many',
+  'tap-small',
+  'text-small',
+] as const;
+export type LayoutCode = (typeof LAYOUT_CODES)[number];
+
+// Находка проверки вёрстки, как её отдаёт страница. `clip` — место на странице, уже с полями и обрезанное по экрану;
+// `mark` — номер, по которому страница обводит элементы находки на время снимка вырезки.
+export interface LayoutFinding {
+  code: LayoutCode;
+  section: string | null;
+  text: string;
+  clip: Clip;
+  mark: number;
+}
+
+// Находка в ответе снимка. Источники: детектор Impeccable (`section`, `clip` и `image` у него null) и проверки вёрстки
+// (`layout`). `section` — id экземпляра секции на странице (`data-section-id`, как в `merfy_pages · outline`), `clip` —
+// прямоугольник места в пикселях страницы, `image` — вырезка этого места, JPEG в base64 (есть не у каждой находки: не
+// больше `MAX_CLIPS` на ответ).
 export interface LookFinding {
-  source: 'impeccable';
+  source: 'impeccable' | 'layout';
   code: string;
   name: string;
   text: string;
   device: LookDevice;
   section: string | null;
   clip: Clip | null;
+  image: string | null;
 }
 
 // Одна страница в браузере на одном размере экрана. Живёт до `RenderedPage.close()`.
@@ -64,6 +91,10 @@ export interface PageSession {
   shoot(index: number, quality: number): Promise<Uint8Array>;
   // Детектор Impeccable на отрисованной странице. Вызывается после снимков.
   detect(): Promise<DetectorFinding[]>;
+  // Проверки вёрстки на отрисованной странице (`look-layout.ts`). Ничего на странице не меняют.
+  layout(): Promise<LayoutFinding[]>;
+  // JPEG места находки: страница прокручивается к `finding.clip`, элементы находки обводятся.
+  shootClip(finding: LayoutFinding, quality: number): Promise<Uint8Array>;
 }
 
 export interface RenderedPage {

@@ -92,9 +92,10 @@ export interface ListedPage {
   facets: Omit<ListFacets, 'collections'> | null;
 }
 
-// id записи из значения поля с записью (section-records): публичные поля или null.
+// id записи из значения поля с записью (section-records): публичные поля или null. У значения пустого поля (правило
+// «все товары», allProductsRule) id пустой — это не запись: null, список из всех товаров магазина.
 const recordIdOf = (value: object | null): string | null =>
-  value !== null && 'id' in value && typeof value.id === 'string' ? value.id : null;
+  value !== null && 'id' in value && typeof value.id === 'string' && value.id !== '' ? value.id : null;
 
 const clampPerPage = (value: number): number => Math.max(PER_PAGE_MIN, Math.min(PER_PAGE_MAX, Math.floor(value)));
 

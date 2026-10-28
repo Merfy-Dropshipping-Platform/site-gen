@@ -2,7 +2,9 @@
 const { settings, theme, shop } = Astro.props;
 ---
 <!-- Подвал пяти тем одной разметкой: раскладка (3-col — flux и rose, 2-part — satin и bloom, 2-part-asymmetric —
-     vanilla, minimal) — атрибутом корня и вариантами классов; ссылки — из меню и данных магазина. -->
+     vanilla, minimal) — атрибутом корня и вариантами классов; ссылки — из меню и данных магазина. Логотип, как на
+     проде: своя картинка подвала, иначе логотип магазина из настроек темы (тот же, что в шапке); в раскладке «Колонки»
+     (flux, rose) логотипа магазина в подвале нет — только своя картинка. -->
 <div class="font-body text-sm text-foreground" data-capitals={settings.capitals} data-layout={settings.layout}>
   <div class="mx-auto flex max-w-page flex-col gap-10 px-4 in-data-[layout=2-part-asymmetric]:items-center in-data-[layout=2-part-asymmetric]:text-center md:in-data-[layout=2-part-asymmetric]:items-start md:in-data-[layout=2-part-asymmetric]:text-left">
     {settings.newsletter && (
@@ -50,13 +52,13 @@ const { settings, theme, shop } = Astro.props;
     )}
 
     <div class="flex w-full flex-col gap-10 md:grid md:grid-cols-4 md:gap-4 md:in-data-[layout=2-part]:flex md:in-data-[layout=2-part]:flex-row md:in-data-[layout=2-part]:justify-between md:in-data-[layout=2-part-asymmetric]:flex md:in-data-[layout=minimal]:flex md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:flex-wrap md:in-data-[layout=minimal]:items-center md:in-data-[layout=minimal]:justify-between">
-      {settings.logo ? (
-        <a class="inline-flex self-start no-underline in-data-[layout=2-part-asymmetric]:self-center md:col-span-4 md:in-data-[layout=2-part-asymmetric]:self-start" href="/">
-          <img alt={shop.name} class="block h-10 w-auto max-w-logo object-contain" src={settings.logo} />
+      {[settings.logo || theme['logo-image']].map((logo) => logo ? (
+        <a class:list={['inline-flex self-start no-underline in-data-[layout=2-part-asymmetric]:self-center md:col-span-4 md:in-data-[layout=2-part-asymmetric]:self-start', !settings.logo && 'in-data-[layout=3-col]:hidden']} href="/">
+          <img alt={shop.name} class="block h-10 w-auto max-w-logo object-contain" src={logo} />
         </a>
       ) : (
         <a class="inline-flex min-h-11 items-center self-start font-heading weight-heading tracking-heading text-xl text-heading no-underline in-data-[capitals=all]:uppercase in-data-[layout=2-part-asymmetric]:self-center in-data-[layout=3-col]:hidden md:min-h-0 md:in-data-[layout=2-part-asymmetric]:self-start" href="/">{shop.name}</a>
-      )}
+      ))}
       <div class="contents md:in-data-[layout=2-part]:flex md:in-data-[layout=2-part]:gap-16 md:in-data-[layout=minimal]:flex md:in-data-[layout=minimal]:flex-wrap md:in-data-[layout=minimal]:gap-x-8">
         {settings.menu.items.some((item) => item.items.length === 0) && (
           <nav aria-label="Навигация" class="flex flex-col gap-2 md:gap-4">
@@ -121,7 +123,12 @@ const { settings, theme, shop } = Astro.props;
       <li><a class="inline-flex h-11 items-center rounded-badge border-width-input border-border px-4 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href={link.url} rel="noopener noreferrer" target="_blank">{link.label}</a></li>
     ))}
   </ul>
-  <div class="flex min-h-16 items-center justify-center px-4">
-    <a class="inline-flex min-h-11 items-center text-sm text-foreground no-underline hover:text-heading md:text-base" href="https://merfy.ru/" rel="noopener noreferrer" target="_blank">Разработано на Merfy</a>
+  <!-- Подпись: своя от мерчанта — текстом (shop.signature), стандартная — ссылкой на лендинг, как на проде. -->
+  <div class="flex min-h-16 items-center justify-center px-4 text-center">
+    {shop.signature ? (
+      <p class="m-0 text-sm text-foreground md:text-base">{shop.signature}</p>
+    ) : (
+      <a class="inline-flex min-h-11 items-center text-sm text-foreground no-underline hover:text-heading md:text-base" href="https://merfy.ru/" rel="noopener noreferrer" target="_blank">Разработано на Merfy</a>
+    )}
   </div>
 </div>

@@ -22,6 +22,10 @@ export interface ShopProps {
   contacts: { phone: string; email: string; fields: ShopContactField[] };
   policies: ShopPolicy[];
   payments: { online: boolean };
+  // Своя подпись под подвалом (site.settings.themeBrandName, как у пяти тем на проде): текст мерчанта без пробелов по
+  // краям. Пусто — не вписана или вписан стандартный текст платформы: секция выводит «Разработано на Merfy» ссылкой.
+  // Ключ необязательный по той же причине, что catalogUrl: данные магазина в тестах секций его не знают.
+  signature?: string;
   // Адрес каталога (блок 11 «Секций и SDK», Р11а-2): /catalog, если страница каталога есть; нет — null. Ключ
   // необязательный: данные магазина в тестах секций и запросы рендера старой формы его не знают, процесс рендера даёт null.
   catalogUrl?: string | null;
@@ -32,8 +36,17 @@ export const EMPTY_SHOP: ShopProps = {
   contacts: { phone: '', email: '', fields: [] },
   policies: [],
   payments: { online: false },
+  signature: '',
   catalogUrl: null,
 };
+
+// Стандартные тексты подписи платформы (footer-data.ts пяти тем): мерчантской правкой не считаются, регистр не важен.
+const PLATFORM_SIGNATURES: ReadonlySet<string> = new Set(['powered by merfy', 'разработано на merfy']);
+
+export function signatureOf(raw: string): string {
+  const value = raw.trim();
+  return PLATFORM_SIGNATURES.has(value.toLowerCase()) ? '' : value;
+}
 
 // Тип политики, адрес страницы и название — POLICY_PAGES (records.ts, блок 8 «Секций и SDK», часть 8а): тот же список,
 // что у страниц политик.
@@ -65,7 +78,12 @@ function policiesOf(entities: readonly Entity[]): ShopPolicy[] {
   });
 }
 
-export function shopPropsOf(name: string, entities: readonly Entity[], catalogUrl: string | null = null): ShopProps {
+export function shopPropsOf(
+  name: string,
+  entities: readonly Entity[],
+  catalogUrl: string | null = null,
+  signature = '',
+): ShopProps {
   const fields = contactFieldsOf(entities);
   const email = fields.find((field) => isEmail(field.value) || EMAIL_LABEL.test(field.label));
   const phone = fields.find((field) => field !== email && (isPhone(field.value) || PHONE_LABEL.test(field.label)));
@@ -79,6 +97,7 @@ export function shopPropsOf(name: string, entities: readonly Entity[], catalogUr
     },
     policies: policiesOf(entities),
     payments: { online },
+    signature: signatureOf(signature),
     catalogUrl,
   };
 }

@@ -82,6 +82,12 @@ function stableStringify(value: unknown): string {
   });
 }
 
+/** Подпись под подвалом из настроек магазина (themeBrandName); не вписана — пустая строка. */
+function themeBrandNameOf(settings: { themeBrandName?: unknown } | null | undefined): string {
+  const value = settings?.themeBrandName;
+  return typeof value === "string" ? value.trim() : "";
+}
+
 /**
  * Темы, для которых переключение НА них применяет полный канон верстальщиков
  * (defaults/<theme>.json, либо PageResolver+theme.json fallback для rose):
@@ -1263,6 +1269,7 @@ export class SitesDomainService {
     // ключи (requireCustomerAuth, contactMethod, customerNameMode): мёржим
     // входящий объект в текущие настройки сайта. settings === null (или
     // undefined) очищает блок целиком.
+    let signatureChanged = false;
     if ("settings" in (params.patch ?? {})) {
       const incoming = params.patch.settings;
       if (incoming === null || incoming === undefined) {
@@ -1273,6 +1280,10 @@ export class SitesDomainService {
           ...incoming,
         };
       }
+      // Подпись под подвалом — вход сборки новой темы (site.signature): смена пересобирает витрину.
+      signatureChanged =
+        themeBrandNameOf(existingSite?.settings) !==
+        themeBrandNameOf(updates.settings);
     }
 
     updates.updatedAt = new Date();
@@ -1428,6 +1439,12 @@ export class SitesDomainService {
       void this.storefrontHandoff?.notify(
         params.siteId,
         "shop-name-change",
+        "SitesDomainService.update",
+      );
+    if (row && signatureChanged)
+      void this.storefrontHandoff?.notify(
+        params.siteId,
+        "branding-change",
         "SitesDomainService.update",
       );
     return Boolean(row);

@@ -24,6 +24,7 @@ const EDITS: Record<string, (inputs: BuildInputs) => void> = {
   'site.seoTitle': (inputs) => (inputs.site.seoTitle = 'Шарфы изо льна'),
   'site.keywords': (inputs) => (inputs.site.keywords = 'шарфы, лён'),
   'site.logoUrl': (inputs) => (inputs.site.logoUrl = 'https://s3.merfy.ru/merfy/branding/logo-1.png'),
+  'site.signature': (inputs) => (inputs.site.signature = 'Сделано в ООО «Ромашка»'),
   'site.updatedAt': (inputs) => (inputs.site.updatedAt = '2026-10-06T10:00:00.000Z'),
   'env.apiUrl': (inputs) => (inputs.env.apiUrl = 'http://localhost:4322/api'),
   'env.analyticsUrl': (inputs) => (inputs.env.analyticsUrl = 'https://analytics.dev.merfy.ru'),

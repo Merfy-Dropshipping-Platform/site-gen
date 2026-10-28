@@ -211,6 +211,9 @@ const buildInputsSchema = z.strictObject({
     // Логотип из брендинга (site.branding.logoUrl) — картинка для соцсетей (блок 9). Не загружен — пустая строка. Адрес
     // здесь не проверяется: негодный логотип сборку не валит, тега og:image просто нет (head.ts).
     logoUrl: z.string(),
+    // Подпись под подвалом, которую мерчант вписал в карточке темы (site.settings.themeBrandName), как в настройках.
+    // Пусто — не вписана; пробелы по краям и стандартные тексты платформы убирает shopPropsOf.
+    signature: z.string(),
     updatedAt: instantSchema,
   }),
   env: z.strictObject({

@@ -114,7 +114,7 @@ export function pagePropsOf(
     theme.panel === undefined
       ? {}
       : resolveSettings(theme.platformPanel ?? theme.panel, readSettingsEdits(theme.panel, settingsEdits).edits);
-  const shop = shopPropsOf(shopName(inputs.site), inputs.data.entities, catalogUrlOf(inputs));
+  const shop = shopPropsOf(shopName(inputs.site), inputs.data.entities, catalogUrlOf(inputs), inputs.site.signature);
   return { theme: settings, shop, page: HOME_PAGE };
 }
 

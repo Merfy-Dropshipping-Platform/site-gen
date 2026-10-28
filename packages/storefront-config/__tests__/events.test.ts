@@ -70,7 +70,7 @@ describe('события пересборки (design.md блока 3, 5.7)', ()
       ['contacts-change', 'new', 'store', 'works'],
       ['publication-change', 'new', 'dependent-pages', 'works'],
       ['collection-change', 'new', 'dependent-pages', 'works'],
-      ['payment-settings-change', 'new', 'store', 'with-sections'],
+      ['payment-settings-change', 'new', 'store', 'works'],
       ['stock-change', 'new', 'dependent-pages', 'works'],
       ['extension-toggle', 'new', 'store', 'works'],
       ['analytics-counters-change', 'new', 'store', 'works'],

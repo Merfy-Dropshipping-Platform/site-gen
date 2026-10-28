@@ -74,7 +74,7 @@ afterAll(async () => {
 
 interface Variant {
   settings?: Record<string, string | boolean>;
-  shop?: typeof EMPTY_SHOP | typeof FULL_SHOP;
+  shop?: (typeof EMPTY_SHOP | typeof FULL_SHOP) & { signature?: string };
   theme?: Record<string, string>;
   menu?: typeof MENU | typeof NO_MENU;
 }
@@ -148,6 +148,20 @@ describe('«Подвал»: признаки и раскладки', () => {
     const withLogo = await html({ settings: { logo: 'https://cdn.merfy.ru/footer-logo.webp' } });
     expect(withLogo).toMatch(/<img\b[^>]*src="https:\/\/cdn\.merfy\.ru\/footer-logo\.webp"/);
     expect(withLogo).not.toContain('>Мой сайт</a>');
+  });
+
+  // Логотип магазина из настроек темы (тот же, что в шапке): в «Колонках» (flux, rose) его нет, в остальных раскладках
+  // он вместо названия; своя картинка подвала важнее.
+  it('логотип из настроек темы: вместо названия, кроме «Колонок»; своя картинка подвала важнее', async () => {
+    const theme = { 'logo-image': 'https://cdn.merfy.ru/header-logo.webp' };
+    const columns = await html({ theme });
+    expect(tags(columns, 'a').find((tag) => tag.includes('href="/"') && tag.includes('in-data-[layout=3-col]:hidden'))).toBeDefined();
+    const twoPart = await html({ theme, settings: { layout: '2-part' } });
+    expect(twoPart).toMatch(/<img\b[^>]*src="https:\/\/cdn\.merfy\.ru\/header-logo\.webp"/);
+    expect(twoPart).not.toContain('>Мой сайт</a>');
+    const own = await html({ theme, settings: { layout: '2-part', logo: 'https://cdn.merfy.ru/footer-logo.webp' } });
+    expect(own).toContain('footer-logo.webp');
+    expect(own).not.toContain('header-logo.webp');
   });
 });
 
@@ -231,6 +245,27 @@ describe('«Подвал»: нижняя строка и чистота разм
     expect(link).toContain('target="_blank"');
     expect(link).toContain('rel="noopener noreferrer"');
     expect(source).toContain('Разработано на Merfy');
+  });
+
+  // Своя подпись из карточки темы (site.settings.themeBrandName) — текстом, без ссылки; стандартная — ссылкой (как на проде).
+  it('своя подпись мерчанта — вместо «Разработано на Merfy», текстом без ссылки на платформу', async () => {
+    const source = await html({ shop: { ...EMPTY_SHOP, signature: 'Сделано в ООО «Ромашка»' } });
+    expect(source).toContain('Сделано в ООО «Ромашка»');
+    expect(source).not.toContain('Разработано на Merfy');
+    expect(source).not.toContain('href="https://merfy.ru/"');
+  });
+
+  it('подпись с разметкой выводится текстом: теги экранированы', async () => {
+    const source = await html({ shop: { ...EMPTY_SHOP, signature: '<b>Свой</b> текст' } });
+    expect(source).toContain('&lt;b&gt;Свой&lt;/b&gt; текст');
+    expect(source).not.toContain('<b>Свой</b>');
+  });
+
+  it('подписи нет — стандартная ссылкой', async () => {
+    for (const shop of [EMPTY_SHOP, { ...EMPTY_SHOP, signature: '' }]) {
+      const source = await html({ shop });
+      expect(tags(source, 'a').some((tag) => tag.includes('href="https://merfy.ru/"'))).toBe(true);
+    }
   });
 
   it.each(LAYOUTS)('%s: нет style, скриптов и поведений', async (layout) => {

@@ -36,6 +36,19 @@ describe('данные магазина для секций', () => {
     ]);
   });
 
+  // Подпись под подвалом — site.settings.themeBrandName, как у пяти тем (footer-data.ts): своя — как вписана, пусто и
+  // стандартные тексты платформы (любой регистр) — «не вписана».
+  it.each([
+    ['своя подпись — без пробелов по краям', '  Сделано в ООО «Ромашка» ', 'Сделано в ООО «Ромашка»'],
+    ['пусто', '', ''],
+    ['одни пробелы', '   ', ''],
+    ['Разработано на Merfy', 'Разработано на Merfy', ''],
+    ['powered by merfy в другом регистре', ' POWERED BY Merfy ', ''],
+    ['стандартный текст с добавкой — уже своя', 'Разработано на Merfy и мной', 'Разработано на Merfy и мной'],
+  ])('подпись: %s', (_title, raw, expected) => {
+    expect(shopPropsOf('Шарфы', [], null, raw).signature).toBe(expected);
+  });
+
   it('оплата онлайн — по сущности billing; нет данных — пустой магазин с именем', () => {
     expect(shopPropsOf('Шарфы', [entity('billing', 'main', { online: true })]).payments).toEqual({ online: true });
     expect(shopPropsOf('Шарфы', [entity('billing', 'main', { provider: 'robokassa' })]).payments).toEqual({

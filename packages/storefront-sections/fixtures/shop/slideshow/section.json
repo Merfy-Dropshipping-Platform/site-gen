@@ -3,27 +3,248 @@
   "name": "slideshow",
   "kind": "section",
   "title": "Слайд-шоу",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "image-frame": {
+      "kinds": ["radio"],
+      "label": "Положение изображения",
+      "about": "Слайды на всю ширину экрана или в окне по ширине страницы",
+      "asks": ["на весь экран", "окно", "положение изображения", "слайды в рамке", "ширина слайдов"]
+    },
+    "numbering": {
+      "kinds": ["select"],
+      "label": "Нумерация страниц",
+      "about": "Чем отмечены слайды под рядом: числа, точки, полоски, счётчик «1 / 3» или ничем; нажатие листает к слайду",
+      "asks": ["нумерация", "точки", "числа", "счётчик слайдов", "полоски", "навигация слайдов", "pagination"]
+    },
+    "text-box": {
+      "kinds": ["toggle"],
+      "label": "Контейнер",
+      "about": "Плашка под текстом слайда: фон схемы, скруглённые углы, тень; выключена — текст прямо на картинке",
+      "asks": ["контейнер", "плашка под текстом", "подложка под текстом", "рамка вокруг текста"]
+    }
+  },
   "settings": [
-    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Подборки" } },
+    {
+      "id": "image-frame",
+      "label": "Положение изображения",
+      "setting": {
+        "kind": "radio",
+        "default": "fullscreen",
+        "options": [
+          { "value": "fullscreen", "label": "На весь экран" },
+          { "value": "contained", "label": "Окно" }
+        ]
+      }
+    },
+    {
+      "id": "height",
+      "label": "Размер",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
     {
       "id": "autoplay",
       "label": "Листать сами",
-      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Листать", "off": "Не листать" } }
-    }
+      "setting": {
+        "kind": "toggle",
+        "default": true,
+        "labels": { "on": "Листать", "off": "Не листать" }
+      }
+    },
+    {
+      "id": "interval",
+      "label": "Интервал",
+      "visibleWhen": { "setting": "autoplay", "equals": true },
+      "setting": {
+        "kind": "range",
+        "default": 5,
+        "min": 1,
+        "max": 20,
+        "step": 1
+      }
+    },
+    {
+      "id": "numbering",
+      "label": "Нумерация страниц",
+      "setting": {
+        "kind": "select",
+        "default": "numbers",
+        "options": [
+          { "value": "numbers", "label": "Числа" },
+          { "value": "dots", "label": "Точки" },
+          { "value": "lines", "label": "Полоски" },
+          { "value": "counter", "label": "Счётчик" },
+          { "value": "none", "label": "Нет" }
+        ]
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" }
   ],
   "blocks": {
     "slide": {
       "title": "Слайд",
-      "limit": 6,
+      "limit": 5,
       "settings": [
-        { "id": "subheading", "label": "Заголовок слайда", "setting": { "kind": "string", "default": "Новый слайд" } },
-        { "id": "text", "label": "Текст слайда", "setting": { "kind": "text", "default": "Коротко о слайде" } }
+        {
+          "id": "image",
+          "label": "Изображение",
+          "setting": {
+            "kind": "image",
+            "default": "",
+            "maxBytes": 2097152
+          }
+        },
+        {
+          "id": "overlay",
+          "label": "Затемнение",
+          "setting": {
+            "kind": "range",
+            "default": 0,
+            "min": 0,
+            "max": 100,
+            "step": 5
+          }
+        },
+        {
+          "id": "heading",
+          "label": "Заголовок",
+          "section": "Содержание",
+          "setting": {
+            "kind": "string",
+            "default": "Новый слайд",
+            "ai": "title"
+          }
+        },
+        {
+          "id": "heading-size",
+          "label": "Размер заголовка",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "text",
+          "label": "Текст",
+          "setting": {
+            "kind": "text",
+            "default": "Коротко о слайде",
+            "ai": "description"
+          }
+        },
+        {
+          "id": "text-size",
+          "label": "Размер текста",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "button-label",
+          "label": "Кнопка",
+          "sublabel": "Оставьте пустой, чтобы скрыть",
+          "setting": {
+            "kind": "string",
+            "default": "Подробнее"
+          }
+        },
+        {
+          "id": "button-link",
+          "label": "Ссылка",
+          "setting": {
+            "kind": "url",
+            "default": "/catalog"
+          }
+        },
+        {
+          "id": "text-box",
+          "label": "Контейнер",
+          "setting": {
+            "kind": "toggle",
+            "default": false,
+            "labels": { "on": "Показать", "off": "Скрыть" }
+          }
+        },
+        {
+          "id": "content-position",
+          "label": "Позиция",
+          "setting": {
+            "kind": "select",
+            "default": "center",
+            "options": [
+              { "value": "top-left", "label": "Сверху слева" },
+              { "value": "top-center", "label": "Сверху в центре" },
+              { "value": "top-right", "label": "Сверху справа" },
+              { "value": "center-left", "label": "По центру слева" },
+              { "value": "center", "label": "По центру" },
+              { "value": "center-right", "label": "По центру справа" },
+              { "value": "bottom-left", "label": "Снизу слева" },
+              { "value": "bottom-center", "label": "Снизу по центру" },
+              { "value": "bottom-right", "label": "Снизу справа" }
+            ]
+          }
+        },
+        {
+          "id": "align",
+          "label": "Выравнивание",
+          "setting": {
+            "kind": "alignment",
+            "default": "center"
+          }
+        },
+        {
+          "id": "color-scheme",
+          "label": "Цветовая схема",
+          "setting": {
+            "kind": "color-scheme",
+            "default": ""
+          }
+        }
       ]
     }
   },
   "defaultBlocks": [
-    { "type": "slide", "settings": { "subheading": "Новинки", "text": "Свежие поступления — первыми в каталоге." } },
-    { "type": "slide", "settings": { "subheading": "Любимое покупателей", "text": "Товары, которые чаще всего берут в подарок и для себя." } },
-    { "type": "slide", "settings": { "subheading": "Доставка", "text": "Способ и срок доставки выберете при оформлении заказа." } }
+    {
+      "type": "slide",
+      "settings": {
+        "heading": "Новинки",
+        "text": "Свежие поступления — первыми в каталоге."
+      }
+    },
+    {
+      "type": "slide",
+      "settings": {
+        "heading": "Любимое покупателей",
+        "text": "Товары, которые чаще всего берут в подарок и для себя."
+      }
+    },
+    {
+      "type": "slide",
+      "settings": {
+        "heading": "Доставка",
+        "text": "Способ и срок доставки выберете при оформлении заказа.",
+        "button-label": ""
+      }
+    }
   ]
 }

@@ -34,7 +34,7 @@ describe('лимиты полей секции', () => {
   it('числа — из раздела 3.4 design.md блока 3', () => {
     expect(SETTINGS_LIMITS).toEqual({
       sectionFields: 20,
-      blockFields: 10,
+      blockFields: 16,
       blockTypes: 6,
       blocksTotal: 50,
       optionsMin: 2,
@@ -51,17 +51,17 @@ describe('лимиты полей секции', () => {
       { ...select('align', variants(2)), label: long(32), sublabel: long(120), section: long(32), row: long(32) },
     ];
     const blocks = [...types(5, 8), { type: 't6', title: long(32), limit: 10 }];
-    expect(limitIssues(sectionOf(fields, [blockList('t1', many(10, 'c'))], blocks))).toEqual([]);
+    expect(limitIssues(sectionOf(fields, [blockList('t1', many(16, 'c'))], blocks))).toEqual([]);
   });
 
-  it('21 поле у секции, 11 у типа блока', () => {
-    const lists = [blockList('card', many(10, 'c')), blockList('slide', many(11, 's'))];
+  it('21 поле у секции, 17 у типа блока', () => {
+    const lists = [blockList('card', many(16, 'c')), blockList('slide', many(17, 's'))];
     expect(limitIssues(sectionOf(many(21, 'f'), lists))).toEqual([
       { code: 'settings-limit', path: ['settings'], message: 'полей у секции — 21, можно не больше 20' },
       {
         code: 'settings-limit',
         path: ['blocks', 'slide', 'settings'],
-        message: 'полей у блока `slide` — 11, можно не больше 10',
+        message: 'полей у блока `slide` — 17, можно не больше 16',
       },
     ]);
   });

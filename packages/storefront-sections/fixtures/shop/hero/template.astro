@@ -1,81 +1,75 @@
 ---
 const { settings, blocks } = Astro.props;
 ---
-<!-- Значок кнопки — Lucide (arrow-right), лицензия ISC, lucide.dev/license. -->
-<div class:list={['relative font-body', { 'mx-auto max-w-page px-4': settings.images.url1 === '' }]}>
+<!-- Значок кнопки — Lucide (arrow-right), лицензия ISC, lucide.dev/license.
+     Раскладка и размеры — атрибутами data-* на корне, вид по ним — вариантами in-data-[…]: у вложенных элементов.
+     Позиция текста: «сверху / по центру / снизу» — по началу значения, «слева / справа» — по концу, остальное — по центру. -->
+<div
+  class="relative font-body data-[photo=false]:mx-auto data-[photo=false]:max-w-page data-[photo=false]:px-4"
+  data-photo={settings.images.url1 !== ''}
+  data-layout={settings.layout}
+  data-height={settings.height}
+  data-align={settings.align}
+  data-position={settings['content-position']}
+  data-image-position={settings['image-position']}
+  data-text-box={settings['text-box']}
+>
   <div
-    class:list={[
-      'relative flex overflow-hidden',
-      settings.images.url1 === ''
-        ? {
-            'rounded-card bg-muted': true,
-            'min-h-64': settings.height === 'small',
-            'min-h-96': settings.height === 'medium',
-            'min-h-112 md:min-h-136': settings.height === 'large',
-          }
-        : { 'min-h-64': settings.height === 'small', 'min-h-96': settings.height === 'medium', 'min-h-screen': settings.height === 'large' },
-    ]}
+    class="relative flex flex-col overflow-hidden in-data-[photo=false]:rounded-card md:flex-row md:in-data-[image-position=right]:flex-row-reverse in-data-[height=small]:min-h-60 sm:in-data-[height=small]:min-h-76 lg:in-data-[height=small]:min-h-88 in-data-[height=medium]:min-h-80 sm:in-data-[height=medium]:min-h-100 lg:in-data-[height=medium]:min-h-112 in-data-[height=large]:min-h-96 sm:in-data-[height=large]:min-h-120 lg:in-data-[height=large]:min-h-152"
   >
-    {settings.images.url1 !== '' && (
-      <picture>
-        {settings.images.url2 !== '' && <source media="(max-width: 767px)" srcset={settings.images.url2} />}
-        <img src={settings.images.url1} alt="" class="absolute inset-0 h-full w-full object-cover" />
-      </picture>
-    )}
-    {settings.images.url1 !== '' && <div class={`absolute inset-0 bg-foreground opacity-${settings.overlay}`} />}
+    <div class="absolute inset-0 bg-muted in-data-[layout=split]:relative in-data-[layout=split]:min-h-72 md:in-data-[layout=split]:w-1/2">
+      {settings.images.url1 !== '' && (
+        <Fragment>
+          <picture>
+            {settings.images.url2 !== '' && <source media="(max-width: 767px)" srcset={settings.images.url2} />}
+            <img src={settings.images.url1} alt="" class="absolute inset-0 size-full object-cover" />
+          </picture>
+          <div class={`absolute inset-0 bg-foreground opacity-${settings.overlay}`}></div>
+        </Fragment>
+      )}
+    </div>
     <div
-      class:list={[
-        'relative mx-auto flex w-full max-w-page flex-col justify-center gap-5 px-6 py-16 md:px-12',
-        {
-          'items-start text-left': settings.align === 'left',
-          'items-center text-center': settings.align === 'center',
-          'items-end text-right': settings.align === 'right',
-        },
-      ]}
+      class="relative z-10 flex w-full flex-col items-center justify-center px-4 py-10 in-data-[position^=top]:justify-start in-data-[position^=bottom]:justify-end in-data-[position$=left]:items-start in-data-[position$=right]:items-end md:px-12 md:py-16 md:in-data-[layout=split]:w-1/2 lg:in-data-[layout=overlay]:px-20"
     >
-      {blocks.map((block) => (
-        <div
-          class:list={[
-            'flex flex-col',
-            {
-              'items-start': settings.align === 'left',
-              'items-center': settings.align === 'center',
-              'items-end': settings.align === 'right',
-              'pt-2': block.type === 'button',
-            },
-          ]}
-        >
-          {block.type === 'heading' && (
-            <h2
-              class:list={[
-                'm-0 max-w-4xl text-balance font-heading weight-heading tracking-heading',
-                {
-                  'text-2xl': settings['heading-size'] === 'small',
-                  'text-3xl md:text-4xl': settings['heading-size'] === 'medium',
-                  'text-4xl md:text-5xl': settings['heading-size'] === 'large',
-                },
-                settings.images.url1 !== '' ? 'text-background' : 'text-heading',
-              ]}
-              set:html={block.settings.heading}
-            />
-          )}
-          {block.type === 'text' && (
-            <p
-              class:list={['m-0 max-w-2xl text-pretty text-lg', settings.images.url1 !== '' ? 'text-background' : 'text-muted-foreground']}
-              set:html={block.settings.text}
-            />
-          )}
-          {block.type === 'button' && block.settings.label && (
-            <a
-              class="inline-flex h-12 items-center justify-center gap-2 rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              href={block.settings.link}
-            >
-              {block.settings.label}
-              <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
-            </a>
-          )}
-        </div>
-      ))}
+      <div
+        class="flex w-fit max-w-xl flex-wrap gap-x-3 gap-y-4 in-data-[align=left]:justify-start in-data-[align=center]:justify-center in-data-[align=right]:justify-end in-data-[text-box=true]:rounded-card in-data-[text-box=true]:bg-background in-data-[text-box=true]:p-6 in-data-[text-box=true]:shadow-card md:in-data-[text-box=true]:p-8"
+      >
+        {blocks.map((block) => (
+          <div class="data-[block=heading]:w-full data-[block=text]:w-full" data-block={block.type}>
+            {block.type === 'heading' && (
+              <h2
+                class={`m-0 w-full text-balance font-heading weight-heading tracking-heading text-heading text-${settings.align} data-[heading-size=small]:text-xl md:data-[heading-size=small]:text-2xl data-[heading-size=medium]:text-2xl md:data-[heading-size=medium]:text-4xl data-[heading-size=large]:text-4xl md:data-[heading-size=large]:text-5xl`}
+                data-heading-size={block.settings['heading-size']}
+                set:html={block.settings.heading}
+              />
+            )}
+            {block.type === 'text' && (
+              <p
+                class={`m-0 w-full text-pretty text-foreground text-${settings.align} data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg md:data-[text-size=large]:text-xl`}
+                data-text-size={block.settings['text-size']}
+                set:html={block.settings.text}
+              />
+            )}
+            {block.type === 'button' && block.settings['button-label'] && (
+              <a
+                class="inline-flex h-12 items-center justify-center gap-2 rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                href={block.settings['button-link']}
+              >
+                {block.settings['button-label']}
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+              </a>
+            )}
+            {block.type === 'button-second' && block.settings['button-label'] && (
+              <a
+                class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-secondary-border bg-secondary px-8 text-base text-secondary-foreground no-underline hover:bg-secondary-hover hover:text-secondary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                href={block.settings['button-link']}
+              >
+                {block.settings['button-label']}
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   </div>
 </div>

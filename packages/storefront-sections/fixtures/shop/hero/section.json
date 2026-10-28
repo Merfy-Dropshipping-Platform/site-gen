@@ -3,6 +3,15 @@
   "name": "hero",
   "kind": "section",
   "title": "Первый экран",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "text-box": {
+      "kinds": ["toggle"],
+      "label": "Контейнер",
+      "about": "Плашка под текстом на картинке: фон схемы, скруглённые углы, тень; выключена — текст прямо на картинке",
+      "asks": ["контейнер", "плашка под текстом", "подложка под текстом", "рамка вокруг текста"]
+    }
+  },
   "settings": [
     {
       "id": "images",
@@ -18,23 +27,14 @@
     },
     {
       "id": "height",
-      "label": "Высота",
+      "label": "Размер",
       "setting": {
-        "kind": "radio",
+        "kind": "select",
         "default": "large",
         "options": [
-          {
-            "value": "small",
-            "label": "Маленькая"
-          },
-          {
-            "value": "medium",
-            "label": "Средняя"
-          },
-          {
-            "value": "large",
-            "label": "Большая"
-          }
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
         ]
       }
     },
@@ -43,41 +43,74 @@
       "label": "Затемнение",
       "setting": {
         "kind": "range",
-        "default": 30,
+        "default": 0,
         "min": 0,
         "max": 100,
         "step": 5
       }
     },
     {
-      "id": "align",
-      "label": "Выравнивание",
-      "section": "Содержание",
-      "setting": {
-        "kind": "alignment",
-        "default": "center"
-      }
-    },
-    {
-      "id": "heading-size",
-      "label": "Размер заголовка",
+      "id": "content-position",
+      "label": "Позиция",
       "section": "Содержание",
       "setting": {
         "kind": "select",
-        "default": "large",
+        "default": "center-left",
         "options": [
-          {
-            "value": "small",
-            "label": "Маленький"
-          },
-          {
-            "value": "medium",
-            "label": "Средний"
-          },
-          {
-            "value": "large",
-            "label": "Большой"
-          }
+          { "value": "top-left", "label": "Сверху слева" },
+          { "value": "top-center", "label": "Сверху в центре" },
+          { "value": "top-right", "label": "Сверху справа" },
+          { "value": "center-left", "label": "По центру слева" },
+          { "value": "center", "label": "По центру" },
+          { "value": "center-right", "label": "По центру справа" },
+          { "value": "bottom-left", "label": "Снизу слева" },
+          { "value": "bottom-center", "label": "Снизу по центру" },
+          { "value": "bottom-right", "label": "Снизу справа" }
+        ]
+      }
+    },
+    {
+      "id": "align",
+      "label": "Выравнивание",
+      "setting": {
+        "kind": "alignment",
+        "default": "left"
+      }
+    },
+    {
+      "id": "text-box",
+      "label": "Контейнер",
+      "setting": {
+        "kind": "toggle",
+        "default": false,
+        "labels": { "on": "Показать", "off": "Скрыть" }
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "layout",
+      "label": "Раскладка",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "overlay",
+        "options": [
+          { "value": "overlay", "label": "Текст на картинке" },
+          { "value": "split", "label": "Текст рядом с картинкой" }
+        ]
+      }
+    },
+    {
+      "id": "image-position",
+      "label": "Картинка",
+      "visibleWhen": { "setting": "layout", "equals": "split" },
+      "setting": {
+        "kind": "radio",
+        "default": "right",
+        "options": [
+          { "value": "left", "label": "Слева" },
+          { "value": "right", "label": "Справа" }
         ]
       }
     }
@@ -95,6 +128,19 @@
             "default": "Добро пожаловать в наш магазин",
             "ai": "title"
           }
+        },
+        {
+          "id": "heading-size",
+          "label": "Размер заголовка",
+          "setting": {
+            "kind": "select",
+            "default": "small",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
         }
       ]
     },
@@ -110,27 +156,62 @@
             "default": "Собрали товары, которые любим сами. Выберите своё в каталоге — доставим удобным способом.",
             "ai": "description"
           }
+        },
+        {
+          "id": "text-size",
+          "label": "Размер текста",
+          "setting": {
+            "kind": "select",
+            "default": "small",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
         }
       ]
     },
     "button": {
-      "title": "Кнопка",
+      "title": "Кнопка основная",
       "limit": 1,
       "settings": [
         {
-          "id": "label",
-          "label": "Текст кнопки",
+          "id": "button-label",
+          "label": "Текст",
           "setting": {
             "kind": "string",
             "default": "Перейти в каталог"
           }
         },
         {
-          "id": "link",
-          "label": "Ссылка кнопки",
+          "id": "button-link",
+          "label": "Ссылка",
           "setting": {
             "kind": "url",
             "default": "/catalog"
+          }
+        }
+      ]
+    },
+    "button-second": {
+      "title": "Кнопка дополнительная",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "button-label",
+          "label": "Текст",
+          "setting": {
+            "kind": "string",
+            "default": "О нас"
+          }
+        },
+        {
+          "id": "button-link",
+          "label": "Ссылка",
+          "setting": {
+            "kind": "url",
+            "default": "/o-nas"
           }
         }
       ]

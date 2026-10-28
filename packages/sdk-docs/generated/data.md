@@ -1,6 +1,6 @@
 # Данные магазина
 
-> SDK 1 · документация 1.4.0 · 2026-10-28
+> SDK 1 · документация 1.5.0 · 2026-10-29
 
 Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
 
@@ -46,9 +46,22 @@ const { settings } = Astro.props;
 | Вид          | Публичные поля записи                                                                                                                                                                                                                                                                                             |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `product`    | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `options`, `variants`, `collections`, `updatedAt`                                                                                                                                                                  |
-| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `images`, `available`; `image` — первое фото, `images` — первые два, для `data-photos` поведения `card-photos`: `{product.images.join(' ')}`) |
+| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `images`, `available`, `variantId`, `colors`; `image` — первое фото, `images` — первые два, для `data-photos` поведения `card-photos`: `{product.images.join(' ')}`; `variantId` — сочетание вариантов по умолчанию для `cart.add`, у товара без вариантов `null`; `colors` — образцы цвета `{ title, swatch }`, `swatch` — `#rrggbb`, до 6, без цветов `[]`) |
 | `blog`       | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `cover`, `excerpt`)                                                                                                                                                                    |
 | `policy`     | `type`, `title`, `url`, `html`                                                                                                                                                                                                                                                                                    |
+
+### Образцы цвета на карточке
+
+Цвет товара — данные, а `style` и произвольные классы запрещены ([styles.md](styles.md)). Образец рисуют SVG с заливкой
+атрибутом `fill`; форму (круг, квадрат) задаёт рамка с `overflow-hidden` и классом радиуса:
+
+```astro
+{card.colors.map((color) => (
+  <span class="inline-flex size-5 overflow-hidden rounded-full border border-border" title={color.title}>
+    <svg class="size-full" viewBox="0 0 20 20" role="img" aria-label={color.title}><rect width="20" height="20" fill={color.swatch} /></svg>
+  </span>
+))}
+```
 
 ### Цена — объект `Money`
 

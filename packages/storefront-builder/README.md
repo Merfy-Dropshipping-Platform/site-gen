@@ -122,7 +122,60 @@
 - Правила: `release-rules.json` — для автостопа; красное там только поломка (новая ошибка в консоли, пропавший токен
   или шрифт), новый скрипт, другой цвет и новый запрос — жёлтое. `compare-rules.json` — правила стенда и отчёта
   человеку, строже; проверяющий процесс их не читает.
-- Строки журнала: `checker-started` (порт, число правил), `check-done`, `check-failed`, `checker-stopped`.
+- Строки журнала: `checker-started` (порт, число правил, `looks` — включены ли снимки), `check-done`, `check-failed`,
+  `checker-stopped`.
+
+## Снимок черновика (28.10)
+
+Страница черновика магазина картинками: первый экран телефона 390×844 и компьютера 1440×900 (телефон всегда первым), с
+`full` — вся страница кусками по высоте экрана, до 12 экранов на устройство. Плюс факты (высота, битые картинки, ошибки
+консоли, прокрутка вбок) и находки детектора дизайна Impeccable. Делает проверяющий процесс — у него уже есть Chromium;
+зовёт шлюз (`POST /api/sites/:id/look`, api-gateway `src/sites/look/`), им пользуются merfy-mcp (`merfy_pages · look`) и
+будущий чат конструктора. Код перенесён из merfy-mcp: `src/look/` (отрисовка, вес, фильтр адресов), детектор —
+`vendor/impeccable/` (Apache-2.0, `LICENSE` и `NOTICE.md` рядом).
+
+**Откуда HTML.** Процесс сам читает `GET <SITES_SERVICE_URL>/api/sites/:id/preview?page=<id страницы>` — ровно тот
+адрес, что у превью конструктора. Развилка «новая тема → стенд сборщика (`StandPreviewMiddleware`), нынешние темы →
+`PreviewController`» остаётся в одном месте, в sites; функцию сборщика (`/preview?shop=`) напрямую не зовём — она знает
+только новые темы. Задание поэтому несёт только `siteId` и страницу, без HTML: так его сможет поставить и автоснимок после
+правки, у которого HTML нет. Права уже проверил шлюз; адрес превью в sites открытый, как и раньше.
+
+**Вызов.** RPC в формате ClientProxy Nest через RabbitMQ:
+
+- очередь `storefront_looks` (durable; объявляют сборщик и проверяющий процесс, шлюз только проверяет её `checkQueue`);
+- сообщение `{ pattern: 'storefront.look', id, data }`, свойства `replyTo` (прямой ответ `amq.rabbitmq.reply-to`),
+  `correlationId`, `expiration` (мс, столько шлюз ждёт ответа — непрочитанное задание брокер потом удалит сам);
+- `data` (строго, лишние поля — отказ): `{ v: 1, siteId, page, devices: 'mobile' | 'desktop' | 'both', full: boolean,
+  deadline }`, `deadline` — время (мс с 1970), после которого ответа уже не ждут;
+- ответ на `replyTo` с тем же `correlationId`: `{ err: null, isDisposed: true, id, response }`, где `response` —
+  `{ ok: true, snapshot }` или `{ ok: false, error: { code, message, status? } }`.
+
+`snapshot`: `{ v: 1, siteId, page, full, devices: [{ device, viewport, facts: { pageHeight, brokenImages,
+consoleErrors (до 50, каждое до 500 знаков), sideScroll }, screens: { total, shown }, images: [JPEG base64] }],
+detector: { ok: true } | { ok: false, reason }, findings: [{ source, code, name, text, device, section, clip }] }`.
+`findings` — место и для будущих проверок вёрстки (карточки разной высоты и т. п.): `source` — кто нашёл, `section` — имя
+экземпляра секции, `clip` — прямоугольник места на странице `{ x, y, width, height }`; у детектора `section` и `clip`
+пока `null`. Детектор запускается на первом устройстве (телефон, если он есть); его отказ не роняет снимки.
+
+Коды отказа: `invalid` (задание не по форме), `expired` (до срока меньше 5 с — очередь занята), `preview-failed` (sites
+не отдал HTML; `status` — его код), `no-browser`, `timeout` (не успел за 30 с или за остаток срока), `render-failed`.
+
+**Пределы.** Не больше двух снимков разом (prefetch 2 = места отрисовщика); третий ждёт в очереди. Превью — до 10 с,
+отрисовка — до 30 с и не дольше срока задания. Картинки в base64 — до 1,5 МБ на ответ: качество JPEG 80 → 62 → 45 → 30,
+затем хвостовые экраны (`src/look/look-fit.ts`). Сообщение брокера с ответом — до ~2 МБ (у RabbitMQ предел 128 МБ).
+
+**Безопасность.** Страница открывается на адресе `shop.url` из `merfy-config` (запасной — `preview.merfy.invalid`), её
+запросы на внутренние адреса (частные сети, имена без точки, `.internal`, metadata облака) режет `src/look/look-guard.ts`.
+Один браузер на процесс, на задание — свои контексты (cookie и кэш не делятся между магазинами).
+
+**Включение.** Переменная `SITES_SERVICE_URL` проверяющего процесса (dev — `http://sites-service-dev:3114`). Нет её —
+снимки выключены (строка `look-disabled`), очередь никто не слушает, шлюз сразу отвечает 503. Проверки выпуска от неё не
+зависят.
+
+**Журнал.** `look-done` (shopId, page, devices, full, images, kb, ms), `look-failed` (shopId, page, code, error, ms).
+
+**Тесты.** `__tests__/look-job.test.ts` (задание, отказы, ответ в формате Nest), `look-parts.test.ts` (вес, фильтр,
+очередь мест), `look-browser.test.ts` — настоящий Chromium (пропускается, если браузера Playwright нет).
 
 ## Команда выпуска (блок 10)
 

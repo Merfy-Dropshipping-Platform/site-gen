@@ -74,7 +74,11 @@ describe('проверка магазина (блок 10)', () => {
   });
 
   it('настройки: порт по умолчанию 8080; без RABBITMQ_URL — settings-invalid', () => {
-    expect(readCheckerSettings({ RABBITMQ_URL: 'amqp://stand' })).toEqual({ rabbitmqUrl: 'amqp://stand', port: 8080 });
+    expect(readCheckerSettings({ RABBITMQ_URL: 'amqp://stand' })).toEqual({
+      rabbitmqUrl: 'amqp://stand',
+      port: 8080,
+      sitesUrl: null,
+    });
     expect(() => readCheckerSettings({})).toThrow(StorefrontBuilderError);
   });
 });
@@ -87,7 +91,10 @@ describe('паспорт «после» снимается с новой сбо�
   const NEW_HOME = '2'.repeat(64);
   const etagOf = (hex: string): Response => new Response('', { status: 200, headers: { ETag: `"${hex}"` } });
 
-  const PASSPORT_NEW = normalizePassport({ ...PASSPORT, scripts: [{ src: '/_merfy/b/new.js', kind: 'module', bytes: 9216, hash: '3f9a2c1e' }] });
+  const PASSPORT_NEW = normalizePassport({
+    ...PASSPORT,
+    scripts: [{ src: '/_merfy/b/new.js', kind: 'module', bytes: 9216, hash: '3f9a2c1e' }],
+  });
 
   it('раздача первые опросы отдаёт старую главную — ждём совпадения ETag, потом снимаем паспорт; не красный', async () => {
     const etags = [OLD_HOME, OLD_HOME, NEW_HOME];
@@ -135,11 +142,14 @@ describe('паспорт «после» снимается с новой сбо�
       opened += 1;
       return Promise.resolve({ passport: PASSPORT, sections: [] });
     };
-    await checkShop(depsWith(open, () => Promise.reject(new Error('не должна зваться'))), {
-      ...JOB,
-      phase: 'after',
-      before: PASSPORT,
-    });
+    await checkShop(
+      depsWith(open, () => Promise.reject(new Error('не должна зваться'))),
+      {
+        ...JOB,
+        phase: 'after',
+        before: PASSPORT,
+      },
+    );
     expect(opened).toBe(1);
   });
 });
@@ -154,7 +164,8 @@ describe('ошибки страницы оформления', () => {
   const open = (url: string): Promise<Collected> => {
     opened.push(url);
     const path = new URL(url).pathname;
-    if (path === '/checkout') return Promise.resolve(passportAt('/checkout', ['TypeError: window.__merfyRoot is not a function']));
+    if (path === '/checkout')
+      return Promise.resolve(passportAt('/checkout', ['TypeError: window.__merfyRoot is not a function']));
     return Promise.resolve(passportAt('/', []));
   };
 
@@ -167,7 +178,14 @@ describe('ошибки страницы оформления', () => {
 
   it('новая ошибка оформления в «после» — красный', async () => {
     const red = await checkShop(
-      { open: (url) => openWithCheckout(open, url), rules: RULES, log: () => undefined, fetch: () => Promise.resolve(new Response('', { status: 200 })), homePollMs: 0, homeWaitMs: 5_000 },
+      {
+        open: (url) => openWithCheckout(open, url),
+        rules: RULES,
+        log: () => undefined,
+        fetch: () => Promise.resolve(new Response('', { status: 200 })),
+        homePollMs: 0,
+        homeWaitMs: 5_000,
+      },
       { ...JOB, phase: 'after', before: passportAt('/', []).passport },
     );
     expect(red.verdict).toBe('red');
@@ -175,7 +193,8 @@ describe('ошибки страницы оформления', () => {
 
   it('страница оформления ушла редиректом или не открылась — паспорт главной без изменений', async () => {
     const redirected = await openWithCheckout(
-      (url) => (new URL(url).pathname === '/checkout' ? Promise.resolve(passportAt('/login', ['ошибка входа'])) : open(url)),
+      (url) =>
+        new URL(url).pathname === '/checkout' ? Promise.resolve(passportAt('/login', ['ошибка входа'])) : open(url),
       'https://a.dev.merfy.ru',
     );
     expect(redirected.passport.errors).toEqual([]);

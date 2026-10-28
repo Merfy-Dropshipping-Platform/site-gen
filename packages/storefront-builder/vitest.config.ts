@@ -18,6 +18,9 @@ export default defineConfig({
         'src/release/{waves,kinds,checks,page-check,dry-run,report}.ts',
         // Код секций в ответах превью (блок 5, часть 5г).
         'src/preview-code.ts',
+        // Снимок черновика (28.10): задание, вес снимков, фильтр адресов. Браузерная часть (look-browser, look-page)
+        // проверяется настоящим Chromium в __tests__/look-browser.test.ts — без браузера тест пропускается.
+        'src/look/{look-job,look-fit,look-guard,look-queue}.ts',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },

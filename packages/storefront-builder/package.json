@@ -30,6 +30,7 @@
     "amqp-connection-manager": "4.1.15",
     "amqplib": "0.10.9",
     "pg": "8.16.3",
+    "playwright": "1.59.1",
     "zod": "4.3.6"
   },
   "devDependencies": {

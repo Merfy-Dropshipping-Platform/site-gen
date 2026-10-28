@@ -4,7 +4,7 @@ import { defineSection, type El } from '@merfy/shell';
 // пустой счётчик скрыт; адрес «Профиля» — по входу. Переход в корзину — действие cart.open в разметке, поиск —
 // search.open.
 
-const showCount = (badges: El[], count: number): void => {
+const showCount = (badges: readonly El[], count: number): void => {
   for (const badge of badges) {
     badge.text(count);
     badge.toggle(count > 0);

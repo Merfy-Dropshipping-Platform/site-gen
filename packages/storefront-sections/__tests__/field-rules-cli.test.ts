@@ -21,8 +21,9 @@ function merfy(...args: string[]): Promise<Run> {
 // Порядок — Р3.16: имена, лимиты, условия.
 const FIELDS_BROKEN = [
   'section.json:7:13 — поле `coatColor`: такого имени нет в словаре, ближе всего — `color-scheme` [setting-name-unknown]',
-  'section.json:8:13 — поле `layout`: такого имени нет в словаре. Секция другого вида — новая секция: её делает ИИ или ' +
-    'автор. Мелкие отличия — поля `image-position`, `columns`, `height` [setting-name-unknown]',
+  'section.json:8:13 — поле `variant`: такого имени нет в словаре. Другая раскладка той же секции — поле `layout`; ' +
+    'секция другого назначения — новая секция. Мелкие отличия — поля `image-position`, `columns`, `height` ' +
+    '[setting-name-unknown]',
   'section.json:9:13 — поле `cart-type`: такого имени нет в словаре. Это настройка «Настроек темы» «Корзина → Вид ' +
     'корзины»; секция её читает: `"uses": ["theme"]`, в шаблоне `theme[\'cart-type\']` [setting-name-unknown]',
   'section.json:10:67 — поле `heading`: в словаре это `string`, здесь `text`; имена с видом `text` — `text` [setting-name-kind]',

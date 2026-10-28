@@ -49,6 +49,8 @@ describe('база страницы generated/base.css', () => {
       /\[hidden\]:where\(:not\(\[hidden=['"]until-found['"]\]\)\)\s*\{\s*display:\s*none\s*!important/,
     );
     expect(css).toContain('font-family: var(--font-body)');
+    // Запрет прокрутки окнами не сдвигает страницу: место под полосу прокрутки занято всегда.
+    expect(css).toMatch(/html\s*\{\s*scrollbar-gutter:\s*stable/);
     expect(css).toMatch(/merfy-section\s*\{\s*display:\s*block;?\s*\}/);
     expect(css.indexOf('@layer base')).toBeGreaterThan(-1);
     expect(css.indexOf('@layer base')).toBeLessThan(css.search(/merfy-section\s*\{/));

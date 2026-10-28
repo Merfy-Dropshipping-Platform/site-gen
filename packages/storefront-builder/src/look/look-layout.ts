@@ -96,9 +96,12 @@ interface DeviceLayout {
 type LayoutStatus = { ok: true } | { ok: false; reason: string };
 
 // Проверки одного устройства. Отказ проверок не роняет снимки: причина уходит в ответ; срок задания — наружу.
-async function layoutOf(session: PageSession): Promise<{ layout: DeviceLayout; failure: string | null }> {
+async function layoutOf(
+  session: PageSession,
+  section: string | undefined,
+): Promise<{ layout: DeviceLayout; failure: string | null }> {
   try {
-    const found = limitPerCode(await session.layout());
+    const found = limitPerCode(await session.layout(section));
     const findings = found.map((finding) => ({
       ...finding,
       clip: clipArea(finding.clip, session.viewport, session.facts.pageHeight),
@@ -152,9 +155,9 @@ export interface LayoutResult {
   clipBytes: number;
 }
 
-// Проверки вёрстки на всех устройствах и вырезки первых по важности находок.
-export async function runLayoutChecks(sessions: PageSession[]): Promise<LayoutResult> {
-  const results = await Promise.all(sessions.map(layoutOf));
+// Проверки вёрстки на всех устройствах и вырезки первых по важности находок. С `section` — только находки этой секции.
+export async function runLayoutChecks(sessions: PageSession[], section?: string): Promise<LayoutResult> {
+  const results = await Promise.all(sessions.map((session) => layoutOf(session, section)));
   const layouts = results.map((result) => result.layout);
   const reason = results.find((result) => result.failure !== null)?.failure ?? null;
   const shots = new Map<LayoutFinding, Uint8Array>();

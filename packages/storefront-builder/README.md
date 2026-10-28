@@ -146,12 +146,13 @@
 - сообщение `{ pattern: 'storefront.look', id, data }`, свойства `replyTo` (прямой ответ `amq.rabbitmq.reply-to`),
   `correlationId`, `expiration` (мс, столько шлюз ждёт ответа — непрочитанное задание брокер потом удалит сам);
 - `data` (строго, лишние поля — отказ): `{ v: 1, siteId, page, devices: 'mobile' | 'desktop' | 'both', full: boolean,
-  deadline }`, `deadline` — время (мс с 1970), после которого ответа уже не ждут;
+  section?, deadline }`, `deadline` — время (мс с 1970), после которого ответа уже не ждут; `section` — id экземпляра
+  секции, см. «Снимок одной секции»;
 - ответ на `replyTo` с тем же `correlationId`: `{ err: null, isDisposed: true, id, response }`, где `response` —
   `{ ok: true, snapshot }` или `{ ok: false, error: { code, message, status? } }`.
 
-`snapshot`: `{ v: 1, siteId, page, full, devices: [{ device, viewport, facts: { pageHeight, brokenImages,
-consoleErrors (до 50, каждое до 500 знаков), sideScroll }, screens: { total, shown }, images: [JPEG base64] }],
+`snapshot`: `{ v: 1, siteId, page, full, section, devices: [{ device, viewport, facts: { pageHeight, brokenImages,
+consoleErrors (до 50, каждое до 500 знаков), sideScroll }, screens: { total, shown }, images: [JPEG base64], cut }],
 detector: { ok: true } | { ok: false, reason }, layout: { ok: true } | { ok: false, reason }, findings: [{ source, code,
 name, text, device, section, clip, image }] }`. `findings` — сначала детектор, потом проверки вёрстки (телефон первым,
 коды по важности): `source` — `impeccable` или `layout`, `section` — id экземпляра секции (`data-section-id`, как в
@@ -182,8 +183,26 @@ name, text, device, section, clip, image }] }`. `findings` — сначала д
 JPEG 70 → 50 → 35) вычитается из предела экранов. Элементы находки на вырезке обведены. Строки журнала: `look-done` —
 поле `checks` (находок вёрстки), `look-layout-failed` — проверки не отработали.
 
+**Снимок одной секции (28.10).** С `section` (id экземпляра секции, `data-section-id`, как в `merfy_pages · outline`;
+`[A-Za-z0-9_.:-]`, до 100 знаков) ответ несёт не страницу, а эту секцию: так merfy-mcp после правки показывает, что
+получилось (`merfy_pages · edit`, `merfy_sections · save`, `merfy_theme · set`). `full` тогда не действует.
+
+- `images` устройства — одна картинка: вырезка секции (JPEG, ширина экрана, не выше 1 600 px — выше срезается снизу);
+  `screens` — `{ total: 1, shown: 1 }`. Секции нет на устройстве (скрыта стилями) — `images: []`, `screens.shown: 0`,
+  `cut: null`. `cut` — `{ height, shown, pinned }`: настоящая высота секции, сколько её на картинке, снята ли без прокрутки;
+  в снимке страницы `cut: null`, `section: null`.
+- Секция прибита к экрану (`fixed` или `sticky` сама или через предка; обёртка баннера cookie высотой 0 с `fixed`
+  потомком тоже) — снимается без прокрутки, по месту на экране (баннер cookie, липкая шапка). Остальные: страница
+  прокручивается к верху секции, липкие и плавающие чужие элементы на время снимка скрыты (они закрыли бы верх), снимается
+  область документа (`fullPage` + `clip`: секция выше экрана телефона целиком).
+- `findings` — только проверки вёрстки внутри этой секции (отбор в странице до «до 6 на код», иначе находки других секций
+  вытеснили бы её собственные); вырезки находок и пределы — как у страницы, вес вычитается из 1,5 МБ. Детектор дизайна не
+  запускается (он смотрит страницу целиком, находок по секциям не даёт): `detector: { ok: false, reason: 'не запускался…' }`.
+- Секции нет ни на одном устройстве — отказ `section-not-found`.
+
 Коды отказа: `invalid` (задание не по форме), `expired` (до срока меньше 5 с — очередь занята), `preview-failed` (sites
-не отдал HTML; `status` — его код), `no-browser`, `timeout` (не успел за 30 с или за остаток срока), `render-failed`.
+не отдал HTML; `status` — его код), `no-browser`, `timeout` (не успел за 30 с или за остаток срока), `render-failed`,
+`section-not-found` (только со `section`).
 
 **Пределы.** Не больше двух снимков разом (prefetch 2 = места отрисовщика); третий ждёт в очереди. Превью — до 10 с,
 отрисовка — до 30 с и не дольше срока задания. Картинки в base64 — до 1,5 МБ на ответ: качество JPEG 80 → 62 → 45 → 30,
@@ -197,12 +216,14 @@ JPEG 70 → 50 → 35) вычитается из предела экранов. 
 снимки выключены (строка `look-disabled`), очередь никто не слушает, шлюз сразу отвечает 503. Проверки выпуска от неё не
 зависят.
 
-**Журнал.** `look-done` (shopId, page, devices, full, images, kb, ms), `look-failed` (shopId, page, code, error, ms).
+**Журнал.** `look-done` (shopId, page, section, devices, full, images, kb, ms), `look-failed` (shopId, page, section, code,
+error, ms).
 
-**Тесты.** `__tests__/look-job.test.ts` (задание, отказы, ответ в формате Nest, пределы находок и вырезок),
-`look-parts.test.ts` (вес, фильтр, очередь мест), `look-browser.test.ts` и `look-layout.test.ts` (проверки вёрстки: на
-каждую — страница, где срабатывает, и где нет; вырезка попадает в нужное место) — настоящий Chromium (пропускаются, если
-браузера Playwright нет).
+**Тесты.** `__tests__/look-job.test.ts` (задание, отказы, ответ в формате Nest, пределы находок и вырезок, снимок одной
+секции), `look-parts.test.ts` (вес, фильтр, очередь мест), `look-browser.test.ts` и `look-layout.test.ts` (проверки
+вёрстки: на каждую — страница, где срабатывает, и где нет; вырезка попадает в нужное место; снимок секции: высокая секция
+под липкой шапкой, баннер поверх страницы, скрытая и отсутствующая секция, отбор находок по секции) — настоящий Chromium
+(пропускаются, если браузера Playwright нет).
 
 ## Команда выпуска (блок 10)
 

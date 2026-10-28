@@ -19,6 +19,7 @@ import {
   type LookDevice,
   type PageFacts,
   type PageSession,
+  type SectionPlace,
   type Viewport,
 } from './look-types';
 
@@ -165,10 +166,111 @@ async function runDetector(page: Page): Promise<DetectorFinding[]> {
 }
 
 // Проверки вёрстки (`browser/layout-checks.js`) на отрисованной странице нужного устройства.
-async function runLayout(page: Page, device: LookDevice): Promise<LayoutFinding[]> {
+async function runLayout(page: Page, device: LookDevice, section?: string): Promise<LayoutFinding[]> {
   // Строку Playwright только вычисляет, функцию из неё с аргументом не зовёт — вызов пишем сами.
-  const raw: unknown = await page.evaluate(`(${layoutSource()})(${JSON.stringify({ device })})`);
+  const options = section === undefined ? { device } : { device, section };
+  const raw: unknown = await page.evaluate(`(${layoutSource()})(${JSON.stringify(options)})`);
   return parseLayout(raw);
+}
+
+// Секция в странице по id экземпляра. Сравнение — в коде, а не в селекторе: id приходит снаружи.
+const SECTION_FINDER = `
+  (id) => [...document.querySelectorAll('[data-section-id]')].find((node) => node.getAttribute('data-section-id') === id)
+`;
+
+// Высота, выше которой секция на снимке обрезается: две-три высоты экрана телефона — больше не нужно, вес растёт.
+export const SECTION_MAX_HEIGHT = 1_600;
+
+const RawPlaceShape = z.object({
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  pinned: z.boolean(),
+});
+
+// Скрипт страницы: место секции после прокрутки в начало. У обёртки секции нет своей рамки (баннер cookie: внутри
+// `fixed`, сама она высотой 0) — берётся объединение видимых потомков. Прибита к экрану, если и сама обёртка, и все
+// потомки с рамкой — `fixed` или `sticky` (сама или через предка): координаты тогда экранные, а на нулевой прокрутке
+// они же страничные.
+const LOCATE_SCRIPT = (section: string): string => `((find, id) => {
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  const wrapper = find(id);
+  if (!wrapper) return null;
+  const sized = (node) => {
+    const rect = node.getBoundingClientRect();
+    return rect.width >= 1 && rect.height >= 1;
+  };
+  const pinnedUp = (node) => {
+    for (let at = node; at && at !== document.documentElement; at = at.parentElement) {
+      const position = getComputedStyle(at).position;
+      if (position === 'fixed' || position === 'sticky') return true;
+    }
+    return false;
+  };
+  const boxes = sized(wrapper)
+    ? [wrapper]
+    : [...wrapper.querySelectorAll('*')].filter((node) => sized(node) && node.checkVisibility());
+  if (boxes.length === 0 || !wrapper.checkVisibility()) return null;
+  const rects = boxes.map((node) => node.getBoundingClientRect());
+  const left = Math.min(...rects.map((rect) => rect.left));
+  const top = Math.min(...rects.map((rect) => rect.top));
+  const right = Math.max(...rects.map((rect) => rect.right));
+  const bottom = Math.max(...rects.map((rect) => rect.bottom));
+  return { x: left, y: top, width: right - left, height: bottom - top, pinned: boxes.every(pinnedUp) };
+})(${SECTION_FINDER}, ${JSON.stringify(section)})`;
+
+async function locateSection(page: Page, viewport: Viewport, section: string): Promise<SectionPlace | null> {
+  const raw: unknown = await page.evaluate(LOCATE_SCRIPT(section));
+  if (raw === null) return null;
+  const place = RawPlaceShape.parse(raw);
+  // В кадр: не шире экрана, левее нуля не выходит; у прибитой — и не ниже экрана. Обрезка по высоте — от верха секции.
+  const x = Math.max(0, Math.floor(place.x));
+  const right = Math.min(viewport.width, Math.ceil(place.x + place.width));
+  const height = Math.max(1, Math.ceil(place.height));
+  const capped = Math.min(SECTION_MAX_HEIGHT, place.pinned ? Math.min(height, viewport.height) : height);
+  return {
+    x,
+    y: Math.max(0, Math.floor(place.y)),
+    width: Math.max(1, right - x),
+    height: capped,
+    fullHeight: height,
+    pinned: place.pinned,
+  };
+}
+
+// Снимок секции. Прибитая к экрану — без прокрутки, как есть (её высота не больше экрана). Остальные: страница
+// прокручивается к верху секции, липкие и плавающие чужие элементы (шапка, баннер, кнопка) на время снимка скрываются —
+// иначе они закрыли бы верх секции, — и снимается область страницы `clip` в координатах документа (`fullPage`): так
+// секция выше экрана телефона попадает в кадр целиком, а без `fullPage` Playwright обрезал бы её по высоте экрана.
+async function shootSection(page: Page, place: SectionPlace, section: string, quality: number): Promise<Uint8Array> {
+  await page.evaluate(
+    `((find, id, top, pinned) => {
+      window.scrollTo({ top: pinned ? 0 : top, left: 0, behavior: 'instant' });
+      const wrapper = find(id);
+      if (wrapper && !pinned) {
+        const style = document.createElement('style');
+        style.id = '__look-hide-style';
+        style.textContent = '[data-look-hide]{visibility:hidden !important}';
+        document.head.append(style);
+        for (const node of document.body.querySelectorAll('*')) {
+          if (wrapper.contains(node) || node.contains(wrapper)) continue;
+          const position = getComputedStyle(node).position;
+          if (position === 'fixed' || position === 'sticky') node.setAttribute('data-look-hide', '');
+        }
+      }
+    })(${SECTION_FINDER}, ${JSON.stringify(section)}, ${place.y}, ${place.pinned})`,
+  );
+  try {
+    await page.waitForTimeout(SHOT_SETTLE_MS);
+    const clip = { x: place.x, y: place.y, width: place.width, height: place.height };
+    return await page.screenshot({ type: 'jpeg', quality, animations: 'disabled', clip, fullPage: !place.pinned });
+  } finally {
+    await page.evaluate(() => {
+      document.getElementById('__look-hide-style')?.remove();
+      for (const node of document.querySelectorAll('[data-look-hide]')) node.removeAttribute('data-look-hide');
+    });
+  }
 }
 
 // Вырезка места находки: страница прокручивается так, чтобы место было в середине экрана (липкая шапка его не закроет),
@@ -223,7 +325,9 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
       return page.screenshot({ type: 'jpeg', quality, animations: 'disabled' });
     },
     detect: () => runDetector(page),
-    layout: () => runLayout(page, device),
+    layout: (section) => runLayout(page, device, section),
     shootClip: (finding, quality) => shootClip(page, viewport, finding, quality),
+    locateSection: (section) => locateSection(page, viewport, section),
+    shootSection: (place, section, quality) => shootSection(page, place, section, quality),
   };
 }

@@ -179,8 +179,10 @@ export class ChromiumRenderer implements PageRenderer {
       ...session,
       shoot: (index, quality) => job.guard(() => session.shoot(index, quality)),
       detect: () => job.guard(() => session.detect()),
-      layout: () => job.guard(() => session.layout()),
+      layout: (section) => job.guard(() => session.layout(section)),
       shootClip: (finding, quality) => job.guard(() => session.shootClip(finding, quality)),
+      locateSection: (section) => job.guard(() => session.locateSection(section)),
+      shootSection: (place, section, quality) => job.guard(() => session.shootSection(place, section, quality)),
     };
   }
 }

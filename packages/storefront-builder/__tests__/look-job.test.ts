@@ -215,6 +215,127 @@ describe('снимок черновика · проверки вёрстки', (
   });
 });
 
+describe('снимок черновика · одна секция', () => {
+  it('картинка — вырезка секции, а не экраны страницы; находки только её; детектор не запускается', async () => {
+    const { deps, fake } = setup({
+      mobile: {
+        pageHeight: 844 * 6,
+        findings: [{ rule: 'gradient-text', name: 'Gradient text', detail: 'h1' }],
+        layout: [layoutFinding('tap-small', 0, 'hero-1')],
+        section: { place: { x: 0, y: 900, width: 390, height: 700, fullHeight: 700, pinned: false }, bytes: 900 },
+      },
+    });
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ devices: 'mobile', section: 'hero-1' })));
+
+    expect(snapshot.section).toBe('hero-1');
+    expect(snapshot.full).toBe(false);
+    expect(snapshot.devices).toHaveLength(1);
+    expect(snapshot.devices[0]?.images.map((image) => Buffer.from(image, 'base64').length)).toEqual([900]);
+    expect(snapshot.devices[0]?.screens).toEqual({ total: 1, shown: 1 });
+    expect(snapshot.devices[0]?.cut).toEqual({ height: 700, shown: 700, pinned: false });
+    // Экраны страницы не снимались, детектор не запускался: находок нет, причина названа.
+    expect(fake.calls).toEqual([]);
+    expect(snapshot.detector).toEqual({ ok: false, reason: 'не запускался: снимок одной секции' });
+    expect(snapshot.findings.map((finding) => [finding.source, finding.code, finding.section])).toEqual([
+      ['layout', 'tap-small', 'hero-1'],
+    ]);
+    expect(fake.sectionCalls.layout).toEqual([{ device: 'mobile', section: 'hero-1' }]);
+    expect(fake.sectionCalls.shot).toEqual([{ device: 'mobile', section: 'hero-1', quality: 80 }]);
+  });
+
+  it('высокая секция: в кадре верх, в ответе — полная высота; прибитая (шапка, баннер) — признак pinned', async () => {
+    const tall = setup({
+      mobile: { section: { place: { x: 0, y: 0, width: 390, height: 1_600, fullHeight: 3_100, pinned: false } } },
+    });
+    const pinned = setup({
+      mobile: { section: { place: { x: 0, y: 700, width: 390, height: 140, fullHeight: 140, pinned: true } } },
+    });
+
+    const tallShot = snapshotOf(await runLookJob(tall.deps, job({ devices: 'mobile', section: 'long-1' })));
+    const pinnedShot = snapshotOf(await runLookJob(pinned.deps, job({ devices: 'mobile', section: 'cookie-1' })));
+
+    expect(tallShot.devices[0]?.cut).toEqual({ height: 3_100, shown: 1_600, pinned: false });
+    expect(pinnedShot.devices[0]?.cut).toEqual({ height: 140, shown: 140, pinned: true });
+  });
+
+  it('вес: вырезки находок вычитаются из предела, картинка секции идёт на худшем качестве, если не влезла', async () => {
+    const { deps, fake } = setup({
+      mobile: {
+        clipBytes: 55_000,
+        layout: [0, 1, 2, 3].map((mark) => layoutFinding('overlap', mark, `s-${mark}`)),
+        section: { bytes: (quality) => quality * 15_000 },
+      },
+    });
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ devices: 'mobile', section: 's-1' })));
+
+    const images = [
+      ...snapshot.devices.flatMap((entry) => entry.images),
+      ...snapshot.findings.flatMap((finding) => (finding.image === null ? [] : [finding.image])),
+    ];
+    expect(images.reduce((sum, image) => sum + image.length, 0)).toBeLessThanOrEqual(1_500_000);
+    // 80 → 1 200 000 байт не влезло рядом с вырезками, 62 → 930 000 влезло.
+    expect(fake.sectionCalls.shot.map((call) => call.quality)).toEqual([80, 62]);
+  });
+
+  it('секции нет ни на одном устройстве — section-not-found; на одном из двух — снимок без её картинки', async () => {
+    const none = setup({ mobile: { section: { place: null } } });
+    expect(errorOf(await runLookJob(none.deps, job({ devices: 'mobile', section: 'ghost-1' })))).toEqual({
+      code: 'section-not-found',
+      message: 'Не нашёл секцию на странице превью: её нет в черновике этой страницы или она скрыта',
+    });
+    expect(none.fake.state.closed).toBe(1);
+
+    const half = setup({ desktop: { section: { place: null } } });
+    const snapshot = snapshotOf(await runLookJob(half.deps, job({ section: 'menu-1' })));
+    expect(snapshot.devices.map((entry) => [entry.device, entry.images.length, entry.cut === null])).toEqual([
+      ['mobile', 1, false],
+      ['desktop', 0, true],
+    ]);
+    expect(snapshot.devices[1]?.screens).toEqual({ total: 1, shown: 0 });
+  });
+
+  it('снимок страницы без секции: section null, cut null, locateSection не зовётся', async () => {
+    const { deps, fake } = setup();
+
+    const snapshot = snapshotOf(await runLookJob(deps, job()));
+
+    expect(snapshot.section).toBeNull();
+    expect(snapshot.devices.map((entry) => entry.cut)).toEqual([null, null]);
+    expect(fake.sectionCalls.located).toEqual([]);
+  });
+
+  it('id секции не по форме — invalid, браузер не открывается', async () => {
+    const { deps, fake } = setup();
+
+    for (const section of ['', 'a b', '"]; drop', 'x'.repeat(101)]) {
+      expect(errorOf(await runLookJob(deps, job({ section })))?.code).toBe('invalid');
+    }
+    expect(fake.opened).toHaveLength(0);
+  });
+
+  it('в журнале — id секции', async () => {
+    const { deps, log } = setup();
+    const broker = (() => {
+      let handler: ((delivery: Delivery) => Promise<void>) | undefined;
+      return {
+        consume: (_queue: string, _prefetch: number, next: (delivery: Delivery) => Promise<void>) => {
+          handler = next;
+          return Promise.resolve();
+        },
+        reply: () => Promise.resolve(),
+        deliver: (delivery: Delivery) => (handler ? handler(delivery) : Promise.resolve()),
+      };
+    })();
+    await startLooks(broker, deps);
+
+    await broker.deliver({ exchange: '', body: job({ devices: 'mobile', section: 'hero-1' }) });
+
+    expect(log).toHaveBeenCalledWith('look-done', expect.objectContaining({ section: 'hero-1', images: 1 }));
+  });
+});
+
 describe('снимок черновика · отказы', () => {
   it.each([
     ['не тот pattern', { ...job(), pattern: 'sites.get' }],

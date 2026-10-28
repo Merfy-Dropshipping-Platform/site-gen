@@ -44,8 +44,11 @@ const TAILWIND_RESETS = [
   '--inset-shadow-*: initial;',
 ];
 
+// Полоса прокрутки у <html> занимает место всегда: окно и шторка запрещают прокрутку страницы (overflow: hidden),
+// без резерва полоса исчезает и страница сдвигается вбок на её ширину.
 const BASE_LAYER = [
   '@layer base {',
+  '  html { scrollbar-gutter: stable; }',
   '  body { font-family: var(--font-body); font-weight: var(--weight-body); letter-spacing: var(--tracking-body); }',
   '  h1, h2, h3, h4, h5, h6 { color: var(--heading); font-family: var(--font-heading); ' +
     'font-weight: var(--weight-heading); letter-spacing: var(--tracking-heading); }',

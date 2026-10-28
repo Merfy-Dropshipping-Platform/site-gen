@@ -5,7 +5,7 @@
   "title": "Сломанные поля",
   "settings": [
     { "id": "coatColor", "label": "Цвет пальто", "setting": { "kind": "select", "default": "matte", "options": [{ "value": "matte", "label": "Матовый" }, { "value": "glossy", "label": "Глянцевый" }] } },
-    { "id": "layout", "label": "Вёрстка", "setting": { "kind": "select", "default": "grid", "options": [{ "value": "grid", "label": "Сетка" }, { "value": "list", "label": "Список" }] } },
+    { "id": "variant", "label": "Вёрстка", "setting": { "kind": "select", "default": "grid", "options": [{ "value": "grid", "label": "Сетка" }, { "value": "list", "label": "Список" }] } },
     { "id": "cart-type", "label": "Вид корзины", "setting": { "kind": "select", "default": "drawer", "options": [{ "value": "drawer", "label": "Сайдбар" }, { "value": "page", "label": "Страница" }] } },
     { "id": "heading", "label": "Заголовок", "setting": { "kind": "text", "default": "" } },
     {

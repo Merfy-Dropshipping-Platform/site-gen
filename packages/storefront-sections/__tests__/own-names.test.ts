@@ -74,9 +74,9 @@ describe('свои имена секции', () => {
     });
 
     it('имя из not-names.json — отказ с подсказкой, что вместо', () => {
-      const lines = linesOf(manifestOf([], { layout: SKU }));
+      const lines = linesOf(manifestOf([], { variant: SKU }));
       expect(lines).toEqual([
-        'section.json:8:15 — своё имя `layout`: такое имя нельзя. Секция другого вида — новая секция: её делает ИИ или автор. Мелкие отличия — поля `image-position`, `columns`, `height` [name-own-invalid]',
+        'section.json:8:16 — своё имя `variant`: такое имя нельзя. Другая раскладка той же секции — поле `layout`; секция другого назначения — новая секция. Мелкие отличия — поля `image-position`, `columns`, `height` [name-own-invalid]',
       ]);
     });
 

@@ -150,8 +150,8 @@ describe('что внутри', () => {
       '## Нет в словаре',
     ]);
     // Блок 11, часть 11б: шесть новых имён — шесть строк таблиц; блок 10, часть 10б — сквозная wishlist-enabled;
-    // блок 15, часть 15в: zoom.
-    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(64);
+    // блок 15, часть 15в: zoom; #372: layout и active-link.
+    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(66);
     expect(markdown.endsWith(' |\n')).toBe(true);
   });
 });

@@ -99,6 +99,7 @@
 @custom-variant motion-hover-none (&:where([data-motion-hover="none"], [data-motion-hover="none"] *));
 @custom-variant motion-hover-lift (&:where([data-motion-hover="lift"], [data-motion-hover="lift"] *));
 @layer base {
+  html { scrollbar-gutter: stable; }
   body { font-family: var(--font-body); font-weight: var(--weight-body); letter-spacing: var(--tracking-body); }
   h1, h2, h3, h4, h5, h6 { color: var(--heading); font-family: var(--font-heading); font-weight: var(--weight-heading); letter-spacing: var(--tracking-heading); }
 }

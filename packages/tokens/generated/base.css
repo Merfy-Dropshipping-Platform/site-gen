@@ -150,6 +150,9 @@
   }
 }
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
   body {
     font-family: var(--font-body);
     font-weight: var(--weight-body);

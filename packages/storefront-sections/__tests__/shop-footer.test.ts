@@ -19,6 +19,15 @@ const FULL_SHOP = {
   payments: { online: true },
 };
 const NEWSLETTER = { newsletter: true, heading: 'Подпишитесь на нашу рассылку', text: 'Скидки раз в неделю' };
+// Меню подвала — настройка menu (по умолчанию «Главное меню»): у нового магазина в нём «Каталог» и «О нас».
+const MENU = {
+  title: 'Главное меню',
+  items: [
+    { label: 'Каталог', url: '/catalog', items: [] },
+    { label: 'О нас', url: '/o-nas', items: [] },
+  ],
+};
+const NO_MENU = { title: '', items: [] };
 
 let renderer: SectionRenderer;
 let module = '';
@@ -43,6 +52,7 @@ interface Variant {
   settings?: Record<string, string | boolean>;
   shop?: typeof EMPTY_SHOP | typeof FULL_SHOP;
   theme?: Record<string, string>;
+  menu?: typeof MENU;
 }
 
 const html = (variant: Variant = {}): Promise<string> =>
@@ -50,7 +60,8 @@ const html = (variant: Variant = {}): Promise<string> =>
     section: 'shop:footer',
     hash,
     module,
-    settings: { logo: '', newsletter: false, heading: '', 'heading-size': 'small', text: '', 'text-size': 'small', ...variant.settings },
+    settings: { logo: '', menu: 'main', newsletter: false, heading: '', 'heading-size': 'small', text: '', 'text-size': 'small', ...variant.settings },
+    menus: { menu: variant.menu ?? MENU },
     blocks: [],
     theme: variant.theme ?? {},
     shop: variant.shop ?? EMPTY_SHOP,
@@ -79,12 +90,18 @@ describe('«Подвал»: рассылка', () => {
 });
 
 describe('«Подвал»: колонки', () => {
-  it('без данных магазина: «Навигация» с тремя ссылками, остальных колонок нет', async () => {
+  it('без данных магазина: «Навигация» — пункты меню подвала, остальных колонок нет', async () => {
     const source = await html();
     expect(source).toContain('Навигация');
-    for (const href of ['/catalog', '/about', '/contacts']) expect(source).toContain(`href="${href}"`);
+    for (const href of ['/catalog', '/o-nas']) expect(source).toContain(`href="${href}"`);
+    expect(source).not.toContain('href="/about"');
+    expect(source).not.toContain('href="/contacts"');
     expect(source).not.toContain('Информация');
     expect(source).not.toContain('Социальные сети');
+  });
+
+  it('меню пустое — колонки «Навигация» нет', async () => {
+    expect(await html({ menu: NO_MENU })).not.toContain('Навигация');
   });
 
   it('политики с текстом: колонка «Информация» со ссылками /legal/*', async () => {

@@ -32,14 +32,16 @@ const { settings, theme, shop } = Astro.props;
         shop.name && <p class="m-0 font-heading weight-heading text-lg text-heading">{shop.name}</p>
       )}
     </div>
-    <nav class="flex flex-col gap-3" aria-label="Навигация">
-      <h3 class="m-0 text-sm weight-heading text-heading">Навигация</h3>
-      <ul class="m-0 flex list-none flex-col gap-2 p-0">
-        <li><a class="text-muted-foreground no-underline hover:text-foreground" href="/catalog">Каталог</a></li>
-        <li><a class="text-muted-foreground no-underline hover:text-foreground" href="/about">О нас</a></li>
-        <li><a class="text-muted-foreground no-underline hover:text-foreground" href="/contacts">Контакты</a></li>
-      </ul>
-    </nav>
+    {settings.menu.items.length > 0 && (
+      <nav class="flex flex-col gap-3" aria-label="Навигация">
+        <h3 class="m-0 text-sm weight-heading text-heading">Навигация</h3>
+        <ul class="m-0 flex list-none flex-col gap-2 p-0">
+          {settings.menu.items.map((item) => (
+            <li><a class="text-muted-foreground no-underline hover:text-foreground" href={item.url}>{item.label}</a></li>
+          ))}
+        </ul>
+      </nav>
+    )}
     {shop.policies.length > 0 && (
       <nav class="flex flex-col gap-3" aria-label="Информация">
         <h3 class="m-0 text-sm weight-heading text-heading">Информация</h3>

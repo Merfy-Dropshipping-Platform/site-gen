@@ -5,14 +5,23 @@ import type { Config } from 'jest';
 // spec-файле по-прежнему красит прогон.
 const typeCheck = process.env.CI === 'true';
 
+// Пакеты только в ESM, которые нужны коду sites: sanitize-html (очистка текста с начертаниями при записи ревизии,
+// packages/storefront-sections/src/inline-text.ts) тянет htmlparser2 12 и его зависимости. Node 24 в образе
+// загружает их через require сам, загрузчик jest — нет.
+const ESM_ONLY_DEPS = ['htmlparser2', 'domhandler', 'domutils', 'domelementtype', 'dom-serializer', 'entities'].join('|');
+
 const config: Config = {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   transform: {
+    // Зависимости только в ESM (ESM_ONLY_DEPS) — переводом в CommonJS без проверки типов.
+    '/node_modules/.+\\.js$': ['ts-jest', { useESM: true, tsconfig: { isolatedModules: true, allowJs: true } }],
     '^.+\\.(t|j)s$': ['ts-jest', typeCheck ? { useESM: true } : { useESM: true, tsconfig: { isolatedModules: true } }],
   },
+  // Остальные node_modules jest не переводит, как по умолчанию.
+  transformIgnorePatterns: [`/node_modules/(?!\\.pnpm/(${ESM_ONLY_DEPS})@|(${ESM_ONLY_DEPS})/)`],
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',

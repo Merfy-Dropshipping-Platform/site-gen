@@ -42,7 +42,12 @@ import type { WriteModel } from "./write-model";
 import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
 import type { PanelDefaultsSource } from "./panel-defaults";
 import { saveOnBase, writeLabels } from "./save-on-base";
-import { assertRoleInstances } from "./section-roles";
+import {
+  assertRoleInstances,
+  placedShopSections,
+  sectionRolesOf,
+} from "./section-roles";
+import { cleanSectionText } from "./section-text";
 import type { RevisionStore } from "./save-on-base";
 import {
   RevisionConflictError,
@@ -548,16 +553,18 @@ export class DocumentAdapter implements StoreContent {
    * `setCurrentUnconditional`); `expected` задан — CAS: 0 обновлённых строк →
    * `CasMiss`, транзакция откатывается целиком (вставленные ревизии тоже).
    */
-  // Роли секций магазина для проверки ревизии (блок 12 «Секций и SDK», часть 12а): роль — из manifest текущей правки
-  // (draft) секции в storefront_section, как у role-taken реестра секций.
-  private async sectionRoles(
+  // manifest секций магазина для проверки и очистки ревизии: текущая правка (draft) секции в storefront_section, как у
+  // role-taken реестра секций. Из него — роли (блок 12 «Секций и SDK», часть 12а) и поля с начертаниями (этап 0
+  // базовых секций, section-text.ts).
+  private async sectionManifests(
     siteId: string,
     names: readonly string[],
-  ): Promise<ReadonlyMap<string, string>> {
+  ): Promise<ReadonlyMap<string, unknown>> {
+    if (names.length === 0) return new Map();
     const rows = await this.db
       .select({
         name: schema.storefrontSection.name,
-        role: sql<string | null>`${schema.storefrontSection.manifest}->>'role'`,
+        manifest: schema.storefrontSection.manifest,
       })
       .from(schema.storefrontSection)
       .where(
@@ -569,25 +576,31 @@ export class DocumentAdapter implements StoreContent {
         ),
       );
     return new Map(
-      rows.flatMap((row): [string, string][] =>
-        typeof row.role === "string" ? [[row.name, row.role]] : [],
-      ),
+      rows.map((row): [string, unknown] => [row.name, row.manifest]),
     );
   }
 
   private async commit(
     write: Parameters<RevisionStore["commit"]>[0],
   ): Promise<boolean> {
-    // Второй экземпляр секции с ролью — отказ role-duplicate до записи (блок 12, часть 12а): через commit идут запись
-    // с базой и без неё и снимок клиента.
+    // Через commit идут запись с базой и без неё и снимок клиента. До записи: второй экземпляр секции с ролью — отказ
+    // role-duplicate (блок 12, часть 12а); поля с начертаниями очищаются (section-text.ts).
+    const documents = write.rows.map((row) => row.data);
+    const manifests = await this.sectionManifests(write.siteId, [
+      ...new Set(documents.flatMap(placedShopSections)),
+    ]);
     await assertRoleInstances(
-      (siteId, names) => this.sectionRoles(siteId, names),
+      async () => sectionRolesOf(manifests),
       write.siteId,
-      write.rows.map((row) => row.data),
+      documents,
     );
+    const rows = write.rows.map((row) => ({
+      ...row,
+      data: cleanSectionText(row.data, manifests),
+    }));
     try {
       await this.db.transaction(async (tx) => {
-        for (const row of write.rows) {
+        for (const row of rows) {
           await tx.insert(schema.siteRevision).values({
             id: row.id,
             siteId: write.siteId,

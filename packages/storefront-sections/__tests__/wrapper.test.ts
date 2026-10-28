@@ -19,6 +19,16 @@ describe('resolveWrapper', () => {
     expect(result.invalid.map((text) => text.split(':')[0]).sort()).toEqual(['padding', 'scheme', 'width']);
   });
 
+  it('отступы — до 160 на шаге 8, как у подвала пяти тем на проде; больше — в invalid', () => {
+    expect(resolveWrapper(BOTH, { padding: { top: 160, bottom: 152 } }).values).toEqual({
+      padding: { top: 160, bottom: 152 },
+    });
+    expect(wrapperView(BOTH, { padding: { top: 160, bottom: 152 } }).classes).toEqual(['pt-40', 'pb-38']);
+    expect(resolveWrapper(BOTH, { padding: { top: 168, bottom: 0 } }).invalid).toEqual([
+      'padding: нужны два целых числа от 0 до 160, кратные 4, или null',
+    ]);
+  });
+
   it('не объект — всё в invalid одной строкой', () => {
     expect(resolveWrapper(BOTH, 'scheme-2').invalid).toHaveLength(1);
   });

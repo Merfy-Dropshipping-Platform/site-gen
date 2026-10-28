@@ -1,4 +1,5 @@
 import { sectionSettingProblem, type SectionField, type SectionSettingSpec, type SectionValue } from './fields';
+import { cleanInlineText, isInlineTextSpec } from './inline-text';
 import { cleanRichtext } from './richtext';
 
 // Поля настроек секции (блок 1 «Секций и SDK»; design.md блока 7, п. 23): поле настройки панели темы (блок 8) или
@@ -55,7 +56,8 @@ export interface ResolvedSettings {
 const isSectionValue = (value: unknown): value is SectionValue => value !== undefined && typeof value !== 'function';
 
 // Значения экземпляра: правки поверх умолчаний. Сначала неизвестные ключи, потом поля с неверным значением — в invalid;
-// у такого поля остаётся умолчание. Значения richtext — очищенные: и умолчание, и правка.
+// у такого поля остаётся умолчание. Значения richtext и полей с начертаниями (string и text с ai, inline-text.ts) —
+// очищенные: и умолчание, и правка.
 export function resolveSectionSettings(
   settings: readonly SectionField[],
   edits: Readonly<Record<string, unknown>>,
@@ -74,7 +76,9 @@ export function resolveSectionSettings(
   }
   for (const field of settings) {
     const value = values[field.id];
-    if (field.setting.kind === 'richtext' && typeof value === 'string') values[field.id] = cleanRichtext(value);
+    if (typeof value !== 'string') continue;
+    if (field.setting.kind === 'richtext') values[field.id] = cleanRichtext(value);
+    else if (isInlineTextSpec(field.setting)) values[field.id] = cleanInlineText(value);
   }
   return { values, invalid: [...unknown, ...wrong] };
 }

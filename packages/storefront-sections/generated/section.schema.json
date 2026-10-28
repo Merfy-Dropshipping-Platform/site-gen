@@ -4100,6 +4100,288 @@
             "properties": {
               "id": {
                 "type": "string",
+                "const": "active-link",
+                "description": "Как отмечен пункт меню открытой страницы, например подчёркиванием: варианты задаёт секция"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sublabel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visibleWhen": {
+                "type": "object",
+                "properties": {
+                  "setting": {
+                    "type": "string"
+                  },
+                  "equals": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "setting",
+                  "equals"
+                ],
+                "additionalProperties": false
+              },
+              "setting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "select"
+                      },
+                      "default": {
+                        "type": "string"
+                      },
+                      "options": {
+                        "minItems": 2,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "label"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default",
+                      "options"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "radio"
+                      },
+                      "default": {
+                        "type": "string"
+                      },
+                      "options": {
+                        "minItems": 2,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "label"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default",
+                      "options"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "control": {
+                "type": "string",
+                "const": "segment"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "setting"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "const": "layout",
+                "description": "Раскладка той же секции: в одну или две строки, число и порядок колонок; варианты задаёт секция, у каждого — своя разметка в шаблоне"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sublabel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visibleWhen": {
+                "type": "object",
+                "properties": {
+                  "setting": {
+                    "type": "string"
+                  },
+                  "equals": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "setting",
+                  "equals"
+                ],
+                "additionalProperties": false
+              },
+              "setting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "select"
+                      },
+                      "default": {
+                        "type": "string"
+                      },
+                      "options": {
+                        "minItems": 2,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "label"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default",
+                      "options"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "radio"
+                      },
+                      "default": {
+                        "type": "string"
+                      },
+                      "options": {
+                        "minItems": 2,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "label"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default",
+                      "options"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "control": {
+                "type": "string",
+                "const": "segment"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "setting"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
                 "const": "open-first",
                 "description": "Первый вопрос раскрыт при загрузке"
               },
@@ -8615,6 +8897,288 @@
                             "kind": {
                               "type": "string",
                               "const": "select"
+                            },
+                            "default": {
+                              "type": "string"
+                            },
+                            "options": {
+                              "minItems": 2,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default",
+                            "options"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "control": {
+                      "type": "string",
+                      "const": "segment"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "setting"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "active-link",
+                      "description": "Как отмечен пункт меню открытой страницы, например подчёркиванием: варианты задаёт секция"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sublabel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "section": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "row": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "visibleWhen": {
+                      "type": "object",
+                      "properties": {
+                        "setting": {
+                          "type": "string"
+                        },
+                        "equals": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "setting",
+                        "equals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "setting": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "select"
+                            },
+                            "default": {
+                              "type": "string"
+                            },
+                            "options": {
+                              "minItems": 2,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default",
+                            "options"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "radio"
+                            },
+                            "default": {
+                              "type": "string"
+                            },
+                            "options": {
+                              "minItems": 2,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default",
+                            "options"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "control": {
+                      "type": "string",
+                      "const": "segment"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "setting"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "layout",
+                      "description": "Раскладка той же секции: в одну или две строки, число и порядок колонок; варианты задаёт секция, у каждого — своя разметка в шаблоне"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sublabel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "section": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "row": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "visibleWhen": {
+                      "type": "object",
+                      "properties": {
+                        "setting": {
+                          "type": "string"
+                        },
+                        "equals": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "setting",
+                        "equals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "setting": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "select"
+                            },
+                            "default": {
+                              "type": "string"
+                            },
+                            "options": {
+                              "minItems": 2,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default",
+                            "options"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "radio"
                             },
                             "default": {
                               "type": "string"

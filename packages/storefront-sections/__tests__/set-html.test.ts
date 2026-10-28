@@ -7,7 +7,7 @@ import { templateProblems } from '../src/template';
 const FRONT = '---\nconst { settings, blocks } = Astro.props;\n---\n';
 const IDS = { section: new Set(['content']), block: new Set(['answer']) };
 const REFUSED =
-  'set:html можно только с настройкой вида richtext, page.record.html или settings.<id>.html поля вида policy';
+  'set:html можно только с настройкой вида richtext, string или text с ai, page.record.html или settings.<id>.html поля вида policy';
 const messages = async (body: string): Promise<string[]> =>
   (await templateProblems(`${FRONT}${body}`, IDS)).map((item) => item.message);
 

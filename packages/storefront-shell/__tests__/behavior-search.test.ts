@@ -127,16 +127,15 @@ describe('поведение search', () => {
     expect(sent.defaultPrevented).toBe(false);
   });
 
-  it('merfy:search:open — нажимает «open» окна вокруг панели и ставит курсор в поле', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined); // кода dialog в этом тесте нет
-    open(`<div data-behavior="dialog"><button type="button" data-part="open" hidden>Поиск</button>${panel('/catalog')}</div>`);
-    let opened = 0;
+  it('merfy:search:open — ставит курсор в поле; окно открывает dialog по data-open-on="search-open", а не поиск', async () => {
+    open(`<div data-behavior="dialog" data-open-on="search-open"><button type="button" data-part="open" hidden>Поиск</button>${panel('/catalog')}</div>`);
+    let pressed = 0;
     el('[data-part="open"]', HTMLButtonElement).addEventListener('click', () => {
-      opened += 1;
+      pressed += 1;
     });
     document.dispatchEvent(new CustomEvent('merfy:search:open', { detail: {} }));
     await settle();
-    expect(opened).toBe(1);
+    expect(pressed).toBe(0);
     expect(document.activeElement).toBe(el('[data-part="input"]', HTMLInputElement));
   });
 

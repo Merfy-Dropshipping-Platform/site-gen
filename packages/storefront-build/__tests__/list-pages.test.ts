@@ -238,6 +238,17 @@ describe('page.list у секций', () => {
     expect([found?.url, found?.next, found?.pages]).toEqual(['/', '/?page=2', 3]);
     expect(shopRoutes(home).some((route) => route.path === '/page/2')).toBe(false);
   });
+
+  it('главная, секция с пустым полем коллекции — все товары магазина: значение пустого поля не коллекция с id «»', async () => {
+    const home = recordInputs(PRODUCTS, { home: list(2) });
+    home.code.sections = home.code.sections.map((section) => ({
+      ...section,
+      recordFields: { collection: 'collection' },
+    }));
+    expect(listSourceAt(home, '/', theme)).toMatchObject({ kind: 'products', collectionId: null });
+    const found = await listAt('/', home);
+    expect([found?.total, found?.items.length]).toEqual([5, 2]);
+  });
 });
 
 describe('строка манифеста и SEO страницы N', () => {

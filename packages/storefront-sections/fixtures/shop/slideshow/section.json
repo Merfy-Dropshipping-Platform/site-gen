@@ -4,7 +4,7 @@
   "kind": "section",
   "title": "Слайд-шоу",
   "settings": [
-    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Новинки сезона" } },
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Подборки" } },
     {
       "id": "autoplay",
       "label": "Листать сами",
@@ -22,8 +22,8 @@
     }
   },
   "defaultBlocks": [
-    { "type": "slide", "settings": { "subheading": "Кашемировые шарфы", "text": "Мягкие и тёплые, из шерсти мериноса." } },
-    { "type": "slide", "settings": { "subheading": "Льняные шарфы", "text": "Лёгкие, для прохладного лета." } },
-    { "type": "slide", "settings": { "subheading": "Доставка за два дня", "text": "По Москве — два дня, по России — до недели." } }
+    { "type": "slide", "settings": { "subheading": "Новинки", "text": "Свежие поступления — первыми в каталоге." } },
+    { "type": "slide", "settings": { "subheading": "Любимое покупателей", "text": "Товары, которые чаще всего берут в подарок и для себя." } },
+    { "type": "slide", "settings": { "subheading": "Доставка", "text": "Способ и срок доставки выберете при оформлении заказа." } }
   ]
 }

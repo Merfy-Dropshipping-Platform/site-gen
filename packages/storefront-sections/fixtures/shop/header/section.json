@@ -8,7 +8,7 @@
   "removable": false,
   "uses": ["theme", "shop", "cart", "favorites", "customer"],
   "themeSettings": ["wishlist-enabled"],
-  "wrapper": ["scheme", "padding", "sticky"],
+  "wrapper": ["scheme", "sticky"],
   "settings": [
     {
       "id": "logo-position",
@@ -41,9 +41,6 @@
     },
     {
       "wrapper": "scheme"
-    },
-    {
-      "wrapper": "padding"
     },
     {
       "id": "color-scheme",

@@ -15,7 +15,7 @@ import { fakeGateway, serverItem } from './sdk-support';
 const here = dirname(fileURLToPath(import.meta.url));
 const CART_TEMPLATE = readFileSync(join(here, '../sections/cart/template.astro'), 'utf8');
 const SUMMARY_SOURCE = readFileSync(join(here, '../sections/cart-summary/template.astro'), 'utf8');
-const SUMMARY = `<div>
+const SUMMARY = `<div data-ref="summary" hidden>
   <p>Сумма <span data-ref="subtotal"></span></p>
   <p data-ref="discount" hidden><span data-ref="discount-name">Скидка</span> <span data-ref="discount-value"></span></p>
   <p>Итого <span data-ref="total"></span></p>
@@ -132,7 +132,7 @@ describe('«Промежуточный итог»', () => {
   it('шаблон: блоки total и button, текст о налогах, «Оформить заказ» — cart.checkout', () => {
     expect(SUMMARY_SOURCE).toContain('Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.');
     expect(SUMMARY_SOURCE).toContain('data-action="cart.checkout"');
-    for (const ref of ['subtotal', 'discount', 'total', 'checkout'])
+    for (const ref of ['summary', 'subtotal', 'discount', 'total', 'checkout'])
       expect(SUMMARY_SOURCE).toContain(`data-ref="${ref}"`);
   });
 
@@ -142,11 +142,13 @@ describe('«Промежуточный итог»', () => {
     const money = (ref: string) => text(summary, ref)[0]?.replace(/\s/g, '');
     expect([money('subtotal'), money('discount-value'), money('total')]).toEqual(['7470₽', '−747₽', '6723₽']);
     expect(text(summary, 'discount-name')).toEqual(['Скидка «Осень»']);
+    expect(summary.querySelector('[data-ref="summary"]')?.hasAttribute('hidden')).toBe(false);
   });
 
-  it('пустая корзина — кнопки нет, скидки нет', async () => {
+  it('пустая корзина — итога нет целиком: ни «Суммы 0 ₽», ни кнопки, ни скидки', async () => {
     const { summary } = openPage();
     await settle();
+    expect(summary.querySelector('[data-ref="summary"]')?.hasAttribute('hidden')).toBe(true);
     expect(summary.querySelector('[data-ref="checkout"]')?.hasAttribute('hidden')).toBe(true);
     expect(summary.querySelector('[data-ref="discount"]')?.hasAttribute('hidden')).toBe(true);
   });

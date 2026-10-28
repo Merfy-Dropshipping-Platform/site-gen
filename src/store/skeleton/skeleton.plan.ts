@@ -6,10 +6,11 @@
  * - Список заполняется, только когда в магазине есть все его секции: иначе он ждёт (`waiting`), и повтор после
  *   докопирования секций его заполнит.
  * - Экземпляр — как «Добавить секцию» в конструкторе: пустые настройки, блоки по умолчанию с id `<тип>-<n>`, id —
- *   имя секции и 8 случайных знаков. Секции с ролью («Уведомления», «Корзина-панель», «Баннер cookie») конструктор в
- *   «Поверх страниц» не предлагает, но заготовка кладёт их туда сама — так они стоят на эталоне.
- * - «О нас» — своя страница (строка `customPageOf`, пустое дерево, пункт в главном меню), как из кабинета; на ней
- *   секция «Страница» с заголовком.
+ *   имя секции и 8 случайных знаков; у экземпляров из `layout.settings`, `layout.wrappers` и `layout.blocks` — их
+ *   правки настроек, «Отступы» и свои блоки (`[]` — без блоков). Секции с ролью («Уведомления», «Поиск», «Корзина-панель», «Баннер cookie») конструктор в «Поверх
+ *   страниц» не предлагает, но заготовка кладёт их туда сама — так они стоят на эталоне.
+ * - «О нас» — своя страница (строка `customPageOf`, пустое дерево), как из кабинета; на ней секция «Страница» с
+ *   заголовком. Вместе с ней в главное меню встают пункты `layout.menu` («Каталог») и «О нас».
  */
 import { randomBytes, randomUUID } from "crypto";
 import {
@@ -17,7 +18,7 @@ import {
   withMenuItem,
   type Menu,
 } from "../../pages/pages.service";
-import type { Library, LibrarySection } from "./skeleton-library";
+import type { Library, LibraryBlock, LibrarySection } from "./skeleton-library";
 import {
   SHARED_LISTS,
   type SkeletonLayout,
@@ -34,7 +35,7 @@ export interface SkeletonInstance {
   section: string;
   settings: Record<string, unknown>;
   blocks?: { id: string; type: string; settings: Record<string, unknown> }[];
-  /** Общие настройки экземпляра (`wrapper` ревизии) — только у экземпляров из `layout.wrappers`. */
+  /** Общие настройки экземпляра (`wrapper` ревизии) — только у экземпляров из `layout.wrappers` и у «О нас». */
   wrapper?: SkeletonWrapper;
 }
 
@@ -139,22 +140,30 @@ class Ids {
   }
 }
 
+/** Правки экземпляра из раскладки: настройки, «Отступы» и свои блоки вместо блоков по умолчанию. */
+interface InstancePreset {
+  settings?: Readonly<Record<string, unknown>>;
+  wrapper?: SkeletonWrapper;
+  blocks?: readonly LibraryBlock[];
+}
+
 function instanceOf(
   section: LibrarySection,
   ids: Ids,
-  settings: Record<string, unknown> = {},
-  wrapper?: SkeletonWrapper,
+  preset: InstancePreset = {},
 ): SkeletonInstance {
+  const { wrapper } = preset;
+  const blocks = preset.blocks ?? section.defaultBlocks;
   return {
     id: ids.next(section.name),
     section: `${SHOP_PREFIX}${section.name}`,
-    settings: { ...settings },
+    settings: { ...preset.settings },
     ...(wrapper === undefined
       ? {}
       : { wrapper: { padding: { ...wrapper.padding } } }),
     ...(section.hasBlocks
       ? {
-          blocks: section.defaultBlocks.map((block, index) => ({
+          blocks: blocks.map((block, index) => ({
             id: `${block.type}-${index + 1}`,
             type: block.type,
             settings: { ...block.settings },
@@ -204,7 +213,11 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
       continue;
     }
     sections[key] = names.map((name) =>
-      instanceOf(library.get(name)!, ids, {}, layout.wrappers?.[key]?.[name]),
+      instanceOf(library.get(name)!, ids, {
+        settings: layout.settings?.[key]?.[name],
+        wrapper: layout.wrappers?.[key]?.[name],
+        blocks: layout.blocks?.[key]?.[name],
+      }),
     );
     placement.filled.push({ key, label, sections: names.length });
     changed = true;
@@ -212,6 +225,11 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
 
   const about = layout.about;
   const aboutSection = available(about.section);
+  const aboutInstance = (section: LibrarySection): SkeletonInstance =>
+    instanceOf(section, ids, {
+      settings: about.settings,
+      wrapper: about.wrapper,
+    });
   const existing = pages.find(
     (page) =>
       (page.slug !== undefined &&
@@ -229,7 +247,7 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
         missing: [about.section],
       });
     else {
-      sections[existing.id] = [instanceOf(aboutSection, ids, about.settings)];
+      sections[existing.id] = [aboutInstance(aboutSection)];
       placement.filled.push({
         key: existing.id,
         label: existing.name,
@@ -241,8 +259,9 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
     placement.about = "waiting";
   } else {
     const id = `page-custom-${randomUUID()}`;
-    sections[id] = [instanceOf(aboutSection, ids, about.settings)];
+    sections[id] = [aboutInstance(aboutSection)];
     const menus: Menu[] = Array.isArray(doc.menus) ? (doc.menus as Menu[]) : [];
+    const items = [...layout.menu, { label: about.name, url: about.slug }];
     next = {
       ...doc,
       pages: [
@@ -257,7 +276,7 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
           zones: {},
         },
       },
-      menus: withMenuItem(menus, { label: about.name, url: about.slug }),
+      menus: items.reduce((list, item) => withMenuItem(list, item), menus),
     };
     placement.about = "created";
     placement.filled.push({ key: id, label: about.name, sections: 1 });

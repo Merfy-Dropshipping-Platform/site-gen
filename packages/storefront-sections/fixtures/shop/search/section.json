@@ -4,6 +4,7 @@
   "kind": "section",
   "title": "Поиск",
   "role": "search",
+  "wrapper": [],
   "uses": ["shop", "search"],
   "settings": []
 }

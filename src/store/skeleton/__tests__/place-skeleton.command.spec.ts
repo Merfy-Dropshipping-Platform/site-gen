@@ -109,7 +109,7 @@ function setup(
 const input = { tenantId: TENANT, siteId: SITE, actorUserId: "u1" };
 
 describe("PlaceSkeleton: новый магазин nova", () => {
-  it("копирует 24 секции библиотеки файлами из пакетов sites и одной записью ставит их по раскладке", async () => {
+  it("копирует 22 секции библиотеки файлами из пакетов sites и одной записью ставит их по раскладке", async () => {
     const { command, saved, writes, save, current } = setup();
 
     const result = await command.execute(input);
@@ -145,7 +145,7 @@ describe("PlaceSkeleton: новый магазин nova", () => {
       complete: true,
       revisionId: "rev-2",
       about: "created",
-      sections: { total: 24, kept: 0, skipped: [] },
+      sections: { total: 22, kept: 0, skipped: [] },
     });
     // Порядок «добавлено» — порядок раскладки, не порядок ответа сборщика.
     expect(result.effect.sections.added).toEqual(ALL);
@@ -188,7 +188,7 @@ describe("PlaceSkeleton: новый магазин nova", () => {
       complete: true,
       revisionId: "rev-2",
       about: "kept",
-      sections: { added: [], kept: 24, skipped: [] },
+      sections: { added: [], kept: 22, skipped: [] },
       lists: { filled: [], waiting: [], absent: [] },
     });
     expect(again.effect.lists.kept).toHaveLength(17);
@@ -206,7 +206,7 @@ describe("PlaceSkeleton: магазин, где уже что-то есть", ()
     const result = await command.execute(input);
     expect(saved).not.toContain("header");
     expect(saved).not.toContain("hero");
-    expect(saved).toHaveLength(22);
+    expect(saved).toHaveLength(20);
     expect(result.ok && result.effect.sections.kept).toBe(2);
   });
 
@@ -230,7 +230,7 @@ describe("PlaceSkeleton: магазин, где уже что-то есть", ()
       { key: "page-cart", label: "Корзина", missing: ["cart"] },
     ]);
     expect(current().document.sections["page-cart"]).toBeUndefined();
-    expect(current().document.sections.home).toHaveLength(5);
+    expect(current().document.sections.home).toHaveLength(3);
   });
 
   it("сборщик не принял секцию — пропуск с причиной; повтор докопирует и заполнит её список", async () => {
@@ -319,7 +319,7 @@ describe("PlaceSkeleton: отказы кодом", () => {
       ok: false,
       error: { code: "skeleton_in_progress" },
     });
-    expect(save.mock.calls).toHaveLength(24);
+    expect(save.mock.calls).toHaveLength(22);
   });
 
   it("CAS проиграл все попытки — revision_conflict", async () => {

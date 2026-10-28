@@ -9,6 +9,7 @@
   "uses": ["theme", "shop"],
   "settings": [
     { "id": "logo", "label": "Логотип", "setting": { "kind": "image", "default": "", "maxBytes": 512000 } },
+    { "id": "menu", "label": "Изменить пункты меню", "setting": { "kind": "menu", "default": "main" } },
     {
       "id": "newsletter",
       "label": "Рассылка",

@@ -1,19 +1,46 @@
 ---
 const { settings, blocks } = Astro.props;
 ---
-<!-- Значок раскрытия — Lucide (chevron-down), лицензия ISC, lucide.dev/license. -->
-<div class="mx-auto grid max-w-page gap-6 px-4 font-body text-foreground md:grid-cols-3 md:gap-12">
+<!-- Сворачиваемый раздел пяти тем одной разметкой: раскладка (узкая колонка — flux, во всю ширину — rose, vanilla, satin,
+     bloom), значок (шеврон — flux, rose, vanilla, bloom; плюс и минус — satin) и контейнер — атрибутами data-* на корне,
+     вид по ним — вариантами in-data-[…]: у вложенных элементов. Раскрытие — элементы details и поведение accordion (плавное).
+     Значки — Lucide (chevron-down, plus, minus), лицензия ISC, lucide.dev/license. -->
+<div
+  class="mx-auto flex w-full max-w-page flex-col gap-8 px-4 font-body text-foreground data-[layout=column]:max-w-195 md:gap-10"
+  data-animate="appear-group"
+  data-behavior="accordion"
+  data-box={settings['item-box']}
+  data-icon={settings.icon}
+  data-layout={settings.layout}
+>
   {settings.heading && (
-    <h2 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading">{settings.heading}</h2>
+    <h2
+      class="m-0 font-heading weight-heading tracking-heading text-heading data-[heading-size=small]:text-base md:data-[heading-size=small]:text-lg data-[heading-size=medium]:text-xl md:data-[heading-size=medium]:text-2xl data-[heading-size=large]:text-2xl md:data-[heading-size=large]:text-3xl"
+      data-heading-size={settings['heading-size']}
+      set:html={settings.heading}
+    />
   )}
-  <div class:list={['flex flex-col border-t border-border', { 'md:col-span-2': settings.heading, 'md:col-span-3': !settings.heading }]}>
+  <div class="flex flex-col in-data-[box=true]:gap-3 md:in-data-[box=true]:gap-4">
     {blocks.map((block, index) => (
-      <details class="group border-b border-border" open={settings['open-first'] && index === 0}>
-        <summary class="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg text-heading hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-          {block.settings.question}
-          <svg class="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      <details
+        class:list={['group border-b border-border first:border-t in-data-[box=true]:rounded-card in-data-[box=true]:border-0 in-data-[box=true]:bg-muted in-data-[box=true]:px-6 md:in-data-[box=true]:px-8', settings['item-box'] && settings['color-scheme'] && `color-${settings['color-scheme']}`]}
+        open={settings['open-first'] && index === 0}
+      >
+        <summary
+          class="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-heading hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[heading-size=small]:text-sm md:data-[heading-size=small]:text-base data-[heading-size=medium]:text-base md:data-[heading-size=medium]:text-lg data-[heading-size=large]:text-lg md:data-[heading-size=large]:text-xl"
+          data-heading-size={block.settings['heading-size']}
+        >
+          <span class="min-w-0 flex-1 break-words" set:html={block.settings.heading} />
+          <svg class="size-5 shrink-0 transition-transform in-data-[icon=plus-minus]:hidden group-open:rotate-180 motion-reduce:transition-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+          <svg class="size-6 shrink-0 in-data-[icon=chevron]:hidden group-open:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+          <svg class="hidden size-6 shrink-0 group-open:in-data-[icon=plus-minus]:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /></svg>
         </summary>
-        <div class="max-w-prose pb-5 text-base text-muted-foreground" set:html={block.settings.answer}></div>
+        <div
+          class="max-w-prose pb-5 text-foreground data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg"
+          data-part="content"
+          data-text-size={block.settings['text-size']}
+          set:html={block.settings.text}
+        ></div>
       </details>
     ))}
   </div>

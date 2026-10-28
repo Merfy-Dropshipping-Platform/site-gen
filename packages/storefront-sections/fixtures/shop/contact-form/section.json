@@ -1,0 +1,151 @@
+{
+  "sdk": 1,
+  "name": "contact-form",
+  "kind": "section",
+  "title": "Контактная форма",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "required": {
+      "kinds": ["toggle"],
+      "label": "Обязательное",
+      "about": "Поле формы нужно заполнить, чтобы отправить форму; рядом с подписью стоит звёздочка",
+      "asks": ["обязательное поле", "обязательно", "required"]
+    },
+    "button-position": {
+      "kinds": ["select", "radio"],
+      "label": "Положение кнопки",
+      "about": "Где кнопка отправки в форме в две колонки: справа, слева или на всю ширину правой колонки",
+      "asks": ["положение кнопки", "кнопка справа", "кнопка слева", "кнопка на всю ширину"]
+    }
+  },
+  "settings": [
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "section": "Содержание",
+      "setting": { "kind": "string", "default": "Связаться с нами", "ai": "title" }
+    },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "text",
+      "label": "Текст",
+      "setting": { "kind": "text", "default": "Оставьте заявку — ответим в течение рабочего дня.", "ai": "description" }
+    },
+    {
+      "id": "text-size",
+      "label": "Размер текста",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "layout",
+      "label": "Раскладка",
+      "section": "Вид",
+      "setting": {
+        "kind": "radio",
+        "default": "single",
+        "options": [
+          { "value": "single", "label": "Одна колонка" },
+          { "value": "columns", "label": "Две колонки" }
+        ]
+      }
+    },
+    { "id": "align", "label": "Выравнивание заголовка", "setting": { "kind": "alignment", "default": "center" } },
+    {
+      "id": "button-position",
+      "label": "Положение кнопки",
+      "visibleWhen": { "setting": "layout", "equals": "columns" },
+      "setting": {
+        "kind": "select",
+        "default": "right",
+        "options": [
+          { "value": "right", "label": "Справа" },
+          { "value": "left", "label": "Слева" },
+          { "value": "full", "label": "На всю ширину" }
+        ]
+      }
+    },
+    {
+      "id": "button-label",
+      "label": "Кнопка",
+      "section": "Форма",
+      "setting": { "kind": "string", "default": "Отправить" }
+    }
+  ],
+  "blocks": {
+    "name": {
+      "title": "Имя",
+      "limit": 1,
+      "settings": [
+        { "id": "label", "label": "Подпись", "setting": { "kind": "string", "default": "Имя" } },
+        {
+          "id": "required",
+          "label": "Обязательное",
+          "setting": { "kind": "toggle", "default": true, "labels": { "on": "Да", "off": "Нет" } }
+        }
+      ]
+    },
+    "email": {
+      "title": "Email",
+      "limit": 1,
+      "settings": [
+        { "id": "label", "label": "Подпись", "setting": { "kind": "string", "default": "Email" } },
+        {
+          "id": "required",
+          "label": "Обязательное",
+          "setting": { "kind": "toggle", "default": true, "labels": { "on": "Да", "off": "Нет" } }
+        }
+      ]
+    },
+    "phone": {
+      "title": "Телефон",
+      "limit": 1,
+      "settings": [
+        { "id": "label", "label": "Подпись", "setting": { "kind": "string", "default": "Телефон" } },
+        {
+          "id": "required",
+          "label": "Обязательное",
+          "setting": { "kind": "toggle", "default": false, "labels": { "on": "Да", "off": "Нет" } }
+        }
+      ]
+    },
+    "message": {
+      "title": "Сообщение",
+      "limit": 1,
+      "settings": [
+        { "id": "label", "label": "Подпись", "setting": { "kind": "string", "default": "Сообщение" } },
+        {
+          "id": "required",
+          "label": "Обязательное",
+          "setting": { "kind": "toggle", "default": false, "labels": { "on": "Да", "off": "Нет" } }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "name", "settings": {} },
+    { "type": "email", "settings": {} },
+    { "type": "message", "settings": {} }
+  ]
+}

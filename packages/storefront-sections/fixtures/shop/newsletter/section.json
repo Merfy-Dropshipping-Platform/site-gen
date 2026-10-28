@@ -1,0 +1,147 @@
+{
+  "sdk": 1,
+  "name": "newsletter",
+  "kind": "section",
+  "title": "Подписка на рассылку",
+  "uses": ["shop", "newsletter"],
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "agreement": {
+      "kinds": ["toggle"],
+      "label": "Согласие на рассылку",
+      "about": "Флажок согласия под формой подписки: без отметки подписаться нельзя",
+      "asks": ["согласие на рассылку", "согласие на обработку данных", "чекбокс согласия", "agreement", "consent"]
+    },
+    "agreement-text": {
+      "kinds": ["text"],
+      "label": "Текст согласия",
+      "about": "Подпись у флажка согласия на рассылку",
+      "asks": ["текст согласия", "подпись согласия"]
+    },
+    "agreement-link": {
+      "kinds": ["toggle"],
+      "label": "Сделать ссылкой",
+      "about": "Текст согласия — ссылка на политику конфиденциальности магазина; без этой политики остаётся обычным текстом",
+      "asks": ["ссылка на политику", "согласие ссылкой", "политика конфиденциальности в согласии"]
+    },
+    "placeholder": {
+      "kinds": ["string"],
+      "label": "Плейсхолдер",
+      "about": "Подсказка в пустом поле формы",
+      "asks": ["плейсхолдер", "подсказка в поле", "placeholder"]
+    },
+    "form-layout": {
+      "kinds": ["select", "radio"],
+      "label": "Форма",
+      "about": "Где кнопка отправки: внутри поля почты или под ним",
+      "asks": ["кнопка внутри поля", "кнопка под полем", "вид формы", "inline submit"]
+    }
+  },
+  "settings": [
+    {
+      "id": "agreement",
+      "label": "Согласие на рассылку",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Вкл", "off": "Выкл" } }
+    },
+    {
+      "id": "agreement-text",
+      "label": "Текст согласия",
+      "visibleWhen": { "setting": "agreement", "equals": true },
+      "setting": { "kind": "text", "default": "Согласен на обработку персональных данных", "ai": "description" }
+    },
+    {
+      "id": "agreement-link",
+      "label": "Сделать ссылкой",
+      "visibleWhen": { "setting": "agreement", "equals": true },
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Вкл", "off": "Выкл" } }
+    },
+    {
+      "id": "text",
+      "label": "Текст",
+      "setting": {
+        "kind": "text",
+        "default": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.",
+        "ai": "description"
+      }
+    },
+    {
+      "id": "text-size",
+      "label": "Размер текста",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "id": "align", "label": "Выравнивание", "setting": { "kind": "alignment", "default": "left" } },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "placeholder",
+      "label": "Плейсхолдер",
+      "section": "Форма рассылки",
+      "setting": { "kind": "string", "default": "Email" }
+    },
+    {
+      "id": "button-label",
+      "label": "Кнопка",
+      "setting": { "kind": "string", "default": "Подписаться" }
+    },
+    {
+      "id": "layout",
+      "label": "Раскладка",
+      "section": "Вид",
+      "setting": {
+        "kind": "radio",
+        "default": "column",
+        "options": [
+          { "value": "column", "label": "Колонка" },
+          { "value": "row", "label": "Текст слева, форма справа" }
+        ]
+      }
+    },
+    {
+      "id": "form-layout",
+      "label": "Форма",
+      "setting": {
+        "kind": "radio",
+        "default": "stacked",
+        "options": [
+          { "value": "stacked", "label": "Кнопка под полем" },
+          { "value": "inline-submit", "label": "Кнопка в поле" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "heading": {
+      "title": "Заголовок",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Заголовок",
+          "setting": { "kind": "string", "default": "Подпишитесь на нашу рассылку", "ai": "title" }
+        },
+        {
+          "id": "heading-size",
+          "label": "Размер заголовка",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [{ "type": "heading", "settings": {} }]
+}

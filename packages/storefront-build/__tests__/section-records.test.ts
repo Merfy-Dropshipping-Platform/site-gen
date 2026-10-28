@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { sectionInputTag } from '../src/input-tag';
 import { parseBuildInputs, type BuildInputs, type Entity } from '../src/inputs';
 import { renderShopPage, type ShopTheme } from '../src/page';
-import { money, recordIndexOf, type RecordEntry, type RecordType } from '../src/records';
+import { cardOfRecord, money, recordIndexOf, type RecordEntry, type RecordType } from '../src/records';
 import {
   menusWithRecordPaths,
   recordDepsOf,
@@ -74,20 +74,8 @@ function pageOf(type: RecordType, id: string): PageProps {
   const found = entry(type, id);
   return { ...HOME, page: { id: type, path: found?.path ?? null, record: found?.record ?? null } };
 }
-// Карточка товара — те же поля, что у товаров коллекции записей (records.ts).
-const cardOf = (found: RecordEntry | null) =>
-  found?.type === 'product'
-    ? {
-        id: found.record.id,
-        title: found.record.title,
-        url: found.record.url,
-        price: found.record.price,
-        compareAtPrice: found.record.compareAtPrice,
-        image: found.record.images[0] ?? null,
-        available: found.record.available,
-        images: found.record.images.slice(0, 2),
-      }
-    : null;
+// Карточка товара — та же, что у товаров коллекции записей (records.ts): сверка, что обе берутся одной функцией.
+const cardOf = (found: RecordEntry | null) => (found?.type === 'product' ? cardOfRecord(found.record) : null);
 const jsonOf = (tag: string): unknown => JSON.parse(tag.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, ''));
 
 describe('записи полей секции', () => {

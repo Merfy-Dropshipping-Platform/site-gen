@@ -1,7 +1,7 @@
 ---
-const { settings } = Astro.props;
+const { settings, theme } = Astro.props;
 ---
-<!-- Значок заглушки фото — Lucide (image), лицензия ISC, lucide.dev/license. -->
+<!-- Значки — Lucide (image, plus, minus, heart), лицензия ISC, lucide.dev/license. -->
 <div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body text-foreground md:gap-8">
   {settings.collection && (settings.collection.title || settings.collection.description) && (
     <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
@@ -11,29 +11,35 @@ const { settings } = Astro.props;
         )}
         {settings.collection.description && <p class="m-0 text-base text-muted-foreground">{settings.collection.description}</p>}
       </div>
-      {settings.collection.productsCount > 0 && (
-        <p class="m-0 text-sm text-muted-foreground">
-          {settings.collection.productsCount}{' '}
-          {settings.collection.productsCount % 10 === 1 && settings.collection.productsCount % 100 !== 11
-            ? 'товар'
-            : settings.collection.productsCount % 10 >= 2 && settings.collection.productsCount % 10 <= 4 && (settings.collection.productsCount % 100 < 12 || settings.collection.productsCount % 100 > 14)
-              ? 'товара'
-              : 'товаров'}
-        </p>
-      )}
+      {settings.collection.productsCount > 0 && <p class="m-0 text-sm text-muted-foreground">Товаров: {settings.collection.productsCount}</p>}
     </div>
   )}
   {settings.collection && settings.collection.products.length === 0 && (
     <p class="m-0 rounded-card bg-muted px-6 py-12 text-center text-muted-foreground">В этой коллекции пока нет товаров</p>
   )}
   {settings.collection && settings.collection.products.length > 0 && (
-    <ul class="m-0 grid list-none grid-cols-2 gap-x-grid-column gap-y-grid-row p-0 md:grid-cols-3 lg:grid-cols-4">
+    <ul
+      class="m-0 grid list-none gap-x-grid-column gap-y-grid-row p-0 data-[columns-mobile=1]:grid-cols-1 data-[columns-mobile=2]:grid-cols-2 md:data-[columns=1]:grid-cols-1 md:data-[columns=2]:grid-cols-2 md:data-[columns=3]:grid-cols-3 md:data-[columns=4]:grid-cols-3 md:data-[columns=5]:grid-cols-3 md:data-[columns=6]:grid-cols-3 lg:data-[columns=4]:grid-cols-4 lg:data-[columns=5]:grid-cols-5 lg:data-[columns=6]:grid-cols-6"
+      data-columns={settings.columns}
+      data-columns-mobile={settings['columns-mobile']}
+      data-aspect-ratio={settings['aspect-ratio']}
+      data-image-fit={settings['image-fit']}
+      data-button-style={settings['button-style']}
+      data-swatches={settings.swatches}
+    >
       {settings.collection.products.map((card) => (
-        <li class="flex min-w-0 flex-col gap-3 border-border card-style-card:rounded-card card-style-card:border-width-card card-style-card:bg-card card-style-card:p-card card-style-card:text-card-foreground card-style-card:shadow-card card-align-center:text-center card-align-right:text-right motion-hover-lift:transition-transform motion-hover-lift:hover:-translate-y-1 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+        <li class="group/card relative flex h-full min-w-0 flex-col gap-3 border-border card-style-card:rounded-card card-style-card:border-width-card card-style-card:bg-card card-style-card:p-card card-style-card:text-card-foreground card-style-card:shadow-card card-align-center:text-center card-align-right:text-right motion-hover-lift:transition-transform motion-hover-lift:hover:-translate-y-1 motion-reduce:transition-none motion-reduce:hover:translate-y-0" data-available={card.available} data-ref="card">
           <div class="relative">
-            <a class="block aspect-4/5 overflow-hidden rounded-media border-width-media border-border bg-muted shadow-media" href={card.url} tabindex="-1" aria-hidden="true">
+            <a
+              class="block overflow-hidden rounded-media border-width-media border-border bg-muted shadow-media in-data-[aspect-ratio=portrait]:aspect-3/4 in-data-[aspect-ratio=square]:aspect-square in-data-[aspect-ratio=landscape]:aspect-4/3"
+              href={card.url}
+              tabindex="-1"
+              aria-hidden="true"
+            >
               {card.image ? (
-                <img class="size-full object-cover" src={card.image} alt={card.title} loading="lazy" />
+                <div class="size-full" data-behavior="card-photos" data-photos={card.images.join(' ')} data-hover-next={settings['next-photo']}>
+                  <img class="size-full in-data-[image-fit=contain]:object-contain in-data-[image-fit=cover]:object-cover" data-part="image" src={card.image} alt={card.title} loading="lazy" />
+                </div>
               ) : (
                 <span class="flex size-full items-center justify-center text-muted-foreground">
                   <svg class="size-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
@@ -43,16 +49,83 @@ const { settings } = Astro.props;
             {card.compareAtPrice && card.compareAtPrice.amount > card.price.amount && (
               <span class="absolute left-2 top-2 rounded-badge bg-sale px-2 py-1 text-xs text-sale-foreground md:left-3 md:top-3">−{Math.round((1 - card.price.amount / card.compareAtPrice.amount) * 100)} %</span>
             )}
-            {!card.available && (
-              <span class="absolute bottom-2 left-2 rounded-badge bg-background px-2 py-1 text-xs text-foreground md:bottom-3 md:left-3">Нет в наличии</span>
+            <span class="absolute bottom-2 left-2 rounded-badge bg-background px-2 py-1 text-xs text-foreground in-data-[available=true]:hidden md:bottom-3 md:left-3">Нет в наличии</span>
+            {theme['wishlist-enabled'] !== false && settings.favorite && (
+              <button
+                type="button"
+                class="group/heart absolute right-1 top-1 inline-flex size-11 items-center justify-center rounded-full border-0 bg-transparent p-0 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:right-2 md:top-2"
+                aria-pressed="false"
+                aria-label="В избранное"
+                data-action="favorites.toggle"
+                data-product-id={card.id}
+                data-ref="heart"
+              >
+                <span class="inline-flex size-9 items-center justify-center rounded-full bg-background/90 shadow-media">
+                  <svg class="size-5 group-aria-[pressed=true]/heart:fill-current group-aria-[pressed=true]/heart:text-sale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" /></svg>
+                </span>
+              </button>
+            )}
+            {settings['quick-add'] === 'button' && (
+              <button
+                type="button"
+                class="absolute bottom-2 right-2 inline-flex size-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary p-0 text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[available=false]:hidden md:bottom-3 md:right-3"
+                data-action="cart.add"
+                data-product-id={card.id}
+                data-variant-id={card.variantId ?? undefined}
+                aria-label={`В корзину: ${card.title}`}
+              >
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+              </button>
+            )}
+            {settings['quick-add'] === 'hover' && (
+              <button
+                type="button"
+                class="absolute inset-x-2 bottom-2 inline-flex h-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-sm uppercase text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[available=false]:hidden md:inset-x-3 md:bottom-3 md:opacity-0 md:group-hover/card:opacity-100"
+                data-action="cart.add"
+                data-product-id={card.id}
+                data-variant-id={card.variantId ?? undefined}
+              >В корзину</button>
             )}
           </div>
-          <div class="flex flex-col gap-1">
+          <div class="flex flex-1 flex-col gap-2">
+            {settings.swatches !== 'none' && card.colors.length > 0 && (
+              <div class="flex flex-wrap items-center gap-1" role="list" aria-label="Цвета">
+                {card.colors.map((color) => (
+                  <span class="inline-flex size-5 overflow-hidden border border-border in-data-[swatches=circle]:rounded-full in-data-[swatches=square]:rounded-badge" role="listitem" title={color.title}>
+                    <svg class="size-full" viewBox="0 0 20 20" role="img" aria-label={color.title}><rect width="20" height="20" fill={color.swatch} /></svg>
+                  </span>
+                ))}
+              </div>
+            )}
             <a class="line-clamp-2 text-sm text-foreground no-underline hover:underline md:text-base" href={card.url}>{card.title}</a>
             <p class="m-0 flex flex-wrap items-baseline gap-x-2 card-align-center:justify-center card-align-right:justify-end">
               <span class:list={['text-base weight-heading md:text-lg', card.compareAtPrice ? 'text-sale' : 'text-price']}>{card.price.text}</span>
               {card.compareAtPrice && <s class="text-sm text-price-old">{card.compareAtPrice.text}</s>}
             </p>
+            {(settings['quick-add'] === 'standard' || settings['quick-add'] === 'count') && (
+              <div class="mt-auto flex flex-col gap-2 in-data-[available=false]:hidden">
+                {settings['quick-add'] === 'count' && (
+                  <div class="flex h-11 items-center justify-between rounded-input border-width-input border-input bg-background text-foreground">
+                    <button type="button" class="inline-flex size-11 items-center justify-center border-0 bg-transparent p-0 text-foreground disabled:opacity-40" aria-label="Меньше" data-action="less" data-ref="less" disabled>
+                      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /></svg>
+                    </button>
+                    <span class="min-w-8 text-center text-base tabular-nums" data-ref="quantity" aria-live="polite">1</span>
+                    <button type="button" class="inline-flex size-11 items-center justify-center border-0 bg-transparent p-0 text-foreground disabled:opacity-40" aria-label="Больше" data-action="more" data-ref="more">
+                      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  class="inline-flex h-11 w-full items-center justify-center rounded-button border-width-button px-4 text-sm uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[button-style=primary]:border-primary-border in-data-[button-style=primary]:bg-primary in-data-[button-style=primary]:text-primary-foreground in-data-[button-style=primary]:shadow-button in-data-[button-style=primary]:hover:bg-primary-hover in-data-[button-style=primary]:hover:text-primary-hover-foreground in-data-[button-style=secondary]:border-foreground in-data-[button-style=secondary]:bg-background in-data-[button-style=secondary]:text-foreground in-data-[button-style=secondary]:hover:bg-foreground in-data-[button-style=secondary]:hover:text-background in-data-[button-style=link]:border-transparent in-data-[button-style=link]:bg-transparent in-data-[button-style=link]:text-foreground in-data-[button-style=link]:underline in-data-[button-style=link]:underline-offset-4"
+                  data-action="cart.add"
+                  data-product-id={card.id}
+                  data-variant-id={card.variantId ?? undefined}
+                  data-quantity="1"
+                  data-ref="buy"
+                >В корзину</button>
+              </div>
+            )}
           </div>
         </li>
       ))}

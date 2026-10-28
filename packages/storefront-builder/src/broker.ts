@@ -13,6 +13,7 @@ import {
 } from './events';
 import type { Log } from './log';
 import { PREVIEW_EXCHANGE, type PreviewSignal } from './preview';
+import { LOOKS_QUEUE } from './look/look-queue';
 import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } from './release/checks';
 
 // RabbitMQ сборщика (design.md блока 6, В6-2 В, Св-3 А). Имена — новые: нынешние sites_queue, sites_build_queue и
@@ -22,7 +23,8 @@ import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } fr
 //   storefront_builds         — задания сборки, приоритет 1–3 (x-max-priority);
 //   storefront_section_errors — ошибки секций из браузеров; кладёт шлюз (блок 11, часть 4), Nest emit;
 //   storefront_checks         — задания проверки в браузере (блок 10), их берёт проверяющий процесс;
-//   storefront_check_results  — ответы проверки, их берёт ведущий волн сборщика.
+//   storefront_check_results  — ответы проверки, их берёт ведущий волн сборщика;
+//   storefront_looks          — снимки черновика (RPC шлюза), их берёт проверяющий процесс.
 // Объявление — на каждом канале при каждом подключении (факт 6): брокер перезапустился — очереди на месте.
 
 export const EVENTS_QUEUE = 'storefront_builder_events';
@@ -75,6 +77,9 @@ export async function declareTopology(channel: ConfirmChannel): Promise<void> {
   await channel.assertQueue(SECTION_ERRORS_QUEUE, { durable: true });
   await channel.assertQueue(CHECKS_QUEUE, { durable: true });
   await channel.assertQueue(CHECK_RESULTS_QUEUE, { durable: true });
+  // Снимки черновика (28.10): объявляют только сборщик и проверяющий процесс; шлюз очередь не объявляет, а проверяет
+  // (checkQueue), поэтому аргументов, которые пришлось бы держать одинаковыми с ним, нет.
+  await channel.assertQueue(LOOKS_QUEUE, { durable: true });
 }
 
 const json = (value: unknown): Buffer => Buffer.from(JSON.stringify(value));

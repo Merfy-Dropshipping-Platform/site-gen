@@ -25,16 +25,19 @@ export interface CheckerDeps {
 export interface CheckerSettings {
   rabbitmqUrl: string;
   port: number;
+  // Адрес sites внутри сети для снимков черновика (28.10). Нет — снимки выключены, проверки выпуска работают как раньше.
+  sitesUrl: string | null;
 }
 
 const envSchema = z.object({
   RABBITMQ_URL: z.string().min(1),
   PORT: z.coerce.number().int().positive().default(8080),
+  SITES_SERVICE_URL: z.url({ protocol: /^https?$/ }).optional(),
 });
 
 export function readCheckerSettings(env: NodeJS.ProcessEnv): CheckerSettings {
   const value = parseWith(envSchema, env, 'settings-invalid', 'env');
-  return { rabbitmqUrl: value.RABBITMQ_URL, port: value.PORT };
+  return { rabbitmqUrl: value.RABBITMQ_URL, port: value.PORT, sitesUrl: value.SITES_SERVICE_URL ?? null };
 }
 
 // «После» — отличия от «до» и вердикт; «до» — только паспорт.
@@ -49,10 +52,7 @@ function compared(job: CheckJob, collected: Collected, rules: FieldRule[]) {
 // функцией open; её ошибки (консоль и pageerror) добавляем в паспорт главной — правило «errors added → red» их
 // ловит. Страница оформления не открылась или ушла редиректом (вход покупателя — page в паспорте не /checkout) —
 // ошибки не считаем: отличий из ничего не делаем.
-export async function openWithCheckout(
-  open: (url: string) => Promise<Collected>,
-  url: string,
-): Promise<Collected> {
+export async function openWithCheckout(open: (url: string) => Promise<Collected>, url: string): Promise<Collected> {
   const home = await open(url);
   const checkout = await open(new URL('/checkout', url).toString()).then(
     (found) => found,

@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint';
 // без вложенных тернарников, без `as` (кроме `as const`), без `!`, без console. Комментарии-отключения
 // не действуют: noInlineConfig.
 export default tseslint.config(
-  { ignores: ['eslint.config.mjs', 'coverage/**'] },
+  // vendor/ — сторонний сгенерированный код (детектор Impeccable, NOTICE.md рядом): его не правят.
+  { ignores: ['eslint.config.mjs', 'coverage/**', 'vendor/**'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

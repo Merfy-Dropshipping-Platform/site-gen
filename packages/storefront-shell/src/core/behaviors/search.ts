@@ -132,18 +132,12 @@ function listenSubmit(parts: Parts, host: BehaviorHost): void {
   );
 }
 
-// Открытие панели (Р11б-20): кнопка «open» ближайшего окна вокруг панели, затем курсор в поле.
+// Открытие панели (Р11б-20): окно вокруг панели открывает событие — data-open-on="search-open" у dialog; здесь —
+// курсор в поле.
 function listenOpen(parts: Parts, host: BehaviorHost): void {
-  document.addEventListener(
-    'merfy:search:open',
-    () => {
-      const dialog = host.root.closest('[data-behavior="dialog"]');
-      const open = dialog?.querySelector<HTMLElement>('[data-part="open"]');
-      open?.click();
-      setTimeout(() => parts.input.focus(), 0);
-    },
-    { signal: host.signal },
-  );
+  document.addEventListener('merfy:search:open', () => setTimeout(() => parts.input.focus(), 0), {
+    signal: host.signal,
+  });
 }
 
 export const search: Behavior<'search'> = {

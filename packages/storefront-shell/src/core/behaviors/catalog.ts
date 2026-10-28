@@ -48,8 +48,11 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
       transition: { kind: 'enum', values: ['fade', 'drawer', 'drawer-back', 'drop'], default: 'fade' },
       side: { kind: 'enum', values: ['right', 'left'], default: 'right' },
       modal: { kind: 'bool', default: true },
-      // Блок 10 (Р10а-6): открыть по событию SDK — cart-open: merfy:cart:open, cart-add: merfy:cart:add.
-      'open-on': { kind: 'enum', values: ['none', 'cart-open', 'cart-add'], default: 'none' },
+      // Блок 10 (Р10а-6): открыть по событию SDK — cart-open: merfy:cart:open, cart-add: merfy:cart:add,
+      // search-open: merfy:search:open (панель поиска, действие search.open).
+      'open-on': { kind: 'enum', values: ['none', 'cart-open', 'cart-add', 'search-open'], default: 'none' },
+      // Место немодального окна: section — под низом своей секции, header — под шапкой страницы (секции перед <main>).
+      anchor: { kind: 'enum', values: ['section', 'header'], default: 'section' },
     },
     onSection: false,
   },

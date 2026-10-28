@@ -100,7 +100,10 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 - Разметка секции: `data-behavior="<имя>"` на корне, части — `data-part`, параметры — `data-<имя>` (вид, умолчание и
   границы — `BEHAVIORS`). Девять поведений: `accordion` (`<details>` + Motion: плавное раскрытие значений satin,
   общий `name` — открыт один), `dialog` (`<dialog>` + Motion: `fade`, `drawer`, `drawer-back`, `drop`; модальные и
-  немодальные, запрет прокрутки, Escape/фон/ссылка; открытие модального окна закрывает немодальные окна своей секции), `carousel` (Embla с Autoplay и Fade: стрелки, точки, миниатюры,
+  немодальные, запрет прокрутки, Escape/фон/ссылка; открытие модального окна закрывает немодальные окна своей секции;
+  `data-anchor` — место немодального окна: `section` (по умолчанию) — под низом своей секции, `header` — под шапкой
+  страницы: наибольший низ секций перед `<main>`, не меньше 0; для секций из списка «Поверх страниц», которые стоят
+  после подвала), `carousel` (Embla с Autoplay и Fade: стрелки, точки, миниатюры,
   счётчик, текст слайда, кнопка паузы, ←/→), `tabs` и `nav-menu` (свой код по W3C APG), `quantity` (браузерные
   `stepUp`/`stepDown`), `card-photos` (наведение и свайп фото карточки), `sticky-header` (ставит и снимает
   `data-hidden`), `video` (кнопка «Смотреть»). Что делает браузер, что — SDK — `BEHAVIORS` в каталоге.
@@ -173,7 +176,7 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 - `cart.change({ lineId, quantity })`, `cart.remove({ lineId })` — `PATCH` и `DELETE`, потом `GET`; счётчик — сразу,
   строка — после ответа; разметка — `data-line-id`, `data-quantity`.
 - `cart.open()` — при «Сайдбар» (`cart-type`) и окне `data-open-on="cart-open"` на странице — `merfy:cart:open`, иначе
-  `/cart`. Поведение `dialog`: параметр `open-on` — `cart-open` или `cart-add`.
+  `/cart`. Поведение `dialog`: параметр `open-on` — `cart-open`, `cart-add` или `search-open`.
 - `cart.checkout()` — `merfy:cartId` и копия строк `merfy:cart-handoff:v1`, переход на `/checkout`. После оплаты ядро
   читает `merfy:pendingOrder` и сводит корзину по таблице пяти тем (`src/core/cart-checkout.ts`).
 - В превью номер корзины приходит в адресе рамки (`merfy-cart`), новый номер — сообщение `cart-id` конструктору.
@@ -209,7 +212,8 @@ codeOnly }` (скрипт секций превью → скрипт превь�
   превью — событие `merfy:preview:list` с `reply`.
 - `data-behavior="search"` и `data-limit` (1–20, по умолчанию 8): части `input`, `results`, `template[data-part="item"]`
   со строкой (`link`, `image`, `title`, `price`, `compare`), `empty`, `all`. Пауза 250 мс после ввода; отправка формы —
-  `merfy:search:submit`; `merfy:search:open` открывает окно `dialog` вокруг панели. Нужен `"uses": ["search"]` секции.
+  `merfy:search:submit`; `merfy:search:open` ставит курсор в поле, а окно `dialog` вокруг панели открывает сам `dialog` по
+  `data-open-on="search-open"` (повторное нажатие на лупу закрывает панель). Нужен `"uses": ["search"]` секции.
 - Поведения получают ядро страницы — `BehaviorHost.core`.
 
 ## Избранное (часть 10б)

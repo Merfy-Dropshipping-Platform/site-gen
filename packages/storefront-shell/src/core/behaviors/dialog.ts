@@ -4,7 +4,8 @@ import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
 
 // Окно и выезжающая панель (design.md блока 6, раздел 5; факты 10, 12; дополнения блока 7, п. 15): <dialog> и
 // showModal/show — браузер, переходы и запрет прокрутки — поведение. Немодальные окна секции — по одному; открытие
-// модального окна закрывает немодальные окна своей секции (блок 7, часть 7б).
+// модального окна закрывает немодальные окна своей секции (блок 7, часть 7б). Место немодального окна — data-anchor:
+// под своей секцией (умолчание) или под шапкой страницы (секция вне шапки, например поверх страниц).
 
 const CLOSE_OTHERS_EVENT = 'merfy-dialog-close-others';
 
@@ -92,6 +93,7 @@ interface Box {
   readonly opens: readonly HTMLElement[];
   readonly spec: TransitionSpec;
   readonly modal: boolean;
+  readonly anchor: 'section' | 'header';
   state: BoxState;
   runs: Animation[];
   afterEscape: boolean;
@@ -144,11 +146,24 @@ function setExpanded(box: Box, value: boolean): void {
   box.opens.forEach((button) => button.setAttribute('aria-expanded', String(value)));
 }
 
-// Немодальное окно — под низом своей секции; пересчёт на resize.
-function placeUnderSection(box: Box): void {
-  const bottom = box.host.section.getBoundingClientRect().bottom;
+// Низ шапки страницы: шапка — секции перед <main> (раскладка страницы: витрина и превью ставят группу header до
+// <main>). Наибольший низ; шапка ушла из экрана или спрятана при прокрутке — 0, окно у верха экрана; <main> нет — 0.
+function headerBottom(from: HTMLElement): number {
+  const doc = from.ownerDocument;
+  const main = doc.querySelector('main');
+  if (main === null) return 0;
+  const bottoms = [...doc.querySelectorAll('merfy-section')]
+    .filter((section) => main.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_PRECEDING)
+    .map((section) => section.getBoundingClientRect().bottom);
+  return Math.max(0, ...bottoms);
+}
+
+// Немодальное окно — под низом своей секции или под шапкой страницы (data-anchor); пересчёт на resize.
+function placeNonModal(box: Box): void {
+  const edge =
+    box.anchor === 'header' ? headerBottom(box.host.section) : box.host.section.getBoundingClientRect().bottom;
   box.dialog.style.position = 'fixed';
-  box.dialog.style.top = `${Math.round(bottom)}px`;
+  box.dialog.style.top = `${Math.round(edge)}px`;
 }
 
 function announceOpen(box: Box): void {
@@ -162,7 +177,7 @@ function doOpen(box: Box): void {
   if (box.modal) {
     box.dialog.showModal();
   } else {
-    placeUnderSection(box);
+    placeNonModal(box);
     box.dialog.show();
   }
   announceOpen(box);
@@ -291,7 +306,7 @@ function listenCloseAndLinks(box: Box): void {
     .forEach((link) => link.addEventListener('click', () => closeImmediately(box), { signal }));
 }
 
-// Немодальные окна секции — по одному: чужое открытие закрывает наше; верх окна — снова под низ шапки на resize.
+// Немодальные окна секции — по одному: чужое открытие закрывает наше; верх окна — на resize снова по своему месту.
 function listenSectionEvents(box: Box): void {
   const signal = box.host.signal;
   box.host.section.addEventListener(
@@ -305,14 +320,20 @@ function listenSectionEvents(box: Box): void {
   window.addEventListener(
     'resize',
     () => {
-      if (box.state !== 'closed') placeUnderSection(box);
+      if (box.state !== 'closed') placeNonModal(box);
     },
     { signal },
   );
 }
 
 // Открытие по событию SDK (блок 10, Р10а-6): ядро копирует события на document; закрытое окно открывается.
-const OPEN_EVENTS: Readonly<Record<string, string>> = { 'cart-open': 'merfy:cart:open', 'cart-add': 'merfy:cart:add' };
+// Окно открывает только событие при закрытом окне: нажатие на значок, который это событие шлёт, закрывает открытое
+// немодальное окно как «нажатие вне окна», и следующий за ним клик его не открывает снова.
+const OPEN_EVENTS: Readonly<Record<string, string>> = {
+  'cart-open': 'merfy:cart:open',
+  'cart-add': 'merfy:cart:add',
+  'search-open': 'merfy:search:open',
+};
 
 function listenOpenEvent(box: Box): void {
   const name = OPEN_EVENTS[String(box.host.params['open-on'])];
@@ -344,6 +365,7 @@ export const dialog: Behavior<'dialog'> = {
       opens,
       spec: transitionOf(String(host.params.transition), String(host.params.side)),
       modal: host.params.modal === true,
+      anchor: host.params.anchor === 'header' ? 'header' : 'section',
       state: 'closed',
       runs: [],
       afterEscape: false,

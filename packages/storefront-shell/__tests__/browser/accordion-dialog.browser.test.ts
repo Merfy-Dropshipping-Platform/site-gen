@@ -260,6 +260,110 @@ describe('dialog', () => {
   });
 });
 
+// Место немодального окна (data-anchor): шапка — секции перед <main>, окно секции поверх страниц стоит в конце <body>.
+describe('dialog: anchor', () => {
+  const PAGE = (anchor: string) => `<merfy-section data-section="shop:header" data-section-id="header" style="display:block;height:80px;background:#fff">
+  <button id="loupe" type="button">Лупа</button>
+</merfy-section>
+<merfy-section data-section="shop:announcement" data-section-id="strip" style="display:block;height:40px;background:#eee">Полоса</merfy-section>
+<main style="display:block;height:3000px">Страница</main>
+<merfy-section data-section="shop:footer" data-section-id="footer" style="display:block;height:200px">Подвал</merfy-section>
+<merfy-section data-section="shop:search" data-section-id="search" style="display:block">
+  <div data-behavior="dialog" data-modal="false" data-transition="drop"${anchor}>
+    <button data-part="open" id="open-search" type="button">Поиск</button>
+    <dialog data-part="content" id="panel" style="margin:0;width:100%;max-width:none"><input aria-label="Поиск"></dialog>
+  </div>
+</merfy-section>`;
+  const press = (page: Page) => page.evaluate(() => document.getElementById('open-search')?.click());
+  const topOf = (page: Page) => page.$eval('#panel', (el) => Math.round(el.getBoundingClientRect().top));
+  const scrollTo = async (page: Page, top: number) => {
+    await page.evaluate((y) => window.scrollTo(0, y), top);
+    await page.waitForFunction((y) => Math.round(window.scrollY) === y, top);
+  };
+
+  it('data-anchor="header": верх окна — низ последней секции перед <main>, хотя сама секция в конце страницы', async () => {
+    const { page, errors } = await open(PAGE(' data-anchor="header"'));
+    await press(page);
+    expect(await isOpen(page, '#panel')).toBe(true);
+    expect(await topOf(page)).toBe(120);
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('data-anchor="header": шапка ушла из экрана — окно у верха экрана', async () => {
+    const { page } = await open(PAGE(' data-anchor="header"'));
+    await scrollTo(page, 1500);
+    await press(page);
+    expect(await topOf(page)).toBe(0);
+    await page.close();
+  });
+
+  it('data-anchor="header": шапка частично в экране — окно под её видимым низом', async () => {
+    const { page } = await open(PAGE(' data-anchor="header"'));
+    await scrollTo(page, 50);
+    await press(page);
+    expect(await topOf(page)).toBe(70);
+    await page.close();
+  });
+
+  it('data-anchor="header": смена размера окна — верх снова по низу шапки', async () => {
+    const { page } = await open(PAGE(' data-anchor="header"'));
+    await press(page);
+    await page.$eval('[data-section-id="header"]', (el) => {
+      if (el instanceof HTMLElement) el.style.height = '100px';
+    });
+    await page.setViewportSize({ width: 1000, height: 700 });
+    await page.waitForFunction(() => Math.round(document.getElementById('panel')?.getBoundingClientRect().top ?? 0) === 140);
+    await page.close();
+  });
+
+  it('без data-anchor и с data-anchor="section" — по-прежнему под низом своей секции', async () => {
+    for (const attribute of ['', ' data-anchor="section"']) {
+      const { page } = await open(PAGE(attribute));
+      await press(page);
+      const own = await page.$eval('[data-section-id="search"]', (el) => Math.round(el.getBoundingClientRect().bottom));
+      expect(await topOf(page)).toBe(own);
+      await page.close();
+    }
+  });
+
+  it('open-on="search-open": лупа шлёт merfy:search:open — открывает; второе нажатие закрывает, без «закрылась-открылась»', async () => {
+    const { page, errors } = await open(PAGE(' data-anchor="header" data-open-on="search-open"'));
+    await page.evaluate(() => {
+      document
+        .getElementById('loupe')
+        ?.addEventListener('click', () => document.dispatchEvent(new CustomEvent('merfy:search:open', { detail: {} })));
+      const panel = document.getElementById('panel');
+      if (panel instanceof HTMLDialogElement) {
+        // Журнал смен open: «1» — открылось, «0» — закрылось.
+        new MutationObserver(() => {
+          document.documentElement.dataset.openLog = `${document.documentElement.dataset.openLog ?? ''}${panel.open ? 1 : 0}`;
+        }).observe(panel, {
+          attributes: true,
+          attributeFilter: ['open'],
+        });
+      }
+    });
+    await page.click('#loupe');
+    await settle(page);
+    expect(await isOpen(page, '#panel')).toBe(true);
+    expect(await topOf(page)).toBe(120);
+    await page.click('#loupe');
+    await page.waitForFunction(() => !document.getElementById('panel')?.hasAttribute('open'));
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => document.documentElement.dataset.openLog)).toBe('10');
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('без <main> шапки нет — окно у верха экрана', async () => {
+    const { page } = await open(PAGE(' data-anchor="header"').replace(/<\/?main[^>]*>/g, ''));
+    await press(page);
+    expect(await topOf(page)).toBe(0);
+    await page.close();
+  });
+});
+
 // Блок 10, часть 10а (Р10а-6): окно открывает событие SDK — копия на document.
 describe('dialog: open-on', () => {
   const PANEL = (

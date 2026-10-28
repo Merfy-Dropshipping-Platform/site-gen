@@ -9,6 +9,7 @@ import {
   type PageRenderer,
   type PageSession,
   type RenderInput,
+  type SectionPlace,
 } from '../src/look/look-types';
 
 export interface FakeSessionOptions {
@@ -24,6 +25,9 @@ export interface FakeSessionOptions {
   layoutError?: Error;
   // Вес вырезки в байтах.
   clipBytes?: number;
+  // Снимок секции: где она на этом устройстве (`null` — не видно; не задано — стоит в начале страницы) и вес её картинки
+  // функцией от качества.
+  section?: { place?: SectionPlace | null; bytes?: number | ((quality: number) => number) };
 }
 
 export interface ShootCall {
@@ -32,7 +36,21 @@ export interface ShootCall {
   quality: number;
 }
 
-export function fakeSession(device: LookDevice, options: FakeSessionOptions, calls: ShootCall[]): PageSession {
+// Вызовы по секции: поиск места, съёмка с качеством, проверки вёрстки с id секции.
+export interface SectionCalls {
+  located: Array<{ device: LookDevice; section: string }>;
+  shot: Array<{ device: LookDevice; section: string; quality: number }>;
+  layout: Array<{ device: LookDevice; section: string | undefined }>;
+}
+
+const PLACE: SectionPlace = { x: 0, y: 0, width: 390, height: 600, fullHeight: 600, pinned: false };
+
+export function fakeSession(
+  device: LookDevice,
+  options: FakeSessionOptions,
+  calls: ShootCall[],
+  sectionCalls: SectionCalls = { located: [], shot: [], layout: [] },
+): PageSession {
   const bytes = options.shotBytes ?? 1_000;
   return {
     device,
@@ -54,12 +72,23 @@ export function fakeSession(device: LookDevice, options: FakeSessionOptions, cal
       if (options.detectError) return Promise.reject(options.detectError);
       return Promise.resolve(options.findings ?? []);
     },
-    layout() {
+    layout(section) {
+      sectionCalls.layout.push({ device, section });
       if (options.layoutError) return Promise.reject(options.layoutError);
       return Promise.resolve(options.layout ?? []);
     },
     shootClip(finding) {
       return Promise.resolve(new Uint8Array(options.clipBytes ?? 500).fill(finding.mark + 1));
+    },
+    locateSection(section) {
+      sectionCalls.located.push({ device, section });
+      const place = options.section?.place;
+      return Promise.resolve(place === undefined ? PLACE : place);
+    },
+    shootSection(_place, section, quality) {
+      sectionCalls.shot.push({ device, section, quality });
+      const bytes = options.section?.bytes ?? 700;
+      return Promise.resolve(new Uint8Array(typeof bytes === 'function' ? bytes(quality) : bytes).fill(9));
     },
   };
 }
@@ -72,6 +101,7 @@ export interface FakeRendererOptions {
 
 export function fakeRenderer(options: FakeRendererOptions = {}) {
   const calls: ShootCall[] = [];
+  const sectionCalls: SectionCalls = { located: [], shot: [], layout: [] };
   const opened: RenderInput[] = [];
   const state = { closed: 0 };
   const renderer: PageRenderer = {
@@ -79,7 +109,7 @@ export function fakeRenderer(options: FakeRendererOptions = {}) {
       opened.push(input);
       if (options.openError) return Promise.reject(options.openError);
       return Promise.resolve({
-        sessions: input.devices.map((device) => fakeSession(device, options[device] ?? {}, calls)),
+        sessions: input.devices.map((device) => fakeSession(device, options[device] ?? {}, calls, sectionCalls)),
         close() {
           state.closed += 1;
           return Promise.resolve();
@@ -87,5 +117,5 @@ export function fakeRenderer(options: FakeRendererOptions = {}) {
       });
     },
   };
-  return { renderer, calls, opened, state };
+  return { renderer, calls, sectionCalls, opened, state };
 }

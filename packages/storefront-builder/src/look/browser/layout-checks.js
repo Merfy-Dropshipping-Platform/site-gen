@@ -9,7 +9,8 @@
 // Ничего на странице не меняется: все проверки читают геометрию и стили. Возвращается список находок (до
 // MAX_PER_CODE на код, не больше одной на секцию, пока есть другие секции) вместе с вырезкой — прямоугольником места
 // в пикселях страницы — и номером метки: элементы находки лежат в `window.__lookMarks[номер]`, `window.__lookMark(номер)`
-// обводит их на время снимка вырезки, `window.__lookUnmark()` убирает обводку.
+// обводит их на время снимка вырезки, `window.__lookUnmark()` убирает обводку. `options.device` — устройство,
+// `options.section` (необязательно) — id экземпляра секции: тогда в итог идут только её находки.
 async (options) => {
   'use strict';
 
@@ -668,13 +669,16 @@ async (options) => {
 
   // ---- итог ---------------------------------------------------------------------------------------------------
 
+  // Снимок одной секции (`options.section` — её data-section-id): берём только находки внутри неё, до отбора «до
+  // MAX_PER_CODE на код» — иначе находки других секций вытеснили бы её собственные.
+  const scoped = options.section ? collected.filter((item) => item.section === options.section) : collected;
   const pick = (code) => {
-    const found = collected.filter((item) => item.code === code).sort((a, b) => b.score - a.score);
+    const found = scoped.filter((item) => item.code === code).sort((a, b) => b.score - a.score);
     const seen = new Set();
     const first = found.filter((item) => !seen.has(item.section) && seen.add(item.section));
     return [...first, ...found.filter((item) => !first.includes(item))].slice(0, MAX_PER_CODE);
   };
-  const codes = [...new Set(collected.map((item) => item.code))];
+  const codes = [...new Set(scoped.map((item) => item.code))];
   const chosen = codes.flatMap(pick);
 
   window.__lookMarks = chosen.map((item) => item.elements);

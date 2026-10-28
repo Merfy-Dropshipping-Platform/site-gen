@@ -84,6 +84,14 @@ export interface LookFinding {
   image: string | null;
 }
 
+// Где на странице стоит секция (28.10, снимок одной секции). `x`, `y` — левый верх в пикселях страницы, `height` уже
+// не больше `SECTION_MAX_HEIGHT` (`look-section.ts`), `fullHeight` — настоящая высота. `pinned`: секция прибита к
+// экрану (липкая шапка, баннер cookie, плавающая кнопка) — координаты тогда от экрана, и снимается она без прокрутки.
+export interface SectionPlace extends Clip {
+  fullHeight: number;
+  pinned: boolean;
+}
+
 // Одна страница в браузере на одном размере экрана. Живёт до `RenderedPage.close()`.
 export interface PageSession {
   device: LookDevice;
@@ -93,10 +101,15 @@ export interface PageSession {
   shoot(index: number, quality: number): Promise<Uint8Array>;
   // Детектор Impeccable на отрисованной странице. Вызывается после снимков.
   detect(): Promise<DetectorFinding[]>;
-  // Проверки вёрстки на отрисованной странице (`look-layout.ts`). Ничего на странице не меняют.
-  layout(): Promise<LayoutFinding[]>;
+  // Проверки вёрстки на отрисованной странице (`look-layout.ts`). Ничего на странице не меняют. С `section` —
+  // только то, что лежит в секции с этим id экземпляра (`data-section-id`): отбор до пределов «до N на код».
+  layout(section?: string): Promise<LayoutFinding[]>;
   // JPEG места находки: страница прокручивается к `finding.clip`, элементы находки обводятся.
   shootClip(finding: LayoutFinding, quality: number): Promise<Uint8Array>;
+  // Место секции с этим id экземпляра; `null` — такой секции на странице нет или её не видно (скрыта стилями).
+  locateSection(section: string): Promise<SectionPlace | null>;
+  // JPEG секции: страница прокручивается к её верху, прибитые к экрану чужие элементы на время снимка скрыты.
+  shootSection(place: SectionPlace, section: string, quality: number): Promise<Uint8Array>;
 }
 
 export interface RenderedPage {
@@ -119,9 +132,9 @@ export interface PageRenderer {
 
 // Отрисовка не удалась по понятной мерчанту причине: текст идёт в ответ как есть.
 export class LookError extends Error {
-  readonly code: 'timeout' | 'no-browser';
+  readonly code: 'timeout' | 'no-browser' | 'section-not-found';
 
-  constructor(code: 'timeout' | 'no-browser', message: string, options?: { cause?: unknown }) {
+  constructor(code: 'timeout' | 'no-browser' | 'section-not-found', message: string, options?: { cause?: unknown }) {
     super(message, options);
     this.name = 'LookError';
     this.code = code;

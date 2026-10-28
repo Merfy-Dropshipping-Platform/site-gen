@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 import { afterAll, describe, expect, it } from 'vitest';
 import { ChromiumRenderer } from '../src/look/look-browser';
 import { runLayoutChecks } from '../src/look/look-layout';
-import type { LookDevice } from '../src/look/look-types';
+import type { LookDevice, PageSession } from '../src/look/look-types';
 
 const hasChromium = existsSync(chromium.executablePath());
 
@@ -424,6 +424,171 @@ describe.skipIf(!hasChromium)('проверки вёрстки · настоящ
     }
   }, 60_000);
 });
+
+describe.skipIf(!hasChromium)('снимок одной секции · настоящий Chromium', () => {
+  const section = (id: string, style: string, inner = ''): string =>
+    `<merfy-section data-section="block" data-section-id="${id}" style="display:block;${style}">${inner}</merfy-section>`;
+
+  async function onPage<T>(html: string, work: (session: PageSession) => Promise<T>): Promise<T> {
+    const rendered = await renderer.open({ html, devices: ['mobile'] });
+    try {
+      const [session] = rendered.sessions;
+      if (session === undefined) throw new Error('нет экрана');
+      return await work(session);
+    } finally {
+      await rendered.close();
+    }
+  }
+
+  it('высокая секция ниже экрана: вся в кадре (выше экрана телефона), липкая шапка её не закрывает', async () => {
+    const html = page(
+      `<header style="position:sticky;top:0;height:60px;background:#d00">шапка</header>` +
+        `<div style="height:1000px;background:#ccc"></div>` +
+        section(
+          'mid-1',
+          'height:1200px',
+          '<div style="height:600px;background:#0a0"></div><div style="height:600px;background:#00c"></div>',
+        ) +
+        `<div style="height:2000px;background:#ccc"></div>`,
+    );
+
+    await onPage(html, async (session) => {
+      const place = await session.locateSection('mid-1');
+      expect(place).toMatchObject({ y: 1060, height: 1200, fullHeight: 1200, pinned: false });
+      if (place === null) return;
+      const image = Buffer.from(await session.shootSection(place, 'mid-1', 80)).toString('base64');
+      const probe = await jpegProbe(image, [
+        [0.5, 0.05],
+        [0.5, 0.95],
+      ]);
+      expect(probe.height).toBe(1200);
+      expect(probe.width).toBe(390);
+      // Верх — зелёный (не красная шапка поверх), низ — синий.
+      expect(probe.colors[0]?.green).toBeGreaterThan(120);
+      expect(probe.colors[0]?.red).toBeLessThan(60);
+      expect(probe.colors[1]?.blue).toBeGreaterThan(120);
+    });
+  }, 60_000);
+
+  it('секция выше предела — в кадре верх, полная высота в месте; последняя секция страницы снимается целиком', async () => {
+    const html = page(
+      section('tall-1', 'height:2400px;background:#0a0') + section('last-1', 'height:300px;background:#c60'),
+    );
+
+    await onPage(html, async (session) => {
+      const tall = await session.locateSection('tall-1');
+      expect(tall).toMatchObject({ height: 1_600, fullHeight: 2_400 });
+      const last = await session.locateSection('last-1');
+      if (tall === null || last === null) throw new Error('нет секций');
+      const probe = await jpegProbe(Buffer.from(await session.shootSection(last, 'last-1', 80)).toString('base64'), [
+        [0.5, 0.5],
+      ]);
+      expect(probe.height).toBe(300);
+      expect(probe.colors[0]?.red).toBeGreaterThan(150);
+      const topProbe = await jpegProbe(Buffer.from(await session.shootSection(tall, 'tall-1', 80)).toString('base64'), [
+        [0.5, 0.5],
+      ]);
+      expect(topProbe.height).toBe(1_600);
+    });
+  }, 60_000);
+
+  it('баннер поверх страницы (обёртка без высоты, внутри fixed) и липкая шапка — снимаются по месту, без прокрутки', async () => {
+    const html = page(
+      `<header data-section="header" data-section-id="header-1" style="position:sticky;top:0;height:70px;background:#d00">шапка</header>` +
+        `<div style="height:3000px;background:#ccc"></div>` +
+        section(
+          'cookie-1',
+          '',
+          '<div style="position:fixed;left:0;bottom:0;width:100%;height:120px;background:#e07800">cookie</div>',
+        ),
+    );
+
+    await onPage(html, async (session) => {
+      const banner = await session.locateSection('cookie-1');
+      expect(banner).toMatchObject({ pinned: true, height: 120, y: 844 - 120 });
+      const header = await session.locateSection('header-1');
+      expect(header).toMatchObject({ pinned: true, y: 0, height: 70 });
+      if (banner === null || header === null) return;
+      const orange = await jpegProbe(
+        Buffer.from(await session.shootSection(banner, 'cookie-1', 80)).toString('base64'),
+        [[0.5, 0.5]],
+      );
+      expect(orange.colors[0]?.red).toBeGreaterThan(180);
+      expect(orange.colors[0]?.blue).toBeLessThan(60);
+      const red = await jpegProbe(Buffer.from(await session.shootSection(header, 'header-1', 80)).toString('base64'), [
+        [0.5, 0.5],
+      ]);
+      expect(red.colors[0]?.red).toBeGreaterThan(150);
+      expect(red.colors[0]?.green).toBeLessThan(60);
+    });
+  }, 60_000);
+
+  it('нет такой секции, скрытая стилями, id с кавычкой — null', async () => {
+    const html = page(section('hero-1', 'height:200px') + section('gone-1', 'display:none') + section('a', 'height:0'));
+
+    await onPage(html, async (session) => {
+      expect(await session.locateSection('hero-2')).toBeNull();
+      expect(await session.locateSection('gone-1')).toBeNull();
+      expect(await session.locateSection('a')).toBeNull();
+      expect(await session.locateSection('"] , [data-section-id="hero-1')).toBeNull();
+      expect(await session.locateSection('hero-1')).not.toBeNull();
+    });
+  }, 60_000);
+
+  it('проверки вёрстки с id секции дают находки только её — чужие не вытесняют', async () => {
+    const green = png(80, 40, [0, 160, 0]);
+    const squashed = (height: number) =>
+      `<img src="${green}" style="width:200px;height:${height}px;margin:0 20px" alt="">`;
+    // Семь секций с сильным искажением и восьмая со слабым: проверки отдают шесть сильнейших (по одной на секцию).
+    const html = page(
+      ['a-1', 'b-1', 'c-1', 'd-1', 'e-1', 'f-1', 'g-1']
+        .map((id) => section(id, 'padding:8px', squashed(200)))
+        .join('') + section('last-1', 'padding:8px', squashed(150)),
+    );
+
+    await onPage(html, async (session) => {
+      const all = await session.layout();
+      expect(all.map((finding) => finding.section)).not.toContain('last-1');
+      const own = await session.layout('last-1');
+      expect(own.map((finding) => [finding.code, finding.section])).toEqual([['image-distorted', 'last-1']]);
+      expect(await session.layout('absent-1')).toEqual([]);
+    });
+  }, 60_000);
+});
+
+interface Probe {
+  width: number;
+  height: number;
+  colors: Array<{ red: number; green: number; blue: number }>;
+}
+
+// Размер JPEG и цвета в точках `[доля ширины, доля высоты]`.
+async function jpegProbe(base64: string, points: Array<[number, number]>): Promise<Probe> {
+  const browser = await chromium.launch({ args: ['--no-sandbox'] });
+  try {
+    const tab = await browser.newPage();
+    return await tab.evaluate(
+      async ({ data, at }) => {
+        const image = new Image();
+        image.src = `data:image/jpeg;base64,${data}`;
+        await image.decode();
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext('2d');
+        context?.drawImage(image, 0, 0);
+        const colors = at.map(([fx, fy]) => {
+          const pixel = context?.getImageData(Math.floor(image.width * fx), Math.floor(image.height * fy), 1, 1).data;
+          return { red: pixel?.[0] ?? 0, green: pixel?.[1] ?? 0, blue: pixel?.[2] ?? 0 };
+        });
+        return { width: image.width, height: image.height, colors };
+      },
+      { data: base64, at: points },
+    );
+  } finally {
+    await browser.close();
+  }
+}
 
 // Цвет центра JPEG: картинка рисуется в соседней вкладке, пиксель читается с холста.
 async function pixelAtCenter(base64: string): Promise<{ red: number; green: number; blue: number }> {

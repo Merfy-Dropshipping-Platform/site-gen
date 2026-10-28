@@ -6,6 +6,7 @@ import { MAX_CONCURRENT_RENDERS } from './look-browser';
 import { BUDGET_BYTES, fitShots, type DeviceShots } from './look-fit';
 import { runLayoutChecks } from './look-layout';
 import { LOOK_PATTERN, LOOKS_QUEUE } from './look-queue';
+import { cutOf, locateSection, shootSections, type SectionCut } from './look-section';
 import {
   LookError,
   type LookDevice,
@@ -14,6 +15,7 @@ import {
   type PageRenderer,
   type PageSession,
   type RenderedPage,
+  type SectionPlace,
   type Viewport,
 } from './look-types';
 
@@ -47,6 +49,11 @@ const lookJobSchema = z.strictObject({
   page: z.string().min(1).max(200),
   devices: z.enum(['mobile', 'desktop', 'both']),
   full: z.boolean(),
+  // id экземпляра секции (`data-section-id`): снимок только этой секции, а не страницы. `full` тогда не действует.
+  section: z
+    .string()
+    .regex(/^[A-Za-z0-9_.:-]{1,100}$/)
+    .optional(),
   // Время (мс с 1970), после которого вызывающий ответа уже не ждёт.
   deadline: z.int().positive(),
 });
@@ -54,16 +61,25 @@ const envelopeSchema = z.object({ pattern: z.literal(LOOK_PATTERN), data: z.unkn
 
 export type LookJob = z.infer<typeof lookJobSchema>;
 
-export type LookErrorCode = 'invalid' | 'expired' | 'preview-failed' | 'render-failed' | 'timeout' | 'no-browser';
+export type LookErrorCode =
+  | 'invalid'
+  | 'expired'
+  | 'preview-failed'
+  | 'render-failed'
+  | 'timeout'
+  | 'no-browser'
+  | 'section-not-found';
 
 export interface LookDeviceShots {
   device: LookDevice;
   viewport: Viewport;
   facts: PageFacts;
-  // Экранов в странице всего и сколько снято (подряд с первого).
+  // Экранов в странице всего и сколько снято (подряд с первого). Снимок секции: 1 из 1 (секции на устройстве нет — 1 из 0).
   screens: { total: number; shown: number };
-  // JPEG в base64 по порядку экранов.
+  // JPEG в base64 по порядку экранов; снимок секции — одна картинка (секции на устройстве нет — ни одной).
   images: string[];
+  // Только снимок секции, иначе null: высота секции, сколько её на картинке (сверху) и снята ли без прокрутки.
+  cut: SectionCut | null;
 }
 
 export interface LookSnapshot {
@@ -71,6 +87,8 @@ export interface LookSnapshot {
   siteId: string;
   page: string;
   full: boolean;
+  // id секции из задания; null — снимок страницы.
+  section: string | null;
   devices: LookDeviceShots[];
   detector: { ok: true } | { ok: false; reason: string };
   // Проверки вёрстки (`look-layout.ts`): отказ одного устройства не мешает остальным, причина — сюда.
@@ -167,12 +185,25 @@ function deviceShots(session: PageSession, shots: DeviceShots): LookDeviceShots 
     facts: tidyFacts(session.facts),
     screens: { total: shots.total, shown: shots.shots.length },
     images: shots.shots.map((shot) => Buffer.from(shot).toString('base64')),
+    cut: null,
   };
 }
 
-async function snapshotOf(sessions: PageSession[], job: LookJob): Promise<LookSnapshot> {
-  const [first] = sessions;
-  if (first === undefined) throw new Error('отрисовщик не открыл ни одного экрана');
+// Устройство снимка секции: одна картинка секции (или ни одной, если на этом устройстве её не видно).
+function sectionShots(session: PageSession, place: SectionPlace | null, shot: Uint8Array | null): LookDeviceShots {
+  const shown = shot === null ? 0 : 1;
+  return {
+    device: session.device,
+    viewport: session.viewport,
+    facts: tidyFacts(session.facts),
+    screens: { total: 1, shown },
+    images: shot === null ? [] : [Buffer.from(shot).toString('base64')],
+    cut: place === null ? null : cutOf(place),
+  };
+}
+
+// Снимок страницы: экраны, детектор дизайна и проверки вёрстки.
+async function pageSnapshot(sessions: PageSession[], first: PageSession, job: LookJob): Promise<LookSnapshot> {
   // Вырезки мест идут в тот же предел веса, что и экраны: сначала они, экранам остаётся остальное.
   const checks = await runLayoutChecks(sessions);
   const shots = await fitShots(sessions, job.full, BUDGET_BYTES - checks.clipBytes);
@@ -185,11 +216,38 @@ async function snapshotOf(sessions: PageSession[], job: LookJob): Promise<LookSn
     siteId: job.siteId,
     page: job.page,
     full: job.full,
+    section: null,
     devices,
     detector,
     layout: checks.status,
     findings: [...findings, ...checks.findings],
   };
+}
+
+// Снимок одной секции: её вырезка и находки вёрстки в ней. Детектор дизайна смотрит страницу целиком и находок по
+// секциям не даёт — он не запускается (это быстрее: снимок после правки ждут секунды).
+async function sectionSnapshot(sessions: PageSession[], job: LookJob, section: string): Promise<LookSnapshot> {
+  const places = await locateSection(sessions, section);
+  const checks = await runLayoutChecks(sessions, section);
+  const { shots } = await shootSections(sessions, places, section, BUDGET_BYTES - checks.clipBytes);
+  const devices = sessions.map((session, index) => sectionShots(session, places[index] ?? null, shots[index] ?? null));
+  return {
+    v: 1,
+    siteId: job.siteId,
+    page: job.page,
+    full: false,
+    section,
+    devices,
+    detector: { ok: false, reason: 'не запускался: снимок одной секции' },
+    layout: checks.status,
+    findings: checks.findings,
+  };
+}
+
+async function snapshotOf(sessions: PageSession[], job: LookJob): Promise<LookSnapshot> {
+  const [first] = sessions;
+  if (first === undefined) throw new Error('отрисовщик не открыл ни одного экрана');
+  return job.section === undefined ? pageSnapshot(sessions, first, job) : sectionSnapshot(sessions, job, job.section);
 }
 
 function renderFailure(error: unknown): LookReply {
@@ -227,7 +285,12 @@ export async function runLookJob(deps: LookDeps, body: unknown): Promise<LookRep
 
 function logOutcome(deps: LookDeps, body: unknown, reply: LookReply, startedAt: number): void {
   const job = parseLookJob(body);
-  const fields = { shopId: job?.siteId ?? null, page: job?.page ?? null, ms: deps.now() - startedAt };
+  const fields = {
+    shopId: job?.siteId ?? null,
+    page: job?.page ?? null,
+    section: job?.section ?? null,
+    ms: deps.now() - startedAt,
+  };
   if (!reply.ok) {
     deps.log('look-failed', { ...fields, code: reply.error.code, error: reply.error.message });
     return;

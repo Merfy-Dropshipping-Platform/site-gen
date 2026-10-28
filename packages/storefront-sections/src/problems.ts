@@ -72,6 +72,12 @@ export const PROBLEM_CODES = [
   'taste-button-height',
   'taste-overflow',
   'taste-motion',
+  // Код шаблона (taste-code.ts, страница code.md): ?: внутри ?:, условие из многих частей, ветка class:list на каждое
+  // значение поля, одно условие в нескольких местах — тоже только предупреждения.
+  'taste-nested-ternary',
+  'taste-long-condition',
+  'taste-class-branches',
+  'taste-repeated-condition',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];
 
@@ -82,6 +88,10 @@ const WARNING_CODES: ReadonlySet<ProblemCode> = new Set([
   'taste-button-height',
   'taste-overflow',
   'taste-motion',
+  'taste-nested-ternary',
+  'taste-long-condition',
+  'taste-class-branches',
+  'taste-repeated-condition',
 ]);
 
 export const sectionProblemSchema = z.strictObject({

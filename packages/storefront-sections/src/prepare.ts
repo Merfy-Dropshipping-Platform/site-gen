@@ -164,7 +164,8 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
       : checkTemplate(template, manifest.ok ? templateOptionsOf(manifest.value) : NO_TEMPLATE_OPTIONS),
     entry === null ? null : buildScript(files, entry),
     manifest.ok && template !== undefined ? styleProblems(manifest.value, files, template) : [],
-    // Предупреждения вкуса: кнопки от 44 px, прокрутка вбок, «уменьшить движение» (taste-check.ts).
+    // Предупреждения вкуса: кнопки от 44 px, прокрутка вбок, «уменьшить движение» (taste-check.ts) и код шаблона
+    // (taste-code.ts).
     manifest.ok ? tasteProblems(files) : [],
   ]);
   const problems = [

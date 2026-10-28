@@ -2,6 +2,7 @@ import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
 import { MANIFEST_FILE, TEMPLATE_FILE, type SectionFiles } from './format';
 import { positionAt } from './position';
 import { problem, type ProblemCode, type SectionProblem } from './problems';
+import { codeFound } from './taste-code';
 
 // Проверки вкуса (спека MCP-секций, §9, последний пункт): кнопки от 44 px, нет прокрутки вбок, «уменьшить движение».
 // Только предупреждения: секция сохраняется, ИИ исправляет по ответу. Своего CSS у секции нет (styles.md), поэтому
@@ -179,13 +180,15 @@ function motionFound(element: Element): Found[] {
   });
 }
 
+// Классы по элементам и код выражений шаблона (taste-code.ts) — по одному разбору.
 async function templateFound(text: string): Promise<Found[]> {
   const { parse } = await import('@astrojs/compiler-rs');
   const { ast } = await Promise.resolve(parse(text));
-  return nodesOf(ast)
+  const byElement = nodesOf(ast)
     .filter((node) => node.type === 'JSXOpeningElement')
     .map(elementOf)
     .flatMap((element) => [...buttonFound(element), ...overflowFound(element), ...motionFound(element)]);
+  return [...byElement, ...codeFound(ast, text)];
 }
 
 // ---- скрипт

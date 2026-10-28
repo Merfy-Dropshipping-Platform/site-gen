@@ -21,9 +21,10 @@ function merfy(...args: string[]): Promise<{ code: number; stdout: string }> {
 
 describe('pnpm merfy section check --json', () => {
   it('прошла — ok, полное имя, пустые списки, выход 0', async () => {
-    const run = await merfy('section', 'check', 'fixtures/shop/hero', '--json');
+    // «Вопросы и ответы»: у «Первого экрана» есть предупреждения кода шаблона (taste-code.ts) до его переписывания.
+    const run = await merfy('section', 'check', 'fixtures/shop/faq', '--json');
     expect(run.code).toBe(0);
-    expect(JSON.parse(run.stdout)).toEqual({ ok: true, name: 'shop:hero', problems: [], warnings: [] });
+    expect(JSON.parse(run.stdout)).toEqual({ ok: true, name: 'shop:faq', problems: [], warnings: [] });
   }, 30_000);
 
   it('не прошла — место, код и doc; выход 1; AGENTS.md в папке не мешает', async () => {

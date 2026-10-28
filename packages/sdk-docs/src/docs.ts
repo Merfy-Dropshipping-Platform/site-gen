@@ -88,6 +88,7 @@ function bodyOf(sources: DocsSources, page: PageSpec, date: string): string {
   const guideBodies: Readonly<Record<string, string>> = {
     'start.md': applyMarks(sources, sources.guide.start ?? ''),
     'template.md': applyMarks(sources, sources.guide.template ?? ''),
+    'code.md': applyMarks(sources, sources.guide.code ?? ''),
     'styles.md': stylesBody,
     'names.md': namesBody(sources.names),
   };

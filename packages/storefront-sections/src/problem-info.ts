@@ -7,9 +7,11 @@ export interface ProblemInfo {
   readonly when: string; // когда бывает — одно предложение
   readonly fix: string; // как исправить — одно предложение
   readonly example?: { readonly before: string; readonly after: string }; // было → стало, по строке
+  readonly doc?: string; // раздел правила, если оно описано на своей странице: 'code.md#вложенные-условия'
 }
 
-export const problemDoc = (code: ProblemCode): string => `errors.md#${code}`;
+// Ссылка ответа проверки: раздел правила на своей странице, иначе раздел кода в errors.md.
+export const problemDoc = (code: ProblemCode): string => PROBLEM_INFO[code].doc ?? `errors.md#${code}`;
 
 export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   'manifest-missing': {
@@ -153,6 +155,40 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: 'Класс animate-*, transition-*, scroll-smooth или animate( и requestAnimationFrame в скрипте не учитывают «уменьшить движение»; секция сохраняется.',
     fix: 'Поставь motion-safe: перед классом или motion-reduce:transition-none рядом; в скрипте — ctx.animate или matchMedia.',
     example: { before: 'class="animate-pulse"', after: 'class="motion-safe:animate-pulse"' },
+  },
+  // Код шаблона (taste-code.ts): правила и примеры «плохо → хорошо» — на странице code.md, туда и ссылка ответа.
+  'taste-nested-ternary': {
+    when: 'В выражении шаблона условный оператор ?: стоит внутри другого ?:; секция сохраняется.',
+    fix: 'Класс по значению поля задай вариантом data-[…]:, текст по числу или виду — данными или отдельными элементами со своим условием.',
+    example: { before: "{n === 1 ? 'товар' : n < 5 ? 'товара' : 'товаров'}", after: 'Товаров: {n}' },
+    doc: 'code.md#вложенные-условия',
+  },
+  'taste-long-condition': {
+    when: 'Условие в разметке собрано из больше чем трёх частей через && и ||; секция сохраняется.',
+    fix: 'Разбей разметку на элементы со своим условием или посчитай значение один раз — атрибутом data-* у общего предка.',
+    example: {
+      before: '{(phone || email || vk || telegram) && <div>контакты и соцсети</div>}',
+      after: '{(phone || email) && <div>контакты</div>} {(vk || telegram) && <div>соцсети</div>}',
+    },
+    doc: 'code.md#длинные-условия',
+  },
+  'taste-class-branches': {
+    when: 'В class или class:list одно поле сравнивается с тремя и больше значениями — ветка на каждое значение; секция сохраняется.',
+    fix: 'Передай значение атрибутом `data-<поле>` и задай классы вариантами `data-[<поле>=<значение>]:` на элементе и `in-data-[…]:` внутри него.',
+    example: {
+      before: "class:list={[{ 'min-h-64': settings.height === 'small', 'min-h-96': settings.height === 'medium', … }]}",
+      after: 'data-height={settings.height} class="data-[height=small]:min-h-64 data-[height=medium]:min-h-96"',
+    },
+    doc: 'code.md#значения-настройки',
+  },
+  'taste-repeated-condition': {
+    when: 'Одно и то же сравнение или вызов вроде blocks.some(…) стоит в условиях шаблона три раза и больше; секция сохраняется.',
+    fix: 'Посчитай условие один раз — атрибутом data-* у общего предка и вариантами in-data-[…]:; выбранную ссылку отметь aria-current и вариантом aria-[current=page]:.',
+    example: {
+      before: "class:list={[item.url === page.path ? 'text-heading' : 'text-muted-foreground']}",
+      after: 'class="text-muted-foreground aria-[current=page]:text-heading"',
+    },
+    doc: 'code.md#повтор-условия',
   },
   'release-changed': {
     when: 'Выпуск расширения с этой версией уже сохранён с другими файлами.',

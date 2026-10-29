@@ -48,6 +48,9 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
       transition: { kind: 'enum', values: ['fade', 'drawer', 'drawer-back', 'drop'], default: 'fade' },
       side: { kind: 'enum', values: ['right', 'left'], default: 'right' },
       modal: { kind: 'bool', default: true },
+      // Запрет прокрутки страницы, пока окно открыто; не зависит от модальности. "false" — страницу за окном можно листать
+      // (панель поиска шапки, как на проде).
+      'lock-scroll': { kind: 'bool', default: true },
       // Блок 10 (Р10а-6): открыть по событию SDK — cart-open: merfy:cart:open, cart-add: merfy:cart:add,
       // search-open: merfy:search:open (панель поиска, действие search.open).
       'open-on': { kind: 'enum', values: ['none', 'cart-open', 'cart-add', 'search-open'], default: 'none' },

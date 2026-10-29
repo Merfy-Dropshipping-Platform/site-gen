@@ -5,7 +5,9 @@ import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
 // Окно и выезжающая панель (design.md блока 6, раздел 5; факты 10, 12; дополнения блока 7, п. 15): <dialog> и
 // showModal/show — браузер, переходы и запрет прокрутки — поведение. Немодальные окна секции — по одному; открытие
 // модального окна закрывает немодальные окна своей секции (блок 7, часть 7б). Место немодального окна — data-anchor:
-// под своей секцией (умолчание) или под шапкой страницы (секция вне шапки, например поверх страниц).
+// под своей секцией (умолчание) или под шапкой страницы (секция вне шапки, например поверх страниц). Запрет прокрутки
+// страницы не зависит от модальности: окно запирает её, пока data-lock-scroll не "false" (как на проде: меню, окно
+// «Товар добавлен», шторки — запирают; панель поиска — нет).
 
 const CLOSE_OTHERS_EVENT = 'merfy-dialog-close-others';
 
@@ -93,6 +95,7 @@ interface Box {
   readonly opens: readonly HTMLElement[];
   readonly spec: TransitionSpec;
   readonly modal: boolean;
+  readonly locksScroll: boolean;
   readonly anchor: 'section' | 'header';
   state: BoxState;
   runs: Animation[];
@@ -172,9 +175,7 @@ function announceOpen(box: Box): void {
 
 function doOpen(box: Box): void {
   stopRuns(box);
-  // Запрет прокрутки — только у модального окна: немодальное (поиск, «Товар добавлен») — поповер у края страницы,
-  // страницу за ним можно листать, как у окон «добавлено» пяти тем на проде.
-  if (box.modal) lockScroll();
+  if (box.locksScroll) lockScroll();
   setExpanded(box, true);
   if (box.modal) {
     box.dialog.showModal();
@@ -199,7 +200,7 @@ function doOpen(box: Box): void {
 function doCloseNow(box: Box): void {
   stopRuns(box);
   box.dialog.close();
-  if (box.modal) unlockScroll();
+  if (box.locksScroll) unlockScroll();
   setExpanded(box, false);
   const focusOpen = box.afterEscape;
   box.afterEscape = false;
@@ -364,7 +365,7 @@ function releaseOnDetach(box: Box): void {
       if (box.state === 'closed') return;
       box.state = 'closed';
       stopRuns(box);
-      if (box.modal) unlockScroll();
+      if (box.locksScroll) unlockScroll();
     },
     { once: true },
   );
@@ -382,6 +383,7 @@ export const dialog: Behavior<'dialog'> = {
       opens,
       spec: transitionOf(String(host.params.transition), String(host.params.side)),
       modal: host.params.modal === true,
+      locksScroll: host.params['lock-scroll'] === true,
       anchor: host.params.anchor === 'header' ? 'header' : 'section',
       state: 'closed',
       runs: [],

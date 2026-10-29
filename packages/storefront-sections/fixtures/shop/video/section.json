@@ -40,28 +40,9 @@
       }
     },
     {
-      "id": "height",
-      "label": "Размер",
-      "setting": {
-        "kind": "select",
-        "default": "medium",
-        "options": [
-          { "value": "small", "label": "Маленький" },
-          { "value": "medium", "label": "Средний" },
-          { "value": "large", "label": "Большой" }
-        ]
-      }
-    },
-    {
       "id": "heading",
       "label": "Заголовок",
-      "section": "Содержание",
       "setting": { "kind": "string", "default": "Видео о магазине", "ai": "title" }
-    },
-    {
-      "id": "subheading",
-      "label": "Подзаголовок",
-      "setting": { "kind": "string", "default": "", "ai": "description" }
     },
     {
       "id": "heading-size",
@@ -79,9 +60,28 @@
     { "wrapper": "scheme" },
     { "wrapper": "padding" },
     {
+      "id": "subheading",
+      "label": "Подзаголовок",
+      "section": "Содержание",
+      "setting": { "kind": "string", "default": "", "ai": "description" }
+    },
+    {
+      "id": "height",
+      "label": "Размер",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
       "id": "align",
       "label": "Выравнивание",
-      "section": "Вид",
       "setting": { "kind": "alignment", "default": "left" }
     },
     {

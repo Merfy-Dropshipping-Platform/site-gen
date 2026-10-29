@@ -7,9 +7,10 @@ import { readSectionFolder } from '../src/read-folder';
 import { startSectionRenderer, type SectionRenderer } from '../src/render';
 import { prepareInWorker } from '../src/sandbox';
 
-// «Видео» — сводная секция пяти тем (базовые секции, 29.10): панель прода в её порядке (видео, положение, размер,
-// «Содержание», цветовая схема, отступы), новые параметры — после, в группах «Вид» и «Воспроизведение»; раскладка и
-// воспроизведение — признаками data-* на корне и атрибутами тега video.
+// «Видео» — сводная секция пяти тем (базовые секции, 29.10): панель прода в её порядке (видео, положение видео,
+// заголовок, размер заголовка, цветовая схема, отступы), новые параметры — после, в группах «Содержание» (подзаголовок),
+// «Вид» (размер, выравнивание…) и «Воспроизведение»; раскладка и воспроизведение — признаками data-* на корне и
+// атрибутами тега video.
 const FOLDER = fileURLToPath(new URL('../fixtures/shop/video', import.meta.url));
 const FILE = 'https://s3.merfy.ru/media/site/clip.mp4';
 const POSTER = 'https://s3.merfy.ru/media/site/poster.jpg';
@@ -72,12 +73,12 @@ describe('панель: поля прода в их порядке, новые �
     expect(order()).toEqual([
       'video',
       'layout',
-      'height',
       'heading',
-      'subheading',
       'heading-size',
       'wrapper:scheme',
       'wrapper:padding',
+      'subheading',
+      'height',
       'align',
       'capitals',
       'text-style',
@@ -90,10 +91,10 @@ describe('панель: поля прода в их порядке, новые �
     expect(fields().map((field) => field.label)).toEqual([
       'Видео',
       'Положение видео',
-      'Размер',
       'Заголовок',
-      'Подзаголовок',
       'Размер заголовка',
+      'Подзаголовок',
+      'Размер',
       'Выравнивание',
       'Заглавные буквы',
       'Стиль текста',
@@ -105,11 +106,11 @@ describe('панель: поля прода в их порядке, новые �
     ]);
   });
 
-  it('группы: «Содержание» с заголовка, «Вид» с выравнивания, «Воспроизведение» с обложки', () => {
-    expect(groupOf('heading')).toBe('Содержание');
-    expect(groupOf('align')).toBe('Вид');
+  it('группы: поля прода без группы, новые — «Содержание» с подзаголовка, «Вид» с размера, «Воспроизведение» с обложки', () => {
+    for (const id of ['video', 'layout', 'heading', 'heading-size']) expect(groupOf(id)).toBeUndefined();
+    expect(groupOf('subheading')).toBe('Содержание');
+    expect(groupOf('height')).toBe('Вид');
     expect(groupOf('poster')).toBe('Воспроизведение');
-    expect(groupOf('video')).toBeUndefined();
   });
 
   it('видео — файл до 50 МБ, обложка — картинка до 30 МБ, как на проде', () => {

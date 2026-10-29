@@ -2,8 +2,9 @@ import { defineSection, type Ctx, type El, type Money, type Order, type OrderLin
 
 // «Заказы» по страницам кабинета прода (flux): список («Заказ №…», «от …», статус, «Перейти») и заказ по ?n= —
 // подзаголовок с e-mail (ctx.customer), мета «N товаров · от …», колонки товаров и данных; отмена с причиной —
-// окно behavior dialog, после успеха страница перезагружается, как у прода. Данные — ctx.orders с quiet: true,
-// отказы — текст рядом (список) или вместо заказа; гость — «Войдите…» со ссылкой на «Вход».
+// окно behavior dialog, после успеха — обновлённый заказ и «Заказ отменён» (прод перезагружает страницу, но в SDK
+// окно не владеет адресом страницы). Данные — ctx.orders с quiet: true, отказы — текст рядом (список) или вместо
+// заказа; гостья на страницы кабинета не попадает — её уводит каркас (leavePrivatePage).
 
 const LIST_FAILED_TEXT = 'Не удалось загрузить заказы';
 const REASON_EMPTY_TEXT = 'Укажите причину отмены';
@@ -91,6 +92,7 @@ function showOrder(order: Order, ctx: Ctx<Record<string, unknown>, 'orders'>): v
   ctx.ref('order-total')?.text(order.total === null ? '' : priceOf(order.total));
   ctx.ref('lines')?.list(order.lines, fillLine);
   clearNotice(ctx.ref('cancel-error'));
+  ctx.ref('cancel-success')?.hide();
   ctx.ref('cancel-open')?.toggle(order.canCancel);
 }
 
@@ -104,7 +106,9 @@ async function showOrderByNumber(number: string, ctx: Ctx<Record<string, unknown
   showOrder(result.data.order, ctx);
 }
 
-// Отмена: пустая причина — текст без запроса; успех — страница перезагружается, как у прода.
+// Отмена: пустая причина — текст без запроса; успех — заказ из ответа на страницу (статус, кнопки нет)
+// и «Заказ отменён» в окне. Прод перезагружает страницу, но в SDK адресом страницы окна не владеет:
+// данные после отмены те же, что при перезагрузке.
 async function cancelOrder(number: string, ctx: Ctx<Record<string, unknown>, 'orders'>): Promise<void> {
   const reason = ctx.ref('reason')?.value().trim() ?? '';
   if (reason === '') {
@@ -116,7 +120,8 @@ async function cancelOrder(number: string, ctx: Ctx<Record<string, unknown>, 'or
     notice(result.error.message, ctx.ref('cancel-error'));
     return;
   }
-  window.location.reload();
+  showOrder(result.data.order, ctx);
+  ctx.ref('cancel-success')?.show();
 }
 
 export default defineSection({

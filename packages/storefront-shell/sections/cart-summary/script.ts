@@ -14,7 +14,6 @@ const priceOf = (money: Money): string =>
 export default defineSection({
   mount(_el, ctx) {
     ctx.watch(ctx.cart.$totals, (totals) => {
-      ctx.ref('subtotal')?.text(priceOf(totals.subtotal));
       ctx.ref('discount')?.toggle(totals.discount.amount > 0);
       ctx.ref('discount-name')?.text(totals.discountName === null ? 'Скидка' : `Скидка «${totals.discountName}»`);
       ctx.ref('discount-value')?.text(`−${priceOf(totals.discount)}`);

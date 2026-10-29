@@ -1,26 +1,39 @@
 ---
-const { blocks } = Astro.props;
+const { settings, blocks } = Astro.props;
 ---
+<!-- Как на проде: пояснение, «Итого <цена>» и «Оформить заказ» одной колонкой; у flux колонка слева, у остальных
+     тем справа — параметр «Выравнивание». Скидка магазина — строкой под «Итого», когда она есть. -->
 <div class="mx-auto flex max-w-page flex-col px-4 font-body text-foreground">
   {blocks.length > 0 && (
-  <div data-ref="summary" class="flex w-full flex-col gap-5 rounded-card bg-muted p-6 md:ml-auto md:max-w-md" hidden>
+  <div
+    data-ref="summary"
+    class:list={[
+      'flex w-full max-w-86 flex-col gap-5',
+      { 'md:ml-auto': settings.align === 'right' },
+      { 'md:mr-auto': settings.align !== 'right' },
+    ]}
+    hidden
+  >
+    <p class="m-0 text-sm leading-6 text-muted-foreground">Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.</p>
     {blocks.map((block) => (
       <div class="flex flex-col gap-3">
         {block.type === 'total' ? (
           <div class="flex flex-col gap-3">
-            <p class="m-0 flex items-baseline justify-between gap-4 text-sm"><span class="text-muted-foreground">Сумма</span> <span data-ref="subtotal"></span></p>
+            <p class="m-0 flex items-baseline justify-between gap-4 text-lg weight-heading text-heading">Итого <span class="text-price" data-ref="total"></span></p>
             <p data-ref="discount" class="m-0 flex items-baseline justify-between gap-4 text-sm text-sale" hidden>
               <span data-ref="discount-name">Скидка</span> <span data-ref="discount-value"></span>
             </p>
-            <p class="m-0 flex items-baseline justify-between gap-4 border-t border-border pt-3 text-lg weight-heading text-heading">Итого <span class="text-price" data-ref="total"></span></p>
-            <p class="m-0 text-sm text-muted-foreground">Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.</p>
           </div>
         ) : (
           <a
             href="/checkout"
             data-action="cart.checkout"
             data-ref="checkout"
-            class="inline-flex h-12 w-full items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            class:list={[
+              'inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+              { 'w-fit': settings['button-width'] === 'auto' },
+              { 'w-full': settings['button-width'] !== 'auto' },
+            ]}
           >Оформить заказ</a>
         )}
       </div>

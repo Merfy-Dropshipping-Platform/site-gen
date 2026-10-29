@@ -2,6 +2,7 @@ import { defineSection, type CartLine, type El, type Money } from '@merfy/shell'
 
 // «Корзина» (блок 10 «Секций и SDK», 10.4, «Решил сам» п. 7; часть 10а, Р10а-11): строки — ответ шлюза через El.list
 // по <template>; «−», «+» и «Удалить» — действия SDK в разметке, скрипт пишет им только data-line-id и data-quantity.
+// Вид строки (миниатюра, удаление, счётчик) выбирает шаблон параметрами секции — скрипт его не трогает.
 
 // Деньги — копейки целым числом; на витрине — рубли без копеек, знак рубля после числа.
 const priceOf = (money: Money): string =>
@@ -31,6 +32,14 @@ const controlsOf = (row: El, line: CartLine): void => {
   remove?.attr('data-line-id', line.id);
 };
 
+// Миниатюра и название ведут на страницу товара, как строки корзины на проде.
+const linkRow = (row: El, line: CartLine): void => {
+  const url = `/product/${line.productId}`;
+  row.ref('product')?.attr('href', url);
+  row.ref('product')?.attr('aria-label', line.title);
+  row.ref('title')?.attr('href', url);
+};
+
 const fillRow = (row: El, line: CartLine): void => {
   const image = row.ref('image');
   if (line.image === null) image?.hide();
@@ -42,7 +51,7 @@ const fillRow = (row: El, line: CartLine): void => {
   row.ref('options')?.text(optionsText(line));
   row.ref('price')?.text(line.gift ? 'Подарок' : priceOf(line.price));
   row.ref('quantity')?.text(line.quantity);
-  row.ref('total')?.text(priceOf(line.total));
+  linkRow(row, line);
   controlsOf(row, line);
 };
 

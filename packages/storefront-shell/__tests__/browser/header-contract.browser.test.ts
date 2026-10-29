@@ -78,7 +78,7 @@ describe('разметка «Шапки» в Chromium', () => {
     await page.close();
   });
 
-  it('панель поиска: поле в фокусе при открытии, прокрутка страницы запрещена (Р7б-5), Escape возвращает фокус на значок', async () => {
+  it('панель поиска: поле в фокусе при открытии, прокрутка страницы свободна (немодальное окно её не запирает), Escape возвращает фокус на значок', async () => {
     const { page } = await open();
     await page.click('#search-open');
     expect(
@@ -86,7 +86,7 @@ describe('разметка «Шапки» в Chromium', () => {
         document.activeElement instanceof HTMLInputElement ? document.activeElement.name : '',
       ),
     ).toBe('q');
-    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.getElementById('search')?.hasAttribute('open'));
     expect(await focusedId(page)).toBe('search-open');

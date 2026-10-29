@@ -6,5 +6,94 @@
   "role": "cart",
   "groups": ["page"],
   "limit": 1,
-  "uses": ["cart"]
+  "uses": ["cart"],
+  "wrapper": ["scheme", "padding"],
+  "wrapperSpec": {
+    "padding": { "default": { "top": 80, "bottom": 40 } }
+  },
+  "names": {
+    "thumb-size": {
+      "kinds": ["radio"],
+      "label": "Миниатюра товара",
+      "about": "Размер фото товара в строке корзины: компактная — как у vanilla, satin и bloom, обычная — как у rose, крупная — как у flux",
+      "asks": ["миниатюра", "размер фото", "превью товара", "thumbnail"]
+    },
+    "remove-style": {
+      "kinds": ["select"],
+      "label": "Удаление товара",
+      "about": "Как выглядит удаление товара из корзины: крестик (flux), значок корзины (rose) или слово «Удалить» (satin, bloom)",
+      "asks": ["удаление", "удалить товар", "крестик", "значок корзины", "remove"]
+    },
+    "counter-style": {
+      "kinds": ["radio"],
+      "label": "Счётчик количества",
+      "about": "Вид счётчика количества: залитый (flux) или с контуром (остальные темы)",
+      "asks": ["счётчик", "количество", "степпер", "quantity"]
+    }
+  },
+  "settings": [
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "small",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "capitals",
+      "label": "Заглавные буквы",
+      "setting": {
+        "kind": "toggle",
+        "default": true,
+        "labels": { "on": "Заглавные", "off": "Как набрано" }
+      }
+    },
+    {
+      "id": "thumb-size",
+      "label": "Миниатюра товара",
+      "setting": {
+        "kind": "radio",
+        "default": "large",
+        "options": [
+          { "value": "compact", "label": "Компактная" },
+          { "value": "medium", "label": "Обычная" },
+          { "value": "large", "label": "Крупная" }
+        ]
+      }
+    },
+    {
+      "id": "remove-style",
+      "label": "Удаление товара",
+      "setting": {
+        "kind": "select",
+        "default": "cross",
+        "options": [
+          { "value": "cross", "label": "Крестик" },
+          { "value": "trash", "label": "Значок корзины" },
+          { "value": "text", "label": "Слово «Удалить»" }
+        ]
+      }
+    },
+    {
+      "id": "counter-style",
+      "label": "Счётчик количества",
+      "setting": {
+        "kind": "radio",
+        "default": "filled",
+        "options": [
+          { "value": "filled", "label": "Залитый" },
+          { "value": "outline", "label": "С контуром" }
+        ]
+      }
+    }
+  ]
 }

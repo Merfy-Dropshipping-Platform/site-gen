@@ -172,7 +172,9 @@ function announceOpen(box: Box): void {
 
 function doOpen(box: Box): void {
   stopRuns(box);
-  lockScroll();
+  // Запрет прокрутки — только у модального окна: немодальное (поиск, «Товар добавлен») — поповер у края страницы,
+  // страницу за ним можно листать, как у окон «добавлено» пяти тем на проде.
+  if (box.modal) lockScroll();
   setExpanded(box, true);
   if (box.modal) {
     box.dialog.showModal();
@@ -197,7 +199,7 @@ function doOpen(box: Box): void {
 function doCloseNow(box: Box): void {
   stopRuns(box);
   box.dialog.close();
-  unlockScroll();
+  if (box.modal) unlockScroll();
   setExpanded(box, false);
   const focusOpen = box.afterEscape;
   box.afterEscape = false;
@@ -362,7 +364,7 @@ function releaseOnDetach(box: Box): void {
       if (box.state === 'closed') return;
       box.state = 'closed';
       stopRuns(box);
-      unlockScroll();
+      if (box.modal) unlockScroll();
     },
     { once: true },
   );

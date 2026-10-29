@@ -1,6 +1,16 @@
+---
+const { settings } = Astro.props;
+---
 <!-- Значки — Lucide (x, shopping-bag, image, minus, plus), лицензия ISC, lucide.dev/license. -->
-<div data-behavior="dialog" data-transition="drawer" data-side="right" data-open-on="cart-open">
-  <dialog data-part="content" class="scheme-cart-drawer my-0 ml-auto mr-0 h-full max-h-none w-full max-w-none border-0 bg-background p-0 font-body text-foreground shadow-drawer md:w-114">
+<div data-behavior="dialog" data-transition="drawer" data-side={settings.side} data-open-on="cart-open">
+  <dialog
+    data-part="content"
+    class:list={[
+      'scheme-cart-drawer my-0 h-full max-h-none w-full max-w-none border-0 bg-background p-0 font-body text-foreground shadow-drawer md:w-114',
+      { 'ml-auto mr-0': settings.side !== 'left' },
+      { 'mr-auto ml-0': settings.side === 'left' },
+    ]}
+  >
     <div class="flex h-full flex-col">
       <div class="flex items-center justify-between gap-4 border-b border-border py-3 pl-5 pr-3">
         <h2 class="m-0 font-heading weight-heading text-xl text-heading">Корзина</h2>
@@ -65,7 +75,9 @@
         <p class="m-0 flex items-baseline justify-between gap-4 text-lg weight-heading text-heading">Итого <span class="text-price" data-ref="total"></span></p>
         <p class="m-0 text-xs text-muted-foreground">Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.</p>
         <div data-ext-point="cart"></div>
-        <a href="/checkout" data-action="cart.checkout" class="inline-flex h-12 w-full items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Оформить заказ</a>
+        {settings.checkout !== false && (
+          <a href="/checkout" data-action="cart.checkout" class="inline-flex h-12 w-full items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Оформить заказ</a>
+        )}
       </div>
     </div>
   </dialog>

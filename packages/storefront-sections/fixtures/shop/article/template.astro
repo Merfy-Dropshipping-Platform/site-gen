@@ -2,7 +2,8 @@
 const { page } = Astro.props;
 ---
 <!-- Страница записи блога: ссылка на блог, заголовок, дата словами (publishedText), обложка и текст в колонке 768 px по
-     центру. Текст записи — очищенный HTML сборки; блоки текста идут столбцом с отступом между ними. -->
+     центру. Текст записи — очищенный HTML сборки; вид подзаголовков, списков, ссылок и картинок внутри него задаёт
+     класс rich-text (HTML-текст оформляется только им). -->
 <div class="mx-auto max-w-page px-4 font-body md:px-8">
   {page.id === 'article' && page.record && (
     <article class="mx-auto flex max-w-3xl flex-col gap-4 md:gap-6">
@@ -10,7 +11,7 @@ const { page } = Astro.props;
       <h1 class="m-0 text-balance font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl">{page.record.title}</h1>
       {page.record.publishedAt && <time class="text-sm text-muted-foreground" datetime={page.record.publishedAt}>{page.record.publishedText}</time>}
       {page.record.cover && <img class="aspect-video w-full rounded-media object-cover" src={page.record.cover} alt={page.record.title} />}
-      <div class="flex max-w-2xl flex-col gap-4 text-pretty text-base text-foreground" set:html={page.record.html}></div>
+      <div class="rich-text max-w-2xl text-pretty text-base text-foreground" set:html={page.record.html}></div>
     </article>
   )}
   {page.id === 'article' && !page.record && (

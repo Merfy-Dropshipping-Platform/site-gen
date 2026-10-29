@@ -156,6 +156,15 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     fix: 'Поставь motion-safe: перед классом или motion-reduce:transition-none рядом; в скрипте — ctx.animate или matchMedia.',
     example: { before: 'class="animate-pulse"', after: 'class="motion-safe:animate-pulse"' },
   },
+  'taste-rich-text': {
+    when: '`set:html` выводит HTML-текст — richtext-поле, текст записи page.record.html или политику settings.<поле>.html — на элементе без класса rich-text; секция сохраняется.',
+    fix: 'Добавь класс rich-text элементу с set:html: он оформляет абзацы, подзаголовки, списки, ссылки, цитаты и картинки внутри текста токенами магазина.',
+    example: {
+      before: '<div class="text-base" set:html={settings.text}></div>',
+      after: '<div class="rich-text text-base" set:html={settings.text}></div>',
+    },
+    doc: 'styles.md#html-текст',
+  },
   // Код шаблона (taste-code.ts): правила и примеры «плохо → хорошо» — на странице code.md, туда и ссылка ответа.
   'taste-nested-ternary': {
     when: 'В выражении шаблона условный оператор ?: стоит внутри другого ?:; секция сохраняется.',

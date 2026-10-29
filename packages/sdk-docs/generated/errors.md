@@ -1,6 +1,6 @@
 # Коды ошибок
 
-> SDK 1 · документация 1.16.0 · 2026-10-29
+> SDK 1 · документация 1.17.0 · 2026-10-29
 
 Справка по кодам проверки секции: когда бывает код и как исправить.
 
@@ -394,6 +394,16 @@
 
 Как исправить: Поставь motion-safe: перед классом или motion-reduce:transition-none рядом; в скрипте — ctx.animate или matchMedia..
 Пример: было `class="animate-pulse"` → стало `class="motion-safe:animate-pulse"`.
+
+
+## taste-rich-text
+
+Когда: `set:html` выводит HTML-текст — richtext-поле, текст записи page.record.html или политику settings.<поле>.html — на элементе без класса rich-text; секция сохраняется.
+
+Как исправить: Добавь класс rich-text элементу с set:html: он оформляет абзацы, подзаголовки, списки, ссылки, цитаты и картинки внутри текста токенами магазина..
+Пример: было `<div class="text-base" set:html={settings.text}></div>` → стало `<div class="rich-text text-base" set:html={settings.text}></div>`.
+
+Правило с примерами: [styles.md#html-текст](styles.md#html-текст).
 
 
 ## taste-nested-ternary

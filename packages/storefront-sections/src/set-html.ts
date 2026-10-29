@@ -50,6 +50,14 @@ export function richtextIdsOf(manifest: Pick<SectionManifest, 'settings' | 'bloc
   };
 }
 
+// id полей вида richtext — у секции и у типов блока: их значение несёт абзацы, подзаголовки, списки и ссылки, а не только
+// <em> и <strong>. Для предупреждения taste-rich-text (taste-check.ts): такой HTML оформляет класс rich-text.
+export function richtextFieldIdsOf(manifest: Pick<SectionManifest, 'settings' | 'blocks'>): ReadonlySet<string> {
+  const types = Object.values(manifest.blocks ?? {});
+  const fields = [...settingFieldsOf(manifest.settings), ...types.flatMap((type) => type.settings)];
+  return new Set(fields.filter((field) => field.setting.kind === 'richtext').map((field) => field.id));
+}
+
 const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
 const identifierOf = (value: unknown): string =>
   isNode(value) && value.type === 'Identifier' ? stringOf(fieldOf(value, 'name')) : '';

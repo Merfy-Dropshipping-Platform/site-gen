@@ -23,7 +23,8 @@ const { settings, blocks } = Astro.props;
 - `set:html` — только у поля вида `richtext` и у `string` и `text` с `ai`: `<div set:html={block.settings.answer}></div>`,
   `<h2 set:html={block.settings.heading} />`. Значение поля с `ai` — текст с начертаниями: кнопки «К» и «Ж» конструктора
   ставят `<em>` и `<strong>`; другие теги и атрибуты платформа вырезает при сохранении и при выводе. Такое поле выводите
-  через `set:html`, иначе теги видны текстом.
+  через `set:html`, иначе теги видны текстом. Значение `richtext`, `page.record.html` и политику выводите в элементе с
+  классом `rich-text` ([styles.md](styles.md#html-текст)): он оформляет абзацы, подзаголовки, списки и ссылки внутри.
 - Атрибуты `data-*` — для скрипта (`data-ref`, `data-action`) и поведений (`data-behavior`, `data-part`,
   `data-animate`).
 - Деньги записей (`price`, `compareAtPrice`) — объект `Money`, не строка: выводите `price.text`, а не `price`

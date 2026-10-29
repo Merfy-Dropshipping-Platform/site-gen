@@ -1,0 +1,212 @@
+{
+  "sdk": 1,
+  "name": "image-with-text",
+  "kind": "section",
+  "title": "Изображение с текстом",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "cta-position": {
+      "kinds": ["select", "radio"],
+      "label": "Положение кнопки",
+      "about": "Где стоит кнопка в колонке с текстом: сразу под текстом или внизу колонки",
+      "asks": ["положение кнопки", "кнопка внизу", "прижать кнопку", "button position", "cta position"]
+    },
+    "text-style": {
+      "kinds": ["select"],
+      "label": "Стиль текста",
+      "about": "Начертание заголовка и текста секции: обычное или курсив, как на vanilla",
+      "asks": ["стиль текста", "курсив", "наклонный текст", "italic", "text style"]
+    }
+  },
+  "settings": [
+    {
+      "id": "image",
+      "label": "Изображение",
+      "setting": { "kind": "image", "default": "", "maxBytes": 31457280 }
+    },
+    {
+      "id": "height",
+      "label": "Размер",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "image-position",
+      "label": "Позиция фото",
+      "setting": {
+        "kind": "radio",
+        "default": "left",
+        "options": [
+          { "value": "left", "label": "Слева" },
+          { "value": "right", "label": "Справа" }
+        ]
+      }
+    },
+    {
+      "id": "align",
+      "label": "Выравнивание",
+      "setting": { "kind": "alignment", "default": "left" }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "layout",
+      "label": "Раскладка",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "square",
+        "options": [
+          { "value": "square", "label": "Фото рядом с текстом" },
+          { "value": "narrow", "label": "Узкое высокое фото" },
+          { "value": "overlay", "label": "Текст поверх фото" }
+        ]
+      }
+    },
+    {
+      "id": "content-position",
+      "label": "Положение",
+      "visibleWhen": { "setting": "layout", "equals": "overlay" },
+      "setting": {
+        "kind": "select",
+        "default": "center",
+        "options": [
+          { "value": "top", "label": "Сверху" },
+          { "value": "center", "label": "По центру" },
+          { "value": "bottom", "label": "Снизу" }
+        ]
+      }
+    },
+    {
+      "id": "color-scheme",
+      "label": "Цветовая схема контейнера",
+      "visibleWhen": { "setting": "layout", "equals": "overlay" },
+      "setting": { "kind": "color-scheme", "default": "" }
+    },
+    {
+      "id": "cta-position",
+      "label": "Положение кнопки",
+      "setting": {
+        "kind": "select",
+        "default": "inline",
+        "options": [
+          { "value": "inline", "label": "Под текстом" },
+          { "value": "bottom", "label": "Внизу колонки" }
+        ]
+      }
+    },
+    {
+      "id": "text-style",
+      "label": "Стиль текста",
+      "setting": {
+        "kind": "select",
+        "default": "normal",
+        "options": [
+          { "value": "normal", "label": "Обычный" },
+          { "value": "italic", "label": "Курсив" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "heading": {
+      "title": "Заголовок",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Заголовок",
+          "setting": {
+            "kind": "string",
+            "default": "Расскажите о главном в одном блоке",
+            "ai": "title"
+          }
+        },
+        {
+          "id": "heading-size",
+          "label": "Размер заголовка",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        }
+      ]
+    },
+    "text": {
+      "title": "Текст",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "text",
+          "label": "Текст",
+          "setting": {
+            "kind": "text",
+            "default": "Расскажите о товаре или идее рядом с фото: что в нём главное и почему его стоит выбрать.",
+            "ai": "description"
+          }
+        },
+        {
+          "id": "text-size",
+          "label": "Размер текста",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        }
+      ]
+    },
+    "button": {
+      "title": "Кнопка",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "button-label",
+          "label": "Текст",
+          "setting": {
+            "kind": "string",
+            "default": "Смотреть новинки"
+          }
+        },
+        {
+          "id": "button-link",
+          "label": "Ссылка",
+          "setting": {
+            "kind": "url",
+            "default": "/catalog"
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    {
+      "type": "heading",
+      "settings": {}
+    },
+    {
+      "type": "text",
+      "settings": {}
+    },
+    {
+      "type": "button",
+      "settings": {}
+    }
+  ]
+}

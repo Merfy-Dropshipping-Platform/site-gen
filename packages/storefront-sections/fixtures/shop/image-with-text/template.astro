@@ -1,0 +1,56 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<!-- Три раскладки одним корнем: data-layout. square — фото в рамке рядом с текстом; narrow — узкое высокое фото и текст
+     в центре второй половины, без зазора; overlay — текст на плашке поверх фото (на телефоне плашка заходит на фото
+     снизу). Сторона фото — data-image-position, выравнивание — data-align, положение плашки — data-position. -->
+<div
+  class="mx-auto grid w-full max-w-page grid-cols-1 gap-6 px-4 font-body md:gap-8 md:px-8 lg:grid-cols-2 lg:gap-10 data-[layout=narrow]:max-w-3xl data-[layout=narrow]:gap-0 data-[layout=narrow]:px-0 data-[layout=overlay]:gap-0 lg:data-[layout=overlay]:grid-cols-12"
+  data-layout={settings.layout}
+  data-height={settings.height}
+  data-image-position={settings['image-position']}
+  data-align={settings.align}
+  data-position={settings['content-position']}
+  data-cta={settings['cta-position']}
+  data-text-style={settings['text-style']}
+>
+  <div
+    class="relative w-full overflow-hidden rounded-media bg-muted in-data-[height=small]:aspect-4/3 in-data-[height=medium]:aspect-square in-data-[height=large]:aspect-5/6 md:in-data-[layout=narrow]:in-data-[height=small]:aspect-3/4 md:in-data-[layout=narrow]:in-data-[height=medium]:aspect-2/3 md:in-data-[layout=narrow]:in-data-[height=large]:aspect-3/5 lg:in-data-[image-position=right]:order-2 lg:in-data-[layout=overlay]:col-span-8 lg:in-data-[layout=overlay]:row-start-1 lg:in-data-[layout=overlay]:in-data-[image-position=left]:col-start-1 lg:in-data-[layout=overlay]:in-data-[image-position=right]:col-start-5"
+  >
+    {settings.image !== '' && <img src={settings.image} alt="" class="absolute inset-0 size-full object-cover" />}
+  </div>
+  <div
+    class:list={[
+      'relative flex w-full flex-col justify-center gap-2 in-data-[align=left]:items-start in-data-[align=left]:text-left in-data-[align=center]:items-center in-data-[align=center]:text-center in-data-[align=right]:items-end in-data-[align=right]:text-right lg:in-data-[image-position=right]:order-1 in-data-[layout=narrow]:px-6 in-data-[layout=narrow]:py-10 md:in-data-[layout=narrow]:px-10 in-data-[layout=overlay]:z-10 in-data-[layout=overlay]:mx-4 in-data-[layout=overlay]:-mt-12 in-data-[layout=overlay]:rounded-card in-data-[layout=overlay]:p-6 lg:in-data-[layout=overlay]:col-span-5 lg:in-data-[layout=overlay]:row-start-1 lg:in-data-[layout=overlay]:mx-0 lg:in-data-[layout=overlay]:my-10 lg:in-data-[layout=overlay]:p-8 lg:in-data-[layout=overlay]:in-data-[image-position=left]:col-start-8 lg:in-data-[layout=overlay]:in-data-[image-position=right]:col-start-1 lg:in-data-[layout=overlay]:in-data-[position=top]:self-start lg:in-data-[layout=overlay]:in-data-[position=center]:self-center lg:in-data-[layout=overlay]:in-data-[position=bottom]:self-end',
+      settings.layout === 'overlay' && settings['color-scheme'] && `color-${settings['color-scheme']}`,
+      settings['color-scheme'] === '' && 'in-data-[layout=overlay]:bg-muted',
+    ]}
+  >
+    {blocks.map((block) => (
+      <div class="w-full data-[block=button]:w-auto in-data-[cta=inline]:data-[block=button]:mt-4 md:in-data-[cta=inline]:data-[block=button]:mt-6 in-data-[cta=bottom]:data-[block=button]:mt-auto in-data-[cta=bottom]:data-[block=button]:pt-4" data-block={block.type}>
+        {block.type === 'heading' && (
+          <h2
+            class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[text-style=italic]:italic data-[heading-size=small]:text-lg data-[heading-size=medium]:text-xl data-[heading-size=large]:text-2xl"
+            data-heading-size={block.settings['heading-size']}
+            set:html={block.settings.heading}
+          />
+        )}
+        {block.type === 'text' && (
+          <p
+            class="m-0 text-pretty text-foreground in-data-[text-style=italic]:italic data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg"
+            data-text-size={block.settings['text-size']}
+            set:html={block.settings.text}
+          />
+        )}
+        {block.type === 'button' && block.settings['button-label'] && (
+          <a
+            class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            href={block.settings['button-link']}
+          >
+            {block.settings['button-label']}
+          </a>
+        )}
+      </div>
+    ))}
+  </div>
+</div>

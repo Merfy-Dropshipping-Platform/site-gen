@@ -1,0 +1,152 @@
+{
+  "sdk": 1,
+  "name": "main-text",
+  "kind": "section",
+  "title": "Основной текст",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "text-style": {
+      "kinds": ["select"],
+      "label": "Стиль текста",
+      "about": "Начертание заголовка и текста секции: обычное или курсив, как на vanilla",
+      "asks": ["стиль текста", "курсив", "наклонный текст", "italic", "text style"]
+    }
+  },
+  "settings": [
+    {
+      "id": "content-position",
+      "label": "Позиция",
+      "section": "Содержание",
+      "setting": {
+        "kind": "select",
+        "default": "center",
+        "options": [
+          { "value": "left", "label": "Слева" },
+          { "value": "center", "label": "По центру" },
+          { "value": "right", "label": "Справа" }
+        ]
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "text-style",
+      "label": "Стиль текста",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "normal",
+        "options": [
+          { "value": "normal", "label": "Обычный" },
+          { "value": "italic", "label": "Курсив" }
+        ]
+      }
+    },
+    {
+      "id": "button-style",
+      "label": "Стиль кнопки",
+      "setting": {
+        "kind": "select",
+        "default": "primary",
+        "options": [
+          { "value": "primary", "label": "Сплошная" },
+          { "value": "secondary", "label": "Контурная" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "heading": {
+      "title": "Заголовок",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Заголовок",
+          "setting": {
+            "kind": "string",
+            "default": "Расскажите о своём бренде",
+            "ai": "title"
+          }
+        },
+        {
+          "id": "heading-size",
+          "label": "Размер заголовка",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        }
+      ]
+    },
+    "text": {
+      "title": "Текст",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "text",
+          "label": "Текст",
+          "setting": {
+            "kind": "text",
+            "default": "Расскажите подробнее о магазине: чем вы занимаетесь, что отличает ваши товары и почему им доверяют покупатели.",
+            "ai": "description"
+          }
+        },
+        {
+          "id": "text-size",
+          "label": "Размер текста",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        }
+      ]
+    },
+    "button": {
+      "title": "Кнопка",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "button-label",
+          "label": "Текст",
+          "setting": {
+            "kind": "string",
+            "default": "Перейти в каталог"
+          }
+        },
+        {
+          "id": "button-link",
+          "label": "Ссылка",
+          "setting": {
+            "kind": "url",
+            "default": "/catalog"
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    {
+      "type": "heading",
+      "settings": {}
+    },
+    {
+      "type": "text",
+      "settings": {}
+    },
+    {
+      "type": "button",
+      "settings": {}
+    }
+  ]
+}

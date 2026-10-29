@@ -1,0 +1,81 @@
+{
+  "sdk": 1,
+  "name": "promo-banner",
+  "kind": "section",
+  "title": "Промо-баннер",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "capitals": {
+      "kinds": ["toggle"],
+      "label": "Заглавные буквы",
+      "about": "Текст объявления набран заглавными буквами, как на flux и vanilla",
+      "asks": ["заглавные", "капс", "прописные", "uppercase", "caps"]
+    }
+  },
+  "settings": [
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "capitals",
+      "label": "Заглавные буквы",
+      "section": "Вид",
+      "setting": {
+        "kind": "toggle",
+        "default": true,
+        "labels": { "on": "Показать", "off": "Скрыть" }
+      }
+    }
+  ],
+  "blocks": {
+    "announcement": {
+      "title": "Объявление",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "text",
+          "label": "Текст",
+          "setting": {
+            "kind": "text",
+            "default": "Бесплатная доставка на весь ассортимент до конца года.",
+            "ai": "title"
+          }
+        },
+        {
+          "id": "text-size",
+          "label": "Размер текста",
+          "setting": {
+            "kind": "select",
+            "default": "large",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "link",
+          "label": "Ссылка",
+          "setting": {
+            "kind": "url",
+            "default": "/catalog"
+          }
+        },
+        {
+          "id": "label",
+          "label": "Название ссылки",
+          "setting": {
+            "kind": "string",
+            "default": "Смотреть больше"
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    {
+      "type": "announcement",
+      "settings": {}
+    }
+  ]
+}

@@ -3,9 +3,9 @@
        («Основные данные», «Мои заказы»; у новой архитектуры /account — копия этой страницы, поэтому навигация
        здесь). Заголовок 20 px, заглавные — вид flux; поля — как «Вход». -->
   <nav aria-label="Меню личного кабинета" class="flex flex-col gap-3">
-    <a aria-current="page" class="text-base text-foreground no-underline" href="/account/profile">Основные данные</a>
-    <a class="text-base text-muted-foreground no-underline hover:underline" href="/account/orders">Мои заказы</a>
-    <a class="text-base text-muted-foreground no-underline hover:underline" href="/wishlist">Избранное</a>
+    <a aria-current="page" class="inline-flex min-h-11 items-center text-base text-foreground no-underline" href="/account/profile">Основные данные</a>
+    <a class="inline-flex min-h-11 items-center text-base text-muted-foreground no-underline hover:underline" href="/account/orders">Мои заказы</a>
+    <a class="inline-flex min-h-11 items-center text-muted-foreground no-underline hover:underline" href="/wishlist">Избранное</a>
   </nav>
   <div class="flex flex-col gap-1">
     <h1 class="m-0 font-heading text-xl font-normal uppercase text-heading">Основные данные</h1>
@@ -29,7 +29,7 @@
         type="tel"
         autocomplete="tel"
         placeholder="+7 (000) 000-00-00"
-        class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base font-light text-foreground"
+        class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base font-light text-foreground placeholder:text-foreground"
       />
     </label>
     <p data-ref="status" role="status" class="m-0 text-sm" hidden></p>
@@ -42,7 +42,7 @@
       >
         Сохранить
       </button>
-      <button type="button" data-action="auth.signout" class="cursor-pointer border-0 bg-transparent p-0 text-base text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+      <button type="button" data-action="auth.signout" class="inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent px-1 text-base text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
         Выйти из аккаунта
       </button>
     </div>

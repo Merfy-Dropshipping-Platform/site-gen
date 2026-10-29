@@ -152,9 +152,9 @@ describe('HTML-текст: класс rich-text', () => {
     ]);
     expect(await found(files('<div class="text-base" set:html={page.record.html}></div>'))).toHaveLength(1);
     expect(await found(files('<div set:html={settings.policy.html}></div>'))).toHaveLength(1);
-    expect(await found(files('<div>{blocks.map((block) => <div set:html={block.settings.answer} />)}</div>'))).toHaveLength(
-      1,
-    );
+    expect(
+      await found(files('<div>{blocks.map((block) => <div set:html={block.settings.answer} />)}</div>')),
+    ).toHaveLength(1);
     const [item] = await tasteProblems(files('<div set:html={settings.text}></div>'));
     expect(item?.message).toContain('rich-text');
     expect(item !== undefined && isWarning(item)).toBe(true);
@@ -162,9 +162,9 @@ describe('HTML-текст: класс rich-text', () => {
 
   it('с классом rich-text (class и class:list) — без предупреждений', async () => {
     expect(await found(files('<div class="rich-text text-base" set:html={settings.text}></div>'))).toEqual([]);
-    expect(await found(files("<div class:list={['rich-text', 'max-w-2xl']} set:html={page.record.html}></div>"))).toEqual(
-      [],
-    );
+    expect(
+      await found(files("<div class:list={['rich-text', 'max-w-2xl']} set:html={page.record.html}></div>")),
+    ).toEqual([]);
   });
 
   it('string и text с ai (только <em> и <strong>) класса не требуют', async () => {

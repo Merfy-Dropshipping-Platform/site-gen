@@ -29,6 +29,7 @@ const LIST = {
   kind: 'products',
   items: [CARD],
   total: 3,
+  totalLabel: '3 товара',
   page: 1,
   pages: 2,
   perPage: 2,
@@ -41,8 +42,9 @@ const LIST = {
   ],
   query: EMPTY_LIST_QUERY,
   sorts: [
-    { value: 'newest', label: 'Новые', selected: true },
-    { value: 'price_asc', label: 'Цена по возрастанию', selected: false },
+    { value: 'popular', label: 'По популярности', selected: false },
+    { value: 'newest', label: 'По новизне', selected: true },
+    { value: 'price_asc', label: 'По возрастанию цены', selected: false },
   ],
   facets: {
     price: { min: money(190000), max: money(350000) },
@@ -95,7 +97,8 @@ describe('наши секции блока 11', () => {
     expect(html).toContain('data-behavior="catalog" data-paging="more"');
     expect(html).toContain('data-part="list" data-page="1"');
     expect(html).toContain('data-part="next" href="/catalog/page/2"');
-    expect(html).toContain('<span data-part="count">1</span>');
+    expect(html).toMatch(/<p class="[^"]*">3 товара<\/p>/);
+    expect(html).not.toContain('Показано');
     expect(html).toContain('data-photos="https://s3.merfy.ru/p/1.jpg https://s3.merfy.ru/p/2.jpg"');
     expect(html).toContain('data-action="cart.add" data-product-id="p-1" data-variant-id="v-1"');
     expect(await renderer.render({ ...request, settings, page: { id: 'home', path: '/' } })).not.toContain(

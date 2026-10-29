@@ -3,7 +3,8 @@
 // RPC сервиса product — те же, что строит шлюз (api-gateway src/store/store.controller.ts, getProducts и getFilters).
 // Договор между репозиториями: имена и значения — только то, что шлюз принимает (правило владельца 19.10).
 
-export const LIST_SORTS = ['newest', 'price_asc', 'price_desc', 'title_asc'] as const;
+// Порядок — как в сортировке прода: «По популярности» (по остатку), «По новизне», «По убыванию цены», «По возрастанию цены».
+export const LIST_SORTS = ['popular', 'newest', 'price_desc', 'price_asc'] as const;
 export type ListSort = (typeof LIST_SORTS)[number];
 export const LIST_AVAILABILITY = ['in_stock', 'sold_out'] as const;
 export type ListAvailability = (typeof LIST_AVAILABILITY)[number];
@@ -141,6 +142,15 @@ export interface ProductsRpcArgs extends FiltersRpcArgs {
   sort?: string;
 }
 
+// Сортировка сервиса product: у него `popular` — новые сверху (так шлюз и называет «newest»), а «По популярности»
+// прода — по остатку, `quantity_desc` (у товара с вариантами — сумма остатков сочетаний).
+const RPC_SORTS: Record<ListSort, string> = {
+  popular: 'quantity_desc',
+  newest: 'popular',
+  price_desc: 'price_desc',
+  price_asc: 'price_asc',
+};
+
 // Цены местами, если от больше до (как шлюз).
 function pricesOf(query: ListQuery): Pick<FiltersRpcArgs, 'minPrice' | 'maxPrice'> {
   const { minPrice, maxPrice } = query;
@@ -162,7 +172,7 @@ function sharedArgs(query: ListQuery): Omit<FiltersRpcArgs, 'shopId'> {
 }
 
 // product.findAll: shopId — id магазина (siteId, как product.list сборщика); collectionIds — коллекция страницы или
-// коллекции из collection=…, уже id; сортировка newest → popular (шлюз); без сортировки — порядок сервиса.
+// коллекции из collection=…, уже id; без сортировки — порядок сервиса.
 export function productsRpcArgs(
   shopId: string,
   query: ListQuery,
@@ -175,7 +185,7 @@ export function productsRpcArgs(
     take: perPage,
     status: 'active',
     ...(collectionIds.length === 0 ? {} : { collectionId: rpcValue(collectionIds) }),
-    ...(query.sort === null ? {} : { sort: query.sort === 'newest' ? 'popular' : query.sort }),
+    ...(query.sort === null ? {} : { sort: RPC_SORTS[query.sort] }),
     ...sharedArgs(query),
   };
 }

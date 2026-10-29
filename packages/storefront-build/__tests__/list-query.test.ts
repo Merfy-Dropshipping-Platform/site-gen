@@ -35,9 +35,10 @@ describe('разбор параметров списка', () => {
 
   it('чужие параметры и то, чего шлюз не принимает, — отброшены', () => {
     expect(
-      parse('utm_source=vk&yclid=1&sort=popular&availability=all&min_price=-1&max_price=abc&page=0&filter.=x'),
+      parse('utm_source=vk&yclid=1&sort=cheap&availability=all&min_price=-1&max_price=abc&page=0&filter.=x'),
     ).toEqual(EMPTY_LIST_QUERY);
-    expect(parse('sort=newest&sort=title_asc').sort).toBe('title_asc');
+    expect(parse('sort=newest&sort=price_asc').sort).toBe('price_asc');
+    expect(parse('sort=title_asc').sort).toBeNull();
     expect(parse('q=%20%20').q).toBeNull();
     expect(parse(`q=${'а'.repeat(LIST_Q_MAX + 1)}`).q).toBeNull();
     expect(parse('collection=a&collection=a&filter.cvet=x&filter.cvet=x')).toMatchObject({
@@ -74,6 +75,17 @@ describe('аргументы RPC — как у шлюза', () => {
       searchFields: ['title', 'sku'],
       variantFilters: { cvet: ['Синий', 'Красный'] },
     });
+  });
+
+  it('сортировки списка — имена сервиса product: popular → quantity_desc (по остатку), newest → popular', () => {
+    const sortOf = (list: string): unknown => productsRpcArgs(SHOP, parse(list), [], 8).sort;
+    expect([
+      sortOf('sort=popular'),
+      sortOf('sort=newest'),
+      sortOf('sort=price_desc'),
+      sortOf('sort=price_asc'),
+      sortOf(''),
+    ]).toEqual(['quantity_desc', 'popular', 'price_desc', 'price_asc', undefined]);
   });
 
   it('product.findAll без фильтров: только магазин, страница и статус; несколько коллекций — массивом', () => {

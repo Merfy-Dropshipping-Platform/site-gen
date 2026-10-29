@@ -57,7 +57,7 @@ const { settings } = Astro.props;
           <div class="flex items-center justify-between gap-4">
             <p data-ref="price" class="m-0 text-base text-heading"></p>
             <div
-              class="inline-flex shrink-0 items-center rounded-button not-data-[counter=outline]:gap-2 not-data-[counter=outline]:bg-primary not-data-[counter=outline]:p-2 not-data-[counter=outline]:text-primary-foreground in-data-[counter=outline]:h-11 in-data-[counter=outline]:rounded-input in-data-[counter=outline]:border-width-input in-data-[counter=outline]:border-input in-data-[counter=outline]:bg-background md:absolute md:bottom-0 md:right-0"
+              class="inline-flex shrink-0 items-center rounded-button not-data-[counter=outline]:gap-2 not-data-[counter=outline]:bg-primary not-data-[counter=outline]:text-primary-foreground md:not-data-[counter=outline]:p-2 in-data-[counter=outline]:h-11 in-data-[counter=outline]:rounded-input in-data-[counter=outline]:border-width-input in-data-[counter=outline]:border-input in-data-[counter=outline]:bg-background md:absolute md:bottom-0 md:right-0"
               role="group"
               aria-label="Количество"
             >
@@ -66,7 +66,7 @@ const { settings } = Astro.props;
                 data-ref="less"
                 data-action="cart.change"
                 aria-label="Меньше"
-                class="inline-flex cursor-pointer items-center justify-center rounded-button bg-transparent p-0 not-data-[counter=outline]:size-8 not-data-[counter=outline]:hover:opacity-70 in-data-[counter=outline]:size-11 in-data-[counter=outline]:text-foreground in-data-[counter=outline]:hover:bg-accent in-data-[counter=outline]:hover:text-accent-foreground"
+                class="inline-flex cursor-pointer items-center justify-center rounded-button bg-transparent p-0 not-data-[counter=outline]:size-11 md:not-data-[counter=outline]:size-8 not-data-[counter=outline]:hover:opacity-70 in-data-[counter=outline]:size-11 in-data-[counter=outline]:text-foreground in-data-[counter=outline]:hover:bg-accent in-data-[counter=outline]:hover:text-accent-foreground"
               >
                 <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /></svg>
               </button>
@@ -79,7 +79,7 @@ const { settings } = Astro.props;
                 data-ref="more"
                 data-action="cart.change"
                 aria-label="Больше"
-                class="inline-flex cursor-pointer items-center justify-center rounded-button bg-transparent p-0 not-data-[counter=outline]:size-8 not-data-[counter=outline]:hover:opacity-70 in-data-[counter=outline]:size-11 in-data-[counter=outline]:text-foreground in-data-[counter=outline]:hover:bg-accent in-data-[counter=outline]:hover:text-accent-foreground"
+                class="inline-flex cursor-pointer items-center justify-center rounded-button bg-transparent p-0 not-data-[counter=outline]:size-11 md:not-data-[counter=outline]:size-8 not-data-[counter=outline]:hover:opacity-70 in-data-[counter=outline]:size-11 in-data-[counter=outline]:text-foreground in-data-[counter=outline]:hover:bg-accent in-data-[counter=outline]:hover:text-accent-foreground"
               >
                 <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
               </button>

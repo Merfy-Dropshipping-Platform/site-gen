@@ -2,7 +2,7 @@
 const { settings, blocks, theme, shop, page } = Astro.props;
 ---
 <!-- Шапка пяти тем одной разметкой: настройки — атрибутами корня, раскладка — вариантами классов; от 768 px — сетка
-     в три колонки. Значки — Lucide (menu, x, search, heart, shopping-bag, user), лицензия ISC. -->
+     в три колонки. Значки — Lucide (menu, x, search, heart, shopping-bag, user, chevron-right), лицензия ISC. -->
 <div
   class="font-body text-foreground"
   data-logo-position={settings['logo-position']}
@@ -54,8 +54,11 @@ const { settings, blocks, theme, shop, page } = Astro.props;
               {item.items.length === 0 ? (
                 <a aria-current={item.url === page.path ? 'page' : undefined} class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:text-heading aria-[current=page]:text-heading in-data-[capitals=all]:uppercase" href={item.url}>{item.label}</a>
               ) : (
-                <details>
-                  <summary class="flex min-h-11 cursor-pointer list-none items-center text-base text-muted-foreground hover:text-heading in-data-[capitals=all]:uppercase">{item.label}</summary>
+                <details class="group/item">
+                  <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-base text-muted-foreground hover:text-heading in-data-[capitals=all]:uppercase">
+                    <span>{item.label}</span>
+                    <svg class="size-4 shrink-0 transition-transform group-open/item:rotate-90 motion-reduce:transition-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                  </summary>
                   <ul class="m-0 list-none pb-2 pl-4">
                     {item.items.map((child) => (
                       <li>

@@ -11,7 +11,7 @@ const { settings } = Astro.props;
   {(settings.heading || settings.text) && (
     <div class="flex flex-col items-center gap-2 text-center">
       {settings.heading && <h1 class="m-0 font-heading weight-heading text-xl uppercase text-heading" set:html={settings.heading} />}
-      {settings.text && <p class="m-0 text-base text-muted-foreground" set:html={settings.text} />}
+      {settings.text && <p class="m-0 text-pretty text-base text-muted-foreground" set:html={settings.text} />}
     </div>
   )}
   <div data-ref="email-step" class="flex w-full flex-col gap-6">

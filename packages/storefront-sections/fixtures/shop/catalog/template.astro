@@ -11,17 +11,14 @@ const { settings, blocks, page, theme } = Astro.props;
   data-paging={settings.paging}
   data-filters-side={blocks.some((item) => item.type === 'filters' && item.settings['filter-position'] === 'side') ? 'true' : 'false'}
 >
-  {(settings.heading || settings.subheading || page.list) && (
+  {(settings.heading || settings.subheading) && (
     <div class="col-span-full flex flex-col gap-2">
-      <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        {settings.heading && page.id === 'catalog' && (
-          <h1 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl" set:html={settings.heading} />
-        )}
-        {settings.heading && page.id !== 'catalog' && (
-          <h2 class="m-0 font-heading weight-heading tracking-heading text-2xl text-heading md:text-3xl" set:html={settings.heading} />
-        )}
-        {page.list && page.list.total > 0 && <p class="m-0 text-sm text-muted-foreground">Товаров: {page.list.total}</p>}
-      </div>
+      {settings.heading && page.id === 'catalog' && (
+        <h1 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl" set:html={settings.heading} />
+      )}
+      {settings.heading && page.id !== 'catalog' && (
+        <h2 class="m-0 font-heading weight-heading tracking-heading text-2xl text-heading md:text-3xl" set:html={settings.heading} />
+      )}
       {settings.subheading && <p class="m-0 text-base text-muted-foreground md:text-lg" set:html={settings.subheading} />}
     </div>
   )}
@@ -320,9 +317,9 @@ const { settings, blocks, page, theme } = Astro.props;
           </li>
         ))}
       </ul>
+      {page.list.items.length > 0 && <p class="m-0 pt-4 text-sm text-muted-foreground">{page.list.totalLabel}</p>}
       {page.list.items.length > 0 && (
         <div class="flex flex-col items-center gap-4 pt-4 text-center">
-          <p class="m-0 text-sm text-muted-foreground">Показано <span data-part="count">{page.list.items.length}</span> из {page.list.total}</p>
           {page.list.next && (
             <a class="inline-flex h-12 items-center justify-center rounded-button border-width-input border-foreground bg-background px-8 text-sm text-foreground no-underline hover:bg-foreground hover:text-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" data-part="next" href={page.list.next}>Показать ещё</a>
           )}

@@ -1,9 +1,14 @@
 import { defineSection, type Ctx, type El } from '@merfy/shell';
 
-// «Личный кабинет» (по странице «Основные данные» прода, flux): поля — из ctx.auth.$customer; «Сохранить» —
+// «Личный кабинет» (по страницам кабинета прода, flux): /account — хаб «Учётная запись» (заголовок, e-mail, навигация
+// и «Выйти из аккаунта»; у прода это отдельная страница, здесь /account — алиас page-profile, поэтому вид выбирается
+// по адресу страницы), /account/profile — «Основные данные»: поля — из ctx.auth.$customer; «Сохранить» —
 // auth.updateProfile с quiet: true, статус — под кнопкой («Сохранено!» / «Не удалось сохранить»); «Выйти» —
-// auth.signout в разметке; гость — «Войдите…» со ссылкой на «Вход» (у прода — редирект; у страницы новая
-// копия адреса /account, навигация кабинета — в самой секции, поэтому здесь остаёмся).
+// auth.signout в разметке; гость на страницы кабинета не попадает — её уводит каркас. В превью конструктора —
+// вид «Основных данных».
+
+// Хаб кабинета — адрес /account (алиас страницы профиля); вид «Основных данных» — /account/profile.
+const HUB_PATH = '/account';
 
 const SAVED_TEXT = 'Сохранено!';
 const SAVE_FAILED_TEXT = 'Не удалось сохранить';
@@ -49,6 +54,15 @@ async function saveProfile(ctx: Ctx<AccountState, 'auth'>, button: El | null): P
 
 export default defineSection<AccountState, 'auth'>({
   mount(_el, ctx) {
+    // Хаб кабинета (адрес /account): вместо «Основных данных» — «Учётная запись» с навигацией, как у прода.
+    if (ctx.mode === 'live' && ctx.page.path === HUB_PATH) {
+      ctx.ref('profile-view')?.hide();
+      ctx.ref('hub-view')?.show();
+      ctx.watch(ctx.auth.$customer, (state) => {
+        ctx.ref('hub-email')?.text(state.ready && state.customer !== null ? state.customer.email : '');
+      });
+      return;
+    }
     ctx.watch(ctx.auth.$customer, (state) => {
       if (!state.ready) return;
       fillForm(state.customer, ctx);

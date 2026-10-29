@@ -1,10 +1,11 @@
 import { defineSection, type Ctx, type El, type Money, type Order, type OrderLine, type OrderSummary } from '@merfy/shell';
 
-// «Заказы» по страницам кабинета прода (flux): список («Заказ №…», «от …», статус, «Перейти») и заказ по ?n= —
-// подзаголовок с e-mail (ctx.customer), мета «N товаров · от …», колонки товаров и данных; отмена с причиной —
-// окно behavior dialog, после успеха — обновлённый заказ и «Заказ отменён» (прод перезагружает страницу, но в SDK
-// окно не владеет адресом страницы). Данные — ctx.orders с quiet: true, отказы — текст рядом (список) или вместо
-// заказа; гостья на страницы кабинета не попадает — её уводит каркас (leavePrivatePage).
+// «Заказы» по страницам кабинета прода (flux): список («Заказ №…», «от …», «Перейти»; статуса в строке у прода нет)
+// и заказ по ?n= — подзаголовок с e-mail (ctx.customer), мета «N товаров» и «от …» по краям, равные колонки товаров
+// и данных в карточках; отмена с причиной — окно behavior dialog, после успеха — обновлённый заказ и «Заказ отменён»
+// (прод перезагружает страницу, но в SDK окно не владеет адресом страницы). Данные — ctx.orders с quiet: true,
+// отказы — текст рядом (список) или вместо заказа; гостья на страницы кабинета не попадает — её уводит каркас
+// (leavePrivatePage).
 
 const LIST_FAILED_TEXT = 'Не удалось загрузить заказы';
 const REASON_EMPTY_TEXT = 'Укажите причину отмены';
@@ -22,8 +23,8 @@ const optionsText = (line: OrderLine): string =>
     .map(([name, value]) => `${name}: ${value}`)
     .join(', ');
 
-// «2 товара · от 20.10.26» — склонение и дата как у страницы заказа прода.
-function metaText(order: Order): string {
+// Мета заказа: «N товаров» и «от 20.10.26» — склонение и дата как у страницы заказа прода.
+function fillMeta(order: Order, ctx: Ctx<Record<string, unknown>, 'orders'>): void {
   const count = order.lines.length;
   const last = count % 100;
   const digit = count % 10;
@@ -33,7 +34,8 @@ function metaText(order: Order): string {
     else if (digit >= 2 && digit <= 4) word = 'товара';
   }
   const date = new Date(order.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  return `${count} ${word} · от ${date}`;
+  ctx.ref('order-meta-count')?.text(`${count} ${word}`);
+  ctx.ref('order-meta-date')?.text(`от ${date}`);
 }
 
 const notice = (message: string, target: El | null): void => {
@@ -46,12 +48,11 @@ const clearNotice = (target: El | null): void => {
   target?.hide();
 };
 
-// Строка списка: «Заказ №…», «от <дата>», статус, «Перейти» на заказ.
+// Строка списка: «Заказ №…», «от <дата>», «Перейти» на заказ (статуса в строке у прода нет).
 function fillSummary(row: El, order: OrderSummary): void {
   const date = new Date(order.createdAt).toLocaleDateString('ru-RU');
   row.ref('number')?.text(`Заказ №${order.number}`);
   row.ref('date')?.text(`от ${date}`);
-  row.ref('status')?.text(order.statusText);
   row.ref('open')?.attr('href', `${ORDER_URL}?n=${encodeURIComponent(order.number)}`);
 }
 
@@ -84,8 +85,8 @@ function showOrder(order: Order, ctx: Ctx<Record<string, unknown>, 'orders'>): v
   ctx.ref('order-error')?.hide();
   ctx.ref('order-body')?.show();
   ctx.ref('order-subtitle')?.text(`Заказ №${order.number}`);
-  ctx.ref('order-meta')?.text(metaText(order));
-  ctx.ref('order-number')?.text(order.number);
+  fillMeta(order, ctx);
+  ctx.ref('order-number')?.text(`№${order.number}`);
   ctx.ref('order-status')?.text(order.statusText);
   ctx.ref('address-row')?.toggle(order.address !== null);
   ctx.ref('order-address')?.text(order.address ?? '');
@@ -151,7 +152,8 @@ export default defineSection({
   },
   actions: {
     'cancel-confirm'(_target, ctx) {
-      const number = ctx.ref('order-number')?.text() ?? '';
+      // В ячейке номер с «№» (как у прода) — для отмены снимаем префикс.
+      const number = (ctx.ref('order-number')?.text() ?? '').replace(/^№/, '');
       void cancelOrder(number, ctx);
     },
   },

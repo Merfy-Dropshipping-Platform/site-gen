@@ -3,7 +3,7 @@ const { settings } = Astro.props;
 ---
 <!-- Записи блога на главной: выбранный блог или, если поле пусто, записи всех блогов — новые сверху, показано столько,
      сколько в «Карточках». Колонки — признаком data-columns на корне (на телефоне одна, от `md` — до двух, от `lg` — столько,
-     сколько выбрано); дата — число.месяц.год из publishedAt. -->
+     сколько выбрано); дата — publishedText («20 октября 2026 г.»). -->
 <div
   class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body md:gap-8 md:px-8"
   data-heading-size={settings['heading-size']}
@@ -29,7 +29,7 @@ const { settings } = Astro.props;
             </span>
             <span class="flex flex-1 flex-col gap-1">
               {settings.date && post.publishedAt && (
-                <time class="text-xs text-muted-foreground md:text-sm" datetime={post.publishedAt}>{`${post.publishedAt.slice(8, 10)}.${post.publishedAt.slice(5, 7)}.${post.publishedAt.slice(0, 4)}`}</time>
+                <time class="text-xs text-muted-foreground md:text-sm" datetime={post.publishedAt}>{post.publishedText}</time>
               )}
               <span class="line-clamp-2 text-base text-muted-foreground group-hover:text-foreground">{post.title}</span>
               {settings.excerpt && post.excerpt && <span class="line-clamp-3 text-sm text-muted-foreground">{post.excerpt}</span>}

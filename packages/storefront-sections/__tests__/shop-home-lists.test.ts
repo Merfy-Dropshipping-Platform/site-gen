@@ -41,16 +41,27 @@ afterAll(async () => {
   await renderer.close();
 });
 
-const block = (id: string, settings: Record<string, string> = {}) => ({
-  id,
-  type: 'tile',
-  settings: { image: '', label: 'Коллекция', link: '/catalog', ...settings },
+// Плитка — блок с полем «Выбор коллекции»: запись приходит отдельно (blockRecords), по id блока. Выбранная коллекция —
+// публичные поля записи; пустое поле при пустом магазине — null; при товарах магазина — запись «Все товары» без адреса.
+const block = (id: string) => ({ id, type: 'tile', settings: {} });
+const TILES = [block('t1'), block('t2'), block('t3'), block('t4')];
+const collectionRecord = (title: string, slug: string, images: string[]) => ({
+  id: `id-${slug}`,
+  title,
+  slug,
+  url: `/collections/${slug}`,
+  description: '',
+  images,
+  productsCount: 0,
+  products: [],
 });
-const TILES = [
-  block('t1', { image: 'https://s3.merfy.ru/c/1.jpg', label: 'Шарфы', link: '/catalog?collection=scarves' }),
-  block('t2', { label: 'Пледы', link: '' }),
-  block('t3'),
-];
+const ALL_PRODUCTS = { ...collectionRecord('', '', []), id: '', url: '', productsCount: 2 };
+const COLLECTION_RECORDS = {
+  t1: { collection: collectionRecord('Шарфы', 'scarves', ['https://s3.merfy.ru/c/1.jpg', 'https://s3.merfy.ru/c/2.jpg']) },
+  t2: { collection: collectionRecord('Пледы', 'pledy', []) },
+  t3: { collection: ALL_PRODUCTS },
+  t4: { collection: null },
+};
 const COLLECTIONS_SETTINGS = {
   heading: 'Коллекции',
   'heading-size': 'medium',
@@ -66,6 +77,7 @@ const COLLECTIONS_SETTINGS = {
 const collections = async (
   settings: Record<string, string | number | boolean> = {},
   blocks: ReturnType<typeof block>[] = TILES,
+  blockRecords: Record<string, Record<string, object | null>> = COLLECTION_RECORDS,
 ): Promise<string> => {
   const section = loaded.get('collections');
   if (section === undefined) throw new Error('collections');
@@ -75,16 +87,25 @@ const collections = async (
     module: section.module,
     settings: { ...COLLECTIONS_SETTINGS, ...settings },
     blocks,
+    blockRecords,
     theme: {},
   });
 };
 
 const BLOG = sampleRecord('blog');
+// Дату словами считает сборка (publishedText записи блога); секция выводит её как есть.
+const TEXT_OF_DATE: Record<string, string> = {
+  '2026-10-19T09:30:00.000Z': '19 октября 2026 г.',
+  '2026-10-05T09:30:00.000Z': '5 октября 2026 г.',
+  '2026-09-30T09:30:00.000Z': '30 сентября 2026 г.',
+  '2026-09-01T09:30:00.000Z': '1 сентября 2026 г.',
+};
 const article = (id: string, title: string, publishedAt: string | null, cover: string | null, excerpt: string) => ({
   id,
   title,
   url: `/blogs/novosti/${id}`,
   publishedAt,
+  publishedText: publishedAt === null ? '' : (TEXT_OF_DATE[publishedAt] ?? ''),
   cover,
   excerpt,
 });
@@ -192,12 +213,13 @@ describe('панель: поля прода в их порядке, новые �
     expect(columns).toMatchObject({ label: 'Колонки', setting: { kind: 'range', min: 1, max: 6, default: 3 } });
   });
 
-  it('«Список коллекций»: до десяти элементов, подпись читается как «Добавить элемент списка»', () => {
+  it('«Список коллекций»: до десяти коллекций, у плитки одно поле «Выбор коллекции» (как на проде), «Добавить коллекцию»', () => {
     const tile = loaded.get('collections')?.manifest.blocks?.tile;
     expect(tile?.limit).toBe(10);
-    expect(`Добавить ${(tile?.title ?? '').toLowerCase()}`).toBe('Добавить элемент списка');
-    expect(tile?.settings.map((field) => field.label)).toEqual(['Изображение', 'Название', 'Ссылка']);
-    expect(tile?.settings[0]?.setting).toMatchObject({ kind: 'image', maxBytes: 30 * 1024 * 1024 });
+    expect(tile?.title).toBe('Коллекция');
+    expect(`Добавить ${tile?.addTitle ?? ''}`).toBe('Добавить коллекцию');
+    expect(tile?.settings).toHaveLength(1);
+    expect(tile?.settings[0]).toMatchObject({ id: 'collection', label: 'Выбор коллекции', setting: { kind: 'collection' } });
   });
 });
 
@@ -223,17 +245,24 @@ describe('«Список коллекций»', () => {
     expect(attr(await collections(), 'capitals')).toBe('false');
   });
 
-  it('плитка: картинка и подпись — ссылкой; без картинки — значок места, без ссылки — тег без href', async () => {
+  it('плитка выбранной коллекции: первая картинка, название и ссылка — из коллекции', async () => {
     const source = await collections();
-    expect(count(source, /<li[ >]/g)).toBe(3);
-    expect(source).toContain('href="/catalog?collection=scarves"');
+    expect(count(source, /<li[ >]/g)).toBe(4);
+    expect(source).toContain('href="/collections/scarves"');
     expect(source).toContain('src="https://s3.merfy.ru/c/1.jpg"');
-    expect(count(source, /<img /g)).toBe(1);
-    expect(count(source, /<svg /g)).toBe(2);
+    expect(source).not.toContain('https://s3.merfy.ru/c/2.jpg');
     expect(source).toContain('Шарфы');
+    expect(source).toContain('href="/collections/pledy"');
     expect(source).toContain('Пледы');
+  });
+
+  it('коллекция без картинки — значок места; выбор не сделан — серая плитка «Коллекция» без ссылки', async () => {
+    const source = await collections();
+    expect(count(source, /<img /g)).toBe(1);
+    expect(count(source, /<svg /g)).toBe(3);
     expect(count(source, /<a [^>]*href=/g)).toBe(2);
-    expect(count(source, /<a /g)).toBe(3);
+    expect(count(source, /<a /g)).toBe(4);
+    expect(count(source, />Коллекция</g)).toBe(2);
   });
 
   it('заголовок и текст с начертаниями; пустые — не выводятся', async () => {
@@ -251,12 +280,14 @@ describe('«Список коллекций»', () => {
 });
 
 describe('«Публикации»', () => {
-  it('записи выбранного блога: ссылка, название, дата числом, картинка', async () => {
+  it('записи выбранного блога: ссылка, название, дата словами, картинка', async () => {
     const source = await publications();
     expect(count(source, /<li[ >]/g)).toBe(3);
     expect(source).toContain('href="/blogs/novosti/a-1"');
     expect(source).toContain('Как стирать плед');
-    expect(source).toContain('19.10.2026');
+    expect(source).toContain('>19 октября 2026 г.</time>');
+    expect(source).toContain('>5 октября 2026 г.</time>');
+    expect(source).not.toContain('19.10.2026');
     expect(source).toContain('datetime="2026-10-19T09:30:00.000Z"');
     expect(source).toContain('src="https://s3.merfy.ru/b/1.jpg"');
     expect(source).not.toContain('Подарки');

@@ -65,6 +65,7 @@ const articleCard = (found: RecordEntryOf<'article'>): ArticleCard => ({
   title: found.record.title,
   url: found.record.url,
   publishedAt: found.record.publishedAt,
+  publishedText: found.record.publishedText,
   cover: found.record.cover,
   excerpt: found.record.excerpt,
 });

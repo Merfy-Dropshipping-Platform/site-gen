@@ -69,8 +69,12 @@ const { settings } = Astro.props;
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `product`    | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `options`, `variants`, `collections`, `updatedAt`                                                                                                                                                                  |
 | `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `images`, `available`, `variantId`, `colors`; `image` — первое фото, `images` — первые два, для `data-photos` поведения `card-photos`: `{product.images.join(' ')}`; `variantId` — сочетание вариантов по умолчанию для `cart.add`, у товара без вариантов `null`; `colors` — образцы цвета `{ title, swatch }`, `swatch` — `#rrggbb`, до 6, без цветов `[]`) |
-| `blog`       | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `cover`, `excerpt`)                                                                                                                                                                    |
+| `blog`       | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `publishedText`, `cover`, `excerpt`)                                                                                                                                                   |
 | `policy`     | `type`, `title`, `url`, `html`                                                                                                                                                                                                                                                                                    |
+
+Дата статьи — в двух видах: `publishedAt` (время ISO, для `datetime`) и `publishedText` (она же словами по Москве,
+«20 октября 2026 г.», для показа). У статьи без даты `publishedAt` — `null`, `publishedText` — пустая строка. Форматировать
+дату в шаблоне не нужно: `Date` и `Intl` там недоступны.
 
 ### Образцы цвета на карточке
 
@@ -142,7 +146,7 @@ const { page } = Astro.props;
   {page.id === 'article' && page.record && (
     <article class="flex flex-col gap-4">
       <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{page.record.title}</h1>
-      {page.record.publishedAt && <p class="m-0 text-sm text-foreground">{page.record.publishedAt.slice(0, 10)}</p>}
+      {page.record.publishedAt && <p class="m-0 text-sm text-foreground">{page.record.publishedText}</p>}
       {page.record.cover && <img class="h-auto w-full rounded-button" src={page.record.cover} alt={page.record.title} />}
       <div class="text-foreground" set:html={page.record.html}></div>
     </article>

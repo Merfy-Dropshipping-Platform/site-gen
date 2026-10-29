@@ -151,6 +151,12 @@ describe('записи полей секции', () => {
     expect(recordDepsOf([only, plain], HOME)).toEqual([`product:${P2}`]);
   });
 
+  it('статьи «записей всех блогов» несут дату словами, как статьи выбранного блога', () => {
+    const { values } = sectionRecords(card(EMPTY), HOME);
+    const articles = values.posts !== null && 'articles' in values.posts ? values.posts.articles : [];
+    expect(articles).toMatchObject([{ publishedAt: '2026-10-19T10:00:00.000Z', publishedText: '19 октября 2026 г.' }]);
+  });
+
   it('лимиты: 24 товара и 12 статей, счётчики — все', () => {
     const many = [
       ...Array.from({ length: 30 }, (_, n) => product(ID(1000 + n), { handle: `sharf-${n}`, collectionIds: [] })),

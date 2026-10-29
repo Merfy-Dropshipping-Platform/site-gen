@@ -1,0 +1,217 @@
+{
+  "sdk": 1,
+  "name": "multi-rows",
+  "kind": "section",
+  "title": "Мультиряды",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "content-width": {
+      "kinds": ["select"],
+      "label": "Ширина",
+      "about": "Ширина содержимого секции и доля картинки в ряду: узкая — картинка меньше текста, большая — больше",
+      "asks": ["ширина секции", "ширина содержимого", "узкая секция", "ширина рядов", "доля картинки"]
+    }
+  },
+  "settings": [
+    {
+      "id": "height",
+      "label": "Высота",
+      "setting": {
+        "kind": "select",
+        "default": "small",
+        "options": [
+          { "value": "small", "label": "Маленькая" },
+          { "value": "medium", "label": "Средняя" },
+          { "value": "large", "label": "Большая" }
+        ]
+      }
+    },
+    {
+      "id": "content-width",
+      "label": "Ширина",
+      "setting": {
+        "kind": "select",
+        "default": "large",
+        "options": [
+          { "value": "small", "label": "Маленькая" },
+          { "value": "medium", "label": "Средняя" },
+          { "value": "large", "label": "Большая" }
+        ]
+      }
+    },
+    {
+      "id": "image-position",
+      "label": "Позиция рядов",
+      "setting": {
+        "kind": "radio",
+        "default": "left",
+        "options": [
+          { "value": "left", "label": "Слева" },
+          { "value": "right", "label": "Справа" }
+        ]
+      }
+    },
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "section": "Содержание",
+      "setting": {
+        "kind": "string",
+        "default": "Как мы работаем",
+        "ai": "title"
+      }
+    },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "button-style",
+      "label": "Стиль кнопки",
+      "setting": {
+        "kind": "select",
+        "default": "primary",
+        "options": [
+          { "value": "primary", "label": "Основная" },
+          { "value": "secondary", "label": "Дополнительная" }
+        ]
+      }
+    },
+    {
+      "id": "align",
+      "label": "Выравнивание",
+      "setting": {
+        "kind": "alignment",
+        "default": "left"
+      }
+    },
+    { "wrapper": "scheme" },
+    {
+      "id": "color-scheme",
+      "label": "Цветовая схема контейнера",
+      "setting": {
+        "kind": "color-scheme",
+        "default": ""
+      }
+    },
+    { "wrapper": "padding" }
+  ],
+  "blocks": {
+    "row": {
+      "title": "Ряд",
+      "limit": 10,
+      "settings": [
+        {
+          "id": "image",
+          "label": "Изображение",
+          "setting": {
+            "kind": "image",
+            "default": "",
+            "maxBytes": 31457280
+          }
+        },
+        {
+          "id": "height",
+          "label": "Размер",
+          "setting": {
+            "kind": "select",
+            "default": "inherit",
+            "options": [
+              { "value": "inherit", "label": "Как у секции" },
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "heading",
+          "label": "Заголовок",
+          "section": "Содержание",
+          "setting": {
+            "kind": "string",
+            "default": "Изображение с текстом",
+            "ai": "title"
+          }
+        },
+        {
+          "id": "heading-size",
+          "label": "Размер заголовка",
+          "setting": {
+            "kind": "select",
+            "default": "small",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "text",
+          "label": "Текст",
+          "setting": {
+            "kind": "text",
+            "default": "Покажите и расскажите о своём товаре в одном блоке.",
+            "ai": "description"
+          }
+        },
+        {
+          "id": "text-size",
+          "label": "Размер текста",
+          "setting": {
+            "kind": "select",
+            "default": "small",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "button-label",
+          "label": "Кнопка",
+          "sublabel": "Оставьте пустой, чтобы скрыть",
+          "setting": {
+            "kind": "string",
+            "default": "Подробнее"
+          }
+        },
+        {
+          "id": "button-link",
+          "label": "Ссылка",
+          "setting": {
+            "kind": "url",
+            "default": "/catalog"
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    {
+      "type": "row",
+      "settings": {
+        "heading": "Делаем под заказ",
+        "text": "Берём в работу после оплаты: шьём и собираем за несколько дней."
+      }
+    },
+    {
+      "type": "row",
+      "settings": {
+        "heading": "Упаковываем с заботой",
+        "text": "Каждый заказ — в фирменной упаковке, с открыткой и инструкцией."
+      }
+    }
+  ]
+}

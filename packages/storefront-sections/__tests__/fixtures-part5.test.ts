@@ -111,6 +111,116 @@ describe('«Слайд-шоу»', () => {
   });
 });
 
+// Порядок полей секции: у общей настройки — «wrapper:<имя>».
+const orderOf = (settings: readonly ({ wrapper: string } | { id: string })[]): string[] =>
+  settings.map((entry) => ('wrapper' in entry ? `wrapper:${entry.wrapper}` : entry.id));
+
+describe('«Мультиколонны»', () => {
+  // Сводные мультиколонны пяти тем (базовые секции, 29.10): панель прода — заголовок, ширина, соотношение, кнопка,
+  // колонки, положение текста, контейнер, схема, отступы; до 10 колонок по 8 полей; три раскладки — после полей прода.
+  it('принимается; поля в порядке прода, «Раскладка» — после них; колонка — 8 полей прода', async () => {
+    const result = await prepareSection({ prefix: 'shop', files: await files('shop/multi-columns') });
+    expect(result.ok ? withoutCode(result.section.warnings) : result.problems).toEqual([]);
+    if (!result.ok) return;
+    expect(orderOf(result.section.manifest.settings)).toEqual([
+      'heading',
+      'heading-size',
+      'content-width',
+      'aspect-ratio',
+      'button-label',
+      'button-link',
+      'columns',
+      'text-position',
+      'text-box',
+      'wrapper:scheme',
+      'wrapper:padding',
+      'layout',
+    ]);
+    const fields = settingFieldsOf(result.section.manifest.settings);
+    expect(optionValues(fields, 'layout')).toEqual(['images', 'cards', 'icons']);
+    expect(optionValues(fields, 'aspect-ratio')).toEqual(['adapt', 'square', 'portrait', 'landscape']);
+    expect(fields.find((field) => field.id === 'columns')?.setting).toMatchObject({ kind: 'range', min: 1, max: 4 });
+    expect(fields.find((field) => field.id === 'heading')?.setting).toMatchObject({ kind: 'string', ai: 'title' });
+    const column = result.section.manifest.blocks?.column;
+    expect(column?.limit).toBe(10);
+    expect(column?.settings.map((field) => field.id)).toEqual([
+      'image',
+      'image-size',
+      'heading',
+      'heading-size',
+      'text',
+      'text-size',
+      'label',
+      'link',
+    ]);
+    expect(column?.settings.find((field) => field.id === 'text')?.setting).toMatchObject({ kind: 'text', ai: 'description' });
+  });
+});
+
+describe('«Мультиряды»', () => {
+  // Сводные мультиряды пяти тем (базовые секции, 29.10): панель прода — высота, ширина, позиция рядов, «Содержание»
+  // (заголовок, размер, стиль кнопки, выравнивание), схема, схема контейнера, отступы; до 10 рядов по 8 полей.
+  it('принимается; поля в порядке прода; ряд — 8 полей прода, «Размер» ряда по умолчанию — как у секции', async () => {
+    const result = await prepareSection({ prefix: 'shop', files: await files('shop/multi-rows') });
+    expect(result.ok ? withoutCode(result.section.warnings) : result.problems).toEqual([]);
+    if (!result.ok) return;
+    expect(orderOf(result.section.manifest.settings)).toEqual([
+      'height',
+      'content-width',
+      'image-position',
+      'heading',
+      'heading-size',
+      'button-style',
+      'align',
+      'wrapper:scheme',
+      'color-scheme',
+      'wrapper:padding',
+    ]);
+    const fields = settingFieldsOf(result.section.manifest.settings);
+    expect(optionValues(fields, 'button-style')).toEqual(['primary', 'secondary']);
+    expect(optionValues(fields, 'image-position')).toEqual(['left', 'right']);
+    const row = result.section.manifest.blocks?.row;
+    expect(row?.limit).toBe(10);
+    expect(row?.settings.map((field) => field.id)).toEqual([
+      'image',
+      'height',
+      'heading',
+      'heading-size',
+      'text',
+      'text-size',
+      'button-label',
+      'button-link',
+    ]);
+    expect(row?.settings.find((field) => field.id === 'height')?.setting).toMatchObject({ kind: 'select', default: 'inherit' });
+  });
+});
+
+describe('«Галерея»', () => {
+  // Сводная галерея пяти тем (базовые секции, 29.10): панель прода — «Содержание» (заголовок, текст и их размеры),
+  // положение изображения, схема, отступы; до трёх плиток. Выбор товара и коллекции в плитке — не здесь: поля
+  // `product` и `collection` в блоках SDK не допускает (проверка: setting-invalid).
+  it('принимается; поля в порядке прода, «Раскладка» — после них; плиток до трёх, выбора товара в плитке нет', async () => {
+    const result = await prepareSection({ prefix: 'shop', files: await files('shop/gallery') });
+    expect(result.ok ? withoutCode(result.section.warnings) : result.problems).toEqual([]);
+    if (!result.ok) return;
+    expect(orderOf(result.section.manifest.settings)).toEqual([
+      'heading',
+      'heading-size',
+      'text',
+      'text-size',
+      'image-position',
+      'wrapper:scheme',
+      'wrapper:padding',
+      'layout',
+    ]);
+    expect(optionValues(settingFieldsOf(result.section.manifest.settings), 'layout')).toEqual(['featured', 'row']);
+    const tile = result.section.manifest.blocks?.tile;
+    expect(tile?.limit).toBe(3);
+    expect(tile?.settings.map((field) => field.id)).toEqual(['image', 'label', 'caption', 'link']);
+    expect(result.section.manifest.defaultBlocks).toHaveLength(3);
+  });
+});
+
 describe('«Шапка»', () => {
   // Сводная шапка пяти тем (базовые секции, 28.10): панель прода — «Положение логотипа», «Статичность», «Цветовая
   // схема», «Отступы», группа «Меню»; дальше параметры раскладок тем. Отступы по умолчанию ставит заготовка (8 px), без

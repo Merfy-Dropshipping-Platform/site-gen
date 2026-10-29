@@ -1,0 +1,143 @@
+{
+  "sdk": 1,
+  "name": "gallery",
+  "kind": "section",
+  "title": "Галерея",
+  "wrapper": ["scheme", "padding"],
+  "settings": [
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "section": "Содержание",
+      "setting": {
+        "kind": "string",
+        "default": "Галерея",
+        "ai": "title"
+      }
+    },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "text",
+      "label": "Текст",
+      "setting": {
+        "kind": "text",
+        "default": "",
+        "ai": "description"
+      }
+    },
+    {
+      "id": "text-size",
+      "label": "Размер текста",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "image-position",
+      "label": "Положение изображения",
+      "setting": {
+        "kind": "radio",
+        "default": "left",
+        "options": [
+          { "value": "left", "label": "Слева" },
+          { "value": "right", "label": "Справа" }
+        ]
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "layout",
+      "label": "Раскладка",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "featured",
+        "options": [
+          { "value": "featured", "label": "Крупная плитка и стопка" },
+          { "value": "row", "label": "Плитки в ряд" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "tile": {
+      "title": "Элемент",
+      "limit": 3,
+      "settings": [
+        {
+          "id": "image",
+          "label": "Изображение",
+          "setting": {
+            "kind": "image",
+            "default": "",
+            "maxBytes": 31457280
+          }
+        },
+        {
+          "id": "label",
+          "label": "Название",
+          "sublabel": "Оставьте пустым, чтобы скрыть",
+          "setting": {
+            "kind": "string",
+            "default": ""
+          }
+        },
+        {
+          "id": "caption",
+          "label": "Вторая строка",
+          "sublabel": "Например, цена. Оставьте пустой, чтобы скрыть",
+          "setting": {
+            "kind": "string",
+            "default": ""
+          }
+        },
+        {
+          "id": "link",
+          "label": "Ссылка",
+          "setting": {
+            "kind": "url",
+            "default": "/catalog"
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    {
+      "type": "tile",
+      "settings": {}
+    },
+    {
+      "type": "tile",
+      "settings": {
+        "label": "Новинка",
+        "caption": "2 500 ₽"
+      }
+    },
+    {
+      "type": "tile",
+      "settings": {
+        "label": "Коллекция"
+      }
+    }
+  ]
+}

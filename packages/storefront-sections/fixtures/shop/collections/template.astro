@@ -1,0 +1,57 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<!-- Плитки коллекций. Раскладку задают признаки data-* на корне: колонки (на телефоне — `columns-mobile`, от `md` — до
+     трёх, от `lg` — столько, сколько выбрано), пропорции плитки, выравнивание заголовка и подписи, заглавные буквы.
+     Плитка — блок «Элемент списка»: картинка, название и ссылка; выбора коллекции в блоке пока нет (SDK не принимает
+     запись в настройках блока), поэтому название и ссылку мерчант вписывает сам. -->
+<div
+  class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body md:gap-8 md:px-8"
+  data-heading-size={settings['heading-size']}
+  data-text-size={settings['text-size']}
+  data-columns={settings.columns}
+  data-columns-mobile={settings['columns-mobile']}
+  data-aspect-ratio={settings['aspect-ratio']}
+  data-align={settings.align}
+  data-caption-align={settings['caption-align']}
+  data-capitals={settings.capitals}
+>
+  {(settings.heading || settings.text) && (
+    <div class="flex w-full flex-col gap-2 text-balance in-data-[align=left]:items-start in-data-[align=left]:text-left in-data-[align=center]:items-center in-data-[align=center]:text-center in-data-[align=right]:items-end in-data-[align=right]:text-right">
+      {settings.heading && (
+        <h2
+          class="m-0 font-heading weight-heading tracking-heading text-heading in-data-[heading-size=small]:text-base in-data-[heading-size=medium]:text-lg in-data-[heading-size=large]:text-xl md:in-data-[heading-size=small]:text-lg md:in-data-[heading-size=medium]:text-xl md:in-data-[heading-size=large]:text-2xl"
+          set:html={settings.heading}
+        />
+      )}
+      {settings.text && (
+        <p
+          class="m-0 max-w-3xl text-pretty text-muted-foreground in-data-[text-size=small]:text-sm in-data-[text-size=medium]:text-base in-data-[text-size=large]:text-lg"
+          set:html={settings.text}
+        />
+      )}
+    </div>
+  )}
+  {blocks.length > 0 && (
+    <ul class="m-0 grid list-none gap-x-grid-column gap-y-grid-row p-0 in-data-[columns-mobile=1]:grid-cols-1 in-data-[columns-mobile=2]:grid-cols-2 md:in-data-[columns=1]:grid-cols-1 md:in-data-[columns=2]:grid-cols-2 md:in-data-[columns=3]:grid-cols-3 md:in-data-[columns=4]:grid-cols-3 md:in-data-[columns=5]:grid-cols-3 md:in-data-[columns=6]:grid-cols-3 lg:in-data-[columns=4]:grid-cols-4 lg:in-data-[columns=5]:grid-cols-5 lg:in-data-[columns=6]:grid-cols-6">
+      {blocks.map((block) => (
+        <li class="min-w-0">
+          <a class="group flex h-full flex-col gap-3 text-muted-foreground no-underline hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href={block.settings.link === '' ? undefined : block.settings.link}>
+            <span class="block overflow-hidden rounded-media border-width-media border-border bg-muted shadow-media in-data-[aspect-ratio=square]:aspect-square in-data-[aspect-ratio=portrait]:aspect-3/4 in-data-[aspect-ratio=landscape]:aspect-4/3">
+              {block.settings.image !== '' ? (
+                <img class="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" src={block.settings.image} alt="" loading="lazy" />
+              ) : (
+                <span class="flex size-full items-center justify-center text-muted-foreground">
+                  <svg class="size-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+                </span>
+              )}
+            </span>
+            {block.settings.label && (
+              <span class="line-clamp-2 text-base in-data-[caption-align=left]:text-left in-data-[caption-align=center]:text-center in-data-[caption-align=right]:text-right in-data-[capitals=true]:uppercase in-data-[capitals=true]:tracking-wide">{block.settings.label}</span>
+            )}
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+</div>

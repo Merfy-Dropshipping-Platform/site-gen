@@ -1,0 +1,128 @@
+{
+  "sdk": 1,
+  "name": "collections",
+  "kind": "section",
+  "title": "Список коллекций",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "caption-align": {
+      "kinds": ["alignment"],
+      "label": "Выравнивание подписи",
+      "about": "Выравнивание названия под плиткой: слева, по центру или справа; заголовок секции выравнивается своим полем `align`",
+      "asks": ["выравнивание подписи", "подпись плитки", "название под картинкой", "caption alignment"]
+    },
+    "capitals": {
+      "kinds": ["toggle"],
+      "label": "Заглавные буквы",
+      "about": "Названия под плитками набраны заглавными буквами, как на vanilla и satin",
+      "asks": ["заглавные", "капс", "прописные", "uppercase", "caps"]
+    }
+  },
+  "settings": [
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "section": "Содержание",
+      "setting": { "kind": "string", "default": "Коллекции", "ai": "title" }
+    },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "", "ai": "description" } },
+    {
+      "id": "text-size",
+      "label": "Размер текста",
+      "setting": {
+        "kind": "select",
+        "default": "small",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "id": "columns", "label": "Колонки", "setting": { "kind": "range", "default": 3, "min": 1, "max": 6, "step": 1 } },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "aspect-ratio",
+      "label": "Пропорции плиток",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "square",
+        "options": [
+          { "value": "square", "label": "Квадрат" },
+          { "value": "portrait", "label": "Портрет" },
+          { "value": "landscape", "label": "Широкий" }
+        ]
+      }
+    },
+    {
+      "id": "columns-mobile",
+      "label": "Колонки на телефоне",
+      "setting": {
+        "kind": "radio",
+        "default": "1",
+        "options": [
+          { "value": "1", "label": "Одна" },
+          { "value": "2", "label": "Две" }
+        ]
+      }
+    },
+    {
+      "id": "align",
+      "label": "Выравнивание заголовка",
+      "setting": { "kind": "alignment", "default": "center" }
+    },
+    {
+      "id": "caption-align",
+      "label": "Выравнивание подписи",
+      "setting": { "kind": "alignment", "default": "left" }
+    },
+    {
+      "id": "capitals",
+      "label": "Заглавные буквы",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Вкл", "off": "Выкл" } }
+    }
+  ],
+  "blocks": {
+    "tile": {
+      "title": "Элемент списка",
+      "limit": 10,
+      "settings": [
+        {
+          "id": "image",
+          "label": "Изображение",
+          "setting": { "kind": "image", "default": "", "maxBytes": 31457280 }
+        },
+        {
+          "id": "label",
+          "label": "Название",
+          "setting": { "kind": "string", "default": "Коллекция" }
+        },
+        {
+          "id": "link",
+          "label": "Ссылка",
+          "setting": { "kind": "url", "default": "/catalog" }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    { "type": "tile", "settings": {} },
+    { "type": "tile", "settings": {} },
+    { "type": "tile", "settings": {} }
+  ]
+}

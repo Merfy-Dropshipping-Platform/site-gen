@@ -87,11 +87,6 @@
       "setting": { "kind": "string", "default": "Email" }
     },
     {
-      "id": "button-label",
-      "label": "Кнопка",
-      "setting": { "kind": "string", "default": "Подписаться" }
-    },
-    {
       "id": "layout",
       "label": "Раскладка",
       "section": "Вид",
@@ -141,7 +136,21 @@
           }
         }
       ]
+    },
+    "button": {
+      "title": "Текст кнопки",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "button-label",
+          "label": "Кнопка",
+          "setting": { "kind": "string", "default": "Подписаться" }
+        }
+      ]
     }
   },
-  "defaultBlocks": [{ "type": "heading", "settings": {} }]
+  "defaultBlocks": [
+    { "type": "heading", "settings": {} },
+    { "type": "button", "settings": {} }
+  ]
 }

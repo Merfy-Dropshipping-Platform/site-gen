@@ -12,14 +12,18 @@ const { settings, blocks, shop } = Astro.props;
   data-layout={settings.layout}
 >
   <div class="flex w-full flex-col gap-6 in-data-[layout=column]:max-w-163 in-data-[layout=column]:in-data-[align=center]:mx-auto in-data-[layout=column]:in-data-[align=center]:items-center in-data-[layout=column]:in-data-[align=center]:text-center in-data-[layout=column]:in-data-[align=right]:ml-auto in-data-[layout=column]:in-data-[align=right]:items-end in-data-[layout=column]:in-data-[align=right]:text-right md:in-data-[layout=row]:flex-row md:in-data-[layout=row]:items-start md:in-data-[layout=row]:justify-between">
-    {(blocks.length > 0 || settings.text) && (
+    {(blocks.some((item) => item.type === 'heading') || settings.text) && (
       <div class="flex flex-col gap-2">
         {blocks.map((block) => (
-          <h2
-            class="m-0 font-heading weight-heading tracking-heading text-heading data-[heading-size=small]:text-base md:data-[heading-size=small]:text-lg data-[heading-size=medium]:text-xl md:data-[heading-size=medium]:text-2xl data-[heading-size=large]:text-2xl md:data-[heading-size=large]:text-3xl"
-            data-heading-size={block.settings['heading-size']}
-            set:html={block.settings.heading}
-          />
+          <div class="contents" data-block={block.type}>
+            {block.type === 'heading' && (
+              <h2
+                class="m-0 font-heading weight-heading tracking-heading text-heading data-[heading-size=small]:text-base md:data-[heading-size=small]:text-lg data-[heading-size=medium]:text-xl md:data-[heading-size=medium]:text-2xl data-[heading-size=large]:text-2xl md:data-[heading-size=large]:text-3xl"
+                data-heading-size={block.settings['heading-size']}
+                set:html={block.settings.heading}
+              />
+            )}
+          </div>
         ))}
         {settings.text && (
           <p
@@ -44,7 +48,13 @@ const { settings, blocks, shop } = Astro.props;
             required
             type="email"
           />
-          <button class="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50" data-ref="submit" type="submit">{settings['button-label']}</button>
+          {blocks.map((block) => (
+            <div class="contents" data-block={block.type}>
+              {block.type === 'button' && (
+                <button class="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50" data-ref="submit" type="submit">{block.settings['button-label']}</button>
+              )}
+            </div>
+          ))}
         </div>
       ) : (
         <div class="flex flex-col gap-4 in-data-[align=center]:items-center in-data-[align=right]:items-end">
@@ -58,7 +68,13 @@ const { settings, blocks, shop } = Astro.props;
             required
             type="email"
           />
-          <button class="inline-flex h-12 min-w-50 cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50" data-ref="submit" type="submit">{settings['button-label']}</button>
+          {blocks.map((block) => (
+            <div class="contents" data-block={block.type}>
+              {block.type === 'button' && (
+                <button class="inline-flex h-12 min-w-50 cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50" data-ref="submit" type="submit">{block.settings['button-label']}</button>
+              )}
+            </div>
+          ))}
         </div>
       )}
       {settings.agreement && (

@@ -389,6 +389,76 @@ describe('dialog: anchor', () => {
     await page.close();
   });
 
+  // Окно «Товар добавлен»: под значком корзины, середина окна под серединой значка (прод: anchorToCartIcon).
+  const CART_PAGE = (icon: string) => `<merfy-section data-section="shop:header" data-section-id="header" style="display:block;position:relative;height:80px;background:#fff">${icon}</merfy-section>
+<main style="display:block;height:3000px">Страница</main>
+<merfy-section data-section="shop:cart-added" data-section-id="added" style="display:block">
+  <div data-behavior="dialog" data-modal="false" data-anchor="cart" data-open-on="cart-add">
+    <dialog data-part="content" id="panel" class="" style="margin:0;right:16px;width:300px"><a href="/cart">В корзину</a></dialog>
+  </div>
+</merfy-section>`;
+  const ICON = (left: number) =>
+    `<a href="/cart" data-action="cart.open" id="cart-icon" style="position:absolute;top:18px;left:${left}px;width:44px;height:44px">Корзина</a>`;
+  const showAdded = async (page: Page) => {
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('merfy:cart:add', { detail: {} })));
+    await page.waitForFunction(() => document.getElementById('panel')?.hasAttribute('open') === true);
+  };
+  interface Box {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+    width: number;
+  }
+  const boxes = (page: Page) =>
+    page.evaluate((): { panel: Box; icon: Box } => {
+      const of = (id: string): Box => {
+        const { top, bottom, left, right, width } = (document.getElementById(id) ?? document.body).getBoundingClientRect();
+        return { top, bottom, left, right, width };
+      };
+      return { panel: of('panel'), icon: of('cart-icon') };
+    });
+
+  it('data-anchor="cart": верх — на 12 px ниже значка корзины, середина окна — под серединой значка, не у левого края', async () => {
+    const { page, errors } = await open(CART_PAGE(ICON(900)));
+    await showAdded(page);
+    const { panel, icon } = await boxes(page);
+    expect(Math.round(panel.top)).toBe(Math.round(icon.bottom) + 12);
+    expect(Math.round(panel.left + panel.width / 2)).toBe(Math.round(icon.left + icon.width / 2));
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('data-anchor="cart": значок у правого края — окно не ближе 16 px к краю; левый край экрана — свободен', async () => {
+    const { page } = await open(CART_PAGE(ICON(1230)));
+    await showAdded(page);
+    const { panel } = await boxes(page);
+    expect(Math.round(1280 - panel.right)).toBe(16);
+    expect(panel.left).toBeGreaterThan(900);
+    await page.close();
+  });
+
+  it('data-anchor="cart": смена размера окна — окно снова под значком', async () => {
+    const { page } = await open(CART_PAGE(ICON(900)));
+    await showAdded(page);
+    await page.$eval('#cart-icon', (el) => {
+      if (el instanceof HTMLElement) el.style.left = '700px';
+    });
+    await page.setViewportSize({ width: 1100, height: 700 });
+    await page.waitForFunction(() => {
+      const panel = document.getElementById('panel')?.getBoundingClientRect();
+      return panel !== undefined && Math.round(panel.left + panel.width / 2) === 722;
+    });
+    await page.close();
+  });
+
+  it('data-anchor="cart": значка корзины нет — окно под шапкой, как при header', async () => {
+    const { page } = await open(CART_PAGE(''));
+    await showAdded(page);
+    expect(await topOf(page)).toBe(80);
+    await page.close();
+  });
+
   it('без data-anchor и с data-anchor="section" — по-прежнему под низом своей секции', async () => {
     for (const attribute of ['', ' data-anchor="section"']) {
       const { page } = await open(PAGE(attribute));

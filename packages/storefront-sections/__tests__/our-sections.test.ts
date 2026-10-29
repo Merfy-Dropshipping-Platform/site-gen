@@ -85,7 +85,7 @@ describe('наши секции блока 10в — проверка при со
   it.each([
     ['login', 'shop:login', ['auth'], ['scheme', 'padding']],
     ['account', 'shop:account', ['auth'], ['scheme']],
-    ['orders', 'shop:orders', ['orders'], ['scheme']],
+    ['orders', 'shop:orders', ['customer', 'orders'], ['scheme']], // e-mail покупателя в подзаголовке — ctx.customer
   ])('%s: страница, одна на список, свой модуль', async (folder, name, uses, wrapper) => {
     const { problems, section } = await prepared(folder);
     expect(problems).toEqual([]);

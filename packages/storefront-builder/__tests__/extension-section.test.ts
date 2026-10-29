@@ -45,6 +45,7 @@ function probe(result: AcceptResult | Error = { status: 'accepted', row: ROW }, 
     accept,
     source: vi.fn(() => Promise.resolve(null)),
     history: vi.fn(() => Promise.resolve([])),
+    errors: vi.fn(() => Promise.resolve([])),
     rollback: vi.fn(() => Promise.resolve(null)),
     log,
   };

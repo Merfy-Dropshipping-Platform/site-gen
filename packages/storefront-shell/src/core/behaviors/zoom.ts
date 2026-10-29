@@ -94,26 +94,9 @@ function buildDialog(photos: readonly string[], at: number): ZoomDialog {
   return { dialog, main, thumbs };
 }
 
-// Окно: showModal, проявление 150 мс ease-out (при «уменьшить движение» — сразу), ←/→ без перехода с последнего
-// на первое, миниатюра и «Закрыть», клик по фону; close (и Escape) убирает окно и возвращает фокус на рамку.
-// Окно открывается на фото, которое сейчас в рамке: его адрес в списке — его место, нет — он первым (как openLightbox).
-function openDialog(host: BehaviorHost, photos: readonly string[], current: string): void {
-  const found = photos.indexOf(current);
-  const list = found >= 0 ? photos : [current, ...photos];
-  const start = found >= 0 ? found : 0;
-  const view = buildDialog(list, start);
-  let at = start;
-  const turn = (step: number): void => {
-    const next = at + step;
-    if (next < 0 || next >= list.length) return;
-    at = next;
-    showPhoto(view, list, at);
-  };
-  view.dialog.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowRight') turn(1);
-    if (event.key === 'ArrowLeft') turn(-1);
-  });
-  // Закрытие — синхронно: окно сразу уходит из документа и фокус возвращается на рамку (close-событие — асинхронно).
+// Закрытие окна: клик по фону и по «Закрыть», Escape (cancel), уход секции. Закрытие — синхронно: окно сразу уходит из
+// документа и фокус возвращается на рамку (close-событие — асинхронно). Клик по миниатюре отдаётся в pick.
+function listenClose(host: BehaviorHost, view: ZoomDialog, pick: (thumb: number) => void): void {
   const shut = (): void => {
     view.dialog.close();
     view.dialog.remove();
@@ -126,17 +109,35 @@ function openDialog(host: BehaviorHost, photos: readonly string[], current: stri
     const button = target instanceof Element ? target.closest('button') : null;
     if (!(button instanceof HTMLButtonElement)) return;
     if (button.hasAttribute('data-zoom-close')) return shut();
-    const thumbAt = view.thumbs.indexOf(button);
-    if (thumbAt >= 0) {
-      at = thumbAt;
-      showPhoto(view, list, at);
-    }
+    pick(view.thumbs.indexOf(button));
   });
   view.dialog.addEventListener('cancel', (event) => {
     event.preventDefault();
     shut();
   });
   host.signal.addEventListener('abort', shut);
+}
+
+// Окно: showModal, проявление 150 мс ease-out (при «уменьшить движение» — сразу), ←/→ без перехода с последнего
+// на первое, миниатюра и «Закрыть», клик по фону; close (и Escape) убирает окно и возвращает фокус на рамку.
+// Окно открывается на фото, которое сейчас в рамке: его адрес в списке — его место, нет — он первым (как openLightbox).
+function openDialog(host: BehaviorHost, photos: readonly string[], current: string): void {
+  const found = photos.indexOf(current);
+  const list = found >= 0 ? photos : [current, ...photos];
+  const start = found >= 0 ? found : 0;
+  const view = buildDialog(list, start);
+  let at = start;
+  // Фото с номером index; за пределами списка (первое, последнее, миниатюры нет) — остаётся прежнее.
+  const show = (index: number): void => {
+    if (index < 0 || index >= list.length) return;
+    at = index;
+    showPhoto(view, list, at);
+  };
+  view.dialog.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowRight') show(at + 1);
+    if (event.key === 'ArrowLeft') show(at - 1);
+  });
+  listenClose(host, view, show);
   document.body.append(view.dialog);
   view.dialog.showModal();
   if (!host.motion.reduced) view.dialog.animate({ opacity: [0, 1] }, { duration: 150, easing: 'ease-out' });

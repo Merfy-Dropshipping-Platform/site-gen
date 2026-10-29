@@ -54,8 +54,9 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
       // Блок 10 (Р10а-6): открыть по событию SDK — cart-open: merfy:cart:open, cart-add: merfy:cart:add,
       // search-open: merfy:search:open (панель поиска, действие search.open).
       'open-on': { kind: 'enum', values: ['none', 'cart-open', 'cart-add', 'search-open'], default: 'none' },
-      // Место немодального окна: section — под низом своей секции, header — под шапкой страницы (секции перед <main>).
-      anchor: { kind: 'enum', values: ['section', 'header'], default: 'section' },
+      // Место немодального окна: section — под низом своей секции, header — под шапкой страницы (секции перед <main>),
+      // cart — под значком корзины страницы (cart.open), середина окна под серединой значка; значка нет — как header.
+      anchor: { kind: 'enum', values: ['section', 'header', 'cart'], default: 'section' },
     },
     onSection: false,
   },

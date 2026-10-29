@@ -220,7 +220,9 @@ const CASES: Case[] = [
     name: 'overlap: крестик на заголовке',
     expected: 'overlap',
     html: page(
-      '<div style="position:relative;margin:16px"><h2 style="margin:0">Подписка на новости магазина</h2><button aria-label="Закрыть" style="position:absolute;right:60px;top:0;width:44px;height:44px">×</button></div>',
+      // Крестик над началом заголовка: первая строка начинается у левого края в любом шрифте. Справа (right:60px) наложение
+      // зависело от ширины шрифта — конец первой строки на телефоне ложился впритык к крестику и в CI на Linux не находился.
+      '<div style="position:relative;margin:16px"><h2 style="margin:0">Подписка на новости магазина</h2><button aria-label="Закрыть" style="position:absolute;left:24px;top:0;width:44px;height:44px">×</button></div>',
     ),
   },
   {

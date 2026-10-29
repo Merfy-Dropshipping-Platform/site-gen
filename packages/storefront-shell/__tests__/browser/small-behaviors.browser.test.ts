@@ -155,6 +155,22 @@ describe('card-photos', () => {
     await page.close();
   });
 
+  it('свайп идёт от фото в рамке: секция сменила фото сама (миниатюра, вариант) — листается дальше от него', async () => {
+    const { page } = await openPage(browser, { body: card('/p/1.jpg /p/2.jpg /p/3.jpg'), behaviors: ['cardPhotos'] });
+    await page.evaluate(() => document.getElementById('img')?.setAttribute('src', '/p/2.jpg'));
+    await swipe(page, -60, 0);
+    expect(await src(page)).toBe('/p/3.jpg');
+    await swipe(page, 60, 0);
+    await swipe(page, 60, 0);
+    expect(await src(page)).toBe('/p/1.jpg');
+    await page.evaluate(() => document.getElementById('img')?.setAttribute('src', '/p/variant.jpg'));
+    await swipe(page, 60, 0);
+    expect(await src(page)).toBe('/p/variant.jpg');
+    await swipe(page, -60, 0);
+    expect(await src(page)).toBe('/p/1.jpg');
+    await page.close();
+  });
+
   it('после свайпа нажатие 400 мс не срабатывает, потом — переход по ссылке', async () => {
     const { page } = await openPage(browser, { body: card('/p/1.jpg /p/2.jpg'), behaviors: ['cardPhotos'] });
     await swipe(page, -60, 0);

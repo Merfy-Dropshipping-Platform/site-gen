@@ -87,18 +87,19 @@ export const cardPhotos: Behavior<'card-photos'> = {
     // Горизонтальный жест по фото — странице, вертикальная прокрутка — браузеру: без pan-y телефон отдаёт
     // свайп прокрутке или своему жесту «назад», и фото не листается (прод card-photo-swipe.ts, lockHorizontalGesture).
     image.style.touchAction = 'pan-y';
-    let at = 0;
     let suppressedUntil = 0;
+    // Какое фото сейчас — по адресу в рамке, а не по счётчику behavior: секция может сменить фото сама (миниатюра,
+    // фото выбранного варианта «Товара»), и свайп идёт от того, что видно. Фото вне списка — перед первым.
+    const at = (): number => photos.indexOf(image.getAttribute('src') ?? '');
     const show = (index: number): void => {
-      at = index;
-      image.setAttribute('src', photos[at] ?? photos[0] ?? '');
+      image.setAttribute('src', photos[index] ?? photos[0] ?? '');
     };
 
     const nextBySwipe = (from: Swipe, to: Swipe): number | null => {
       const dx = Math.abs(to.x - from.x);
       const dy = Math.abs(to.y - from.y);
       if (dx < SWIPE_MIN_PX || dx < dy * SWIPE_RATIO) return null;
-      return to.x < from.x ? at + 1 : at - 1;
+      return to.x < from.x ? at() + 1 : at() - 1;
     };
 
     listenSwipe(host, nextBySwipe, (target) => {

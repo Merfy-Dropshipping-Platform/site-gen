@@ -3,28 +3,96 @@
   "name": "product",
   "kind": "section",
   "title": "Товар",
-  "uses": ["variants"],
+  "uses": ["theme", "variants", "cart", "favorites"],
+  "themeSettings": ["wishlist-enabled"],
+  "names": {
+    "size": {
+      "kinds": ["select"],
+      "label": "Размер",
+      "about": "Размер фото товара на компьютере: главное фото 440, 552 или 640 px; миниатюры подстраиваются",
+      "asks": ["размер фото", "размер галереи", "насколько крупное фото", "gallery-size", "photo-size"]
+    },
+    "buy-now": {
+      "kinds": ["toggle"],
+      "label": "Динамическая кнопка",
+      "about": "Кнопка «Купить сейчас» рядом с «Добавить в корзину»: кладёт товар в корзину и сразу ведёт в оформление заказа",
+      "asks": ["купить сейчас", "динамическая кнопка", "быстрая покупка", "buy-now", "express"]
+    },
+    "counter": {
+      "kinds": ["select"],
+      "label": "Вид счётчика",
+      "about": "Как выглядит счётчик количества: без рамки, в рамке или две залитые кнопки",
+      "asks": ["счётчик", "количество", "вид счётчика", "quantity", "stepper"]
+    },
+    "variants-style": {
+      "kinds": ["radio"],
+      "label": "Стиль",
+      "about": "Как показаны значения вариантов: кнопками в ряд или выпадающим списком",
+      "asks": ["стиль вариантов", "список вариантов", "выпадающий список", "variants-style", "dropdown"]
+    },
+    "variants-shape": {
+      "kinds": ["radio"],
+      "label": "Вариации",
+      "about": "Форма образца у значения с цветом: круг, квадрат или без образцов — текстом",
+      "asks": ["вариации", "форма образца", "образцы вариантов", "variants-shape", "swatch-shape"]
+    },
+    "button-size": {
+      "kinds": ["select"],
+      "label": "Размер кнопок",
+      "about": "Высота и шрифт кнопок покупки: обычные или крупные, заглавными буквами",
+      "asks": ["размер кнопок", "крупные кнопки", "высота кнопок", "button-size"]
+    },
+    "discount-badge": {
+      "kinds": ["toggle"],
+      "label": "Значок скидки",
+      "about": "Плашка «−20 %» на фото, когда у товара или выбранного варианта есть старая цена",
+      "asks": ["значок скидки", "плашка скидки", "бейдж скидки", "discount-badge", "sale-badge"]
+    },
+    "breadcrumbs": {
+      "kinds": ["toggle"],
+      "label": "Хлебные крошки",
+      "about": "Строка «Главная — коллекция — товар» над товаром",
+      "asks": ["хлебные крошки", "путь до товара", "breadcrumbs", "navigation-path"]
+    }
+  },
   "settings": [
     { "id": "product", "label": "Выбор товара", "setting": { "kind": "product" } },
     {
-      "id": "price",
-      "label": "Стоимость",
+      "id": "layout",
+      "label": "Макет",
       "setting": {
-        "kind": "hint",
-        "title": "Настройка недоступна",
-        "text": "Изменения проводятся на странице",
-        "link": { "label": "Товары", "href": "/products" }
+        "kind": "select",
+        "default": "stacked",
+        "options": [
+          { "value": "stacked", "label": "Сложенный" },
+          { "value": "two-columns", "label": "2 колонки" },
+          { "value": "carousel", "label": "Карусель" },
+          { "value": "split", "label": "Миниатюрный" }
+        ]
       }
     },
     {
-      "id": "sold-out",
-      "label": "Распроданное",
+      "id": "size",
+      "label": "Размер",
       "setting": {
         "kind": "select",
-        "default": "show",
+        "default": "medium",
         "options": [
-          { "value": "show", "label": "Показывать" },
-          { "value": "hide", "label": "Прятать" }
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "image-position",
+      "label": "Позиция фото",
+      "setting": {
+        "kind": "radio",
+        "default": "left",
+        "options": [
+          { "value": "left", "label": "Слева" },
+          { "value": "right", "label": "Справа" }
         ]
       }
     },
@@ -39,6 +107,188 @@
           { "value": "hover", "label": "Наведение" }
         ]
       }
+    },
+    {
+      "id": "buy-now",
+      "label": "Динамическая кнопка",
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "price",
+      "label": "Стоимость",
+      "setting": {
+        "kind": "hint",
+        "title": "Настройка недоступна",
+        "text": "Изменения проводятся на странице",
+        "link": { "label": "Товары", "href": "/products" }
+      }
+    },
+    {
+      "id": "counter",
+      "label": "Вид счётчика",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "inline",
+        "options": [
+          { "value": "inline", "label": "Без рамки" },
+          { "value": "boxed", "label": "В рамке" },
+          { "value": "split", "label": "Две кнопки" }
+        ]
+      }
+    },
+    {
+      "id": "button-size",
+      "label": "Размер кнопок",
+      "setting": {
+        "kind": "select",
+        "default": "large",
+        "options": [
+          { "value": "regular", "label": "Обычные" },
+          { "value": "large", "label": "Крупные, заглавными" }
+        ]
+      }
+    },
+    {
+      "id": "button-style",
+      "label": "Стиль кнопки",
+      "setting": {
+        "kind": "select",
+        "default": "secondary",
+        "options": [
+          { "value": "primary", "label": "«Добавить в корзину» залита" },
+          { "value": "secondary", "label": "«Добавить в корзину» контуром" }
+        ]
+      }
+    },
+    {
+      "id": "discount-badge",
+      "label": "Значок скидки",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    {
+      "id": "breadcrumbs",
+      "label": "Хлебные крошки",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    {
+      "id": "favorite",
+      "label": "Избранное",
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    {
+      "id": "sold-out",
+      "label": "Распроданное",
+      "setting": {
+        "kind": "select",
+        "default": "show",
+        "options": [
+          { "value": "show", "label": "Показывать" },
+          { "value": "hide", "label": "Прятать" }
+        ]
+      }
     }
+  ],
+  "blocks": {
+    "text": {
+      "title": "Текст",
+      "limit": 1,
+      "settings": [
+        { "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "", "ai": "description" } },
+        {
+          "id": "text-size",
+          "label": "Размер текста",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        }
+      ]
+    },
+    "title": {
+      "title": "Название",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "heading-size",
+          "label": "Размер",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        }
+      ]
+    },
+    "variants": {
+      "title": "Варианты",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "variants-style",
+          "label": "Стиль",
+          "setting": {
+            "kind": "radio",
+            "default": "list",
+            "options": [
+              { "value": "button", "label": "Кнопка" },
+              { "value": "list", "label": "Список" }
+            ]
+          }
+        },
+        {
+          "id": "variants-shape",
+          "label": "Вариации",
+          "setting": {
+            "kind": "radio",
+            "default": "none",
+            "options": [
+              { "value": "circle", "label": "Круг" },
+              { "value": "square", "label": "Квадрат" },
+              { "value": "none", "label": "Нет" }
+            ]
+          }
+        }
+      ]
+    },
+    "quantity": { "title": "Количество", "limit": 1, "settings": [] },
+    "buttons": {
+      "title": "Кнопки",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "button-label",
+          "label": "Текст",
+          "section": "Основная кнопка",
+          "setting": { "kind": "string", "default": "Добавить в корзину" }
+        },
+        {
+          "id": "button-second-label",
+          "label": "Текст",
+          "section": "Динамическая кнопка",
+          "setting": { "kind": "string", "default": "Купить сейчас" }
+        }
+      ]
+    },
+    "description": { "title": "Описание", "limit": 1, "settings": [] }
+  },
+  "defaultBlocks": [
+    { "type": "text", "settings": {} },
+    { "type": "title", "settings": {} },
+    { "type": "variants", "settings": {} },
+    { "type": "quantity", "settings": {} },
+    { "type": "buttons", "settings": {} },
+    { "type": "description", "settings": {} }
   ]
 }

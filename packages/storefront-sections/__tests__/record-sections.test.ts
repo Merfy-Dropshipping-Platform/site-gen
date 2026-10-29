@@ -55,12 +55,14 @@ describe('наши секции с записями', () => {
     const renderer = rendererOf();
     const request = await requestOf('product');
     const settings = { product: 'pled', price: null };
-    const html = await renderer.render({ ...request, settings, records: { product: PRODUCT } });
+    // Название, цена и наличие — блок «Название»: блоки по умолчанию ставит платформа, тест даёт его сам.
+    const blocks = [{ id: 'title-1', type: 'title', settings: { 'heading-size': 'medium' } }];
+    const html = await renderer.render({ ...request, settings, blocks, records: { product: PRODUCT } });
     expect(html).toContain('Плед «Нова»');
     expect(html).toContain(money(350000).text);
-    expect(html).toContain(`<s class="text-lg text-price-old">${money(420000).text}</s>`);
+    expect(html).toContain(`<s class="text-base text-price-old" data-ref="compare">${money(420000).text}</s>`);
     expect(html).toContain('В наличии');
-    expect(await renderer.render({ ...request, settings, records: { product: null } })).not.toContain('<h1');
+    expect(await renderer.render({ ...request, settings, blocks, records: { product: null } })).not.toContain('<h1');
   }, 30_000);
 
   it('«Коллекция»: название и карточки товаров; «все товары» — без заголовка', async () => {

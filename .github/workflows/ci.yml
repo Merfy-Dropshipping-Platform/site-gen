@@ -2398,6 +2398,72 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # Тексты документации витринного SDK (packages/sdk-docs/generated) → MinIO, бакет merfy-docs
+  # (раздел «Документация», З2). Только на пуш в dev и только если пуш менял packages/sdk-docs/**.
+  # Нет секретов DOCS_S3_ENDPOINT / DOCS_S3_ACCESS_KEY / DOCS_S3_SECRET_KEY — шаг пропускается, CI не падает.
+  # Свежесть generated/ проверяет тест пакета в build-and-test, а эта джоба идёт после него.
+  publish-sdk-docs:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Нужна история до предыдущего коммита ветки: по ней видно, менялся ли packages/sdk-docs.
+          fetch-depth: 0
+
+      - name: Менялся ли packages/sdk-docs и есть ли ключи хранилища
+        id: gate
+        env:
+          BEFORE: ${{ github.event.before }}
+          DOCS_S3_ENDPOINT: ${{ secrets.DOCS_S3_ENDPOINT }}
+          DOCS_S3_ACCESS_KEY: ${{ secrets.DOCS_S3_ACCESS_KEY }}
+          DOCS_S3_SECRET_KEY: ${{ secrets.DOCS_S3_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          run=true
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
+            || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "предыдущий коммит ветки неизвестен — считаю, что документация менялась"
+          elif git diff --quiet "$BEFORE" "$GITHUB_SHA" -- packages/sdk-docs; then
+            echo "packages/sdk-docs в этом пуше не менялся — выгрузка не нужна"
+            run=false
+          fi
+          if [ "$run" = true ] && { [ -z "$DOCS_S3_ENDPOINT" ] || [ -z "$DOCS_S3_ACCESS_KEY" ] || [ -z "$DOCS_S3_SECRET_KEY" ]; }; then
+            echo "::notice::секреты DOCS_S3_ENDPOINT / DOCS_S3_ACCESS_KEY / DOCS_S3_SECRET_KEY не заданы — выгрузка документации пропущена"
+            run=false
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v3
+        if: steps.gate.outputs.run == 'true'
+        with:
+          version: 10.14.0
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: "22.23.3"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
+        run: |
+          pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN" --location=user
+          pnpm install --frozen-lockfile
+
+      - name: Выгрузить документацию витринного SDK в MinIO
+        if: steps.gate.outputs.run == 'true'
+        env:
+          DOCS_S3_ENDPOINT: ${{ secrets.DOCS_S3_ENDPOINT }}
+          DOCS_S3_ACCESS_KEY: ${{ secrets.DOCS_S3_ACCESS_KEY }}
+          DOCS_S3_SECRET_KEY: ${{ secrets.DOCS_S3_SECRET_KEY }}
+        run: pnpm --dir packages/sdk-docs docs:publish
+
   deploy-to-coolify:
     # Прод живёт на ветке production (spec 116, 26.09.2026). main выкатывается в dev вебхуком
     # Coolify сам; ручной вызов /deploy на main дал бы дубль в очереди.

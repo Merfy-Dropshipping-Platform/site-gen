@@ -196,7 +196,8 @@ describe('поведение catalog: фильтры', () => {
   it('форма в открытом окне (фильтры на телефоне): выбор поля запроса не шлёт, отправка формы — шлёт', async () => {
     const fresh = { page: 1, rows: [4], form: FORM };
     const asked = server({ '/catalog?sort=price_desc': pageHtml(fresh, 'sort=price_desc') });
-    const inDialog = `<dialog open>${FORM.replace('</form>', '<button type="submit">Показать</button></form>')}</dialog>`;
+    // Как в шаблоне «Каталога»: форма снаружи, окно с полями и кнопкой — внутри неё.
+    const inDialog = FORM.replace('<select', '<dialog open><select').replace('</form>', '<button type="submit">Показать</button></dialog></form>');
     open({ page: 1, rows: [1, 2], form: inDialog });
     choose('price_desc', false);
     await settle();
@@ -210,7 +211,7 @@ describe('поведение catalog: фильтры', () => {
 
   it('форма в закрытом окне (на компьютере окно стоит в потоке): выбор поля применяется сразу', async () => {
     const asked = server({ '/catalog?sort=price_desc': pageHtml({ page: 1, rows: [4], form: FORM }, 'sort=price_desc') });
-    open({ page: 1, rows: [1, 2], form: `<dialog>${FORM}</dialog>` });
+    open({ page: 1, rows: [1, 2], form: FORM.replace('<select', '<dialog><select').replace('</select>', '</select></dialog>') });
     choose('price_desc', false);
     await settle();
     expect(asked.map((one) => one.path)).toEqual(['/catalog?sort=price_desc']);

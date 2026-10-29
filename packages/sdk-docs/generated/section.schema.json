@@ -1484,7 +1484,7 @@
               "id": {
                 "type": "string",
                 "const": "video",
-                "description": "Адрес видео"
+                "description": "Видеофайл секции: мерчант загружает его в панели, на витрине он играет в плеере браузера. Ссылки на YouTube и Vimeo не поддерживаются — тег `iframe` в шаблоне запрещён"
               },
               "label": {
                 "type": "string",
@@ -1532,19 +1532,107 @@
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "const": "url"
+                        "const": "video"
                       },
                       "default": {
                         "type": "string"
                       },
-                      "placeholder": {
-                        "type": "string",
-                        "minLength": 1
+                      "maxBytes": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
                       }
                     },
                     "required": [
                       "kind",
-                      "default"
+                      "default",
+                      "maxBytes"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "control": {
+                "type": "string",
+                "const": "segment"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "setting"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "const": "poster",
+                "description": "Кадр, который виден, пока видео не началось"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sublabel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visibleWhen": {
+                "type": "object",
+                "properties": {
+                  "setting": {
+                    "type": "string"
+                  },
+                  "equals": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "setting",
+                  "equals"
+                ],
+                "additionalProperties": false
+              },
+              "setting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "image"
+                      },
+                      "default": {
+                        "type": "string"
+                      },
+                      "maxBytes": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default",
+                      "maxBytes"
                     ],
                     "additionalProperties": false
                   }
@@ -5397,6 +5485,303 @@
             "properties": {
               "id": {
                 "type": "string",
+                "const": "video-autoplay",
+                "description": "Видео начинает играть само, без звука: браузеры не запускают видео со звуком без нажатия"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sublabel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visibleWhen": {
+                "type": "object",
+                "properties": {
+                  "setting": {
+                    "type": "string"
+                  },
+                  "equals": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "setting",
+                  "equals"
+                ],
+                "additionalProperties": false
+              },
+              "setting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "toggle"
+                      },
+                      "default": {
+                        "type": "boolean"
+                      },
+                      "labels": {
+                        "type": "object",
+                        "properties": {
+                          "on": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "off": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "on",
+                          "off"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default",
+                      "labels"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "control": {
+                "type": "string",
+                "const": "segment"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "setting"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "const": "video-muted",
+                "description": "Видео играет без звука; поле показано при выключенном `video-autoplay` — с автозапуском звука нет всегда"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sublabel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visibleWhen": {
+                "type": "object",
+                "properties": {
+                  "setting": {
+                    "type": "string"
+                  },
+                  "equals": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "setting",
+                  "equals"
+                ],
+                "additionalProperties": false
+              },
+              "setting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "toggle"
+                      },
+                      "default": {
+                        "type": "boolean"
+                      },
+                      "labels": {
+                        "type": "object",
+                        "properties": {
+                          "on": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "off": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "on",
+                          "off"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default",
+                      "labels"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "control": {
+                "type": "string",
+                "const": "segment"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "setting"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "const": "video-loop",
+                "description": "Закончившись, видео начинается сначала"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sublabel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visibleWhen": {
+                "type": "object",
+                "properties": {
+                  "setting": {
+                    "type": "string"
+                  },
+                  "equals": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "setting",
+                  "equals"
+                ],
+                "additionalProperties": false
+              },
+              "setting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "toggle"
+                      },
+                      "default": {
+                        "type": "boolean"
+                      },
+                      "labels": {
+                        "type": "object",
+                        "properties": {
+                          "on": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "off": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "on",
+                          "off"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default",
+                      "labels"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "control": {
+                "type": "string",
+                "const": "segment"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "setting"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
                 "const": "interval",
                 "description": "Секунд между слайдами; поле показано при `autoplay`"
               },
@@ -5631,6 +6016,7 @@
                 "url",
                 "image",
                 "image-pair",
+                "video",
                 "select",
                 "radio",
                 "toggle",
@@ -7150,7 +7536,7 @@
                     "id": {
                       "type": "string",
                       "const": "video",
-                      "description": "Адрес видео"
+                      "description": "Видеофайл секции: мерчант загружает его в панели, на витрине он играет в плеере браузера. Ссылки на YouTube и Vimeo не поддерживаются — тег `iframe` в шаблоне запрещён"
                     },
                     "label": {
                       "type": "string",
@@ -7198,19 +7584,107 @@
                           "properties": {
                             "kind": {
                               "type": "string",
-                              "const": "url"
+                              "const": "video"
                             },
                             "default": {
                               "type": "string"
                             },
-                            "placeholder": {
-                              "type": "string",
-                              "minLength": 1
+                            "maxBytes": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
                             }
                           },
                           "required": [
                             "kind",
-                            "default"
+                            "default",
+                            "maxBytes"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "control": {
+                      "type": "string",
+                      "const": "segment"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "setting"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "poster",
+                      "description": "Кадр, который виден, пока видео не началось"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sublabel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "section": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "row": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "visibleWhen": {
+                      "type": "object",
+                      "properties": {
+                        "setting": {
+                          "type": "string"
+                        },
+                        "equals": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "setting",
+                        "equals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "setting": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "image"
+                            },
+                            "default": {
+                              "type": "string"
+                            },
+                            "maxBytes": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default",
+                            "maxBytes"
                           ],
                           "additionalProperties": false
                         }
@@ -10966,6 +11440,303 @@
                       "type": "string",
                       "const": "autoplay",
                       "description": "Слайды меняются без нажатия"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sublabel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "section": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "row": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "visibleWhen": {
+                      "type": "object",
+                      "properties": {
+                        "setting": {
+                          "type": "string"
+                        },
+                        "equals": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "setting",
+                        "equals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "setting": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "toggle"
+                            },
+                            "default": {
+                              "type": "boolean"
+                            },
+                            "labels": {
+                              "type": "object",
+                              "properties": {
+                                "on": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "off": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "on",
+                                "off"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default",
+                            "labels"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "control": {
+                      "type": "string",
+                      "const": "segment"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "setting"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "video-autoplay",
+                      "description": "Видео начинает играть само, без звука: браузеры не запускают видео со звуком без нажатия"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sublabel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "section": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "row": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "visibleWhen": {
+                      "type": "object",
+                      "properties": {
+                        "setting": {
+                          "type": "string"
+                        },
+                        "equals": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "setting",
+                        "equals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "setting": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "toggle"
+                            },
+                            "default": {
+                              "type": "boolean"
+                            },
+                            "labels": {
+                              "type": "object",
+                              "properties": {
+                                "on": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "off": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "on",
+                                "off"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default",
+                            "labels"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "control": {
+                      "type": "string",
+                      "const": "segment"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "setting"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "video-muted",
+                      "description": "Видео играет без звука; поле показано при выключенном `video-autoplay` — с автозапуском звука нет всегда"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sublabel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "section": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "row": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "visibleWhen": {
+                      "type": "object",
+                      "properties": {
+                        "setting": {
+                          "type": "string"
+                        },
+                        "equals": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "setting",
+                        "equals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "setting": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "toggle"
+                            },
+                            "default": {
+                              "type": "boolean"
+                            },
+                            "labels": {
+                              "type": "object",
+                              "properties": {
+                                "on": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "off": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "on",
+                                "off"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default",
+                            "labels"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "control": {
+                      "type": "string",
+                      "const": "segment"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "setting"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "video-loop",
+                      "description": "Закончившись, видео начинается сначала"
                     },
                     "label": {
                       "type": "string",

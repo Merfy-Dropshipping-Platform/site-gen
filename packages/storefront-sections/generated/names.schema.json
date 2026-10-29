@@ -53,6 +53,7 @@
                 "url",
                 "image",
                 "image-pair",
+                "video",
                 "select",
                 "radio",
                 "toggle",

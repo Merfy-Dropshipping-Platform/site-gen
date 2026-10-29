@@ -1,0 +1,148 @@
+{
+  "sdk": 1,
+  "name": "video",
+  "kind": "section",
+  "title": "Видео",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "capitals": {
+      "kinds": ["toggle"],
+      "label": "Заглавные буквы",
+      "about": "Заголовок набран заглавными буквами, как на rose",
+      "asks": ["заглавные", "капс", "прописные", "uppercase", "caps"]
+    },
+    "text-style": {
+      "kinds": ["select"],
+      "label": "Стиль текста",
+      "about": "Начертание заголовка и подзаголовка: обычное или курсив, как на vanilla",
+      "asks": ["стиль текста", "курсив", "наклонный текст", "italic", "text style"]
+    }
+  },
+  "tokens": {
+    "custom-scrim": { "kind": "color", "about": "Цвет затемнения видео: тёмный при любой цветовой схеме", "default": "#000000" }
+  },
+  "settings": [
+    {
+      "id": "video",
+      "label": "Видео",
+      "setting": { "kind": "video", "default": "", "maxBytes": 52428800 }
+    },
+    {
+      "id": "layout",
+      "label": "Положение видео",
+      "setting": {
+        "kind": "radio",
+        "default": "window",
+        "options": [
+          { "value": "fullscreen", "label": "На весь экран" },
+          { "value": "window", "label": "Окно" }
+        ]
+      }
+    },
+    {
+      "id": "height",
+      "label": "Размер",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "section": "Содержание",
+      "setting": { "kind": "string", "default": "Видео о магазине", "ai": "title" }
+    },
+    {
+      "id": "subheading",
+      "label": "Подзаголовок",
+      "setting": { "kind": "string", "default": "", "ai": "description" }
+    },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "align",
+      "label": "Выравнивание",
+      "section": "Вид",
+      "setting": { "kind": "alignment", "default": "left" }
+    },
+    {
+      "id": "capitals",
+      "label": "Заглавные буквы",
+      "setting": {
+        "kind": "toggle",
+        "default": false,
+        "labels": { "on": "Да", "off": "Нет" }
+      }
+    },
+    {
+      "id": "text-style",
+      "label": "Стиль текста",
+      "setting": {
+        "kind": "select",
+        "default": "normal",
+        "options": [
+          { "value": "normal", "label": "Обычный" },
+          { "value": "italic", "label": "Курсив" }
+        ]
+      }
+    },
+    {
+      "id": "overlay",
+      "label": "Затемнение",
+      "setting": { "kind": "range", "default": 0, "min": 0, "max": 100, "step": 5 }
+    },
+    {
+      "id": "poster",
+      "label": "Обложка",
+      "section": "Воспроизведение",
+      "setting": { "kind": "image", "default": "", "maxBytes": 31457280 }
+    },
+    {
+      "id": "video-autoplay",
+      "label": "Автозапуск",
+      "setting": {
+        "kind": "toggle",
+        "default": false,
+        "labels": { "on": "Да", "off": "Нет" }
+      }
+    },
+    {
+      "id": "video-muted",
+      "label": "Без звука",
+      "visibleWhen": { "setting": "video-autoplay", "equals": false },
+      "setting": {
+        "kind": "toggle",
+        "default": false,
+        "labels": { "on": "Да", "off": "Нет" }
+      }
+    },
+    {
+      "id": "video-loop",
+      "label": "Повтор",
+      "setting": {
+        "kind": "toggle",
+        "default": false,
+        "labels": { "on": "Да", "off": "Нет" }
+      }
+    }
+  ]
+}

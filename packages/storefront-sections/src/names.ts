@@ -7,7 +7,7 @@ import { z } from 'zod';
 // сквозных настроек — generated/shared-settings.json, его пишет pnpm generate из панели темы (Р3.4). Форму и смысл
 // данных проверяет parseNames при загрузке модуля: сломанный словарь — исключение со списком проблем.
 
-export const SDK_KINDS = ['string', 'text', 'richtext', 'url', 'image', 'image-pair', 'select', 'radio', 'toggle',
+export const SDK_KINDS = ['string', 'text', 'richtext', 'url', 'image', 'image-pair', 'video', 'select', 'radio', 'toggle',
   'range', 'alignment', 'color-scheme', 'padding', 'menu', 'product', 'collection', 'blog', 'policy', 'hint'] as const;
 export type SdkKind = (typeof SDK_KINDS)[number];
 

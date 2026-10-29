@@ -59,6 +59,12 @@ const imagePairSpec = z.strictObject({
   default: imagePairValue,
   maxBytes: z.int().positive(),
 });
+// Видео (базовые секции, E13): адрес файла в хранилище магазина, как у image; панель загружает файл не больше maxBytes.
+const videoSpec = z.strictObject({
+  kind: z.literal('video'),
+  default: z.string(),
+  maxBytes: z.int().positive(),
+});
 const radioSpec = z.strictObject({
   kind: z.literal('radio'),
   default: z.string(),
@@ -96,6 +102,7 @@ export const sectionFieldShape = settingFieldShape.extend({
     richtextSpecShape,
     menuSpecShape,
     imagePairSpec,
+    videoSpec,
     radioSpec,
     rangeSpec,
     alignmentSpec,
@@ -125,14 +132,17 @@ const ONLY_KEYS = (value: Record<string, unknown>, keys: readonly string[]): boo
   Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 const onStep = (value: number, min: number, step: number): boolean =>
   Math.abs((value - min) / step - Math.round((value - min) / step)) < 1e-9;
-const isImageUrl = (value: unknown): boolean =>
+const isMediaUrl = (value: unknown): boolean =>
   typeof value === 'string' && (value === '' || (value.length <= IMAGE_URL_MAX && IMAGE_URL.test(value)));
 
 // Проверки значений видов части 5 — таблица Р1-5-3. Каждая возвращает текст «<путь>: нужно …» или undefined.
 const imagePairText = (path: string, value: unknown): string | undefined =>
-  isRecord(value) && ONLY_KEYS(value, ['url1', 'url2']) && isImageUrl(value.url1) && isImageUrl(value.url2)
+  isRecord(value) && ONLY_KEYS(value, ['url1', 'url2']) && isMediaUrl(value.url1) && isMediaUrl(value.url2)
     ? undefined
     : `${path}: нужны два адреса картинок http(s):// до ${IMAGE_URL_MAX} знаков или пустые строки`;
+
+const videoText = (path: string, value: unknown): string | undefined =>
+  isMediaUrl(value) ? undefined : `${path}: нужна пустая строка или адрес видео http(s):// до ${IMAGE_URL_MAX} знаков`;
 
 const oneOfText = (path: string, values: readonly string[], value: unknown): string | undefined =>
   typeof value === 'string' && values.includes(value) ? undefined : `${path}: нужно одно из: ${values.join(', ')}`;
@@ -179,7 +189,7 @@ const richtextText = (path: string, value: unknown): string | undefined =>
     ? undefined
     : `${path}: нужно HTML до ${RICHTEXT_MAX} знаков`;
 
-type CheckedKind = 'menu' | 'richtext' | 'image-pair' | 'radio' | 'range' | 'alignment' | 'color-scheme' | 'padding';
+type CheckedKind = 'menu' | 'richtext' | 'image-pair' | 'video' | 'radio' | 'range' | 'alignment' | 'color-scheme' | 'padding';
 type CheckedSpec = Extract<SectionSettingSpec, { kind: CheckedKind }>;
 
 const KIND_CHECKS: {
@@ -192,6 +202,7 @@ const KIND_CHECKS: {
   menu: (path, _spec, value) => menuText(path, value),
   richtext: (path, _spec, value) => richtextText(path, value),
   'image-pair': (path, _spec, value) => imagePairText(path, value),
+  video: (path, _spec, value) => videoText(path, value),
   radio: (path, spec, value) =>
     oneOfText(
       path,

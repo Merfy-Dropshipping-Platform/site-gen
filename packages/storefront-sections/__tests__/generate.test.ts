@@ -152,7 +152,8 @@ describe('что внутри', () => {
     // Блок 11, часть 11б: шесть новых имён — шесть строк таблиц; блок 10, часть 10б — сквозная wishlist-enabled;
     // блок 15, часть 15в: zoom; #372: layout и active-link; каталог: шесть имён карточки товара (cards, columns-mobile,
     // button-style, image-fit, swatches, favorite); первый экран: button-second-label и button-second-link.
-    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(74);
+    // Видео: poster, video-autoplay, video-muted, video-loop.
+    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(78);
     expect(markdown.endsWith(' |\n')).toBe(true);
   });
 });

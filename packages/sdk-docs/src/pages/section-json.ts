@@ -104,5 +104,7 @@ export function sectionJsonPage(): string {
     ...settingOptions(schema).map(kindRow),
     '',
     'У вида `toggle` ключ `labels` — объект `{ "on": "…", "off": "…" }`: подписи двух положений переключателя.',
+    '',
+    'У видов `image`, `image-pair` и `video` ключ `maxBytes` — предел файла в байтах; панель отказывает файлу больше. Значение `video` — адрес файла в хранилище магазина; в шаблоне его выводят в `<video src>`, пустая строка — видео нет. Ссылки на YouTube и Vimeo поле не принимает по смыслу: тег `iframe` в шаблоне запрещён.',
   ].join('\n');
 }

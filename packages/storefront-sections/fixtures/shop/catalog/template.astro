@@ -44,7 +44,7 @@ const { settings, blocks, page, theme } = Astro.props;
               <span class="sr-only">Закрыть</span>
             </button>
           </div>
-          <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto p-4 md:flex-none md:flex-row md:flex-wrap md:items-start md:gap-x-8 md:gap-y-4 md:overflow-visible md:border-b md:border-border md:p-0 md:pb-5 md:in-data-[filters-side=true]:flex-col md:in-data-[filters-side=true]:gap-y-6 md:in-data-[filters-side=true]:border-b-0 md:in-data-[filters-side=true]:pb-0">
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto p-4 md:flex-none md:flex-row md:flex-wrap md:items-start md:gap-x-8 md:gap-y-4 md:overflow-visible md:border-b md:border-border md:p-0 md:pb-5 md:in-data-[filters-side=true]:flex-col md:in-data-[filters-side=true]:items-stretch md:in-data-[filters-side=true]:gap-y-6 md:in-data-[filters-side=true]:border-b-0 md:in-data-[filters-side=true]:pb-0">
       {page.list.query.q && <input type="hidden" name="q" value={page.list.query.q} />}
       <div class="contents" data-behavior="accordion">
       {blocks.map((block) => (

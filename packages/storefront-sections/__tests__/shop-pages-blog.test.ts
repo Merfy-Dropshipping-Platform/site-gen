@@ -71,7 +71,7 @@ describe('«Блог»', () => {
     expect(panelOf(blog.manifest)).toEqual([
       ['wrapper:padding', undefined, undefined],
       ['wrapper:scheme', undefined, undefined],
-      ['per-page', 'Записей на странице', 'Содержание'],
+      ['per-page', 'Карточки', 'Содержание'],
       ['date', 'Дата и время', undefined],
       ['excerpt', 'Анонс', undefined],
       ['columns', 'Колонки', 'Вид'],

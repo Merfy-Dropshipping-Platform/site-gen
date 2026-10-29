@@ -24,7 +24,7 @@
     { "wrapper": "scheme" },
     {
       "id": "per-page",
-      "label": "Записей на странице",
+      "label": "Карточки",
       "section": "Содержание",
       "setting": { "kind": "range", "default": 12, "min": 2, "max": 24, "step": 1 }
     },

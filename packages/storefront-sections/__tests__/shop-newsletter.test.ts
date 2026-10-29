@@ -129,6 +129,8 @@ describe('«Подписка на рассылку»: разметка', () => {
       const privacy = SHOP([{ type: 'privacy', title: 'Политика конфиденциальности', url: '/legal/privacy' }]);
       const linked = await section.html({ settings, shop: privacy });
       expect(tags(linked, 'a').map((tag) => attr(tag, 'href'))).toEqual(['/legal/privacy']);
+      // На телефоне ссылка не ниже 44 px (проверка look: tap-small).
+      expect(attr(tags(linked, 'a')[0] ?? '', 'class')).toContain('min-h-11');
       const plain = await section.html({ settings, shop: SHOP([{ type: 'refund', title: 'Возврат', url: '/legal/refund' }]) });
       expect(tags(plain, 'a')).toEqual([]);
       expect(plain).toContain('Согласен на обработку персональных данных');

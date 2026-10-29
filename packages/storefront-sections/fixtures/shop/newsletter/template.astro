@@ -62,11 +62,11 @@ const { settings, blocks, shop } = Astro.props;
         </div>
       )}
       {settings.agreement && (
-        <label class="flex min-h-11 cursor-pointer items-start gap-2 text-sm text-muted-foreground">
-          <input class="mt-0.5 size-5 shrink-0 cursor-pointer accent-primary" data-ref="consent" type="checkbox" />
+        <label class="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+          <input class="size-5 shrink-0 cursor-pointer accent-primary" data-ref="consent" type="checkbox" />
           {settings['agreement-link'] && shop.policies.some((policy) => policy.type === 'privacy') ? (
             shop.policies.filter((policy) => policy.type === 'privacy').map((policy) => (
-              <a class="text-muted-foreground underline underline-offset-2 hover:text-heading" href={policy.url} rel="noopener noreferrer" target="_blank" set:html={settings['agreement-text']} />
+              <a class="inline-flex min-h-11 items-center text-muted-foreground underline underline-offset-2 hover:text-heading" href={policy.url} rel="noopener noreferrer" target="_blank" set:html={settings['agreement-text']} />
             ))
           ) : (
             <span set:html={settings['agreement-text']} />

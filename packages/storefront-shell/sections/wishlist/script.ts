@@ -50,10 +50,10 @@ export default defineSection({
       const cards = ctx.ref('cards');
       const subtitle = ctx.ref('subtitle');
       const hasCards = state.products.length > 0;
+      cards?.list(state.products, fillCard); // и в пусто: прошлые карточки снимаются со страницы
       empty?.toggle(!hasCards);
       subtitle?.toggle(hasCards);
       cards?.toggle(hasCards);
-      if (hasCards) cards?.list(state.products, fillCard);
     });
   },
 });

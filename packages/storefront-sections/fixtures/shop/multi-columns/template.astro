@@ -25,7 +25,7 @@ const { settings, blocks } = Astro.props;
     )}
     <ul class="m-0 grid list-none grid-cols-1 gap-6 p-0 md:gap-8 md:in-data-[columns=2]:grid-cols-2 md:in-data-[columns=3]:grid-cols-2 md:in-data-[columns=4]:grid-cols-2 lg:in-data-[columns=3]:grid-cols-3 lg:in-data-[columns=4]:grid-cols-4">
       {blocks.map((block) => (
-        <li class="flex h-full min-w-0 flex-col gap-4 in-data-[text-position=center]:items-center in-data-[text-position=center]:text-center in-data-[plate=true]:rounded-card in-data-[plate=true]:bg-muted in-data-[plate=true]:p-6 md:in-data-[plate=true]:p-8">
+        <li class="flex h-full min-w-0 flex-col items-start gap-4 in-data-[text-position=center]:items-center in-data-[text-position=center]:text-center in-data-[plate=true]:rounded-card in-data-[plate=true]:bg-muted in-data-[plate=true]:p-6 md:in-data-[plate=true]:p-8">
           {block.settings.image !== '' && settings.layout !== 'icons' && (
             <div
               class="w-full overflow-hidden rounded-media bg-muted in-data-[aspect-ratio=square]:aspect-square in-data-[aspect-ratio=portrait]:aspect-4/5 in-data-[aspect-ratio=landscape]:aspect-4/3 data-[size=small]:w-1/2"

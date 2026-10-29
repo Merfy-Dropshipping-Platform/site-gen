@@ -3,8 +3,9 @@ const { settings, blocks } = Astro.props;
 ---
 <!-- Плитки коллекций. Раскладку задают признаки data-* на корне: колонки (на телефоне — `columns-mobile`, от `md` — до
      трёх, от `lg` — столько, сколько выбрано), пропорции плитки, выравнивание заголовка и подписи, заглавные буквы.
-     Плитка — блок «Элемент списка»: картинка, название и ссылка; выбора коллекции в блоке пока нет (SDK не принимает
-     запись в настройках блока), поэтому название и ссылку мерчант вписывает сам. -->
+     Плитка — блок «Коллекция» с полем «Выбор коллекции»: первая картинка, название и ссылка берутся из выбранной
+     коллекции. Выбор не сделан (запись пустая или «Все товары», у неё нет адреса) — как на проде: серая плитка с подписью
+     «Коллекция» и без ссылки. -->
 <div
   class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body md:gap-8 md:px-8"
   data-heading-size={settings['heading-size']}
@@ -36,19 +37,17 @@ const { settings, blocks } = Astro.props;
     <ul class="m-0 grid list-none gap-x-grid-column gap-y-grid-row p-0 in-data-[columns-mobile=1]:grid-cols-1 in-data-[columns-mobile=2]:grid-cols-2 md:in-data-[columns=1]:grid-cols-1 md:in-data-[columns=2]:grid-cols-2 md:in-data-[columns=3]:grid-cols-3 md:in-data-[columns=4]:grid-cols-3 md:in-data-[columns=5]:grid-cols-3 md:in-data-[columns=6]:grid-cols-3 lg:in-data-[columns=4]:grid-cols-4 lg:in-data-[columns=5]:grid-cols-5 lg:in-data-[columns=6]:grid-cols-6">
       {blocks.map((block) => (
         <li class="min-w-0">
-          <a class="group flex h-full flex-col gap-3 text-muted-foreground no-underline hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href={block.settings.link === '' ? undefined : block.settings.link}>
+          <a class="group flex h-full flex-col gap-3 text-muted-foreground no-underline hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href={block.settings.collection?.url || undefined}>
             <span class="block overflow-hidden rounded-media border-width-media border-border bg-muted shadow-media in-data-[aspect-ratio=square]:aspect-square in-data-[aspect-ratio=portrait]:aspect-3/4 in-data-[aspect-ratio=landscape]:aspect-4/3">
-              {block.settings.image !== '' ? (
-                <img class="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" src={block.settings.image} alt="" loading="lazy" />
+              {block.settings.collection?.images?.length > 0 ? (
+                <img class="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" src={block.settings.collection.images[0]} alt="" loading="lazy" />
               ) : (
                 <span class="flex size-full items-center justify-center text-muted-foreground">
                   <svg class="size-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
                 </span>
               )}
             </span>
-            {block.settings.label && (
-              <span class="line-clamp-2 text-base in-data-[caption-align=left]:text-left in-data-[caption-align=center]:text-center in-data-[caption-align=right]:text-right in-data-[capitals=true]:uppercase in-data-[capitals=true]:tracking-wide">{block.settings.label}</span>
-            )}
+            <span class="line-clamp-2 text-base in-data-[caption-align=left]:text-left in-data-[caption-align=center]:text-center in-data-[caption-align=right]:text-right in-data-[capitals=true]:uppercase in-data-[capitals=true]:tracking-wide">{block.settings.collection?.title || 'Коллекция'}</span>
           </a>
         </li>
       ))}

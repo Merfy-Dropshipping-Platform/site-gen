@@ -94,23 +94,14 @@
   ],
   "blocks": {
     "tile": {
-      "title": "Элемент списка",
+      "title": "Коллекция",
+      "addTitle": "коллекцию",
       "limit": 10,
       "settings": [
         {
-          "id": "image",
-          "label": "Изображение",
-          "setting": { "kind": "image", "default": "", "maxBytes": 31457280 }
-        },
-        {
-          "id": "label",
-          "label": "Название",
-          "setting": { "kind": "string", "default": "Коллекция" }
-        },
-        {
-          "id": "link",
-          "label": "Ссылка",
-          "setting": { "kind": "url", "default": "/catalog" }
+          "id": "collection",
+          "label": "Выбор коллекции",
+          "setting": { "kind": "collection" }
         }
       ]
     }

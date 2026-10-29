@@ -95,7 +95,7 @@ describe('наши секции с записями', () => {
     const page = { id: 'article', path: ARTICLE.url, record: ARTICLE };
     const html = await renderer.render({ ...request, settings: {}, page });
     expect(html).toContain('<p>Стирать вручную</p>');
-    expect(html).toContain('2026-10-19');
+    expect(html).toContain('19 октября 2026 г.');
     expect(await renderer.render({ ...request, settings: {} })).not.toContain('<article');
   }, 30_000);
 

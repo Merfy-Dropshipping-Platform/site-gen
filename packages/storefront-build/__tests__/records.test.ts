@@ -8,6 +8,7 @@ import {
   RECORD_FIELDS,
   money,
   policyTextToHtml,
+  publishedTextOf,
   recordIndexOf,
   recordPath,
   recordSlug,
@@ -318,6 +319,32 @@ describe('коллекция', () => {
   });
 });
 
+describe('дата публикации словами', () => {
+  it('«20 октября 2026 г.»: число без нуля, месяц в родительном падеже', () => {
+    expect(publishedTextOf('2026-10-20T10:00:00.000Z')).toBe('20 октября 2026 г.');
+    expect(publishedTextOf('2026-03-05T10:00:00.000Z')).toBe('5 марта 2026 г.');
+  });
+
+  it('день — по Москве: 22:30 UTC уже следующее число', () => {
+    expect(publishedTextOf('2026-12-31T22:30:00.000Z')).toBe('1 января 2027 г.');
+  });
+
+  it('даты нет или она не читается — пустая строка', () => {
+    expect(publishedTextOf(null)).toBe('');
+    expect(publishedTextOf('не дата')).toBe('');
+  });
+
+  it('статья без даты — publishedAt null и publishedText пустой, и в записи, и в карточке блога', () => {
+    const index = recordIndexOf([blog(B1), article(A1, { publishedAt: null })]);
+    expect(index.find('article', A1)?.record).toMatchObject({ publishedAt: null, publishedText: '' });
+    const cards = index.find('blog', B1)?.record;
+    expect(cards !== undefined && 'articles' in cards ? cards.articles[0] : undefined).toMatchObject({
+      publishedAt: null,
+      publishedText: '',
+    });
+  });
+});
+
 describe('блог и статьи', () => {
   it('статья: текст, обложка, дата, блог — ссылкой; SEO мерчанта; зависимости — статья и блог', () => {
     const index = recordIndexOf([blog(B1), article(A1, { seo: { title: 'Уход за льном', description: '' } })]);
@@ -329,6 +356,7 @@ describe('блог и статьи', () => {
       slug: 'linen',
       url: '/blogs/novosti/linen',
       publishedAt: '2026-10-19T10:00:00.000Z',
+      publishedText: '19 октября 2026 г.',
       cover: 'https://s3.merfy.ru/a/1.jpg',
       excerpt: 'Стирка и глажка',
       html: '<p>Стирать при 30°</p>',
@@ -373,6 +401,7 @@ describe('блог и статьи', () => {
       title: 'Статья 14',
       url: '/blogs/novosti/statya-14',
       publishedAt: '2026-10-15T10:00:00.000Z',
+      publishedText: '15 октября 2026 г.',
       cover: 'https://s3.merfy.ru/a/1.jpg',
       excerpt: 'Стирка и глажка',
     });

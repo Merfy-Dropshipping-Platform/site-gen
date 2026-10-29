@@ -144,6 +144,8 @@ export interface ArticleCard {
   title: string;
   url: string;
   publishedAt: string | null;
+  // Дата словами для вывода: «20 октября 2026 г.»; даты нет — пустая строка.
+  publishedText: string;
   cover: string | null;
   excerpt: string;
 }
@@ -162,6 +164,8 @@ export interface ArticleRecord {
   slug: string;
   url: string;
   publishedAt: string | null;
+  // Дата словами для вывода: «20 октября 2026 г.»; даты нет — пустая строка.
+  publishedText: string;
   cover: string | null;
   excerpt: string;
   html: string;
@@ -200,7 +204,7 @@ export const RECORD_FIELDS = {
   ],
   collection: ['id', 'title', 'slug', 'url', 'description', 'images', 'productsCount', 'products'],
   blog: ['id', 'title', 'handle', 'url', 'articlesCount', 'articles'],
-  article: ['id', 'title', 'slug', 'url', 'publishedAt', 'cover', 'excerpt', 'html', 'blog'],
+  article: ['id', 'title', 'slug', 'url', 'publishedAt', 'publishedText', 'cover', 'excerpt', 'html', 'blog'],
   policy: ['type', 'title', 'url', 'html'],
 } as const satisfies { [T in RecordType]: readonly (keyof RecordOf[T])[] };
 
@@ -225,6 +229,20 @@ export const money = (amount: number): Money => ({
   currency: 'RUB',
   text: `${Math.round(amount / 100).toLocaleString('ru-RU')} ₽`,
 });
+
+// Дата публикации словами, как у пяти тем на проде: «20 октября 2026 г.». День — по московскому времени: запись,
+// опубликованную в 01:30 по Москве, не показывать вчерашним числом. Даты нет или она не читается — пустая строка.
+const PUBLISHED_FORMAT = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: 'Europe/Moscow',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+export function publishedTextOf(publishedAt: string | null): string {
+  if (publishedAt === null) return '';
+  const time = Date.parse(publishedAt);
+  return Number.isNaN(time) ? '' : PUBLISHED_FORMAT.format(time);
+}
 
 // Адрес записи (Р8а-10): handle — если это буквы, цифры, «-» и «_», до 200 знаков; иначе id.
 export const recordSlug = (handle: string, id: string): string =>
@@ -543,6 +561,7 @@ function articleRecordOf(item: Placed<PublicationItem>, blog: Placed<BlogData>):
     slug,
     url: recordPath.article(blog.slug, slug),
     publishedAt: data.publishedAt,
+    publishedText: publishedTextOf(data.publishedAt),
     cover: data.cover,
     excerpt: data.excerpt ?? '',
     html: data.content,
@@ -627,6 +646,7 @@ function articleCardOf(blogSlug: string, article: Placed<PublicationItem>): Arti
     title: article.data.title,
     url: recordPath.article(blogSlug, article.slug),
     publishedAt: article.data.publishedAt,
+    publishedText: publishedTextOf(article.data.publishedAt),
     cover: article.data.cover,
     excerpt: article.data.excerpt ?? '',
   };

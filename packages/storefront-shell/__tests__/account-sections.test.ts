@@ -57,6 +57,7 @@ const ORDERS = `
       <button type="button" data-ref="cancel-open" hidden>Отменить заказ</button>
       <textarea data-ref="reason"></textarea>
       <p data-ref="cancel-error" role="alert" hidden></p>
+      <p data-ref="cancel-success" hidden>Заказ отменён</p>
       <button type="button" data-action="cancel-confirm">Подтвердить отмену</button>
     </div>
   </div>`;
@@ -82,29 +83,9 @@ const ORDER = {
     { name: 'Платок', imageUrl: null, options: null, quantity: 1, totalCents: 0, isBonus: true },
   ],
 };
-const realLocation = window.location;
 let core: StartedCore | undefined;
 let failures: ReturnType<typeof watchFailures>;
 let go: ReturnType<typeof vi.spyOn>;
-let reload: ReturnType<typeof vi.fn>;
-
-// window.location.reload в jsdom «Not implemented», а само свойство reload нельзя подменить даже прокси (non-
-// configurable): адрес страницы в тестах — копия настоящего с reload-заглушкой.
-// Значение — unknown: типы у window.location в defineProperty, каст не нужен.
-const stubLocation = (): unknown => ({
-  get hash() { return realLocation.hash; },
-  get host() { return realLocation.host; },
-  get hostname() { return realLocation.hostname; },
-  get href() { return realLocation.href; },
-  get origin() { return realLocation.origin; },
-  get pathname() { return realLocation.pathname; },
-  get port() { return realLocation.port; },
-  get protocol() { return realLocation.protocol; },
-  get search() { return realLocation.search; },
-  reload,
-  toString: () => realLocation.href,
-});
-
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 8; i += 1) await vi.advanceTimersByTimeAsync(0);
 };
@@ -161,8 +142,6 @@ beforeEach(() => {
   localStorage.setItem(CUSTOMER_TOKEN_KEY, TOKEN);
   failures = watchFailures();
   go = vi.spyOn(navigation, 'go').mockImplementation(() => undefined);
-  reload = vi.fn();
-  Object.defineProperty(window, 'location', { value: stubLocation(), configurable: true, writable: true });
 });
 
 afterEach(async () => {
@@ -173,7 +152,6 @@ afterEach(async () => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  Object.defineProperty(window, 'location', { value: realLocation, configurable: true, writable: true });
   window.history.replaceState(null, '', '/');
   document.head.replaceChildren();
   document.body.replaceChildren();
@@ -322,7 +300,7 @@ describe('«Заказы»', () => {
     expect(hidden(page, 'cancel-open')).toBe(false);
   });
 
-  it('отмена: пустая причина — текст без запроса; с причиной — POST cancel и перезагрузка страницы, как у прода', async () => {
+  it('отмена: пустая причина — текст без запроса; с причиной — POST cancel, статус отменён и «Заказ отменён»', async () => {
     const { gateway, page, run } = openOrders('/account/orders?n=1042');
     gateway.answer('GET /store/auth/me', meAnswer);
     // после отмены часть orders перечитывает заказ — второй ответ
@@ -347,7 +325,8 @@ describe('«Заказы»', () => {
       key: 'POST /store/orders/1042/cancel',
       body: { reason: 'Передумала' },
     });
-    expect(reload).toHaveBeenCalledTimes(1);
+    expect(text(page, 'order-status')).toBe('Отменён');
+    expect([hidden(page, 'cancel-success'), hidden(page, 'cancel-open')]).toEqual([false, true]);
   });
 
   it('отмена не удалась — текст ошибки, страница не перезагружается', async () => {
@@ -359,7 +338,7 @@ describe('«Заказы»', () => {
     type(page, 'reason', 'Передумала');
     click(page, '[data-action="cancel-confirm"]');
     await settle();
-    expect([hidden(page, 'cancel-error'), reload.mock.calls.length]).toEqual([false, 0]);
+    expect([hidden(page, 'cancel-error'), hidden(page, 'cancel-success')]).toEqual([false, true]);
   });
 
   it('нет заказа — «Заказ не найден»; превью — «У вас пока нет заказов» без запросов', async () => {

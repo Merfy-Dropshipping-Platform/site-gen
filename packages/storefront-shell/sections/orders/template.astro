@@ -48,8 +48,8 @@
       <div class="flex flex-col gap-6 md:flex-row">
         <ul data-ref="lines" class="m-0 flex w-full list-none flex-col gap-3 p-0 md:flex-1">
           <template>
-            <li class="flex items-start gap-3 rounded-field bg-muted p-3">
-              <img data-ref="image" alt="" class="h-20 w-20 shrink-0 rounded-field bg-background object-cover" />
+            <li class="flex items-start gap-3 rounded-input bg-muted p-3">
+              <img data-ref="image" alt="" class="h-20 w-20 shrink-0 rounded-input bg-background object-cover" />
               <span class="flex min-w-0 flex-1 flex-col gap-1">
                 <span data-ref="title" class="text-base text-foreground"></span>
                 <span data-ref="options" class="text-sm text-muted-foreground"></span>
@@ -88,7 +88,7 @@
         >
           Отменить заказ
         </button>
-        <dialog data-part="content" class="m-auto w-[min(28rem,100%-2rem)] border-0 bg-background p-6 font-body text-foreground shadow-2xl backdrop:bg-black/40">
+        <dialog data-part="content" class="m-auto w-full max-w-96 border-0 bg-background p-6 font-body text-foreground shadow-card">
           <h2 class="m-0 mb-2 font-heading text-lg font-normal text-heading">Отмена заказа</h2>
           <p class="m-0 mb-4 text-sm text-muted-foreground">После отмены восстановить заказ невозможно.</p>
           <textarea
@@ -99,11 +99,12 @@
             class="mb-2 h-auto w-full resize-none rounded-input border-width-input border-input bg-background px-3 py-3 text-base font-light text-foreground"
           ></textarea>
           <p data-ref="cancel-error" role="alert" class="m-0 mb-3 text-xs text-destructive" hidden></p>
+          <p data-ref="cancel-success" class="m-0 mb-3 text-sm text-muted-foreground" hidden>Заказ отменён</p>
           <div class="flex gap-3">
             <button
               type="button"
               data-action="cancel-confirm"
-              class="inline-flex h-12 flex-1 cursor-pointer items-center justify-center rounded-button bg-destructive px-4 text-base text-white no-underline hover:opacity-90"
+              class="inline-flex h-12 flex-1 cursor-pointer items-center justify-center rounded-button bg-destructive px-4 text-base text-background no-underline hover:opacity-90"
             >
               Подтвердить отмену
             </button>

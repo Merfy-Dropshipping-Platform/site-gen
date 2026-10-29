@@ -18,14 +18,14 @@ const { settings } = Astro.props;
     <div class="mx-auto flex w-full max-w-page flex-col gap-2 px-4 md:px-8 in-data-[align=left]:items-start in-data-[align=left]:text-left in-data-[align=center]:items-center in-data-[align=center]:text-center in-data-[align=right]:items-end in-data-[align=right]:text-right">
       {settings.heading && (
         <h2
-          class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[capitals=true]:uppercase in-data-[text-style=italic]:italic data-[heading-size=small]:text-base data-[heading-size=medium]:text-lg data-[heading-size=large]:text-2xl md:data-[heading-size=small]:text-lg md:data-[heading-size=medium]:text-2xl md:data-[heading-size=large]:text-3xl"
+          class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[capitals=true]:uppercase in-data-[text-style=italic]:italic data-[heading-size=small]:text-lg data-[heading-size=medium]:text-xl data-[heading-size=large]:text-2xl"
           data-heading-size={settings['heading-size']}
           set:html={settings.heading}
         />
       )}
       {settings.subheading && (
         <p
-          class="m-0 text-pretty text-sm text-foreground in-data-[text-style=italic]:italic md:text-base"
+          class="m-0 text-pretty text-sm text-muted-foreground in-data-[text-style=italic]:italic md:text-base"
           set:html={settings.subheading}
         />
       )}

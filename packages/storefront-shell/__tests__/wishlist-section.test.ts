@@ -67,7 +67,7 @@ function openWishlist() {
 }
 
 describe('«Избранное»', () => {
-  it('шаблон: пусто — текст и «Перейти в каталог»; карточка в <template>; удаление — сердце, есть «В корзину» и скелетон', () => {
+  it('шаблон: пусто — текст и «Перейти в каталог»; карточка в <template>; удаление — сердце, скелетон; «В корзину» нет', () => {
     for (const part of [
       'В избранном пока пусто',
       'Перейти в каталог',
@@ -75,11 +75,14 @@ describe('«Избранное»', () => {
       '<template>',
       'data-action="favorites.toggle"',
       'aria-label="Убрать из избранного"',
-      'data-action="cart.add"',
       'data-ref="skeleton"',
       'Товары, которые вам понравились',
+      'rounded-card bg-muted p-3',
+      'uppercase',
     ])
       expect(WISHLIST).toContain(part);
+    expect(WISHLIST).not.toContain('data-action="cart.add"');
+    expect(WISHLIST).not.toContain('data-ref="buy"');
   });
 
   it('пусто — скелетон скрыт, подзаголовок скрыт, текст виден, карточек нет, запросов к товарам нет', async () => {
@@ -92,7 +95,7 @@ describe('«Избранное»', () => {
     expect(gateway.calls).toEqual([]);
   });
 
-  it('карточка: название, цена и старая цена, ссылка на товар, бейдж скидки; «В корзину» — товар; сердце — карточка уходит', async () => {
+  it('карточка: название, цена и старая цена, ссылка на товар, бейдж скидки; сердце — карточка уходит', async () => {
     guestList(NOVA.id);
     const { gateway, page } = openWishlist();
     gateway.answer('GET /store/products', { status: 200, body: { products: [NOVA] } });
@@ -105,9 +108,7 @@ describe('«Избранное»', () => {
     expect(page.querySelector('[data-ref="link"]')?.getAttribute('href')).toBe('/product/nova');
     expect(shown(page, 'sale')).toEqual(['−17 %']);
     expect(page.querySelector('[data-ref="card"]')?.getAttribute('data-available')).toBe('true');
-    const buy = page.querySelector<HTMLButtonElement>('[data-ref="buy"]');
-    expect(buy?.getAttribute('data-product-id')).toBe(NOVA.id);
-    expect(buy?.getAttribute('data-action')).toBe('cart.add');
+    expect(page.querySelector('[data-ref="buy"]')).toBeNull();
     const remove = page.querySelector<HTMLButtonElement>('[data-ref="remove"]');
     expect(remove?.getAttribute('data-product-id')).toBe(NOVA.id);
     remove?.click();
@@ -117,7 +118,7 @@ describe('«Избранное»', () => {
     expect(failures.details).toEqual([]);
   });
 
-  it('распроданный товар без старой цены: бейджей нет, «Нет в наличии», «В корзину» скрыта классом', async () => {
+  it('распроданный товар без старой цены: бейджей нет, «Нет в наличии»', async () => {
     const soldOut = { ...NOVA, id: 'p-sold-out', compareAtPrice: null, quantity: 0 };
     guestList(soldOut.id);
     const { gateway, page } = openWishlist();

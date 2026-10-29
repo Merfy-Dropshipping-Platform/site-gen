@@ -1,12 +1,13 @@
 <!-- «Избранное» — страница /wishlist пяти старых тем, вид по умолчанию flux: заголовок с подзаголовком, скелетон на
-     время чтения, сетка карточек как у «Каталога» (карточка та же: фото, бейдж скидки, «Нет в наличии», название, цена,
-     старая цена, «В корзину»), пустое состояние с кнопкой в каталог. Карточки наполняет script.ts из ctx.favorites.$products;
+     время чтения, сетка карточек на подложке (светлый фон поверхности, скругление карточки, внутренний отступ 12 px,
+     название и цена внутри под фото — как замерено на проде), пустое состояние с кнопкой в каталог. Кнопки «В корзину»
+     на карточке нет — ни у одной из пяти тем на проде. Карточки наполняет script.ts из ctx.favorites.$products;
      удаление из избранного — залитое сердце на карточке (favorites.toggle). Отступы и схема — обёртка секции. -->
 <!-- Значки — Lucide (image, heart), лицензия ISC, lucide.dev/license. -->
 <div class="mx-auto flex max-w-page flex-col gap-8 px-4 font-body text-foreground">
   <div class="flex flex-col gap-2">
-    <h1 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl">Избранное</h1>
-    <p class="m-0 text-base text-muted-foreground md:text-lg" data-ref="subtitle">Товары, которые вам понравились</p>
+    <h1 class="m-0 font-heading weight-heading tracking-heading text-3xl uppercase text-heading">Избранное</h1>
+    <p class="m-0 text-base font-light text-muted-foreground md:text-lg" data-ref="subtitle">Товары, которые вам понравились</p>
   </div>
   <ul
     data-ref="skeleton"
@@ -42,7 +43,7 @@
   >
     <template>
       <li
-        class="group/card relative flex h-full min-w-0 flex-col gap-3 border-border card-style-card:rounded-card card-style-card:border-width-card card-style-card:bg-card card-style-card:p-card card-style-card:text-card-foreground card-style-card:shadow-card"
+        class="group/card relative flex h-full min-w-0 flex-col gap-3 rounded-card bg-muted p-3 md:gap-4"
       >
         <div class="contents" data-ref="card" data-available="true">
         <div class="relative">
@@ -62,7 +63,7 @@
           <span data-ref="unavailable" class="absolute bottom-2 left-2 hidden rounded-badge bg-background px-2 py-1 text-xs text-foreground in-data-[available=false]:block md:bottom-3 md:left-3">Нет в наличии</span>
           <button
             type="button"
-            class="group/heart absolute right-1 top-1 inline-flex size-11 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:right-2 md:top-2"
+            class="group/heart absolute right-2 top-2 inline-flex size-11 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             aria-pressed="true"
             aria-label="Убрать из избранного"
             data-ref="remove"
@@ -73,21 +74,14 @@
             </span>
           </button>
         </div>
-        <div class="flex flex-1 flex-col gap-2">
+        <div class="flex flex-1 flex-col gap-1">
           <a class="line-clamp-2 min-h-11 text-sm text-foreground no-underline hover:underline md:min-h-0 md:text-base" href="/catalog" data-ref="link">
             <span data-ref="title"></span>
           </a>
           <p class="m-0 flex flex-wrap items-baseline gap-x-2">
-            <span class="text-base weight-heading text-price data-[discount=true]:text-sale md:text-lg" data-ref="price"></span>
+            <span class="text-sm text-price data-[discount=true]:text-sale md:text-base" data-ref="price"></span>
             <s data-ref="old-price" class="text-sm text-price-old" hidden></s>
           </p>
-          <button
-            type="button"
-            class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-sm text-primary-foreground uppercase shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[available=false]:hidden"
-            data-ref="buy"
-            data-action="cart.add"
-            data-quantity="1"
-          >В корзину</button>
         </div>
         </div>
       </li>

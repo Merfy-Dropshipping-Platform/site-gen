@@ -1,12 +1,13 @@
 ---
-const { settings, shop } = Astro.props;
+const { settings } = Astro.props;
 ---
 
 <!-- «Вход» — страница /login и /verify пяти старых тем, вид по умолчанию flux: узкая колонка по центру (w-96),
      центрированные заголовок и текст, поле e-mail с обязательной меткой, ошибка под полем, широкая кнопка с блеском
-     «Отправляем...». Код из письма — на той же странице; шаги переключает script.ts (часть 10в, Р10в-11). Стёртые
-     заголовок и текст не рисуются. Внизу — строка согласия со ссылкой на политику данных магазина, если она заполнена. -->
-<div class="mx-auto flex w-96 max-w-full flex-col items-center gap-16 px-5 font-body text-foreground md:gap-20">
+     «Отправляем...». Между блоками колонки один зазор 80 px (gap-20 flux): заголовок → поле → кнопка. Код из письма —
+     на той же странице; шаги переключает script.ts (часть 10в, Р10в-11). Стёртые заголовок и текст не рисуются.
+     Строки согласия с политикой нет — на проде «Вход» её не выводит (согласие — только в оформлении заказа). -->
+<div class="mx-auto flex w-96 max-w-full flex-col items-center gap-20 px-5 font-body text-foreground">
   {(settings.heading || settings.text) && (
     <div class="flex flex-col items-center gap-2 text-center">
       {settings.heading && <h1 class="m-0 font-heading weight-heading text-xl uppercase text-heading" set:html={settings.heading} />}
@@ -28,6 +29,8 @@ const { settings, shop } = Astro.props;
       />
     </div>
     <p data-ref="email-error" role="alert" class="m-0 text-center text-sm text-destructive" hidden></p>
+  </div>
+  <div class="flex w-full flex-col items-center">
     <button
       type="button"
       data-ref="request"
@@ -73,10 +76,4 @@ const { settings, shop } = Astro.props;
     >Изменить e-mail</button>
   </div>
   <p data-ref="checking" class="m-0 text-base text-muted-foreground" hidden>Входим…</p>
-  <p class="m-0 text-center text-sm text-muted-foreground">
-    Входя, вы соглашаетесь с
-    {shop.policies.filter((policy) => policy.type === 'privacy').length > 0 ? shop.policies.filter((policy) => policy.type === 'privacy').map((policy) => (
-      <a class="text-muted-foreground underline underline-offset-2 hover:text-heading" href={policy.url} rel="noopener noreferrer" target="_blank">политикой обработки персональных данных</a>
-    )) : <span>политикой обработки персональных данных</span>}
-  </p>
 </div>

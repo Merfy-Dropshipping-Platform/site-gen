@@ -72,11 +72,11 @@ const RESULT_PROPS = {
 	</head>
 	<body>
 		{checkout.result ? (
-			<div class="color-scheme-2">
+			<div class="color-scheme-1">
 				<OrderConfirmation {...RESULT_PROPS} />
 			</div>
 		) : (
-			<div class="color-scheme-2">
+			<div class="color-scheme-1">
 				<main class="flex-1 w-full bg-background text-foreground">
 					<CheckoutSplit {...checkout.layout}>
 						<CheckoutHeader

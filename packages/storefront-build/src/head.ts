@@ -168,6 +168,17 @@ export function themeSchemes(
   return resolveTokens(theme.dictionary, theme.tokens, edits).schemes;
 }
 
+// Корневые токены словаря с правками мерчанта (блок 10, Р10а-18): те же словарь и правки, из которых печатается
+// tokensCss, — по ним сборка пишет размеры переменных оформления (checkout-css.ts).
+export function themeRootTokens(
+  inputs: BuildInputs,
+  theme: ParsedTheme,
+  migrations: TokenMigrations = NO_MIGRATIONS,
+): Record<string, unknown> {
+  const edits = editsOf(inputs, theme, migrations);
+  return resolveTokens(theme.dictionary, theme.tokens, edits).root;
+}
+
 type ConfigAnalytics = Parameters<typeof buildStorefrontConfig>[0]['analytics'];
 
 // Страница для конфига витрины: id и адрес; у страницы записи — вид и id записи (часть 8б-2; блоки 13 и 12в).

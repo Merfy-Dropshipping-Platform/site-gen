@@ -284,16 +284,15 @@
           "label": "Текст",
           "section": "Динамическая кнопка",
           "setting": { "kind": "string", "default": "Купить сейчас" }
-        },
-        {
-          "id": "share-label",
-          "label": "Текст",
-          "section": "Поделиться",
-          "setting": { "kind": "string", "default": "Поделиться" }
         }
       ]
     },
-    "description": { "title": "Описание", "limit": 1, "settings": [] }
+    "description": { "title": "Описание", "limit": 1, "settings": [] },
+    "share": {
+      "title": "Поделиться",
+      "limit": 1,
+      "settings": [{ "id": "share-label", "label": "Текст", "setting": { "kind": "string", "default": "Поделиться" } }]
+    }
   },
   "defaultBlocks": [
     { "type": "text", "settings": {} },
@@ -301,6 +300,7 @@
     { "type": "variants", "settings": {} },
     { "type": "quantity", "settings": {} },
     { "type": "buttons", "settings": {} },
-    { "type": "description", "settings": {} }
+    { "type": "description", "settings": {} },
+    { "type": "share", "settings": {} }
   ]
 }

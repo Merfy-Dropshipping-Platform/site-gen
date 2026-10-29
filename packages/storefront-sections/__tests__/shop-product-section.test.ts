@@ -161,7 +161,7 @@ describe('панель: поля прода в их порядке, новые �
     expect(groupOf('product')).toBeUndefined();
   });
 
-  it('подпанели прода — блоки по одному: «Текст», «Название», «Варианты», «Количество», «Кнопки», «Описание»', () => {
+  it('подпанели прода — блоки по одному: «Текст», «Название», «Варианты», «Количество», «Кнопки», «Описание», «Поделиться»', () => {
     const blocks = manifest.blocks ?? {};
     expect(Object.values(blocks).map((block) => block.title)).toEqual([
       'Текст',
@@ -170,6 +170,7 @@ describe('панель: поля прода в их порядке, новые �
       'Количество',
       'Кнопки',
       'Описание',
+      'Поделиться',
     ]);
     expect(Object.values(blocks).every((block) => block.limit === 1)).toBe(true);
     expect(manifest.defaultBlocks?.map((block) => block.type)).toEqual(Object.keys(blocks));
@@ -183,8 +184,8 @@ describe('панель: поля прода в их порядке, новые �
     expect(labels('buttons')).toEqual([
       ['Текст', 'Основная кнопка'],
       ['Текст', 'Динамическая кнопка'],
-      ['Текст', 'Поделиться'],
     ]);
+    expect(labels('share')).toEqual([['Текст', undefined]]);
     expect(manifest.blocks?.text?.settings[0]?.setting).toMatchObject({ kind: 'text', ai: 'description' });
   });
 
@@ -384,24 +385,24 @@ describe('счётчик и кнопки покупки', () => {
     expect(noBuy).not.toContain('data-action="buy"');
   });
 
-  it('«Поделиться»: кнопка с подписью из блока «Кнопки», действие share и текст после копирования; пустая подпись — кнопки нет', async () => {
+  it('«Поделиться» — отдельный блок: кнопка с подписью из блока, действие share и текст после копирования; пустая подпись — кнопки нет', async () => {
     const source = await html();
     const button = withAttr(source, 'data-action="share"')[0] ?? '';
     expect(button).toContain('data-copied="Ссылка скопирована"');
     expect(source).toContain('<span data-ref="share-label">Поделиться</span>');
-    const renamed = await html({ blocks: blocksOf({ buttons: { 'share-label': 'Отправить ссылку' } }) });
+    expect(source).toMatch(/data-type="share"[^>]*data-no-share="false"/);
+    const renamed = await html({ blocks: blocksOf({ share: { 'share-label': 'Отправить ссылку' } }) });
     expect(renamed).toContain('<span data-ref="share-label">Отправить ссылку</span>');
-    const none = await html({ blocks: blocksOf({ buttons: { 'share-label': '' } }) });
+    const none = await html({ blocks: blocksOf({ share: { 'share-label': '' } }) });
     expect(none).not.toContain('data-action="share"');
     expect(none).toContain('data-action="cart.add"');
+    expect(none).toMatch(/data-type="share"[^>]*data-no-share="true"/);
   });
 
-  it('блок «Кнопки» скрыт, только когда нет ни одной из трёх кнопок', async () => {
-    const onlyShare = await html({
-      blocks: blocksOf({ buttons: { 'button-label': '', 'button-second-label': '' } }),
-    });
-    expect(onlyShare).toContain('data-no-buttons="false"');
-    expect(onlyShare).toContain('data-action="share"');
+  it('без блока «Поделиться» кнопки нет, остальные кнопки на месте', async () => {
+    const source = await html({ blocks: blocksOf().filter((block) => block.type !== 'share') });
+    expect(source).not.toContain('data-action="share"');
+    expect(source).toContain('data-action="cart.add"');
   });
 
   it.each(['regular', 'large'])('размер кнопок %s и стиль — признаки на корне', async (size) => {
@@ -433,7 +434,7 @@ describe('блоки: нет блока — нет части', () => {
       Array.from(source.match(new RegExp(`<div[^>]*data-type="${type}"[^>]*>`))?.[0].matchAll(/data-(no-[a-z]+)="(true|false)"/g) ?? [], (found) => `${found[1]}=${found[2]}`);
     const source = await html({
       product: { options: [], description: '' },
-      blocks: blocksOf({ buttons: { 'button-label': '', 'button-second-label': '', 'share-label': '' } }),
+      blocks: blocksOf({ buttons: { 'button-label': '', 'button-second-label': '' } }),
     });
     expect(marks(source, 'text')).toContain('no-text=true');
     expect(marks(source, 'variants')).toContain('no-options=true');

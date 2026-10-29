@@ -2,28 +2,147 @@
   "sdk": 1,
   "name": "faq",
   "kind": "section",
-  "title": "Вопросы и ответы",
+  "title": "Сворачиваемый раздел",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "item-box": {
+      "kinds": ["toggle"],
+      "label": "Контейнер",
+      "about": "Каждый раздел в своей карточке: фон цвета схемы контейнера, скруглённые углы; выключено — разделы разделены линиями",
+      "asks": ["контейнер", "карточки разделов", "рамка вокруг вопроса", "плашка под вопросом"]
+    },
+    "icon": {
+      "kinds": ["radio", "select"],
+      "label": "Значок",
+      "about": "Значок раскрытия раздела: шеврон, который переворачивается, или плюс, который становится минусом",
+      "asks": ["значок", "иконка раскрытия", "плюс и минус", "шеврон", "стрелка раскрытия"]
+    }
+  },
   "settings": [
-    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Вопросы и ответы" } },
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "section": "Содержание",
+      "setting": { "kind": "string", "default": "Часто задаваемые вопросы", "ai": "title" }
+    },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "item-box",
+      "label": "Контейнер",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    { "wrapper": "scheme" },
+    { "id": "color-scheme", "label": "Цветовая схема контейнера", "setting": { "kind": "color-scheme", "default": "" } },
+    { "wrapper": "padding" },
+    {
+      "id": "layout",
+      "label": "Раскладка",
+      "section": "Вид",
+      "setting": {
+        "kind": "radio",
+        "default": "column",
+        "options": [
+          { "value": "column", "label": "Узкая колонка" },
+          { "value": "wide", "label": "Во всю ширину" }
+        ]
+      }
+    },
+    {
+      "id": "icon",
+      "label": "Значок",
+      "setting": {
+        "kind": "radio",
+        "default": "chevron",
+        "options": [
+          { "value": "chevron", "label": "Шеврон" },
+          { "value": "plus-minus", "label": "Плюс и минус" }
+        ]
+      }
+    },
     {
       "id": "open-first",
-      "label": "Первый вопрос",
-      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Открыт", "off": "Закрыт" } }
+      "label": "Первый раздел",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Открыт", "off": "Закрыт" } }
     }
   ],
   "blocks": {
     "question": {
-      "title": "Вопрос",
-      "limit": 20,
+      "title": "Раздел",
+      "limit": 10,
       "settings": [
-        { "id": "question", "label": "Вопрос", "setting": { "kind": "string", "default": "Новый вопрос" } },
-        { "id": "answer", "label": "Ответ", "setting": { "kind": "richtext", "default": "<p>Ответ</p>" } }
+        {
+          "id": "heading",
+          "label": "Заголовок",
+          "section": "Содержание",
+          "setting": { "kind": "string", "default": "Новый раздел", "ai": "title" }
+        },
+        {
+          "id": "heading-size",
+          "label": "Размер заголовка",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "text",
+          "label": "Текст",
+          "setting": { "kind": "text", "default": "Ответ на вопрос.", "ai": "description" }
+        },
+        {
+          "id": "text-size",
+          "label": "Размер текста",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        }
       ]
     }
   },
   "defaultBlocks": [
-    { "type": "question", "settings": { "question": "Как оформить заказ?", "answer": "<p>Добавьте товары в корзину и нажмите «Оформить заказ». Укажите контакты и адрес — мы подтвердим заказ.</p>" } },
-    { "type": "question", "settings": { "question": "Как и когда придёт заказ?", "answer": "<p>Способы, сроки и стоимость доставки видны при оформлении заказа.</p>" } },
-    { "type": "question", "settings": { "question": "Можно ли вернуть товар?", "answer": "<p>Да. Напишите нам — расскажем, как оформить возврат.</p>" } }
+    {
+      "type": "question",
+      "settings": {
+        "heading": "Как оформить заказ?",
+        "text": "Добавьте товары в корзину и нажмите «Оформить заказ». Укажите контакты и адрес — мы подтвердим заказ."
+      }
+    },
+    {
+      "type": "question",
+      "settings": {
+        "heading": "Как и когда придёт заказ?",
+        "text": "Способы, сроки и стоимость доставки видны при оформлении заказа."
+      }
+    },
+    {
+      "type": "question",
+      "settings": {
+        "heading": "Можно ли вернуть товар?",
+        "text": "Да. Напишите нам — расскажем, как оформить возврат."
+      }
+    }
   ]
 }

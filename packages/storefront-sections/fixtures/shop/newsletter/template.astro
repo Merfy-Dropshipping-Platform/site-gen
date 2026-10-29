@@ -1,0 +1,84 @@
+---
+const { settings, blocks, shop } = Astro.props;
+---
+<!-- Подписка на рассылку пяти тем одной разметкой: раскладка (колонка — flux, rose, vanilla, satin; текст слева и форма
+     справа — bloom), выравнивание колонки и вид формы (кнопка под полем — flux, rose; в поле — vanilla, satin, bloom) —
+     атрибутами data-* на корне, вид по ним — вариантами in-data-[…]: у вложенных элементов. Форма и тексты ответов — как
+     в «Подвале»: отправка — ctx.newsletter в script.ts, в превью ничего не уходит. -->
+<div
+  class="mx-auto w-full max-w-page px-4 font-body text-foreground"
+  data-align={settings.align}
+  data-form-layout={settings['form-layout']}
+  data-layout={settings.layout}
+>
+  <div class="flex w-full flex-col gap-6 in-data-[layout=column]:max-w-163 in-data-[layout=column]:in-data-[align=center]:mx-auto in-data-[layout=column]:in-data-[align=center]:items-center in-data-[layout=column]:in-data-[align=center]:text-center in-data-[layout=column]:in-data-[align=right]:ml-auto in-data-[layout=column]:in-data-[align=right]:items-end in-data-[layout=column]:in-data-[align=right]:text-right md:in-data-[layout=row]:flex-row md:in-data-[layout=row]:items-start md:in-data-[layout=row]:justify-between">
+    {(blocks.length > 0 || settings.text) && (
+      <div class="flex flex-col gap-2">
+        {blocks.map((block) => (
+          <h2
+            class="m-0 font-heading weight-heading tracking-heading text-heading data-[heading-size=small]:text-base md:data-[heading-size=small]:text-lg data-[heading-size=medium]:text-xl md:data-[heading-size=medium]:text-2xl data-[heading-size=large]:text-2xl md:data-[heading-size=large]:text-3xl"
+            data-heading-size={block.settings['heading-size']}
+            set:html={block.settings.heading}
+          />
+        ))}
+        {settings.text && (
+          <p
+            class="m-0 text-muted-foreground data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg md:data-[text-size=large]:text-xl"
+            data-text-size={settings['text-size']}
+            set:html={settings.text}
+          />
+        )}
+      </div>
+    )}
+    <form class="m-0 flex w-full flex-col gap-3 md:in-data-[layout=row]:w-80 md:in-data-[layout=row]:shrink-0" data-action="subscribe" novalidate>
+      <label class="sr-only" for="newsletter-email">Электронная почта</label>
+      {settings['form-layout'] === 'inline-submit' ? (
+        <div class="flex h-14 items-center gap-2 rounded-input border-width-input border-input bg-background pl-4 pr-1.5 shadow-input focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
+          <input
+            autocomplete="email"
+            class="h-11 min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
+            data-ref="email"
+            id="newsletter-email"
+            name="email"
+            placeholder={settings.placeholder}
+            required
+            type="email"
+          />
+          <button class="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50" data-ref="submit" type="submit">{settings['button-label']}</button>
+        </div>
+      ) : (
+        <div class="flex flex-col gap-4 in-data-[align=center]:items-center in-data-[align=right]:items-end">
+          <input
+            autocomplete="email"
+            class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base text-foreground shadow-input outline-none placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            data-ref="email"
+            id="newsletter-email"
+            name="email"
+            placeholder={settings.placeholder}
+            required
+            type="email"
+          />
+          <button class="inline-flex h-12 min-w-50 cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50" data-ref="submit" type="submit">{settings['button-label']}</button>
+        </div>
+      )}
+      {settings.agreement && (
+        <label class="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+          <input class="size-5 shrink-0 cursor-pointer accent-primary" data-ref="consent" type="checkbox" />
+          {settings['agreement-link'] && shop.policies.some((policy) => policy.type === 'privacy') ? (
+            shop.policies.filter((policy) => policy.type === 'privacy').map((policy) => (
+              <a class="inline-flex min-h-11 items-center text-muted-foreground underline underline-offset-2 hover:text-heading" href={policy.url} rel="noopener noreferrer" target="_blank" set:html={settings['agreement-text']} />
+            ))
+          ) : (
+            <span set:html={settings['agreement-text']} />
+          )}
+        </label>
+      )}
+      <p class="m-0 text-sm text-foreground" data-ref="subscribed" hidden role="status">Спасибо! Мы отправим вам приветственное письмо.</p>
+      <p class="m-0 text-sm text-foreground" data-ref="already-subscribed" hidden role="status">Вы уже подписаны на рассылку.</p>
+      <p class="m-0 text-sm text-destructive" data-ref="too-many" hidden role="alert">Слишком много попыток. Попробуйте позже.</p>
+      <p class="m-0 text-sm text-destructive" data-ref="invalid" hidden role="alert">Проверьте адрес электронной почты.</p>
+      <p class="m-0 text-sm text-destructive" data-ref="consent-missing" hidden role="alert">Подтвердите согласие на обработку персональных данных.</p>
+      <p class="m-0 text-sm text-destructive" data-ref="failed" hidden role="alert">Не получилось подписаться. Попробуйте позже.</p>
+    </form>
+  </div>
+</div>

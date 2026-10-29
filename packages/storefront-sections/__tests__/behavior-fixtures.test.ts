@@ -18,8 +18,8 @@ function merfy(...args: string[]): Promise<{ code: number; stdout: string }> {
 }
 
 describe('секции для проверки поведений (часть 6б)', () => {
-  it('«Слайд-шоу» и «Вопросы с плавным раскрытием» из fixtures/shop проходят без предупреждений', async () => {
-    for (const name of ['slideshow', 'questions'])
+  it('«Слайд-шоу» и «Сворачиваемый раздел» (плавное раскрытие) из fixtures/shop проходят без предупреждений', async () => {
+    for (const name of ['slideshow', 'faq'])
       expect(await merfy('section', 'check', `fixtures/shop/${name}`)).toEqual({
         code: 0,
         stdout: `shop:${name}: проверка прошла\n`,

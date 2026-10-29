@@ -1,0 +1,66 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<!-- Контактная форма пяти тем одной разметкой: раскладка (одна колонка — flux; две колонки — rose, vanilla, satin,
+     bloom), выравнивание заголовка и положение кнопки — атрибутами data-* на корне, вид по ним — вариантами
+     in-data-[…]: у вложенных элементов. Поля формы — блоки (имя, email, телефон, сообщение): блок скрыт — поля нет.
+     ВАЖНО: как у пяти тем на проде, форма никуда не отправляет — скрипт показывает «Спасибо!» (script.ts). -->
+<div
+  class="mx-auto flex w-full max-w-page flex-col gap-8 px-4 font-body text-foreground md:gap-10"
+  data-align={settings.align}
+  data-button-position={settings['button-position']}
+  data-layout={settings.layout}
+>
+  {(settings.heading || settings.text) && (
+    <div class="flex w-full flex-col gap-2 in-data-[align=center]:items-center in-data-[align=center]:text-center in-data-[align=right]:items-end in-data-[align=right]:text-right">
+      {settings.heading && (
+        <h2
+          class="m-0 font-heading weight-heading tracking-heading text-heading data-[heading-size=small]:text-lg md:data-[heading-size=small]:text-xl data-[heading-size=medium]:text-xl md:data-[heading-size=medium]:text-2xl data-[heading-size=large]:text-2xl md:data-[heading-size=large]:text-3xl"
+          data-heading-size={settings['heading-size']}
+          set:html={settings.heading}
+        />
+      )}
+      {settings.text && (
+        <p
+          class="m-0 text-muted-foreground data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg md:data-[text-size=large]:text-xl"
+          data-text-size={settings['text-size']}
+          set:html={settings.text}
+        />
+      )}
+    </div>
+  )}
+  <form class="m-0 flex w-full flex-col gap-5 in-data-[layout=single]:mx-auto in-data-[layout=single]:max-w-163 lg:in-data-[layout=columns]:grid lg:in-data-[layout=columns]:grid-cols-3 lg:in-data-[layout=columns]:gap-x-10" data-action="submit">
+    {blocks.map((block) => (
+      <label class="flex w-full flex-col gap-2 text-sm text-heading lg:in-data-[layout=columns]:col-start-1 lg:data-[field=message]:in-data-[layout=columns]:col-span-2 lg:data-[field=message]:in-data-[layout=columns]:col-start-2 lg:data-[field=message]:in-data-[layout=columns]:row-span-3 lg:data-[field=message]:in-data-[layout=columns]:row-start-1" data-field={block.type}>
+        <span>
+          {block.settings.label}
+          {block.settings.required && <span aria-hidden="true" class="ml-1 text-destructive">*</span>}
+        </span>
+        {block.type === 'message' && (
+          <textarea
+            class="min-h-40 w-full rounded-input border-width-input border-input bg-background px-3 py-3 text-base text-foreground shadow-input outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:in-data-[layout=columns]:h-full"
+            data-ref="field"
+            name={block.type}
+            required={block.settings.required}
+            rows="6"
+          ></textarea>
+        )}
+        {block.type !== 'message' && (
+          <input
+            autocomplete={block.type === 'phone' ? 'tel' : block.type}
+            class="h-12 w-full rounded-input border-width-input border-input bg-background px-3 text-base text-foreground shadow-input outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            data-ref="field"
+            name={block.type}
+            required={block.settings.required}
+            inputmode={block.type === 'phone' ? 'tel' : 'text'}
+            type={block.type === 'email' ? 'email' : 'text'}
+          />
+        )}
+      </label>
+    ))}
+    <div class="flex flex-col gap-3 lg:in-data-[layout=columns]:col-span-3 lg:in-data-[layout=columns]:in-data-[button-position=right]:items-end lg:in-data-[layout=columns]:in-data-[button-position=full]:col-span-2 lg:in-data-[layout=columns]:in-data-[button-position=full]:col-start-2">
+      <button class="inline-flex h-14 w-full cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-8 text-base uppercase text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:in-data-[layout=columns]:in-data-[button-position=left]:w-fit lg:in-data-[layout=columns]:in-data-[button-position=right]:w-fit" type="submit">{settings['button-label']}</button>
+      <p class="m-0 text-sm text-foreground" data-ref="thanks" hidden role="status">Спасибо! Мы свяжемся с вами в ближайшее время.</p>
+    </div>
+  </form>
+</div>

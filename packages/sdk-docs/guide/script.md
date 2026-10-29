@@ -68,3 +68,8 @@ export default defineSection<State>({
 (ключ, имя, размер, тип, картинка ли), `ctx.files.upload({ key, extension, kind })` — загрузка в хранилище расширения
 (`kind` — `photo`, `video`, `file`; ответ `ready` с `fileId` или `rejected` с причиной `format`, `size`, `empty`),
 `ctx.files.preview(img, key)` и `ctx.files.forget(key)` — превью картинки и отказ от файла. В превью файлов нет.
+
+«Поделиться» страницей — модуль `share`: `ctx.share.page()` открывает окно «Поделиться» системы с названием и адресом
+страницы, а там, где окна нет, копирует адрес в буфер обмена; ответ `{ method: "share" }` или `{ method: "copy" }`.
+Закрытое без выбора окно — не ошибка. Кнопке в разметке хватает `data-action="share.page"`; что показать после
+копирования («Ссылка скопирована»), решает секция по `method`.

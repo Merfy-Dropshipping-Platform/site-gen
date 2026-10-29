@@ -396,6 +396,15 @@ export interface FilesModule {
   forget(key: string): void;
 }
 
+// «Поделиться» страницей (базовые секции, 29.10): окно системы с названием и адресом страницы или адрес в буфер обмена.
+// method: share — окно системы открыто (покупатель мог закрыть его, не выбрав); copy — адрес скопирован.
+export interface ShareResult {
+  readonly method: 'share' | 'copy';
+}
+export interface ShareModule {
+  page(options?: ActionOptions): Promise<Result<ShareResult>>;
+}
+
 export interface Modules {
   readonly cart: CartModule;
   readonly consent: ConsentModule;
@@ -410,6 +419,8 @@ export interface Modules {
   readonly catalog: CatalogModule;
   // Блок 12 «Секций и SDK», часть 12е.
   readonly files: FilesModule;
+  // Базовые секции, 29.10: «Поделиться» у «Товара».
+  readonly share: ShareModule;
 }
 export type ModuleName = keyof Modules;
 

@@ -16016,7 +16016,8 @@
               "search",
               "catalog",
               "orders",
-              "files"
+              "files",
+              "share"
             ]
           },
           {

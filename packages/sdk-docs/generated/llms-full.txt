@@ -1047,6 +1047,11 @@ export default defineSection<State>({
 (`kind` — `photo`, `video`, `file`; ответ `ready` с `fileId` или `rejected` с причиной `format`, `size`, `empty`),
 `ctx.files.preview(img, key)` и `ctx.files.forget(key)` — превью картинки и отказ от файла. В превью файлов нет.
 
+«Поделиться» страницей — модуль `share`: `ctx.share.page()` открывает окно «Поделиться» системы с названием и адресом
+страницы, а там, где окна нет, копирует адрес в буфер обмена; ответ `{ method: "share" }` или `{ method: "copy" }`.
+Закрытое без выбора окно — не ошибка. Кнопке в разметке хватает `data-action="share.page"`; что показать после
+копирования («Ссылка скопирована»), решает секция по `method`.
+
 
 
 ---
@@ -1121,6 +1126,11 @@ export default defineSection<State>({
 Файлы покупательницы для форм расширений: `chosen`, `upload`, `preview`, `forget`. В бандле только страниц, где секция объявила модуль в `uses` или поставила его действие в `data-action`.
 
 Действий разметки нет.
+## share
+
+Поделиться страницей: `page()` — окно «Поделиться» системы с названием и адресом, нет окна — адрес в буфер обмена. В бандле только страниц, где секция объявила модуль в `uses` или поставила его действие в `data-action`.
+
+Действия: `share.page`.
 
 
 ---
@@ -1205,6 +1215,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 | `newsletter.subscribe` | newsletter | подписать на рассылку магазина; аргументы { email }, ответ — { alreadySubscribed }; e-mail — из поля формы | только из script.ts |
 | `variants.pick` | variants | выбрать значение группы вариантов товара; аргументы { productId, group, value } — id из JSON вариантов страницы, ответ — Variant, потом merfy:variant:change | `data-product-id`, `data-group`, `data-value` |
 | `search.open` | search | открыть панель поиска: есть на странице — merfy:search:open, нет — переход на /catalog; ответ — { panel } | — |
+| `share.page` | share | поделиться страницей: окно «Поделиться» системы с названием и адресом страницы, нет окна — адрес в буфер обмена; ответ — { method: "share" | "copy" } | — |
 
 Свои действия секция описывает в `script.ts` ([script.md](script.md)).
 

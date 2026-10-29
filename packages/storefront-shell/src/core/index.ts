@@ -52,6 +52,9 @@ export type { ExtMethod, ExtModule, ExtStore, ExtUse, ExtValue } from './types';
 // Блок 12, часть 12е: файлы покупательницы — ctx.files; в бандле страниц, где секция объявила "files" в uses.
 export { files } from './parts/files';
 export type { ChosenFile, FileKind, FilesModule, UploadArgs, UploadDone } from './types';
+// Базовые секции, 29.10: «Поделиться» — ctx.share; в бандле страниц, где секция объявила "share" в uses.
+export { share } from './parts/share';
+export type { ShareModule, ShareResult } from './types';
 export type { ConsentAnswer, ConsentModule, ConsentState, Money, NewsletterModule, NoticeLevel } from './types';
 export {
   EMPTY_INPUT,

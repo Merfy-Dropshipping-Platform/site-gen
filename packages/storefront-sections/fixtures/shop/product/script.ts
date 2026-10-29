@@ -30,6 +30,7 @@ function stepPhoto(ctx: Ctx, step: number): void {
 // Количество: «−» и «+» меняют число и data-quantity обеих кнопок покупки (cart.add и «Купить сейчас» берут штуки из
 // него), от 1 до 99.
 const QUANTITY_MIN = 1;
+const COPIED_MS = 1500;
 const QUANTITY_MAX = 99;
 
 function changeQuantity(ctx: Ctx, step: number): void {
@@ -105,6 +106,15 @@ export default defineSection({
         quantity: Number(button.attr('data-quantity') ?? QUANTITY_MIN),
       });
       if (added.ok) await ctx.cart.checkout();
+    },
+    // «Поделиться»: окно системы или адрес в буфер обмена; после копирования подпись на 1,5 с — «Ссылка скопирована».
+    async share(button, ctx) {
+      const shared = await ctx.share.page();
+      const label = ctx.ref('share-label');
+      if (!shared.ok || shared.data.method !== 'copy' || label === null) return;
+      const own = label.text();
+      label.text(button.attr('data-copied') ?? own);
+      ctx.after(COPIED_MS, () => label.text(own));
     },
   },
   mount(_el, ctx) {

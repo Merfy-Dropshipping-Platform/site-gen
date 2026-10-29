@@ -1,7 +1,7 @@
 ---
 const { settings, blocks, page, theme } = Astro.props;
 ---
-<!-- Значки — Lucide (image, chevron-right, chevron-left, chevron-down, minus, plus, heart), лицензия ISC, lucide.dev/license. -->
+<!-- Значки — Lucide (image, chevron-right, chevron-left, chevron-down, minus, plus, heart, share-2), лицензия ISC, lucide.dev/license. -->
 <div class="mx-auto max-w-page px-4 font-body text-foreground">
   {settings.product && (
     <div
@@ -105,7 +105,7 @@ const { settings, blocks, page, theme } = Astro.props;
         </div>
         <div class="flex min-w-0 flex-1 flex-col gap-6 md:gap-10">
           {blocks.map((block) => (
-            <div class="flex min-w-0 flex-col gap-2 data-[type=text]:-mb-4 data-[type=text]:data-[no-text=true]:hidden data-[type=text]:md:-mb-8 data-[type=variants]:gap-5 data-[type=variants]:data-[no-options=true]:hidden data-[type=description]:data-[no-description=true]:hidden data-[type=buttons]:data-[no-buttons=true]:hidden" data-type={block.type} data-no-text={!block.settings.text} data-no-options={settings.product.options.length === 0} data-no-description={!settings.product.description} data-no-buttons={!block.settings['button-label'] && !(settings['buy-now'] && block.settings['button-second-label'])} data-title-size={block.settings['heading-size']} data-variants-style={block.settings['variants-style']} data-variants-shape={block.settings['variants-shape']}>
+            <div class="flex min-w-0 flex-col gap-2 data-[type=text]:-mb-4 data-[type=text]:data-[no-text=true]:hidden data-[type=text]:md:-mb-8 data-[type=variants]:gap-5 data-[type=variants]:data-[no-options=true]:hidden data-[type=description]:data-[no-description=true]:hidden data-[type=buttons]:data-[no-buttons=true]:hidden" data-type={block.type} data-no-text={!block.settings.text} data-no-options={settings.product.options.length === 0} data-no-description={!settings.product.description} data-no-buttons={!block.settings['button-label'] && !(settings['buy-now'] && block.settings['button-second-label']) && !block.settings['share-label']} data-title-size={block.settings['heading-size']} data-variants-style={block.settings['variants-style']} data-variants-shape={block.settings['variants-shape']}>
               {block.type === 'text' && block.settings.text && (
                 <p class="m-0 text-muted-foreground in-data-[text-size=small]:text-sm in-data-[text-size=medium]:text-base in-data-[text-size=large]:text-lg" set:html={block.settings.text} />
               )}
@@ -234,6 +234,17 @@ const { settings, blocks, page, theme } = Astro.props;
                   data-quantity="1"
                   disabled={!settings.product.available}
                 >{block.settings['button-second-label']}</button>
+              )}
+              {block.settings['share-label'] && (
+                <button
+                  type="button"
+                  class="inline-flex w-fit cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-sm text-foreground hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  data-action="share"
+                  data-copied="Ссылка скопирована"
+                >
+                  <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" x2="15.42" y1="13.51" y2="17.49" /><line x1="15.41" x2="8.59" y1="6.51" y2="10.49" /></svg>
+                  <span data-ref="share-label">{block.settings['share-label']}</span>
+                </button>
               )}
                 </div>
               )}

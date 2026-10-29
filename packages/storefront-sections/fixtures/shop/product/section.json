@@ -3,7 +3,7 @@
   "name": "product",
   "kind": "section",
   "title": "Товар",
-  "uses": ["theme", "variants", "cart", "favorites"],
+  "uses": ["theme", "variants", "cart", "favorites", "share"],
   "themeSettings": ["wishlist-enabled"],
   "names": {
     "size": {
@@ -47,6 +47,12 @@
       "label": "Значок скидки",
       "about": "Плашка «−20 %» на фото, когда у товара или выбранного варианта есть старая цена",
       "asks": ["значок скидки", "плашка скидки", "бейдж скидки", "discount-badge", "sale-badge"]
+    },
+    "share-label": {
+      "kinds": ["string"],
+      "label": "Текст",
+      "about": "Подпись кнопки «Поделиться»: окно «Поделиться» системы с адресом страницы, а без него — адрес в буфер обмена. Пусто — кнопки нет",
+      "asks": ["поделиться", "кнопка поделиться", "ссылка на товар", "share", "share-label"]
     },
     "breadcrumbs": {
       "kinds": ["toggle"],
@@ -278,6 +284,12 @@
           "label": "Текст",
           "section": "Динамическая кнопка",
           "setting": { "kind": "string", "default": "Купить сейчас" }
+        },
+        {
+          "id": "share-label",
+          "label": "Текст",
+          "section": "Поделиться",
+          "setting": { "kind": "string", "default": "Поделиться" }
         }
       ]
     },

@@ -1,0 +1,42 @@
+---
+const { settings } = Astro.props;
+---
+<!-- Записи блога на главной: выбранный блог или, если поле пусто, записи всех блогов — новые сверху, показано столько,
+     сколько в «Карточках». Колонки — признаком data-columns на корне (на телефоне одна, от `md` — до двух, от `lg` — столько,
+     сколько выбрано); дата — число.месяц.год из publishedAt. -->
+<div
+  class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body md:gap-8 md:px-8"
+  data-heading-size={settings['heading-size']}
+  data-columns={settings.columns}
+  data-align={settings.align}
+>
+  {settings.heading && (
+    <h2
+      class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[align=left]:text-left in-data-[align=center]:text-center in-data-[align=right]:text-right in-data-[heading-size=small]:text-base in-data-[heading-size=medium]:text-lg in-data-[heading-size=large]:text-xl md:in-data-[heading-size=small]:text-lg md:in-data-[heading-size=medium]:text-xl md:in-data-[heading-size=large]:text-2xl"
+      set:html={settings.heading}
+    />
+  )}
+  {(settings.posts === null || settings.posts.articles.length === 0) && (
+    <p class="m-0 rounded-card bg-muted px-6 py-12 text-center text-muted-foreground">Публикаций пока нет</p>
+  )}
+  {settings.posts !== null && settings.posts.articles.length > 0 && (
+    <ul class="m-0 grid list-none grid-cols-1 gap-x-grid-column gap-y-8 p-0 md:in-data-[columns=2]:grid-cols-2 md:in-data-[columns=3]:grid-cols-2 md:in-data-[columns=4]:grid-cols-2 lg:in-data-[columns=3]:grid-cols-3 lg:in-data-[columns=4]:grid-cols-4">
+      {settings.posts.articles.slice(0, settings.cards).map((post) => (
+        <li class="min-w-0">
+          <a class="group flex h-full flex-col gap-3 no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href={post.url}>
+            <span class="block aspect-4/3 w-full overflow-hidden rounded-media border-width-media border-border bg-muted shadow-media">
+              {post.cover && <img class="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" src={post.cover} alt="" loading="lazy" />}
+            </span>
+            <span class="flex flex-1 flex-col gap-1">
+              {settings.date && post.publishedAt && (
+                <time class="text-xs text-muted-foreground md:text-sm" datetime={post.publishedAt}>{`${post.publishedAt.slice(8, 10)}.${post.publishedAt.slice(5, 7)}.${post.publishedAt.slice(0, 4)}`}</time>
+              )}
+              <span class="line-clamp-2 text-base text-muted-foreground group-hover:text-foreground">{post.title}</span>
+              {settings.excerpt && post.excerpt && <span class="line-clamp-3 text-sm text-muted-foreground">{post.excerpt}</span>}
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+</div>

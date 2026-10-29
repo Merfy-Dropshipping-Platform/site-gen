@@ -1,0 +1,63 @@
+{
+  "sdk": 1,
+  "name": "publications",
+  "kind": "section",
+  "title": "Публикации",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "date": {
+      "kinds": ["toggle"],
+      "label": "Дата и время",
+      "about": "Дата публикации над названием записи в карточке",
+      "asks": ["дата", "дата и время", "дата публикации", "date", "published"]
+    },
+    "excerpt": {
+      "kinds": ["toggle"],
+      "label": "Анонс",
+      "about": "Короткий текст записи под названием в карточке",
+      "asks": ["анонс", "краткое описание", "отрывок", "excerpt", "summary"]
+    }
+  },
+  "settings": [
+    { "id": "posts", "label": "Выбор публикации", "setting": { "kind": "blog" } },
+    { "id": "cards", "label": "Карточки", "setting": { "kind": "range", "default": 3, "min": 1, "max": 4, "step": 1 } },
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "section": "Содержание",
+      "setting": { "kind": "string", "default": "Публикации", "ai": "title" }
+    },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "large",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "id": "columns", "label": "Колонки", "setting": { "kind": "range", "default": 3, "min": 1, "max": 4, "step": 1 } },
+    {
+      "id": "date",
+      "label": "Дата и время",
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "align",
+      "label": "Выравнивание заголовка",
+      "section": "Вид",
+      "setting": { "kind": "alignment", "default": "left" }
+    },
+    {
+      "id": "excerpt",
+      "label": "Анонс",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Показать", "off": "Скрыть" } }
+    }
+  ]
+}

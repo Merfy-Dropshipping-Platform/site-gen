@@ -121,8 +121,8 @@ const EXTENSION_OWN = [
 describe('Tailwind по словарю платформы', () => {
   const css = tailwindCss(platformDictionary);
 
-  it('файл — 105 строк', () => {
-    expect(css.trimEnd().split('\n')).toHaveLength(105);
+  it('файл — 132 строки', () => {
+    expect(css.trimEnd().split('\n')).toHaveLength(132);
   });
 
   it.each(OWN)('класс словаря собирается: %s', async (cls) => {
@@ -140,6 +140,48 @@ describe('Tailwind по словарю платформы', () => {
   it('переменные словаря Tailwind в :root не печатает — значения даёт только tokensCss', async () => {
     const output = await buildClasses(css, ['bg-primary', 'rounded-button', 'shadow-card']);
     expect(output).not.toMatch(/--(primary|radius-button|shadow-card):/);
+  });
+});
+
+describe('rich-text: вид HTML-текста', () => {
+  const css = tailwindCss(platformDictionary);
+  const built = buildClasses(css, ['rich-text']);
+
+  it('класс собирается, а с вариантом и без обёртки — тоже', async () => {
+    expect(await builds(css, 'rich-text')).toBe(true);
+    expect(await builds(css, 'md:rich-text')).toBe(true);
+  });
+
+  it.each(['h2', 'h3', 'h4', 'ul', 'ol', 'li + li', 'a', 'blockquote', 'img', 'figcaption', ':where(strong, b)'])(
+    'оформляет вложенный тег: %s',
+    async (selector) => {
+      expect(await built).toContain(selector);
+    },
+  );
+
+  it('маркеры списков и подчёркивание ссылок на месте', async () => {
+    const output = await built;
+    expect(output).toMatch(/list-style:\s*disc/);
+    expect(output).toMatch(/list-style:\s*decimal/);
+    expect(output).toMatch(/text-decoration:\s*underline/);
+  });
+
+  it('значения — токены магазина, а не числа и цвета прода', async () => {
+    const output = await built;
+    for (const token of [
+      '--font-heading',
+      '--weight-heading',
+      '--tracking-heading',
+      '--heading',
+      '--text-xl',
+      '--text-lg',
+      '--text-sm',
+      '--border',
+      '--radius-media',
+    ])
+      expect(output).toContain(`var(${token}`);
+    expect(output).not.toMatch(/#[0-9a-f]{3,8}\b|rgb\(|hsl\(|oklch\(/i);
+    expect(output).not.toMatch(/font-size:\s*[\d.]+(px|rem)/);
   });
 });
 

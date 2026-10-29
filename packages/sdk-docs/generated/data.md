@@ -1,6 +1,6 @@
 # Данные магазина
 
-> SDK 1 · документация 1.16.0 · 2026-10-29
+> SDK 1 · документация 1.17.0 · 2026-10-29
 
 Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
 
@@ -140,7 +140,8 @@ export default defineSection({
 
 `set:html` с HTML записей: кроме richtext — `page.record.html` (текст статьи, очищенный сборщиком, или текст
 политики с экранированием) и `settings.<id>.html` поля вида `policy`. Другие поля записей — только текстом; имя
-`page` или `settings`, связанное параметром стрелки, — отказ. Пример — шаблон «Статьи»:
+`page` или `settings`, связанное параметром стрелки, — отказ. Элемент с таким `set:html` получает класс `rich-text`
+([styles.md](styles.md#html-текст)). Пример — шаблон «Статьи»:
 
 ```astro
 ---
@@ -152,7 +153,7 @@ const { page } = Astro.props;
       <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{page.record.title}</h1>
       {page.record.publishedAt && <p class="m-0 text-sm text-foreground">{page.record.publishedText}</p>}
       {page.record.cover && <img class="h-auto w-full rounded-button" src={page.record.cover} alt={page.record.title} />}
-      <div class="text-foreground" set:html={page.record.html}></div>
+      <div class="rich-text text-foreground" set:html={page.record.html}></div>
     </article>
   )}
 </div>

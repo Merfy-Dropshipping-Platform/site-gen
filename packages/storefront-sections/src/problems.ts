@@ -74,6 +74,8 @@ export const PROBLEM_CODES = [
   'taste-button-height',
   'taste-overflow',
   'taste-motion',
+  // HTML-текст (richtext, текст записи, политика) на элементе без класса rich-text — тоже предупреждение.
+  'taste-rich-text',
   // Код шаблона (taste-code.ts, страница code.md): ?: внутри ?:, условие из многих частей, ветка class:list на каждое
   // значение поля, одно условие в нескольких местах — тоже только предупреждения.
   'taste-nested-ternary',
@@ -90,6 +92,7 @@ const WARNING_CODES: ReadonlySet<ProblemCode> = new Set([
   'taste-button-height',
   'taste-overflow',
   'taste-motion',
+  'taste-rich-text',
   'taste-nested-ternary',
   'taste-long-condition',
   'taste-class-branches',

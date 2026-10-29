@@ -15,7 +15,7 @@ const { settings, blocks } = Astro.props;
     {settings.heading}
   </h2>
   <p class="m-0 text-lg text-foreground">{settings.text}</p>
-  {settings.answer !== '' && <div class="max-w-page text-lg text-foreground" set:html={settings.answer} />}
+  {settings.answer !== '' && <div class="rich-text max-w-page text-lg text-foreground" set:html={settings.answer} />}
   <a class="rounded-button bg-primary px-4 py-2 text-primary-foreground no-underline" href={settings['button-link']}>Смотреть</a>
   {settings.image !== '' && <img src={settings.image} alt="" class="h-48 w-auto object-cover" />}
   {settings.newsletter && <p class="m-0 text-lg text-foreground">Рассылка включена</p>}

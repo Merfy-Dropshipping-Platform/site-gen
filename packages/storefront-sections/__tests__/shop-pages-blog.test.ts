@@ -10,7 +10,13 @@ const BLOG = sampleRecord('blog');
 const ARTICLE = sampleRecord('article');
 const POLICY = sampleRecord('policy');
 
-const card = (id: string, title: string, publishedAt: string | null, cover: string | null, excerpt: string): ArticleCard => ({
+const card = (
+  id: string,
+  title: string,
+  publishedAt: string | null,
+  cover: string | null,
+  excerpt: string,
+): ArticleCard => ({
   id,
   title,
   url: `/blogs/novosti/${id}`,
@@ -40,7 +46,16 @@ const listOf = (items: ArticleCard[], pages = 1, page = 1): PageList => ({
     url: index === 0 ? '/blogs/novosti' : `/blogs/novosti/page/${index + 1}`,
     current: index + 1 === page,
   })),
-  query: { sort: null, minPrice: null, maxPrice: null, availability: null, collections: [], filters: {}, q: null, page },
+  query: {
+    sort: null,
+    minPrice: null,
+    maxPrice: null,
+    availability: null,
+    collections: [],
+    filters: {},
+    q: null,
+    page,
+  },
   sorts: [],
   facets: null,
 });
@@ -163,8 +178,18 @@ describe('«Статья»', () => {
     expect(html).toContain('<p>Стирать вручную</p>');
   });
 
+  it('текст записи — в обёртке rich-text: подзаголовок, список и ссылка остаются в ней', async () => {
+    const record = { ...ARTICLE, html: '<h2>Уход</h2><ul><li>Вручную</li></ul><p><a href="/care">Подробнее</a></p>' };
+    const html = await article.html({ page: articlePage(record) });
+    expect(html).toMatch(
+      /<div class="rich-text [^"]*"><h2>Уход<\/h2><ul><li>Вручную<\/li><\/ul><p><a href="\/care">Подробнее<\/a><\/p><\/div>/,
+    );
+  });
+
   it('без обложки и без даты — без картинки и времени', async () => {
-    const html = await article.html({ page: articlePage({ ...ARTICLE, cover: null, publishedAt: null, publishedText: '' }) });
+    const html = await article.html({
+      page: articlePage({ ...ARTICLE, cover: null, publishedAt: null, publishedText: '' }),
+    });
     expect(tags(html, 'img')).toEqual([]);
     expect(tags(html, 'time')).toEqual([]);
   });
@@ -201,6 +226,13 @@ describe('«Страница»', () => {
     expect(attr(tags(html, 'div')[0] ?? '', 'data-heading-size')).toBe('medium');
     expect(html).toContain('>Страница</h1>');
     expect(html).toContain('<p>Расскажите покупателям, о чём эта страница.</p>');
+  });
+
+  it('текст — в обёртке rich-text: своя страница и политика', async () => {
+    const own = await page.html({ settings: { text: '<h2>Доставка</h2><ul><li>СДЭК</li></ul>' } });
+    expect(own).toMatch(/<div class="rich-text [^"]*"><h2>Доставка<\/h2><ul><li>СДЭК<\/li><\/ul><\/div>/);
+    const policy = await page.html({ settings: { policy: 'privacy' }, records: { policy: POLICY } });
+    expect(policy).toMatch(/<div class="rich-text [^"]*"><p>Мы бережём данные<\/p><\/div>/);
   });
 
   it('выбрана политика — её название и текст вместо своих', async () => {

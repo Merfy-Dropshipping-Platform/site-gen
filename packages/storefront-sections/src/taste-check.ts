@@ -1,7 +1,8 @@
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
-import { MANIFEST_FILE, TEMPLATE_FILE, type SectionFiles } from './format';
+import { MANIFEST_FILE, TEMPLATE_FILE, readManifest, type SectionFiles } from './format';
 import { positionAt } from './position';
 import { problem, type ProblemCode, type SectionProblem } from './problems';
+import { richtextFieldIdsOf } from './set-html';
 import { codeFound } from './taste-code';
 
 // Проверки вкуса (спека MCP-секций, §9, последний пункт): кнопки от 44 px, нет прокрутки вбок, «уменьшить движение».
@@ -30,6 +31,8 @@ interface Element {
   tag: string;
   role: string;
   classes: ClassAt[];
+  // Последнее имя в выражении set:html: settings.text → 'text', page.record.html → 'html'; нет set:html — undefined.
+  htmlKey: { name: string; at: number } | undefined;
 }
 
 const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
@@ -55,6 +58,17 @@ function classesOfAttribute(attribute: AstNode): ClassAt[] {
   });
 }
 
+// Имя последнего члена выражения set:html={a.b.c} или set:html={a['c']}; другое выражение — undefined.
+function htmlKeyOf(attribute: AstNode | undefined): Element['htmlKey'] {
+  const value = attribute === undefined ? undefined : fieldOf(attribute, 'value');
+  const expression = isNode(value) ? fieldOf(value, 'expression') : undefined;
+  if (!isNode(expression) || expression.type !== 'MemberExpression') return undefined;
+  const property = fieldOf(expression, 'property');
+  if (!isNode(property)) return undefined;
+  const name = stringOf(fieldOf(property, fieldOf(expression, 'computed') === true ? 'value' : 'name'));
+  return name === '' || attribute === undefined ? undefined : { name, at: attribute.start };
+}
+
 function elementOf(node: AstNode): Element {
   const attributes = fieldOf(node, 'attributes');
   const list = Array.isArray(attributes) ? attributes.filter(isNode) : [];
@@ -66,6 +80,7 @@ function elementOf(node: AstNode): Element {
     tag: nameText(node),
     role: isNode(roleValue) ? stringOf(fieldOf(roleValue, 'value')) : '',
     classes: [...named('class'), ...named('class:list')].flatMap(classesOfAttribute),
+    htmlKey: htmlKeyOf(named('set:html')[0]),
   };
 }
 
@@ -180,14 +195,34 @@ function motionFound(element: Element): Found[] {
   });
 }
 
+// ---- HTML-текст
+
+// Вид HTML-текста: подзаголовки, списки, ссылки и абзацы внутри значения шаблон не оформит, их оформляет класс rich-text.
+const RICH_TEXT_CLASS = 'rich-text';
+
+// set:html из richtext-поля, из HTML записи (page.record.html) или политики (settings.<поле>.html) на элементе без
+// класса rich-text. Значения string и text с подсказкой ai — только <em> и <strong>, класс им не нужен.
+function richTextFound(element: Element, richtextIds: ReadonlySet<string>): Found[] {
+  const key = element.htmlKey;
+  if (key === undefined || (key.name !== 'html' && !richtextIds.has(key.name))) return [];
+  if (element.classes.some((item) => item.name === RICH_TEXT_CLASS)) return [];
+  const message = `set:html={…${key.name}} выводит HTML-текст (абзацы, подзаголовки, списки, ссылки), а элемент без класса ${RICH_TEXT_CLASS}: списки без маркеров, подзаголовки как обычный текст, ссылки не отличить. Добавь класс ${RICH_TEXT_CLASS} этому элементу`;
+  return [{ at: key.at, code: 'taste-rich-text' as const, message }];
+}
+
 // Классы по элементам и код выражений шаблона (taste-code.ts) — по одному разбору.
-async function templateFound(text: string): Promise<Found[]> {
+async function templateFound(text: string, richtextIds: ReadonlySet<string>): Promise<Found[]> {
   const { parse } = await import('@astrojs/compiler-rs');
   const { ast } = await Promise.resolve(parse(text));
   const byElement = nodesOf(ast)
     .filter((node) => node.type === 'JSXOpeningElement')
     .map(elementOf)
-    .flatMap((element) => [...buttonFound(element), ...overflowFound(element), ...motionFound(element)]);
+    .flatMap((element) => [
+      ...buttonFound(element),
+      ...overflowFound(element),
+      ...motionFound(element),
+      ...richTextFound(element, richtextIds),
+    ]);
   return [...byElement, ...codeFound(ast, text)];
 }
 
@@ -213,10 +248,12 @@ function scriptProblems(file: string, text: string): SectionProblem[] {
 // Предупреждения вкуса секции: шаблон и файлы скрипта. Шаблон не разобрался — его ошибку сообщает компиляция.
 export async function tasteProblems(files: SectionFiles): Promise<SectionProblem[]> {
   const template = files[TEMPLATE_FILE];
+  const manifest = readManifest(files);
+  const richtextIds = manifest.ok ? richtextFieldIdsOf(manifest.value) : new Set<string>();
   let found: Found[] = [];
   if (template !== undefined) {
     try {
-      found = await templateFound(template);
+      found = await templateFound(template, richtextIds);
     } catch {
       found = [];
     }

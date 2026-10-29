@@ -125,6 +125,58 @@ describe('«уменьшить движение»: скрипт', () => {
   });
 });
 
+describe('HTML-текст: класс rich-text', () => {
+  const manifest = JSON.stringify({
+    sdk: 1,
+    name: 'rich',
+    kind: 'section',
+    title: 'Текст',
+    settings: [
+      { id: 'text', label: 'Текст', setting: { kind: 'richtext', default: '<p>Текст</p>' } },
+      { id: 'title', label: 'Заголовок', setting: { kind: 'string', default: 'Заголовок', ai: 'title' } },
+      { id: 'policy', label: 'Политика', setting: { kind: 'policy' } },
+    ],
+    blocks: {
+      item: {
+        title: 'Пункт',
+        limit: 4,
+        settings: [{ id: 'answer', label: 'Ответ', setting: { kind: 'richtext', default: '<p>Ответ</p>' } }],
+      },
+    },
+  });
+  const files = (body: string): Record<string, string> => ({ 'section.json': manifest, 'template.astro': body });
+
+  it('richtext-поле, html записи и html политики без класса — по предупреждению на место set:html', async () => {
+    expect(await found(files('<div class="text-base" set:html={settings.text}></div>'))).toEqual([
+      'taste-rich-text template.astro:1:24',
+    ]);
+    expect(await found(files('<div class="text-base" set:html={page.record.html}></div>'))).toHaveLength(1);
+    expect(await found(files('<div set:html={settings.policy.html}></div>'))).toHaveLength(1);
+    expect(
+      await found(files('<div>{blocks.map((block) => <div set:html={block.settings.answer} />)}</div>')),
+    ).toHaveLength(1);
+    const [item] = await tasteProblems(files('<div set:html={settings.text}></div>'));
+    expect(item?.message).toContain('rich-text');
+    expect(item !== undefined && isWarning(item)).toBe(true);
+  });
+
+  it('с классом rich-text (class и class:list) — без предупреждений', async () => {
+    expect(await found(files('<div class="rich-text text-base" set:html={settings.text}></div>'))).toEqual([]);
+    expect(
+      await found(files("<div class:list={['rich-text', 'max-w-2xl']} set:html={page.record.html}></div>")),
+    ).toEqual([]);
+  });
+
+  it('string и text с ai (только <em> и <strong>) класса не требуют', async () => {
+    expect(await found(files('<h2 class="m-0" set:html={settings.title}></h2>'))).toEqual([]);
+  });
+
+  it('без section.json id richtext неизвестны: проверяются только html записи и политики', async () => {
+    expect(await found(template('<div set:html={settings.text}></div>'))).toEqual([]);
+    expect(await found(template('<div set:html={page.record.html}></div>'))).toHaveLength(1);
+  });
+});
+
 describe('в приёме секции', () => {
   const manifest = JSON.stringify({ sdk: 1, name: 'taste', kind: 'section', title: 'Вкус' });
   const bad =

@@ -93,6 +93,33 @@
 @utility border-width-card { border-style: solid; border-width: var(--border-width-card); }
 @utility border-width-media { border-style: solid; border-width: var(--border-width-media); }
 @utility border-width-popover { border-style: solid; border-width: var(--border-width-popover); }
+@utility rich-text {
+  & { overflow-wrap: break-word; }
+  & :where(p, h2, h3, h4, ul, ol, li, blockquote, figure) { margin: 0; }
+  & > * + * { margin-top: 1rem; }
+  & > * + h2 { margin-top: 2rem; }
+  & > * + h3, & > * + h4 { margin-top: 1.5rem; }
+  & > h2 + *, & > h3 + *, & > h4 + * { margin-top: 0.75rem; }
+  & > :where(img, figure) { margin-block: 1.5rem; }
+  & > :first-child { margin-top: 0; }
+  & > :last-child { margin-bottom: 0; }
+  & :where(h2, h3, h4) { color: var(--heading); font-family: var(--font-heading); font-weight: var(--weight-heading); letter-spacing: var(--tracking-heading); }
+  & h2 { font-size: var(--text-xl); line-height: var(--text-xl--line-height); }
+  & h3 { font-size: var(--text-lg); line-height: var(--text-lg--line-height); }
+  & h4 { font-size: var(--text-base); line-height: var(--text-base--line-height); }
+  & :where(ul, ol) { padding-left: 1.5rem; }
+  & ul { list-style: disc; }
+  & ol { list-style: decimal; }
+  & li + li { margin-top: 0.25rem; }
+  & li > :where(ul, ol) { margin-top: 0.25rem; }
+  & a { text-decoration: underline; text-underline-offset: 2px; }
+  & a:hover { opacity: 0.8; }
+  & :where(strong, b) { font-weight: 600; }
+  & :where(em, i) { font-style: italic; }
+  & blockquote { border-left: 2px solid var(--border); padding-left: 1rem; font-style: italic; }
+  & img { display: block; max-width: 100%; height: auto; border-radius: var(--radius-media); }
+  & figcaption { margin-top: 0.5rem; color: var(--muted-foreground); font-size: var(--text-sm); line-height: var(--text-sm--line-height); }
+}
 @custom-variant card-style-standard (&:where([data-card-style="standard"], [data-card-style="standard"] *));
 @custom-variant card-style-card (&:where([data-card-style="card"], [data-card-style="card"] *));
 @custom-variant card-align-left (&:where([data-card-align="left"], [data-card-align="left"] *));

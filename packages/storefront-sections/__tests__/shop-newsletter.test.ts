@@ -6,7 +6,8 @@ import { acceptanceProblems, attr, fieldOf, panelOf, renderSection, tags, type R
 // «Цветовая схема», «Отступы»; заголовок — блок, форма рассылки — «Плейсхолдер» и «Кнопка». Подписка — часть newsletter ядра
 // (тот же запрос, что у «Подвала» и у rose и flux на проде); скрипт проверяют на витрине (тексты, исходы, повтор).
 const HEADING = [{ id: 'heading-1', type: 'heading', settings: { heading: 'Будьте <em>в курсе</em>', 'heading-size': 'large' } }];
-const SHOP = (policies: { type: string; title: string; url: string }[]) => ({
+const BUTTON = [{ id: 'button-2', type: 'button', settings: { 'button-label': 'Подписаться' } }];
+const SHOP =(policies: { type: string; title: string; url: string }[]) => ({
   name: 'Мой сайт',
   contacts: { phone: '', email: '', fields: [] },
   policies,
@@ -39,7 +40,6 @@ describe('«Подписка на рассылку»: панель', () => {
       ['wrapper:scheme', undefined, undefined],
       ['wrapper:padding', undefined, undefined],
       ['placeholder', 'Плейсхолдер', 'Форма рассылки'],
-      ['button-label', 'Кнопка', undefined],
       ['layout', 'Раскладка', 'Вид'],
       ['form-layout', 'Форма', undefined],
     ]);
@@ -57,6 +57,15 @@ describe('«Подписка на рассылку»: панель', () => {
     expect(heading?.limit).toBe(1);
   });
 
+  it('«Кнопка» — блок, как у прода: подпись в одном поле, не больше одного, по умолчанию стоит', () => {
+    const button = section.manifest.blocks?.button;
+    // Конструктор пишет «Добавить » + название блока со строчной буквы: «Добавить текст кнопки» грамотно, «Добавить кнопка» — нет.
+    expect(button?.title).toBe('Текст кнопки');
+    expect(button?.limit).toBe(1);
+    expect(button?.settings.map((field) => [field.id, field.label])).toEqual([['button-label', 'Кнопка']]);
+    expect(section.manifest.defaultBlocks?.map((block) => block.type)).toEqual(['heading', 'button']);
+  });
+
   it('подписку делает часть newsletter ядра', () => {
     expect(section.manifest.uses).toContain('newsletter');
   });
@@ -64,7 +73,7 @@ describe('«Подписка на рассылку»: панель', () => {
 
 describe('«Подписка на рассылку»: разметка', () => {
   it('по умолчанию — вид flux: колонка по левому краю, кнопка под полем; форма с подписью поля, ответы скрыты', async () => {
-    const source = await section.html({ blocks: HEADING });
+    const source = await section.html({ blocks: [...HEADING, ...BUTTON] });
     const tag = root(source);
     expect(attr(tag, 'data-layout')).toBe('column');
     expect(attr(tag, 'data-align')).toBe('left');
@@ -98,12 +107,19 @@ describe('«Подписка на рассылку»: разметка', () => {
   });
 
   it.each([['inline-submit'], ['stacked']])('вид формы %s — кнопка в поле или под ним, поле и кнопка есть', async (formLayout) => {
-    const source = await section.html({ settings: { 'form-layout': formLayout, placeholder: 'Ваш e-mail', 'button-label': 'Хочу' } });
+    const blocks = [{ id: 'button-2', type: 'button', settings: { 'button-label': 'Хочу' } }];
+    const source = await section.html({ blocks, settings: { 'form-layout': formLayout, placeholder: 'Ваш e-mail' } });
     expect(attr(root(source), 'data-form-layout')).toBe(formLayout);
     expect(source).toMatch(/<input\b[^>]*placeholder="Ваш e-mail"/);
     expect(source).toContain('>Хочу</button>');
     expect(tags(source, 'button')).toHaveLength(1);
     expect(source.includes('pl-4 pr-1.5')).toBe(formLayout === 'inline-submit');
+  });
+
+  it('блока «Кнопка» нет (удалён в конструкторе) — кнопки нет, поле остаётся', async () => {
+    const source = await section.html({ blocks: HEADING });
+    expect(tags(source, 'button')).toEqual([]);
+    expect(source).toMatch(/<input\b[^>]*type="email"/);
   });
 
   it.each([['column'], ['row']])('раскладка %s и выравнивание — признаки на корне', async (layout) => {

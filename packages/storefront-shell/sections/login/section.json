@@ -6,16 +6,18 @@
   "role": "login",
   "groups": ["page"],
   "limit": 1,
-  "uses": ["auth"],
+  "uses": ["auth", "shop"],
+  "wrapper": ["scheme", "padding"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
   "settings": [
-    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Вход в аккаунт", "inlineEdit": true } },
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Вход в аккаунт", "ai": "title" } },
     {
       "id": "text",
       "label": "Текст",
       "setting": {
         "kind": "text",
         "default": "Введите e-mail — пришлём ссылку для входа. Войдём в аккаунт или создадим новый.",
-        "inlineEdit": true
+        "ai": "description"
       }
     },
     { "wrapper": "scheme" },

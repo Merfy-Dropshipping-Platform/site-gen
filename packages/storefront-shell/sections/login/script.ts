@@ -2,7 +2,8 @@ import { defineSection, type Ctx, type El } from '@merfy/shell';
 
 // «Вход» (блок 10 «Секций и SDK», 10.7, «Решил сам» пп. 18, 19; часть 10в, Р10в-11): e-mail → письмо с кодом и
 // ссылкой; код — на той же странице; ссылка /verify?token=… — вход сама; отказы — текст под полем (quiet: true).
-// В превью кнопки ничего не шлют.
+// На время запроса кнопка показывает блеск «Отправляем...»/«Проверяем...» и выключается. В превью кнопки ничего
+// не шлют; вошедшую на страницу «Входа» уводит в кабинет часть auth (как на проде).
 
 const showNotice = (message: string, notice: El | null): void => {
   notice?.text(message);
@@ -14,8 +15,19 @@ const clearNotice = (notice: El | null): void => {
   notice?.hide();
 };
 
+// Кнопка в работе: блеск вместо текста, disabled — от повторного нажатия (как у пяти тем на проде).
 const busy = (button: El | null, on: boolean): void => {
   button?.attr('disabled', on ? '' : null);
+  if (button === null) return;
+  const loading = button.ref('request-loading') ?? button.ref('verify-loading');
+  const text = button.ref('request-text') ?? button.ref('verify-text');
+  if (on) {
+    loading?.show();
+    text?.hide();
+  } else {
+    loading?.hide();
+    text?.show();
+  }
 };
 
 // Шаг e-mail → шаг кода: адрес в текст, ошибки скрыть, фокус на поле кода.

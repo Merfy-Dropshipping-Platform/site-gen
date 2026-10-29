@@ -1,49 +1,82 @@
 ---
-const { settings } = Astro.props;
+const { settings, shop } = Astro.props;
 ---
 
-<div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body">
-  <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h1>
-  {settings.text ? <p class="m-0 text-foreground">{settings.text}</p> : null}
-  <div data-ref="email-step" class="flex max-w-page flex-col gap-3">
-    <label class="text-sm">E-mail</label>
-    <input
-      data-ref="email"
-      type="email"
-      autocomplete="email"
-      placeholder="example@merfy.ru"
-      class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
-    />
-    <p data-ref="email-error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
+<!-- «Вход» — страница /login и /verify пяти старых тем, вид по умолчанию flux: узкая колонка по центру (w-96),
+     центрированные заголовок и текст, поле e-mail с обязательной меткой, ошибка под полем, широкая кнопка с блеском
+     «Отправляем...». Код из письма — на той же странице; шаги переключает script.ts (часть 10в, Р10в-11). Стёртые
+     заголовок и текст не рисуются. Внизу — строка согласия со ссылкой на политику данных магазина, если она заполнена. -->
+<div class="mx-auto flex w-96 max-w-full flex-col items-center gap-16 px-5 font-body text-foreground md:gap-20">
+  {(settings.heading || settings.text) && (
+    <div class="flex flex-col items-center gap-2 text-center">
+      {settings.heading && <h1 class="m-0 font-heading weight-heading text-xl uppercase text-heading" set:html={settings.heading} />}
+      {settings.text && <p class="m-0 text-base text-muted-foreground" set:html={settings.text} />}
+    </div>
+  )}
+  <div data-ref="email-step" class="flex w-full flex-col gap-6">
+    <div class="flex w-full flex-col gap-2">
+      <label class="text-base text-muted-foreground" for="login-email">
+        E-mail<span class="text-destructive" aria-hidden="true"> *</span>
+      </label>
+      <input
+        id="login-email"
+        data-ref="email"
+        type="email"
+        autocomplete="email"
+        placeholder="example@merfy.ru"
+        class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      />
+    </div>
+    <p data-ref="email-error" role="alert" class="m-0 text-center text-sm text-destructive" hidden></p>
     <button
       type="button"
       data-ref="request"
       data-action="request"
-      class="rounded-button bg-primary px-4 py-2 text-primary-foreground"
+      class="inline-flex h-14 w-full cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-base text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
-      {settings['button-label'] || 'Получить ссылку для входа'}
+      <span data-ref="request-loading" class="inline-flex items-center gap-2" hidden>
+        <svg class="size-5 motion-safe:animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle class="opacity-30" cx="12" cy="12" r="9" stroke-width="2" /><path d="M21 12a9 9 0 0 0-9-9" stroke-width="2" stroke-linecap="round" /></svg>
+        Отправляем...
+      </span>
+      <span data-ref="request-text">{settings['button-label'] || 'Получить ссылку для входа'}</span>
     </button>
   </div>
-  <div data-ref="code-step" class="flex max-w-page flex-col gap-3" hidden>
-    <p class="m-0 text-foreground">Мы отправили письмо на <span data-ref="sent-to"></span>. Перейдите по ссылке из письма или введите код из него</p>
+  <div data-ref="code-step" class="flex w-full flex-col gap-6" hidden>
+    <p class="m-0 text-center text-base text-muted-foreground">
+      Мы отправили письмо на <span data-ref="sent-to"></span>. Перейдите по ссылке из письма или введите код из него
+    </p>
     <input
       data-ref="code"
       inputmode="numeric"
       autocomplete="one-time-code"
       maxlength="6"
       placeholder="000000"
-      class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
+      class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-center text-base text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     />
-    <p data-ref="code-error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
+    <p data-ref="code-error" role="alert" class="m-0 text-center text-sm text-destructive" hidden></p>
     <button
       type="button"
       data-ref="verify"
       data-action="verify"
-      class="rounded-button bg-primary px-4 py-2 text-primary-foreground"
+      class="inline-flex h-14 w-full cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-base text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
-      Войти
+      <span data-ref="verify-loading" class="inline-flex items-center gap-2" hidden>
+        <svg class="size-5 motion-safe:animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle class="opacity-30" cx="12" cy="12" r="9" stroke-width="2" /><path d="M21 12a9 9 0 0 0-9-9" stroke-width="2" stroke-linecap="round" /></svg>
+        Проверяем...
+      </span>
+      <span data-ref="verify-text">Войти</span>
     </button>
-    <button type="button" data-action="change-email" class="text-sm underline">Изменить e-mail</button>
+    <button
+      type="button"
+      data-action="change-email"
+      class="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-button bg-transparent p-0 text-base text-muted-foreground underline underline-offset-4 hover:text-heading"
+    >Изменить e-mail</button>
   </div>
-  <p data-ref="checking" hidden>Входим…</p>
+  <p data-ref="checking" class="m-0 text-base text-muted-foreground" hidden>Входим…</p>
+  <p class="m-0 text-center text-sm text-muted-foreground">
+    Входя, вы соглашаетесь с
+    {shop.policies.filter((policy) => policy.type === 'privacy').length > 0 ? shop.policies.filter((policy) => policy.type === 'privacy').map((policy) => (
+      <a class="text-muted-foreground underline underline-offset-2 hover:text-heading" href={policy.url} rel="noopener noreferrer" target="_blank">политикой обработки персональных данных</a>
+    )) : <span>политикой обработки персональных данных</span>}
+  </p>
 </div>

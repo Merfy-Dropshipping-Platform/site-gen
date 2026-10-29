@@ -67,28 +67,47 @@ function openWishlist() {
 }
 
 describe('«Избранное»', () => {
-  it('шаблон: пусто — текст и «Перейти в каталог»; карточка в <template>; «Убрать» — favorites.toggle', () => {
-    for (const part of ['В избранном пока ничего нет', 'Перейти в каталог', 'href="/catalog"', '<template>', 'data-action="favorites.toggle"'])
+  it('шаблон: пусто — текст и «Перейти в каталог»; карточка в <template>; удаление — сердце, есть «В корзину» и скелетон', () => {
+    for (const part of [
+      'В избранном пока пусто',
+      'Перейти в каталог',
+      'href="/catalog"',
+      '<template>',
+      'data-action="favorites.toggle"',
+      'aria-label="Убрать из избранного"',
+      'data-action="cart.add"',
+      'data-ref="skeleton"',
+      'Товары, которые вам понравились',
+    ])
       expect(WISHLIST).toContain(part);
   });
 
-  it('пусто — текст виден, карточек нет, запросов к товарам нет', async () => {
+  it('пусто — скелетон скрыт, подзаголовок скрыт, текст виден, карточек нет, запросов к товарам нет', async () => {
     const { gateway, page } = openWishlist();
     await settle();
     expect(page.querySelector('[data-ref="empty"]')?.hasAttribute('hidden')).toBe(false);
+    expect(page.querySelector('[data-ref="skeleton"]')?.hasAttribute('hidden')).toBe(true);
+    expect(page.querySelector('[data-ref="subtitle"]')?.hasAttribute('hidden')).toBe(true);
     expect(shown(page, 'title')).toEqual([]);
     expect(gateway.calls).toEqual([]);
   });
 
-  it('карточка: название, цена и старая цена, ссылка на товар; «Убрать» — карточка уходит, текст пустого виден', async () => {
+  it('карточка: название, цена и старая цена, ссылка на товар, бейдж скидки; «В корзину» — товар; сердце — карточка уходит', async () => {
     guestList(NOVA.id);
     const { gateway, page } = openWishlist();
     gateway.answer('GET /store/products', { status: 200, body: { products: [NOVA] } });
     await settle();
+    expect(page.querySelector('[data-ref="skeleton"]')?.hasAttribute('hidden')).toBe(true);
+    expect(page.querySelector('[data-ref="subtitle"]')?.hasAttribute('hidden')).toBe(false);
     expect(shown(page, 'title')).toEqual(['Шарф «Нова»']);
     expect(shown(page, 'price')[0]?.replace(/\s/g, '')).toBe('2490₽');
     expect(shown(page, 'old-price')[0]?.replace(/\s/g, '')).toBe('2990₽');
     expect(page.querySelector('[data-ref="link"]')?.getAttribute('href')).toBe('/product/nova');
+    expect(shown(page, 'sale')).toEqual(['−17 %']);
+    expect(page.querySelector('[data-ref="card"]')?.getAttribute('data-available')).toBe('true');
+    const buy = page.querySelector<HTMLButtonElement>('[data-ref="buy"]');
+    expect(buy?.getAttribute('data-product-id')).toBe(NOVA.id);
+    expect(buy?.getAttribute('data-action')).toBe('cart.add');
     const remove = page.querySelector<HTMLButtonElement>('[data-ref="remove"]');
     expect(remove?.getAttribute('data-product-id')).toBe(NOVA.id);
     remove?.click();
@@ -96,6 +115,18 @@ describe('«Избранное»', () => {
     expect(shown(page, 'title')).toEqual([]);
     expect(page.querySelector('[data-ref="empty"]')?.hasAttribute('hidden')).toBe(false);
     expect(failures.details).toEqual([]);
+  });
+
+  it('распроданный товар без старой цены: бейджей нет, «Нет в наличии», «В корзину» скрыта классом', async () => {
+    const soldOut = { ...NOVA, id: 'p-sold-out', compareAtPrice: null, quantity: 0 };
+    guestList(soldOut.id);
+    const { gateway, page } = openWishlist();
+    gateway.answer('GET /store/products', { status: 200, body: { products: [soldOut] } });
+    await settle();
+    expect(shown(page, 'sale')).toEqual([]);
+    expect(shown(page, 'old-price')).toEqual([]);
+    expect(page.querySelector('[data-ref="card"]')?.getAttribute('data-available')).toBe('false');
+    expect(page.querySelector('[data-ref="unavailable"]')?.textContent?.trim()).toBe('Нет в наличии');
   });
 });
 

@@ -83,7 +83,7 @@ describe('наши секции блока 10б — проверка при со
 // Блок 10, часть 10в: вход и кабинет — те же правила, что у секции мерчанта.
 describe('наши секции блока 10в — проверка при сохранении', () => {
   it.each([
-    ['login', 'shop:login', ['auth'], undefined],
+    ['login', 'shop:login', ['auth'], ['scheme', 'padding']],
     ['account', 'shop:account', ['auth'], ['scheme']],
     ['orders', 'shop:orders', ['orders'], ['scheme']],
   ])('%s: страница, одна на список, свой модуль', async (folder, name, uses, wrapper) => {

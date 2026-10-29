@@ -340,11 +340,16 @@ describe('«Шапка»: цветовая схема меню', () => {
     expect(carriers(page, 'color-scheme-2')).toEqual(['dialog', 'nav']);
   });
 
-  it('«Отступы» секции — классы обёртки, без правки — отступ темы', () => {
-    expect(resolveWrapperView(sectionManifest, { padding: { top: 8, bottom: 8 } }).view.classes).toEqual(
-      expect.arrayContaining(['pt-2', 'pb-2']),
+  it('«Отступы» секции — классы обёртки; без правки — умолчание секции 8 и 8; предел 64 на шаге 4, как на проде', () => {
+    expect(resolveWrapperView(sectionManifest, { padding: { top: 20, bottom: 64 } }).view.classes).toEqual(
+      expect.arrayContaining(['pt-5', 'pb-16']),
     );
-    expect(resolveWrapperView(sectionManifest, {}).view.classes).toContain('py-section');
+    expect(resolveWrapperView(sectionManifest, {}).view.classes).toEqual(expect.arrayContaining(['pt-2', 'pb-2']));
+    expect(resolveWrapperView(sectionManifest, {}).view.classes).not.toContain('py-section');
+    const over = resolveWrapperView(sectionManifest, { padding: { top: 72, bottom: 8 } });
+    expect(over.invalid).toEqual(['padding: нужны два целых числа от 0 до 64, кратные 4, или null']);
+    expect(over.view.classes).toEqual(expect.arrayContaining(['pt-2', 'pb-2']));
+    expect(sectionManifest.wrapperSpec?.padding).toEqual({ default: { top: 8, bottom: 8 }, max: 64, step: 4 });
   });
 });
 

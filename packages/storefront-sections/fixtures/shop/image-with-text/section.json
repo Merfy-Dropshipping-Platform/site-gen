@@ -3,19 +3,14 @@
   "name": "image-with-text",
   "kind": "section",
   "title": "Изображение с текстом",
-  "wrapper": ["scheme", "padding"],
+  "wrapper": ["scheme", "padding", "width"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
   "names": {
     "cta-position": {
       "kinds": ["select", "radio"],
       "label": "Положение кнопки",
       "about": "Где стоит кнопка в колонке с текстом: сразу под текстом или внизу колонки",
       "asks": ["положение кнопки", "кнопка внизу", "прижать кнопку", "button position", "cta position"]
-    },
-    "text-style": {
-      "kinds": ["select"],
-      "label": "Стиль текста",
-      "about": "Начертание заголовка и текста секции: обычное или курсив, как на vanilla",
-      "asks": ["стиль текста", "курсив", "наклонный текст", "italic", "text style"]
     }
   },
   "settings": [
@@ -37,6 +32,7 @@
         ]
       }
     },
+    { "wrapper": "width" },
     {
       "id": "image-position",
       "label": "Позиция фото",
@@ -174,6 +170,7 @@
     },
     "button": {
       "title": "Кнопка",
+      "addTitle": "кнопку",
       "limit": 1,
       "settings": [
         {

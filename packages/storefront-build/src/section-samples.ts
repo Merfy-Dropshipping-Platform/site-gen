@@ -2,10 +2,15 @@ import type { Entity } from './inputs';
 import { EMPTY_LIST_QUERY } from './list-query';
 import { pageListOf, type ListInputs, type ListSource } from './page-list';
 import { recordIndexOf, type RecordEntry, type RecordEntryOf, type RecordIndex, type RecordType } from './records';
-import { sectionRecords, type RecordFieldKind, type SectionRecordValues } from './section-records';
+import {
+  sectionRecords,
+  type BlockRecordFields,
+  type RecordFieldKind,
+  type SectionRecordValues,
+} from './section-records';
 import { shopPropsOf, type ShopProps } from './shop-props';
 import { HOME_PAGE, type PageInfo } from './special-pages';
-import type { SettingValues } from './sections-render';
+import type { RenderBlock, SettingValues } from './sections-render';
 
 // Примеры данных магазина для пробного рендера секции при сохранении и для тестов (блок 2 «Секций и SDK», «Решил сам»
 // п. 5, дополнение «Утечки в HTML»). Секция без записей, с пустым магазином и умолчаниями настроек не выполняет ветки,
@@ -171,6 +176,23 @@ export function sampleRecordValues(
   const placed = { id: 'sample', name: 'sample', hash: 'sample', settings, recordFields };
   return sectionRecords(placed, { theme: SAMPLE_THEME, shop: SAMPLE_SHOP, page: HOME_PAGE, records: SAMPLE_RECORDS })
     .values;
+}
+
+// Значения полей с записями в блоках (базовые секции, 29.10): у каждого блока поле выбрано на пример своего вида; id
+// блока → id поля → запись. Тип блока без таких полей — блока в ответе нет.
+export function sampleBlockRecords(
+  blockRecordFields: BlockRecordFields | undefined,
+  blocks: readonly RenderBlock[],
+): Readonly<Record<string, SectionRecordValues>> {
+  if (blockRecordFields === undefined) return {};
+  const sampled = blocks.map((block) => {
+    const fields = blockRecordFields[block.type] ?? {};
+    const ids = Object.entries(fields).map(([id, kind]): [string, string] => [id, SAMPLE_IDS[kind]]);
+    return { ...block, settings: { ...block.settings, ...Object.fromEntries(ids) } };
+  });
+  const placed = { id: 'sample', name: 'sample', hash: 'sample', settings: {}, blocks: sampled, blockRecordFields };
+  return sectionRecords(placed, { theme: SAMPLE_THEME, shop: SAMPLE_SHOP, page: HOME_PAGE, records: SAMPLE_RECORDS })
+    .blocks;
 }
 
 const LIST_INPUTS: ListInputs = { data: { entities: [...SAMPLE_ENTITIES] } };

@@ -3,7 +3,33 @@
   "name": "gallery",
   "kind": "section",
   "title": "Галерея",
-  "wrapper": ["scheme", "padding"],
+  "wrapper": [
+    "scheme",
+    "padding"
+  ],
+  "wrapperSpec": {
+    "padding": {
+      "default": {
+        "top": 80,
+        "bottom": 80
+      }
+    }
+  },
+  "names": {
+    "item-type": {
+      "kinds": [
+        "radio"
+      ],
+      "label": "Тип",
+      "about": "Что показывает элемент галереи: своё изображение, товар магазина (фото, название, цена) или коллекцию",
+      "asks": [
+        "тип элемента",
+        "товар в галерее",
+        "коллекция в галерее",
+        "что показать в плитке"
+      ]
+    }
+  },
   "settings": [
     {
       "id": "heading",
@@ -22,9 +48,18 @@
         "kind": "select",
         "default": "medium",
         "options": [
-          { "value": "small", "label": "Маленький" },
-          { "value": "medium", "label": "Средний" },
-          { "value": "large", "label": "Большой" }
+          {
+            "value": "small",
+            "label": "Маленький"
+          },
+          {
+            "value": "medium",
+            "label": "Средний"
+          },
+          {
+            "value": "large",
+            "label": "Большой"
+          }
         ]
       }
     },
@@ -44,9 +79,18 @@
         "kind": "select",
         "default": "medium",
         "options": [
-          { "value": "small", "label": "Маленький" },
-          { "value": "medium", "label": "Средний" },
-          { "value": "large", "label": "Большой" }
+          {
+            "value": "small",
+            "label": "Маленький"
+          },
+          {
+            "value": "medium",
+            "label": "Средний"
+          },
+          {
+            "value": "large",
+            "label": "Большой"
+          }
         ]
       }
     },
@@ -57,13 +101,23 @@
         "kind": "radio",
         "default": "left",
         "options": [
-          { "value": "left", "label": "Слева" },
-          { "value": "right", "label": "Справа" }
+          {
+            "value": "left",
+            "label": "Слева"
+          },
+          {
+            "value": "right",
+            "label": "Справа"
+          }
         ]
       }
     },
-    { "wrapper": "scheme" },
-    { "wrapper": "padding" },
+    {
+      "wrapper": "scheme"
+    },
+    {
+      "wrapper": "padding"
+    },
     {
       "id": "layout",
       "label": "Раскладка",
@@ -72,8 +126,14 @@
         "kind": "select",
         "default": "featured",
         "options": [
-          { "value": "featured", "label": "Крупная плитка и стопка" },
-          { "value": "row", "label": "Плитки в ряд" }
+          {
+            "value": "featured",
+            "label": "Крупная плитка и стопка"
+          },
+          {
+            "value": "row",
+            "label": "Плитки в ряд"
+          }
         ]
       }
     }
@@ -84,8 +144,34 @@
       "limit": 3,
       "settings": [
         {
+          "id": "item-type",
+          "label": "Тип",
+          "setting": {
+            "kind": "radio",
+            "default": "image",
+            "options": [
+              {
+                "value": "image",
+                "label": "Изображение"
+              },
+              {
+                "value": "product",
+                "label": "Товар"
+              },
+              {
+                "value": "collection",
+                "label": "Коллекция"
+              }
+            ]
+          }
+        },
+        {
           "id": "image",
           "label": "Изображение",
+          "visibleWhen": {
+            "setting": "item-type",
+            "equals": "image"
+          },
           "setting": {
             "kind": "image",
             "default": "",
@@ -96,6 +182,10 @@
           "id": "label",
           "label": "Название",
           "sublabel": "Оставьте пустым, чтобы скрыть",
+          "visibleWhen": {
+            "setting": "item-type",
+            "equals": "image"
+          },
           "setting": {
             "kind": "string",
             "default": ""
@@ -105,6 +195,10 @@
           "id": "caption",
           "label": "Вторая строка",
           "sublabel": "Например, цена. Оставьте пустой, чтобы скрыть",
+          "visibleWhen": {
+            "setting": "item-type",
+            "equals": "image"
+          },
           "setting": {
             "kind": "string",
             "default": ""
@@ -113,9 +207,35 @@
         {
           "id": "link",
           "label": "Ссылка",
+          "visibleWhen": {
+            "setting": "item-type",
+            "equals": "image"
+          },
           "setting": {
             "kind": "url",
             "default": "/catalog"
+          }
+        },
+        {
+          "id": "product",
+          "label": "Выбор товара",
+          "visibleWhen": {
+            "setting": "item-type",
+            "equals": "product"
+          },
+          "setting": {
+            "kind": "product"
+          }
+        },
+        {
+          "id": "collection",
+          "label": "Выбор коллекции",
+          "visibleWhen": {
+            "setting": "item-type",
+            "equals": "collection"
+          },
+          "setting": {
+            "kind": "collection"
           }
         }
       ]
@@ -129,14 +249,13 @@
     {
       "type": "tile",
       "settings": {
-        "label": "Новинка",
-        "caption": "2 500 ₽"
+        "item-type": "product"
       }
     },
     {
       "type": "tile",
       "settings": {
-        "label": "Коллекция"
+        "item-type": "collection"
       }
     }
   ]

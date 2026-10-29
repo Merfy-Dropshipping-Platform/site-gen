@@ -4,6 +4,7 @@
   "kind": "section",
   "title": "Сворачиваемый раздел",
   "wrapper": ["scheme", "padding"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
   "names": {
     "item-box": {
       "kinds": ["toggle"],

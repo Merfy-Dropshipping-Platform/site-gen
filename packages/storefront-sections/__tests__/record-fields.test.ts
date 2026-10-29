@@ -88,10 +88,10 @@ describe('виды полей с записями', () => {
     ]);
   });
 
-  it('в блоке — только у настроек секции, как menu', () => {
+  // С 29.10 товар и коллекция есть и у блоков («Тип» элемента «Галереи» на проде); подсказка — только у секции.
+  it('в блоке: product можно, hint — только у настроек секции, как menu', () => {
     const manifest = manifestOf([], { blocks: { card: { title: 'Карточка', limit: 4, settings: [PRODUCT, PRICE] } } });
     expect(problemsOf(manifest)).toEqual([
-      'setting-invalid blocks.card.settings.0: вид product — только у настроек секции',
       'setting-invalid blocks.card.settings.1: вид hint — только у настроек секции',
     ]);
   });

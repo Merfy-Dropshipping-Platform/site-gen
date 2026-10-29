@@ -4,14 +4,7 @@
   "kind": "section",
   "title": "Основной текст",
   "wrapper": ["scheme", "padding"],
-  "names": {
-    "text-style": {
-      "kinds": ["select"],
-      "label": "Стиль текста",
-      "about": "Начертание заголовка и текста секции: обычное или курсив, как на vanilla",
-      "asks": ["стиль текста", "курсив", "наклонный текст", "italic", "text style"]
-    }
-  },
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
   "settings": [
     {
       "id": "content-position",
@@ -114,6 +107,7 @@
     },
     "button": {
       "title": "Кнопка",
+      "addTitle": "кнопку",
       "limit": 1,
       "settings": [
         {

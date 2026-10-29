@@ -6,7 +6,7 @@ import { nameIssues } from './name-check';
 import { problem, type SectionProblem } from './problems';
 import { valuePosition } from './position';
 import type { FieldList, JsonPath, RuleSection } from './rule-types';
-import { visibleWhenIssues } from './visibility';
+import { disabledWhenIssues, visibleWhenIssues } from './visibility';
 
 // Правила полей секции (блок 3 «Секций и SDK», Р3.16) в проверке при сохранении: один текст ошибки для человека, ИИ
 // и MCP. Место — строка и колонка значения в section.json.
@@ -35,10 +35,16 @@ export function ruleSectionOf(manifest: SectionManifest): RuleSection {
   };
 }
 
-// Имена, потом лимиты, потом условия (Р3.16); файл — section.json, место — valuePosition(text, issue.path).
+// Имена, потом лимиты, потом условия показа и неактивности (Р3.16); файл — section.json, место — valuePosition(text,
+// issue.path).
 export function fieldRuleProblems(manifest: SectionManifest, text: string): SectionProblem[] {
   const section = ruleSectionOf(manifest);
-  const issues = [...nameIssues(section), ...limitIssues(section), ...visibleWhenIssues(section)];
+  const issues = [
+    ...nameIssues(section),
+    ...limitIssues(section),
+    ...visibleWhenIssues(section),
+    ...disabledWhenIssues(section),
+  ];
   // Пути правил — по списку полей без ссылок { "wrapper": … }; место в файле — по номеру элемента settings.
   const at = settingsIndexes(manifest.settings);
   const placed = (path: JsonPath): JsonPath =>

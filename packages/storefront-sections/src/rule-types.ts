@@ -12,6 +12,7 @@ export interface RuleField {
   section?: string;
   row?: string;
   visibleWhen?: { setting: string; equals: string | boolean };
+  disabledWhen?: { setting: string; equals: string | boolean };
   setting: { kind: string; default?: unknown; options?: readonly { value: string; label: string }[] };
 }
 

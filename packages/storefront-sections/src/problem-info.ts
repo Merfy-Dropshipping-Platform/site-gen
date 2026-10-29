@@ -225,6 +225,14 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: 'Условие показа поля ссылается на поле, которого нет, или на значение не того вида.',
     fix: 'Сошлись на поле той же секции или блока и значение его вида.',
   },
+  'disabled-when-invalid': {
+    when: 'Условие неактивности поля (disabledWhen) ссылается на само поле, на поле, которого нет, или на значение не того вида.',
+    fix: 'Сошлись на другое поле той же секции или блока вида toggle, select, radio или alignment и значение его вида.',
+    example: {
+      before: '"disabledWhen": { "setting": "agreement", "equals": "off" }',
+      after: '"disabledWhen": { "setting": "agreement", "equals": false }',
+    },
+  },
   'render-empty-failed': {
     when: 'Шаблон упал при рендере с пустыми значениями полей: мерчант может стереть любое поле.',
     fix: 'Покажи элемент только при непустом значении: {settings.heading && <h2>…</h2>}.',

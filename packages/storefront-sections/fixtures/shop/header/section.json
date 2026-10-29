@@ -23,21 +23,10 @@
     "padding",
     "sticky"
   ],
+  "wrapperSpec": {
+    "padding": { "default": { "top": 8, "bottom": 8 }, "max": 64, "step": 4 }
+  },
   "names": {
-    "capitals": {
-      "kinds": [
-        "select"
-      ],
-      "label": "Заглавные буквы",
-      "about": "Что в шапке набрано заглавными: логотип-название, логотип и пункты меню или ничего",
-      "asks": [
-        "заглавные",
-        "капс",
-        "прописные",
-        "uppercase",
-        "caps"
-      ]
-    },
     "announcement": {
       "kinds": [
         "text"
@@ -201,6 +190,7 @@
     },
     "cart": {
       "title": "Корзина",
+      "addTitle": "корзину",
       "limit": 1,
       "settings": []
     },

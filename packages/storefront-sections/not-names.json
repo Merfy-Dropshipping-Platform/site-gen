@@ -16,15 +16,15 @@
     "refusal": "Отступы секции — общая настройка «Отступы» в `wrapper`; внутри секции — классы словаря"
   },
   {
-    "id": "width", "names": ["width", "container", "full-width"],
-    "refusal": "Ширина секции будет общей настройкой секции; своего поля ширины у секции нет"
+    "id": "width", "names": ["container", "full-width"],
+    "refusal": "Ширина содержимого секции — общая настройка «Ширина» (`width` в `wrapper`); своего поля ширины у секции нет"
   },
   {
     "id": "show-hide", "names": ["show-*", "hide-*", "visible", "hidden"],
     "refusal": "Показать или скрыть часть секции — блок с `limit: 1`: его скрывают в конструкторе"
   },
   {
-    "id": "wrapper", "names": ["scheme", "padding", "sticky"],
+    "id": "wrapper", "names": ["scheme", "padding", "sticky", "width"],
     "refusal": "Общая настройка секции: в `settings` её не объявляют, секция перечисляет её в `wrapper`"
   },
   {

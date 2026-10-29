@@ -211,6 +211,42 @@ describe('список секций магазина', () => {
       wrapper: WRAPPER_FIELDS,
     });
   });
+
+  // wrapperSpec (базовые секции, 29.10): у секции со своими умолчанием, пределом и шагом — её объявления целиком.
+  it('секция с wrapperSpec — ключ wrapperFields с её объявлениями; превью блока — с её умолчаниями', async () => {
+    const PROMO: CurrentSection = {
+      ...HERO,
+      name: 'shop:promo',
+      manifest: {
+        ...HERO.manifest,
+        name: 'promo',
+        wrapperSpec: { scheme: { default: 'scheme-4' }, padding: { default: { top: 0, bottom: 0 }, max: 64, step: 4 } },
+      },
+    };
+    const { deps } = depsOf(new Map([[PROMO.name, PROMO]]));
+    const answer: unknown = JSON.parse((await shopSections(deps, SHOP)).body);
+    expect(answer).toMatchObject({
+      sections: [
+        {
+          name: 'shop:promo',
+          wrapper: ['scheme', 'padding'],
+          wrapperFields: [
+            { id: 'scheme', label: 'Цветовая схема', setting: { kind: 'color-scheme', default: 'scheme-4' } },
+            {
+              id: 'padding',
+              label: 'Отступы',
+              setting: { kind: 'padding', default: { top: 0, bottom: 0 }, max: 64, step: 4 },
+            },
+          ],
+        },
+      ],
+      wrapper: WRAPPER_FIELDS,
+    });
+    const preview = await sectionPreview(deps, SHOP, block({ id: 'promo-1', section: 'shop:promo', settings: {} }));
+    expect(blockAnswerSchema.parse(JSON.parse(preview.body)).html).toMatch(
+      /^<merfy-section data-section="shop:promo" data-section-id="promo-1" class="color-scheme-4 pt-0 pb-0">/,
+    );
+  });
 });
 
 describe('блоки секции (часть 3)', () => {
@@ -447,7 +483,7 @@ describe('общие настройки секции в превью (часть
       })
       .parse(JSON.parse((await shopSections(deps, SHOP)).body));
     expect(parsed.sections[0]?.wrapper).toEqual(['scheme', 'padding', 'sticky']);
-    expect(parsed.wrapper.map((field) => field.id)).toEqual(['scheme', 'padding', 'sticky']);
+    expect(parsed.wrapper.map((field) => field.id)).toEqual(['scheme', 'padding', 'sticky', 'width']);
   });
 
   it('секция без ключа wrapper в section.json — список по умолчанию из двух', async () => {

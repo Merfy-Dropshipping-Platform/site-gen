@@ -59,6 +59,9 @@ export {
   DATA_FROM,
   DATA_NAME,
   RECORD_FIELD_KINDS,
+  BLOCK_RECORD_KINDS,
+  type BlockRecordFields,
+  type BlockRecordKind,
   type RecordFieldKind,
   type SectionDataEntry,
   type SectionRecordValues,
@@ -157,6 +160,7 @@ export {
   SAMPLE_RECORDS,
   SAMPLE_SHOP,
   SAMPLE_THEME,
+  sampleBlockRecords,
   sampleRecord,
   sampleRecordValues,
 } from './section-samples';

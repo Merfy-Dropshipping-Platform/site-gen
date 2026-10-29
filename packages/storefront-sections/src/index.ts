@@ -44,12 +44,16 @@ export {
   STICKY_VIEW,
   WRAPPER_FIELDS,
   WRAPPER_IDS,
+  WIDTH_VALUES,
   isDefaultWrapperView,
   resolveWrapper,
   resolveWrapperView,
+  wrapperFieldsOf,
   wrapperIdsOf,
+  wrapperSpecShape,
   wrapperView,
   type WrapperId,
+  type WrapperSpec,
   type WrapperValues,
 } from './wrapper';
 export { MAIN_MENU, menuTreeOf, revisionMenusSchema, sectionMenus, type RevisionMenu } from './menus';

@@ -150,7 +150,7 @@
         }
       ]
     },
-    "sort": { "title": "Сортировка", "limit": 1, "settings": [] }
+    "sort": { "title": "Сортировка", "addTitle": "сортировку", "limit": 1, "settings": [] }
   },
   "defaultBlocks": [
     { "type": "filters", "settings": {} },

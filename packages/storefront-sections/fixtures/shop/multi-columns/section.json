@@ -3,25 +3,17 @@
   "name": "multi-columns",
   "kind": "section",
   "title": "Мультиколонны",
-  "wrapper": ["scheme", "padding"],
+  "wrapper": ["scheme", "padding", "width"],
+  "wrapperSpec": {
+    "width": { "default": "medium" },
+    "padding": { "default": { "top": 80, "bottom": 80 } }
+  },
   "names": {
-    "content-width": {
-      "kinds": ["select"],
-      "label": "Ширина",
-      "about": "Ширина содержимого секции: узкая, средняя или во всю ширину страницы",
-      "asks": ["ширина секции", "ширина содержимого", "узкая секция", "ширина колонок"]
-    },
     "text-position": {
       "kinds": ["radio"],
       "label": "Положение текста",
       "about": "Текст колонок и заголовок прижаты влево или стоят по центру",
       "asks": ["положение текста", "текст по центру", "текст слева", "выравнивание колонок"]
-    },
-    "text-box": {
-      "kinds": ["toggle"],
-      "label": "Контейнер",
-      "about": "Плашка под каждой колонкой: фон, скруглённые углы и поля; выключена — текст прямо на фоне секции",
-      "asks": ["контейнер", "плашка под текстом", "подложка под колонкой", "рамка вокруг колонки"]
     },
     "image-size": {
       "kinds": ["select"],
@@ -53,19 +45,7 @@
         ]
       }
     },
-    {
-      "id": "content-width",
-      "label": "Ширина",
-      "setting": {
-        "kind": "select",
-        "default": "medium",
-        "options": [
-          { "value": "small", "label": "Маленькая" },
-          { "value": "medium", "label": "Средняя" },
-          { "value": "large", "label": "Большая" }
-        ]
-      }
-    },
+    { "wrapper": "width" },
     {
       "id": "aspect-ratio",
       "label": "Соотношение изображения",
@@ -149,7 +129,8 @@
   ],
   "blocks": {
     "column": {
-      "title": "Столбец",
+      "title": "Колонна",
+      "addTitle": "колонну",
       "limit": 10,
       "settings": [
         {

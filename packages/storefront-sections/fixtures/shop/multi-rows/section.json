@@ -3,22 +3,15 @@
   "name": "multi-rows",
   "kind": "section",
   "title": "Мультиряды",
-  "wrapper": ["scheme", "padding"],
-  "names": {
-    "content-width": {
-      "kinds": ["select"],
-      "label": "Ширина",
-      "about": "Ширина содержимого секции и доля картинки в ряду: узкая — картинка меньше текста, большая — больше",
-      "asks": ["ширина секции", "ширина содержимого", "узкая секция", "ширина рядов", "доля картинки"]
-    }
-  },
+  "wrapper": ["scheme", "padding", "width"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
   "settings": [
     {
       "id": "height",
       "label": "Высота",
       "setting": {
         "kind": "select",
-        "default": "small",
+        "default": "medium",
         "options": [
           { "value": "small", "label": "Маленькая" },
           { "value": "medium", "label": "Средняя" },
@@ -26,19 +19,7 @@
         ]
       }
     },
-    {
-      "id": "content-width",
-      "label": "Ширина",
-      "setting": {
-        "kind": "select",
-        "default": "large",
-        "options": [
-          { "value": "small", "label": "Маленькая" },
-          { "value": "medium", "label": "Средняя" },
-          { "value": "large", "label": "Большая" }
-        ]
-      }
-    },
+    { "wrapper": "width" },
     {
       "id": "image-position",
       "label": "Позиция рядов",
@@ -78,7 +59,7 @@
       "id": "button-style",
       "label": "Стиль кнопки",
       "setting": {
-        "kind": "select",
+        "kind": "radio",
         "default": "primary",
         "options": [
           { "value": "primary", "label": "Основная" },

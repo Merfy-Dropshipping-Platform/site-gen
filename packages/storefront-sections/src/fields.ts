@@ -39,7 +39,13 @@ const PADDING_MAX_DEFAULT = 120;
 const ALIGNMENT_VALUES = ['left', 'center', 'right'] as const;
 const optionShape = z.strictObject({ value: z.string(), label: z.string().min(1) });
 const imagePairValue = z.strictObject({ url1: z.string(), url2: z.string() });
-const paddingValue = z.strictObject({ top: z.int(), bottom: z.int() });
+export const paddingValueShape = z.strictObject({ top: z.int(), bottom: z.int() });
+// Предел и шаг «Отступов»: у поля вида padding и у общей настройки секции (wrapperSpec, wrapper.ts).
+export const paddingMaxShape = z.int().min(PADDING_STEP).max(PADDING_MAX);
+export const paddingStepShape = z
+  .int()
+  .min(PADDING_STEP)
+  .refine((step) => step % PADDING_STEP === 0, { error: 'шаг кратен 4' });
 
 const [imageSpec, urlSpec, , , selectSpec, toggleSpec] = settingFieldShape.shape.setting.options;
 const stringSpec = z.strictObject({
@@ -82,16 +88,18 @@ const alignmentSpec = z.strictObject({ kind: z.literal('alignment'), default: z.
 const colorSchemeSpec = z.strictObject({ kind: z.literal('color-scheme'), default: z.string() });
 const paddingSpec = z.strictObject({
   kind: z.literal('padding'),
-  default: z.union([z.null(), paddingValue]),
-  max: z.int().min(PADDING_STEP).max(PADDING_MAX).optional(),
-  step: z
-    .int()
-    .min(PADDING_STEP)
-    .refine((step) => step % PADDING_STEP === 0, { error: 'шаг кратен 4' })
-    .optional(),
+  default: z.union([z.null(), paddingValueShape]),
+  max: paddingMaxShape.optional(),
+  step: paddingStepShape.optional(),
 });
 
+// Условие неактивности поля (базовые секции, 29.10): поле видно, но серое и не правится, когда настройка цели равна
+// значению — «Текст согласия» при выключенном «Согласии», как на проде. Форма — как у visibleWhen; цель и значение
+// проверяет visibility.ts. Только у полей секций и блоков: панель темы ключа не знает.
+export const conditionShape = z.strictObject({ setting: z.string(), equals: z.union([z.string(), z.boolean()]) });
+
 export const sectionFieldShape = settingFieldShape.extend({
+  disabledWhen: conditionShape.optional(),
   setting: z.discriminatedUnion('kind', [
     imageSpec,
     urlSpec,
@@ -237,10 +245,10 @@ export function sectionSettingProblem(path: string, spec: SectionSettingSpec, va
 
 // Элемент settings: поле или ссылка на общую настройку (часть 5, Р1-5-5). Ссылка ставит общую настройку на своё место
 // в панели; сборка и проверка значений работают только с полями — settingFieldsOf.
-export type WrapperRef = { wrapper: 'scheme' | 'padding' | 'sticky' };
+export type WrapperRef = { wrapper: 'scheme' | 'padding' | 'sticky' | 'width' };
 export type SettingsEntry = SectionField | WrapperRef;
 // Значения-литералы дублируют WRAPPER_IDS типом WrapperId: импорт значения из wrapper.ts создал бы цикл модулей.
-const WRAPPER_REF_IDS: readonly ['scheme', 'padding', 'sticky'] = ['scheme', 'padding', 'sticky'];
+const WRAPPER_REF_IDS: readonly ['scheme', 'padding', 'sticky', 'width'] = ['scheme', 'padding', 'sticky', 'width'];
 export const wrapperRefShape = z.strictObject({ wrapper: z.enum(WRAPPER_REF_IDS) });
 export const settingsEntryShape = z.union([sectionFieldShape, wrapperRefShape]);
 

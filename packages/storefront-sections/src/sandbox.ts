@@ -1,4 +1,4 @@
-import { sampleRecordValues } from '@merfy/storefront-build';
+import { sampleBlockRecords, sampleRecordValues } from '@merfy/storefront-build';
 import { defaultLaunch, spawnIsolated, type IsolatedLaunch } from './isolation';
 import { prepareResultSchema, type PrepareInput, type PrepareResult } from './prepare';
 import { problem } from './problems';
@@ -94,8 +94,18 @@ export async function prepareInWorker(
   if (blank.length > 0) return { ok: false, problems: blank };
   // Третий пробный рендер — на примерах данных магазина: ветки с ценой и карточками при умолчаниях не выполняются.
   // Блоки и меню — как в первом.
-  const records = sampleRecordValues(sectionRecordKeys(result.section.manifest).recordFields);
+  const keys = sectionRecordKeys(result.section.manifest);
+  const records = sampleRecordValues(keys.recordFields);
+  // Поля с записями в блоках (29.10): у блоков по умолчанию — примеры своего вида.
+  const blockRecords = sampleBlockRecords(keys.blockRecordFields, blocks);
   const sample = { launch: options.launch };
-  const sampled = await sampleTrialRender(result.section.render, settings, { records }, sample, blocks, menus);
+  const sampled = await sampleTrialRender(
+    result.section.render,
+    settings,
+    { records, blockRecords },
+    sample,
+    blocks,
+    menus,
+  );
   return sampled.length > 0 ? { ok: false, problems: sampled } : result;
 }

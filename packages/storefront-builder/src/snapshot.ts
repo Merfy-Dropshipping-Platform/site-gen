@@ -41,10 +41,12 @@ const zoned = (column: string): string => `to_char(${column} AT TIME ZONE 'UTC',
 
 // SEO главной — из настроек магазина (branding.seo: title, description, keywords, как у нынешних тем —
 // home-seo-inject.ts). Не заполнено — пустая строка: сборка блока 4 такие теги не рисует. Логотип (branding.logoUrl) —
-// картинка для соцсетей (блок 9); не загружен — пустая строка.
+// картинка для соцсетей (блок 9); не загружен — пустая строка. Подпись под подвалом — site.settings.themeBrandName, её
+// мерчант правит в карточке темы (кабинет, как у пяти тем на проде); не вписана — пустая строка.
 const SHOP_SQL = `SELECT id, tenant_id, name, theme_id, theme_version, status, public_url,
   COALESCE(branding->'seo'->>'description', '') AS description, COALESCE(branding->'seo'->>'title', '') AS seo_title,
   COALESCE(branding->'seo'->>'keywords', '') AS keywords, COALESCE(branding->>'logoUrl', '') AS logo_url,
+  COALESCE(settings->>'themeBrandName', '') AS signature,
   ${plain('updated_at')} AS updated_at
   FROM site WHERE id = $1 AND deleted_at IS NULL`;
 
@@ -60,6 +62,7 @@ const shopRowSchema = z.object({
   seo_title: z.string(),
   keywords: z.string(),
   logo_url: z.string(),
+  signature: z.string(),
   updated_at: z.string(),
 });
 
@@ -76,6 +79,7 @@ export interface Shop {
   seoTitle: string;
   keywords: string;
   logoUrl: string;
+  signature: string;
   updatedAt: string;
 }
 
@@ -95,6 +99,7 @@ export async function readShop(db: Queryable, siteId: string): Promise<Shop | nu
     seoTitle: row.seo_title,
     keywords: row.keywords,
     logoUrl: row.logo_url,
+    signature: row.signature,
     updatedAt: row.updated_at,
   };
 }
@@ -411,6 +416,7 @@ export const buildInputsOf = (parts: InputsParts) => ({
     seoTitle: parts.shop.seoTitle,
     keywords: parts.shop.keywords,
     logoUrl: parts.shop.logoUrl,
+    signature: parts.shop.signature,
     updatedAt: parts.shop.updatedAt,
   },
   env: {

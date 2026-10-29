@@ -17,6 +17,7 @@
     "seoTitle": "",
     "keywords": "",
     "logoUrl": "",
+    "signature": "",
     "updatedAt": "2026-10-06T09:00:00.000Z"
   },
   "env": { "apiUrl": "http://localhost:4321/api", "analyticsUrl": "http://localhost:4321/api/analytics" },

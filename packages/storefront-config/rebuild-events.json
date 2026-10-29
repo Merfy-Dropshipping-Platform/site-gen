@@ -30,7 +30,7 @@
     },
     {
       "id": "branding-change",
-      "title": "Брендинг у опубликованного сайта: фавиконы, цвета, SEO главной — перепубликация через 8 с",
+      "title": "Брендинг у опубликованного сайта: фавиконы, цвета, SEO главной — перепубликация через 8 с; у новой темы ещё подпись подвала — сразу",
       "trigger": { "file": "src/sites.service.ts", "name": "scheduleBrandingRepublish" },
       "themes": "all",
       "scope": "store",
@@ -142,11 +142,14 @@
     {
       "id": "payment-settings-change",
       "title": "Настройки оплаты магазина: значок кассы в подвале",
-      "trigger": { "service": "billing", "description": "смена кассы магазина" },
+      "trigger": {
+        "service": "billing",
+        "description": "StorefrontEventsPublisher: событие после billing.shop_payment_settings.update и billing.shop_payment_providers.set_active, connect_robokassa, connect_tochka, disconnect"
+      },
       "themes": "new",
       "scope": "store",
       "delayMs": 0,
-      "status": "with-sections"
+      "status": "works"
     },
     {
       "id": "stock-change",

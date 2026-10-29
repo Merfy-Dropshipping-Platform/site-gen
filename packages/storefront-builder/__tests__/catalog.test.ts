@@ -17,6 +17,7 @@ const SHOP: Shop = {
   seoTitle: '',
   keywords: '',
   logoUrl: '',
+  signature: '',
   updatedAt: '2026-10-20T10:00:00.000Z',
 };
 

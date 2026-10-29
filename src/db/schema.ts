@@ -157,6 +157,9 @@ export const site = pgTable("site", {
     addressRequired?: boolean;                              // блок 2: full→true, none→false
     contactMethod?: "email-phone" | "email";               // блок 3
     customerNameMode?: "name-surname" | "surname" | "name"; // блок 4
+    // Своя подпись под подвалом: мерчант правит её в карточке темы (кабинет); пусто или стандартный текст платформы —
+    // подвал показывает «Разработано на Merfy» ссылкой (footer-data.ts пяти тем, shop.signature новой темы).
+    themeBrandName?: string;
   }>(),
   // Закреплённая версия темы (e.g. "1.2.0"). Null = использовать latest.
   themeVersion: text("theme_version"),

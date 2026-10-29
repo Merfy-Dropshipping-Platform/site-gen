@@ -223,8 +223,9 @@ function listenFilters(session: Session): void {
     event.preventDefault();
     run();
   });
-  form.addEventListener('change', () => {
-    if (form.closest('dialog[open]') === null) run();
+  form.addEventListener('change', (event) => {
+    const inOpenDialog = event.target instanceof Element && event.target.closest('dialog[open]') !== null;
+    if (!inOpenDialog) run();
   });
 }
 

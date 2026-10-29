@@ -6,6 +6,43 @@
   "groups": ["page"],
   "limit": 1,
   "uses": ["cart"],
+  "wrapper": ["scheme", "padding"],
+  "wrapperSpec": {
+    "padding": { "default": { "top": 0, "bottom": 80 } }
+  },
+  "names": {
+    "button-width": {
+      "kinds": ["select"],
+      "label": "Ширина кнопки",
+      "about": "Кнопка «Оформить заказ»: на всю ширину итога (flux) или по тексту (остальные темы)",
+      "asks": ["ширина кнопки", "кнопка на всю ширину", "button width"]
+    }
+  },
+  "settings": [
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "align",
+      "label": "Выравнивание",
+      "section": "Вид",
+      "setting": {
+        "kind": "alignment",
+        "default": "left"
+      }
+    },
+    {
+      "id": "button-width",
+      "label": "Ширина кнопки",
+      "setting": {
+        "kind": "select",
+        "default": "full",
+        "options": [
+          { "value": "full", "label": "На всю ширину" },
+          { "value": "auto", "label": "По тексту" }
+        ]
+      }
+    }
+  ],
   "blocks": {
     "total": {
       "title": "Итоговая цена",

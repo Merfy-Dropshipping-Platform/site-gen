@@ -1,50 +1,88 @@
-<!-- Значки — Lucide (shopping-bag, image, minus, plus, x), лицензия ISC, lucide.dev/license. -->
+---
+const { settings } = Astro.props;
+---
+<!-- Значки — Lucide (image, minus, plus, x, trash-2), лицензия ISC, lucide.dev/license. -->
+<!-- Вид строк — как в пяти темах прода, выбирается параметрами и считается один раз атрибутами data-thumb,
+     data-remove и data-counter у строки: миниатюра (компактная 96 — vanilla, satin, bloom; обычная 120/80 — rose;
+     крупная 208/140 — flux), удаление (крестик flux, значок корзины rose, слово — satin, bloom), счётчик
+     (залитый flux, с контуром — остальные). -->
 <div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body text-foreground">
-  <h1 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl">Корзина</h1>
-  <div data-ref="empty" class="flex flex-col items-center gap-4 rounded-card bg-muted px-6 py-16 text-center" hidden>
-    <svg class="size-10 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
-    <p class="m-0 font-heading weight-heading text-xl text-heading">В корзине пока пусто</p>
-    <a class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" href="/catalog">Продолжить покупки</a>
+  <h1
+    class:list={[
+      'm-0 font-heading weight-heading tracking-heading text-heading',
+      { 'text-xl': settings['heading-size'] !== 'medium' && settings['heading-size'] !== 'large' },
+      { 'text-2xl': settings['heading-size'] === 'medium' },
+      { 'text-3xl': settings['heading-size'] === 'large' },
+      { uppercase: settings.capitals !== false },
+    ]}
+  >Корзина</h1>
+  <div data-ref="empty" class="flex w-full max-w-md flex-col items-start gap-6" hidden>
+    <p class="m-0 text-base text-muted-foreground">Вы пока не добавили товар в корзину</p>
+    <a class="inline-flex h-14 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" href="/catalog">Продолжить покупки</a>
+    <p class="m-0 text-sm text-muted-foreground">Есть аккаунт? <a class="text-foreground underline underline-offset-4" href="/login">Войти</a></p>
   </div>
-  <div data-ref="lines" class="flex flex-col border-t border-border" hidden>
+  <div data-ref="lines" class="flex flex-col gap-6" hidden>
     <template>
-      <div class="flex gap-4 border-b border-border py-5">
-        <span class="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-media bg-muted text-muted-foreground md:size-24">
+      <div
+        class="flex flex-col gap-4 md:flex-row md:items-start md:gap-6"
+        data-thumb={settings['thumb-size']}
+        data-remove={settings['remove-style']}
+        data-counter={settings['counter-style']}
+      >
+        <a
+          data-ref="product"
+          aria-label=""
+          class="relative flex shrink-0 items-center justify-center overflow-hidden rounded-media bg-muted text-muted-foreground in-data-[thumb=compact]:size-24 in-data-[thumb=medium]:size-20 md:in-data-[thumb=medium]:size-30 in-data-[thumb=large]:size-35 md:in-data-[thumb=large]:size-52"
+        >
           <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
           <img data-ref="image" alt="" class="absolute inset-0 size-full object-cover" />
-        </span>
-        <div class="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:items-center md:gap-6">
+        </a>
+        <div class="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-6">
           <div class="flex min-w-0 flex-1 flex-col gap-1">
-            <p data-ref="title" class="m-0 line-clamp-2 text-base text-heading"></p>
+            <a data-ref="title" href="" class="m-0 line-clamp-2 text-base text-heading no-underline hover:opacity-70 md:text-xl"></a>
             <p data-ref="options" class="m-0 text-sm text-muted-foreground"></p>
-            <p data-ref="price" class="m-0 text-sm text-muted-foreground"></p>
+            <p data-ref="price" class="m-0 text-base text-heading"></p>
           </div>
-          <div class="flex items-center justify-between gap-4 md:gap-6">
-            <div class="inline-flex h-11 shrink-0 items-center rounded-input border-width-input border-input bg-background" role="group" aria-label="Количество">
+          <div class="flex items-start justify-between gap-4 md:flex-col md:items-end md:gap-4">
+            <button
+              type="button"
+              data-ref="remove"
+              data-action="cart.remove"
+              aria-label="Удалить"
+              class="m-0 cursor-pointer bg-transparent p-0 text-muted-foreground not-data-[remove=text]:inline-flex not-data-[remove=text]:size-11 not-data-[remove=text]:items-center not-data-[remove=text]:justify-center not-data-[remove=text]:rounded-button not-data-[remove=text]:hover:bg-accent not-data-[remove=text]:hover:text-accent-foreground in-data-[remove=text]:border-0 in-data-[remove=text]:text-sm in-data-[remove=text]:underline in-data-[remove=text]:underline-offset-4 in-data-[remove=text]:hover:text-foreground"
+            >
+              <svg class="hidden size-5 in-data-[remove=cross]:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+              <svg class="hidden size-5 in-data-[remove=trash]:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
+              <span class="hidden in-data-[remove=text]:block">Удалить</span>
+            </button>
+            <div
+              class="inline-flex shrink-0 items-center rounded-button not-data-[counter=outline]:gap-2 not-data-[counter=outline]:bg-primary not-data-[counter=outline]:p-2 not-data-[counter=outline]:text-primary-foreground in-data-[counter=outline]:h-11 in-data-[counter=outline]:rounded-input in-data-[counter=outline]:border-width-input in-data-[counter=outline]:border-input in-data-[counter=outline]:bg-background"
+              role="group"
+              aria-label="Количество"
+            >
               <button
                 type="button"
                 data-ref="less"
                 data-action="cart.change"
                 aria-label="Меньше"
-                class="inline-flex size-11 cursor-pointer items-center justify-center rounded-input bg-transparent p-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+                class="inline-flex cursor-pointer items-center justify-center rounded-button bg-transparent p-0 not-data-[counter=outline]:size-8 not-data-[counter=outline]:hover:opacity-70 in-data-[counter=outline]:size-11 in-data-[counter=outline]:text-foreground in-data-[counter=outline]:hover:bg-accent in-data-[counter=outline]:hover:text-accent-foreground"
               >
-                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /></svg>
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /></svg>
               </button>
-              <span data-ref="quantity" class="min-w-6 text-center text-sm tabular-nums">0</span>
+              <span
+                data-ref="quantity"
+                class="text-center tabular-nums not-data-[counter=outline]:min-w-4 not-data-[counter=outline]:text-base in-data-[counter=outline]:min-w-6 in-data-[counter=outline]:text-sm"
+              >0</span>
               <button
                 type="button"
                 data-ref="more"
                 data-action="cart.change"
                 aria-label="Больше"
-                class="inline-flex size-11 cursor-pointer items-center justify-center rounded-input bg-transparent p-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+                class="inline-flex cursor-pointer items-center justify-center rounded-button bg-transparent p-0 not-data-[counter=outline]:size-8 not-data-[counter=outline]:hover:opacity-70 in-data-[counter=outline]:size-11 in-data-[counter=outline]:text-foreground in-data-[counter=outline]:hover:bg-accent in-data-[counter=outline]:hover:text-accent-foreground"
               >
-                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
               </button>
             </div>
-            <p data-ref="total" class="m-0 shrink-0 text-base weight-heading text-price md:min-w-24 md:text-right"></p>
-            <button type="button" data-ref="remove" data-action="cart.remove" class="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-button bg-transparent p-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground" aria-label="Удалить">
-              <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-            </button>
           </div>
         </div>
       </div>

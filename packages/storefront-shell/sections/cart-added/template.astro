@@ -1,6 +1,8 @@
 <!-- Значки — Lucide (circle-check, image), лицензия ISC, lucide.dev/license. -->
-<div data-behavior="dialog" data-transition="fade" data-open-on="cart-add">
-  <dialog data-part="content" class="scheme-cart-drawer mx-0 mb-0 mt-auto w-full max-w-none rounded-t-popover border-width-popover md:m-auto md:max-w-md md:rounded-popover border-border bg-background p-0 font-body text-foreground shadow-popover">
+<!-- Как на проде: окно открывается под шапкой у значка корзины, страницу не затемняет и не запирает прокрутку —
+     немодальное окно поведения dialog с data-anchor="header". -->
+<div data-behavior="dialog" data-transition="fade" data-modal="false" data-anchor="header" data-open-on="cart-add">
+  <dialog data-part="content" class="scheme-cart-drawer right-4 top-0 w-full max-w-xs rounded-popover border-width-popover border-border bg-background p-0 font-body text-foreground shadow-popover">
     <div class="flex flex-col gap-5 p-5">
       <h2 class="m-0 flex items-center gap-2 font-heading weight-heading text-lg text-heading">
         <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>

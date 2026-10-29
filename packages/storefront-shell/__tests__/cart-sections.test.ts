@@ -76,7 +76,7 @@ function openPage(...items: unknown[]) {
 describe('«Корзина»', () => {
   it('шаблон: пустая корзина, строка в <template>, действия «−», «+», «Удалить»', () => {
     for (const part of [
-      'В корзине пока пусто',
+      'Вы пока не добавили товар в корзину',
       'href="/catalog"',
       '<template>',
       'data-action="cart.change"',
@@ -92,7 +92,7 @@ describe('«Корзина»', () => {
     expect(text(lines, 'title')).toEqual([]);
   });
 
-  it('строки: название, варианты, цена, количество, сумма; подарок — без «−», «+», «Удалить»', async () => {
+  it('строки: название, варианты, цена, количество; подарок — без «−», «+», «Удалить»', async () => {
     const red = { ...serverItem('l-2', 'p7', 1, 'v-red'), name: 'Шарф «Нова»', options: { Цвет: 'Красный' } };
     const gift = { ...serverItem('l-3', 'p12', 1), name: 'Платок', unitPriceCents: 0, totalCents: 0, isBonus: true };
     const { lines } = openPage(serverItem('l-1', 'p12', 2), red, gift);
@@ -101,7 +101,10 @@ describe('«Корзина»', () => {
     expect(text(lines, 'title')).toEqual(['Шарф', 'Шарф «Нова»', 'Платок']);
     expect(text(lines, 'options')).toContain('Цвет: Красный');
     expect(text(lines, 'quantity')).toEqual(['2', '1', '1']);
-    expect(text(lines, 'total')[0]?.replace(/\s/g, '')).toBe('4980₽');
+    expect(text(lines, 'price')[0]?.replace(/\s/g, '')).toBe('2490₽');
+    expect(
+      [...lines.querySelectorAll('[data-ref="product"]')].map((link) => link.getAttribute('href')),
+    ).toEqual(['/product/p12', '/product/p7', '/product/p12']);
     expect(text(lines, 'remove')).toHaveLength(2);
     const more = lines.querySelector('[data-ref="more"]');
     expect([more?.getAttribute('data-line-id'), more?.getAttribute('data-quantity')]).toEqual(['l-1', '3']);
@@ -132,15 +135,15 @@ describe('«Промежуточный итог»', () => {
   it('шаблон: блоки total и button, текст о налогах, «Оформить заказ» — cart.checkout', () => {
     expect(SUMMARY_SOURCE).toContain('Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.');
     expect(SUMMARY_SOURCE).toContain('data-action="cart.checkout"');
-    for (const ref of ['summary', 'subtotal', 'discount', 'total', 'checkout'])
+    for (const ref of ['summary', 'discount', 'total', 'checkout'])
       expect(SUMMARY_SOURCE).toContain(`data-ref="${ref}"`);
   });
 
-  it('сумма, скидка с именем, итог — из $totals', async () => {
+  it('скидка с именем и итог — из $totals', async () => {
     const { summary } = openPage(serverItem('l-1', 'p12', 3));
     await settle();
     const money = (ref: string) => text(summary, ref)[0]?.replace(/\s/g, '');
-    expect([money('subtotal'), money('discount-value'), money('total')]).toEqual(['7470₽', '−747₽', '6723₽']);
+    expect([money('discount-value'), money('total')]).toEqual(['−747₽', '6723₽']);
     expect(text(summary, 'discount-name')).toEqual(['Скидка «Осень»']);
     expect(summary.querySelector('[data-ref="summary"]')?.hasAttribute('hidden')).toBe(false);
   });

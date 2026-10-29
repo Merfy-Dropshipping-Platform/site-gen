@@ -217,7 +217,7 @@ describe('dialog', () => {
     await page.close();
   });
 
-  it('немодальное меню: show(), верх — по низу шапки, drop за 300 мс; прокрутка запрещена; повторное нажатие закрывает', async () => {
+  it('немодальное меню: show(), верх — по низу шапки, drop за 300 мс; прокрутка страницы свободна; повторное нажатие закрывает', async () => {
     const { page } = await open(HEADER);
     const [menu] = await clickAndRead(page, '#open-menu', '#menu');
     expect(await page.$eval('#menu', (el) => el.hasAttribute('open') && !el.matches(':modal'))).toBe(true);
@@ -225,7 +225,7 @@ describe('dialog', () => {
     expect(menu?.first.clipPath).toBeDefined();
     expect(menu?.easing).toEqual(curve('material'));
     expect(await page.$eval('#menu', (el) => Math.round(el.getBoundingClientRect().top))).toBe(80);
-    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
     await settle(page);
     await page.click('#open-menu');
     await page.waitForFunction(() => !document.getElementById('menu')?.hasAttribute('open'));
@@ -297,6 +297,17 @@ describe('dialog: anchor', () => {
     await press(page);
     expect(await isOpen(page, '#panel')).toBe(true);
     expect(await topOf(page)).toBe(120);
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('немодальное окно не запирает прокрутку страницы — как окна «добавлено» у пяти тем', async () => {
+    const { page, errors } = await open(PAGE(' data-anchor="header"'));
+    await press(page);
+    expect(await isOpen(page, '#panel')).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    await scrollTo(page, 300);
+    expect(await page.evaluate(() => Math.round(window.scrollY))).toBe(300);
     expect(errors).toEqual([]);
     await page.close();
   });

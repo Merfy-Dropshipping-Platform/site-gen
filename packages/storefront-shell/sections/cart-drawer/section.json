@@ -5,5 +5,43 @@
   "title": "Корзина-панель",
   "role": "cart-drawer",
   "wrapper": [],
-  "uses": ["cart"]
+  "uses": ["cart"],
+  "names": {
+    "side": {
+      "kinds": ["radio"],
+      "label": "Позиция",
+      "about": "С какой стороны экрана выезжает панель корзины",
+      "asks": ["позиция", "сторона", "слева", "справа", "side"]
+    },
+    "checkout": {
+      "kinds": ["toggle"],
+      "label": "Кнопка оформления",
+      "about": "Кнопка «Оформить заказ» внизу панели корзины",
+      "asks": ["оформление", "кнопка оформления", "checkout"]
+    }
+  },
+  "settings": [
+    {
+      "id": "side",
+      "label": "Позиция",
+      "section": "Вид",
+      "setting": {
+        "kind": "radio",
+        "default": "right",
+        "options": [
+          { "value": "left", "label": "Слева" },
+          { "value": "right", "label": "Справа" }
+        ]
+      }
+    },
+    {
+      "id": "checkout",
+      "label": "Кнопка оформления",
+      "setting": {
+        "kind": "toggle",
+        "default": true,
+        "labels": { "on": "Показать", "off": "Скрыть" }
+      }
+    }
+  ]
 }

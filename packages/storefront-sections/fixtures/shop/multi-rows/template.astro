@@ -1,0 +1,67 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<!-- Ряд — картинка и текст рядом (на телефоне — друг под другом, картинка сверху). «Позиция рядов» — с какой стороны
+     картинка у первого ряда, дальше ряды чередуются: data-right у ряда. «Ширина» задаёт ширину содержимого и долю
+     картинки в ряду (из десяти долей: 4, 5 или 6). «Высота» — пропорции картинки: у ряда «Размер» либо «Как у секции».
+     Схема контейнера (color-scheme) красит плашку под текстом ряда. Вид — вариантами in-data-[…]: от атрибутов на
+     корне и у ряда. -->
+<div
+  class="mx-auto w-full max-w-page px-4 font-body md:px-8"
+  data-width={settings['content-width']}
+  data-align={settings.align}
+  data-heading-size={settings['heading-size']}
+  data-button-style={settings['button-style']}
+  data-plate={settings['color-scheme'] !== ''}
+>
+  <div class="mx-auto flex flex-col gap-8 in-data-[width=small]:max-w-3xl in-data-[width=medium]:max-w-5xl md:gap-12">
+    {settings.heading && (
+      <h2
+        class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[align=center]:text-center in-data-[align=right]:text-right in-data-[heading-size=small]:text-xl md:in-data-[heading-size=small]:text-2xl in-data-[heading-size=medium]:text-2xl md:in-data-[heading-size=medium]:text-3xl in-data-[heading-size=large]:text-3xl md:in-data-[heading-size=large]:text-4xl"
+        set:html={settings.heading}
+      />
+    )}
+    <ul class="m-0 flex list-none flex-col gap-8 p-0">
+      {blocks.map((block, index) => (
+        <li
+          class="grid grid-cols-1 gap-6 md:grid-cols-10 md:gap-0"
+          data-right={(settings['image-position'] === 'right') === (index % 2 === 0)}
+          data-row-height={block.settings.height === 'inherit' ? settings.height : block.settings.height}
+        >
+          <div class="relative w-full overflow-hidden rounded-media bg-muted in-data-[row-height=small]:aspect-video in-data-[row-height=medium]:aspect-square in-data-[row-height=large]:aspect-4/5 md:in-data-[width=small]:col-span-4 md:in-data-[width=medium]:col-span-5 md:in-data-[width=large]:col-span-6 md:in-data-[right=true]:order-2">
+            {block.settings.image !== '' && <img src={block.settings.image} alt="" class="absolute inset-0 size-full object-cover" />}
+          </div>
+          <div
+            class:list={[
+              'flex flex-col items-start justify-center gap-4 in-data-[align=center]:items-center in-data-[align=center]:text-center in-data-[align=right]:items-end in-data-[align=right]:text-right in-data-[plate=true]:rounded-card in-data-[plate=true]:bg-background in-data-[plate=true]:p-6 in-data-[plate=true]:text-foreground md:gap-6 md:p-8 md:in-data-[width=small]:col-span-6 md:in-data-[width=medium]:col-span-5 md:in-data-[width=large]:col-span-4 md:in-data-[right=true]:order-1',
+              settings['color-scheme'] && `color-${settings['color-scheme']}`,
+            ]}
+          >
+            {block.settings.heading && (
+              <h3
+                class="m-0 text-balance font-heading weight-heading text-heading data-[heading-size=small]:text-lg md:data-[heading-size=small]:text-xl data-[heading-size=medium]:text-xl md:data-[heading-size=medium]:text-2xl data-[heading-size=large]:text-2xl md:data-[heading-size=large]:text-3xl"
+                data-heading-size={block.settings['heading-size']}
+                set:html={block.settings.heading}
+              />
+            )}
+            {block.settings.text && (
+              <p
+                class="m-0 text-pretty text-foreground data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg"
+                data-text-size={block.settings['text-size']}
+                set:html={block.settings.text}
+              />
+            )}
+            {block.settings['button-label'] && (
+              <a
+                class="inline-flex h-12 items-center justify-center rounded-button border-width-button px-8 text-base no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[button-style=primary]:border-primary-border in-data-[button-style=primary]:bg-primary in-data-[button-style=primary]:text-primary-foreground in-data-[button-style=primary]:shadow-button in-data-[button-style=primary]:hover:bg-primary-hover in-data-[button-style=primary]:hover:text-primary-hover-foreground in-data-[button-style=secondary]:border-secondary-border in-data-[button-style=secondary]:bg-secondary in-data-[button-style=secondary]:text-secondary-foreground in-data-[button-style=secondary]:hover:bg-secondary-hover in-data-[button-style=secondary]:hover:text-secondary-hover-foreground"
+                href={block.settings['button-link']}
+              >
+                {block.settings['button-label']}
+              </a>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>

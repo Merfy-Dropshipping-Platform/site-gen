@@ -1,0 +1,266 @@
+{
+  "sdk": 1,
+  "name": "multi-columns",
+  "kind": "section",
+  "title": "Мультиколонны",
+  "wrapper": ["scheme", "padding"],
+  "names": {
+    "content-width": {
+      "kinds": ["select"],
+      "label": "Ширина",
+      "about": "Ширина содержимого секции: узкая, средняя или во всю ширину страницы",
+      "asks": ["ширина секции", "ширина содержимого", "узкая секция", "ширина колонок"]
+    },
+    "text-position": {
+      "kinds": ["radio"],
+      "label": "Положение текста",
+      "about": "Текст колонок и заголовок прижаты влево или стоят по центру",
+      "asks": ["положение текста", "текст по центру", "текст слева", "выравнивание колонок"]
+    },
+    "text-box": {
+      "kinds": ["toggle"],
+      "label": "Контейнер",
+      "about": "Плашка под каждой колонкой: фон, скруглённые углы и поля; выключена — текст прямо на фоне секции",
+      "asks": ["контейнер", "плашка под текстом", "подложка под колонкой", "рамка вокруг колонки"]
+    },
+    "image-size": {
+      "kinds": ["select"],
+      "label": "Размер",
+      "about": "Размер картинки колонки: у вида «Картинки» — половина или вся ширина колонки, у «Иконок» — 32, 44 или 56 px",
+      "asks": ["размер картинки", "размер иконки", "размер изображения"]
+    }
+  },
+  "settings": [
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "setting": {
+        "kind": "string",
+        "default": "Почему выбирают нас",
+        "ai": "title"
+      }
+    },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    {
+      "id": "content-width",
+      "label": "Ширина",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленькая" },
+          { "value": "medium", "label": "Средняя" },
+          { "value": "large", "label": "Большая" }
+        ]
+      }
+    },
+    {
+      "id": "aspect-ratio",
+      "label": "Соотношение изображения",
+      "setting": {
+        "kind": "select",
+        "default": "square",
+        "options": [
+          { "value": "adapt", "label": "Адаптировать" },
+          { "value": "square", "label": "Квадрат" },
+          { "value": "portrait", "label": "Портрет" },
+          { "value": "landscape", "label": "Альбом" }
+        ]
+      }
+    },
+    {
+      "id": "button-label",
+      "label": "Кнопка",
+      "sublabel": "Оставьте пустой, чтобы скрыть",
+      "setting": {
+        "kind": "string",
+        "default": ""
+      }
+    },
+    {
+      "id": "button-link",
+      "label": "Ссылка",
+      "setting": {
+        "kind": "url",
+        "default": "/catalog"
+      }
+    },
+    {
+      "id": "columns",
+      "label": "Колонки",
+      "setting": {
+        "kind": "range",
+        "default": 3,
+        "min": 1,
+        "max": 4,
+        "step": 1
+      }
+    },
+    {
+      "id": "text-position",
+      "label": "Положение текста",
+      "setting": {
+        "kind": "radio",
+        "default": "left",
+        "options": [
+          { "value": "left", "label": "Слева" },
+          { "value": "center", "label": "Центр" }
+        ]
+      }
+    },
+    {
+      "id": "text-box",
+      "label": "Контейнер",
+      "visibleWhen": { "setting": "layout", "equals": "images" },
+      "setting": {
+        "kind": "toggle",
+        "default": false,
+        "labels": { "on": "Показать", "off": "Скрыть" }
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "layout",
+      "label": "Раскладка",
+      "section": "Вид",
+      "setting": {
+        "kind": "select",
+        "default": "images",
+        "options": [
+          { "value": "images", "label": "Картинки" },
+          { "value": "cards", "label": "Карточки" },
+          { "value": "icons", "label": "Иконки" }
+        ]
+      }
+    }
+  ],
+  "blocks": {
+    "column": {
+      "title": "Столбец",
+      "limit": 10,
+      "settings": [
+        {
+          "id": "image",
+          "label": "Изображение",
+          "section": "Изображения",
+          "setting": {
+            "kind": "image",
+            "default": "",
+            "maxBytes": 31457280
+          }
+        },
+        {
+          "id": "image-size",
+          "label": "Размер",
+          "setting": {
+            "kind": "select",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "heading",
+          "label": "Заголовок",
+          "section": "Содержание",
+          "setting": {
+            "kind": "string",
+            "default": "Новая колонка",
+            "ai": "title"
+          }
+        },
+        {
+          "id": "heading-size",
+          "label": "Размер заголовка",
+          "setting": {
+            "kind": "select",
+            "default": "small",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "text",
+          "label": "Текст",
+          "setting": {
+            "kind": "text",
+            "default": "Коротко о главном: одно-два предложения.",
+            "ai": "description"
+          }
+        },
+        {
+          "id": "text-size",
+          "label": "Размер текста",
+          "setting": {
+            "kind": "select",
+            "default": "small",
+            "options": [
+              { "value": "small", "label": "Маленький" },
+              { "value": "medium", "label": "Средний" },
+              { "value": "large", "label": "Большой" }
+            ]
+          }
+        },
+        {
+          "id": "label",
+          "label": "Название ссылки",
+          "sublabel": "Оставьте пустой, чтобы скрыть",
+          "setting": {
+            "kind": "string",
+            "default": ""
+          }
+        },
+        {
+          "id": "link",
+          "label": "Ссылка",
+          "setting": {
+            "kind": "url",
+            "default": "/catalog"
+          }
+        }
+      ]
+    }
+  },
+  "defaultBlocks": [
+    {
+      "type": "column",
+      "settings": {
+        "heading": "Быстрая доставка",
+        "text": "Отправляем заказы в день оплаты и сообщаем номер для отслеживания."
+      }
+    },
+    {
+      "type": "column",
+      "settings": {
+        "heading": "Гарантия качества",
+        "text": "Проверяем каждый товар перед отправкой, возвращаем деньги за брак."
+      }
+    },
+    {
+      "type": "column",
+      "settings": {
+        "heading": "Поддержка",
+        "text": "Отвечаем на вопросы в мессенджерах и по почте каждый день."
+      }
+    }
+  ]
+}

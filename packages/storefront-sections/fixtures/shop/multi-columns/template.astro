@@ -1,0 +1,84 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<!-- Значок стрелки — Lucide (arrow-right), лицензия ISC, lucide.dev/license.
+     Раскладка, ширина, колонки и положение текста — атрибутами data-* на корне, вид по ним — вариантами in-data-[…]:
+     у вложенных элементов. «Картинки» — картинка заданных пропорций над текстом (плашка — по «Контейнеру»),
+     «Карточки» — плашка у каждой колонки и стрелка у ссылки, «Иконки» — маленькая картинка над текстом в плашке.
+     Колонки: на телефоне одна, на планшете две, на компьютере столько, сколько задано. -->
+<div
+  class="mx-auto w-full max-w-page px-4 font-body md:px-8"
+  data-layout={settings.layout}
+  data-columns={settings.columns}
+  data-aspect-ratio={settings['aspect-ratio']}
+  data-text-position={settings['text-position']}
+  data-width={settings['content-width']}
+  data-heading-size={settings['heading-size']}
+  data-plate={settings.layout !== 'images' || settings['text-box']}
+>
+  <div class="mx-auto flex flex-col gap-8 in-data-[width=small]:max-w-3xl in-data-[width=medium]:max-w-5xl md:gap-12">
+    {settings.heading && (
+      <h2
+        class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[text-position=center]:text-center in-data-[heading-size=small]:text-xl md:in-data-[heading-size=small]:text-2xl in-data-[heading-size=medium]:text-2xl md:in-data-[heading-size=medium]:text-3xl in-data-[heading-size=large]:text-3xl md:in-data-[heading-size=large]:text-4xl"
+        set:html={settings.heading}
+      />
+    )}
+    <ul class="m-0 grid list-none grid-cols-1 gap-6 p-0 md:gap-8 md:in-data-[columns=2]:grid-cols-2 md:in-data-[columns=3]:grid-cols-2 md:in-data-[columns=4]:grid-cols-2 lg:in-data-[columns=3]:grid-cols-3 lg:in-data-[columns=4]:grid-cols-4">
+      {blocks.map((block) => (
+        <li class="flex h-full min-w-0 flex-col items-start gap-4 in-data-[text-position=center]:items-center in-data-[text-position=center]:text-center in-data-[plate=true]:rounded-card in-data-[plate=true]:bg-muted in-data-[plate=true]:p-6 md:in-data-[plate=true]:p-8">
+          {block.settings.image !== '' && settings.layout !== 'icons' && (
+            <div
+              class="w-full overflow-hidden rounded-media bg-muted in-data-[aspect-ratio=square]:aspect-square in-data-[aspect-ratio=portrait]:aspect-4/5 in-data-[aspect-ratio=landscape]:aspect-4/3 data-[size=small]:w-1/2"
+              data-size={block.settings['image-size']}
+            >
+              <img src={block.settings.image} alt="" class="block h-full w-full object-cover in-data-[aspect-ratio=adapt]:h-auto" />
+            </div>
+          )}
+          {block.settings.image !== '' && settings.layout === 'icons' && (
+            <img
+              src={block.settings.image}
+              alt=""
+              class="shrink-0 object-contain data-[size=small]:size-8 data-[size=medium]:size-11 data-[size=large]:size-14"
+              data-size={block.settings['image-size']}
+            />
+          )}
+          <div class="flex w-full flex-1 flex-col gap-2 md:gap-3">
+            {block.settings.heading && (
+              <h3
+                class="m-0 text-balance font-heading weight-heading text-heading data-[heading-size=small]:text-base data-[heading-size=medium]:text-lg md:data-[heading-size=medium]:text-xl data-[heading-size=large]:text-xl md:data-[heading-size=large]:text-2xl"
+                data-heading-size={block.settings['heading-size']}
+                set:html={block.settings.heading}
+              />
+            )}
+            {block.settings.text && (
+              <p
+                class="m-0 text-pretty text-foreground data-[text-size=small]:text-sm data-[text-size=medium]:text-base data-[text-size=large]:text-lg"
+                data-text-size={block.settings['text-size']}
+                set:html={block.settings.text}
+              />
+            )}
+          </div>
+          {block.settings.label && (
+            <a
+              class="inline-flex h-11 items-center gap-2 text-sm text-foreground underline underline-offset-4 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[layout=cards]:no-underline md:text-base"
+              href={block.settings.link}
+            >
+              {block.settings.label}
+              <svg class="hidden size-5 in-data-[layout=cards]:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </a>
+          )}
+        </li>
+      ))}
+    </ul>
+    {settings['button-label'] && (
+      <div class="flex in-data-[text-position=center]:justify-center">
+        <a
+          class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          href={settings['button-link']}
+        >
+          {settings['button-label']}
+        </a>
+      </div>
+    )}
+  </div>
+</div>

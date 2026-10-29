@@ -1,0 +1,58 @@
+---
+const { settings, blocks } = Astro.props;
+---
+<!-- «Крупная плитка и стопка»: первая плитка — крупная, остальные — стопкой рядом; «Положение изображения» — с какой
+     стороны крупная. Крупная плитка тянется на высоту стопки (data-fill), одна плитка — во всю ширину в пропорции
+     16:9. «Плитки в ряд»: плитки одной ширины, колонок столько же, сколько плиток (data-row-cols). Телефон: крупная
+     плитка на всю ширину, остальные под ней по две в ряд (featured) или все друг под другом (row). -->
+<div
+  class="mx-auto flex w-full max-w-page flex-col gap-8 px-4 font-body md:px-8"
+  data-layout={settings.layout}
+  data-count={blocks.length}
+  data-fill={settings.layout === 'featured' && blocks.length > 1}
+  data-row-cols={settings.layout === 'row' ? blocks.length : 0}
+  data-image-position={settings['image-position']}
+  data-heading-size={settings['heading-size']}
+  data-text-size={settings['text-size']}
+>
+  {(settings.heading || settings.text) && (
+    <div class="flex flex-col items-center gap-2 text-center">
+      {settings.heading && (
+        <h2
+          class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[heading-size=small]:text-lg md:in-data-[heading-size=small]:text-xl in-data-[heading-size=medium]:text-xl md:in-data-[heading-size=medium]:text-2xl in-data-[heading-size=large]:text-2xl md:in-data-[heading-size=large]:text-3xl"
+          set:html={settings.heading}
+        />
+      )}
+      {settings.text && (
+        <p
+          class="m-0 max-w-2xl text-pretty text-muted-foreground in-data-[text-size=small]:text-sm in-data-[text-size=medium]:text-base in-data-[text-size=large]:text-lg"
+          set:html={settings.text}
+        />
+      )}
+    </div>
+  )}
+  <div class="grid grid-cols-1 gap-4 in-data-[fill=true]:grid-cols-2 md:in-data-[row-cols=2]:grid-cols-2 md:in-data-[row-cols=3]:grid-cols-3 lg:gap-6 lg:in-data-[fill=true]:grid-cols-3">
+    {blocks.map((block) => (
+      <a
+        class="group flex min-w-0 flex-col gap-3 no-underline first:in-data-[fill=true]:col-span-2 first:lg:in-data-[fill=true]:row-span-2 first:lg:in-data-[image-position=right]:in-data-[fill=true]:col-start-2"
+        href={block.settings.link}
+      >
+        <div class="relative aspect-square w-full overflow-hidden rounded-media bg-muted in-data-[count=1]:aspect-video group-first:lg:in-data-[fill=true]:aspect-auto group-first:lg:in-data-[fill=true]:flex-1">
+          {block.settings.image !== '' && (
+            <img
+              src={block.settings.image}
+              alt={block.settings.label}
+              class="absolute inset-0 size-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
+            />
+          )}
+        </div>
+        {(block.settings.label || block.settings.caption) && (
+          <div class="flex flex-col gap-1">
+            {block.settings.label && <p class="m-0 text-base text-foreground">{block.settings.label}</p>}
+            {block.settings.caption && <p class="m-0 text-sm text-muted-foreground">{block.settings.caption}</p>}
+          </div>
+        )}
+      </a>
+    ))}
+  </div>
+</div>

@@ -27,7 +27,7 @@ const files = async (folder: string): Promise<Record<string, string>> => {
 describe('«Первый экран»', () => {
   // Сводный первый экран пяти тем (базовые секции, 29.10): панель прода — «Изображения», «Размер», «Затемнение», группа
   // «Содержание» (позиция, выравнивание, контейнер), «Цветовая схема», «Отступы»; дальше — раскладка. Заголовок и текст
-  // несут свой размер, основная и дополнительная кнопка — отдельные блоки.
+  // несут свой размер; обе кнопки — один блок «Кнопки», как на проде (две группы полей: основная и дополнительная).
   it('принимается без проблем; поля в порядке прода, раскладка — после полей прода', async () => {
     const result = await prepareSection({ prefix: 'shop', files: await files('shop/hero') });
     expect(result.ok ? withoutCode(result.section.warnings) : result.problems).toEqual([]);
@@ -59,7 +59,15 @@ describe('«Первый экран»', () => {
       'bottom-right',
     ]);
     const blocks = result.section.manifest.blocks ?? {};
-    expect(Object.keys(blocks)).toEqual(['heading', 'text', 'button', 'button-second']);
+    expect(Object.keys(blocks)).toEqual(['heading', 'text', 'buttons']);
+    expect(blocks.buttons?.title).toBe('Кнопки');
+    expect(blocks.buttons?.settings.map((field) => [field.id, field.section ?? ''])).toEqual([
+      ['button-label', 'Кнопка основная'],
+      ['button-link', ''],
+      ['button-second-label', 'Кнопка дополнительная'],
+      ['button-second-link', ''],
+    ]);
+    expect(result.section.manifest.defaultBlocks?.map((block) => block.type)).toEqual(['heading', 'text', 'buttons']);
     expect(blocks.heading?.settings.map((field) => field.id)).toEqual(['heading', 'heading-size']);
     expect(blocks.text?.settings.map((field) => field.id)).toEqual(['text', 'text-size']);
     expect(blocks.heading?.settings[0]?.setting).toMatchObject({ kind: 'string', ai: 'title' });

@@ -89,7 +89,7 @@ describe('имя поля — по словарю', () => {
     });
     expect(nameIssue('text-size', 'string')?.message).toBe(
       'поле `text-size`: в словаре это `select` или `radio`, здесь `string`; имена с видом `string` — `heading`, ' +
-        '`subheading`, `button-label`, `label`, `question`, `author`, `caption`',
+        '`subheading`, `button-label`, `button-second-label`, `label`, `question`, `author`, `caption`',
     );
     expect(nameIssue('heading', 'padding')?.message).toBe(
       'поле `heading`: в словаре это `string`, здесь `padding`; имена с видом `padding` — `space`',

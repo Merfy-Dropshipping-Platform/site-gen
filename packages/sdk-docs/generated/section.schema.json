@@ -500,6 +500,180 @@
             "properties": {
               "id": {
                 "type": "string",
+                "const": "button-second-label",
+                "description": "Надпись на второй, дополнительной кнопке рядом с основной (`button-label`); пустая — кнопка не выводится"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sublabel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visibleWhen": {
+                "type": "object",
+                "properties": {
+                  "setting": {
+                    "type": "string"
+                  },
+                  "equals": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "setting",
+                  "equals"
+                ],
+                "additionalProperties": false
+              },
+              "setting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "string"
+                      },
+                      "default": {
+                        "type": "string"
+                      },
+                      "ai": {
+                        "type": "string",
+                        "enum": [
+                          "title",
+                          "description"
+                        ]
+                      },
+                      "inlineEdit": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "control": {
+                "type": "string",
+                "const": "segment"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "setting"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "const": "button-second-link",
+                "description": "Куда ведёт дополнительная кнопка (`button-second-label`): страница магазина или свой адрес"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sublabel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visibleWhen": {
+                "type": "object",
+                "properties": {
+                  "setting": {
+                    "type": "string"
+                  },
+                  "equals": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "setting",
+                  "equals"
+                ],
+                "additionalProperties": false
+              },
+              "setting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "url"
+                      },
+                      "default": {
+                        "type": "string"
+                      },
+                      "placeholder": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "default"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "control": {
+                "type": "string",
+                "const": "segment"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "setting"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
                 "const": "image",
                 "description": "Картинка секции или блока"
               },
@@ -5910,6 +6084,180 @@
                       "type": "string",
                       "const": "button-link",
                       "description": "Куда ведёт кнопка: страница магазина или свой адрес"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sublabel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "section": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "row": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "visibleWhen": {
+                      "type": "object",
+                      "properties": {
+                        "setting": {
+                          "type": "string"
+                        },
+                        "equals": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "setting",
+                        "equals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "setting": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "url"
+                            },
+                            "default": {
+                              "type": "string"
+                            },
+                            "placeholder": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "control": {
+                      "type": "string",
+                      "const": "segment"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "setting"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "button-second-label",
+                      "description": "Надпись на второй, дополнительной кнопке рядом с основной (`button-label`); пустая — кнопка не выводится"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sublabel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "section": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "row": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "visibleWhen": {
+                      "type": "object",
+                      "properties": {
+                        "setting": {
+                          "type": "string"
+                        },
+                        "equals": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "setting",
+                        "equals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "setting": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "string"
+                            },
+                            "default": {
+                              "type": "string"
+                            },
+                            "ai": {
+                              "type": "string",
+                              "enum": [
+                                "title",
+                                "description"
+                              ]
+                            },
+                            "inlineEdit": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "default"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "control": {
+                      "type": "string",
+                      "const": "segment"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "setting"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "const": "button-second-link",
+                      "description": "Куда ведёт дополнительная кнопка (`button-second-label`): страница магазина или свой адрес"
                     },
                     "label": {
                       "type": "string",

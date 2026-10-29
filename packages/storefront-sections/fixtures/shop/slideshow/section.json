@@ -103,7 +103,7 @@
           "setting": {
             "kind": "image",
             "default": "",
-            "maxBytes": 2097152
+            "maxBytes": 31457280
           }
         },
         {

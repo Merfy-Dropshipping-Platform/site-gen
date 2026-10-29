@@ -1,0 +1,76 @@
+---
+const { settings } = Astro.props;
+---
+<!-- Видео из секций пяти тем. Заголовок и подзаголовок стоят над плеером; положение — data-layout: в окне плеер
+     в ширине страницы со скруглением медиа, на весь экран — во всю ширину без полей и скругления. Размер (высота) —
+     пропорции плеера: 21:9, 16:9, 4:3. Играет файл магазина в плеере браузера; кнопка «Смотреть» — поведение video,
+     при автозапуске она скрыта с самого начала и появляется на паузе. Затемнение лежит поверх видео и кнопки не
+     перехватывает. Своё видео не задано — плитка цвета media с обложкой, если она есть, и значком воспроизведения. -->
+<div
+  class="flex w-full flex-col gap-6 font-body md:gap-8"
+  data-layout={settings.layout}
+  data-height={settings.height}
+  data-align={settings.align}
+  data-capitals={settings.capitals}
+  data-text-style={settings['text-style']}
+>
+  {(settings.heading || settings.subheading) && (
+    <div class="mx-auto flex w-full max-w-page flex-col gap-2 px-4 md:px-8 in-data-[align=left]:items-start in-data-[align=left]:text-left in-data-[align=center]:items-center in-data-[align=center]:text-center in-data-[align=right]:items-end in-data-[align=right]:text-right">
+      {settings.heading && (
+        <h2
+          class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[capitals=true]:uppercase in-data-[text-style=italic]:italic data-[heading-size=small]:text-base data-[heading-size=medium]:text-lg data-[heading-size=large]:text-2xl md:data-[heading-size=small]:text-lg md:data-[heading-size=medium]:text-2xl md:data-[heading-size=large]:text-3xl"
+          data-heading-size={settings['heading-size']}
+          set:html={settings.heading}
+        />
+      )}
+      {settings.subheading && (
+        <p
+          class="m-0 text-pretty text-sm text-foreground in-data-[text-style=italic]:italic md:text-base"
+          set:html={settings.subheading}
+        />
+      )}
+    </div>
+  )}
+  <div class="mx-auto w-full in-data-[layout=window]:max-w-page in-data-[layout=window]:px-4 md:in-data-[layout=window]:px-8">
+    <div
+      class="relative w-full overflow-hidden bg-muted in-data-[layout=window]:rounded-media in-data-[height=small]:aspect-21/9 in-data-[height=medium]:aspect-video in-data-[height=large]:aspect-4/3"
+      data-behavior="video"
+    >
+      {settings.video !== '' ? (
+        <Fragment>
+          <video
+            class="absolute inset-0 size-full object-cover"
+            data-part="video"
+            src={settings.video}
+            poster={settings.poster !== '' ? settings.poster : undefined}
+            controls
+            playsinline
+            preload={settings['video-autoplay'] ? 'auto' : 'metadata'}
+            autoplay={settings['video-autoplay']}
+            muted={settings['video-autoplay'] || settings['video-muted']}
+            loop={settings['video-loop']}
+          ></video>
+          <div class={`pointer-events-none absolute inset-0 bg-custom-scrim opacity-${settings.overlay}`}></div>
+          <button
+            type="button"
+            class="absolute left-1/2 top-1/2 flex size-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-background text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            data-part="play"
+            aria-label="Смотреть видео"
+            hidden={settings['video-autoplay']}
+          >
+            <svg class="size-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5Z" /></svg>
+          </button>
+        </Fragment>
+      ) : (
+        <Fragment>
+          {settings.poster !== '' && <img src={settings.poster} alt="" class="absolute inset-0 size-full object-cover" />}
+          <div class="pointer-events-none absolute inset-0 flex items-center justify-center text-foreground" aria-hidden="true">
+            <span class="flex size-14 items-center justify-center rounded-full bg-background">
+              <svg class="size-6" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5Z" /></svg>
+            </span>
+          </div>
+        </Fragment>
+      )}
+    </div>
+  </div>
+</div>

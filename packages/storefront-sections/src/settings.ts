@@ -29,13 +29,14 @@ export const defaultSettings = (settings: readonly SectionField[]): Record<strin
 
 // Пустое значение по виду (блок 3 «Секций и SDK», Р3.11): мерчант может стереть заголовок. У строк, текстов,
 // richtext, адресов и картинок пустого значения нет — пустая строка; у выборов, переключателей, ползунков,
-// выравнивания, схемы и отступов — умолчание. image-pair — две пустые строки (часть 5 блока 1).
+// выравнивания, схемы и отступов — умолчание. image-pair — две пустые строки (часть 5 блока 1). video — пустая строка.
 const EMPTY_VALUES: Readonly<Partial<Record<SectionSettingSpec['kind'], SectionValue>>> = {
   string: '',
   text: '',
   richtext: '',
   url: '',
   image: '',
+  video: '',
   'image-pair': { url1: '', url2: '' },
 };
 

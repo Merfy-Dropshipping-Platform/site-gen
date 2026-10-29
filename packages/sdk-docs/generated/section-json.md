@@ -1,6 +1,6 @@
 # section.json
 
-> SDK 1 · документация 1.8.0 · 2026-10-29
+> SDK 1 · документация 1.9.0 · 2026-10-29
 
 Ключи файла `section.json` и формы полей каждого вида. Формат хранит та же схема, по которой работает проверка при сохранении.
 
@@ -44,6 +44,7 @@
 | `richtext` | `default` | `inlineEdit` |
 | `menu` | `default` | — |
 | `image-pair` | `default`, `maxBytes` | — |
+| `video` | `default`, `maxBytes` | — |
 | `radio` | `default`, `options` | — |
 | `range` | `default`, `min`, `max`, `step` | `unit` |
 | `alignment` | `default` | — |
@@ -56,3 +57,5 @@
 | `hint` | `title`, `text` | `default`, `link` |
 
 У вида `toggle` ключ `labels` — объект `{ "on": "…", "off": "…" }`: подписи двух положений переключателя.
+
+У видов `image`, `image-pair` и `video` ключ `maxBytes` — предел файла в байтах; панель отказывает файлу больше. Значение `video` — адрес файла в хранилище магазина; в шаблоне его выводят в `<video src>`, пустая строка — видео нет. Ссылки на YouTube и Vimeo поле не принимает по смыслу: тег `iframe` в шаблоне запрещён.

@@ -11,6 +11,11 @@ const IMAGES: SectionField = {
   label: 'Изображения',
   setting: { kind: 'image-pair', default: { url1: '', url2: '' }, maxBytes: 2_097_152 },
 };
+const VIDEO: SectionField = {
+  id: 'video',
+  label: 'Видео',
+  setting: { kind: 'video', default: '', maxBytes: 52_428_800 },
+};
 const HEIGHT: SectionField = {
   id: 'height',
   label: 'Высота',
@@ -46,6 +51,11 @@ const BODY: SectionField = {
   setting: { kind: 'text', default: 'Тёплые', ai: 'description' },
 };
 
+const VIDEO_WITH_FILE: SectionField = {
+  id: 'video',
+  label: 'Видео',
+  setting: { kind: 'video', default: 'https://cdn.example/clip.mp4', maxBytes: 52_428_800 },
+};
 const withSetting = (field: SectionField, change: object): object => ({
   ...field,
   setting: { ...field.setting, ...change },
@@ -61,10 +71,14 @@ const problems = (...settings: unknown[]): string[] => {
 
 describe('форма полей в section.json', () => {
   it('все новые виды и ai проходят', () => {
-    expect(problems(IMAGES, HEIGHT, OVERLAY, ALIGN, TINT, SPACE, TITLE, BODY)).toEqual([]);
+    expect(problems(IMAGES, VIDEO, HEIGHT, OVERLAY, ALIGN, TINT, SPACE, TITLE, BODY)).toEqual([]);
   });
 
   it.each<[string, object]>([
+    ['video без maxBytes', withSetting(VIDEO, { maxBytes: undefined })],
+    ['video: maxBytes ноль', withSetting(VIDEO, { maxBytes: 0 })],
+    ['video: умолчание не адрес', withSetting(VIDEO, { default: 'javascript:alert(1)' })],
+    ['video с лишним ключом', withSetting(VIDEO, { options: [] })],
     ['image-pair без url2', withSetting(IMAGES, { default: { url1: '' } })],
     ['image-pair без maxBytes', withSetting(IMAGES, { maxBytes: undefined })],
     ['image-pair с лишним ключом', withSetting(IMAGES, { default: { url1: '', url2: '', url3: '' } })],
@@ -92,6 +106,8 @@ describe('форма полей в section.json', () => {
 describe('значения по виду', () => {
   const ok: [SectionField, unknown][] = [
     [IMAGES, { url1: '', url2: 'https://cdn.example/a.jpg' }],
+    [VIDEO, ''],
+    [VIDEO, 'https://s3.merfy.ru/media/site/clip.mp4'],
     [HEIGHT, 'small'],
     [OVERLAY, 45],
     [ALIGN, 'right'],
@@ -103,6 +119,11 @@ describe('значения по виду', () => {
   const bad: [SectionField, unknown][] = [
     [IMAGES, { url1: 'javascript:alert(1)', url2: '' }],
     [IMAGES, 'https://cdn.example/a.jpg'],
+    [VIDEO, 'javascript:alert(1)'],
+    [VIDEO, 'clip.mp4'],
+    [VIDEO, `https://cdn.example/${'a'.repeat(2_048)}.mp4`],
+    [VIDEO, { url: 'https://cdn.example/clip.mp4' }],
+    [VIDEO, null],
     [HEIGHT, 'huge'],
     [OVERLAY, 33],
     [OVERLAY, 105],
@@ -135,8 +156,22 @@ describe('значения по виду', () => {
     expect(bad.invalid.map((text) => text.split(':')[0])).toEqual(['overlay', 'heading']);
   });
 
-  it('пустое значение: у image-pair — две пустые строки, у остальных новых видов — умолчание', () => {
-    const fields = [IMAGES, OVERLAY, SPACE, TITLE];
-    expect(emptySettings(fields)).toEqual({ images: { url1: '', url2: '' }, overlay: 30, space: null, heading: '' });
+  it('пустое значение: у image-pair — две пустые строки, у video — пустая строка, у остальных новых видов — умолчание', () => {
+    const fields = [IMAGES, VIDEO_WITH_FILE, OVERLAY, SPACE, TITLE];
+    expect(emptySettings(fields)).toEqual({
+      images: { url1: '', url2: '' },
+      video: '',
+      overlay: 30,
+      space: null,
+      heading: '',
+    });
+  });
+
+  it('resolveSectionSettings: адрес видео сохраняется, не адрес — умолчание и текст', () => {
+    const good = resolveSectionSettings([VIDEO], { video: 'https://cdn.example/clip.mp4' });
+    expect(good).toEqual({ values: { video: 'https://cdn.example/clip.mp4' }, invalid: [] });
+    const bad = resolveSectionSettings([VIDEO], { video: 'clip.mp4' });
+    expect(bad.values).toEqual({ video: '' });
+    expect(bad.invalid.map((text) => text.split(':')[0])).toEqual(['video']);
   });
 });

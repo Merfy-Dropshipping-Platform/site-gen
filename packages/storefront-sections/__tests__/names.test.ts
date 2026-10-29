@@ -14,12 +14,13 @@ const problemsOf = (run: () => unknown): string[] => {
 };
 
 describe('словарь имён полей', () => {
-  it('файлы пакета читаются: 56 имён в трёх группах, 8 отказов, 10 сквозных', () => {
+  it('файлы пакета читаются: 60 имён в трёх группах, 8 отказов, 10 сквозных', () => {
     // Блок 11 «Секций и SDK», часть 11б: per-page, paging, filter-position, next-photo, quick-add, sold-out.
     // Блок 15, часть 15в: zoom. Базовые секции, этап 0 (шапка и подвал прода): active-link, layout.
     // Базовые секции, каталог: cards, columns-mobile, button-style, image-fit, swatches, favorite (карточка товара).
     // Базовые секции, первый экран: button-second-label, button-second-link (вторая кнопка в одном блоке «Кнопки»).
-    expect(NAMES.names).toHaveLength(56);
+    // Базовые секции, видео: poster, video-autoplay, video-muted, video-loop; имя video — вида video.
+    expect(NAMES.names).toHaveLength(60);
     expect(NAMES.groups.map((group) => group.title)).toEqual(['Содержимое', 'Вид', 'Поведение']);
     expect(NAMES.refusals.map((refusal) => refusal.id)).toEqual([
       'section-view',

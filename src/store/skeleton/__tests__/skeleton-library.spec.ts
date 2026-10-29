@@ -23,8 +23,8 @@ const wrapperIdsOf = (name: string): string[] =>
   manifestOf(name).wrapper ?? ["scheme", "padding"];
 
 describe("библиотека заготовки", () => {
-  it("33 секции из fixtures/shop и storefront-shell/sections (с 29.10 — «Коллекция товаров», «Подписка на рассылку», «Контактная форма», «Промо-баннер», «Основной текст», «Изображение с текстом», «Мультиколонны», «Мультиряды», «Галерея»; «Вопросы с плавным раскрытием» склеены с «Сворачиваемым разделом»); в раскладке 22 — без «Значка корзины», «Слайд-шоу», «Подписки на рассылку» и «Контактной формы», все есть в библиотеке", () => {
-    expect(library.size).toBe(33);
+  it("34 секции из fixtures/shop и storefront-shell/sections (с 29.10 — «Коллекция товаров», «Подписка на рассылку», «Контактная форма», «Промо-баннер», «Основной текст», «Изображение с текстом», «Мультиколонны», «Мультиряды», «Галерея», «Видео»; «Вопросы с плавным раскрытием» склеены с «Сворачиваемым разделом»); в раскладке 22 — без «Значка корзины», «Слайд-шоу», «Подписки на рассылку» и «Контактной формы», все есть в библиотеке", () => {
+    expect(library.size).toBe(34);
     expect(skeletonSectionNames()).toHaveLength(22);
     for (const name of ["cart-badge", "slideshow", "newsletter", "contact-form"]) {
       expect(skeletonSectionNames()).not.toContain(name);
@@ -59,7 +59,7 @@ describe("библиотека заготовки", () => {
       "packages/storefront-sections/fixtures/shop",
       "packages/storefront-sections/fixtures/shop",
     ]);
-    expect(twice.size).toBe(23);
+    expect(twice.size).toBe(24);
   });
 });
 

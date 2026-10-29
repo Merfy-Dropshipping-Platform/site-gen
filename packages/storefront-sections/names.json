@@ -88,9 +88,14 @@
       "asks": ["оценка", "звёзды", "stars", "score"]
     },
     "video": {
-      "kinds": ["url"], "label": "Видео", "group": "content",
-      "about": "Адрес видео",
-      "asks": ["видео", "ролик", "youtube", "vimeo", "clip"]
+      "kinds": ["video"], "label": "Видео", "group": "content",
+      "about": "Видеофайл секции: мерчант загружает его в панели, на витрине он играет в плеере браузера. Ссылки на YouTube и Vimeo не поддерживаются — тег `iframe` в шаблоне запрещён",
+      "asks": ["видео", "ролик", "файл видео", "загрузить видео", "clip", "mp4"]
+    },
+    "poster": {
+      "kinds": ["image"], "label": "Обложка", "group": "content",
+      "about": "Кадр, который виден, пока видео не началось",
+      "asks": ["обложка", "постер", "превью видео", "poster", "cover", "thumbnail"]
     },
     "logo": {
       "kinds": ["image"], "label": "Логотип", "group": "content",
@@ -276,6 +281,21 @@
       "kinds": ["toggle"], "label": "Листать сами", "group": "behavior",
       "about": "Слайды меняются без нажатия",
       "asks": ["автопрокрутка", "auto", "rotate", "slideshow"]
+    },
+    "video-autoplay": {
+      "kinds": ["toggle"], "label": "Автозапуск", "group": "behavior",
+      "about": "Видео начинает играть само, без звука: браузеры не запускают видео со звуком без нажатия",
+      "asks": ["автозапуск", "автоплей", "играть само", "включать сразу", "autoplay video"]
+    },
+    "video-muted": {
+      "kinds": ["toggle"], "label": "Без звука", "group": "behavior",
+      "about": "Видео играет без звука; поле показано при выключенном `video-autoplay` — с автозапуском звука нет всегда",
+      "asks": ["без звука", "выключить звук", "mute", "muted"]
+    },
+    "video-loop": {
+      "kinds": ["toggle"], "label": "Повтор", "group": "behavior",
+      "about": "Закончившись, видео начинается сначала",
+      "asks": ["повтор", "по кругу", "зациклить", "loop", "repeat video"]
     },
     "interval": {
       "kinds": ["range"], "label": "Интервал", "group": "behavior",

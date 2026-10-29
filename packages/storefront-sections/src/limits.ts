@@ -2,12 +2,13 @@ import type { FieldIssue, FieldList, RuleField, RuleSection } from './rule-types
 
 // Лимиты полей секции (блок 3 «Секций и SDK», раздел 3.4 design.md): панель секции остаётся обозримой — ошибки, не
 // предупреждения. Числа — только из SETTINGS_LIMITS. Полей типа блока 16 (было 10): слайд «Слайд-шоу» на проде — 12
-// полей (этап 0 базовых секций, E11).
+// полей (этап 0 базовых секций, E11). Типов блоков 8 (было 6): у «Товара» на проде восемь подпанелей — текст,
+// название, цена, варианты, количество, кнопки, описание, «Поделиться» (базовые секции, 29.10).
 
 export const SETTINGS_LIMITS = {
   sectionFields: 20,
   blockFields: 16,
-  blockTypes: 6,
+  blockTypes: 8,
   blocksTotal: 50,
   optionsMin: 2,
   optionsMax: 10,

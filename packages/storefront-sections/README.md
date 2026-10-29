@@ -62,7 +62,7 @@
 - Имя поля — из словаря `names.json`, вид поля — из `kinds` этого имени. Имя не из словаря — `setting-name-unknown`:
   ближайшее имя, подсказка из `not-names.json` или настройка «Настроек темы» (`generated/shared-settings.json` — поля
   панели темы с `"shared": true`; секция читает их через `"uses": ["theme"]`). Вид не из `kinds` — `setting-name-kind`.
-- Лимиты — `SETTINGS_LIMITS` (`src/limits.ts`): 20 полей у секции, 10 у типа блока, 6 типов блоков, сумма `limit` 50,
+- Лимиты — `SETTINGS_LIMITS` (`src/limits.ts`): 20 полей у секции, 10 у типа блока, 8 типов блоков, сумма `limit` 50,
   вариантов 2–10, подписи до 32 знаков, `sublabel` до 120; отказ `settings-limit`.
 - Условие показа — поле своего списка вида `toggle`, `select`, `radio` или `alignment`, значение из его значений,
   цепочка до двух переходов, без кругов; отказ `visible-when-invalid`.

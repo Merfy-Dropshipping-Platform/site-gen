@@ -13,6 +13,10 @@ const ID = 'cat-1';
 const FORM =
   '<form data-part="filters" method="get" action="/catalog"><select name="sort"><option value="">Новые</option><option value="price_desc">Цена по убыванию</option><option value="title_asc">По названию</option></select><label><input type="checkbox" name="collection" value="sharfy"> Шарфы</label><input type="hidden" name="q" value=""></form>';
 
+// Группы фильтров, как в шаблоне «Каталога»: details с data-group, поля внутри; поля цены — текстовые.
+const GROUPS =
+  '<form data-part="filters" method="get" action="/catalog"><details data-group="sort" open><summary>Сортировать</summary><label><input type="radio" name="sort" value="price_desc"> Дороже</label></details><details data-group="price" open><summary>Стоимость</summary><input type="text" name="min_price"><input type="text" name="max_price"></details></form>';
+
 interface View {
   readonly page: number;
   readonly rows: readonly number[];
@@ -20,13 +24,16 @@ interface View {
   readonly prev?: string;
   readonly paging?: string;
   readonly form?: string;
+  // Раскладка фильтров: сбоку (true) или сверху (false); без поля атрибута у секции нет.
+  readonly side?: boolean;
 }
 
 function sectionHtml(view: View): string {
   const rows = view.rows.map((n) => `<li>Товар ${n}</li>`).join('');
   const prev = view.prev === undefined ? '' : `<a data-part="prev" href="${view.prev}">Показать предыдущие</a>`;
   const next = view.next === undefined ? '' : `<a data-part="next" href="${view.next}">Показать ещё</a>`;
-  return `<merfy-section data-section="shop:catalog" data-section-id="${ID}"><div data-behavior="catalog" data-paging="${view.paging ?? 'more'}">${view.form ?? ''}${prev}<ul data-part="list" data-page="${view.page}">${rows}</ul><p>Показано <span data-part="count">${view.rows.length}</span> из 5</p>${next}<nav data-part="pages"><a href="/catalog/page/2">2</a></nav><p data-part="status" aria-live="polite"></p></div></merfy-section>`;
+  const side = view.side === undefined ? '' : ` data-filters-side="${view.side}"`;
+  return `<merfy-section data-section="shop:catalog" data-section-id="${ID}"><div data-behavior="catalog" data-paging="${view.paging ?? 'more'}"${side}>${view.form ?? ''}${prev}<ul data-part="list" data-page="${view.page}">${rows}</ul><p>Показано <span data-part="count">${view.rows.length}</span> из 5</p>${next}<nav data-part="pages"><a href="/catalog/page/2">2</a></nav><p data-part="status" aria-live="polite"></p></div></merfy-section>`;
 }
 
 const pageHtml = (view: View, list: string | null = null): string =>
@@ -247,6 +254,88 @@ describe('поведение catalog: фильтры', () => {
     await settle();
     expect(asked[0]?.signal?.aborted).toBe(true);
     expect(rows()).toEqual(['Товар 7']);
+  });
+});
+
+const group = (name: string): HTMLDetailsElement | null =>
+  document.querySelector<HTMLDetailsElement>(`[data-section-id="${ID}"] details[data-group="${name}"]`);
+const input = (name: string): HTMLInputElement | null =>
+  document.querySelector<HTMLInputElement>(`[data-section-id="${ID}"] input[name="${name}"]`);
+
+describe('поведение catalog: группы фильтров', () => {
+  it('замена секции оставляет группы раскрытыми или свёрнутыми, как их оставил покупатель', async () => {
+    server({ '/catalog?min_price=500': pageHtml({ page: 1, rows: [3], form: GROUPS }, 'min_price=500') });
+    open({ page: 1, rows: [1, 2], form: GROUPS });
+    const sort = group('sort');
+    if (sort === null) throw new Error('нет группы');
+    sort.open = false;
+    const min = input('min_price');
+    if (min === null) throw new Error('нет поля цены');
+    min.value = '500';
+    min.dispatchEvent(new Event('change', { bubbles: true }));
+    await settle();
+    expect(rows()).toEqual(['Товар 3']);
+    expect(group('sort')?.open).toBe(false);
+    expect(group('price')?.open).toBe(true);
+  });
+
+  it('поле с фокусом остаётся с фокусом: цена «от» применилась, а курсор уже в «до» (Tab)', async () => {
+    server({ '/catalog?min_price=500': pageHtml({ page: 1, rows: [3], form: GROUPS }, 'min_price=500') });
+    open({ page: 1, rows: [1, 2], form: GROUPS });
+    const min = input('min_price');
+    const max = input('max_price');
+    if (min === null || max === null) throw new Error('нет полей цены');
+    min.value = '500';
+    max.focus();
+    min.dispatchEvent(new Event('change', { bubbles: true }));
+    await settle();
+    const now = input('max_price');
+    expect(now).not.toBe(max);
+    expect(now?.isConnected).toBe(true);
+    expect(document.activeElement).toBe(now);
+  });
+
+  it('радио: после применения фокус — на выбранном пункте, а не на соседнем с тем же именем', async () => {
+    const two =
+      '<form data-part="filters" method="get" action="/catalog"><label><input type="radio" name="sort" value="price_asc"></label><label><input type="radio" name="sort" value="price_desc"></label></form>';
+    server({ '/catalog?sort=price_desc': pageHtml({ page: 1, rows: [3], form: two }, 'sort=price_desc') });
+    open({ page: 1, rows: [1, 2], form: two });
+    const chosen = document.querySelector<HTMLInputElement>('input[value="price_desc"]');
+    if (chosen === null) throw new Error('нет пункта');
+    chosen.checked = true;
+    chosen.focus();
+    chosen.dispatchEvent(new Event('change', { bubbles: true }));
+    await settle();
+    const now = document.querySelector<HTMLInputElement>('input[value="price_desc"]');
+    expect(document.activeElement).toBe(now);
+  });
+
+  const panels = (matches: boolean): void => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches, media: query }));
+  };
+  const opened = (): string[] =>
+    ['sort', 'price'].filter((name) => group(name)?.open === true);
+
+  it('фильтры сверху на компьютере: нажатие вне панели закрывает группы, по заголовку другой — только прежнюю', () => {
+    panels(true);
+    open({ page: 1, rows: [1], form: GROUPS, side: false });
+    document.body.click();
+    expect(opened()).toEqual([]);
+    group('sort')?.setAttribute('open', '');
+    group('price')?.querySelector('summary')?.click();
+    expect(opened()).toEqual(['price']);
+  });
+
+  it('фильтры сбоку и сверху на телефоне: группы сами не закрываются', () => {
+    panels(true);
+    open({ page: 1, rows: [1], form: GROUPS, side: true });
+    document.body.click();
+    expect(opened()).toEqual(['sort', 'price']);
+    started?.stop();
+    panels(false);
+    open({ page: 1, rows: [1], form: GROUPS, side: false });
+    document.body.click();
+    expect(opened()).toEqual(['sort', 'price']);
   });
 });
 

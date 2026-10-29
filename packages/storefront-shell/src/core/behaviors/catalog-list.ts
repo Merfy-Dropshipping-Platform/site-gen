@@ -78,6 +78,38 @@ function carryLink(fresh: HTMLElement, host: BehaviorHost, how: How): void {
   else freshLink?.replaceWith(oldLink.cloneNode(true));
 }
 
+const groupsOf = (root: ParentNode): readonly HTMLDetailsElement[] =>
+  [...root.querySelectorAll<HTMLDetailsElement>('details[data-group]')];
+
+// Группы фильтров («Сортировать», «Наличие»…) — раскрыты или свёрнуты, как оставил покупатель: ответ приходит со своим
+// состоянием по умолчанию, а секция заменяется целиком. Группа — по data-group.
+function carryGroups(fresh: HTMLElement, host: BehaviorHost): void {
+  const opened = new Map(groupsOf(host.section).map((group) => [group.getAttribute('data-group'), group.open]));
+  groupsOf(fresh).forEach((group) => {
+    const state = opened.get(group.getAttribute('data-group'));
+    if (state !== undefined) group.open = state;
+  });
+}
+
+// Поле с фокусом: замена секции не должна его отнимать — переход Tab из «от» в «до» после применения цены, стрелки по
+// пунктам. Поле в новой секции — по имени (и значению, если у пунктов имя общее, как у радио).
+interface Focused {
+  readonly name: string;
+  readonly value: string;
+}
+
+function focusedIn(section: HTMLElement): Focused | null {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLInputElement) || !section.contains(active) || active.name === '') return null;
+  return { name: active.name, value: active.type === 'text' ? '' : active.value };
+}
+
+function restoreFocus(section: HTMLElement, focused: Focused | null): void {
+  if (focused === null) return;
+  const same = [...section.querySelectorAll<HTMLInputElement>('input')].filter((input) => input.name === focused.name);
+  (same.find((input) => input.value === focused.value) ?? same[0])?.focus({ preventScroll: true });
+}
+
 function applyFresh(host: BehaviorHost, fresh: HTMLElement, url: URL, how: How, freshRows: number): void {
   const list = fresh.querySelector<HTMLElement>('[data-part="list"]');
   const total = list === null ? 0 : rowsOf(list).length;
@@ -85,7 +117,11 @@ function applyFresh(host: BehaviorHost, fresh: HTMLElement, url: URL, how: How, 
   if (count !== null) count.textContent = String(total);
   const status = fresh.querySelector<HTMLElement>('[data-part="status"]');
   if (status !== null) status.textContent = how === 'replace' ? `Показано ${total}` : `Загружено ещё ${freshRows}`;
-  host.section.replaceWith(document.importNode(fresh, true));
+  carryGroups(fresh, host);
+  const focused = focusedIn(host.section);
+  const next = document.importNode(fresh, true);
+  host.section.replaceWith(next);
+  restoreFocus(next, focused);
   if (host.motion.preview) return;
   replaceAddress(url, how);
   const page = Number(list?.getAttribute('data-page'));
@@ -229,6 +265,27 @@ function listenFilters(session: Session): void {
   });
 }
 
+// Фильтры сверху на компьютере (md и шире): раскрытая группа — панель под заголовком, нажатие вне панели её закрывает;
+// открывая одну группу, другие закрываются так же (нажатие по заголовку — вне чужой панели). Сбоку и в шторке
+// телефона группы — обычный список, сами не закрываются.
+const PANEL_QUERY = '(min-width: 48rem)';
+
+function listenPanels(session: Session): void {
+  const { root, signal } = session.host;
+  document.addEventListener(
+    'click',
+    (event) => {
+      const opened = groupsOf(root).filter((group) => group.open);
+      if (opened.length === 0 || root.getAttribute('data-filters-side') === 'true') return;
+      if (!window.matchMedia(PANEL_QUERY).matches) return;
+      opened
+        .filter((group) => !(event.target instanceof Node && group.contains(event.target)))
+        .forEach((group) => group.removeAttribute('open'));
+    },
+    { signal },
+  );
+}
+
 export const catalog: Behavior<'catalog'> = {
   name: 'catalog',
   attach(host: BehaviorHost) {
@@ -242,6 +299,7 @@ export const catalog: Behavior<'catalog'> = {
     };
     listenPaging(session);
     listenFilters(session);
+    listenPanels(session);
     return {};
   },
 };

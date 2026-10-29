@@ -7,7 +7,7 @@ const { settings, blocks } = Astro.props;
 <div class="font-body" data-capitals={settings.capitals}>
   {blocks.map((block) => (
     <div
-      class="flex min-h-11 items-center justify-center px-4 text-center data-[text-size=small]:text-xs data-[text-size=medium]:text-sm data-[text-size=large]:min-h-12 data-[text-size=large]:text-sm md:px-8 md:data-[text-size=small]:min-h-8 md:data-[text-size=medium]:min-h-10 md:data-[text-size=large]:text-base"
+      class="flex min-h-11 items-center justify-center px-4 py-2 text-center data-[text-size=small]:text-xs data-[text-size=medium]:text-sm data-[text-size=large]:min-h-12 data-[text-size=large]:text-sm md:px-8 md:py-0 md:data-[text-size=small]:min-h-8 md:data-[text-size=medium]:min-h-10 md:data-[text-size=large]:text-base"
       data-text-size={block.settings['text-size']}
     >
       <p class="m-0 mx-auto max-w-page text-balance in-data-[capitals=true]:uppercase">

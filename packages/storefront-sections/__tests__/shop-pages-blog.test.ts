@@ -35,6 +35,7 @@ const listOf = (items: ArticleCard[], pages = 1, page = 1): PageList => ({
   kind: 'articles',
   items,
   total: items.length,
+  totalLabel: `${items.length} статей`,
   page,
   pages,
   perPage: 12,

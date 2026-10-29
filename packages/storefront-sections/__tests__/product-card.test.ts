@@ -136,6 +136,7 @@ const LIST = (overrides: Partial<PageList> = {}): PageList => ({
   kind: 'products',
   items: CARDS,
   total: 3,
+  totalLabel: '3 товара',
   page: 1,
   pages: 1,
   perPage: 12,
@@ -145,8 +146,9 @@ const LIST = (overrides: Partial<PageList> = {}): PageList => ({
   links: [{ page: 1, url: '/catalog', current: true }],
   query: EMPTY_LIST_QUERY,
   sorts: [
-    { value: 'newest', label: 'Новые', selected: true },
-    { value: 'price_asc', label: 'Цена по возрастанию', selected: false },
+    { value: 'popular', label: 'По популярности', selected: false },
+    { value: 'newest', label: 'По новизне', selected: true },
+    { value: 'price_asc', label: 'По возрастанию цены', selected: false },
   ],
   facets: {
     price: { min: money(120000), max: money(350000) },
@@ -466,8 +468,8 @@ describe('«Каталог»: список страницы', () => {
 
   it('сортировка — радио с пунктами страницы, выбран текущий; «Наличие» — Все, В наличии, Распродано', async () => {
     const source = await html('catalog');
-    expect(radios(source, 'sort').map((tag) => attr(tag, 'value'))).toEqual(['newest', 'price_asc']);
-    expect(radios(source, 'sort').map((tag) => /\schecked/.test(tag))).toEqual([true, false]);
+    expect(radios(source, 'sort').map((tag) => attr(tag, 'value'))).toEqual(['popular', 'newest', 'price_asc']);
+    expect(radios(source, 'sort').map((tag) => /\schecked/.test(tag))).toEqual([false, true, false]);
     expect(radios(source, 'availability').map((tag) => attr(tag, 'value'))).toEqual(['', 'in_stock', 'sold_out']);
     expect(radios(source, 'availability').map((tag) => /\schecked/.test(tag))).toEqual([true, false, false]);
     for (const title of ['Все', 'В наличии', 'Распродано']) expect(source).toContain(`<span>${title}</span>`);
@@ -593,12 +595,12 @@ describe('«Каталог»: список страницы', () => {
     expect(source).toContain(`data-behavior="catalog"`);
     expect(attr(tags(source, 'div\\b[^>]*data-behavior="catalog"')[0] ?? '', 'data-paging')).toBe(paging);
     expect(source).toContain(part);
-    expect(source).toContain('data-part="count"');
   });
 
-  it('число товаров — «Товаров: N»; заголовок: на /catalog — h1, на главной — h2, с «К» и «Ж»', async () => {
+  it('число товаров — «3 товара» под списком, слева; заголовок: на /catalog — h1, на главной — h2, с «К» и «Ж»', async () => {
     const onCatalog = await html('catalog', { settings: { heading: 'Всё <strong>сразу</strong>' } });
-    expect(onCatalog).toContain('Товаров: 3');
+    expect(onCatalog).toMatch(/<\/ul>\s*<p class="[^"]*">3 товара<\/p>/);
+    expect(onCatalog).not.toContain('Товаров: 3');
     expect(onCatalog).toMatch(/<h1[^>]*>Всё <strong>сразу<\/strong><\/h1>/);
     const onHome = await html('catalog', {
       settings: { heading: 'Всё <strong>сразу</strong>' },

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { EMPTY_LIST_QUERY, parseListQuery } from '../src/list-query';
 import { checkPageRow } from '../src/manifest';
 import { listSourceAt, renderShopPage, type ShopTheme } from '../src/page';
-import { pageListOf, type ListSource, type PageList } from '../src/page-list';
+import { countLabelOf, pageListOf, type ListSource, type PageList } from '../src/page-list';
 import { defaultVariantId, money, type ProductRecord } from '../src/records';
 import { recordIndex, routeOf, shopRoutes } from '../src/routes';
 import type { SectionRenderRequest } from '../src/sections-render';
@@ -112,6 +112,31 @@ describe('page.list у секций', () => {
     ]);
     expect(found?.sorts.find((sort) => sort.selected)?.value).toBe('newest');
     expect(found?.query).toEqual({ ...EMPTY_LIST_QUERY, page: 2 });
+  });
+
+  it('сортировки — как у прода, порядок и подписи; число — со склонением', async () => {
+    const found = await listAt('/catalog');
+    expect(found?.sorts.map((sort) => [sort.value, sort.label])).toEqual([
+      ['popular', 'По популярности'],
+      ['newest', 'По новизне'],
+      ['price_desc', 'По убыванию цены'],
+      ['price_asc', 'По возрастанию цены'],
+    ]);
+    expect(found?.totalLabel).toBe('5 товаров');
+    expect([0, 1, 2, 4, 5, 11, 12, 14, 21, 22, 25].map((total) => countLabelOf('products', total))).toEqual([
+      '0 товаров',
+      '1 товар',
+      '2 товара',
+      '4 товара',
+      '5 товаров',
+      '11 товаров',
+      '12 товаров',
+      '14 товаров',
+      '21 товар',
+      '22 товара',
+      '25 товаров',
+    ]);
+    expect([1, 3, 7].map((total) => countLabelOf('articles', total))).toEqual(['1 статья', '3 статьи', '7 статей']);
   });
 
   it('карточка: первые два фото, сочетание по умолчанию, признак вариантов', async () => {

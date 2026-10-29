@@ -3,6 +3,7 @@
   "name": "promo-banner",
   "kind": "section",
   "title": "Промо-баннер",
+  "groups": ["header", "page"],
   "wrapper": ["scheme", "padding"],
   "wrapperSpec": {
     "scheme": { "default": "scheme-4" },

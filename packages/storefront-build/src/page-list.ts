@@ -24,13 +24,28 @@ import type { PageProps, PlacedSection } from './sections-render';
 export const PER_PAGE_SETTING = 'per-page';
 export const PER_PAGE_MIN = 2;
 export const PER_PAGE_MAX = 24;
-// Подписи сортировок (design.md 11.4, п. 10): «Популярные» не предлагаем — у сервиса product это «новые сверху».
+// Подписи сортировок — как в каталоге прода. «По популярности» — по остатку (у прода так же), «По новизне» — новые сверху.
 export const SORT_LABELS = {
-  newest: 'Новые',
-  price_asc: 'Цена по возрастанию',
-  price_desc: 'Цена по убыванию',
-  title_asc: 'По названию',
+  popular: 'По популярности',
+  newest: 'По новизне',
+  price_desc: 'По убыванию цены',
+  price_asc: 'По возрастанию цены',
 } as const;
+
+// Слова счётчика по числу (ru): один, несколько, много. Остальные формы PluralRules (zero, two, other) — «много».
+const COUNT_WORDS = {
+  products: { one: 'товар', few: 'товара', many: 'товаров' },
+  articles: { one: 'статья', few: 'статьи', many: 'статей' },
+} as const;
+const RU_PLURALS = new Intl.PluralRules('ru');
+
+// «1 товар», «3 товара», «12 товаров»: склонение — данными, в шаблоне склонять нечем (sdk-docs, code.md).
+export function countLabelOf(kind: 'products' | 'articles', total: number): string {
+  const form = RU_PLURALS.select(total);
+  const words = COUNT_WORDS[kind];
+  const word = form === 'one' || form === 'few' ? words[form] : words.many;
+  return `${total} ${word}`;
+}
 
 export interface ListProductCard extends ProductCard {
   hasVariants: boolean;
@@ -51,6 +66,8 @@ export interface PageList {
   kind: 'products' | 'articles';
   items: ListProductCard[] | ArticleCard[];
   total: number;
+  // Число со словом по склонению: «1 товар», «3 товара», «12 товаров»; у статей — «статья», «статьи», «статей».
+  totalLabel: string;
   page: number;
   pages: number;
   perPage: number;
@@ -376,12 +393,11 @@ export function pageListOf(
   const total = listed?.total ?? products.length + articles.length;
   const pages = Math.max(1, Math.ceil(total / source.perPage));
   if (query.page > pages) throw new StorefrontBuildError('page-unknown', 'страница списка больше последней');
-  const items = itemsOf(index, source, query, listed, products, articles);
-  const facets = facetsOfPage(index, query, source, listed);
   return {
     kind: source.kind,
-    items,
+    items: itemsOf(index, source, query, listed, products, articles),
     total,
+    totalLabel: countLabelOf(source.kind, total),
     pages,
     page: query.page,
     perPage: source.perPage,
@@ -391,7 +407,7 @@ export function pageListOf(
     links: linksOf(source, query, query.page, pages),
     query,
     sorts: sortsOf(source, query),
-    facets,
+    facets: facetsOfPage(index, query, source, listed),
   };
 }
 

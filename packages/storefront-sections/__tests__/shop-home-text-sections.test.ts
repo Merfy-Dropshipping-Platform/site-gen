@@ -108,6 +108,10 @@ describe('панель: поля прода в их порядке, новые �
     expect(announcement?.settings[0]?.setting).toMatchObject({ kind: 'text', ai: 'title' });
   });
 
+  it('«Промо-баннер»: ставится в список шапки (над «Шапкой», как у flux) и на страницу', () => {
+    expect(loaded.get('promo-banner')?.manifest.groups).toEqual(['header', 'page']);
+  });
+
   it('«Основной текст»: позиция в группе «Содержание», схема, отступы; стили — в «Вид»', () => {
     expect(order('main-text')).toEqual(['content-position', 'wrapper:scheme', 'wrapper:padding', 'text-style', 'button-style']);
     expect(groupOf('main-text', 'content-position')).toBe('Содержание');

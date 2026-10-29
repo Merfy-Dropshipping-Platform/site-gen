@@ -92,6 +92,7 @@ describe('наши секции с записями', () => {
       kind: 'articles' as const,
       items: articles,
       total: articles.length,
+      totalLabel: `${articles.length} статей`,
       page: 1,
       pages: 1,
       perPage: 12,

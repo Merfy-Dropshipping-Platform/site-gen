@@ -6,7 +6,7 @@ const { settings, blocks, theme } = Astro.props;
   {(settings.heading || settings.text) && (
     <div class="mx-auto flex max-w-3xl flex-col items-center gap-3 text-center">
       {settings.heading && (
-        <h2 class="m-0 font-heading weight-heading tracking-heading text-heading in-data-[heading-size=small]:text-2xl in-data-[heading-size=medium]:text-3xl in-data-[heading-size=large]:text-4xl md:in-data-[heading-size=medium]:text-4xl md:in-data-[heading-size=large]:text-5xl" set:html={settings.heading} />
+        <h2 class="m-0 font-heading weight-heading tracking-heading text-heading in-data-[heading-size=small]:text-base in-data-[heading-size=medium]:text-lg in-data-[heading-size=large]:text-xl md:in-data-[heading-size=small]:text-lg md:in-data-[heading-size=medium]:text-xl md:in-data-[heading-size=large]:text-2xl" set:html={settings.heading} />
       )}
       {settings.text && (
         <p class="m-0 text-muted-foreground in-data-[text-size=small]:text-sm in-data-[text-size=medium]:text-base in-data-[text-size=large]:text-lg" set:html={settings.text} />

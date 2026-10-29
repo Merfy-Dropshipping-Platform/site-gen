@@ -3,10 +3,23 @@ export interface PageSpec {
   file: string; // 'start.md'
   title: string; // заголовок страницы и текст ссылки в llms.txt
   about: string; // строка после ссылки в llms.txt
-  section: 'Начать' | 'Справочник' | 'Ошибки проверки';
+  section: 'Гайд' | 'Начать' | 'Справочник' | 'Ошибки проверки';
 }
 
 export const PAGES: readonly PageSpec[] = [
+  {
+    file: 'anatomy.md',
+    title: 'Из чего состоит секция',
+    about:
+      'section.json, template.astro и script.ts, как они связаны, откуда секция берёт данные и как общается со страницей',
+    section: 'Гайд',
+  },
+  {
+    file: 'path.md',
+    title: 'Путь секции до витрины',
+    about: 'написал, проверка, сохранение, публикация и сборка магазина, витрина: что происходит на каждом шаге',
+    section: 'Гайд',
+  },
   {
     file: 'start.md',
     title: 'Как сделать секцию',

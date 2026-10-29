@@ -104,6 +104,14 @@ describe('документация SDK', () => {
     });
   });
 
+  it('llms.txt: раздел «Гайд» идёт первым, в нём обе страницы гайда', () => {
+    const sections = [...(files['llms.txt'] ?? '').matchAll(/^## (.+)$/gm)].map((match) => match[1]);
+    expect(sections[0]).toBe('Гайд');
+    const guide = (files['llms.txt'] ?? '').split('## Гайд\n')[1]?.split('\n## ')[0] ?? '';
+    expect(guide).toContain('- [Из чего состоит секция](anatomy.md):');
+    expect(guide).toContain('- [Путь секции до витрины](path.md):');
+  });
+
   it('script.md: каждый член ctx и El из таблиц есть в типах ядра', () => {
     const types = readFileSync(join(PACKAGE_DIR, '../storefront-shell/src/core/types.ts'), 'utf8');
     const members = [...(files['script.md'] ?? '').matchAll(/^\| `(?:ctx\.)?([a-zA-Z]+)[(`]/gm)].map(

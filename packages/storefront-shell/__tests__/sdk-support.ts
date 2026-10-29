@@ -131,7 +131,19 @@ export function serverItem(id: string, productId: string, quantity: number, vari
 export function cartLine(id: string, productId: string, quantity: number, variantId: string | null = null) {
   const price = { amount: 249000, currency: 'RUB' };
   const total = { amount: 249000 * quantity, currency: 'RUB' };
-  return { id, productId, variantId, quantity, price, title: 'Шарф', image: null, options: {}, total, gift: false };
+  return {
+    id,
+    productId,
+    variantId,
+    quantity,
+    price,
+    title: 'Шарф',
+    image: null,
+    options: {},
+    total,
+    gift: false,
+    compareAt: null,
+  };
 }
 
 // Дождаться микрозадач и ответов шлюза в памяти.

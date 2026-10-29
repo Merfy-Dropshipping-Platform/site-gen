@@ -62,7 +62,21 @@ describe('строки корзины', () => {
         options: {},
         total: rub(3000),
         gift: false,
+        compareAt: null,
       },
+    ]);
+  });
+
+  it('цена до скидки — compareAtPriceCents, только если больше цены; поля нет или не по форме — null', () => {
+    const sale = { ...serverItem('l-1', 'p12', 1), compareAtPriceCents: 399000 };
+    const same = { ...serverItem('l-2', 'p12', 1), compareAtPriceCents: 249000 };
+    const odd = { ...serverItem('l-3', 'p12', 1), compareAtPriceCents: '399000' };
+    const none = serverItem('l-4', 'p12', 1);
+    expect(linesOf({ items: [sale, same, odd, none] }, 'RUB')?.map((line) => line.compareAt)).toEqual([
+      rub(399000),
+      null,
+      null,
+      null,
     ]);
   });
 

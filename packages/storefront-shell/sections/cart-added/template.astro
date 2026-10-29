@@ -1,12 +1,20 @@
-<!-- Значки — Lucide (circle-check, image), лицензия ISC, lucide.dev/license. -->
+<!-- Значки — Lucide (circle-check, image, x), лицензия ISC, lucide.dev/license. -->
+<!-- Строка варианта — значения через запятую («Синий, S»), как у окна на проде, но цвет без кружка: образец цвета нет ни в
+     строке корзины (ответ orders его не отдаёт), ни способа покрасить его из скрипта секции (fill, style и классы со
+     своим цветом секциям нельзя). -->
+<!-- Цена до скидки — compareAt строки корзины; приходит с чтением корзины, скрипт перерисовывает строку на смену $cart. -->
 <!-- Как на проде (cart-added-modal.ts, anchorToCartIcon и lockBody): окно открывается под значком корзины, страницу не
      затемняет, но прокрутку запирает — немодальное окно поведения dialog с data-anchor="cart", запрет прокрутки по
      умолчанию. left-auto right-4 — место, если значка корзины на странице нет (у открытого dialog по умолчанию left: 0).
      z-50 — окно лежит поверх шапки (ряд меню шапки ниже значка корзины), немодальное окно вне верхнего слоя. -->
 <div data-behavior="dialog" data-transition="fade" data-modal="false" data-anchor="cart" data-open-on="cart-add">
   <dialog data-part="content" class="scheme-cart-drawer left-auto right-4 top-0 z-50 w-full max-w-xs rounded-popover border-width-popover border-border bg-background p-0 font-body text-foreground shadow-popover">
+    <button type="button" data-part="close" class="absolute right-2 top-2 inline-flex size-11 cursor-pointer items-center justify-center rounded-button bg-transparent p-0 text-foreground hover:bg-accent hover:text-accent-foreground">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+      <span class="sr-only">Закрыть</span>
+    </button>
     <div class="flex flex-col gap-5 p-5">
-      <h2 class="m-0 flex items-center gap-2 font-heading weight-heading text-lg text-heading">
+      <h2 class="m-0 flex items-center gap-2 pr-10 font-heading weight-heading text-lg text-heading">
         <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
         Товар добавлен в корзину
       </h2>
@@ -17,11 +25,15 @@
         </span>
         <div class="flex min-w-0 flex-1 flex-col gap-1">
           <p data-ref="title" class="m-0 line-clamp-2 text-sm text-heading"></p>
-          <p data-ref="price" class="m-0 text-sm weight-heading text-price"></p>
+          <p data-ref="options" class="m-0 text-xs text-muted-foreground" hidden></p>
+          <p class="m-0 flex flex-wrap items-baseline gap-x-2 text-sm">
+            <span data-ref="price" class="weight-heading text-price"></span>
+            <s data-ref="compare" class="text-xs text-price-old" hidden></s>
+          </p>
         </div>
       </div>
       <div class="flex flex-col gap-2">
-        <a class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" href="/cart" data-ref="go-cart">В корзину (<span data-ref="count">0</span>)</a>
+        <a class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground" href="/cart" data-ref="go-cart">Перейти в корзину (<span data-ref="count">0</span>)</a>
         <a class="inline-flex h-12 items-center justify-center rounded-button border-width-input border-border bg-background px-6 text-base text-foreground no-underline hover:bg-accent hover:text-accent-foreground" href="/checkout" data-action="cart.checkout">Купить сейчас</a>
         <button type="button" data-part="close" class="inline-flex h-11 cursor-pointer items-center justify-center bg-transparent p-0 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">Продолжить покупки</button>
       </div>

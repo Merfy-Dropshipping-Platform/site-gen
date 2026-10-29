@@ -26,6 +26,10 @@ const optionsOf = (value: unknown): Readonly<Record<string, string>> =>
 const totalOf = (item: Record<string, unknown>, unit: number, quantity: number): number =>
   isCount(item.totalCents) ? item.totalCents : unit * quantity;
 
+// Цена до скидки: целое больше цены — Money; иначе (нет поля, ответ POST …/items его не отдаёт, равна или меньше цены) — null.
+const compareAtOf = (value: unknown, unit: number, currency: string): Money | null =>
+  isCount(value) && value > unit ? { amount: value, currency } : null;
+
 // Строка из ответа orders: null — форма не сошлась.
 function lineOfItem(item: Record<string, unknown>, currency: string): CartLine | null {
   const variantId = variantOf(item);
@@ -43,6 +47,7 @@ function lineOfItem(item: Record<string, unknown>, currency: string): CartLine |
     options: optionsOf(item.options),
     total,
     gift: item.isBonus === true,
+    compareAt: compareAtOf(item.compareAtPriceCents, item.unitPriceCents, currency),
   };
   return { id: item.id, productId: item.productId, variantId, quantity: item.quantity, price, ...shown };
 }

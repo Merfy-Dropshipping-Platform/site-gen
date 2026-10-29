@@ -65,19 +65,25 @@ describe('разметка окон корзины', () => {
     ])
       expect(DRAWER).toContain(part);
     // Блок 12, часть 12а (п. 16): «Оформить заказ» — ссылка на оформление, работает и при упавшем скрипте панели.
-    expect(DRAWER).toMatch(/<a\b(?=[^>]*href="\/checkout")(?=[^>]*data-action="cart\.checkout")[^>]*>\s*Оформить заказ/);
+    expect(DRAWER).toMatch(
+      /<a\b(?=[^>]*href="\/checkout")(?=[^>]*data-action="cart\.checkout")[^>]*>\s*Оформить заказ/,
+    );
   });
 
-  it('«Товар добавлен»: fade, open-on cart-add, «В корзину», «Купить сейчас» — cart.checkout, «Продолжить покупки» закрывает', () => {
+  it('«Товар добавлен»: fade, open-on cart-add, «Перейти в корзину», «Купить сейчас» — cart.checkout, «Закрыть» и «Продолжить покупки» закрывают', () => {
     for (const part of [
       'data-transition="fade"',
       'data-open-on="cart-add"',
       'Товар добавлен в корзину',
       'href="/cart"',
+      'Перейти в корзину (',
       'data-action="cart.checkout"',
       'Купить сейчас',
     ])
       expect(ADDED).toContain(part);
+    expect(ADDED).toMatch(
+      /<button[^>]*data-part="close"[^>]*>\s*<svg[^>]*>.*<\/svg>\s*<span class="sr-only">Закрыть<\/span>/s,
+    );
     expect(ADDED).toMatch(/<button[^>]*data-part="close"[^>]*>\s*Продолжить покупки/);
   });
 
@@ -125,8 +131,30 @@ describe('скрипты окон', () => {
     expect(shown(added, 'title')).toEqual(['Шарф']);
     expect(shown(added, 'price')[0]?.replace(/\s/g, '')).toBe('2490₽');
     expect(shown(added, 'count')).toEqual(['2']);
+    expect(shown(added, 'options')).toEqual([]);
+    expect(shown(added, 'compare')).toEqual([]);
     expect(shown(drawer, 'title')).toEqual(['Шарф']);
     expect(shown(drawer, 'total').at(-1)?.replace(/\s/g, '')).toBe('4980₽');
+    expect(failures.details).toEqual([]);
+  });
+
+  it('«В корзину» вариантного товара: значения варианта через запятую; цена до скидки — когда её вернуло чтение корзины', async () => {
+    const { gateway, added } = openPage();
+    const item = { ...serverItem('l-1', 'p12', 1, 'v-blue'), options: { Цвет: 'Синий', Размер: 'S' } };
+    gateway.answer('POST /store/carts', {
+      status: 201,
+      body: { cart: { id: 'c-1', shopId: SHOP_ID, status: 'cart' } },
+    });
+    gateway.answer('POST /store/carts/c-1/items', { status: 201, body: { item } });
+    gateway.answer('GET /store/carts/c-1', {
+      status: 200,
+      body: { cart: CART, items: [{ ...item, compareAtPriceCents: 399000 }] },
+    });
+    await settle();
+    document.querySelector<HTMLButtonElement>('[data-action="cart.add"]')?.click();
+    await settle();
+    expect(shown(added, 'options')).toEqual(['Синий, S']);
+    expect(shown(added, 'compare')[0]?.replace(/\s/g, '')).toBe('3990₽');
     expect(failures.details).toEqual([]);
   });
 

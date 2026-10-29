@@ -25,7 +25,7 @@
           "url1": "",
           "url2": ""
         },
-        "maxBytes": 2097152
+        "maxBytes": 31457280
       }
     },
     {
@@ -175,13 +175,14 @@
         }
       ]
     },
-    "button": {
-      "title": "Кнопка основная",
+    "buttons": {
+      "title": "Кнопки",
       "limit": 1,
       "settings": [
         {
           "id": "button-label",
           "label": "Текст",
+          "section": "Кнопка основная",
           "setting": {
             "kind": "string",
             "default": "Перейти в каталог"
@@ -194,27 +195,22 @@
             "kind": "url",
             "default": "/catalog"
           }
-        }
-      ]
-    },
-    "button-second": {
-      "title": "Кнопка дополнительная",
-      "limit": 1,
-      "settings": [
+        },
         {
-          "id": "button-label",
+          "id": "button-second-label",
           "label": "Текст",
+          "section": "Кнопка дополнительная",
           "setting": {
             "kind": "string",
-            "default": "О нас"
+            "default": ""
           }
         },
         {
-          "id": "button-link",
+          "id": "button-second-link",
           "label": "Ссылка",
           "setting": {
             "kind": "url",
-            "default": "/o-nas"
+            "default": ""
           }
         }
       ]
@@ -230,7 +226,7 @@
       "settings": {}
     },
     {
-      "type": "button",
+      "type": "buttons",
       "settings": {}
     }
   ]

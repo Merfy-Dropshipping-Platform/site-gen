@@ -35,7 +35,7 @@ const { settings, blocks } = Astro.props;
         class="flex w-fit max-w-xl flex-wrap gap-x-3 gap-y-4 in-data-[align=left]:justify-start in-data-[align=center]:justify-center in-data-[align=right]:justify-end in-data-[text-box=true]:rounded-card in-data-[text-box=true]:bg-background in-data-[text-box=true]:p-6 in-data-[text-box=true]:shadow-card md:in-data-[text-box=true]:p-8"
       >
         {blocks.map((block) => (
-          <div class="data-[block=heading]:w-full data-[block=text]:w-full" data-block={block.type}>
+          <div class="data-[block=heading]:w-full data-[block=text]:w-full data-[block=buttons]:flex data-[block=buttons]:w-full data-[block=buttons]:flex-wrap data-[block=buttons]:gap-x-3 data-[block=buttons]:gap-y-4 in-data-[align=left]:data-[block=buttons]:justify-start in-data-[align=center]:data-[block=buttons]:justify-center in-data-[align=right]:data-[block=buttons]:justify-end" data-block={block.type}>
             {block.type === 'heading' && (
               <h2
                 class={`m-0 w-full text-balance font-heading weight-heading tracking-heading text-heading text-${settings.align} data-[heading-size=small]:text-xl data-[heading-size=medium]:text-3xl data-[heading-size=large]:text-5xl`}
@@ -50,7 +50,7 @@ const { settings, blocks } = Astro.props;
                 set:html={block.settings.text}
               />
             )}
-            {block.type === 'button' && block.settings['button-label'] && (
+            {block.type === 'buttons' && block.settings['button-label'] && (
               <a
                 class="inline-flex h-12 items-center justify-center gap-2 rounded-button border-width-button border-primary-border bg-primary px-8 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 href={block.settings['button-link']}
@@ -59,12 +59,12 @@ const { settings, blocks } = Astro.props;
                 <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
               </a>
             )}
-            {block.type === 'button-second' && block.settings['button-label'] && (
+            {block.type === 'buttons' && block.settings['button-second-label'] && (
               <a
                 class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-secondary-border bg-secondary px-8 text-base text-secondary-foreground no-underline hover:bg-secondary-hover hover:text-secondary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                href={block.settings['button-link']}
+                href={block.settings['button-second-link']}
               >
-                {block.settings['button-label']}
+                {block.settings['button-second-label']}
               </a>
             )}
           </div>

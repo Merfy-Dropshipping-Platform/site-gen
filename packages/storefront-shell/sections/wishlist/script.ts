@@ -6,7 +6,8 @@ import { defineSection, type CatalogItem, type El } from '@merfy/shell';
 // на карточке: favorites.toggle в разметке, скрипт пишет только data-product-id; после снятия стор сам
 // обновляет $products. Скелетон и подзаголовок скрываются в любом исходе чтения (грид / пусто).
 
-const fillCard = (row: El, item: CatalogItem): void => {
+// Фото или заглушка «нет фото».
+const fillImage = (row: El, item: CatalogItem): void => {
   const image = row.ref('image');
   const noImage = row.ref('no-image');
   if (item.image === null) {
@@ -18,6 +19,10 @@ const fillCard = (row: El, item: CatalogItem): void => {
     image?.show();
     noImage?.hide();
   }
+};
+
+const fillCard = (row: El, item: CatalogItem): void => {
+  fillImage(row, item);
   row.ref('photo-link')?.attr('href', item.url);
   row.ref('link')?.attr('href', item.url);
   row.ref('title')?.text(item.title);

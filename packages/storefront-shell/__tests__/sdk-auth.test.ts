@@ -222,14 +222,14 @@ describe('вход по коду', () => {
       ({ element: document.createElement('div'), name: 'shop:login', id: 'login-1', mode, signal: new AbortController().signal });
     localStorage.setItem(CUSTOMER_TOKEN_KEY, TOKEN);
     window.history.replaceState(null, '', '/login?redirect=%2Faccount%2Forders');
-    auth.attach(auth.create(coreWith('page-login').core), host('live'));
+    auth.attach?.(auth.create(coreWith('page-login').core), host('live'));
     expect(go).toHaveBeenLastCalledWith('/account/orders');
     localStorage.removeItem(CUSTOMER_TOKEN_KEY);
     go.mockClear();
-    auth.attach(auth.create(coreWith('page-login').core), host('live'));
-    auth.attach(auth.create(coreWith('page-profile').core), host('live'));
+    auth.attach?.(auth.create(coreWith('page-login').core), host('live'));
+    auth.attach?.(auth.create(coreWith('page-profile').core), host('live'));
     localStorage.setItem(CUSTOMER_TOKEN_KEY, TOKEN);
-    auth.attach(auth.create(coreWith('page-login').core), host('preview'));
+    auth.attach?.(auth.create(coreWith('page-login').core), host('preview'));
     expect(go).not.toHaveBeenCalled();
     localStorage.removeItem(CUSTOMER_TOKEN_KEY);
   });

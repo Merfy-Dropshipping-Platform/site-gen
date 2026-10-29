@@ -51,68 +51,72 @@ const fail = (core: CoreHandle, failure: Failure, options?: ActionOptions): Sear
   return failed(failure);
 };
 
+// Память одного модуля: кеш ответов и номер последнего вызова.
+interface SearchState {
+  readonly cache: Map<string, SearchAnswer>;
+  readonly calls: { number: number };
+}
+
+function remember(state: SearchState, key: string, answer: SearchAnswer): void {
+  state.cache.set(key, answer);
+  const oldest = state.cache.keys().next();
+  if (state.cache.size > SEARCH_CACHE_SIZE && oldest.done !== true) state.cache.delete(oldest.value);
+}
+
+// Запрос шлюза: ответ всегда ложится в кеш; обещание выполняется, только если вызова новее не было.
+function ask(
+  core: CoreHandle,
+  state: SearchState,
+  config: NonNullable<CoreHandle['config']>,
+  request: { readonly text: string; readonly limit: number },
+  options?: ActionOptions,
+): Promise<SearchAnswer> {
+  const { text, limit } = request;
+  const params = new URLSearchParams({ store_id: config.shop.id, q: text, limit: String(limit) });
+  const mine = (state.calls.number += 1);
+  return new Promise((resolve) => {
+    void requestJson(`${config.api.url}/store/products/search?${params}`, { method: 'GET' }).then((reply) => {
+      const answer = answerOf(reply, config.currency);
+      const done =
+        answer ?? fail(core, failureOf(reasonOf(reply), 'search.query: шлюз поиска ответил не по форме', reply), options);
+      remember(state, `${text}|${limit}`, done);
+      if (mine === state.calls.number) resolve(done);
+    });
+  });
+}
+
+function query(core: CoreHandle, state: SearchState, q: string, options?: QueryOptions): Promise<SearchAnswer> {
+  const text = q.trim();
+  const limit = options?.limit ?? SEARCH_LIMIT;
+  if (text === '') return Promise.resolve({ ok: true, data: { items: [], hasMore: false } });
+  if (text.length > SEARCH_Q_MAX || !Number.isInteger(limit) || limit < 1 || limit > LIMIT_MAX) {
+    return Promise.resolve(
+      fail(core, failureOf('invalid', 'search.query: запрос до 500 знаков, лимит — целое от 1 до 50'), options),
+    );
+  }
+  const config = core.config;
+  if (config === null) {
+    return Promise.resolve(fail(core, failureOf('server', 'search.query: конфиг витрины не прочитан'), options));
+  }
+  const cached = state.cache.get(`${text}|${limit}`);
+  return cached !== undefined ? Promise.resolve(cached) : ask(core, state, config, { text, limit }, options);
+}
+
+function open(core: CoreHandle): Promise<Result<{ readonly panel: boolean }>> {
+  // Панель поиска — секция с ролью search (блок 12, 12.4, случай 3); её нет или её скрипт упал — переход на каталог.
+  if (roleWorks(document, 'search')) {
+    core.emit('merfy:search:open', {});
+    return Promise.resolve({ ok: true, data: { panel: true } });
+  }
+  if (core.mode === 'live') searchNavigation.go(CATALOG_PATH);
+  return Promise.resolve({ ok: true, data: { panel: false } });
+}
+
 export const search: SdkPart<'search', SearchModule> = {
   name: 'search',
   create: (core: CoreHandle): SearchModule => {
-    const cache = new Map<string, SearchAnswer>();
-    const calls = { number: 0 };
-
-    const remember = (key: string, answer: SearchAnswer): void => {
-      cache.set(key, answer);
-      const oldest = cache.keys().next();
-      if (cache.size > SEARCH_CACHE_SIZE && oldest.done !== true) cache.delete(oldest.value);
-    };
-
-    // Запрос шлюза: ответ всегда ложится в кеш; обещание выполняется, только если вызова новее не было.
-    const ask = (
-      config: NonNullable<CoreHandle['config']>,
-      text: string,
-      limit: number,
-      options?: ActionOptions,
-    ): Promise<SearchAnswer> => {
-      const key = `${text}|${limit}`;
-      const params = new URLSearchParams({ store_id: config.shop.id, q: text, limit: String(limit) });
-      const mine = (calls.number += 1);
-      return new Promise((resolve) => {
-        void requestJson(`${config.api.url}/store/products/search?${params}`, { method: 'GET' }).then((reply) => {
-          const answer = answerOf(reply, config.currency);
-          const done =
-            answer ??
-            fail(core, failureOf(reasonOf(reply), 'search.query: шлюз поиска ответил не по форме', reply), options);
-          remember(key, done);
-          if (mine === calls.number) resolve(done);
-        });
-      });
-    };
-
-    const query = (q: string, options?: QueryOptions): Promise<SearchAnswer> => {
-      const text = q.trim();
-      const limit = options?.limit ?? SEARCH_LIMIT;
-      if (text === '') return Promise.resolve({ ok: true, data: { items: [], hasMore: false } });
-      if (text.length > SEARCH_Q_MAX || !Number.isInteger(limit) || limit < 1 || limit > LIMIT_MAX) {
-        return Promise.resolve(
-          fail(core, failureOf('invalid', 'search.query: запрос до 500 знаков, лимит — целое от 1 до 50'), options),
-        );
-      }
-      const config = core.config;
-      if (config === null) {
-        return Promise.resolve(fail(core, failureOf('server', 'search.query: конфиг витрины не прочитан'), options));
-      }
-      const cached = cache.get(`${text}|${limit}`);
-      return cached !== undefined ? Promise.resolve(cached) : ask(config, text, limit, options);
-    };
-
-    const open = (): Promise<Result<{ readonly panel: boolean }>> => {
-      // Панель поиска — секция с ролью search (блок 12, 12.4, случай 3); её нет или её скрипт упал — переход на каталог.
-      if (roleWorks(document, 'search')) {
-        core.emit('merfy:search:open', {});
-        return Promise.resolve({ ok: true, data: { panel: true } });
-      }
-      if (core.mode === 'live') searchNavigation.go(CATALOG_PATH);
-      return Promise.resolve({ ok: true, data: { panel: false } });
-    };
-
-    return { query, open };
+    const state: SearchState = { cache: new Map(), calls: { number: 0 } };
+    return { query: (q, options) => query(core, state, q, options), open: () => open(core) };
   },
   markup: {
     open: {

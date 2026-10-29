@@ -5,7 +5,8 @@ import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
 // Окно и выезжающая панель (design.md блока 6, раздел 5; факты 10, 12; дополнения блока 7, п. 15): <dialog> и
 // showModal/show — браузер, переходы и запрет прокрутки — поведение. Немодальные окна секции — по одному; открытие
 // модального окна закрывает немодальные окна своей секции (блок 7, часть 7б). Место немодального окна — data-anchor:
-// под своей секцией (умолчание) или под шапкой страницы (секция вне шапки, например поверх страниц). Запрет прокрутки
+// под своей секцией (умолчание), под шапкой страницы (секция вне шапки, например поверх страниц) или под значком
+// корзины (окно «Товар добавлен», как на проде). Запрет прокрутки
 // страницы не зависит от модальности: окно запирает её, пока data-lock-scroll не "false" (как на проде: меню, окно
 // «Товар добавлен», шторки — запирают; панель поиска — нет).
 
@@ -88,6 +89,11 @@ function unlockScroll(): void {
 }
 
 type BoxState = 'closed' | 'opening' | 'open' | 'closing';
+type Anchor = 'section' | 'header' | 'cart';
+
+const CART_ICON = '[data-action="cart.open"]';
+const CART_GAP = 12; // между низом значка корзины и верхом окна, px
+const CART_MIN_SIDE = 16; // наименьший отступ окна под значком от правого края экрана, px
 
 interface Box {
   readonly host: BehaviorHost;
@@ -96,7 +102,7 @@ interface Box {
   readonly spec: TransitionSpec;
   readonly modal: boolean;
   readonly locksScroll: boolean;
-  readonly anchor: 'section' | 'header';
+  readonly anchor: Anchor;
   state: BoxState;
   runs: Animation[];
   afterEscape: boolean;
@@ -161,11 +167,43 @@ function headerBottom(from: HTMLElement): number {
   return Math.max(0, ...bottoms);
 }
 
-// Немодальное окно — под низом своей секции или под шапкой страницы (data-anchor); пересчёт на resize.
+// Значок корзины страницы (действие cart.open): значков в шапке несколько (телефон, компьютер), виден один — берём
+// самый правый из тех, что занимают место. Нет ни одного (шапки нет, значок спрятан) — null.
+function cartIconRect(doc: Document): DOMRect | null {
+  const boxes = [...doc.querySelectorAll(CART_ICON)]
+    .map((icon) => icon.getBoundingClientRect())
+    .filter((rect) => rect.width > 0 && rect.height > 0);
+  return boxes.reduce<DOMRect | null>((far, rect) => (far === null || rect.right > far.right ? rect : far), null);
+}
+
+// Под значком корзины, как на проде (anchorToCartIcon): верх — низ значка и зазор; середина окна — под серединой
+// значка, правый отступ не меньше CART_MIN_SIDE. left сбрасываем: у открытого <dialog> по умолчанию left: 0. Ширину
+// берём замером (у скрытого окна она 0 — doOpen считает место ещё раз после show()). Значка нет — false: окно встаёт
+// по правилам data-anchor="header".
+function placeUnderCart(box: Box): boolean {
+  const { dialog } = box;
+  const icon = cartIconRect(dialog.ownerDocument);
+  if (icon === null) {
+    dialog.style.removeProperty('left');
+    dialog.style.removeProperty('right');
+    return false;
+  }
+  const viewport = dialog.ownerDocument.documentElement.clientWidth;
+  const axis = icon.left + icon.width / 2;
+  const right = Math.max(CART_MIN_SIDE, viewport - axis - dialog.getBoundingClientRect().width / 2);
+  dialog.style.top = `${Math.round(Math.max(CART_MIN_SIDE, icon.bottom + CART_GAP))}px`;
+  dialog.style.left = 'auto';
+  dialog.style.right = `${Math.round(right)}px`;
+  return true;
+}
+
+// Немодальное окно — под низом своей секции, под шапкой страницы или под значком корзины (data-anchor); пересчёт на
+// resize.
 function placeNonModal(box: Box): void {
-  const edge =
-    box.anchor === 'header' ? headerBottom(box.host.section) : box.host.section.getBoundingClientRect().bottom;
   box.dialog.style.position = 'fixed';
+  if (box.anchor === 'cart' && placeUnderCart(box)) return;
+  const edge =
+    box.anchor === 'section' ? box.host.section.getBoundingClientRect().bottom : headerBottom(box.host.section);
   box.dialog.style.top = `${Math.round(edge)}px`;
 }
 
@@ -180,8 +218,11 @@ function doOpen(box: Box): void {
   if (box.modal) {
     box.dialog.showModal();
   } else {
+    // Место — до show(): показанное окно берёт фокус, и пока оно не fixed, страница прокручивается к нему. Под значком
+    // корзины ширина окна известна только у показанного — второй раз после show().
     placeNonModal(box);
     box.dialog.show();
+    if (box.anchor === 'cart') placeNonModal(box);
   }
   announceOpen(box);
   if (isInstant(box.host)) {
@@ -371,6 +412,8 @@ function releaseOnDetach(box: Box): void {
   );
 }
 
+const anchorOf = (value: unknown): Anchor => (value === 'header' || value === 'cart' ? value : 'section');
+
 export const dialog: Behavior<'dialog'> = {
   name: 'dialog',
   attach(host: BehaviorHost): BehaviorInstance {
@@ -384,7 +427,7 @@ export const dialog: Behavior<'dialog'> = {
       spec: transitionOf(String(host.params.transition), String(host.params.side)),
       modal: host.params.modal === true,
       locksScroll: host.params['lock-scroll'] === true,
-      anchor: host.params.anchor === 'header' ? 'header' : 'section',
+      anchor: anchorOf(host.params.anchor),
       state: 'closed',
       runs: [],
       afterEscape: false,

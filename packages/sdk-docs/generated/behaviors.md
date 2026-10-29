@@ -1,6 +1,6 @@
 # Поведения и анимации
 
-> SDK 1 · документация 1.14.0 · 2026-10-29
+> SDK 1 · документация 1.15.0 · 2026-10-29
 
 Готовое поведение вешается на элемент атрибутом `data-behavior="<имя>"` — без скрипта. Части поведения отмечаются `data-part`, параметры — своими `data-…` на том же элементе.
 
@@ -13,7 +13,7 @@
 
 Части: `data-part="open"`, `data-part="content"`, `data-part="close"`.
 
-Параметры: `data-transition` — одно из: fade, drawer, drawer-back, drop; по умолчанию `fade`; `data-side` — одно из: right, left; по умолчанию `right`; `data-modal` — да или нет; по умолчанию `true`; `data-lock-scroll` — да или нет; по умолчанию `true`; `data-open-on` — одно из: none, cart-open, cart-add, search-open; по умолчанию `none`; `data-anchor` — одно из: section, header; по умолчанию `section`.
+Параметры: `data-transition` — одно из: fade, drawer, drawer-back, drop; по умолчанию `fade`; `data-side` — одно из: right, left; по умолчанию `right`; `data-modal` — да или нет; по умолчанию `true`; `data-lock-scroll` — да или нет; по умолчанию `true`; `data-open-on` — одно из: none, cart-open, cart-add, search-open; по умолчанию `none`; `data-anchor` — одно из: section, header, cart; по умолчанию `section`.
 ## carousel
 
 Части: `data-part="viewport"`, `data-part="container"`, `data-part="slide"`, `data-part="prev"`, `data-part="next"`, `data-part="dot"`, `data-part="thumb"`, `data-part="counter"`, `data-part="copy"`, `data-part="play"`.

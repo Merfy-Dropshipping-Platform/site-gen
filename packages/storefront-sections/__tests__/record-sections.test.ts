@@ -54,9 +54,12 @@ describe('наши секции с записями', () => {
   it('«Товар»: название, цена, старая цена, наличие; товара нет — пусто', async () => {
     const renderer = rendererOf();
     const request = await requestOf('product');
-    const settings = { product: 'pled', price: null };
-    // Название, цена и наличие — блок «Название»: блоки по умолчанию ставит платформа, тест даёт его сам.
-    const blocks = [{ id: 'title-1', type: 'title', settings: { 'heading-size': 'medium' } }];
+    const settings = { product: 'pled', stock: true };
+    // Название — блок «Название», цена и наличие — блок «Стоимость»: блоки по умолчанию ставит платформа, тест даёт их сам.
+    const blocks = [
+      { id: 'title-1', type: 'title', settings: { 'heading-size': 'medium' } },
+      { id: 'price-2', type: 'price', settings: { price: null } },
+    ];
     const html = await renderer.render({ ...request, settings, blocks, records: { product: PRODUCT } });
     expect(html).toContain('Плед «Нова»');
     expect(html).toContain(money(350000).text);

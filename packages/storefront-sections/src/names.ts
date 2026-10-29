@@ -47,7 +47,7 @@ export const namesFileShape = z.strictObject({
 
 // Свои имена секции (раздел `names` в section.json): имя, которого нет в словаре. Форму значения проверяет схема
 // формата, смысл имени (запись, длину, повтор словаря, число имён) — name-check.ts.
-export const OWN_NAME_LIMITS = { names: 10, length: 32 } as const;
+export const OWN_NAME_LIMITS = { names: 12, length: 32 } as const;
 export const ownNameShape = z.strictObject({
   kinds: z.array(z.enum(SDK_KINDS)).min(1),
   label: z.string().min(1).max(32),

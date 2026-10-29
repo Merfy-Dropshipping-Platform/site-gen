@@ -59,6 +59,18 @@
       "label": "Хлебные крошки",
       "about": "Строка «Главная — коллекция — товар» над товаром",
       "asks": ["хлебные крошки", "путь до товара", "breadcrumbs", "navigation-path"]
+    },
+    "stock": {
+      "kinds": ["toggle"],
+      "label": "Наличие",
+      "about": "Строка «В наличии» или «Нет в наличии» под ценой; у flux на проде её нет, поэтому по умолчанию скрыта",
+      "asks": ["наличие", "в наличии", "остаток", "stock", "availability"]
+    },
+    "variants-label": {
+      "kinds": ["toggle"],
+      "label": "Подпись группы",
+      "about": "Название группы вариантов («Размер», «Цвет») над выпадающим списком; у flux на проде подписи нет, поэтому по умолчанию скрыта",
+      "asks": ["подпись группы", "название группы вариантов", "подпись над списком", "variants-label", "group-label"]
     }
   },
   "settings": [
@@ -117,20 +129,10 @@
     {
       "id": "buy-now",
       "label": "Динамическая кнопка",
-      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Показать", "off": "Скрыть" } }
+      "setting": { "kind": "toggle", "default": true, "labels": { "on": "Скрыть/показать", "off": "Скрыть/показать" } }
     },
     { "wrapper": "scheme" },
     { "wrapper": "padding" },
-    {
-      "id": "price",
-      "label": "Стоимость",
-      "setting": {
-        "kind": "hint",
-        "title": "Настройка недоступна",
-        "text": "Изменения проводятся на странице",
-        "link": { "label": "Товары", "href": "/products" }
-      }
-    },
     {
       "id": "counter",
       "label": "Вид счётчика",
@@ -177,6 +179,11 @@
     {
       "id": "breadcrumbs",
       "label": "Хлебные крошки",
+      "setting": { "kind": "toggle", "default": false, "labels": { "on": "Показать", "off": "Скрыть" } }
+    },
+    {
+      "id": "stock",
+      "label": "Наличие",
       "setting": { "kind": "toggle", "default": false, "labels": { "on": "Показать", "off": "Скрыть" } }
     },
     {
@@ -237,6 +244,22 @@
         }
       ]
     },
+    "price": {
+      "title": "Стоимость",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "price",
+          "label": "Стоимость",
+          "setting": {
+            "kind": "hint",
+            "title": "Настройка недоступна",
+            "text": "Изменения проводятся на странице",
+            "link": { "label": "Товары", "href": "/products" }
+          }
+        }
+      ]
+    },
     "variants": {
       "title": "Варианты",
       "limit": 1,
@@ -265,6 +288,11 @@
               { "value": "none", "label": "Нет" }
             ]
           }
+        },
+        {
+          "id": "variants-label",
+          "label": "Подпись группы",
+          "setting": { "kind": "toggle", "default": false, "labels": { "on": "Показать", "off": "Скрыть" } }
         }
       ]
     },
@@ -297,6 +325,7 @@
   "defaultBlocks": [
     { "type": "text", "settings": {} },
     { "type": "title", "settings": {} },
+    { "type": "price", "settings": {} },
     { "type": "variants", "settings": {} },
     { "type": "quantity", "settings": {} },
     { "type": "buttons", "settings": {} },

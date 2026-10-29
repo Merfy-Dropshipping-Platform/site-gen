@@ -456,8 +456,9 @@ function placeProblems(manifest: SectionManifest): string[] {
 
 // Вид menu, поля с записями и подсказка (часть 8г блока 8) — только у настроек секции: меню блока конструктор не правит
 // (окно меню — у поля секции). Товар и коллекция (BLOCK_RECORD_KINDS) с 29.10 есть и у блоков — как «Тип» элемента
-// «Галереи» на проде; блог, политика и подсказка остаются у секции.
-const BLOCK_KINDS: readonly string[] = BLOCK_RECORD_KINDS;
+// «Галереи» на проде; подсказка (hint) — тоже: подпанель «Стоимость» у «Товара» на проде состоит из одной подсказки.
+// Блог и политика остаются у секции.
+const BLOCK_KINDS: readonly string[] = [...BLOCK_RECORD_KINDS, 'hint'];
 const SECTION_ONLY_KINDS: ReadonlySet<string> = new Set(
   ['menu', ...RECORD_SETTING_KINDS].filter((kind) => !BLOCK_KINDS.includes(kind)),
 );

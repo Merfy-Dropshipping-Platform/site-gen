@@ -11,15 +11,18 @@ const { settings, blocks, page, theme } = Astro.props;
   data-paging={settings.paging}
   data-filters-side={blocks.some((item) => item.type === 'filters' && item.settings['filter-position'] === 'side') ? 'true' : 'false'}
 >
-  {(settings.heading || page.list) && (
-    <div class="col-span-full flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-      {settings.heading && page.id === 'catalog' && (
-        <h1 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl" set:html={settings.heading} />
-      )}
-      {settings.heading && page.id !== 'catalog' && (
-        <h2 class="m-0 font-heading weight-heading tracking-heading text-2xl text-heading md:text-3xl" set:html={settings.heading} />
-      )}
-      {page.list && page.list.total > 0 && <p class="m-0 text-sm text-muted-foreground">Товаров: {page.list.total}</p>}
+  {(settings.heading || settings.subheading || page.list) && (
+    <div class="col-span-full flex flex-col gap-2">
+      <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        {settings.heading && page.id === 'catalog' && (
+          <h1 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl" set:html={settings.heading} />
+        )}
+        {settings.heading && page.id !== 'catalog' && (
+          <h2 class="m-0 font-heading weight-heading tracking-heading text-2xl text-heading md:text-3xl" set:html={settings.heading} />
+        )}
+        {page.list && page.list.total > 0 && <p class="m-0 text-sm text-muted-foreground">Товаров: {page.list.total}</p>}
+      </div>
+      {settings.subheading && <p class="m-0 text-base text-muted-foreground md:text-lg" set:html={settings.subheading} />}
     </div>
   )}
   {page.list && page.list.query.q && (
@@ -49,12 +52,9 @@ const { settings, blocks, page, theme } = Astro.props;
       <div class="contents" data-behavior="accordion">
       {blocks.map((block) => (
         <div
-          class="flex min-w-0 flex-col gap-2 data-[type=subheading]:order-first data-[type=subheading]:w-full data-[type=sort]:-order-1 md:in-data-[filters-side=true]:gap-6 md:in-data-[filters-side=false]:data-[type=filters]:flex-row md:in-data-[filters-side=false]:data-[type=filters]:flex-wrap md:in-data-[filters-side=false]:data-[type=filters]:items-start md:in-data-[filters-side=false]:data-[type=filters]:gap-x-8 md:in-data-[filters-side=false]:data-[type=filters]:gap-y-4 md:in-data-[filters-side=false]:data-[type=sort]:order-last md:in-data-[filters-side=false]:data-[type=sort]:ml-auto"
+          class="flex min-w-0 flex-col gap-2 data-[type=sort]:-order-1 md:in-data-[filters-side=true]:gap-6 md:in-data-[filters-side=false]:data-[type=filters]:flex-row md:in-data-[filters-side=false]:data-[type=filters]:flex-wrap md:in-data-[filters-side=false]:data-[type=filters]:items-start md:in-data-[filters-side=false]:data-[type=filters]:gap-x-8 md:in-data-[filters-side=false]:data-[type=filters]:gap-y-4 md:in-data-[filters-side=false]:data-[type=sort]:order-last md:in-data-[filters-side=false]:data-[type=sort]:ml-auto"
           data-type={block.type}
         >
-          {block.type === 'subheading' && block.settings.heading && (
-            <p class="m-0 text-lg text-heading" set:html={block.settings.heading} />
-          )}
           {block.type === 'sort' && (
             <details
               class="group/filter relative min-w-0"

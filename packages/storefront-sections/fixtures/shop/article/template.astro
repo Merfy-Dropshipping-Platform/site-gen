@@ -10,7 +10,7 @@ const { page } = Astro.props;
       <h1 class="m-0 text-balance font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl">{page.record.title}</h1>
       {page.record.publishedAt && <time class="text-sm text-muted-foreground" datetime={page.record.publishedAt}>{page.record.publishedText}</time>}
       {page.record.cover && <img class="aspect-video w-full rounded-media object-cover" src={page.record.cover} alt={page.record.title} />}
-      <div class="flex flex-col gap-4 text-base text-foreground" set:html={page.record.html}></div>
+      <div class="flex max-w-2xl flex-col gap-4 text-pretty text-base text-foreground" set:html={page.record.html}></div>
     </article>
   )}
   {page.id === 'article' && !page.record && (

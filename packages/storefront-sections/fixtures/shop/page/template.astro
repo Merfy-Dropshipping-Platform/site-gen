@@ -1,15 +1,20 @@
 ---
 const { settings } = Astro.props;
 ---
-<div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
-  {settings.policy ? (
-    <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.policy.title}</h1>
-  ) : (
-    <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h1>
-  )}
-  {settings.policy ? (
-    <div class="text-foreground" set:html={settings.policy.html}></div>
-  ) : (
-    <div class="text-foreground" set:html={settings.text}></div>
-  )}
+<!-- «Страница»: выбрана политика магазина — её название и текст, иначе свои заголовок и текст (правятся прямо в превью).
+     Заголовок — h1 страницы; размер — признаком data-heading-size на корне, как у секций главной. Блоки текста идут
+     столбцом с отступом между ними. -->
+<div class="mx-auto max-w-page px-4 font-body md:px-8" data-heading-size={settings['heading-size']}>
+  <div class="flex max-w-3xl flex-col gap-4 md:gap-6">
+    {settings.policy ? (
+      <h1 class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[heading-size=small]:text-base in-data-[heading-size=medium]:text-lg in-data-[heading-size=large]:text-xl md:in-data-[heading-size=small]:text-lg md:in-data-[heading-size=medium]:text-xl md:in-data-[heading-size=large]:text-2xl">{settings.policy.title}</h1>
+    ) : (
+      <h1 class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[heading-size=small]:text-base in-data-[heading-size=medium]:text-lg in-data-[heading-size=large]:text-xl md:in-data-[heading-size=small]:text-lg md:in-data-[heading-size=medium]:text-xl md:in-data-[heading-size=large]:text-2xl">{settings.heading}</h1>
+    )}
+    {settings.policy ? (
+      <div class="flex flex-col gap-4 text-base text-foreground" set:html={settings.policy.html}></div>
+    ) : (
+      <div class="flex flex-col gap-4 text-base text-foreground" set:html={settings.text}></div>
+    )}
+  </div>
 </div>

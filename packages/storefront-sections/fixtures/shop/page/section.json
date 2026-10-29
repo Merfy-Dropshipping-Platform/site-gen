@@ -4,9 +4,31 @@
   "kind": "section",
   "title": "Страница",
   "newPage": "heading",
+  "wrapper": ["scheme", "padding"],
+  "wrapperSpec": { "padding": { "default": { "top": 64, "bottom": 64 } } },
   "settings": [
     { "id": "policy", "label": "Выбор страницы", "setting": { "kind": "policy" } },
-    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Страница", "inlineEdit": true } },
+    {
+      "id": "heading-size",
+      "label": "Размер заголовка",
+      "setting": {
+        "kind": "select",
+        "default": "medium",
+        "options": [
+          { "value": "small", "label": "Маленький" },
+          { "value": "medium", "label": "Средний" },
+          { "value": "large", "label": "Большой" }
+        ]
+      }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "heading",
+      "label": "Заголовок",
+      "section": "Содержание",
+      "setting": { "kind": "string", "default": "Страница", "inlineEdit": true }
+    },
     {
       "id": "text",
       "label": "Текст",

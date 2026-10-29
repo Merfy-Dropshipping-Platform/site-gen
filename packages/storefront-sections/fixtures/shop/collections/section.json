@@ -4,18 +4,13 @@
   "kind": "section",
   "title": "Список коллекций",
   "wrapper": ["scheme", "padding"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
   "names": {
     "caption-align": {
       "kinds": ["alignment"],
       "label": "Выравнивание подписи",
       "about": "Выравнивание названия под плиткой: слева, по центру или справа; заголовок секции выравнивается своим полем `align`",
       "asks": ["выравнивание подписи", "подпись плитки", "название под картинкой", "caption alignment"]
-    },
-    "capitals": {
-      "kinds": ["toggle"],
-      "label": "Заглавные буквы",
-      "about": "Названия под плитками набраны заглавными буквами, как на vanilla и satin",
-      "asks": ["заглавные", "капс", "прописные", "uppercase", "caps"]
     }
   },
   "settings": [

@@ -1,4 +1,10 @@
-import { RECORD_FIELDS, type RecordFieldKind, type SectionDataEntry } from '@merfy/storefront-build';
+import {
+  BLOCK_RECORD_KINDS,
+  RECORD_FIELDS,
+  type BlockRecordKind,
+  type RecordFieldKind,
+  type SectionDataEntry,
+} from '@merfy/storefront-build';
 import { settingFieldsOf } from './fields';
 import { MANIFEST_FILE, type SectionManifest } from './format';
 import { isRecordFieldKind } from './record-fields';
@@ -109,8 +115,11 @@ export function dataUnknownProblems(manifest: SectionManifest, reads: readonly D
 
 // Ключи кода секции во входах сборки (Б8г-3): recordFields — id поля → вид, у полей видов RECORD_FIELD_KINDS (hint не
 // входит); data — как в section.json. Нет — ключа нет.
+// blockRecordFields (базовые секции, 29.10) — то же для типов блоков: тип → id поля → вид (product или collection);
+// тип без таких полей в ключ не входит.
 export function sectionRecordKeys(manifest: SectionManifest): {
   recordFields?: Record<string, RecordFieldKind>;
+  blockRecordFields?: Record<string, Record<string, BlockRecordKind>>;
   data?: Record<string, SectionDataEntry>;
 } {
   const recordFields: Record<string, RecordFieldKind> = {};
@@ -118,9 +127,22 @@ export function sectionRecordKeys(manifest: SectionManifest): {
     const kind = field.setting.kind;
     if (isRecordFieldKind(kind)) recordFields[field.id] = kind;
   }
+  const blockRecordFields: Record<string, Record<string, BlockRecordKind>> = {};
+  for (const [type, block] of Object.entries(manifest.blocks ?? {})) {
+    const fields: Record<string, BlockRecordKind> = {};
+    for (const field of block.settings) {
+      const kind = field.setting.kind;
+      if (isBlockRecordKind(kind)) fields[field.id] = kind;
+    }
+    if (Object.keys(fields).length > 0) blockRecordFields[type] = fields;
+  }
   const { data } = manifest;
   return {
     ...(Object.keys(recordFields).length === 0 ? {} : { recordFields }),
+    ...(Object.keys(blockRecordFields).length === 0 ? {} : { blockRecordFields }),
     ...(data === undefined ? {} : { data }),
   };
 }
+
+const BLOCK_KIND_STRINGS: readonly string[] = BLOCK_RECORD_KINDS;
+export const isBlockRecordKind = (kind: string): kind is BlockRecordKind => BLOCK_KIND_STRINGS.includes(kind);

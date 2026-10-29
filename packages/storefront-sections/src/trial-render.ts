@@ -31,6 +31,8 @@ export interface TemplateProps {
   page: PageInfo;
   // Блок 8, часть 8г: записи полей с записями — в settings.<id> вместо id записи, как деревья меню.
   records: SectionRecordValues;
+  // Записи полей с записями в блоках (29.10): id блока → id поля → запись; в block.settings.<id> вместо id записи.
+  blockRecords?: Readonly<Record<string, SectionRecordValues>>;
 }
 
 let container: Promise<AstroContainer> | null = null;
@@ -57,9 +59,14 @@ const marksOf = (preview: boolean) => ({
 });
 
 export async function renderTemplate(component: TemplateComponent, props: TemplateProps): Promise<string> {
-  const { settings, blocks, preview, menus, theme, shop, page, records } = props;
+  const { settings, blocks, preview, menus, theme, shop, page, records, blockRecords = {} } = props;
   const values = { ...settings, ...menus, ...records };
+  const withRecords = blocks.map((block) =>
+    Object.hasOwn(blockRecords, block.id)
+      ? { ...block, settings: { ...block.settings, ...blockRecords[block.id] } }
+      : block,
+  );
   return (await containerOf()).renderToString(component, {
-    props: { settings: values, blocks, theme, shop, page, __merfy: marksOf(preview) },
+    props: { settings: values, blocks: withRecords, theme, shop, page, __merfy: marksOf(preview) },
   });
 }

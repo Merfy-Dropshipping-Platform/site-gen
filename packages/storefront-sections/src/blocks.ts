@@ -29,6 +29,18 @@ const typeNameTexts = (types: BlockTypes): string[] =>
     .filter((name) => !BLOCK_TYPE_ID.test(name) || name.length > BLOCK_TYPE_MAX)
     .map((name) => `blocks.${name}: ${BLOCK_TYPE_TEXT}`);
 
+// Подпись «Добавить …» (addTitle, базовые секции, 29.10): конструктор пишет «Добавить » и её как есть, поэтому слово
+// «Добавить» в ней лишнее, а первая буква — строчная («кнопку»; латиница и цифры — как есть: «email»).
+const ADD_WORD = /^добавить(?:\s|$)/i;
+const ADD_TITLE_TEXT =
+  'подпись после «Добавить» в винительном падеже со строчной буквы, без слова «Добавить»: «кнопку»';
+const addTitleWrong = (text: string): boolean => ADD_WORD.test(text) || text.charAt(0) !== text.charAt(0).toLowerCase();
+
+const addTitleTexts = (types: BlockTypes): string[] =>
+  Object.entries(types)
+    .filter(([, type]) => type.addTitle !== undefined && addTitleWrong(type.addTitle))
+    .map(([name]) => `blocks.${name}.addTitle: ${ADD_TITLE_TEXT}`);
+
 // Поля типов блоков — settings: тексты settingsTexts с путём от типа.
 const typeFieldTexts = (types: BlockTypes): string[] =>
   Object.entries(types).flatMap(([name, type]) => settingsTexts(type.settings).map((text) => `blocks.${name}.${text}`));
@@ -66,7 +78,7 @@ export function blockFormatProblems(manifest: Pick<SectionManifest, 'blocks' | '
     };
   const defaults = manifest.defaultBlocks ?? [];
   return {
-    structure: [...typeNameTexts(types), ...defaultStructureTexts(types, defaults)],
+    structure: [...typeNameTexts(types), ...addTitleTexts(types), ...defaultStructureTexts(types, defaults)],
     settings: [...typeFieldTexts(types), ...defaultValueTexts(types, defaults)],
   };
 }

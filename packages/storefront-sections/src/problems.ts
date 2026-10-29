@@ -46,6 +46,8 @@ export const PROBLEM_CODES = [
   'names-limit',
   'settings-limit',
   'visible-when-invalid',
+  // Условие неактивности поля (disabledWhen, базовые секции 29.10): цель и значение — как у visibleWhen.
+  'disabled-when-invalid',
   'render-empty-failed',
   // В HTML пробного рендера объект вместо текста ([object Object]) или слова undefined и NaN (trial.ts, render-leak.ts).
   'render-leak',

@@ -5,6 +5,7 @@
   "title": "Подписка на рассылку",
   "uses": ["shop", "newsletter"],
   "wrapper": ["scheme", "padding"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
   "names": {
     "agreement": {
       "kinds": ["toggle"],
@@ -46,13 +47,13 @@
     {
       "id": "agreement-text",
       "label": "Текст согласия",
-      "visibleWhen": { "setting": "agreement", "equals": true },
+      "disabledWhen": { "setting": "agreement", "equals": false },
       "setting": { "kind": "text", "default": "Согласен на обработку персональных данных", "ai": "description" }
     },
     {
       "id": "agreement-link",
       "label": "Сделать ссылкой",
-      "visibleWhen": { "setting": "agreement", "equals": true },
+      "disabledWhen": { "setting": "agreement", "equals": false },
       "setting": { "kind": "toggle", "default": false, "labels": { "on": "Вкл", "off": "Выкл" } }
     },
     {
@@ -138,7 +139,8 @@
       ]
     },
     "button": {
-      "title": "Текст кнопки",
+      "title": "Кнопка",
+      "addTitle": "кнопку",
       "limit": 1,
       "settings": [
         {

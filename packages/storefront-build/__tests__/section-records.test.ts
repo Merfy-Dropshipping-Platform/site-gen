@@ -213,6 +213,59 @@ describe('записи полей секции', () => {
   });
 });
 
+// Поля с записями в блоках (базовые секции, 29.10): «Тип» элемента «Галереи» — товар или коллекция, как на проде.
+describe('записи полей блоков', () => {
+  const gallery = (blocks: PlacedSection['blocks']): PlacedSection => ({
+    id: 'gallery-1',
+    name: 'shop:gallery',
+    hash: '',
+    settings: {},
+    blocks,
+    blockRecordFields: { tile: { product: 'product', collection: 'collection' } },
+  });
+
+  it('выбрана запись — она в блоке; пусто — правило поля секции; тип без полей с записями — блока нет', () => {
+    const records = sectionRecords(
+      gallery([
+        { id: 'tile-1', type: 'tile', settings: { product: P1, collection: 'kashemir' } },
+        { id: 'tile-2', type: 'tile', settings: {} },
+        { id: 'note-1', type: 'note', settings: { product: P1 } },
+      ]),
+      HOME,
+    );
+    expect(records.blocks['tile-1']).toEqual({
+      product: entry('product', P1)?.record,
+      collection: entry('collection', C1)?.record,
+    });
+    expect(records.blocks['tile-2']?.product).toEqual(entry('product', P2)?.record);
+    expect(records.blocks).not.toHaveProperty('note-1');
+    expect(records.values).toEqual({});
+    expect(records.deps).toEqual(expect.arrayContaining([...depsOf('product', P1), ...depsOf('collection', C1)]));
+  });
+
+  it('у секции без blockRecordFields — пусто, как раньше', () => {
+    const plain = {
+      ...gallery([{ id: 'tile-1', type: 'tile', settings: { product: P1 } }]),
+      blockRecordFields: undefined,
+    };
+    expect(sectionRecords(plain, HOME).blocks).toEqual({});
+  });
+
+  it('во входах сборки: blockRecordFields — только товар и коллекция', () => {
+    const inputs = recordInputs(ENTITIES);
+    const section = inputs.code.sections[0];
+    if (section === undefined) throw new Error('нет секции во входах');
+    const withBlocks = (kind: string): unknown => ({
+      ...inputs,
+      code: { ...inputs.code, sections: [{ ...section, blockRecordFields: { tile: { item: kind } } }] },
+    });
+    expect(parseBuildInputs(withBlocks('collection')).code.sections[0]?.blockRecordFields).toEqual({
+      tile: { item: 'collection' },
+    });
+    expect(() => parseBuildInputs(withBlocks('blog'))).toThrow();
+  });
+});
+
 describe('записи полей в странице магазина и во входах сборки', () => {
   const RECORD_CARD = 'shop:record-card';
   const withCard = (inputs: BuildInputs): BuildInputs => ({

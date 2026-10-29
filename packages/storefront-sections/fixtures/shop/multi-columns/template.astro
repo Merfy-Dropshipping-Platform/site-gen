@@ -2,7 +2,8 @@
 const { settings, blocks } = Astro.props;
 ---
 <!-- Значок стрелки — Lucide (arrow-right), лицензия ISC, lucide.dev/license.
-     Раскладка, ширина, колонки и положение текста — атрибутами data-* на корне, вид по ним — вариантами in-data-[…]:
+     «Ширина» — общая настройка секции (width): сужает max-w-page корня.
+     Раскладка, колонки и положение текста — атрибутами data-* на корне, вид по ним — вариантами in-data-[…]:
      у вложенных элементов. «Картинки» — картинка заданных пропорций над текстом (плашка — по «Контейнеру»),
      «Карточки» — плашка у каждой колонки и стрелка у ссылки, «Иконки» — маленькая картинка над текстом в плашке.
      Колонки: на телефоне одна, на планшете две, на компьютере столько, сколько задано. -->
@@ -12,11 +13,10 @@ const { settings, blocks } = Astro.props;
   data-columns={settings.columns}
   data-aspect-ratio={settings['aspect-ratio']}
   data-text-position={settings['text-position']}
-  data-width={settings['content-width']}
   data-heading-size={settings['heading-size']}
   data-plate={settings.layout !== 'images' || settings['text-box']}
 >
-  <div class="mx-auto flex flex-col gap-8 in-data-[width=small]:max-w-3xl in-data-[width=medium]:max-w-5xl md:gap-12">
+  <div class="flex flex-col gap-8 md:gap-12">
     {settings.heading && (
       <h2
         class="m-0 text-balance font-heading weight-heading tracking-heading text-heading in-data-[text-position=center]:text-center in-data-[heading-size=small]:text-xl md:in-data-[heading-size=small]:text-2xl in-data-[heading-size=medium]:text-2xl md:in-data-[heading-size=medium]:text-3xl in-data-[heading-size=large]:text-3xl md:in-data-[heading-size=large]:text-4xl"

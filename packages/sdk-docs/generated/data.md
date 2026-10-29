@@ -1,6 +1,6 @@
 # Данные магазина
 
-> SDK 1 · документация 1.10.0 · 2026-10-29
+> SDK 1 · документация 1.11.0 · 2026-10-29
 
 Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
 
@@ -49,6 +49,18 @@ const { settings } = Astro.props;
 ) : (
   <h2>{settings.product.title}</h2>
 )}
+```
+
+Поля `product` и `collection` бывают и у типа блока — плитка «Товар» или «Коллекция» в элементе галереи. Блок получает
+запись так же, в `block.settings.<id>`, правила пустого поля — те же. Поля `blog`, `policy`, `hint` и `menu` — только у
+секции: в блоке — `setting-invalid`.
+
+```astro
+{blocks.map((block) => (
+  <div>
+    {block.settings.product && <a href={block.settings.product.url}>{block.settings.product.title}</a>}
+  </div>
+))}
 ```
 
 Пустое поле на шаблоне записи своего вида — запись этой страницы: секция «Карточка товара» на шаблоне «Товар»

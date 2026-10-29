@@ -37,6 +37,8 @@ export interface SectionRenderRequest {
   page?: PageInfo;
   // Блок 8, часть 8г: записи полей с записями по id настройки; нет — {} (render-worker.ts).
   records?: SectionRecordValues;
+  // Записи полей с записями в блоках (29.10): id блока → id поля → запись; нет — {} (render-worker.ts).
+  blockRecords?: Readonly<Record<string, SectionRecordValues>>;
 }
 
 export interface SectionRenderer {
@@ -263,7 +265,7 @@ class Renderer implements SectionRenderer {
 
   private send(running: Running, job: Job): void {
     const id = this.nextId++;
-    const { hash, settings, module, blocks, preview, menus, theme, shop, page, records } = job.request;
+    const { hash, settings, module, blocks, preview, menus, theme, shop, page, records, blockRecords } = job.request;
     const message = {
       id,
       hash,
@@ -275,6 +277,7 @@ class Renderer implements SectionRenderer {
       ...(shop === undefined ? {} : { shop }),
       ...(page === undefined ? {} : { page }),
       ...(records === undefined ? {} : { records }),
+      ...(blockRecords === undefined ? {} : { blockRecords }),
       ...(running.sent.has(hash) ? {} : { module }),
     };
     running.sent.add(hash);

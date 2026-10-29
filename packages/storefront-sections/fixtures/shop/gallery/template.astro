@@ -31,28 +31,65 @@ const { settings, blocks } = Astro.props;
       )}
     </div>
   )}
+  <!-- «Тип» элемента: «Изображение» — своё фото, название, вторая строка и ссылка; «Товар» — фото, название и цена
+       выбранного товара (пусто — первый товар магазина); «Коллекция» — фото и название коллекции (пусто — все товары,
+       ссылка на каталог). -->
   <div class="grid grid-cols-1 gap-4 in-data-[fill=true]:grid-cols-2 md:in-data-[row-cols=2]:grid-cols-2 md:in-data-[row-cols=3]:grid-cols-3 lg:gap-6 lg:in-data-[fill=true]:grid-cols-3">
     {blocks.map((block) => (
-      <a
-        class="group flex min-w-0 flex-col gap-3 no-underline first:in-data-[fill=true]:col-span-2 first:lg:in-data-[fill=true]:row-span-2 first:lg:in-data-[image-position=right]:in-data-[fill=true]:col-start-2"
-        href={block.settings.link}
-      >
-        <div class="relative aspect-square w-full overflow-hidden rounded-media bg-muted in-data-[count=1]:aspect-video group-first:lg:in-data-[fill=true]:aspect-auto group-first:lg:in-data-[fill=true]:flex-1">
-          {block.settings.image !== '' && (
-            <img
-              src={block.settings.image}
-              alt={block.settings.label}
-              class="absolute inset-0 size-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
-            />
-          )}
-        </div>
-        {(block.settings.label || block.settings.caption) && (
-          <div class="flex flex-col gap-1">
-            {block.settings.label && <p class="m-0 text-base text-foreground">{block.settings.label}</p>}
-            {block.settings.caption && <p class="m-0 text-sm text-muted-foreground">{block.settings.caption}</p>}
-          </div>
+      <div class="group flex min-w-0 flex-col first:in-data-[fill=true]:col-span-2 first:lg:in-data-[fill=true]:row-span-2 first:lg:in-data-[image-position=right]:in-data-[fill=true]:col-start-2">
+        {block.settings['item-type'] === 'image' && (
+          <a class="flex flex-1 flex-col gap-3 no-underline" href={block.settings.link}>
+            <div class="relative aspect-square w-full overflow-hidden rounded-media bg-muted in-data-[count=1]:aspect-video group-first:lg:in-data-[fill=true]:aspect-auto group-first:lg:in-data-[fill=true]:flex-1">
+              {block.settings.image !== '' && (
+                <img
+                  src={block.settings.image}
+                  alt={block.settings.label}
+                  class="absolute inset-0 size-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
+                />
+              )}
+            </div>
+            {(block.settings.label || block.settings.caption) && (
+              <div class="flex flex-col gap-1">
+                {block.settings.label && <p class="m-0 text-base text-foreground">{block.settings.label}</p>}
+                {block.settings.caption && <p class="m-0 text-sm text-muted-foreground">{block.settings.caption}</p>}
+              </div>
+            )}
+          </a>
         )}
-      </a>
+        {block.settings['item-type'] === 'product' && block.settings.product && (
+          <a class="flex flex-1 flex-col gap-3 no-underline" href={block.settings.product.url}>
+            <div class="relative aspect-square w-full overflow-hidden rounded-media bg-muted in-data-[count=1]:aspect-video group-first:lg:in-data-[fill=true]:aspect-auto group-first:lg:in-data-[fill=true]:flex-1">
+              {block.settings.product.images.length > 0 && (
+                <img
+                  src={block.settings.product.images[0]}
+                  alt={block.settings.product.title}
+                  class="absolute inset-0 size-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
+                />
+              )}
+            </div>
+            <div class="flex flex-col gap-1">
+              <p class="m-0 text-base text-foreground">{block.settings.product.title}</p>
+              <p class="m-0 text-sm text-muted-foreground">{block.settings.product.price.text}</p>
+            </div>
+          </a>
+        )}
+        {block.settings['item-type'] === 'collection' && block.settings.collection && (
+          <a class="flex flex-1 flex-col gap-3 no-underline" href={block.settings.collection.url || '/catalog'}>
+            <div class="relative aspect-square w-full overflow-hidden rounded-media bg-muted in-data-[count=1]:aspect-video group-first:lg:in-data-[fill=true]:aspect-auto group-first:lg:in-data-[fill=true]:flex-1">
+              {block.settings.collection.images.length > 0 && (
+                <img
+                  src={block.settings.collection.images[0]}
+                  alt={block.settings.collection.title}
+                  class="absolute inset-0 size-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
+                />
+              )}
+            </div>
+            {block.settings.collection.title && (
+              <p class="m-0 text-base text-foreground">{block.settings.collection.title}</p>
+            )}
+          </a>
+        )}
+      </div>
     ))}
   </div>
 </div>

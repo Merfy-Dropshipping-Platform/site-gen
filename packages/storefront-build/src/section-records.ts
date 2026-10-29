@@ -43,7 +43,18 @@ export interface SectionRecords {
   deps: readonly string[];
   // data для тега входных данных (sectionData).
   data: SectionRecordValues;
+  // Поля с записями в блоках (базовые секции, 29.10): id блока → id поля → публичные поля записи или null; по
+  // blockRecordFields экземпляра. Правила — те же, что у полей секции (fieldRecords).
+  blocks: Readonly<Record<string, SectionRecordValues>>;
 }
+
+// Виды полей с записями у типов блоков (базовые секции, 29.10): товар и коллекция — как «Тип» элемента «Галереи» на проде.
+// Блог и политика — только у полей секции.
+export const BLOCK_RECORD_KINDS = ['product', 'collection'] as const;
+export type BlockRecordKind = (typeof BLOCK_RECORD_KINDS)[number];
+
+// Поля с записями типов блоков: тип блока → id поля → вид.
+export type BlockRecordFields = Readonly<Record<string, Readonly<Record<string, BlockRecordKind>>>>;
 
 // Карточка товара — та же, что у товаров коллекции записей (records.ts).
 const productCard = (found: RecordEntryOf<'product'>): ProductCard => cardOfRecord(found.record);
@@ -148,17 +159,46 @@ function fieldRecords(props: PageProps, kind: RecordFieldKind, value: unknown): 
   return EMPTY_RULES[kind](index);
 }
 
-export function sectionRecords(placed: PlacedSection, props: PageProps): SectionRecords {
-  const entries = Object.entries(placed.recordFields ?? {});
-  const fields = entries.map(([id, kind]) => fieldRecords(props, kind, placed.settings[id]));
+// Записи полей одного списка значений (настройки секции или блока) по его полям с записями.
+function listRecords(
+  props: PageProps,
+  recordFields: Readonly<Record<string, RecordFieldKind>>,
+  settings: Readonly<Record<string, unknown>>,
+): { values: Record<string, object | null>; deps: string[] } {
+  const entries = Object.entries(recordFields);
+  const fields = entries.map(([id, kind]) => fieldRecords(props, kind, settings[id]));
   const values: Record<string, object | null> = {};
   entries.forEach(([id], index) => {
     values[id] = fields[index]?.value ?? null;
   });
+  return { values, deps: fields.flatMap((field) => field.deps) };
+}
+
+// Записи полей блоков экземпляра: только у блоков, у типа которых есть поля с записями.
+function blockRecords(
+  placed: PlacedSection,
+  props: PageProps,
+): { blocks: Record<string, SectionRecordValues>; deps: string[] } {
+  const blocks: Record<string, SectionRecordValues> = {};
+  const deps: string[] = [];
+  for (const block of placed.blocks ?? []) {
+    const fields = placed.blockRecordFields?.[block.type];
+    if (fields === undefined) continue;
+    const found = listRecords(props, fields, block.settings);
+    blocks[block.id] = found.values;
+    deps.push(...found.deps);
+  }
+  return { blocks, deps };
+}
+
+export function sectionRecords(placed: PlacedSection, props: PageProps): SectionRecords {
+  const own = listRecords(props, placed.recordFields ?? {}, placed.settings);
+  const inBlocks = blockRecords(placed, props);
   return {
-    values,
-    deps: uniqueDeps(fields.flatMap((field) => field.deps)),
-    data: sectionData(placed, props.page, values),
+    values: own.values,
+    deps: uniqueDeps([...own.deps, ...inBlocks.deps]),
+    data: sectionData(placed, props.page, own.values),
+    blocks: inBlocks.blocks,
   };
 }
 
@@ -187,10 +227,13 @@ export function menusWithRecordPaths(
 }
 
 // recordFields и data секции из кода магазина — только если есть (placedSections, code.ts).
-export function recordKeysOf(section: CodeSection | undefined): Pick<PlacedSection, 'recordFields' | 'data'> {
+export function recordKeysOf(
+  section: CodeSection | undefined,
+): Pick<PlacedSection, 'recordFields' | 'blockRecordFields' | 'data'> {
   if (section === undefined) return {};
   return {
     ...(section.recordFields === undefined ? {} : { recordFields: section.recordFields }),
+    ...(section.blockRecordFields === undefined ? {} : { blockRecordFields: section.blockRecordFields }),
     ...(section.data === undefined ? {} : { data: section.data }),
   };
 }

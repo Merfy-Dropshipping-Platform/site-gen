@@ -102,6 +102,8 @@ export async function emptyTrialRender(
 // Примеры данных секции: записи её полей с записями (sampleRecordValues).
 export interface TrialSample {
   records: SectionRecordValues;
+  // Записи полей с записями в блоках (sampleBlockRecords, 29.10): id блока → id поля → запись.
+  blockRecords?: Readonly<Record<string, SectionRecordValues>>;
 }
 
 // Страницы, на которых секция рисуется сверх главной: каталог со списком и страницы записей. Какой из них секция
@@ -124,6 +126,7 @@ export async function sampleTrialRender(
     theme: SAMPLE_THEME,
     shop: SAMPLE_SHOP,
     records: sample.records,
+    ...(sample.blockRecords === undefined ? {} : { blockRecords: sample.blockRecords }),
   };
   return withSectionRenderer(async (draw) => {
     const main = await attempt(draw, base);

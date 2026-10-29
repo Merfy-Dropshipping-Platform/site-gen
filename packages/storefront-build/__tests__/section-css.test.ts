@@ -21,6 +21,17 @@ describe('CSS секций', () => {
     expect(css).not.toMatch(/@layer base\s*\{/);
   });
 
+  // «Ширина» секции (базовые секции, 29.10): обёртка задаёт --width-page, max-w-page внутри берёт её — фон обёртки во
+  // всю ширину, содержимое уже.
+  it('ширина секции: свойство обёртки --width-page и max-w-page содержимого', async () => {
+    const css = await sectionCss(
+      '<merfy-section class="[--width-page:768px]"><div class="max-w-page"></div></merfy-section>',
+      dictionary,
+    );
+    expect(css).toMatch(/--width-page:\s*768px/);
+    expect(css).toMatch(/max-width:\s*var\(--width-page\)/);
+  });
+
   it('классов нет — пустая строка', async () => {
     expect(await sectionCss('<p>текст</p>', dictionary)).toBe('');
   });

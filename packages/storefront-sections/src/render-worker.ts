@@ -72,6 +72,8 @@ const requestSchema = z.strictObject({
   page: pageSchema.default(HOME_PAGE),
   // Блок 8, часть 8г: записи полей с записями по id настройки — публичные поля записи или null; нет ключа — {}.
   records: z.record(z.string(), z.record(z.string(), z.json()).nullable()).default({}),
+  // Записи полей с записями в блоках (29.10): id блока → id поля → запись или null; нет ключа — {}.
+  blockRecords: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.json()).nullable())).default({}),
 });
 
 const templates = new Map<string, Promise<TemplateComponent>>();
@@ -115,7 +117,7 @@ function requestOf(line: string) {
 async function answerTo(line: string): Promise<{ id: number; answer: object }> {
   const parsed = requestOf(line);
   if (parsed === null || !parsed.success) return { id: 0, answer: { error: 'запрос не по форме', denied: false } };
-  const { id, hash, module, settings, blocks, preview, menus, theme, shop, page, records } = parsed.data;
+  const { id, hash, module, settings, blocks, preview, menus, theme, shop, page, records, blockRecords } = parsed.data;
   try {
     if (module !== undefined && !templates.has(hash)) templates.set(hash, loadTemplate(module));
     const template = templates.get(hash);
@@ -130,6 +132,7 @@ async function answerTo(line: string): Promise<{ id: number; answer: object }> {
       shop,
       page: { ...page, list: page.list ?? undefined },
       records,
+      blockRecords,
     };
     return { id, answer: { html: await renderTemplate(await template, props) } };
   } catch (error) {

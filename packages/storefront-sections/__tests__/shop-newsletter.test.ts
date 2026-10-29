@@ -45,9 +45,10 @@ describe('«Подписка на рассылку»: панель', () => {
     ]);
   });
 
-  it('текст согласия и «Сделать ссылкой» видны, когда согласие включено; тексты — с «К» и «Ж»', () => {
+  it('текст согласия и «Сделать ссылкой» видны всегда и неактивны при выключенном согласии, как на проде; тексты — с «К» и «Ж»', () => {
     for (const id of ['agreement-text', 'agreement-link']) {
-      expect(fieldOf(section.manifest, id)).toMatchObject({ visibleWhen: { setting: 'agreement', equals: true } });
+      expect(fieldOf(section.manifest, id)).toMatchObject({ disabledWhen: { setting: 'agreement', equals: false } });
+      expect(fieldOf(section.manifest, id)).not.toHaveProperty('visibleWhen');
     }
     for (const id of ['agreement-text', 'text']) {
       expect(fieldOf(section.manifest, id)).toMatchObject({ setting: { kind: 'text', ai: 'description' } });
@@ -59,8 +60,9 @@ describe('«Подписка на рассылку»: панель', () => {
 
   it('«Кнопка» — блок, как у прода: подпись в одном поле, не больше одного, по умолчанию стоит', () => {
     const button = section.manifest.blocks?.button;
-    // Конструктор пишет «Добавить » + название блока со строчной буквы: «Добавить текст кнопки» грамотно, «Добавить кнопка» — нет.
-    expect(button?.title).toBe('Текст кнопки');
+    // Название — «Кнопка», как у прода; «Добавить кнопку» — подписью addTitle (без неё было бы «Добавить кнопка»).
+    expect(button?.title).toBe('Кнопка');
+    expect(button?.addTitle).toBe('кнопку');
     expect(button?.limit).toBe(1);
     expect(button?.settings.map((field) => [field.id, field.label])).toEqual([['button-label', 'Кнопка']]);
     expect(section.manifest.defaultBlocks?.map((block) => block.type)).toEqual(['heading', 'button']);

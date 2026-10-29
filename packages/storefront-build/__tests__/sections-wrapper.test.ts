@@ -64,7 +64,16 @@ describe('wrapper во входах сборки', () => {
     expect(parseBuildInputs(withWrapper(wrapper)).code.pages.home?.[1]?.wrapper).toEqual(wrapper);
   });
 
+  // «Ширина» секции (базовые секции, 29.10): обёртка задаёт --width-page своей секции числом в px.
+  it('ширина секции — свойство --width-page в px проходит', () => {
+    const wrapper = { classes: ['py-section', '[--width-page:768px]'], attributes: {} };
+    expect(parseBuildInputs(withWrapper(wrapper)).code.pages.home?.[1]?.wrapper).toEqual(wrapper);
+  });
+
   it.each([
+    ['свойство с пробелом', { classes: ['[--width-page:768 px]'], attributes: {} }],
+    ['свойство не в px', { classes: ['[--width-page:var(--x)]'], attributes: {} }],
+    ['свойство не переменная', { classes: ['[color:red]'], attributes: {} }],
     ['класс с пробелом', { classes: ['a b'], attributes: {} }],
     ['класс с кавычкой', { classes: ['a"b'], attributes: {} }],
     ['класс с <', { classes: ['<b'], attributes: {} }],

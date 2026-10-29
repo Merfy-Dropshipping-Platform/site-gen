@@ -4,13 +4,9 @@
   "kind": "section",
   "title": "Промо-баннер",
   "wrapper": ["scheme", "padding"],
-  "names": {
-    "capitals": {
-      "kinds": ["toggle"],
-      "label": "Заглавные буквы",
-      "about": "Текст объявления набран заглавными буквами, как на flux и vanilla",
-      "asks": ["заглавные", "капс", "прописные", "uppercase", "caps"]
-    }
+  "wrapperSpec": {
+    "scheme": { "default": "scheme-4" },
+    "padding": { "default": { "top": 0, "bottom": 0 } }
   },
   "settings": [
     { "wrapper": "scheme" },

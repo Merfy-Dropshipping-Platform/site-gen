@@ -38,6 +38,7 @@ import {
   type RevisionMenu,
   type SectionRenderRequest,
   settingFieldsOf,
+  wrapperFieldsOf,
   wrapperIdsOf,
   WRAPPER_FIELDS,
 } from '@merfy/storefront-sections';
@@ -353,6 +354,9 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
       settings: section.manifest.settings,
       // Часть 5 (Р1-5-5): список общих настроек секции — всегда, чтобы конструктору не нужно знать умолчание.
       wrapper: wrapperIdsOf(section.manifest),
+      // Свои умолчание, предел и шаг общих настроек (wrapperSpec, базовые секции 29.10): объявления секции целиком, по
+      // её списку; без wrapperSpec ключа нет — конструктор берёт общие объявления верхнего ключа wrapper.
+      ...(section.manifest.wrapperSpec === undefined ? {} : { wrapperFields: wrapperFieldsOf(section.manifest) }),
       // Свои токены секции (блок 4, Р4-9) — записи из section.json; нет — {}.
       tokens: section.manifest.tokens ?? {},
       // Типы блоков и блоки новой секции (часть 3) — только у секций с blocks.

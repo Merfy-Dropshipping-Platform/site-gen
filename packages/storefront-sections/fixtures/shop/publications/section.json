@@ -4,6 +4,7 @@
   "kind": "section",
   "title": "Публикации",
   "wrapper": ["scheme", "padding"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
   "names": {
     "date": {
       "kinds": ["toggle"],

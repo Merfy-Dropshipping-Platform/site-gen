@@ -48,12 +48,22 @@ const HEADER = manifestOf({
 });
 
 describe('объявление общих настроек', () => {
-  it('три поля: схема, отступы, закрепление — подписи и формы из design.md 3.15 и блока 7', () => {
+  it('четыре поля: схема, отступы, закрепление, ширина — подписи и формы из design.md 3.15, блока 7 и прода', () => {
     expect(WRAPPER_FIELDS.map((field) => [field.id, field.label, field.setting.kind])).toEqual([
       ['scheme', 'Цветовая схема', 'color-scheme'],
       ['padding', 'Отступы', 'padding'],
       ['sticky', 'Статичность', 'select'],
+      ['width', 'Ширина', 'select'],
     ]);
+    // «Ширина» — как у «Изображения с текстом» на проде: маленькая, средняя, большая; по умолчанию большая.
+    expect(WRAPPER_FIELDS[3]?.setting).toMatchObject({
+      default: 'large',
+      options: [
+        { value: 'small', label: 'Маленькая' },
+        { value: 'medium', label: 'Средняя' },
+        { value: 'large', label: 'Большая' },
+      ],
+    });
     expect(WRAPPER_FIELDS[1]?.setting).toMatchObject({ default: null, max: 160, step: 8 });
     expect(WRAPPER_FIELDS[2]?.setting).toMatchObject({
       default: 'scroll-up',
@@ -84,7 +94,7 @@ describe('ключ wrapper и ссылки в settings', () => {
   });
 
   it.each([
-    ['неизвестный id в wrapper', manifestOf({ wrapper: ['width'], settings: [] }), /^manifest-invalid wrapper\.0: /],
+    ['неизвестный id в wrapper', manifestOf({ wrapper: ['margin'], settings: [] }), /^manifest-invalid wrapper\.0: /],
     ['id в wrapper дважды', manifestOf({ wrapper: ['scheme', 'scheme'], settings: [] }), /^manifest-invalid wrapper: /],
     [
       'ссылка на id вне списка wrapper',
@@ -96,7 +106,12 @@ describe('ключ wrapper и ссылки в settings', () => {
       manifestOf({ wrapper: ['scheme'], settings: [{ wrapper: 'scheme' }, LOGO, { wrapper: 'scheme' }] }),
       /^manifest-invalid settings\.2\.wrapper: /,
     ],
-    ['ссылка на неизвестный id', manifestOf({ settings: [{ wrapper: 'width' }] }), /^manifest-invalid settings\.0/],
+    ['ссылка на неизвестный id', manifestOf({ settings: [{ wrapper: 'margin' }] }), /^manifest-invalid settings\.0/],
+    [
+      'ссылка на «Ширину» вне списка wrapper',
+      manifestOf({ settings: [{ wrapper: 'width' }] }),
+      /^manifest-invalid settings\.0\.wrapper: width нет в списке wrapper секции/,
+    ],
     [
       'ссылка и поле в одном элементе',
       manifestOf({ settings: [{ ...LOGO, wrapper: 'scheme' }] }),

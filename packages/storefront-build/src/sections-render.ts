@@ -11,8 +11,10 @@ import type { RecordIndex } from './records';
 import {
   menusWithRecordPaths,
   sectionRecords,
+  type BlockRecordFields,
   type RecordFieldKind,
   type SectionDataEntry,
+  type SectionRecords,
   type SectionRecordValues,
 } from './section-records';
 import { HOME_PAGE, type PageInfo } from './special-pages';
@@ -84,6 +86,8 @@ export interface SectionRenderRequest {
   page?: PageInfo;
   // Блок 8, часть 8г: записи полей с записями по id настройки — только у секции с такими полями.
   records?: SectionRecordValues;
+  // Записи полей с записями в блоках: id блока → id поля → запись; только у блоков с такими полями.
+  blockRecords?: Readonly<Record<string, SectionRecordValues>>;
 }
 
 export type RenderSection = (request: SectionRenderRequest) => Promise<string>;
@@ -155,6 +159,8 @@ export interface PlacedSection {
   wrapper?: WrapperView;
   // Блок 8, часть 8г: поля с записями (id настройки → вид) и data для скрипта — из кода секции (recordKeysOf).
   recordFields?: Readonly<Record<string, RecordFieldKind>>;
+  // Поля с записями в типах блоков (базовые секции, 29.10): тип блока → id поля → вид.
+  blockRecordFields?: BlockRecordFields;
   data?: Readonly<Record<string, SectionDataEntry>>;
 }
 
@@ -257,13 +263,14 @@ function failedHtml(placed: PlacedSection, mode: PageMode, error: unknown, faile
 const propsOf = (
   placed: PlacedSection,
   props: PageProps,
-  records: SectionRecordValues,
-): Pick<SectionRenderRequest, 'menus' | 'theme' | 'shop' | 'page' | 'records'> => ({
+  records: Pick<SectionRecords, 'values' | 'blocks'>,
+): Pick<SectionRenderRequest, 'menus' | 'theme' | 'shop' | 'page' | 'records' | 'blockRecords'> => ({
   page: props.page,
   ...(placed.menus === undefined ? {} : { menus: menusWithRecordPaths(placed.menus, props.records) }),
   ...(placed.uses?.includes('theme') === true ? { theme: props.theme } : {}),
   ...(placed.uses?.includes('shop') === true ? { shop: props.shop } : {}),
-  ...(Object.keys(records).length === 0 ? {} : { records }),
+  ...(Object.keys(records.values).length === 0 ? {} : { records: records.values }),
+  ...(Object.keys(records.blocks).length === 0 ? {} : { blockRecords: records.blocks }),
 });
 
 export async function renderSection(
@@ -289,7 +296,7 @@ export async function renderSection(
       settings: placed.settings,
       blocks: placed.blocks ?? [],
       preview: mode === 'preview',
-      ...propsOf(placed, props, records.values),
+      ...propsOf(placed, props, records),
     });
     return wrapper(placed, `${html}${input}`);
   } catch (error) {

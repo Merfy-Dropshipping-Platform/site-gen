@@ -1,4 +1,5 @@
 import { MODULE_NAMES } from '@merfy/shell/actions';
+import { BLOCK_RECORD_KINDS } from '@merfy/storefront-build';
 import { EXT_POINTS } from '@merfy/shell/ext-points';
 import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
@@ -8,7 +9,7 @@ import { problem, when, type Checked, type SectionProblem } from './problems';
 import { RECORD_SETTING_KINDS, sectionDataShape } from './record-fields';
 import { settingsTexts } from './settings';
 import { OVERLAY_LIST, ROLE_LIMIT, ROLE_PLACES, SECTION_ROLES, isSectionRole } from './roles';
-import { WRAPPER_IDS, wrapperProblems } from './wrapper';
+import { WRAPPER_IDS, wrapperProblems, wrapperSpecShape } from './wrapper';
 
 // Формат секции SDK 1 (блок 1 «Секций и SDK»; design.md блока 7, п. 20) — один у всех авторов (С7-11 А): папка с
 // section.json, template.astro и скриптом, если он есть (п. 16), — script.ts или script.js и его файлы .ts/.js. Своего
@@ -40,9 +41,11 @@ export const SECTION_KINDS = ['section', 'global'] as const;
 export type SectionKind = (typeof SECTION_KINDS)[number];
 
 // Тип блока секции (часть 3, design.md 3.16, Р53): подпись в конструкторе, сколько блоков типа в секции, поля. Имя типа
-// и значения блоков по умолчанию проверяет blocks.ts.
+// и значения блоков по умолчанию проверяет blocks.ts. addTitle (базовые секции, 29.10) — подпись в винительном падеже
+// для «Добавить …»: у «Кнопки» — «кнопку»; нет ключа — конструктор пишет title со строчной буквы.
 const blockTypeSchema = z.strictObject({
   title: z.string().min(1).max(80),
+  addTitle: z.string().min(1).max(80).optional(),
   limit: z.int().min(1).max(50),
   settings: z.array(sectionFieldShape).default([]),
 });
@@ -114,7 +117,10 @@ export const sectionManifestSchema = z.strictObject({
   // Свои токены секции (блок 4 «Секций и SDK», Р4-9): запись словаря; проверяет token-rules.ts.
   tokens: z.record(z.string(), z.unknown()).optional(),
   // Общие настройки секции (часть 5, Р1-5-5): id из WRAPPER_IDS без повторов; нет ключа — ['scheme', 'padding'].
-  wrapper: z.array(z.enum(WRAPPER_IDS)).max(3).refine(unique, { error: 'id дважды' }).optional(),
+  wrapper: z.array(z.enum(WRAPPER_IDS)).max(WRAPPER_IDS.length).refine(unique, { error: 'id дважды' }).optional(),
+  // Своё умолчание общих настроек, у «Отступов» ещё предел и шаг (базовые секции, 29.10): id → ключи объявления;
+  // значения проверяет wrapperProblems (wrapper.ts).
+  wrapperSpec: wrapperSpecShape.optional(),
   // Поля записей для скрипта (блок 8 «Секций и SDK», часть 8г): имя → { from, fields }; смысл — section-data.ts.
   data: sectionDataShape.optional(),
   // Поля «Настроек темы» в панели секции (блок 10 «Секций и SDK», часть 10б, Р10б-11): id сквозных настроек;
@@ -408,7 +414,17 @@ export const sectionListAllowed = (manifest: SectionManifest, list: string): boo
     ? sectionGroupsOf(manifest).includes(listGroupOf(list))
     : ROLE_PLACES[manifest.role].list === list;
 
-const PLACE_KEYS = ['groups', 'limit', 'removable', 'uses', 'newPage', 'wrapper', 'role', 'autoPlace'] as const;
+const PLACE_KEYS = [
+  'groups',
+  'limit',
+  'removable',
+  'uses',
+  'newPage',
+  'wrapper',
+  'wrapperSpec',
+  'role',
+  'autoPlace',
+] as const;
 
 // newPage — настройка вида string секции, которую ставят на страницу.
 function newPageProblems(manifest: SectionManifest): string[] {
@@ -439,8 +455,12 @@ function placeProblems(manifest: SectionManifest): string[] {
 }
 
 // Вид menu, поля с записями и подсказка (часть 8г блока 8) — только у настроек секции: меню блока конструктор не правит
-// (окно меню — у поля секции), запись получает секция.
-const SECTION_ONLY_KINDS: ReadonlySet<string> = new Set(['menu', ...RECORD_SETTING_KINDS]);
+// (окно меню — у поля секции). Товар и коллекция (BLOCK_RECORD_KINDS) с 29.10 есть и у блоков — как «Тип» элемента
+// «Галереи» на проде; блог, политика и подсказка остаются у секции.
+const BLOCK_KINDS: readonly string[] = BLOCK_RECORD_KINDS;
+const SECTION_ONLY_KINDS: ReadonlySet<string> = new Set(
+  ['menu', ...RECORD_SETTING_KINDS].filter((kind) => !BLOCK_KINDS.includes(kind)),
+);
 const blockMenuProblems = (manifest: SectionManifest): string[] =>
   Object.entries(manifest.blocks ?? {}).flatMap(([type, block]) =>
     block.settings.flatMap((field, index) =>

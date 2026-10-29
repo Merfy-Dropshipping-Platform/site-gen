@@ -122,10 +122,15 @@ describe('«Мультиколонны»', () => {
     const result = await prepareSection({ prefix: 'shop', files: await files('shop/multi-columns') });
     expect(result.ok ? withoutCode(result.section.warnings) : result.problems).toEqual([]);
     if (!result.ok) return;
+    // «Ширина» — общая настройка width (29.10): по умолчанию средняя, отступы 80, как у flux.
+    expect(result.section.manifest.wrapperSpec).toEqual({
+      width: { default: 'medium' },
+      padding: { default: { top: 80, bottom: 80 } },
+    });
     expect(orderOf(result.section.manifest.settings)).toEqual([
       'heading',
       'heading-size',
-      'content-width',
+      'wrapper:width',
       'aspect-ratio',
       'button-label',
       'button-link',
@@ -142,6 +147,8 @@ describe('«Мультиколонны»', () => {
     expect(fields.find((field) => field.id === 'columns')?.setting).toMatchObject({ kind: 'range', min: 1, max: 4 });
     expect(fields.find((field) => field.id === 'heading')?.setting).toMatchObject({ kind: 'string', ai: 'title' });
     const column = result.section.manifest.blocks?.column;
+    // Название прода — «Колонна», в дереве «Добавить колонну» (addTitle, 29.10).
+    expect([column?.title, column?.addTitle]).toEqual(['Колонна', 'колонну']);
     expect(column?.limit).toBe(10);
     expect(column?.settings.map((field) => field.id)).toEqual([
       'image',
@@ -166,7 +173,7 @@ describe('«Мультиряды»', () => {
     if (!result.ok) return;
     expect(orderOf(result.section.manifest.settings)).toEqual([
       'height',
-      'content-width',
+      'wrapper:width',
       'image-position',
       'heading',
       'heading-size',
@@ -177,6 +184,10 @@ describe('«Мультиряды»', () => {
       'wrapper:padding',
     ]);
     const fields = settingFieldsOf(result.section.manifest.settings);
+    // Как на проде (29.10): «Стиль кнопки» — переключатель, «Высота» по умолчанию — средняя, отступы 80, как у flux.
+    expect(fields.find((field) => field.id === 'button-style')?.setting.kind).toBe('radio');
+    expect(fields.find((field) => field.id === 'height')?.setting.default).toBe('medium');
+    expect(result.section.manifest.wrapperSpec).toEqual({ padding: { default: { top: 80, bottom: 80 } } });
     expect(optionValues(fields, 'button-style')).toEqual(['primary', 'secondary']);
     expect(optionValues(fields, 'image-position')).toEqual(['left', 'right']);
     const row = result.section.manifest.blocks?.row;
@@ -197,9 +208,9 @@ describe('«Мультиряды»', () => {
 
 describe('«Галерея»', () => {
   // Сводная галерея пяти тем (базовые секции, 29.10): панель прода — «Содержание» (заголовок, текст и их размеры),
-  // положение изображения, схема, отступы; до трёх плиток. Выбор товара и коллекции в плитке — не здесь: поля
-  // `product` и `collection` в блоках SDK не допускает (проверка: setting-invalid).
-  it('принимается; поля в порядке прода, «Раскладка» — после них; плиток до трёх, выбора товара в плитке нет', async () => {
+  // положение изображения, схема, отступы; до трёх плиток. У плитки «Тип», как у прода (29.10): изображение, товар или
+  // коллекция; выбор товара и коллекции — поля product и collection блока.
+  it('принимается; поля в порядке прода, «Раскладка» — после них; плиток до трёх, «Тип» и выбор записи', async () => {
     const result = await prepareSection({ prefix: 'shop', files: await files('shop/gallery') });
     expect(result.ok ? withoutCode(result.section.warnings) : result.problems).toEqual([]);
     if (!result.ok) return;
@@ -216,8 +227,21 @@ describe('«Галерея»', () => {
     expect(optionValues(settingFieldsOf(result.section.manifest.settings), 'layout')).toEqual(['featured', 'row']);
     const tile = result.section.manifest.blocks?.tile;
     expect(tile?.limit).toBe(3);
-    expect(tile?.settings.map((field) => field.id)).toEqual(['image', 'label', 'caption', 'link']);
-    expect(result.section.manifest.defaultBlocks).toHaveLength(3);
+    expect(tile?.settings.map((field) => [field.id, field.visibleWhen?.equals])).toEqual([
+      ['item-type', undefined],
+      ['image', 'image'],
+      ['label', 'image'],
+      ['caption', 'image'],
+      ['link', 'image'],
+      ['product', 'product'],
+      ['collection', 'collection'],
+    ]);
+    // Как у прода: изображение, товар и коллекция по умолчанию.
+    expect(result.section.manifest.defaultBlocks?.map((block) => block.settings['item-type'])).toEqual([
+      undefined,
+      'product',
+      'collection',
+    ]);
   });
 });
 

@@ -8,18 +8,13 @@
   "removable": false,
   "uses": ["theme", "shop", "newsletter"],
   "wrapper": ["scheme", "padding"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 0 } } },
   "names": {
     "payment-icons": {
       "kinds": ["toggle"],
       "label": "Значки оплаты",
       "about": "Значки карт МИР, Visa и Mastercard в подвале, когда у магазина есть оплата онлайн",
       "asks": ["значки оплаты", "платёжные системы", "карты", "мир", "visa", "mastercard", "payment icons"]
-    },
-    "capitals": {
-      "kinds": ["select"],
-      "label": "Заглавные буквы",
-      "about": "Какие заголовки подвала набраны заглавными: заголовки колонок, все заголовки или никакие",
-      "asks": ["заглавные", "капс", "прописные", "uppercase", "caps"]
     }
   },
   "settings": [

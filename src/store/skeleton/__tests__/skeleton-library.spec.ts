@@ -129,10 +129,15 @@ describe("раскладка заготовки", () => {
       }
   });
 
-  // Шапка с «Отступами», как на проде (базовые секции, 28.10): значение по умолчанию ставит заготовка (wrappers.header).
+  // Шапка с «Отступами», как на проде (базовые секции, 28.10): умолчание, предел и шаг — у самой секции (wrapperSpec,
+  // 29.10), заготовка их не ставит.
   it("шапка — «Цветовая схема», «Отступы», «Статичность»; служебные секции «Поверх страниц» — без «Отступов»", () => {
     expect(wrapperIdsOf("header")).toEqual(["scheme", "padding", "sticky"]);
-    expect(SKELETON_LAYOUT.wrappers?.header?.header).toEqual({ padding: { top: 8, bottom: 8 } });
+    expect(manifestOf("header").wrapperSpec).toEqual({
+      padding: { default: { top: 8, bottom: 8 }, max: 64, step: 4 },
+    });
+    expect(SKELETON_LAYOUT.wrappers?.header).toBeUndefined();
+    expect(SKELETON_LAYOUT.wrappers?.footer).toBeUndefined();
     for (const name of SKELETON_LAYOUT.lists.overlay)
       expect(wrapperIdsOf(name)).toEqual([]);
   });

@@ -118,10 +118,11 @@ describe('панель: поля прода в их порядке, новые �
     expect(blocks.text?.settings[0]?.setting).toMatchObject({ kind: 'text', ai: 'description' });
   });
 
-  it('«Изображение с текстом»: поля прода (кроме «Ширины»), потом «Вид» с раскладкой', () => {
+  it('«Изображение с текстом»: поля прода с «Шириной» (общая настройка width), потом «Вид» с раскладкой', () => {
     expect(order('image-with-text')).toEqual([
       'image',
       'height',
+      'wrapper:width',
       'image-position',
       'align',
       'wrapper:scheme',

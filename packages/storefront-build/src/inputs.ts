@@ -5,7 +5,7 @@ import { hashSchema } from './canonical';
 import { entityKey } from './entities';
 import { StorefrontBuildError } from './errors';
 import { parseWith } from './parse';
-import { DATA_FIELDS_MAX, DATA_FROM, DATA_NAME, RECORD_FIELD_KINDS } from './section-records';
+import { BLOCK_RECORD_KINDS, DATA_FIELDS_MAX, DATA_FROM, DATA_NAME, RECORD_FIELD_KINDS } from './section-records';
 import { SPECIAL_PAGE_IDS, SPECIAL_PAGE_SLUGS } from './special-pages';
 
 // Входы сборки магазина новой темы (design.md блока 4, В4-3 Б): всё, от чего зависят файлы, — явно и в одном месте.
@@ -88,6 +88,8 @@ const codeSectionSchema = z.strictObject({
   role: z.enum(SECTION_ROLES).optional(),
   // Блок 8 «Секций и SDK», часть 8г: поля с записями (id настройки → вид) и data для скрипта — только если объявлены.
   recordFields: z.record(z.string().min(1), z.enum(RECORD_FIELD_KINDS)).optional(),
+  // Поля с записями в типах блоков (базовые секции, 29.10): тип блока → id поля → вид; только если объявлены.
+  blockRecordFields: z.record(z.string().min(1), z.record(z.string().min(1), z.enum(BLOCK_RECORD_KINDS))).optional(),
   data: z.record(z.string().regex(DATA_NAME), sectionDataEntrySchema).optional(),
   uses: z.array(z.enum(['theme', 'shop'])).optional(),
   // Свои токены секции из section.json (блок 4, Р4-10) — только если объявлены.
@@ -124,8 +126,9 @@ const pageSchema = z.strictObject({
   seo: z.strictObject({ title: z.string(), description: z.string(), keywords: z.string() }),
 });
 // Вид обёртки (часть 5, Р1-5-7): во входы идёт только безопасное — токены классов Tailwind и атрибуты data-* с простыми
-// значениями; из этих строк печатается атрибут class и атрибуты обёртки.
-const CLASS_TOKEN = /^[a-z0-9][a-z0-9:_.\-/[\]]*$/;
+// значениями; из этих строк печатается атрибут class и атрибуты обёртки. Ещё — свойство с числом в px (`[--width-page:
+// 768px]`, «Ширина» секции, базовые секции 29.10): без пробелов, кавычек и скобок, кроме внешних.
+const CLASS_TOKEN = /^(?:[a-z0-9][a-z0-9:_.\-/[\]]*|\[--[a-z]+(?:-[a-z]+)*:[0-9]{1,4}px\])$/;
 const DATA_ATTRIBUTE = /^data-[a-z]+(?:-[a-z]+)*$/;
 const DATA_VALUE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const wrapperViewSchema = z.strictObject({

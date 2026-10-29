@@ -4,6 +4,7 @@
   "kind": "section",
   "title": "Контактная форма",
   "wrapper": ["scheme", "padding"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
   "names": {
     "required": {
       "kinds": ["toggle"],

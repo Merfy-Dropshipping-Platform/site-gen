@@ -7,7 +7,7 @@ import { navigation } from '../src/core/navigation';
 import { AUTH_TEXT, auth } from '../src/core/parts/auth';
 import { start, type StartedCore } from '../src/core/start';
 import { configTag, entry, placeSection, SHOP_ID, watchFailures } from './core-support';
-import { fakeGateway } from './sdk-support';
+import { fakeGateway, gate } from './sdk-support';
 
 // Секция «Вход» (блок 10 «Секций и SDK», 10.7, «Решил сам» пп. 18, 19; часть 10в, Р10в-11): e-mail → письмо с кодом и
 // ссылкой; код — на той же странице; ссылка /verify?token=… — вход сам; тексты ошибок — под полем (quiet: true).
@@ -38,13 +38,17 @@ const MARKUP = `
   <div data-ref="email-step">
     <input data-ref="email" type="email">
     <p data-ref="email-error" role="alert" hidden></p>
-    <button type="button" data-ref="request" data-action="request">Получить ссылку для входа</button>
+    <button type="button" data-ref="request" data-action="request">
+      <span data-ref="request-loading" hidden>Отправляем...</span><span data-ref="request-text">Получить ссылку для входа</span>
+    </button>
   </div>
   <div data-ref="code-step" hidden>
     <p>Мы отправили письмо на <span data-ref="sent-to"></span>.</p>
     <input data-ref="code" inputmode="numeric">
     <p data-ref="code-error" role="alert" hidden></p>
-    <button type="button" data-ref="verify" data-action="verify">Войти</button>
+    <button type="button" data-ref="verify" data-action="verify">
+      <span data-ref="verify-loading" hidden>Проверяем...</span><span data-ref="verify-text">Войти</span>
+    </button>
     <button type="button" data-action="change-email">Изменить e-mail</button>
   </div>
   <p data-ref="checking" hidden>Входим…</p>`;
@@ -97,7 +101,16 @@ afterEach(async () => {
 describe('«Вход»', () => {
   it('шаблон и поля: ссылки разметки, поля как на проде', () => {
     for (const part of MARKUP.match(/data-(?:ref|action)="[^"]+"/g) ?? []) expect(TEMPLATE).toContain(part);
-    for (const part of ['settings.heading', 'settings.text', "settings['button-label']", 'Получить ссылку для входа'])
+    for (const part of [
+      'settings.heading',
+      'settings.text',
+      "settings['button-label']",
+      'Получить ссылку для входа',
+      'Отправляем...',
+      'for="login-email"',
+      'политикой обработки персональных данных',
+      "policy.type === 'privacy'",
+    ])
       expect(TEMPLATE).toContain(part);
     expect(MANIFEST.settings.map((item) => item.id ?? `wrapper:${item.wrapper}`)).toEqual([
       'heading',
@@ -107,6 +120,26 @@ describe('«Вход»', () => {
       'button-label',
     ]);
     expect(MANIFEST.settings[0]?.setting?.default).toBe('Вход в аккаунт');
+  });
+
+  it('кнопка в работе: блеск «Отправляем...» вместо текста, кнопка выключена; ответ — как было', async () => {
+    const hold = gate();
+    const { gateway, page, run } = openLogin();
+    gateway.answer('POST /store/auth/magic/request', { status: 200, body: { success: true }, gate: hold.promise });
+    run();
+    type(page, 'email', 'anna@example.ru');
+    click(page, '[data-action="request"]');
+    await settle();
+    const button = page.querySelector<HTMLButtonElement>('[data-ref="request"]');
+    expect(button?.disabled).toBe(true);
+    expect(hidden(page, 'request-loading')).toBe(false);
+    expect(hidden(page, 'request-text')).toBe(true);
+    hold.open();
+    await settle();
+    expect(button?.disabled).toBe(false);
+    expect(hidden(page, 'request-loading')).toBe(true);
+    expect(hidden(page, 'request-text')).toBe(false);
+    expect(hidden(page, 'code-step')).toBe(false);
   });
 
   it('e-mail → письмо: POST magic/request, шаг кода с адресом, шаг e-mail скрыт', async () => {

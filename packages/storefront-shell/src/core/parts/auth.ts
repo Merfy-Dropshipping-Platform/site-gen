@@ -234,17 +234,29 @@ async function updateProfileOf(
 
 // Часть auth — не в ядре (Р15ж-2): в бандле страниц, где секция объявила "auth" в uses или поставила auth.signout в
 // разметке. $customer — тот же стор, что у части customer.
+const RUNTIMES = new WeakMap<AuthModule, AuthRuntime>();
+
 export const auth: SdkPart<'auth', AuthModule> = {
   name: 'auth',
   create: (core: CoreHandle): AuthModule => {
     const rt: AuthRuntime = customerRuntimeOf(core);
-    return {
+    const module: AuthModule = {
       $customer: rt.$customer,
       requestCode: (args, options) => requestCodeOf(rt, args, options),
       verify: (args, options) => verifyOf(rt, args, options),
       signout: (options) => signoutOf(rt, options),
       updateProfile: (args, options) => updateProfileOf(rt, args, options),
     };
+    RUNTIMES.set(module, rt);
+    return module;
+  },
+  // Вошедшая зашла на страницу «Входа» витрины (стоит секция с auth) — сразу по адресу возврата, как у пяти тем на
+  // проде: форма ей не нужна. Гостья, превью и другие страницы — без перехода.
+  attach: (api, host): void => {
+    if (host.mode !== 'live') return;
+    const rt = RUNTIMES.get(api);
+    if (rt === undefined || shopApiOf(rt.core)?.pageId !== LOGIN_PAGE_ID || tokenOf(rt.page) === null) return;
+    returnTo(rt);
   },
   markup: {
     signout: {

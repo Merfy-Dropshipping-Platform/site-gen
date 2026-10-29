@@ -5,5 +5,8 @@
   "title": "Избранное",
   "groups": ["page"],
   "limit": 1,
-  "uses": ["favorites"]
+  "uses": ["favorites"],
+  "wrapper": ["padding", "scheme"],
+  "wrapperSpec": { "padding": { "default": { "top": 80, "bottom": 80 } } },
+  "settings": [{ "wrapper": "padding" }, { "wrapper": "scheme" }]
 }

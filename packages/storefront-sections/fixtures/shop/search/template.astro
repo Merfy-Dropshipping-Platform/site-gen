@@ -2,8 +2,8 @@
 const { shop } = Astro.props;
 ---
 <!-- Значки — Lucide (search, x, image), лицензия ISC, lucide.dev/license. -->
-<!-- Окно открывает событие поиска (лупа «Шапки» — data-action="search.open"), ставится под шапкой страницы, где бы ни стояла секция. -->
-<div data-behavior="dialog" data-transition="drop" data-modal="false" data-anchor="header" data-open-on="search-open">
+<!-- Окно открывает событие поиска (лупа «Шапки» — data-action="search.open"), ставится под шапкой страницы, где бы ни стояла секция. Как на проде, страницу за панелью можно листать (data-lock-scroll="false"). -->
+<div data-behavior="dialog" data-transition="drop" data-modal="false" data-lock-scroll="false" data-anchor="header" data-open-on="search-open">
   <dialog class="m-0 w-full max-w-none border-0 border-b border-border bg-popover px-4 py-5 text-popover-foreground shadow-popover" data-part="content" aria-label="Поиск">
     <div class="mx-auto flex max-w-page items-start gap-2 font-body">
       <div class="flex min-w-0 flex-1 flex-col gap-4" data-behavior="search" data-limit="8">

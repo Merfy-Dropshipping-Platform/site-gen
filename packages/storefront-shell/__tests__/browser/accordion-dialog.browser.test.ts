@@ -28,7 +28,7 @@ const HEADER = `<merfy-section data-section="shop:header" data-section-id="heade
     <button data-part="open" id="open-menu">Меню</button>
     <dialog data-part="content" id="menu"><a href="#catalog" id="menu-link">Каталог</a></dialog>
   </div>
-  <div data-behavior="dialog" data-modal="false">
+  <div data-behavior="dialog" data-modal="false" data-lock-scroll="false">
     <button data-part="open" id="open-search">Поиск</button>
     <dialog data-part="content" id="search"><input aria-label="Поиск"></dialog>
   </div>
@@ -217,7 +217,7 @@ describe('dialog', () => {
     await page.close();
   });
 
-  it('немодальное меню: show(), верх — по низу шапки, drop за 300 мс; прокрутка страницы свободна; повторное нажатие закрывает', async () => {
+  it('немодальное меню: show(), верх — по низу шапки, drop за 300 мс; прокрутка страницы запрещена, как у меню на проде; повторное нажатие закрывает', async () => {
     const { page } = await open(HEADER);
     const [menu] = await clickAndRead(page, '#open-menu', '#menu');
     expect(await page.$eval('#menu', (el) => el.hasAttribute('open') && !el.matches(':modal'))).toBe(true);
@@ -225,11 +225,25 @@ describe('dialog', () => {
     expect(menu?.first.clipPath).toBeDefined();
     expect(menu?.easing).toEqual(curve('material'));
     expect(await page.$eval('#menu', (el) => Math.round(el.getBoundingClientRect().top))).toBe(80);
-    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
     await settle(page);
     await page.click('#open-menu');
     await page.waitForFunction(() => !document.getElementById('menu')?.hasAttribute('open'));
     expect(await page.getAttribute('#open-menu', 'aria-expanded')).toBe('false');
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    await page.close();
+  });
+
+  it('поиск (data-lock-scroll="false") — прокрутка свободна; меню запирает, поиск после него — отпускает', async () => {
+    const { page } = await open(HEADER);
+    await page.click('#open-search');
+    expect(await isOpen(page, '#search')).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    await page.click('#open-menu');
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
+    await page.click('#open-search');
+    await page.waitForFunction(() => !document.getElementById('menu')?.hasAttribute('open'));
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
     await page.close();
   });
 
@@ -301,13 +315,49 @@ describe('dialog: anchor', () => {
     await page.close();
   });
 
-  it('немодальное окно не запирает прокрутку страницы — как окна «добавлено» у пяти тем', async () => {
-    const { page, errors } = await open(PAGE(' data-anchor="header"'));
+  // Колесо мыши, а не window.scrollTo: программная прокрутка работает и при overflow: hidden.
+  const wheel = async (page: Page) => {
+    await page.mouse.move(640, 500);
+    await page.mouse.wheel(0, 300);
+    await page.waitForTimeout(250);
+    return page.evaluate(() => Math.round(window.scrollY));
+  };
+
+  it('data-lock-scroll="false": страницу за немодальным окном можно листать, запрет не остаётся после закрытия', async () => {
+    const { page, errors } = await open(PAGE(' data-anchor="header" data-lock-scroll="false"'));
     await press(page);
     expect(await isOpen(page, '#panel')).toBe(true);
     expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
-    await scrollTo(page, 300);
-    expect(await page.evaluate(() => Math.round(window.scrollY))).toBe(300);
+    expect(await wheel(page)).toBeGreaterThan(0);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.getElementById('panel')?.hasAttribute('open'));
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('свойство не объявлено: немодальное окно запирает прокрутку, закрытие её отпускает', async () => {
+    const { page, errors } = await open(PAGE(' data-anchor="header"'));
+    await press(page);
+    expect(await isOpen(page, '#panel')).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
+    expect(await wheel(page)).toBe(0);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.getElementById('panel')?.hasAttribute('open'));
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    expect(await wheel(page)).toBeGreaterThan(0);
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('окно «Товар добавлен» (немодальное, под шапкой, merfy:cart:add) запирает прокрутку, пока открыто', async () => {
+    const { page, errors } = await open(PAGE(' data-anchor="header" data-open-on="cart-add"'));
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('merfy:cart:add', { detail: {} })));
+    await page.waitForFunction(() => document.getElementById('panel')?.hasAttribute('open') === true);
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
+    expect(await wheel(page)).toBe(0);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.documentElement.style.overflow === '');
     expect(errors).toEqual([]);
     await page.close();
   });

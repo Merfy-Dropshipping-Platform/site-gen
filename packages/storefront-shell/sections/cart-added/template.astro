@@ -1,6 +1,6 @@
 <!-- Значки — Lucide (circle-check, image), лицензия ISC, lucide.dev/license. -->
-<!-- Как на проде: окно открывается под шапкой у значка корзины, страницу не затемняет и не запирает прокрутку —
-     немодальное окно поведения dialog с data-anchor="header". -->
+<!-- Как на проде (cart-added-modal.ts, lockBody): окно открывается под шапкой у значка корзины, страницу не затемняет,
+     но прокрутку запирает — немодальное окно поведения dialog с data-anchor="header", запрет прокрутки по умолчанию. -->
 <div data-behavior="dialog" data-transition="fade" data-modal="false" data-anchor="header" data-open-on="cart-add">
   <dialog data-part="content" class="scheme-cart-drawer right-4 top-0 w-full max-w-xs rounded-popover border-width-popover border-border bg-background p-0 font-body text-foreground shadow-popover">
     <div class="flex flex-col gap-5 p-5">

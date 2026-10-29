@@ -23,7 +23,7 @@ const HEADER = `<merfy-section data-section="shop:header" data-section-id="heade
       <li data-part="item"><a data-part="link" id="contacts" href="#contacts">Контакты</a></li>
     </ul>
   </nav>
-  <div data-behavior="dialog" data-modal="false" data-transition="fade">
+  <div data-behavior="dialog" data-modal="false" data-lock-scroll="false" data-transition="fade">
     <button data-part="open" id="search-open" aria-label="Поиск">Поиск</button>
     <dialog data-part="content" id="search"><form role="search"><input type="search" name="q" aria-label="Поиск" autofocus></form></dialog>
   </div>
@@ -78,7 +78,7 @@ describe('разметка «Шапки» в Chromium', () => {
     await page.close();
   });
 
-  it('панель поиска: поле в фокусе при открытии, прокрутка страницы свободна (немодальное окно её не запирает), Escape возвращает фокус на значок', async () => {
+  it('панель поиска: поле в фокусе при открытии, прокрутка страницы свободна (data-lock-scroll="false", как на проде), Escape возвращает фокус на значок', async () => {
     const { page } = await open();
     await page.click('#search-open');
     expect(

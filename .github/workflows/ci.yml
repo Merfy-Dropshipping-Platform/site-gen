@@ -2400,7 +2400,7 @@ jobs:
 
   # Тексты документации витринного SDK (packages/sdk-docs/generated) → MinIO, бакет merfy-docs
   # (раздел «Документация», З2). Только на пуш в dev и только если пуш менял packages/sdk-docs/**.
-  # Нет секретов DOCS_S3_ACCESS_KEY / DOCS_S3_SECRET_KEY — шаг пропускается, CI не падает.
+  # Нет секретов DOCS_S3_ENDPOINT / DOCS_S3_ACCESS_KEY / DOCS_S3_SECRET_KEY — шаг пропускается, CI не падает.
   # Свежесть generated/ проверяет тест пакета в build-and-test, а эта джоба идёт после него.
   publish-sdk-docs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
@@ -2417,6 +2417,7 @@ jobs:
         id: gate
         env:
           BEFORE: ${{ github.event.before }}
+          DOCS_S3_ENDPOINT: ${{ secrets.DOCS_S3_ENDPOINT }}
           DOCS_S3_ACCESS_KEY: ${{ secrets.DOCS_S3_ACCESS_KEY }}
           DOCS_S3_SECRET_KEY: ${{ secrets.DOCS_S3_SECRET_KEY }}
         run: |
@@ -2429,8 +2430,8 @@ jobs:
             echo "packages/sdk-docs в этом пуше не менялся — выгрузка не нужна"
             run=false
           fi
-          if [ "$run" = true ] && { [ -z "$DOCS_S3_ACCESS_KEY" ] || [ -z "$DOCS_S3_SECRET_KEY" ]; }; then
-            echo "::notice::секреты DOCS_S3_ACCESS_KEY / DOCS_S3_SECRET_KEY не заданы — выгрузка документации пропущена"
+          if [ "$run" = true ] && { [ -z "$DOCS_S3_ENDPOINT" ] || [ -z "$DOCS_S3_ACCESS_KEY" ] || [ -z "$DOCS_S3_SECRET_KEY" ]; }; then
+            echo "::notice::секреты DOCS_S3_ENDPOINT / DOCS_S3_ACCESS_KEY / DOCS_S3_SECRET_KEY не заданы — выгрузка документации пропущена"
             run=false
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
@@ -2458,6 +2459,7 @@ jobs:
       - name: Выгрузить документацию витринного SDK в MinIO
         if: steps.gate.outputs.run == 'true'
         env:
+          DOCS_S3_ENDPOINT: ${{ secrets.DOCS_S3_ENDPOINT }}
           DOCS_S3_ACCESS_KEY: ${{ secrets.DOCS_S3_ACCESS_KEY }}
           DOCS_S3_SECRET_KEY: ${{ secrets.DOCS_S3_SECRET_KEY }}
         run: pnpm --dir packages/sdk-docs docs:publish

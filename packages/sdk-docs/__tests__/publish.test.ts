@@ -5,7 +5,6 @@ import { GetObjectCommand, PutObjectCommand, S3ServiceException } from '@aws-sdk
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_BUCKET,
-  DEFAULT_ENDPOINT,
   DocsPublishError,
   GENERATED_DIR,
   VERSIONS_KEY,
@@ -55,15 +54,14 @@ function fakeClient(stored: Record<string, string> = {}): { client: DocsClient; 
 const CONFIG: PublishConfig = { bucket: 'merfy-docs', endpoint: 'https://minio.test', accessKey: 'a', secretKey: 's' };
 
 describe('конфигурация выгрузки', () => {
-  it('бакет и адрес — по умолчанию, ключи берутся из окружения', () => {
-    expect(configFrom({ DOCS_S3_ACCESS_KEY: 'a', DOCS_S3_SECRET_KEY: 's' })).toEqual({
+  it('бакет — по умолчанию, адрес и ключи берутся из окружения', () => {
+    expect(configFrom({ DOCS_S3_ENDPOINT: 'https://e', DOCS_S3_ACCESS_KEY: 'a', DOCS_S3_SECRET_KEY: 's' })).toEqual({
       bucket: DEFAULT_BUCKET,
-      endpoint: DEFAULT_ENDPOINT,
+      endpoint: 'https://e',
       accessKey: 'a',
       secretKey: 's',
     });
     expect(DEFAULT_BUCKET).toBe('merfy-docs');
-    expect(DEFAULT_ENDPOINT).toBe('https://minio.merfy.ru');
   });
 
   it('бакет и адрес можно задать окружением', () => {
@@ -76,9 +74,11 @@ describe('конфигурация выгрузки', () => {
     expect(configFrom(env)).toMatchObject({ bucket: 'b', endpoint: 'https://e' });
   });
 
-  it('без ключей — понятная ошибка с именами переменных, значения не печатаются', () => {
-    expect(() => configFrom({})).toThrow('DOCS_S3_ACCESS_KEY, DOCS_S3_SECRET_KEY');
-    expect(() => configFrom({ DOCS_S3_ACCESS_KEY: 'a', DOCS_S3_SECRET_KEY: '  ' })).toThrow(/DOCS_S3_SECRET_KEY\.$/);
+  it('без адреса или ключей — понятная ошибка с именами переменных, значения не печатаются', () => {
+    expect(() => configFrom({})).toThrow('DOCS_S3_ENDPOINT, DOCS_S3_ACCESS_KEY, DOCS_S3_SECRET_KEY');
+    expect(() =>
+      configFrom({ DOCS_S3_ENDPOINT: 'https://e', DOCS_S3_ACCESS_KEY: 'a', DOCS_S3_SECRET_KEY: '  ' }),
+    ).toThrow(/DOCS_S3_SECRET_KEY\.$/);
     expect(() => configFrom({})).toThrow(DocsPublishError);
   });
 

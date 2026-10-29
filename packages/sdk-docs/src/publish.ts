@@ -10,7 +10,6 @@ import { PACKAGE_DIR, SDK_VERSION } from './meta';
 export const SECTION = 'storefront-sdk';
 export const SECTION_TITLE = 'Витринный SDK';
 export const DEFAULT_BUCKET = 'merfy-docs';
-export const DEFAULT_ENDPOINT = 'https://minio.merfy.ru';
 export const VERSIONS_KEY = `${SECTION}/versions.json`;
 export const GENERATED_DIR: string = join(PACKAGE_DIR, 'generated');
 
@@ -28,17 +27,24 @@ export type Env = Readonly<Record<string, string | undefined>>;
 
 const valueOf = (env: Env, name: string): string => env[name]?.trim() ?? '';
 
-// Бакет и адрес — по умолчанию прод-хранилище; ключей по умолчанию нет: без них выгрузка не начинается.
+// Бакет — по умолчанию merfy-docs; адреса хранилища и ключей по умолчанию нет: без них выгрузка не начинается.
 export function configFrom(env: Env): PublishConfig {
+  const endpoint = valueOf(env, 'DOCS_S3_ENDPOINT');
   const accessKey = valueOf(env, 'DOCS_S3_ACCESS_KEY');
   const secretKey = valueOf(env, 'DOCS_S3_SECRET_KEY');
-  const missing = [accessKey === '' ? 'DOCS_S3_ACCESS_KEY' : '', secretKey === '' ? 'DOCS_S3_SECRET_KEY' : ''].filter(
-    (name) => name !== '',
-  );
-  if (missing.length > 0) throw new DocsPublishError(`Не заданы ключи хранилища документации: ${missing.join(', ')}.`);
+  const missing = (
+    [
+      ['DOCS_S3_ENDPOINT', endpoint],
+      ['DOCS_S3_ACCESS_KEY', accessKey],
+      ['DOCS_S3_SECRET_KEY', secretKey],
+    ] as const
+  )
+    .filter(([, value]) => value === '')
+    .map(([name]) => name);
+  if (missing.length > 0) throw new DocsPublishError(`Не заданы адрес или ключи хранилища документации: ${missing.join(', ')}.`);
   return {
     bucket: valueOf(env, 'DOCS_S3_BUCKET') || DEFAULT_BUCKET,
-    endpoint: valueOf(env, 'DOCS_S3_ENDPOINT') || DEFAULT_ENDPOINT,
+    endpoint,
     accessKey,
     secretKey,
   };

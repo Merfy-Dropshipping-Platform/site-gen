@@ -1,8 +1,8 @@
 import { DocsPublishError, clientFor, configFrom, publishDocs } from '../src/publish';
 
 // pnpm docs:publish (раздел «Документация», З2): generated/ → MinIO, storefront-sdk/v<мажор>/ и versions.json.
-// Ключи — DOCS_S3_ACCESS_KEY и DOCS_S3_SECRET_KEY; бакет DOCS_S3_BUCKET (merfy-docs) и адрес DOCS_S3_ENDPOINT
-// (https://minio.merfy.ru) заданы по умолчанию. Без ключей — сообщение и код выхода 1.
+// Адрес DOCS_S3_ENDPOINT и ключи DOCS_S3_ACCESS_KEY, DOCS_S3_SECRET_KEY — обязательны; бакет DOCS_S3_BUCKET
+// по умолчанию merfy-docs. Без адреса или ключей — сообщение и код выхода 1.
 try {
   const config = configFrom(process.env);
   const result = await publishDocs(clientFor(config), config);

@@ -1,7 +1,9 @@
 import { defineSection, type Ctx, type El, type Money, type Order, type OrderLine, type OrderSummary } from '@merfy/shell';
 
-// «Заказы» (блок 10 «Секций и SDK», 10.8, «Решил сам» п. 20; часть 10в, Р10в-13): список и заказ по ?n=, отмена с
-// причиной; данные — ctx.orders с quiet: true, отказы — текст рядом (список) или вместо заказа.
+// «Заказы» по страницам кабинета прода (flux): список («Заказ №…», «от …», статус, «Перейти») и заказ по ?n= —
+// подзаголовок с e-mail (ctx.customer), мета «N товаров · от …», колонки товаров и данных; отмена с причиной —
+// окно behavior dialog, после успеха страница перезагружается, как у прода. Данные — ctx.orders с quiet: true,
+// отказы — текст рядом (список) или вместо заказа; гость — «Войдите…» со ссылкой на «Вход».
 
 const LIST_FAILED_TEXT = 'Не удалось загрузить заказы';
 const REASON_EMPTY_TEXT = 'Укажите причину отмены';
@@ -18,6 +20,20 @@ const optionsText = (line: OrderLine): string =>
   Object.entries(line.options)
     .map(([name, value]) => `${name}: ${value}`)
     .join(', ');
+
+// «2 товара · от 20.10.26» — склонение и дата как у страницы заказа прода.
+function metaText(order: Order): string {
+  const count = order.lines.length;
+  const last = count % 100;
+  const digit = count % 10;
+  let word = 'товаров';
+  if (!(last >= 11 && last <= 19)) {
+    if (digit === 1) word = 'товар';
+    else if (digit >= 2 && digit <= 4) word = 'товара';
+  }
+  const date = new Date(order.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  return `${count} ${word} · от ${date}`;
+}
 
 const notice = (message: string, target: El | null): void => {
   target?.text(message);
@@ -58,21 +74,22 @@ function fillLine(row: El, line: OrderLine): void {
   }
   row.ref('title')?.text(line.title);
   row.ref('options')?.text(optionsText(line));
-  row.ref('quantity')?.text(line.quantity);
+  row.ref('quantity')?.text(`${line.quantity} шт.`);
   row.ref('total')?.text(line.gift ? 'Подарок' : priceOf(line.total));
 }
 
-// Заказ: ячейки, строки, адрес (нет — строки нет), «Отменить заказ» — при canCancel, форма отмены скрыта.
+// Заказ: подзаголовок, мета, строки, адрес (нет — ячейки нет), «Отменить заказ» — при canCancel.
 function showOrder(order: Order, ctx: Ctx<Record<string, unknown>, 'orders'>): void {
   ctx.ref('order-error')?.hide();
   ctx.ref('order-body')?.show();
+  ctx.ref('order-subtitle')?.text(`Заказ №${order.number}`);
+  ctx.ref('order-meta')?.text(metaText(order));
   ctx.ref('order-number')?.text(order.number);
   ctx.ref('order-status')?.text(order.statusText);
   ctx.ref('address-row')?.toggle(order.address !== null);
   ctx.ref('order-address')?.text(order.address ?? '');
   ctx.ref('order-total')?.text(order.total === null ? '' : priceOf(order.total));
   ctx.ref('lines')?.list(order.lines, fillLine);
-  ctx.ref('cancel-form')?.hide();
   clearNotice(ctx.ref('cancel-error'));
   ctx.ref('cancel-open')?.toggle(order.canCancel);
 }
@@ -87,7 +104,7 @@ async function showOrderByNumber(number: string, ctx: Ctx<Record<string, unknown
   showOrder(result.data.order, ctx);
 }
 
-// Отмена: пустая причина — текст без запроса; успех — заказ из ответа заново, форма скрыта.
+// Отмена: пустая причина — текст без запроса; успех — страница перезагружается, как у прода.
 async function cancelOrder(number: string, ctx: Ctx<Record<string, unknown>, 'orders'>): Promise<void> {
   const reason = ctx.ref('reason')?.value().trim() ?? '';
   if (reason === '') {
@@ -99,15 +116,19 @@ async function cancelOrder(number: string, ctx: Ctx<Record<string, unknown>, 'or
     notice(result.error.message, ctx.ref('cancel-error'));
     return;
   }
-  showOrder(result.data.order, ctx);
+  window.location.reload();
 }
 
 export default defineSection({
   mount(_el, ctx) {
     if (ctx.mode === 'preview') {
       ctx.ref('loading')?.hide();
+      ctx.ref('empty')?.show();
       return;
     }
+    ctx.watch(ctx.customer.$customer, (state) => {
+      ctx.ref('email')?.text(state.ready && state.customer !== null ? state.customer.email : '');
+    });
     const number = ctx.page.query.n;
     const ext = ctx.page.query.ext;
     // Заказ расширения (?ext=<id>, блок 12 «Секций и SDK»): список скрыт, страницу показывает часть records.
@@ -124,16 +145,6 @@ export default defineSection({
     void showList(ctx);
   },
   actions: {
-    'cancel-open'(_target, ctx) {
-      ctx.ref('cancel-open')?.hide();
-      clearNotice(ctx.ref('cancel-error'));
-      ctx.ref('cancel-form')?.show();
-    },
-    'cancel-close'(_target, ctx) {
-      ctx.ref('cancel-form')?.hide();
-      clearNotice(ctx.ref('cancel-error'));
-      ctx.ref('cancel-open')?.show();
-    },
     'cancel-confirm'(_target, ctx) {
       const number = ctx.ref('order-number')?.text() ?? '';
       void cancelOrder(number, ctx);

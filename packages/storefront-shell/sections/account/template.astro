@@ -1,41 +1,51 @@
-<div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body">
-  <h1 class="m-0 font-heading weight-heading text-3xl text-heading">Основные данные</h1>
+<div class="mx-auto flex w-full max-w-page flex-col items-start gap-10 px-4 pb-28 pt-14 font-body text-foreground">
+  <!-- «Личный кабинет» по страницам кабинета прода (flux): навигация кабинета — как у прода на /account
+       («Основные данные», «Мои заказы»; у новой архитектуры /account — копия этой страницы, поэтому навигация
+       здесь). Заголовок 20 px, заглавные — вид flux; поля — как «Вход». -->
+  <nav aria-label="Меню личного кабинета" class="flex flex-col gap-3">
+    <a aria-current="page" class="text-base text-foreground no-underline" href="/account/profile">Основные данные</a>
+    <a class="text-base text-muted-foreground no-underline hover:underline" href="/account/orders">Мои заказы</a>
+    <a class="text-base text-muted-foreground no-underline hover:underline" href="/wishlist">Избранное</a>
+  </nav>
+  <div class="flex flex-col gap-1">
+    <h1 class="m-0 font-heading text-xl font-normal uppercase text-heading">Основные данные</h1>
+    <p data-ref="email-display" class="m-0 text-base text-muted-foreground"></p>
+  </div>
   <p data-ref="loading" class="m-0 text-foreground">Загрузка...</p>
-  <div data-ref="form" class="flex max-w-page flex-col gap-4" hidden>
-    <label class="flex flex-col gap-2 text-sm">
+  <form data-ref="form" class="flex w-full max-w-96 flex-col gap-6" hidden>
+    <label class="flex flex-col gap-3 text-base">
       E-mail
       <input
         data-ref="email"
         type="email"
         disabled
-        class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
+        class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base font-light text-muted-foreground"
       />
     </label>
-    <label class="flex flex-col gap-2 text-sm">
-      Имя
-      <input data-ref="name" type="text" autocomplete="name" class="rounded-button border border-border bg-card px-4 py-2 text-foreground" />
-    </label>
-    <label class="flex flex-col gap-2 text-sm">
+    <label class="flex flex-col gap-3 text-base">
       Телефон
       <input
         data-ref="phone"
         type="tel"
         autocomplete="tel"
         placeholder="+7 (000) 000-00-00"
-        class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
+        class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base font-light text-foreground"
       />
     </label>
-    <p data-ref="status" class="m-0 text-sm" hidden></p>
-    <button
-      type="button"
-      data-ref="save"
-      data-action="save"
-      class="rounded-button bg-primary px-4 py-2 text-primary-foreground"
-    >
-      Сохранить
-    </button>
-    <a class="no-underline" href="/account/orders">Мои заказы</a>
-    <div data-ext-point="account"></div>
-    <button type="button" data-action="auth.signout" class="text-sm underline">Выйти из аккаунта</button>
-  </div>
+    <p data-ref="status" role="status" class="m-0 text-sm" hidden></p>
+    <div class="flex flex-wrap items-center gap-6">
+      <button
+        type="button"
+        data-ref="save"
+        data-action="save"
+        class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
+        Сохранить
+      </button>
+      <button type="button" data-action="auth.signout" class="cursor-pointer border-0 bg-transparent p-0 text-base text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+        Выйти из аккаунта
+      </button>
+    </div>
+  </form>
+  <div data-ext-point="account"></div>
 </div>

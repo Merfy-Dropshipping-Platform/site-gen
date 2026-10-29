@@ -24,16 +24,16 @@ const ACCOUNT_TEMPLATE = source('../sections/account/template.astro');
 const ORDERS_TEMPLATE = source('../sections/orders/template.astro');
 const ACCOUNT = `
   <p data-ref="loading">Загрузка...</p>
-  <div data-ref="form" hidden>
+  <span data-ref="email-display"></span>
+  <form data-ref="form" hidden>
     <input data-ref="email" type="email" disabled>
-    <input data-ref="name" type="text">
     <input data-ref="phone" type="tel">
     <p data-ref="status" hidden></p>
     <button type="button" data-ref="save" data-action="save">Сохранить</button>
-    <a href="/account/orders">Мои заказы</a>
     <button type="button" data-action="auth.signout">Выйти из аккаунта</button>
-  </div>`;
+  </form>`;
 const ORDERS = `
+  <span data-ref="email"></span>
   <div data-ref="list-view">
     <p data-ref="loading">Загрузка...</p>
     <p data-ref="empty" hidden>У вас пока нет заказов</p>
@@ -46,6 +46,7 @@ const ORDERS = `
   <div data-ref="order-view" hidden>
     <p data-ref="order-error" role="alert" hidden></p>
     <div data-ref="order-body">
+      <span data-ref="order-subtitle"></span><span data-ref="order-meta"></span>
       <span data-ref="order-number"></span><span data-ref="order-status"></span>
       <div data-ref="address-row"><span data-ref="order-address"></span></div>
       <span data-ref="order-total"></span>
@@ -53,13 +54,10 @@ const ORDERS = `
         <img data-ref="image" alt=""><span data-ref="title"></span><span data-ref="options"></span>
         <span data-ref="quantity"></span><span data-ref="total"></span>
       </li></template></ul>
-      <button type="button" data-ref="cancel-open" data-action="cancel-open" hidden>Отменить заказ</button>
-      <div data-ref="cancel-form" hidden>
-        <textarea data-ref="reason"></textarea>
-        <p data-ref="cancel-error" role="alert" hidden></p>
-        <button type="button" data-action="cancel-confirm">Подтвердить отмену</button>
-        <button type="button" data-action="cancel-close">Нет, оставить</button>
-      </div>
+      <button type="button" data-ref="cancel-open" hidden>Отменить заказ</button>
+      <textarea data-ref="reason"></textarea>
+      <p data-ref="cancel-error" role="alert" hidden></p>
+      <button type="button" data-action="cancel-confirm">Подтвердить отмену</button>
     </div>
   </div>`;
 const TOKEN = 't-customer-1';
@@ -84,9 +82,28 @@ const ORDER = {
     { name: 'Платок', imageUrl: null, options: null, quantity: 1, totalCents: 0, isBonus: true },
   ],
 };
+const realLocation = window.location;
 let core: StartedCore | undefined;
 let failures: ReturnType<typeof watchFailures>;
 let go: ReturnType<typeof vi.spyOn>;
+let reload: ReturnType<typeof vi.fn>;
+
+// window.location.reload в jsdom «Not implemented», а само свойство reload нельзя подменить даже прокси (non-
+// configurable): адрес страницы в тестах — копия настоящего с reload-заглушкой.
+// Значение — unknown: типы у window.location в defineProperty, каст не нужен.
+const stubLocation = (): unknown => ({
+  get hash() { return realLocation.hash; },
+  get host() { return realLocation.host; },
+  get hostname() { return realLocation.hostname; },
+  get href() { return realLocation.href; },
+  get origin() { return realLocation.origin; },
+  get pathname() { return realLocation.pathname; },
+  get port() { return realLocation.port; },
+  get protocol() { return realLocation.protocol; },
+  get search() { return realLocation.search; },
+  reload,
+  toString: () => realLocation.href,
+});
 
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 8; i += 1) await vi.advanceTimersByTimeAsync(0);
@@ -108,6 +125,7 @@ const type = (root: Element, ref: string, value: string): void => {
 const click = (root: Element, selector: string): void => root.querySelector<HTMLElement>(selector)?.click();
 const pageTag = (mode: 'live' | 'preview', id: string, path: string): string =>
   configTag(mode).replace('"page":{"id":"home","path":"/"}', `"page":{"id":"${id}","path":"${path}"}`);
+const meAnswer = { status: 200, body: { success: true, data: { customer: ANNA, session: {} } } };
 
 function openAccount(mode: 'live' | 'preview' = 'live') {
   window.history.replaceState(null, '', '/account/profile');
@@ -130,7 +148,10 @@ function openOrders(address = '/account/orders', mode: 'live' | 'preview' = 'liv
     gateway,
     page,
     run: () =>
-      (core = start({ parts: [auth, orders], sections: [entry('shop:orders', ordersScript, { uses: ['orders'] })] })),
+      (core = start({
+        parts: [auth, orders, customer],
+        sections: [entry('shop:orders', ordersScript, { uses: ['orders', 'customer'] })],
+      })),
   };
 }
 
@@ -140,6 +161,8 @@ beforeEach(() => {
   localStorage.setItem(CUSTOMER_TOKEN_KEY, TOKEN);
   failures = watchFailures();
   go = vi.spyOn(navigation, 'go').mockImplementation(() => undefined);
+  reload = vi.fn();
+  Object.defineProperty(window, 'location', { value: stubLocation(), configurable: true, writable: true });
 });
 
 afterEach(async () => {
@@ -150,6 +173,7 @@ afterEach(async () => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  Object.defineProperty(window, 'location', { value: realLocation, configurable: true, writable: true });
   window.history.replaceState(null, '', '/');
   document.head.replaceChildren();
   document.body.replaceChildren();
@@ -159,56 +183,60 @@ describe('шаблоны кабинета', () => {
   it('ссылки разметки и тексты flux', () => {
     for (const part of ACCOUNT.match(/data-(?:ref|action)="[^"]+"/g) ?? []) expect(ACCOUNT_TEMPLATE).toContain(part);
     for (const part of ORDERS.match(/data-(?:ref|action)="[^"]+"/g) ?? []) expect(ORDERS_TEMPLATE).toContain(part);
-    for (const part of ['Основные данные', 'Мои заказы', 'Выйти из аккаунта', '+7 (000) 000-00-00'])
+    for (const part of ['Основные данные', 'Мои заказы', 'Выйти из аккаунта', '+7 (000) 000-00-00', '/wishlist'])
       expect(ACCOUNT_TEMPLATE).toContain(part);
     for (const part of [
       'У вас пока нет заказов',
       'Вернуться к заказам',
       'После отмены восстановить заказ невозможно.',
       'Нет, оставить',
+      'Перейти',
     ])
       expect(ORDERS_TEMPLATE).toContain(part);
+  });
+
+  it('навигация кабинета: текущая страница и ссылки на заказы и избранное', () => {
+    expect(ACCOUNT_TEMPLATE).toContain('aria-current="page"');
+    expect(ACCOUNT_TEMPLATE).toContain('href="/account/orders"');
+    expect(ACCOUNT_TEMPLATE).toContain('href="/wishlist"');
+  });
+
+  it('отмена заказа — окно behavior dialog с открытием и закрытием', () => {
+    expect(ORDERS_TEMPLATE).toContain('data-behavior="dialog"');
+    expect(ORDERS_TEMPLATE).toContain('data-part="open"');
+    expect(ORDERS_TEMPLATE).toContain('data-part="close"');
   });
 });
 
 describe('«Личный кабинет»', () => {
-  it('до ответа — «Загрузка...»; потом форма с e-mail, именем и телефоном', async () => {
+  it('до ответа — «Загрузка...»; потом форма с e-mail и телефоном, e-mail в подзаголовке', async () => {
     const { gateway, page, run } = openAccount();
-    gateway.answer('GET /store/auth/me', {
-      status: 200,
-      body: { success: true, data: { customer: ANNA, session: {} } },
-    });
+    gateway.answer('GET /store/auth/me', meAnswer);
     run();
     expect([hidden(page, 'loading'), hidden(page, 'form')]).toEqual([false, true]);
     await settle();
     expect([hidden(page, 'loading'), hidden(page, 'form')]).toEqual([true, false]);
-    expect([valueOf(page, 'email'), valueOf(page, 'name'), valueOf(page, 'phone')]).toEqual([
+    expect([valueOf(page, 'email'), valueOf(page, 'phone'), text(page, 'email-display')]).toEqual([
       'anna@example.ru',
-      'Анна',
       '+79001234567',
+      'anna@example.ru',
     ]);
   });
 
-  it('«Сохранить» — PATCH profile, «Сохранено!»; сбой — «Не удалось сохранить», сбоя секции нет', async () => {
+  it('«Сохранить» — PATCH profile с телефоном, «Сохранено!»; сбой — «Не удалось сохранить», сбоя секции нет', async () => {
     const { gateway, page, run } = openAccount();
-    gateway.answer('GET /store/auth/me', {
-      status: 200,
-      body: { success: true, data: { customer: ANNA, session: {} } },
-    });
+    gateway.answer('GET /store/auth/me', meAnswer);
     gateway.answer(
       'PATCH /store/auth/profile',
-      { status: 200, body: { success: true, data: { ...ANNA, name: 'Анна К.' } } },
+      { status: 200, body: { success: true, data: { ...ANNA, phone: '+79001234500' } } },
       { status: 500, body: { success: false } },
     );
     run();
     await settle();
-    type(page, 'name', ' Анна К. ');
+    type(page, 'phone', ' +79001234500 ');
     click(page, '[data-action="save"]');
     await settle();
-    expect(gateway.calls.at(-1)).toEqual({
-      key: 'PATCH /store/auth/profile',
-      body: { name: 'Анна К.', phone: '+79001234567' },
-    });
+    expect(gateway.calls.at(-1)).toEqual({ key: 'PATCH /store/auth/profile', body: { phone: '+79001234500' } });
     expect([hidden(page, 'status'), text(page, 'status')]).toEqual([false, 'Сохранено!']);
     click(page, '[data-action="save"]');
     await settle();
@@ -218,10 +246,7 @@ describe('«Личный кабинет»', () => {
 
   it('«Выйти из аккаунта» — POST logout, переход на «Вход»', async () => {
     const { gateway, page, run } = openAccount();
-    gateway.answer('GET /store/auth/me', {
-      status: 200,
-      body: { success: true, data: { customer: ANNA, session: {} } },
-    });
+    gateway.answer('GET /store/auth/me', meAnswer);
     gateway.answer('POST /store/auth/logout', { status: 200, body: { success: true } });
     run();
     await settle();
@@ -241,8 +266,9 @@ describe('«Личный кабинет»', () => {
 });
 
 describe('«Заказы»', () => {
-  it('список: номер, дата, статус, «Перейти» на заказ', async () => {
+  it('список: номер, дата, статус, «Перейти» на заказ; e-mail в подзаголовке', async () => {
     const { gateway, page, run } = openOrders();
+    gateway.answer('GET /store/auth/me', meAnswer);
     gateway.answer('GET /store/orders', {
       status: 200,
       body: { success: true, data: [ORDER, { ...ORDER, orderNumber: '1043', status: 'sent' }] },
@@ -252,6 +278,7 @@ describe('«Заказы»', () => {
     expect(texts(page, 'number')).toEqual(['Заказ №1042', 'Заказ №1043']);
     expect(texts(page, 'status')).toEqual(['Оплачен', 'Отправлен']);
     expect(texts(page, 'date')[0]).toBe('от 20.10.2026');
+    expect(text(page, 'email')).toBe('anna@example.ru');
     expect(page.querySelector('[data-ref="open"]')?.getAttribute('href')).toBe('/account/orders?n=1042');
     expect([hidden(page, 'loading'), hidden(page, 'empty'), hidden(page, 'order-view')]).toEqual([true, true, true]);
   });
@@ -272,27 +299,33 @@ describe('«Заказы»', () => {
     expect(failures.details).toEqual([]);
   });
 
-  it('?n= — заказ: ячейки, строки, подарок, адрес; «Отменить заказ» виден', async () => {
+  it('?n= — заказ: подзаголовок, мета, ячейки, строки, подарок, адрес; «Отменить заказ» виден', async () => {
     const { gateway, page, run } = openOrders('/account/orders?n=1042');
+    gateway.answer('GET /store/auth/me', meAnswer);
     gateway.answer('GET /store/orders/1042', { status: 200, body: { success: true, data: ORDER } });
     run();
     await settle();
-    expect(gateway.keys()).toEqual(['GET /store/orders/1042']);
+    expect(gateway.keys().filter((key) => key.includes('/store/orders'))).toEqual(['GET /store/orders/1042']);
     expect([hidden(page, 'list-view'), hidden(page, 'order-view')]).toEqual([true, false]);
-    expect([text(page, 'order-number'), text(page, 'order-status'), text(page, 'order-address')]).toEqual([
-      '1042',
-      'Оплачен',
-      'Москва, Тверская, д. 7',
-    ]);
+    expect([
+      text(page, 'order-subtitle'),
+      text(page, 'order-meta'),
+      text(page, 'order-number'),
+      text(page, 'order-status'),
+      text(page, 'order-address'),
+    ]).toEqual(['Заказ №1042', '2 товара · от 20.10.26', '1042', 'Оплачен', 'Москва, Тверская, д. 7']);
     expect(text(page, 'order-total').replace(/\s/g, '')).toBe('4980₽');
     expect(texts(page, 'title')).toEqual(['Шарф «Нова»', 'Платок']);
     expect(texts(page, 'options')[0]).toBe('Цвет: Красный');
+    expect(texts(page, 'quantity')[0]).toBe('2 шт.');
     expect(texts(page, 'total')[1]).toBe('Подарок');
     expect(hidden(page, 'cancel-open')).toBe(false);
   });
 
-  it('отмена: пустая причина — текст без запроса; с причиной — POST cancel, статус «Отменён», кнопки нет', async () => {
+  it('отмена: пустая причина — текст без запроса; с причиной — POST cancel и перезагрузка страницы, как у прода', async () => {
     const { gateway, page, run } = openOrders('/account/orders?n=1042');
+    gateway.answer('GET /store/auth/me', meAnswer);
+    // после отмены часть orders перечитывает заказ — второй ответ
     gateway.answer(
       'GET /store/orders/1042',
       { status: 200, body: { success: true, data: ORDER } },
@@ -301,23 +334,35 @@ describe('«Заказы»', () => {
     gateway.answer('POST /store/orders/1042/cancel', { status: 200, body: { success: true } });
     run();
     await settle();
-    click(page, '[data-action="cancel-open"]');
-    expect([hidden(page, 'cancel-form'), hidden(page, 'cancel-open')]).toEqual([false, true]);
     click(page, '[data-action="cancel-confirm"]');
     await settle();
-    expect([text(page, 'cancel-error'), gateway.calls.length]).toEqual(['Укажите причину отмены', 1]);
+    expect([text(page, 'cancel-error'), gateway.calls.filter((call) => call.key.includes('cancel')).length]).toEqual([
+      'Укажите причину отмены',
+      0,
+    ]);
     type(page, 'reason', 'Передумала');
     click(page, '[data-action="cancel-confirm"]');
     await settle();
-    expect(gateway.calls.at(-2)).toEqual({ key: 'POST /store/orders/1042/cancel', body: { reason: 'Передумала' } });
-    expect([text(page, 'order-status'), hidden(page, 'cancel-open'), hidden(page, 'cancel-form')]).toEqual([
-      'Отменён',
-      true,
-      true,
-    ]);
+    expect(gateway.calls.find((call) => call.key === 'POST /store/orders/1042/cancel')).toEqual({
+      key: 'POST /store/orders/1042/cancel',
+      body: { reason: 'Передумала' },
+    });
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 
-  it('нет заказа — «Заказ не найден»; превью — без запросов', async () => {
+  it('отмена не удалась — текст ошибки, страница не перезагружается', async () => {
+    const { gateway, page, run } = openOrders('/account/orders?n=1042');
+    gateway.answer('GET /store/orders/1042', { status: 200, body: { success: true, data: ORDER } });
+    gateway.answer('POST /store/orders/1042/cancel', { status: 500, body: { success: false } });
+    run();
+    await settle();
+    type(page, 'reason', 'Передумала');
+    click(page, '[data-action="cancel-confirm"]');
+    await settle();
+    expect([hidden(page, 'cancel-error'), reload.mock.calls.length]).toEqual([false, 0]);
+  });
+
+  it('нет заказа — «Заказ не найден»; превью — «У вас пока нет заказов» без запросов', async () => {
     const first = openOrders('/account/orders?n=9');
     first.gateway.answer('GET /store/orders/9', { status: 404, body: { success: false, error: 'Order not found' } });
     first.run();
@@ -328,7 +373,11 @@ describe('«Заказы»', () => {
     const second = openOrders('/account/orders', 'preview');
     second.run();
     await settle();
-    expect([second.gateway.calls.length, hidden(second.page, 'loading')]).toEqual([0, true]);
+    expect([second.gateway.calls.length, hidden(second.page, 'loading'), hidden(second.page, 'empty')]).toEqual([
+      0,
+      true,
+      false,
+    ]);
   });
 });
 
@@ -361,10 +410,7 @@ describe('«Шапка»: «Профиль»', () => {
 
   it('вошедшая — /account; гостья — /login', async () => {
     const first = openHeader();
-    first.gateway.answer('GET /store/auth/me', {
-      status: 200,
-      body: { success: true, data: { customer: ANNA, session: {} } },
-    });
+    first.gateway.answer('GET /store/auth/me', meAnswer);
     first.gateway.answer('GET /storefront/wishlist', { status: 200, body: { success: true, data: [] } });
     await settle();
     expect(first.header.querySelector('[data-ref="profile"]')?.getAttribute('href')).toBe('/account');

@@ -247,7 +247,7 @@ describe('товар и коллекция в полях блока', () => {
       },
     });
 
-  it('product и collection в блоке — можно; blog, policy, hint и menu — только у секции', () => {
+  it('product, collection и hint в блоке — можно; blog, policy и menu — только у секции', () => {
     expect(problems(withField('product'))).toEqual([]);
     expect(problems(withField('collection'))).toEqual([]);
     expect(problems(withField('blog'))).toEqual([

@@ -88,12 +88,13 @@ describe('виды полей с записями', () => {
     ]);
   });
 
-  // С 29.10 товар и коллекция есть и у блоков («Тип» элемента «Галереи» на проде); подсказка — только у секции.
-  it('в блоке: product можно, hint — только у настроек секции, как menu', () => {
+  // С 29.10 товар и коллекция есть и у блоков («Тип» элемента «Галереи» на проде), с 29.10 (SDK 1.16) — и подсказка
+  // (подпанель «Стоимость» у «Товара»); блог, политика и меню — только у секции.
+  it('в блоке: product и hint можно, blog — только у настроек секции, как menu', () => {
     const manifest = manifestOf([], { blocks: { card: { title: 'Карточка', limit: 4, settings: [PRODUCT, PRICE] } } });
-    expect(problemsOf(manifest)).toEqual([
-      'setting-invalid blocks.card.settings.1: вид hint — только у настроек секции',
-    ]);
+    expect(problemsOf(manifest)).toEqual([]);
+    const blog = manifestOf([], { blocks: { card: { title: 'Карточка', limit: 4, settings: [POSTS] } } });
+    expect(problemsOf(blog)).toEqual(['setting-invalid blocks.card.settings.0: вид blog — только у настроек секции']);
   });
 
   it('словарь: product, collection, posts, policy, price — подписи прода; products — отказ', () => {

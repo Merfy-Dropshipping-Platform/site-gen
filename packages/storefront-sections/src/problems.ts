@@ -40,7 +40,7 @@ export const PROBLEM_CODES = [
   'release-changed',
   'setting-name-unknown',
   'setting-name-kind',
-  // Свои имена секции (раздел `names` в section.json): запись имени, повтор имени словаря, больше десяти имён.
+  // Свои имена секции (раздел `names` в section.json): запись имени, повтор имени словаря, больше двенадцати имён.
   'name-own-invalid',
   'name-own-in-dictionary',
   'names-limit',

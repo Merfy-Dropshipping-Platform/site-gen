@@ -132,12 +132,12 @@ describe('панель: поля прода в их порядке, новые �
       'buy-now',
       'wrapper:scheme',
       'wrapper:padding',
-      'price',
       'counter',
       'button-size',
       'button-style',
       'discount-badge',
       'breadcrumbs',
+      'stock',
       'favorite',
       'sold-out',
     ]);
@@ -148,12 +148,12 @@ describe('панель: поля прода в их порядке, новые �
       'Позиция фото',
       'Увеличение',
       'Динамическая кнопка',
-      'Стоимость',
       'Вид счётчика',
       'Размер кнопок',
       'Стиль кнопки',
       'Значок скидки',
       'Хлебные крошки',
+      'Наличие',
       'Избранное',
       'Распроданное',
     ]);
@@ -161,11 +161,12 @@ describe('панель: поля прода в их порядке, новые �
     expect(groupOf('product')).toBeUndefined();
   });
 
-  it('подпанели прода — блоки по одному: «Текст», «Название», «Варианты», «Количество», «Кнопки», «Описание», «Поделиться»', () => {
+  it('подпанели прода — блоки по одному: «Текст», «Название», «Стоимость», «Варианты», «Количество», «Кнопки», «Описание», «Поделиться»', () => {
     const blocks = manifest.blocks ?? {};
     expect(Object.values(blocks).map((block) => block.title)).toEqual([
       'Текст',
       'Название',
+      'Стоимость',
       'Варианты',
       'Количество',
       'Кнопки',
@@ -180,7 +181,8 @@ describe('панель: поля прода в их порядке, новые �
     const labels = (type: string) => (manifest.blocks?.[type]?.settings ?? []).map((field) => [field.label, field.section]);
     expect(labels('text')).toEqual([['Текст', undefined], ['Размер текста', undefined]]);
     expect(labels('title')).toEqual([['Размер', undefined]]);
-    expect(labels('variants')).toEqual([['Стиль', undefined], ['Вариации', undefined]]);
+    expect(labels('price')).toEqual([['Стоимость', undefined]]);
+    expect(labels('variants')).toEqual([['Стиль', undefined], ['Вариации', undefined], ['Подпись группы', undefined]]);
     expect(labels('buttons')).toEqual([
       ['Текст', 'Основная кнопка'],
       ['Текст', 'Динамическая кнопка'],
@@ -204,8 +206,17 @@ describe('панель: поля прода в их порядке, новые �
     expect(spec('size')).toMatchObject({ kind: 'select', default: 'medium' });
     expect(spec('image-position')).toMatchObject({ kind: 'radio', default: 'left' });
     expect(spec('zoom')).toMatchObject({ kind: 'radio', default: 'hover' });
-    expect(spec('buy-now')).toMatchObject({ kind: 'toggle', default: true });
-    expect(spec('price')).toMatchObject({ kind: 'hint', title: 'Настройка недоступна' });
+    expect(spec('buy-now')).toMatchObject({
+      kind: 'toggle',
+      default: true,
+      labels: { on: 'Скрыть/показать', off: 'Скрыть/показать' },
+    });
+    // «Стоимость» — подпанель из одной подсказки, как на проде.
+    expect(manifest.blocks?.price?.settings[0]?.setting).toMatchObject({
+      kind: 'hint',
+      title: 'Настройка недоступна',
+      link: { label: 'Товары', href: '/products' },
+    });
   });
 
   it('значения заготовки остаются валидными: у product только выбор товара, распроданное и увеличение', () => {
@@ -307,24 +318,48 @@ describe('цена, скидка, наличие', () => {
     expect(source).toMatch(/data-ref="badge"[^>]*\bhidden\b|\bhidden\b[^>]*data-ref="badge"/);
   });
 
-  it('наличие: «В наличии» и «Нет в наличии» с отключёнными кнопками покупки', async () => {
-    expect(await html()).toContain('>В наличии</span>');
-    const sold = await html({ product: { available: false } });
+  it('наличие по умолчанию скрыто, как у flux; «Наличие: Показать» выводит «В наличии» и «Нет в наличии»', async () => {
+    expect(await html()).not.toContain('data-ref="stock"');
+    expect(await html({ settings: { stock: true } })).toContain('>В наличии</span>');
+    const sold = await html({ settings: { stock: true }, product: { available: false } });
     expect(sold).toContain('>Нет в наличии</span>');
+  });
+
+  it('нет в наличии: кнопки покупки отключены, строка наличия не нужна', async () => {
+    const sold = await html({ product: { available: false } });
+    expect(sold).not.toContain('data-ref="stock"');
     for (const tag of withAttr(sold, 'data-action="cart.add"')) expect(tag).toContain('disabled');
     for (const tag of withAttr(sold, 'data-action="buy"')) expect(tag).toContain('disabled');
+  });
+
+  it('«Название» — только заголовок; цена и старая цена — в блоке «Стоимость»', async () => {
+    const blocks = blocksOf();
+    const title = blocks.filter((block) => block.type === 'title');
+    const withoutPrice = await html({ blocks: blocks.filter((block) => block.type !== 'price') });
+    expect(withoutPrice).toContain('<h1');
+    expect(withoutPrice).not.toContain('data-ref="price"');
+    const onlyPrice = await html({ blocks: blocks.filter((block) => block.type === 'price') });
+    expect(onlyPrice).not.toContain('<h1');
+    expect(onlyPrice).toContain(`data-ref="price">${money(190000).text}</span>`);
+    expect(title).toHaveLength(1);
   });
 });
 
 describe('варианты', () => {
-  it('список (умолчание): подпись группы, выпадающий список со значениями — действие variants.pick с id группы и значения', async () => {
+  it('список (умолчание): выпадающий список со значениями — действие variants.pick с id группы и значения; подписи группы нет, как у flux', async () => {
     const source = await html();
     expect(source).toContain('<details');
     expect(source).toContain('<summary');
     const picks = withAttr(source, 'data-action="variants.pick"');
     expect(picks).toHaveLength(4);
     expect(picks[0]).toContain('data-product-id="p-1" data-group="g-color" data-value="v-blue"');
+    expect(source).not.toContain('>Цвет</p>');
+  });
+
+  it('«Подпись группы: Показать» — название группы над списком', async () => {
+    const source = await html({ blocks: blocksOf({ variants: { 'variants-label': true } }) });
     expect(source).toContain('>Цвет</p>');
+    expect(source).toContain('>Размер</p>');
   });
 
   it('список: у каждого значения с цветом свой образец в строке выбранного, виден первый; fill скрипт не пишет', async () => {
@@ -424,9 +459,9 @@ describe('счётчик и кнопки покупки', () => {
 describe('блоки: нет блока — нет части', () => {
   const without = (type: string): RenderBlock[] => blocksOf().filter((block) => block.type !== type);
 
-  it('без «Названия» нет заголовка, цены и наличия', async () => {
-    const source = await html({ blocks: without('title') });
-    expect(source).not.toContain('<h1');
+  it('без «Названия» нет заголовка; без «Стоимости» нет цены и наличия', async () => {
+    expect(await html({ blocks: without('title') })).not.toContain('<h1');
+    const source = await html({ settings: { stock: true }, blocks: without('price') });
     expect(source).not.toContain('data-ref="price"');
     expect(source).not.toContain('data-ref="stock"');
   });

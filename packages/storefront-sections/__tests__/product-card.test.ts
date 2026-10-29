@@ -10,6 +10,7 @@ import {
   type SettingValues,
 } from '@merfy/storefront-build';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { resolveSectionBlocks } from '../src/blocks';
 import { checkTemplate, templateOptionsOf } from '../src/compile';
 import { readManifest, type SectionManifest } from '../src/format';
 import { settingFieldsOf } from '../src/fields';
@@ -538,14 +539,26 @@ describe('«Каталог»: список страницы', () => {
     expect(onlyFilters).toContain('data-group="availability"');
   });
 
-  it('подзаголовок — блок со своим корнем; выводится с «К» и «Ж»', async () => {
-    const source = await html('catalog', {
-      blocks: [
-        { id: 'subheading-1', type: 'subheading', settings: { heading: 'Подберите <em>товар</em>' } },
-        { id: 'sort-1', type: 'sort', settings: {} },
-      ],
-    });
-    expect(source).toMatch(/<p class="m-0 text-lg text-heading">Подберите <em>товар<\/em><\/p>/);
+  it('подзаголовок — поле секции под заголовком, вне формы фильтров и шторки; с «К» и «Ж»; пустой — абзаца нет', async () => {
+    const source = await html('catalog', { settings: { subheading: 'Подберите <em>товар</em>' } });
+    const subtitle = /<p class="[^"]*text-muted-foreground[^"]*">Подберите <em>товар<\/em><\/p>/.exec(source);
+    expect(subtitle).not.toBeNull();
+    const formAt = source.indexOf('data-part="filters"');
+    expect(formAt).toBeGreaterThan(0);
+    expect(subtitle?.index).toBeLessThan(formAt);
+    expect(source.indexOf('Подберите', formAt)).toBe(-1);
+    expect(await html('catalog')).not.toContain('Подберите');
+  });
+
+  it('старая копия: блок «Подзаголовок» ушёл из типов — его пропускают с пометкой, фильтры и сортировка целы', () => {
+    const manifest = manifestOf('catalog');
+    expect(Object.keys(manifest.blocks ?? {})).toEqual(['filters', 'sort']);
+    const resolved = resolveSectionBlocks(manifest, [
+      { id: 'subheading-1', type: 'subheading', settings: { heading: 'Подберите товар' } },
+      { id: 'sort-1', type: 'sort', settings: {} },
+    ]);
+    expect(resolved.blocks.map((block) => block.type)).toEqual(['sort']);
+    expect(resolved.invalid).toEqual(['blocks.0.type: типа subheading у секции нет']);
   });
 
   it('поиск ?q=: строка «Результаты поиска» и скрытое поле q в форме — фильтры его не теряют', async () => {

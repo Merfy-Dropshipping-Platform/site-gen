@@ -35,6 +35,7 @@
       }
     },
     { "id": "heading", "label": "Заголовок", "section": "Содержание", "setting": { "kind": "string", "default": "Каталог", "ai": "title" } },
+    { "id": "subheading", "label": "Подзаголовок", "section": "Содержание", "setting": { "kind": "string", "default": "", "ai": "description" } },
     {
       "id": "button-style",
       "label": "Стиль кнопки",
@@ -127,11 +128,6 @@
     }
   ],
   "blocks": {
-    "subheading": {
-      "title": "Подзаголовок",
-      "limit": 1,
-      "settings": [{ "id": "heading", "label": "Подзаголовок", "setting": { "kind": "string", "default": "", "ai": "description" } }]
-    },
     "filters": {
       "title": "Фильтры",
       "limit": 1,

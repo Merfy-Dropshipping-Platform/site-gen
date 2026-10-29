@@ -165,6 +165,7 @@ export interface CartLine {
   readonly options: Readonly<Record<string, string>>; // варианты: «Цвет» → «Красный»
   readonly total: Money; // сумма строки (totalCents)
   readonly gift: boolean; // подарок по акции (isBonus): 0 ₽, без «−», «+» и «Удалить»
+  readonly compareAt: Money | null; // цена до скидки за штуку (compareAtPriceCents): есть, только если больше цены
 }
 // Итоги корзины (блок 10, 10.1, Р10а-2): суммы считает orders. Корзины нет — нули, ready: true.
 export interface CartTotals {

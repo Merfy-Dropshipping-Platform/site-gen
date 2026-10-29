@@ -105,14 +105,14 @@ describe('свои имена секции', () => {
   });
 
   describe('names-limit', () => {
-    it('10 своих имён — можно', () => {
-      expect(linesOf(manyNames(10))).toEqual([]);
+    it('12 своих имён — можно', () => {
+      expect(linesOf(manyNames(12))).toEqual([]);
     });
 
-    it('11 своих имён — отказ, место — ключ names', () => {
-      expect(linesOf(manyNames(11))).toEqual([
+    it('13 своих имён — отказ, место — ключ names', () => {
+      expect(linesOf(manyNames(13))).toEqual([
         expect.stringMatching(
-          /^section\.json:\d+:\d+ — своих имён в `names` — 11, можно не больше 10; .* \[names-limit\]$/,
+          /^section\.json:\d+:\d+ — своих имён в `names` — 13, можно не больше 12; .* \[names-limit\]$/,
         ),
       ]);
     });

@@ -43,7 +43,8 @@
         "options": [
           { "value": "portrait", "label": "Портрет" },
           { "value": "square", "label": "Квадрат" },
-          { "value": "landscape", "label": "Широкий" }
+          { "value": "landscape", "label": "Широкий" },
+          { "value": "auto", "label": "Авто" }
         ]
       }
     },
@@ -89,6 +90,18 @@
           { "value": "none", "label": "Нет" },
           { "value": "square", "label": "Квадраты" },
           { "value": "circle", "label": "Кружки" }
+        ]
+      }
+    },
+    {
+      "id": "caption-case",
+      "label": "Регистр подписи",
+      "setting": {
+        "kind": "select",
+        "default": "normal",
+        "options": [
+          { "value": "normal", "label": "Как набрано" },
+          { "value": "uppercase", "label": "Заглавные" }
         ]
       }
     },

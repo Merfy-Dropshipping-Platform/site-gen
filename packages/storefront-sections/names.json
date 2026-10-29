@@ -232,6 +232,11 @@
       "about": "Образцы цвета товара на карточке: кружки, квадраты или без образцов; цвета — из `card.colors`",
       "asks": ["образцы цветов", "свотчи", "цвета товара", "swatches", "colors"]
     },
+    "caption-case": {
+      "kinds": ["select"], "label": "Регистр подписи", "group": "look",
+      "about": "Регистр названия на карточке товара: как набрано или заглавными; значение — `normal` или `uppercase`",
+      "asks": ["регистр подписи", "заглавные буквы", "капс", "uppercase", "text-transform"]
+    },
     "favorite": {
       "kinds": ["toggle"], "label": "Избранное", "group": "behavior",
       "about": "Сердечко «В избранное» на карточке: `data-action=\"favorites.toggle\"`; показано, пока избранное включено в «Настройках темы» (`wishlist-enabled`)",

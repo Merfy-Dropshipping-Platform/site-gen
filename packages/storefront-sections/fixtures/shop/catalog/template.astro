@@ -2,11 +2,14 @@
 const { settings, blocks, page, theme } = Astro.props;
 ---
 <!-- Значки — Lucide (image, plus, minus, heart, chevron-down, sliders-horizontal, search-x), лицензия ISC, lucide.dev/license. -->
+<!-- Фильтры — сворачиваемые группы (details и поведение accordion), вид flux: заголовок с шевроном и пункты-радио. Сбоку
+     группы раскрыты, столбцом; сверху (rose, satin, bloom) — свёрнуты в ряд, раскрытая открывается панелью под заголовком,
+     вне панели нажатие её закрывает (поведение catalog). В шторке телефона группы идут столбцом, как сбоку. -->
 <div
   class="mx-auto grid max-w-page gap-6 px-4 font-body text-foreground data-[filters-side=true]:md:grid-cols-4 md:gap-8"
   data-behavior="catalog"
   data-paging={settings.paging}
-  data-filters-side={blocks.some((item) => item.type === 'filters' && item.settings['filter-position'] === 'side')}
+  data-filters-side={blocks.some((item) => item.type === 'filters' && item.settings['filter-position'] === 'side') ? 'true' : 'false'}
 >
   {(settings.heading || page.list) && (
     <div class="col-span-full flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
@@ -22,7 +25,7 @@ const { settings, blocks, page, theme } = Astro.props;
   {page.list && page.list.query.q && (
     <p class="col-span-full m-0 text-base text-muted-foreground">Результаты поиска: «{page.list.query.q}»</p>
   )}
-  {page.list && blocks.length > 0 && (
+  {page.list && blocks.some((item) => item.type === 'filters' || item.type === 'sort') && (
     <form class="m-0 min-w-0 md:in-data-[filters-side=true]:col-span-1 md:in-data-[filters-side=true]:self-start" data-part="filters" method="get" action={page.list.url}>
     <div class="contents" data-behavior="dialog" data-transition="drawer" data-side="left">
       <button type="button" data-part="open" class="inline-flex h-11 w-fit cursor-pointer items-center gap-2 bg-transparent p-0 text-sm text-foreground md:hidden">
@@ -41,82 +44,145 @@ const { settings, blocks, page, theme } = Astro.props;
               <span class="sr-only">Закрыть</span>
             </button>
           </div>
-          <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4 md:flex-none md:flex-row md:flex-wrap md:items-center md:overflow-visible md:border-b md:border-border md:p-0 md:pb-5 md:in-data-[filters-side=true]:flex-col md:in-data-[filters-side=true]:items-stretch md:in-data-[filters-side=true]:border-b-0 md:in-data-[filters-side=true]:pb-0">
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto p-4 md:flex-none md:flex-row md:flex-wrap md:items-start md:gap-x-8 md:gap-y-4 md:overflow-visible md:border-b md:border-border md:p-0 md:pb-5 md:in-data-[filters-side=true]:flex-col md:in-data-[filters-side=true]:gap-y-6 md:in-data-[filters-side=true]:border-b-0 md:in-data-[filters-side=true]:pb-0">
       {page.list.query.q && <input type="hidden" name="q" value={page.list.query.q} />}
+      <div class="contents" data-behavior="accordion">
       {blocks.map((block) => (
         <div
-          class="flex min-w-0 flex-col gap-3 data-[type=filters]:md:flex-1 data-[type=filters]:md:flex-row data-[type=filters]:md:flex-wrap data-[type=filters]:md:items-center data-[type=sort]:md:ml-auto data-[type=subheading]:w-full md:in-data-[filters-side=true]:data-[type=filters]:flex-none md:in-data-[filters-side=true]:data-[type=filters]:flex-col md:in-data-[filters-side=true]:data-[type=filters]:items-stretch md:in-data-[filters-side=true]:data-[type=sort]:ml-0"
+          class="flex min-w-0 flex-col gap-2 data-[type=subheading]:order-first data-[type=subheading]:w-full data-[type=sort]:-order-1 md:in-data-[filters-side=true]:gap-6 md:in-data-[filters-side=false]:data-[type=filters]:flex-row md:in-data-[filters-side=false]:data-[type=filters]:flex-wrap md:in-data-[filters-side=false]:data-[type=filters]:items-start md:in-data-[filters-side=false]:data-[type=filters]:gap-x-8 md:in-data-[filters-side=false]:data-[type=filters]:gap-y-4 md:in-data-[filters-side=false]:data-[type=sort]:order-last md:in-data-[filters-side=false]:data-[type=sort]:ml-auto"
           data-type={block.type}
         >
           {block.type === 'subheading' && block.settings.heading && (
             <p class="m-0 text-lg text-heading" set:html={block.settings.heading} />
           )}
           {block.type === 'sort' && (
-            <div class="relative md:min-w-56">
-              <select
-                class="h-11 w-full cursor-pointer appearance-none rounded-input border-width-input border-input bg-background pl-4 pr-11 text-sm text-foreground shadow-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                name="sort"
-                aria-label="Сортировка"
-              >
-                {page.list.sorts.map((sort) => <option value={sort.value} selected={sort.selected}>{sort.label}</option>)}
-              </select>
-              <svg class="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-            </div>
-          )}
-          {block.type === 'filters' && page.list.facets && (
-            <Fragment>
-              {page.list.facets.collections.length > 0 && (
-                <div class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0 md:in-data-[filters-side=true]:flex-col md:in-data-[filters-side=true]:items-start" role="group" aria-label="Разделы">
-                  <a
-                    class="inline-flex h-11 shrink-0 items-center rounded-button border-width-input border-border bg-background px-4 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground aria-[current=page]:border-primary-border aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground"
-                    href={page.list.url}
-                    aria-current={page.list.facets.collections.some((collection) => collection.selected) ? undefined : 'page'}
-                  >Все</a>
-                  {page.list.facets.collections.map((collection) => (
-                    <label class="relative inline-flex shrink-0 cursor-pointer">
-                      <input class="peer sr-only" type="checkbox" name="collection" value={collection.slug} checked={collection.selected} />
-                      <span class="inline-flex h-11 items-center rounded-button border-width-input border-border bg-background px-4 text-sm text-foreground hover:bg-accent hover:text-accent-foreground peer-checked:border-primary-border peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">{collection.title}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              <div class="flex flex-wrap items-center gap-3 md:ml-auto md:in-data-[filters-side=true]:ml-0 md:in-data-[filters-side=true]:flex-col md:in-data-[filters-side=true]:items-start">
-                <label class="group inline-flex h-11 cursor-pointer items-center gap-3 text-sm text-foreground">
-                  <input class="peer sr-only" type="checkbox" name="availability" value="in_stock" checked={page.list.query.availability === 'in_stock'} />
-                  <span class="flex h-6 w-10 shrink-0 items-center rounded-full bg-border p-0.5 peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">
-                    <span class="size-5 rounded-full bg-background transition-transform group-has-checked:translate-x-4 motion-reduce:transition-none"></span>
-                  </span>
-                  Только в наличии
-                </label>
-                {page.list.facets.price && (
-                  <fieldset class="m-0 flex items-center gap-2 border-0 p-0">
-                    <legend class="sr-only">Цена, ₽</legend>
-                    <input class="h-11 w-28 rounded-input border-width-input border-input bg-background px-3 text-sm text-foreground shadow-input placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" type="number" inputmode="numeric" min="0" name="min_price" value={page.list.query.minPrice ?? ''} placeholder={`от ${Math.floor(page.list.facets.price.min.amount / 100)}`} aria-label="Цена от, ₽" />
-                    <input class="h-11 w-28 rounded-input border-width-input border-input bg-background px-3 text-sm text-foreground shadow-input placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" type="number" inputmode="numeric" min="0" name="max_price" value={page.list.query.maxPrice ?? ''} placeholder={`до ${Math.ceil(page.list.facets.price.max.amount / 100)}`} aria-label="Цена до, ₽" />
-                  </fieldset>
-                )}
+            <details
+              class="group/filter relative min-w-0"
+              data-group="sort"
+              open={blocks.some((item) => item.type === 'filters' && item.settings['filter-position'] === 'side')}
+            >
+              <summary class="flex h-11 cursor-pointer list-none items-center justify-between gap-2 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:h-auto md:min-h-6 md:in-data-[filters-side=false]:h-11 md:in-data-[filters-side=false]:justify-start">
+                <span>Сортировать</span>
+                <svg class="size-4 shrink-0 -rotate-90 text-muted-foreground transition-transform group-open/filter:rotate-0 motion-reduce:transition-none md:in-data-[filters-side=false]:rotate-0 md:in-data-[filters-side=false]:group-open/filter:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </summary>
+              <div class="flex flex-col gap-1 pb-3 md:gap-3 md:pb-0 md:pt-3 md:in-data-[filters-side=false]:absolute md:in-data-[filters-side=false]:right-0 md:in-data-[filters-side=false]:top-full md:in-data-[filters-side=false]:z-20 md:in-data-[filters-side=false]:mt-1 md:in-data-[filters-side=false]:w-64 md:in-data-[filters-side=false]:rounded-card md:in-data-[filters-side=false]:border md:in-data-[filters-side=false]:border-border md:in-data-[filters-side=false]:bg-background md:in-data-[filters-side=false]:p-4 md:in-data-[filters-side=false]:shadow-drawer" data-part="content">
+                {page.list.sorts.map((sort) => (
+                  <label class="group/option flex min-h-11 cursor-pointer items-center gap-2 text-base text-muted-foreground has-checked:text-foreground md:min-h-6">
+                    <input class="sr-only" type="radio" name="sort" value={sort.value} checked={sort.selected} />
+                    <span class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground group-has-checked/option:border-foreground group-has-focus-visible/option:outline-2 group-has-focus-visible/option:outline-offset-2 group-has-focus-visible/option:outline-ring" aria-hidden="true">
+                      <span class="size-2.5 rounded-full bg-foreground opacity-0 group-has-checked/option:opacity-100"></span>
+                    </span>
+                    <span>{sort.label}</span>
+                  </label>
+                ))}
               </div>
-              {page.list.facets.groups.length > 0 && (
-                <div class="flex flex-col gap-5 md:flex-row md:flex-wrap md:items-start md:in-data-[filters-side=true]:flex-col">
-                  {page.list.facets.groups.map((group) => (
-                    <fieldset class="m-0 flex flex-col gap-3 border-0 border-t border-border p-0 pt-4 md:border-t-0 md:pt-0 md:in-data-[filters-side=true]:border-t md:in-data-[filters-side=true]:pt-4">
-                      <legend class="float-left mb-3 w-full p-0 text-sm text-heading">{group.name}</legend>
-                      <div class="flex flex-wrap gap-2">
-                        {group.values.map((value) => (
-                          <label class="relative inline-flex cursor-pointer">
-                            <input class="peer sr-only" type="checkbox" name={`filter.${group.key}`} value={value.value} checked={value.selected} />
-                            <span class="inline-flex h-11 items-center rounded-button border-width-input border-border px-4 text-sm hover:bg-accent hover:text-accent-foreground peer-checked:border-primary-border peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">{value.value}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </fieldset>
-                  ))}
+            </details>
+          )}
+          {block.type === 'filters' && page.list.facets && [block.settings['filter-position'] === 'side'].map((side) => (
+            <Fragment>
+              <details class="group/filter relative min-w-0" data-group="availability" open={side}>
+                <summary class="flex h-11 cursor-pointer list-none items-center justify-between gap-2 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:h-auto md:min-h-6 md:in-data-[filters-side=false]:h-11 md:in-data-[filters-side=false]:justify-start">
+                  <span>Наличие</span>
+                  <svg class="size-4 shrink-0 -rotate-90 text-muted-foreground transition-transform group-open/filter:rotate-0 motion-reduce:transition-none md:in-data-[filters-side=false]:rotate-0 md:in-data-[filters-side=false]:group-open/filter:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                </summary>
+                <div class="flex flex-col gap-1 pb-3 md:gap-3 md:pb-0 md:pt-3 md:in-data-[filters-side=false]:absolute md:in-data-[filters-side=false]:left-0 md:in-data-[filters-side=false]:top-full md:in-data-[filters-side=false]:z-20 md:in-data-[filters-side=false]:mt-1 md:in-data-[filters-side=false]:w-64 md:in-data-[filters-side=false]:rounded-card md:in-data-[filters-side=false]:border md:in-data-[filters-side=false]:border-border md:in-data-[filters-side=false]:bg-background md:in-data-[filters-side=false]:p-4 md:in-data-[filters-side=false]:shadow-drawer" data-part="content">
+                  <label class="group/option flex min-h-11 cursor-pointer items-center gap-2 text-base text-muted-foreground has-checked:text-foreground md:min-h-6">
+                    <input class="sr-only" type="radio" name="availability" value="" checked={!page.list.query.availability} />
+                    <span class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground group-has-checked/option:border-foreground group-has-focus-visible/option:outline-2 group-has-focus-visible/option:outline-offset-2 group-has-focus-visible/option:outline-ring" aria-hidden="true">
+                      <span class="size-2.5 rounded-full bg-foreground opacity-0 group-has-checked/option:opacity-100"></span>
+                    </span>
+                    <span>Все</span>
+                  </label>
+                  <label class="group/option flex min-h-11 cursor-pointer items-center gap-2 text-base text-muted-foreground has-checked:text-foreground md:min-h-6">
+                    <input class="sr-only" type="radio" name="availability" value="in_stock" checked={page.list.query.availability === 'in_stock'} />
+                    <span class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground group-has-checked/option:border-foreground group-has-focus-visible/option:outline-2 group-has-focus-visible/option:outline-offset-2 group-has-focus-visible/option:outline-ring" aria-hidden="true">
+                      <span class="size-2.5 rounded-full bg-foreground opacity-0 group-has-checked/option:opacity-100"></span>
+                    </span>
+                    <span>В наличии</span>
+                  </label>
+                  <label class="group/option flex min-h-11 cursor-pointer items-center gap-2 text-base text-muted-foreground has-checked:text-foreground md:min-h-6">
+                    <input class="sr-only" type="radio" name="availability" value="sold_out" checked={page.list.query.availability === 'sold_out'} />
+                    <span class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground group-has-checked/option:border-foreground group-has-focus-visible/option:outline-2 group-has-focus-visible/option:outline-offset-2 group-has-focus-visible/option:outline-ring" aria-hidden="true">
+                      <span class="size-2.5 rounded-full bg-foreground opacity-0 group-has-checked/option:opacity-100"></span>
+                    </span>
+                    <span>Распродано</span>
+                  </label>
                 </div>
+              </details>
+              {page.list.facets.price && (
+                <details class="group/filter relative min-w-0" data-group="price" open={side}>
+                  <summary class="flex h-11 cursor-pointer list-none items-center justify-between gap-2 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:h-auto md:min-h-6 md:in-data-[filters-side=false]:h-11 md:in-data-[filters-side=false]:justify-start">
+                    <span>Стоимость</span>
+                    <svg class="size-4 shrink-0 -rotate-90 text-muted-foreground transition-transform group-open/filter:rotate-0 motion-reduce:transition-none md:in-data-[filters-side=false]:rotate-0 md:in-data-[filters-side=false]:group-open/filter:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </summary>
+                  <div class="flex flex-col pb-3 md:pb-0 md:pt-3 md:in-data-[filters-side=false]:absolute md:in-data-[filters-side=false]:left-0 md:in-data-[filters-side=false]:top-full md:in-data-[filters-side=false]:z-20 md:in-data-[filters-side=false]:mt-1 md:in-data-[filters-side=false]:w-64 md:in-data-[filters-side=false]:rounded-card md:in-data-[filters-side=false]:border md:in-data-[filters-side=false]:border-border md:in-data-[filters-side=false]:bg-background md:in-data-[filters-side=false]:p-4 md:in-data-[filters-side=false]:shadow-drawer" data-part="content">
+                    <label class="flex h-11 items-center justify-between gap-2 border-b border-border text-base text-muted-foreground md:h-10">
+                      <span>от</span>
+                      <span class="flex h-full items-center gap-2">
+                        <input class="h-full w-24 border-0 bg-transparent p-0 text-right text-base text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" name="min_price" value={page.list.query.minPrice ?? ''} placeholder={`${Math.floor(page.list.facets.price.min.amount / 100)}`} aria-label="Цена от, ₽" />
+                        <span aria-hidden="true">₽</span>
+                      </span>
+                    </label>
+                    <label class="flex h-11 items-center justify-between gap-2 border-b border-border text-base text-muted-foreground md:h-10">
+                      <span>до</span>
+                      <span class="flex h-full items-center gap-2">
+                        <input class="h-full w-24 border-0 bg-transparent p-0 text-right text-base text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" name="max_price" value={page.list.query.maxPrice ?? ''} placeholder={`${Math.ceil(page.list.facets.price.max.amount / 100)}`} aria-label="Цена до, ₽" />
+                        <span aria-hidden="true">₽</span>
+                      </span>
+                    </label>
+                  </div>
+                </details>
+              )}
+              {page.list.facets.groups.map((group) => (
+                <details class="group/filter relative min-w-0" data-group={`filter.${group.key}`} open={side}>
+                  <summary class="flex h-11 cursor-pointer list-none items-center justify-between gap-2 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:h-auto md:min-h-6 md:in-data-[filters-side=false]:h-11 md:in-data-[filters-side=false]:justify-start">
+                    <span>{group.name}</span>
+                    <svg class="size-4 shrink-0 -rotate-90 text-muted-foreground transition-transform group-open/filter:rotate-0 motion-reduce:transition-none md:in-data-[filters-side=false]:rotate-0 md:in-data-[filters-side=false]:group-open/filter:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </summary>
+                  <div class="flex flex-col gap-1 pb-3 md:gap-3 md:pb-0 md:pt-3 md:in-data-[filters-side=false]:absolute md:in-data-[filters-side=false]:left-0 md:in-data-[filters-side=false]:top-full md:in-data-[filters-side=false]:z-20 md:in-data-[filters-side=false]:mt-1 md:in-data-[filters-side=false]:w-64 md:in-data-[filters-side=false]:rounded-card md:in-data-[filters-side=false]:border md:in-data-[filters-side=false]:border-border md:in-data-[filters-side=false]:bg-background md:in-data-[filters-side=false]:p-4 md:in-data-[filters-side=false]:shadow-drawer" data-part="content">
+                    {group.values.map((value) => (
+                      <label class="group/option flex min-h-11 cursor-pointer items-center gap-2 text-base text-muted-foreground has-checked:text-foreground md:min-h-6">
+                        <input class="sr-only" type="checkbox" name={`filter.${group.key}`} value={value.value} checked={value.selected} />
+                        <span class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground group-has-checked/option:border-foreground group-has-focus-visible/option:outline-2 group-has-focus-visible/option:outline-offset-2 group-has-focus-visible/option:outline-ring" aria-hidden="true">
+                          <span class="size-2.5 rounded-full bg-foreground opacity-0 group-has-checked/option:opacity-100"></span>
+                        </span>
+                        <span>{value.value}</span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+              ))}
+              {page.list.facets.collections.length > 0 && (
+                <details class="group/filter relative min-w-0" data-group="collections" open={side}>
+                  <summary class="flex h-11 cursor-pointer list-none items-center justify-between gap-2 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:h-auto md:min-h-6 md:in-data-[filters-side=false]:h-11 md:in-data-[filters-side=false]:justify-start">
+                    <span>Коллекции</span>
+                    <svg class="size-4 shrink-0 -rotate-90 text-muted-foreground transition-transform group-open/filter:rotate-0 motion-reduce:transition-none md:in-data-[filters-side=false]:rotate-0 md:in-data-[filters-side=false]:group-open/filter:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </summary>
+                  <div class="flex flex-col gap-1 pb-3 md:gap-3 md:pb-0 md:pt-3 md:in-data-[filters-side=false]:absolute md:in-data-[filters-side=false]:left-0 md:in-data-[filters-side=false]:top-full md:in-data-[filters-side=false]:z-20 md:in-data-[filters-side=false]:mt-1 md:in-data-[filters-side=false]:w-64 md:in-data-[filters-side=false]:rounded-card md:in-data-[filters-side=false]:border md:in-data-[filters-side=false]:border-border md:in-data-[filters-side=false]:bg-background md:in-data-[filters-side=false]:p-4 md:in-data-[filters-side=false]:shadow-drawer" data-part="content">
+                    <label class="group/option flex min-h-11 cursor-pointer items-center gap-2 text-base text-muted-foreground has-checked:text-foreground md:min-h-6">
+                      <input class="sr-only" type="radio" name="collection" value="" checked={!page.list.facets.collections.some((collection) => collection.selected)} />
+                      <span class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground group-has-checked/option:border-foreground group-has-focus-visible/option:outline-2 group-has-focus-visible/option:outline-offset-2 group-has-focus-visible/option:outline-ring" aria-hidden="true">
+                        <span class="size-2.5 rounded-full bg-foreground opacity-0 group-has-checked/option:opacity-100"></span>
+                      </span>
+                      <span>Все</span>
+                    </label>
+                    {page.list.facets.collections.map((collection) => (
+                      <label class="group/option flex min-h-11 cursor-pointer items-center gap-2 text-base text-muted-foreground has-checked:text-foreground md:min-h-6">
+                        <input class="sr-only" type="radio" name="collection" value={collection.slug} checked={collection.selected} />
+                        <span class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground group-has-checked/option:border-foreground group-has-focus-visible/option:outline-2 group-has-focus-visible/option:outline-offset-2 group-has-focus-visible/option:outline-ring" aria-hidden="true">
+                          <span class="size-2.5 rounded-full bg-foreground opacity-0 group-has-checked/option:opacity-100"></span>
+                        </span>
+                        <span>{collection.title}</span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
               )}
             </Fragment>
-          )}
+          ))}
         </div>
       ))}
+      </div>
           </div>
           <div class="border-t border-border p-4 md:hidden">
             <button type="submit" class="inline-flex h-12 w-full cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Показать</button>
@@ -148,6 +214,7 @@ const { settings, blocks, page, theme } = Astro.props;
         data-aspect-ratio={settings['aspect-ratio']}
         data-image-fit={settings['image-fit']}
         data-button-style={settings['button-style']}
+        data-caption-case={settings['caption-case']}
         data-swatches={settings.swatches}
       >
         {page.list.items.map((card) => (
@@ -164,7 +231,7 @@ const { settings, blocks, page, theme } = Astro.props;
                     <img class="size-full in-data-[image-fit=contain]:object-contain in-data-[image-fit=cover]:object-cover" data-part="image" src={card.image} alt={card.title} loading="lazy" />
                   </div>
                 ) : (
-                  <span class="flex size-full items-center justify-center text-muted-foreground">
+                  <span class="flex size-full items-center justify-center text-muted-foreground in-data-[aspect-ratio=auto]:aspect-square">
                     <svg class="size-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
                   </span>
                 )}
@@ -191,7 +258,7 @@ const { settings, blocks, page, theme } = Astro.props;
               {settings['quick-add'] === 'button' && (
                 <button
                   type="button"
-                  class="absolute bottom-2 right-2 inline-flex size-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary p-0 text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[available=false]:hidden md:bottom-3 md:right-3"
+                  class="absolute bottom-2 right-2 inline-flex size-11 items-center justify-center rounded-button border-width-button p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[available=false]:hidden in-data-[button-style=primary]:border-primary-border in-data-[button-style=primary]:bg-primary in-data-[button-style=primary]:text-primary-foreground in-data-[button-style=primary]:shadow-button in-data-[button-style=primary]:hover:bg-primary-hover in-data-[button-style=primary]:hover:text-primary-hover-foreground in-data-[button-style=secondary]:border-foreground in-data-[button-style=secondary]:bg-background in-data-[button-style=secondary]:text-foreground in-data-[button-style=secondary]:hover:bg-foreground in-data-[button-style=secondary]:hover:text-background in-data-[button-style=link]:border-transparent in-data-[button-style=link]:bg-background/90 in-data-[button-style=link]:text-foreground in-data-[button-style=link]:hover:bg-background md:bottom-3 md:right-3"
                   data-action="cart.add"
                   data-product-id={card.id}
                   data-variant-id={card.variantId ?? undefined}
@@ -203,7 +270,7 @@ const { settings, blocks, page, theme } = Astro.props;
               {settings['quick-add'] === 'hover' && (
                 <button
                   type="button"
-                  class="absolute inset-x-2 bottom-2 inline-flex h-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-sm uppercase text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[available=false]:hidden md:inset-x-3 md:bottom-3 md:opacity-0 md:group-hover/card:opacity-100"
+                  class="absolute inset-x-2 bottom-2 inline-flex h-11 items-center justify-center rounded-button border-width-button px-4 text-sm uppercase focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring in-data-[available=false]:hidden in-data-[button-style=primary]:border-primary-border in-data-[button-style=primary]:bg-primary in-data-[button-style=primary]:text-primary-foreground in-data-[button-style=primary]:shadow-button in-data-[button-style=primary]:hover:bg-primary-hover in-data-[button-style=primary]:hover:text-primary-hover-foreground in-data-[button-style=secondary]:border-foreground in-data-[button-style=secondary]:bg-background in-data-[button-style=secondary]:text-foreground in-data-[button-style=secondary]:hover:bg-foreground in-data-[button-style=secondary]:hover:text-background in-data-[button-style=link]:border-transparent in-data-[button-style=link]:bg-background/90 in-data-[button-style=link]:text-foreground in-data-[button-style=link]:underline in-data-[button-style=link]:underline-offset-4 in-data-[button-style=link]:hover:bg-background md:inset-x-3 md:bottom-3 md:opacity-0 md:group-hover/card:opacity-100"
                   data-action="cart.add"
                   data-product-id={card.id}
                   data-variant-id={card.variantId ?? undefined}
@@ -220,7 +287,7 @@ const { settings, blocks, page, theme } = Astro.props;
                   ))}
                 </div>
               )}
-              <a class="line-clamp-2 min-h-11 text-sm text-foreground no-underline hover:underline md:min-h-0 md:text-base" href={card.url}>{card.title}</a>
+              <a class="line-clamp-2 min-h-11 text-sm text-foreground no-underline hover:underline in-data-[caption-case=uppercase]:uppercase md:min-h-0 md:text-base" href={card.url}>{card.title}</a>
               <p class="m-0 flex flex-wrap items-baseline gap-x-2 card-align-center:justify-center card-align-right:justify-end">
                 <span class:list={['text-base weight-heading md:text-lg', card.compareAtPrice ? 'text-sale' : 'text-price']}>{card.price.text}</span>
                 {card.compareAtPrice && <s class="text-sm text-price-old">{card.compareAtPrice.text}</s>}

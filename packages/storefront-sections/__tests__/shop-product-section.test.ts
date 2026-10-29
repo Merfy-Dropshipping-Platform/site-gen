@@ -327,6 +327,15 @@ describe('варианты', () => {
     expect(source).toContain('>Цвет</p>');
   });
 
+  it('список: у каждого значения с цветом свой образец в строке выбранного, виден первый; fill скрипт не пишет', async () => {
+    const source = await html({ blocks: blocksOf({ variants: { 'variants-style': 'list', 'variants-shape': 'circle' } }) });
+    const swatches = withAttr(source, 'data-ref="current-swatch"');
+    expect(swatches.map((tag) => /data-value="([^"]*)"/.exec(tag)?.[1])).toEqual(['v-blue', 'v-red']);
+    expect(swatches[0]).not.toMatch(/\shidden[\s=>]/);
+    expect(swatches[1]).toMatch(/\shidden[\s=>]/);
+    expect(source).not.toContain('data-ref="current-fill"');
+  });
+
   it.each([
     ['circle', 'rounded-full'],
     ['square', 'rounded-none'],

@@ -68,15 +68,13 @@ function markHearts(hearts: readonly El[], ids: readonly string[]): void {
 // Выпадающий список группы: подпись и образец выбранного значения.
 function showCurrent(ctx: Ctx, button: El): void {
   const group = button.attr('data-group');
-  const swatch = button.attr('data-swatch');
+  const value = button.attr('data-value');
   ctx.refs('current').forEach((label) => {
     if (label.attr('data-group') === group) label.text(button.attr('data-label') ?? '');
   });
-  ctx.refs('current-fill').forEach((fill) => {
-    if (fill.attr('data-group') === group) fill.attr('fill', swatch ?? 'none');
-  });
+  // Образец у каждого значения свой (fill код секции не пишет): показан образец выбранного, у значения без цвета — никакой.
   ctx.refs('current-swatch').forEach((box) => {
-    if (box.attr('data-group') === group) box.toggle(swatch !== null);
+    if (box.attr('data-group') === group) box.toggle(box.attr('data-value') === value);
   });
 }
 

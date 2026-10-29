@@ -188,6 +188,8 @@ async function loadLive(session: Session, load: Load): Promise<void> {
 }
 
 function load(session: Session, how: How, url: URL): void {
+  // Enter в поле цены даёт и change, и submit: тот же адрес уже загружается — второй запрос не нужен.
+  if (how === 'replace' && session.current?.how === 'replace' && session.current.url.href === url.href) return;
   if (how === 'replace') session.current?.controller.abort();
   else if (session.current !== null) return; // «в конец» и «в начало» во время загрузки не запускаются
   const controller = new AbortController();

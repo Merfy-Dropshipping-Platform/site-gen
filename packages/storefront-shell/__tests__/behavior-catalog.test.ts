@@ -243,6 +243,16 @@ describe('поведение catalog: фильтры', () => {
     ]);
   });
 
+  it('Enter в поле: change и submit с тем же адресом — один запрос', async () => {
+    const asked = server({ '/catalog?sort=price_desc': pageHtml({ page: 1, rows: [4], form: FORM }, 'sort=price_desc') });
+    open({ page: 1, rows: [1, 2], form: FORM });
+    choose('price_desc', false);
+    part('filters')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await settle();
+    expect(asked.map((one) => one.path)).toEqual(['/catalog?sort=price_desc']);
+    expect(rows()).toEqual(['Товар 4']);
+  });
+
   it('новый выбор отменяет прошлый запрос', async () => {
     const asked = server({
       '/catalog?sort=price_desc': 'hang',

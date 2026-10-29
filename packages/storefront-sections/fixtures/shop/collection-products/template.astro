@@ -28,7 +28,7 @@ const { settings, blocks, theme } = Astro.props;
       data-swatches={settings.swatches}
     >
       {settings.collection.products.slice(0, settings.cards).map((card) => (
-        <li class="group/card relative flex h-full min-w-0 flex-col gap-3 border-border card-style-card:rounded-card card-style-card:border-width-card card-style-card:bg-card card-style-card:p-card card-style-card:text-card-foreground card-style-card:shadow-card card-align-center:text-center card-align-right:text-right motion-hover-lift:transition-transform motion-hover-lift:hover:-translate-y-1 motion-reduce:transition-none motion-reduce:hover:translate-y-0" data-available={card.available} data-ref="card">
+        <li class="scheme-card group/card relative flex h-full min-w-0 flex-col gap-3 border-border card-style-card:rounded-card card-style-card:border-width-card card-style-card:bg-card card-style-card:p-card card-style-card:text-card-foreground card-style-card:shadow-card card-align-center:text-center card-align-right:text-right motion-hover-lift:transition-transform motion-hover-lift:hover:-translate-y-1 motion-reduce:transition-none motion-reduce:hover:translate-y-0" data-available={card.available} data-ref="card">
           <div class="relative">
             <a
               class="block overflow-hidden rounded-media border-width-media border-border bg-muted shadow-media in-data-[aspect-ratio=portrait]:aspect-3/4 in-data-[aspect-ratio=square]:aspect-square in-data-[aspect-ratio=landscape]:aspect-4/3"

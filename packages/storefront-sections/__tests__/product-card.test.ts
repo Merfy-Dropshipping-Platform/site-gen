@@ -70,6 +70,10 @@ describe('карточка товара: одна на три секции', () 
     expect(cardMarkup('catalog')).toContain('data-ref="card"');
   });
 
+  it('строка карточки несёт scheme-card: «Цветовая схема карточки товара» темы доходит до подложки', () => {
+    expect(cardMarkup('catalog')).toMatch(/<li class="scheme-card group\/card /);
+  });
+
   it.each(SECTIONS.slice(1))('скрипт карточки у «%s» такой же, как у «Каталога»', (name) => {
     expect(scriptBody(name)).toBe(scriptBody('catalog'));
   });

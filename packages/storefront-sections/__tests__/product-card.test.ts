@@ -45,6 +45,7 @@ const scriptBody = (name: Name): string =>
 const CARD_FIELDS = [
   'button-style',
   'aspect-ratio',
+  'caption-case',
   'image-fit',
   'next-photo',
   'quick-add',
@@ -253,9 +254,10 @@ const buttons = (source: string, action: string): string[] =>
 
 describe.each(SECTIONS)('«%s»: параметры карточки', (name) => {
   it.each([
-    ['aspect-ratio', ['portrait', 'square', 'landscape']],
+    ['aspect-ratio', ['portrait', 'square', 'landscape', 'auto']],
     ['image-fit', ['cover', 'contain']],
     ['button-style', ['primary', 'secondary', 'link']],
+    ['caption-case', ['normal', 'uppercase']],
     ['swatches', ['none', 'square', 'circle']],
     ['columns-mobile', ['1', '2']],
   ] as const)('%s — признак на сетке и вариант класса для каждого значения', async (id, values) => {
@@ -381,6 +383,15 @@ describe.each(SECTIONS)('«%s»: параметры карточки', (name) =>
     expect(hover).toContain('focus-visible:opacity-100');
   });
 
+  it.each(['button', 'hover'])('«Стиль кнопки» действует и в режиме «%s»: вид кнопки по значению у сетки', async (mode) => {
+    const [add = ''] = buttons(await html(name, { settings: { 'quick-add': mode } }), 'cart.add');
+    const classes = attr(add, 'class') ?? '';
+    for (const style of ['primary', 'secondary', 'link'])
+      expect(classes, style).toContain(`in-data-[button-style=${style}]:bg-`);
+    // Заливка и рамка основной кнопки не заданы без значения: иначе стиль «Ссылка» остался бы с заливкой.
+    expect(classes.split(/\s+/)).not.toContain('bg-primary');
+  });
+
   it('кнопки на телефоне не ниже 44 px: у быстрого добавления h-11, у сердечка size-11', async () => {
     const source = await html(name, { settings: { 'quick-add': 'count' } });
     for (const tag of [
@@ -433,24 +444,108 @@ describe('«Каталог»: список страницы', () => {
     expect(source).toContain('data-part="list"');
   });
 
-  it('сортировка — select с пунктами страницы; цена — два поля от и до в рублях; «Только в наличии»', async () => {
+  const radios = (source: string, name: string): string[] =>
+    tags(source, `input\\b[^>]*type="radio"[^>]*name="${name}"`);
+  const groupOf = (source: string, group: string): string =>
+    tags(source, `details\\b[^>]*data-group="${group}"`)[0] ?? '';
+  const GROUPS = ['sort', 'availability', 'price', 'filter.цвет', 'collections'];
+
+  it('фильтры — сворачиваемые группы как у flux: заголовок со шевроном и пункты-радио; порядок блоков не важен', async () => {
     const source = await html('catalog');
-    expect(source).toContain('name="sort"');
-    expect(source).toContain('<option value="price_asc"');
-    expect(source).toContain('name="min_price"');
-    expect(source).toContain('placeholder="от 1200"');
-    expect(source).toContain('placeholder="до 3500"');
-    expect(source).toContain('name="availability"');
+    const found = tags(source, 'details\\b[^>]*data-group=').map((tag) => attr(tag, 'data-group'));
+    expect([...found].sort()).toEqual([...GROUPS].sort());
+    // Заголовок группы — summary с подписью и шевроном; сортировка в узкой колонке и в шторке — первой.
+    for (const title of ['Сортировать', 'Наличие', 'Стоимость', 'Цвет', 'Коллекции'])
+      expect(source).toMatch(new RegExp(`<summary[^>]*>\\s*<span>${title}</span>\\s*<svg`));
+    expect(source).toContain('data-type="sort"');
+    expect(source).toContain('data-type="filters"');
+    expect(source).toContain('data-behavior="accordion"');
+    expect(source).toContain('data-part="content"');
+  });
+
+  it('сортировка — радио с пунктами страницы, выбран текущий; «Наличие» — Все, В наличии, Распродано', async () => {
+    const source = await html('catalog');
+    expect(radios(source, 'sort').map((tag) => attr(tag, 'value'))).toEqual(['newest', 'price_asc']);
+    expect(radios(source, 'sort').map((tag) => /\schecked/.test(tag))).toEqual([true, false]);
+    expect(radios(source, 'availability').map((tag) => attr(tag, 'value'))).toEqual(['', 'in_stock', 'sold_out']);
+    expect(radios(source, 'availability').map((tag) => /\schecked/.test(tag))).toEqual([true, false, false]);
+    for (const title of ['Все', 'В наличии', 'Распродано']) expect(source).toContain(`<span>${title}</span>`);
+    expect(source).not.toContain('<select');
+  });
+
+  it('цена — два поля с подчёркиванием, подсказка — границы каталога в рублях, знак ₽; применяются по Enter и потере фокуса', async () => {
+    const source = await html('catalog');
+    const [min = '', max = ''] = tags(source, 'input\\b[^>]*name="m(?:in|ax)_price"');
+    expect(attr(min, 'placeholder')).toBe('1200');
+    expect(attr(max, 'placeholder')).toBe('3500');
+    // Текстовое поле без стрелок; применение — событие change формы (Enter, уход фокуса), не каждое нажатие.
+    expect(attr(min, 'type')).toBe('text');
+    expect(attr(min, 'inputmode')).toBe('numeric');
+    expect(source.match(/<span aria-hidden="true">₽<\/span>/g)).toHaveLength(2);
+    expect(source).toContain('border-b border-border');
   });
 
   it('значения цены и наличия выбраны из адреса', async () => {
     const source = await html('catalog', {
       list: LIST({ query: { ...EMPTY_LIST_QUERY, minPrice: 1500, maxPrice: 3000, availability: 'in_stock' } }),
     });
-    expect(source).toContain('name="min_price"');
     expect(source).toMatch(/name="min_price"[^>]*value="1500"/);
     expect(source).toMatch(/name="max_price"[^>]*value="3000"/);
-    expect(source).toMatch(/name="availability"[^>]*checked/);
+    expect(radios(source, 'availability').map((tag) => /\schecked/.test(tag))).toEqual([false, true, false]);
+  });
+
+  it('группы вариантов — пункты-флажки в виде кружков (несколько значений), коллекции — радио с «Все»', async () => {
+    const source = await html('catalog');
+    expect(tags(source, 'input\\b[^>]*type="checkbox"[^>]*name="filter\\.цвет"')).toHaveLength(1);
+    expect(radios(source, 'collection').map((tag) => attr(tag, 'value'))).toEqual(['', 'pledy']);
+    expect(radios(source, 'collection').map((tag) => /\schecked/.test(tag))).toEqual([true, false]);
+    const chosen = await html('catalog', {
+      list: LIST({
+        facets: {
+          price: null,
+          groups: [{ key: 'цвет', name: 'Цвет', values: [{ value: 'Синий', selected: true }] }],
+          collections: [{ slug: 'pledy', title: 'Пледы', selected: true }],
+        },
+      }),
+    });
+    expect(tags(chosen, 'input\\b[^>]*name="filter\\.цвет"').map((tag) => /\schecked/.test(tag))).toEqual([true]);
+    expect(radios(chosen, 'collection').map((tag) => /\schecked/.test(tag))).toEqual([false, true]);
+    // Нет границ цены — нет и группы «Стоимость».
+    expect(chosen).not.toContain('data-group="price"');
+  });
+
+  it('сбоку группы раскрыты; сверху свёрнуты и открываются панелью (вид rose, satin, bloom)', async () => {
+    const side = await html('catalog');
+    for (const group of GROUPS) expect(groupOf(side, group), group).toMatch(/\sopen[\s>=]/);
+    const top = await html('catalog', {
+      blocks: [
+        { id: 'filters-1', type: 'filters', settings: { 'filter-position': 'top' } },
+        { id: 'sort-1', type: 'sort', settings: {} },
+      ],
+    });
+    for (const group of GROUPS) expect(groupOf(top, group), group).not.toMatch(/\sopen[\s>=]/);
+    expect(top).toContain('md:in-data-[filters-side=false]:absolute');
+  });
+
+  it('только сортировка — форма и группа «Сортировать» есть, групп фильтров нет; только фильтры — наоборот', async () => {
+    const onlySort = await html('catalog', { blocks: [{ id: 'sort-1', type: 'sort', settings: {} }] });
+    expect(onlySort).toContain('data-group="sort"');
+    expect(onlySort).not.toContain('data-group="availability"');
+    const onlyFilters = await html('catalog', {
+      blocks: [{ id: 'filters-1', type: 'filters', settings: { 'filter-position': 'side' } }],
+    });
+    expect(onlyFilters).not.toContain('data-group="sort"');
+    expect(onlyFilters).toContain('data-group="availability"');
+  });
+
+  it('подзаголовок — блок со своим корнем; выводится с «К» и «Ж»', async () => {
+    const source = await html('catalog', {
+      blocks: [
+        { id: 'subheading-1', type: 'subheading', settings: { heading: 'Подберите <em>товар</em>' } },
+        { id: 'sort-1', type: 'sort', settings: {} },
+      ],
+    });
+    expect(source).toMatch(/<p class="m-0 text-lg text-heading">Подберите <em>товар<\/em><\/p>/);
   });
 
   it('поиск ?q=: строка «Результаты поиска» и скрытое поле q в форме — фильтры его не теряют', async () => {

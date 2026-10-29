@@ -153,7 +153,7 @@ describe('что внутри', () => {
     // блок 15, часть 15в: zoom; #372: layout и active-link; каталог: шесть имён карточки товара (cards, columns-mobile,
     // button-style, image-fit, swatches, favorite); первый экран: button-second-label и button-second-link.
     // Видео: poster, video-autoplay, video-muted, video-loop.
-    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(78);
+    expect(lines.filter((line) => line.startsWith('| `'))).toHaveLength(79);
     expect(markdown.endsWith(' |\n')).toBe(true);
   });
 });

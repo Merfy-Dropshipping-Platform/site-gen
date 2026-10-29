@@ -1,80 +1,121 @@
-<div class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body">
-  <div data-ref="list-view" class="flex flex-col gap-4">
-    <h1 class="m-0 font-heading weight-heading text-3xl text-heading">Мои заказы</h1>
+<div class="mx-auto flex w-full max-w-page flex-col items-start gap-10 px-4 pb-28 pt-14 font-body text-foreground">
+  <!-- «Заказы» по странице кабинета прода (flux): «Вернуться назад» — в кабинет (/account, копия «Основных данных»);
+       заголовок 20 px заглавными и e-mail подзаголовком — вид flux; строки списка — «Заказ №…», «от …», статус и
+       кнопка «Перейти»; детали (?n=) — мета, две колонки (товары и данные), отмена — окно (behavior dialog). -->
+  <a class="inline-flex items-center gap-1 text-sm text-muted-foreground no-underline hover:underline" href="/account">
+    <svg class="size-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+    Вернуться назад
+  </a>
+  <div data-ref="list-view" class="flex w-full flex-col gap-10">
+    <div class="flex flex-col gap-1">
+      <h1 class="m-0 font-heading text-xl font-normal uppercase text-heading">Мои заказы</h1>
+      <p data-ref="email" class="m-0 text-base text-muted-foreground"></p>
+    </div>
     <p data-ref="loading" class="m-0 text-foreground">Загрузка...</p>
-    <p data-ref="empty" class="m-0 text-foreground" hidden>У вас пока нет заказов</p>
+    <p data-ref="empty" class="m-0 text-base text-muted-foreground" hidden>У вас пока нет заказов</p>
     <p data-ref="error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
-    <ul data-ref="orders" class="m-0 list-none p-0">
+    <ul data-ref="orders" class="m-0 flex list-none flex-col gap-6 p-0">
       <template>
-        <li class="flex flex-wrap items-center gap-3 rounded-button border border-border p-4">
-          <span data-ref="number" class="font-heading weight-heading"></span>
-          <span data-ref="date" class="text-sm text-muted-foreground"></span>
-          <span data-ref="status" class="text-sm"></span>
-          <a data-ref="open" class="no-underline" href="/account/orders">Перейти</a>
+        <li class="flex flex-wrap items-center gap-4 md:gap-20">
+          <span class="flex min-w-0 flex-col">
+            <span data-ref="number" class="text-base text-foreground"></span>
+            <span data-ref="date" class="text-sm text-muted-foreground"></span>
+          </span>
+          <span data-ref="status" class="text-sm text-foreground"></span>
+          <a
+            data-ref="open"
+            class="ml-auto inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            href="/account/orders"
+            >Перейти</a
+          >
         </li>
       </template>
     </ul>
   </div>
   <div data-ext-point="orders"></div>
-  <div data-ref="order-view" class="flex flex-col gap-4" hidden>
-    <a class="no-underline" href="/account/orders">Вернуться к заказам</a>
+  <div data-ref="order-view" class="flex w-full flex-col gap-10" hidden>
+    <a class="inline-flex items-center gap-1 text-sm text-muted-foreground no-underline hover:underline" href="/account/orders">
+      <svg class="size-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+      Вернуться к заказам
+    </a>
     <p data-ref="order-error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
-    <div data-ref="order-body" class="flex flex-col gap-4">
-      <div class="flex flex-col gap-2">
-        <span class="text-sm text-muted-foreground">Номер заказа</span>
-        <span data-ref="order-number" class="font-heading weight-heading"></span>
+    <div data-ref="order-body" class="flex w-full flex-col gap-6">
+      <div class="flex flex-col gap-1">
+        <h1 class="m-0 font-heading text-xl font-normal uppercase text-heading">Заказ</h1>
+        <p data-ref="order-subtitle" class="m-0 text-base text-muted-foreground"></p>
       </div>
-      <div class="flex flex-col gap-2">
-        <span class="text-sm text-muted-foreground">Статус</span>
-        <span data-ref="order-status"></span>
+      <p data-ref="order-meta" class="m-0 text-sm text-muted-foreground"></p>
+      <div class="flex flex-col gap-6 md:flex-row">
+        <ul data-ref="lines" class="m-0 flex w-full list-none flex-col gap-3 p-0 md:flex-1">
+          <template>
+            <li class="flex items-start gap-3 rounded-field bg-muted p-3">
+              <img data-ref="image" alt="" class="h-20 w-20 shrink-0 rounded-field bg-background object-cover" />
+              <span class="flex min-w-0 flex-1 flex-col gap-1">
+                <span data-ref="title" class="text-base text-foreground"></span>
+                <span data-ref="options" class="text-sm text-muted-foreground"></span>
+                <span data-ref="total" class="text-base font-semibold text-foreground"></span>
+              </span>
+              <span data-ref="quantity" class="shrink-0 text-sm text-foreground"></span>
+            </li>
+          </template>
+        </ul>
+        <dl class="m-0 grid w-full grid-cols-1 gap-6 md:w-96 md:shrink-0 md:grid-cols-2">
+          <div class="flex flex-col gap-1">
+            <dt class="text-sm text-muted-foreground">Статус</dt>
+            <dd data-ref="order-status" class="m-0 text-base text-foreground"></dd>
+          </div>
+          <div class="flex flex-col gap-1">
+            <dt class="text-sm text-muted-foreground">Номер заказа</dt>
+            <dd data-ref="order-number" class="m-0 text-base text-foreground"></dd>
+          </div>
+          <div data-ref="address-row" class="flex flex-col gap-1">
+            <dt class="text-sm text-muted-foreground">Адрес доставки</dt>
+            <dd data-ref="order-address" class="m-0 text-base text-foreground"></dd>
+          </div>
+          <div class="flex flex-col gap-1">
+            <dt class="text-sm text-muted-foreground">Итоговая стоимость</dt>
+            <dd data-ref="order-total" class="m-0 text-base text-foreground"></dd>
+          </div>
+        </dl>
       </div>
-      <div data-ref="address-row" class="flex flex-col gap-2">
-        <span class="text-sm text-muted-foreground">Адрес доставки</span>
-        <span data-ref="order-address"></span>
-      </div>
-      <div class="flex flex-col gap-2">
-        <span class="text-sm text-muted-foreground">Итоговая стоимость</span>
-        <span data-ref="order-total"></span>
-      </div>
-      <ul data-ref="lines" class="m-0 flex list-none flex-col gap-3 p-0">
-        <template>
-          <li class="flex flex-wrap items-center gap-3 rounded-button border border-border p-4">
-            <img data-ref="image" alt="" class="h-20 w-20 shrink-0 rounded-button object-cover" />
-            <span data-ref="title" class="font-heading weight-heading"></span>
-            <span data-ref="options" class="text-sm text-muted-foreground"></span>
-            <span data-ref="quantity" class="text-sm"></span>
-            <span data-ref="total"></span>
-          </li>
-        </template>
-      </ul>
-      <button
-        type="button"
-        data-ref="cancel-open"
-        data-action="cancel-open"
-        class="self-start text-sm underline"
-        hidden
-      >
-        Отменить заказ
-      </button>
-      <div data-ref="cancel-form" class="flex flex-col gap-3 rounded-button border border-border p-4" hidden>
-        <h2 class="m-0 font-heading weight-heading text-xl text-heading">Отмена заказа</h2>
-        <p class="m-0 text-sm text-muted-foreground">После отмены восстановить заказ невозможно.</p>
-        <textarea
-          data-ref="reason"
-          rows="3"
-          maxlength="500"
-          placeholder="Укажите причину отмены"
-          class="rounded-button border border-border bg-card px-4 py-2 text-foreground"
-        ></textarea>
-        <p data-ref="cancel-error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
+      <div data-behavior="dialog">
         <button
           type="button"
-          data-action="cancel-confirm"
-          class="self-start rounded-button bg-primary px-4 py-2 text-primary-foreground"
+          data-ref="cancel-open"
+          data-part="open"
+          class="mt-4 cursor-pointer border-0 bg-transparent p-0 text-base text-destructive underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          hidden
         >
-          Подтвердить отмену
+          Отменить заказ
         </button>
-        <button type="button" data-action="cancel-close" class="self-start text-sm underline">Нет, оставить</button>
+        <dialog data-part="content" class="m-auto w-[min(28rem,100%-2rem)] border-0 bg-background p-6 font-body text-foreground shadow-2xl backdrop:bg-black/40">
+          <h2 class="m-0 mb-2 font-heading text-lg font-normal text-heading">Отмена заказа</h2>
+          <p class="m-0 mb-4 text-sm text-muted-foreground">После отмены восстановить заказ невозможно.</p>
+          <textarea
+            data-ref="reason"
+            rows="3"
+            maxlength="500"
+            placeholder="Укажите причину отмены"
+            class="mb-2 h-auto w-full resize-none rounded-input border-width-input border-input bg-background px-3 py-3 text-base font-light text-foreground"
+          ></textarea>
+          <p data-ref="cancel-error" role="alert" class="m-0 mb-3 text-xs text-destructive" hidden></p>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              data-action="cancel-confirm"
+              class="inline-flex h-12 flex-1 cursor-pointer items-center justify-center rounded-button bg-destructive px-4 text-base text-white no-underline hover:opacity-90"
+            >
+              Подтвердить отмену
+            </button>
+            <button
+              type="button"
+              data-part="close"
+              class="inline-flex h-12 flex-1 cursor-pointer items-center justify-center rounded-button border border-border bg-background px-4 text-base text-foreground no-underline hover:bg-muted"
+            >
+              Нет, оставить
+            </button>
+          </div>
+        </dialog>
       </div>
     </div>
   </div>

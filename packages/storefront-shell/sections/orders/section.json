@@ -5,6 +5,6 @@
   "title": "Заказы",
   "groups": ["page"],
   "limit": 1,
-  "uses": ["orders"],
+  "uses": ["orders", "customer"],
   "wrapper": ["scheme"]
 }

@@ -115,6 +115,13 @@ export const ACTIONS = {
     about: 'открыть панель поиска: есть на странице — merfy:search:open, нет — переход на /catalog; ответ — { panel }',
     markup: {},
   },
+  // Базовые секции, 29.10: кнопка «Поделиться» у «Товара» — как flux и vanilla на проде.
+  'share.page': {
+    module: 'share',
+    about:
+      'поделиться страницей: окно «Поделиться» системы с названием и адресом страницы, нет окна — адрес в буфер обмена; ответ — { method: "share" | "copy" }',
+    markup: {},
+  },
 } as const satisfies Readonly<Record<string, ActionSpec>>;
 
 export type ActionName = keyof typeof ACTIONS;
@@ -143,6 +150,7 @@ export const MODULE_NAMES = [
   'catalog',
   'orders',
   'files',
+  'share',
 ] as const satisfies readonly ModuleName[];
 type MissingModule = Exclude<ModuleName, (typeof MODULE_NAMES)[number]>;
 export const MODULE_NAMES_COMPLETE: [MissingModule] extends [never] ? true : never = true;

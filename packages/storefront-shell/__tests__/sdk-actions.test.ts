@@ -9,6 +9,7 @@ import { favorites } from '../src/core/parts/favorites';
 import { newsletter } from '../src/core/parts/newsletter';
 import { orders } from '../src/core/parts/orders';
 import { search } from '../src/core/parts/search';
+import { share } from '../src/core/parts/share';
 import { variants } from '../src/core/parts/variants';
 import { start, type StartedCore } from '../src/core/start';
 import type { Ctx, SdkPart } from '../src/core/types';
@@ -24,6 +25,7 @@ const PARTS: readonly SdkPart<string, unknown>[] = [
   newsletter,
   orders,
   search,
+  share,
   variants,
 ];
 let core: StartedCore | undefined;
@@ -57,6 +59,7 @@ describe('таблица действий', () => {
       'orders.get',
       'orders.list',
       'search.open',
+      'share.page',
       'variants.pick',
     ]);
     expect(isActionName('cart.add')).toBe(true);

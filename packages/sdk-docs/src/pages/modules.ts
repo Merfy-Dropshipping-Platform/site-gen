@@ -25,6 +25,7 @@ const MODULE_ABOUT: Readonly<Record<ModuleName, string>> = {
   catalog: 'Товары каталога: `products(query)` — страница товаров с фильтрами',
   orders: 'Заказы покупательницы: `list`, `get`, `cancel`',
   files: 'Файлы покупательницы для форм расширений: `chosen`, `upload`, `preview`, `forget`',
+  share: 'Поделиться страницей: `page()` — окно «Поделиться» системы с названием и адресом, нет окна — адрес в буфер обмена',
 };
 
 const CORE: readonly string[] = coreParts.core;

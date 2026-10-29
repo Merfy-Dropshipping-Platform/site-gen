@@ -1,10 +1,10 @@
 import { defineSection, type CatalogItem, type El } from '@merfy/shell';
 
 // «Избранное» (блок 10 «Секций и SDK», 10.6, «Решил сам» п. 15; часть 10б, Р10б-12): карточки отмеченных —
-// ctx.favorites.$products по <template>, вид карточки — как у «Каталога» (фото, бейдж скидки, «Нет в наличии»,
-// название, цена, старая цена, «В корзину»). Удаление из избранного — сердце на карточке: favorites.toggle в
-// разметке, скрипт пишет только data-product-id; после снятия стор сам обновляет $products. Скелетон и подзаголовок
-// скрываются в любом исходе чтения (грид / пусто).
+// ctx.favorites.$products по <template>, вид карточки — как на проде у flux: подложка, фото, бейдж скидки,
+// «Нет в наличии», название и цена внутри карточки; кнопки «В корзину» нет. Удаление из избранного — сердце
+// на карточке: favorites.toggle в разметке, скрипт пишет только data-product-id; после снятия стор сам
+// обновляет $products. Скелетон и подзаголовок скрываются в любом исходе чтения (грид / пусто).
 
 const fillCard = (row: El, item: CatalogItem): void => {
   const image = row.ref('image');
@@ -38,7 +38,6 @@ const fillCard = (row: El, item: CatalogItem): void => {
   }
   row.ref('card')?.attr('data-available', item.available ? 'true' : 'false');
   row.ref('remove')?.attr('data-product-id', item.id);
-  row.ref('buy')?.attr('data-product-id', item.id);
 };
 
 export default defineSection({

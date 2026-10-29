@@ -108,10 +108,11 @@ describe('«Вход»', () => {
       'Получить ссылку для входа',
       'Отправляем...',
       'for="login-email"',
-      'политикой обработки персональных данных',
-      "policy.type === 'privacy'",
+      'gap-20',
     ])
       expect(TEMPLATE).toContain(part);
+    expect(TEMPLATE).not.toContain('соглашаетесь');
+    expect(TEMPLATE).not.toContain('shop.policies');
     expect(MANIFEST.settings.map((item) => item.id ?? `wrapper:${item.wrapper}`)).toEqual([
       'heading',
       'text',

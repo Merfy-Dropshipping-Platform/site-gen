@@ -1,51 +1,66 @@
-<div class="mx-auto flex w-full max-w-page flex-col items-start gap-10 px-4 pb-28 pt-14 font-body text-foreground">
-  <!-- «Личный кабинет» по страницам кабинета прода (flux): навигация кабинета — как у прода на /account
-       («Основные данные», «Мои заказы»; у новой архитектуры /account — копия этой страницы, поэтому навигация
-       здесь). Заголовок 20 px, заглавные — вид flux; поля — как «Вход». -->
-  <nav aria-label="Меню личного кабинета" class="flex flex-col gap-3">
-    <a aria-current="page" class="inline-flex min-h-11 items-center text-base text-foreground no-underline" href="/account/profile">Основные данные</a>
-    <a class="inline-flex min-h-11 items-center text-base text-muted-foreground no-underline hover:underline" href="/account/orders">Мои заказы</a>
-    <a class="inline-flex min-h-11 items-center text-muted-foreground no-underline hover:underline" href="/wishlist">Избранное</a>
-  </nav>
-  <div class="flex flex-col gap-1">
-    <h1 class="m-0 font-heading text-xl font-normal uppercase text-heading">Основные данные</h1>
-    <p data-ref="email-display" class="m-0 text-base text-muted-foreground"></p>
-  </div>
-  <p data-ref="loading" class="m-0 text-foreground">Загрузка...</p>
-  <form data-ref="form" class="flex w-full max-w-96 flex-col gap-6" hidden>
-    <label class="flex flex-col gap-3 text-base">
-      E-mail
-      <input
-        data-ref="email"
-        type="email"
-        disabled
-        class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base font-light text-muted-foreground"
-      />
-    </label>
-    <label class="flex flex-col gap-3 text-base">
-      Телефон
-      <input
-        data-ref="phone"
-        type="tel"
-        autocomplete="tel"
-        placeholder="+7 (000) 000-00-00"
-        class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base font-light text-foreground placeholder:text-foreground"
-      />
-    </label>
-    <p data-ref="status" role="status" class="m-0 text-sm" hidden></p>
-    <div class="flex flex-wrap items-center gap-6">
-      <button
-        type="button"
-        data-ref="save"
-        data-action="save"
-        class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-      >
-        Сохранить
-      </button>
-      <button type="button" data-action="auth.signout" class="inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent px-1 text-base text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-        Выйти из аккаунта
-      </button>
+<div class="flex w-full flex-col items-start gap-8 px-5 pb-20 pt-10 font-body text-foreground sm:gap-10 sm:px-72 sm:pb-28 sm:pt-14">
+  <!-- «Личный кабинет» по страницам кабинета прода (flux): «Основные данные» (page-profile) — «‹ Вернуться назад»
+       в кабинет, заголовок 20 px заглавными, e-mail подзаголовком, поля — как «Вход». Хаб кабинета «Учётная запись»
+       (адрес /account — алиас этой страницы): заголовок, навигация и «Выйти из аккаунта» — как у прода; вид
+       переключает script.ts по адресу страницы (в превью конструктора — вид «Основных данных»). -->
+  <div data-ref="profile-view" class="flex w-full flex-col items-start gap-8 sm:gap-10">
+    <a class="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground no-underline hover:underline" href="/account">
+      <svg class="size-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+      Вернуться назад
+    </a>
+    <div class="flex flex-col gap-1">
+      <h1 class="m-0 font-heading text-xl font-normal uppercase text-heading">Основные данные</h1>
+      <p data-ref="email-display" class="m-0 text-base text-muted-foreground"></p>
     </div>
-  </form>
-  <div data-ext-point="account"></div>
+    <p data-ref="loading" class="m-0 text-foreground">Загрузка...</p>
+    <form data-ref="form" class="flex w-full max-w-96 flex-col gap-6" hidden>
+      <label class="flex flex-col gap-3 text-base">
+        E-mail
+        <input
+          data-ref="email"
+          type="email"
+          disabled
+          class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base font-light text-muted-foreground"
+        />
+      </label>
+      <label class="flex flex-col gap-3 text-base">
+        Телефон
+        <input
+          data-ref="phone"
+          type="tel"
+          autocomplete="tel"
+          placeholder="+7 (000) 000-00-00"
+          class="h-14 w-full rounded-input border-width-input border-input bg-background px-4 text-base font-light text-foreground placeholder:text-muted-foreground"
+        />
+      </label>
+      <p data-ref="status" role="status" class="m-0 text-sm" hidden></p>
+      <div class="flex flex-wrap items-center gap-6">
+        <button
+          type="button"
+          data-ref="save"
+          data-action="save"
+          class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          Сохранить
+        </button>
+        <button type="button" data-action="auth.signout" class="inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent px-1 text-base text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+          Выйти из аккаунта
+        </button>
+      </div>
+    </form>
+  </div>
+  <div data-ref="hub-view" class="flex w-full flex-col items-start gap-8 sm:gap-10" hidden>
+    <div class="flex flex-col gap-1">
+      <h1 class="m-0 font-heading text-xl font-normal uppercase text-heading">Учётная запись</h1>
+      <p data-ref="hub-email" class="m-0 text-base text-muted-foreground">Загрузка...</p>
+    </div>
+    <nav aria-label="Меню личного кабинета" class="flex flex-col gap-3">
+      <a aria-current="page" class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:underline aria-[current=page]:text-foreground" href="/account/profile">Основные данные</a>
+      <a class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:underline" href="/account/orders">Мои заказы</a>
+    </nav>
+    <button type="button" data-action="auth.signout" class="inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent px-1 text-base text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+      Выйти из аккаунта
+    </button>
+    <div data-ext-point="account"></div>
+  </div>
 </div>

@@ -23,15 +23,27 @@ const source = (path: string): string => readFileSync(join(here, path), 'utf8');
 const ACCOUNT_TEMPLATE = source('../sections/account/template.astro');
 const ORDERS_TEMPLATE = source('../sections/orders/template.astro');
 const ACCOUNT = `
-  <p data-ref="loading">Загрузка...</p>
-  <span data-ref="email-display"></span>
-  <form data-ref="form" hidden>
-    <input data-ref="email" type="email" disabled>
-    <input data-ref="phone" type="tel">
-    <p data-ref="status" hidden></p>
-    <button type="button" data-ref="save" data-action="save">Сохранить</button>
+  <div data-ref="profile-view">
+    <a href="/account">Вернуться назад</a>
+    <p data-ref="loading">Загрузка...</p>
+    <span data-ref="email-display"></span>
+    <form data-ref="form" hidden>
+      <input data-ref="email" type="email" disabled>
+      <input data-ref="phone" type="tel">
+      <p data-ref="status" hidden></p>
+      <button type="button" data-ref="save" data-action="save">Сохранить</button>
+      <button type="button" data-action="auth.signout">Выйти из аккаунта</button>
+    </form>
+  </div>
+  <div data-ref="hub-view" hidden>
+    <h1>Учётная запись</h1>
+    <span data-ref="hub-email">Загрузка...</span>
+    <nav>
+      <a href="/account/profile" aria-current="page">Основные данные</a>
+      <a href="/account/orders">Мои заказы</a>
+    </nav>
     <button type="button" data-action="auth.signout">Выйти из аккаунта</button>
-  </form>`;
+  </div>`;
 const ORDERS = `
   <span data-ref="email"></span>
   <div data-ref="list-view">
@@ -39,14 +51,15 @@ const ORDERS = `
     <p data-ref="empty" hidden>У вас пока нет заказов</p>
     <p data-ref="error" role="alert" hidden></p>
     <ul data-ref="orders"><template><li>
-      <span data-ref="number"></span><span data-ref="date"></span><span data-ref="status"></span>
+      <span data-ref="number"></span><span data-ref="date"></span>
       <a data-ref="open" href="/account/orders">Перейти</a>
     </li></template></ul>
   </div>
   <div data-ref="order-view" hidden>
     <p data-ref="order-error" role="alert" hidden></p>
     <div data-ref="order-body">
-      <span data-ref="order-subtitle"></span><span data-ref="order-meta"></span>
+      <span data-ref="order-subtitle"></span>
+      <p data-ref="order-meta"><span data-ref="order-meta-count"></span><span data-ref="order-meta-date"></span></p>
       <span data-ref="order-number"></span><span data-ref="order-status"></span>
       <div data-ref="address-row"><span data-ref="order-address"></span></div>
       <span data-ref="order-total"></span>
@@ -108,10 +121,10 @@ const pageTag = (mode: 'live' | 'preview', id: string, path: string): string =>
   configTag(mode).replace('"page":{"id":"home","path":"/"}', `"page":{"id":"${id}","path":"${path}"}`);
 const meAnswer = { status: 200, body: { success: true, data: { customer: ANNA, session: {} } } };
 
-function openAccount(mode: 'live' | 'preview' = 'live') {
-  window.history.replaceState(null, '', '/account/profile');
+function openAccount(address = '/account/profile', mode: 'live' | 'preview' = 'live') {
+  window.history.replaceState(null, '', address);
   const gateway = fakeGateway();
-  document.head.innerHTML = pageTag(mode, 'page-profile', '/account/profile');
+  document.head.innerHTML = pageTag(mode, 'page-profile', address);
   const page = placeSection('shop:account', 'account-1', ACCOUNT);
   return {
     gateway,
@@ -161,11 +174,18 @@ describe('шаблоны кабинета', () => {
   it('ссылки разметки и тексты flux', () => {
     for (const part of ACCOUNT.match(/data-(?:ref|action)="[^"]+"/g) ?? []) expect(ACCOUNT_TEMPLATE).toContain(part);
     for (const part of ORDERS.match(/data-(?:ref|action)="[^"]+"/g) ?? []) expect(ORDERS_TEMPLATE).toContain(part);
-    for (const part of ['Основные данные', 'Мои заказы', 'Выйти из аккаунта', '+7 (000) 000-00-00', '/wishlist'])
+    for (const part of [
+      'Основные данные',
+      'Мои заказы',
+      'Учётная запись',
+      'Выйти из аккаунта',
+      '+7 (000) 000-00-00',
+      'Вернуться назад',
+    ])
       expect(ACCOUNT_TEMPLATE).toContain(part);
     for (const part of [
       'У вас пока нет заказов',
-      'Вернуться к заказам',
+      'Вернуться назад',
       'После отмены восстановить заказ невозможно.',
       'Нет, оставить',
       'Перейти',
@@ -173,10 +193,17 @@ describe('шаблоны кабинета', () => {
       expect(ORDERS_TEMPLATE).toContain(part);
   });
 
-  it('навигация кабинета: текущая страница и ссылки на заказы и избранное', () => {
+  it('навигация кабинета: хаб на /account со ссылкой на заказы; «Избранное» — значком шапки, не здесь', () => {
     expect(ACCOUNT_TEMPLATE).toContain('aria-current="page"');
+    expect(ACCOUNT_TEMPLATE).toContain('href="/account/profile"');
     expect(ACCOUNT_TEMPLATE).toContain('href="/account/orders"');
-    expect(ACCOUNT_TEMPLATE).toContain('href="/wishlist"');
+    expect(ACCOUNT_TEMPLATE).not.toContain('href="/wishlist"');
+  });
+
+  it('отступы кабинета — как у flux: телефон 20 px, от 640 px — 288 px по краям', () => {
+    expect(ACCOUNT_TEMPLATE).toContain('px-5');
+    expect(ACCOUNT_TEMPLATE).toContain('sm:px-72');
+    expect(ORDERS_TEMPLATE).toContain('sm:px-72');
   });
 
   it('отмена заказа — окно behavior dialog с открытием и закрытием', () => {
@@ -236,15 +263,27 @@ describe('«Личный кабинет»', () => {
   });
 
   it('превью: форма без данных, запросов нет', async () => {
-    const { gateway, page, run } = openAccount('preview');
+    const { gateway, page, run } = openAccount('/account/profile', 'preview');
     run();
     await settle();
     expect([hidden(page, 'form'), valueOf(page, 'email'), gateway.calls.length]).toEqual([false, '', 0]);
   });
+
+  it('хаб /account: «Учётная запись» с навигацией и e-mail, вид «Основных данных» скрыт', async () => {
+    const { gateway, page, run } = openAccount('/account');
+    gateway.answer('GET /store/auth/me', meAnswer);
+    run();
+    await settle();
+    expect([hidden(page, 'hub-view'), hidden(page, 'profile-view')]).toEqual([false, true]);
+    expect(text(page, 'hub-email')).toBe('anna@example.ru');
+    expect(page.querySelector('nav a[href="/account/profile"]')?.getAttribute('aria-current')).toBe('page');
+    expect(page.querySelector('nav a[href="/account/orders"]')).not.toBeNull();
+    expect(gateway.calls.filter((call) => call.key.includes('/profile'))).toEqual([]);
+  });
 });
 
 describe('«Заказы»', () => {
-  it('список: номер, дата, статус, «Перейти» на заказ; e-mail в подзаголовке', async () => {
+  it('список: номер, дата, «Перейти» на заказ (статуса в строке нет, как у flux); e-mail в подзаголовке', async () => {
     const { gateway, page, run } = openOrders();
     gateway.answer('GET /store/auth/me', meAnswer);
     gateway.answer('GET /store/orders', {
@@ -254,7 +293,7 @@ describe('«Заказы»', () => {
     run();
     await settle();
     expect(texts(page, 'number')).toEqual(['Заказ №1042', 'Заказ №1043']);
-    expect(texts(page, 'status')).toEqual(['Оплачен', 'Отправлен']);
+    expect(page.querySelectorAll('[data-ref="status"]:not(template *)').length).toBe(0);
     expect(texts(page, 'date')[0]).toBe('от 20.10.2026');
     expect(text(page, 'email')).toBe('anna@example.ru');
     expect(page.querySelector('[data-ref="open"]')?.getAttribute('href')).toBe('/account/orders?n=1042');
@@ -287,11 +326,12 @@ describe('«Заказы»', () => {
     expect([hidden(page, 'list-view'), hidden(page, 'order-view')]).toEqual([true, false]);
     expect([
       text(page, 'order-subtitle'),
-      text(page, 'order-meta'),
+      text(page, 'order-meta-count'),
+      text(page, 'order-meta-date'),
       text(page, 'order-number'),
       text(page, 'order-status'),
       text(page, 'order-address'),
-    ]).toEqual(['Заказ №1042', '2 товара · от 20.10.26', '1042', 'Оплачен', 'Москва, Тверская, д. 7']);
+    ]).toEqual(['Заказ №1042', '2 товара', 'от 20.10.26', '№1042', 'Оплачен', 'Москва, Тверская, д. 7']);
     expect(text(page, 'order-total').replace(/\s/g, '')).toBe('4980₽');
     expect(texts(page, 'title')).toEqual(['Шарф «Нова»', 'Платок']);
     expect(texts(page, 'options')[0]).toBe('Цвет: Красный');

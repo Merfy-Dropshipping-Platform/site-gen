@@ -1,12 +1,13 @@
-<div class="mx-auto flex w-full max-w-page flex-col items-start gap-10 px-4 pb-28 pt-14 font-body text-foreground">
-  <!-- «Заказы» по странице кабинета прода (flux): «Вернуться назад» — в кабинет (/account, копия «Основных данных»);
-       заголовок 20 px заглавными и e-mail подзаголовком — вид flux; строки списка — «Заказ №…», «от …», статус и
-       кнопка «Перейти»; детали (?n=) — мета, две колонки (товары и данные), отмена — окно (behavior dialog). -->
+<div class="flex w-full flex-col items-start gap-8 px-5 pb-20 pt-10 font-body text-foreground sm:gap-10 sm:px-72 sm:pb-28 sm:pt-14">
+  <!-- «Заказы» по странице кабинета прода (flux): «Вернуться назад» — в кабинет (/account); заголовок 20 px заглавными
+       и e-mail подзаголовком — вид flux; строки списка — «Заказ №…», «от …» и кнопка «Перейти» (статуса в строке у
+       прода нет); детали (?n=) — мета по краям, две равные колонки (товары и данные в карточках), отмена — окно
+       (behavior dialog). -->
   <a class="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground no-underline hover:underline" href="/account">
     <svg class="size-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
     Вернуться назад
   </a>
-  <div data-ref="list-view" class="flex w-full flex-col gap-10">
+  <div data-ref="list-view" class="flex w-full flex-col items-start gap-8 sm:gap-10">
     <div class="flex flex-col gap-1">
       <h1 class="m-0 font-heading text-xl font-normal uppercase text-heading">Мои заказы</h1>
       <p data-ref="email" class="m-0 text-base text-muted-foreground"></p>
@@ -16,15 +17,14 @@
     <p data-ref="error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
     <ul data-ref="orders" class="m-0 flex list-none flex-col gap-6 p-0">
       <template>
-        <li class="flex flex-wrap items-center gap-4 md:gap-20">
+        <li class="flex items-center gap-8 sm:gap-20">
           <span class="flex min-w-0 flex-col">
             <span data-ref="number" class="text-base text-foreground"></span>
             <span data-ref="date" class="text-sm text-muted-foreground"></span>
           </span>
-          <span data-ref="status" class="text-sm text-foreground"></span>
           <a
             data-ref="open"
-            class="ml-auto inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-4 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             href="/account/orders"
             >Перейти</a
           >
@@ -33,50 +33,52 @@
     </ul>
   </div>
   <div data-ext-point="orders"></div>
-  <div data-ref="order-view" class="flex w-full flex-col gap-10" hidden>
+  <div data-ref="order-view" class="flex w-full flex-col items-start gap-8 sm:gap-10" hidden>
     <a class="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground no-underline hover:underline" href="/account/orders">
       <svg class="size-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-      Вернуться к заказам
+      Вернуться назад
     </a>
     <p data-ref="order-error" role="alert" class="m-0 text-sm text-destructive" hidden></p>
-    <div data-ref="order-body" class="flex w-full flex-col gap-6">
+    <div data-ref="order-body" class="flex w-full flex-col items-start gap-6">
       <div class="flex flex-col gap-1">
         <h1 class="m-0 font-heading text-xl font-normal uppercase text-heading">Заказ</h1>
         <p data-ref="order-subtitle" class="m-0 text-base text-muted-foreground"></p>
       </div>
-      <p data-ref="order-meta" class="m-0 text-sm text-muted-foreground"></p>
-      <div class="flex flex-col gap-6 md:flex-row">
+      <p data-ref="order-meta" class="m-0 flex w-full justify-between text-sm text-muted-foreground"><span data-ref="order-meta-count"></span><span data-ref="order-meta-date"></span></p>
+      <div class="flex w-full flex-col gap-6 md:flex-row">
         <ul data-ref="lines" class="m-0 flex w-full list-none flex-col gap-3 p-0 md:flex-1">
           <template>
-            <li class="flex items-start gap-3 rounded-input bg-muted p-3">
-              <img data-ref="image" alt="" class="h-20 w-20 shrink-0 rounded-input bg-background object-cover" />
+            <li class="flex items-start gap-3 rounded-card bg-muted p-3">
+              <img data-ref="image" alt="" class="h-20 w-20 shrink-0 rounded-card bg-background object-cover" />
               <span class="flex min-w-0 flex-1 flex-col gap-1">
                 <span data-ref="title" class="text-base text-foreground"></span>
                 <span data-ref="options" class="text-sm text-muted-foreground"></span>
                 <span data-ref="total" class="text-base font-semibold text-foreground"></span>
               </span>
-              <span data-ref="quantity" class="shrink-0 text-sm text-foreground"></span>
+              <span data-ref="quantity" class="shrink-0 text-sm text-muted-foreground"></span>
             </li>
           </template>
         </ul>
-        <dl class="m-0 grid w-full grid-cols-1 gap-6 md:w-96 md:shrink-0 md:grid-cols-2">
-          <div class="flex flex-col gap-1">
-            <dt class="text-sm text-muted-foreground">Статус</dt>
-            <dd data-ref="order-status" class="m-0 text-base text-foreground"></dd>
-          </div>
-          <div class="flex flex-col gap-1">
-            <dt class="text-sm text-muted-foreground">Номер заказа</dt>
-            <dd data-ref="order-number" class="m-0 text-base text-foreground"></dd>
-          </div>
-          <div data-ref="address-row" class="flex flex-col gap-1">
-            <dt class="text-sm text-muted-foreground">Адрес доставки</dt>
-            <dd data-ref="order-address" class="m-0 text-base text-foreground"></dd>
-          </div>
-          <div class="flex flex-col gap-1">
+        <div class="flex w-full flex-col gap-3 rounded-card bg-muted p-3 md:flex-1">
+          <dl class="m-0 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="flex flex-col gap-1 rounded-card bg-background p-3">
+              <dt class="text-sm text-muted-foreground">Статус</dt>
+              <dd data-ref="order-status" class="m-0 text-base text-foreground"></dd>
+            </div>
+            <div class="flex flex-col gap-1 rounded-card bg-background p-3">
+              <dt class="text-sm text-muted-foreground">Номер заказа</dt>
+              <dd data-ref="order-number" class="m-0 text-base text-foreground"></dd>
+            </div>
+            <div data-ref="address-row" class="flex flex-col gap-1 rounded-card bg-background p-3">
+              <dt class="text-sm text-muted-foreground">Адрес доставки</dt>
+              <dd data-ref="order-address" class="m-0 text-base text-foreground"></dd>
+            </div>
+          </dl>
+          <dl class="m-0 flex flex-col gap-1 rounded-card bg-background p-3">
             <dt class="text-sm text-muted-foreground">Итоговая стоимость</dt>
             <dd data-ref="order-total" class="m-0 text-base text-foreground"></dd>
-          </div>
-        </dl>
+          </dl>
+        </div>
       </div>
       <div data-behavior="dialog">
         <button

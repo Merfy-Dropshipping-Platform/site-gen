@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { money, sampleRecord, sha256 } from '@merfy/storefront-build';
+import { money, sampleRecord, sha256, type RenderBlock } from '@merfy/storefront-build';
 import { afterEach, describe, expect, it } from 'vitest';
 import { checkTemplate, templateOptionsOf } from '../src/compile';
 import { readManifest } from '../src/format';
@@ -56,7 +56,7 @@ describe('наши секции с записями', () => {
     const request = await requestOf('product');
     const settings = { product: 'pled', stock: true };
     // Название — блок «Название», цена и наличие — блок «Стоимость»: блоки по умолчанию ставит платформа, тест даёт их сам.
-    const blocks = [
+    const blocks: readonly RenderBlock[] = [
       { id: 'title-1', type: 'title', settings: { 'heading-size': 'medium' } },
       { id: 'price-2', type: 'price', settings: { price: null } },
     ];

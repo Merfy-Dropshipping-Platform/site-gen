@@ -133,6 +133,17 @@ describe('dialog', () => {
     await page.close();
   });
 
+  it('секцию с открытым окном убрали из страницы (замена списка «Каталога»): запрет прокрутки снят', async () => {
+    const { page, errors } = await open(drawer('data-transition="drawer"'));
+    await page.click('#open-drawer');
+    await settle(page);
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
+    await page.evaluate(() => document.querySelector('merfy-section')?.remove());
+    await page.waitForFunction(() => document.documentElement.style.overflow === '');
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
   it('Escape: сначала анимация закрытия, потом close(); фокус — на кнопке; прокрутка вернулась', async () => {
     const { page } = await open(drawer('data-transition="drawer"'));
     await page.click('#open-drawer');

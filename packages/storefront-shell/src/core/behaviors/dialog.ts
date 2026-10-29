@@ -353,6 +353,21 @@ function listenClosers(box: Box): void {
   listenSectionEvents(box);
 }
 
+// Секцию с открытым окном заменили или убрали (список «Каталога» после выбора фильтров): запрет прокрутки снимается,
+// иначе страница остаётся запертой. Состояние «закрыто» — чтобы отложенное закрытие не сняло запрет второй раз.
+function releaseOnDetach(box: Box): void {
+  box.host.signal.addEventListener(
+    'abort',
+    () => {
+      if (box.state === 'closed') return;
+      box.state = 'closed';
+      stopRuns(box);
+      unlockScroll();
+    },
+    { once: true },
+  );
+}
+
 export const dialog: Behavior<'dialog'> = {
   name: 'dialog',
   attach(host: BehaviorHost): BehaviorInstance {
@@ -374,6 +389,7 @@ export const dialog: Behavior<'dialog'> = {
     listenOpenButtons(box);
     listenOpenEvent(box);
     listenClosers(box);
+    releaseOnDetach(box);
     return {
       save: () => ({ open: box.state !== 'closed' }),
       restore: (state) => {

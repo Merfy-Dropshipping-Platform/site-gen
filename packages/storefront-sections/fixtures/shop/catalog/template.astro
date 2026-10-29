@@ -23,12 +23,25 @@ const { settings, blocks, page, theme } = Astro.props;
     <p class="col-span-full m-0 text-base text-muted-foreground">Результаты поиска: «{page.list.query.q}»</p>
   )}
   {page.list && blocks.length > 0 && (
-    <form
-      class="m-0 flex min-w-0 flex-col gap-4 border-b border-border pb-5 md:flex-row md:flex-wrap md:items-center md:in-data-[filters-side=true]:col-span-1 md:in-data-[filters-side=true]:flex-col md:in-data-[filters-side=true]:items-stretch md:in-data-[filters-side=true]:self-start md:in-data-[filters-side=true]:border-b-0 md:in-data-[filters-side=true]:pb-0"
-      data-part="filters"
-      method="get"
-      action={page.list.url}
-    >
+    <form class="m-0 min-w-0 md:in-data-[filters-side=true]:col-span-1 md:in-data-[filters-side=true]:self-start" data-part="filters" method="get" action={page.list.url}>
+    <div class="contents" data-behavior="dialog" data-transition="drawer" data-side="left">
+      <button type="button" data-part="open" class="inline-flex h-11 w-fit cursor-pointer items-center gap-2 bg-transparent p-0 text-sm text-foreground md:hidden">
+        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4h-7" /><path d="M10 4H3" /><path d="M21 12h-9" /><path d="M8 12H3" /><path d="M21 20h-5" /><path d="M12 20H3" /><path d="M14 2v4" /><path d="M8 10v4" /><path d="M16 18v4" /></svg>
+        Фильтры и сортировка
+      </button>
+      <dialog
+        class="my-0 ml-0 mr-auto h-full max-h-none w-5/6 max-w-none overflow-hidden border-0 bg-background p-0 font-body text-foreground shadow-drawer md:static md:m-0 md:block md:h-auto md:w-auto md:overflow-visible md:bg-transparent md:shadow-none"
+        data-part="content"
+      >
+        <div class="flex h-full min-w-0 flex-col md:block md:h-auto">
+          <div class="flex items-center justify-between gap-4 border-b border-border py-3 pl-4 pr-2 md:hidden">
+            <h2 class="m-0 font-heading weight-heading text-lg text-heading">Фильтры и сортировка</h2>
+            <button type="button" data-part="close" class="inline-flex size-11 cursor-pointer items-center justify-center rounded-button bg-transparent p-0 text-foreground hover:bg-accent hover:text-accent-foreground">
+              <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+              <span class="sr-only">Закрыть</span>
+            </button>
+          </div>
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4 md:flex-none md:flex-row md:flex-wrap md:items-center md:overflow-visible md:border-b md:border-border md:p-0 md:pb-5 md:in-data-[filters-side=true]:flex-col md:in-data-[filters-side=true]:items-stretch md:in-data-[filters-side=true]:border-b-0 md:in-data-[filters-side=true]:pb-0">
       {page.list.query.q && <input type="hidden" name="q" value={page.list.query.q} />}
       {blocks.map((block) => (
         <div
@@ -104,6 +117,13 @@ const { settings, blocks, page, theme } = Astro.props;
           )}
         </div>
       ))}
+          </div>
+          <div class="border-t border-border p-4 md:hidden">
+            <button type="submit" class="inline-flex h-12 w-full cursor-pointer items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Показать</button>
+          </div>
+        </div>
+      </dialog>
+    </div>
     </form>
   )}
   {page.list && (

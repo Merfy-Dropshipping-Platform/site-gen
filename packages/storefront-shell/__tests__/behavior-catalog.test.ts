@@ -193,6 +193,29 @@ describe('поведение catalog: фильтры', () => {
     expect(`${window.location.pathname}${window.location.search}`).toBe('/catalog?collection=sharfy');
   });
 
+  it('форма в открытом окне (фильтры на телефоне): выбор поля запроса не шлёт, отправка формы — шлёт', async () => {
+    const fresh = { page: 1, rows: [4], form: FORM };
+    const asked = server({ '/catalog?sort=price_desc': pageHtml(fresh, 'sort=price_desc') });
+    const inDialog = `<dialog open>${FORM.replace('</form>', '<button type="submit">Показать</button></form>')}</dialog>`;
+    open({ page: 1, rows: [1, 2], form: inDialog });
+    choose('price_desc', false);
+    await settle();
+    expect(asked).toEqual([]);
+    expect(rows()).toEqual(['Товар 1', 'Товар 2']);
+    part('filters')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await settle();
+    expect(asked.map((one) => one.path)).toEqual(['/catalog?sort=price_desc']);
+    expect(rows()).toEqual(['Товар 4']);
+  });
+
+  it('форма в закрытом окне (на компьютере окно стоит в потоке): выбор поля применяется сразу', async () => {
+    const asked = server({ '/catalog?sort=price_desc': pageHtml({ page: 1, rows: [4], form: FORM }, 'sort=price_desc') });
+    open({ page: 1, rows: [1, 2], form: `<dialog>${FORM}</dialog>` });
+    choose('price_desc', false);
+    await settle();
+    expect(asked.map((one) => one.path)).toEqual(['/catalog?sort=price_desc']);
+  });
+
   it('ответ без merfy-list — уведомление server, секция прежняя; сбой сети — network, ссылка остаётся', async () => {
     server({ '/catalog?sort=price_desc': pageHtml({ page: 1, rows: [9] }), '/catalog/page/2': 'network' });
     const notices = heard('merfy:notice:show');

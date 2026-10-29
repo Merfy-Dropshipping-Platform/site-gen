@@ -1,5 +1,12 @@
 import { fileURLToPath } from 'node:url';
-import { sha256, type RenderBlock, type SettingValues, type ShopProps } from '@merfy/storefront-build';
+import {
+  sha256,
+  type PageInfo,
+  type RenderBlock,
+  type SectionRecordValues,
+  type SettingValues,
+  type ShopProps,
+} from '@merfy/storefront-build';
 import { checkTemplate, templateOptionsOf } from '../src/compile';
 import { readManifest, type SectionManifest } from '../src/format';
 import { prepareSection } from '../src/prepare';
@@ -16,6 +23,8 @@ export interface Variant {
   settings?: SettingValues;
   blocks?: readonly RenderBlock[];
   shop?: ShopProps;
+  page?: PageInfo;
+  records?: SectionRecordValues;
 }
 
 export interface RenderedSection {
@@ -57,6 +66,8 @@ export async function renderSection(name: string): Promise<RenderedSection> {
         settings: { ...defaultsOf(manifest), ...variant.settings },
         blocks: variant.blocks ?? [],
         ...(variant.shop === undefined ? {} : { shop: variant.shop }),
+        ...(variant.page === undefined ? {} : { page: variant.page }),
+        ...(variant.records === undefined ? {} : { records: variant.records }),
       }),
     close: () => renderer.close(),
   };

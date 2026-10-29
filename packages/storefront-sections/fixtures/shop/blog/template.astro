@@ -1,19 +1,58 @@
 ---
-const { settings } = Astro.props;
+const { settings, page } = Astro.props;
 ---
-<div class="mx-auto flex max-w-page flex-col gap-8 px-4 font-body">
-  {settings.posts && settings.posts.title && (
-    <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.posts.title}</h1>
+<!-- Страница блога: название блога страницы — заголовок, записи — список страницы (page.list), по «Записей на странице»
+     на страницу, как у каталога; номера страниц — ссылки на собранные страницы блога. Карточка записи — та же, что у
+     «Публикаций» на главной. Колонки — признаком data-columns на корне (на телефоне одна, от `md` — до двух, от `lg` —
+     столько, сколько выбрано); дата — publishedText («20 октября 2026 г.»). -->
+<div
+  class="mx-auto flex max-w-page flex-col gap-6 px-4 font-body md:gap-8 md:px-8"
+  data-columns={settings.columns}
+  data-align={settings.align}
+>
+  {page.id === 'blog' && page.record && (
+    <h1 class="m-0 text-balance font-heading weight-heading tracking-heading text-heading text-3xl in-data-[align=left]:text-left in-data-[align=center]:text-center in-data-[align=right]:text-right md:text-4xl">{page.record.title}</h1>
   )}
-  {settings.posts && (
-    <ul class="m-0 grid list-none gap-8 p-0 md:grid-cols-3">
-      {settings.posts.articles.map((post) => (
-        <li class="flex flex-col gap-2">
-          {post.cover && <img class="h-auto w-full rounded-button" src={post.cover} alt={post.title} />}
-          <a class="font-heading text-xl text-heading no-underline" href={post.url}>{post.title}</a>
-          {post.excerpt && <p class="m-0 text-foreground">{post.excerpt}</p>}
+  {(!page.list || page.list.items.length === 0) && (
+    <p class="m-0 py-6 text-base text-muted-foreground md:py-12">В этом блоге пока нет записей</p>
+  )}
+  {page.list && page.list.items.length > 0 && (
+    <ul class="m-0 grid list-none grid-cols-1 gap-x-grid-column gap-y-8 p-0 md:in-data-[columns=2]:grid-cols-2 md:in-data-[columns=3]:grid-cols-2 md:in-data-[columns=4]:grid-cols-2 lg:in-data-[columns=3]:grid-cols-3 lg:in-data-[columns=4]:grid-cols-4">
+      {page.list.items.map((post) => (
+        <li class="min-w-0">
+          <a class="group flex h-full flex-col gap-3 no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href={post.url}>
+            <span class="block aspect-4/3 w-full overflow-hidden rounded-media border-width-media border-border bg-muted shadow-media">
+              {post.cover && <img class="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" src={post.cover} alt="" loading="lazy" />}
+            </span>
+            <span class="flex flex-1 flex-col gap-1">
+              {settings.date && post.publishedAt && (
+                <time class="text-xs text-muted-foreground md:text-sm" datetime={post.publishedAt}>{post.publishedText}</time>
+              )}
+              <span class="line-clamp-2 text-base text-muted-foreground group-hover:text-foreground">{post.title}</span>
+              {settings.excerpt && post.excerpt && <span class="line-clamp-3 text-sm text-muted-foreground">{post.excerpt}</span>}
+            </span>
+          </a>
         </li>
       ))}
     </ul>
+  )}
+  {page.list && page.list.pages > 1 && (
+    <nav class="flex flex-wrap items-center justify-center gap-1 pt-2 md:pt-6" aria-label="Страницы блога">
+      {page.list.prev ? (
+        <a class="inline-flex size-11 items-center justify-center rounded-button text-base text-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href={page.list.prev} aria-label="Предыдущая страница">←</a>
+      ) : (
+        <span class="inline-flex size-11 items-center justify-center text-base text-muted-foreground" aria-hidden="true">←</span>
+      )}
+      {page.list.links.map((link) => link.url ? (
+        <a class="inline-flex size-11 items-center justify-center rounded-button text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground" href={link.url} aria-current={link.current ? 'page' : undefined}>{link.page}</a>
+      ) : (
+        <span class="inline-flex size-11 items-center justify-center text-sm text-muted-foreground">…</span>
+      ))}
+      {page.list.next ? (
+        <a class="inline-flex size-11 items-center justify-center rounded-button text-base text-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href={page.list.next} aria-label="Следующая страница">→</a>
+      ) : (
+        <span class="inline-flex size-11 items-center justify-center text-base text-muted-foreground" aria-hidden="true">→</span>
+      )}
+    </nav>
   )}
 </div>

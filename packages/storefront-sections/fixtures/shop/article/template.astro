@@ -1,13 +1,22 @@
 ---
 const { page } = Astro.props;
 ---
-<div class="mx-auto max-w-page px-4 font-body">
+<!-- Страница записи блога: ссылка на блог, заголовок, дата словами (publishedText), обложка и текст в колонке 768 px по
+     центру. Текст записи — очищенный HTML сборки; блоки текста идут столбцом с отступом между ними. -->
+<div class="mx-auto max-w-page px-4 font-body md:px-8">
   {page.id === 'article' && page.record && (
-    <article class="flex flex-col gap-4">
-      <h1 class="m-0 font-heading weight-heading text-3xl text-heading">{page.record.title}</h1>
-      {page.record.publishedAt && <p class="m-0 text-sm text-foreground">{page.record.publishedText}</p>}
-      {page.record.cover && <img class="h-auto w-full rounded-button" src={page.record.cover} alt={page.record.title} />}
-      <div class="text-foreground" set:html={page.record.html}></div>
+    <article class="mx-auto flex max-w-3xl flex-col gap-4 md:gap-6">
+      <a class="inline-flex h-11 w-fit items-center text-sm text-muted-foreground no-underline hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href={page.record.blog.url}>← {page.record.blog.title}</a>
+      <h1 class="m-0 text-balance font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl">{page.record.title}</h1>
+      {page.record.publishedAt && <time class="text-sm text-muted-foreground" datetime={page.record.publishedAt}>{page.record.publishedText}</time>}
+      {page.record.cover && <img class="aspect-video w-full rounded-media object-cover" src={page.record.cover} alt={page.record.title} />}
+      <div class="flex flex-col gap-4 text-base text-foreground" set:html={page.record.html}></div>
     </article>
+  )}
+  {page.id === 'article' && !page.record && (
+    <div class="mx-auto flex max-w-3xl flex-col gap-4">
+      <h1 class="m-0 font-heading weight-heading tracking-heading text-3xl text-heading md:text-4xl">Запись блога</h1>
+      <p class="m-0 text-base text-muted-foreground">Здесь появится текст записи, когда вы опубликуете её в разделе «Публикации».</p>
+    </div>
   )}
 </div>

@@ -81,10 +81,27 @@ describe('наши секции с записями', () => {
     expect(allHtml).toContain('href="/product/pled"');
   }, 30_000);
 
-  it('«Блог»: записи со ссылкой и анонсом', async () => {
+  it('«Блог»: записи страницы блога — по списку страницы, со ссылкой и анонсом', async () => {
     const renderer = rendererOf();
     const request = await requestOf('blog');
-    const html = await renderer.render({ ...request, settings: { posts: null }, records: { posts: BLOG } });
+    const articles = BLOG.articles;
+    const list = {
+      kind: 'articles' as const,
+      items: articles,
+      total: articles.length,
+      page: 1,
+      pages: 1,
+      perPage: 12,
+      url: BLOG.url,
+      prev: null,
+      next: null,
+      links: [],
+      query: { sort: null, minPrice: null, maxPrice: null, availability: null, collections: [], filters: {}, q: null, page: 1 },
+      sorts: [],
+      facets: null,
+    };
+    const page = { id: 'blog', path: BLOG.url, record: BLOG, list };
+    const html = await renderer.render({ ...request, settings: { excerpt: true }, page });
     expect(html).toContain('href="/blogs/novosti/kak-stirat"');
     expect(html).toContain('Вручную, при 30°');
   }, 30_000);

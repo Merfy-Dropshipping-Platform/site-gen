@@ -2,7 +2,7 @@ import { sha256 } from './canonical';
 import { checkoutVarsCss } from './checkout-css';
 import { pageBundle } from './code';
 import { entityKey } from './entities';
-import { pageLocals, themeSchemes } from './head';
+import { pageLocals, themeRootTokens, themeSchemes } from './head';
 import type { BuildInputs } from './inputs';
 import type { CheckoutLocals, JsonObject } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
@@ -33,9 +33,8 @@ const BLOCK_TYPES = { header: 'CheckoutHeader', layout: 'CheckoutLayout', form: 
 const checkoutLocalsOf = (inputs: BuildInputs, theme: ShopTheme, result: boolean, mode: PageMode): CheckoutLocals => ({
   result,
   config: { shopId: inputs.site.id, apiUrl: inputs.env.apiUrl, dadataToken: '' },
-  varsCss: checkoutVarsCss(themeSchemes(inputs, theme.tokens, theme.migrations)),
+  varsCss: checkoutVarsCss(themeSchemes(inputs, theme.tokens, theme.migrations), themeRootTokens(inputs, theme.tokens, theme.migrations)),
   header: propsOf(inputs, BLOCK_TYPES.header),
-  // Р10а-19: на витрине действует только «Шапка оформления»; в превью — все четыре блока, как на проде.
   // Р10а-19: на витрине действует только «Шапка оформления»; в превью — все четыре блока, как на проде.
   ...(mode === 'preview'
     ? {

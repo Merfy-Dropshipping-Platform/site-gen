@@ -92,15 +92,28 @@ describe('свойства блоков оформления по режиму',
 });
 
 describe('переменные пяти тем из токенов', () => {
-  it('цвет схемы #rrggbb — тройка r g b; не #rrggbb — переменной нет; размеры — ссылкой', () => {
-    const css = checkoutVarsCss({ 'scheme-2': { background: '#ffffff', foreground: '#1a1a1a', primary: 'oklch(0.5 0.1 20)' } });
+  it('цвет схемы #rrggbb — тройка r g b; не #rrggbb — переменной нет; текстовые размеры — фиксированным px ступени', () => {
+    const css = checkoutVarsCss(
+      { 'scheme-2': { background: '#ffffff', foreground: '#1a1a1a', primary: 'oklch(0.5 0.1 20)' } },
+      { 'text-base': { min: 16, max: 16 }, 'text-lg': { min: 18, max: 20 }, 'text-2xl': { min: 24, max: 32 } },
+    );
     expect(css).toContain('.color-scheme-2 {');
     expect(css).toContain('--color-bg: 255 255 255;');
     expect(css).toContain('--color-text: 26 26 26;');
     expect(css).toContain('--color-input-bg: 255 255 255;');
     expect(css).not.toContain('--color-button-bg');
-    expect(css).toContain('--size-body: var(--text-base);');
+    expect(css).toContain('--size-body: 16px;');
+    // Заголовки разделов — базовая ступень (18), итог — база text-2xl (24): фиксированные размеры, как у тем прода.
+    expect(css).toContain('--size-h3: 18px;');
+    expect(css).toContain('--size-h2: 24px;');
     expect(css).toContain('--container-max-width: var(--width-page);');
+    expect(css).toContain('--radius-field: var(--radius-input);');
+  });
+
+  it('нет корневых токенов или ступень не шкала — размер ссылкой на переменную nova', () => {
+    const css = checkoutVarsCss({});
+    expect(css).toContain('--size-h3: var(--text-lg);');
+    expect(css).toContain('--size-body: var(--text-base);');
   });
 
   it('таблица — все переменные цвета, которые читают блоки оформления', () => {

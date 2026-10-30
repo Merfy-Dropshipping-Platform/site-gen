@@ -85,6 +85,58 @@ describe.skipIf(!hasChromium)('снимок черновика · настоящ
     for (const image of images) expect(isJpeg(Buffer.from(image, 'base64'))).toBe(true);
   }, 60_000);
 
+  it('снимок секции: детектор отдаёт находки только её элементов, даже если селекторы у секций одинаковые', async () => {
+    // Две секции с одной разметкой: селектор `h2` и `div > section > div` подходит к элементам обеих. Боковая полоса — только
+    // в первой, градиентный заголовок — в обеих, у третьей секции (пустая) находок нет.
+    const heading =
+      '<h2 style="background:linear-gradient(90deg,#7c3aed,#06b6d4);-webkit-background-clip:text;color:transparent;font-size:36px;margin:0">Заголовок</h2>';
+    const card =
+      '<div style="border-left:6px solid #7c3aed;border-radius:12px;padding:16px;margin:12px 0">Карточка</div>';
+    const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;font-family:sans-serif">
+<div data-section-id="first-1"><section style="padding:24px">${heading}${card}</section></div>
+<div data-section-id="second-2"><section style="padding:24px">${heading}</section></div>
+<div data-section-id="empty-3"><section style="padding:24px"><p style="font-size:16px;color:#222">Просто текст</p></section></div>
+</body></html>`;
+    const look = async (section: string) => {
+      const reply = await runLookJob(
+        {
+          renderer,
+          fetch: () => Promise.resolve(new Response(html, { headers: { 'content-type': 'text/html' } })),
+          sitesUrl: 'http://sites',
+          log: () => undefined,
+          now: () => Date.now(),
+        },
+        {
+          pattern: LOOK_PATTERN,
+          data: {
+            v: 1,
+            siteId: 's1',
+            page: 'home',
+            devices: 'mobile',
+            full: false,
+            section,
+            deadline: Date.now() + 55_000,
+          },
+        },
+      );
+      if (!reply.ok) throw new Error(reply.error.message);
+      return reply.snapshot;
+    };
+
+    const first = await look('first-1');
+    const second = await look('second-2');
+    const empty = await look('empty-3');
+
+    expect(first.detector).toEqual({ ok: true });
+    expect(first.findings.map((finding) => finding.code).sort()).toEqual(['gradient-text', 'side-tab']);
+    expect(second.findings.map((finding) => finding.code)).toEqual(['gradient-text']);
+    expect(empty.detector).toEqual({ ok: true });
+    expect(empty.findings.filter((finding) => finding.source === 'impeccable')).toEqual([]);
+    // Форма находки — как у снимка страницы.
+    expect(second.findings[0]).toMatchObject({ source: 'impeccable', device: 'mobile', section: null, clip: null });
+  }, 60_000);
+
   it('страница не достаёт до внутренних адресов сервера', async () => {
     let hits = 0;
     const server: Server = createServer((_request, response) => {

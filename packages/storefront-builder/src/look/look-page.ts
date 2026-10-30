@@ -146,15 +146,65 @@ async function measure(page: Page, collector: Collector): Promise<PageFacts> {
   return { pageHeight: dom.pageHeight, sideScroll: dom.sideScroll, brokenImages, consoleErrors: collector.errors };
 }
 
-async function runDetector(page: Page): Promise<DetectorFinding[]> {
+// Детектор отдаёт группы по элементам: `selector` (не привязан к документу: `div:nth-of-type(1) > section > div` подходит
+// к элементам разных секций), `rect` (getBoundingClientRect на момент запуска), `isPageLevel`. Самого элемента в ответе нет,
+// поэтому принадлежность секции определяется в странице, сразу после запуска (пока `rect` совпадает с живыми рамками):
+// 1) находка уровня страницы в секцию не входит; 2) среди элементов по `selector` берутся те, чья рамка совпала с `rect`
+// (до 1,5 px), и находка принадлежит секции, если один из них лежит внутри её обёртки; 3) нет такого элемента (селектор
+// не разобрался) — по рамке: центр `rect` внутри места секции (рамка обёртки, а у обёртки без рамки — объединение
+// видимых потомков, как в `LOCATE_SCRIPT`).
+const DETECT_IN_SECTION_BODY = `async (find, id) => {
+  const detect = window.impeccableDetectAsync;
+  if (typeof detect !== 'function') throw new Error('детектор не подключился');
+  const groups = await detect.call(window);
+  const wrapper = find(id);
+  if (!wrapper) return [];
+  const sized = (rect) => rect.width >= 1 && rect.height >= 1;
+  const own = wrapper.getBoundingClientRect();
+  const boxes = sized(own)
+    ? [own]
+    : [...wrapper.querySelectorAll('*')].map((node) => node.getBoundingClientRect()).filter(sized);
+  const area = {
+    left: Math.min(...boxes.map((rect) => rect.left)),
+    top: Math.min(...boxes.map((rect) => rect.top)),
+    right: Math.max(...boxes.map((rect) => rect.right)),
+    bottom: Math.max(...boxes.map((rect) => rect.bottom)),
+  };
+  const same = (rect, node) => {
+    const live = node.getBoundingClientRect();
+    return ['left', 'top', 'width', 'height'].every((key) => Math.abs(live[key] - rect[key]) <= 1.5);
+  };
+  return groups.filter((group) => {
+    if (group.isPageLevel) return false;
+    let nodes = [];
+    try {
+      nodes = [...document.querySelectorAll(group.selector)].filter((node) => same(group.rect, node));
+    } catch {
+      nodes = [];
+    }
+    if (nodes.length > 0) return nodes.some((node) => wrapper.contains(node));
+    if (boxes.length === 0) return false;
+    const x = group.rect.left + group.rect.width / 2;
+    const y = group.rect.top + group.rect.height / 2;
+    return x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
+  });
+}`;
+
+const detectInSectionScript = (section: string): string =>
+  `(${DETECT_IN_SECTION_BODY})(${SECTION_FINDER}, ${JSON.stringify(section)})`;
+
+async function runDetector(page: Page, section?: string): Promise<DetectorFinding[]> {
   await page.evaluate(() => Object.assign(window, { __IMPECCABLE_CONFIG__: { autoScan: false } }));
   await page.addScriptTag({ content: detectorScript() });
-  const raw: unknown = await page.evaluate(async () => {
-    const detect: unknown = Reflect.get(window, 'impeccableDetectAsync');
-    if (typeof detect !== 'function') throw new Error('детектор не подключился');
-    const found: unknown = await detect.call(window);
-    return found;
-  });
+  const raw: unknown =
+    section === undefined
+      ? await page.evaluate(async () => {
+          const detect: unknown = Reflect.get(window, 'impeccableDetectAsync');
+          if (typeof detect !== 'function') throw new Error('детектор не подключился');
+          const found: unknown = await detect.call(window);
+          return found;
+        })
+      : await page.evaluate(detectInSectionScript(section));
   const groups = DetectorOutput.parse(raw);
   return groups.flatMap((group) =>
     group.findings.map((finding) => ({
@@ -324,7 +374,7 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
       await page.waitForTimeout(SHOT_SETTLE_MS);
       return page.screenshot({ type: 'jpeg', quality, animations: 'disabled' });
     },
-    detect: () => runDetector(page),
+    detect: (section) => runDetector(page, section),
     layout: (section) => runLayout(page, device, section),
     shootClip: (finding, quality) => shootClip(page, viewport, finding, quality),
     locateSection: (section) => locateSection(page, viewport, section),

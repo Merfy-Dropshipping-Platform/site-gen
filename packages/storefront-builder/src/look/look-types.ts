@@ -99,8 +99,9 @@ export interface PageSession {
   facts: PageFacts;
   // JPEG экрана с номером `index` (с нуля): страница прокручивается на `index` высот экрана.
   shoot(index: number, quality: number): Promise<Uint8Array>;
-  // Детектор Impeccable на отрисованной странице. Вызывается после снимков.
-  detect(): Promise<DetectorFinding[]>;
+  // Детектор Impeccable на отрисованной странице. Вызывается после снимков. С `section` (id экземпляра секции) — только
+  // находки по элементам внутри этой секции; находки уровня страницы в них не входят.
+  detect(section?: string): Promise<DetectorFinding[]>;
   // Проверки вёрстки на отрисованной странице (`look-layout.ts`). Ничего на странице не меняют. С `section` —
   // только то, что лежит в секции с этим id экземпляра (`data-section-id`): отбор до пределов «до N на код».
   layout(section?: string): Promise<LayoutFinding[]>;

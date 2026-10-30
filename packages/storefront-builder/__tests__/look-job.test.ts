@@ -597,6 +597,79 @@ describe('снимок черновика · очередь и ответ', () =
   });
 });
 
+describe('снимок черновика · запись шаблона и вырезки по запросу (шаг 4)', () => {
+  const sampleHtml = (sample: unknown) =>
+    `<!doctype html><html><body><script type="application/json" id="merfy-look-sample">${JSON.stringify(sample)}</script></body></html>`;
+
+  it('record уходит в адрес превью; нашлась ли запись — в ответе, название берётся из превью', async () => {
+    const found = { type: 'product', asked: 'palto', found: true, title: 'Пальто' };
+    const { deps, fetch } = setup({}, () => Promise.resolve(htmlResponse(sampleHtml({ v: 1, record: found }))));
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ page: 'product', record: 'palto' })));
+
+    expect(fetch.mock.calls[0]?.[0]).toContain('/preview?page=product&record=palto');
+    expect(snapshot.record).toEqual(found);
+    expect(snapshot.cart).toBeNull();
+  });
+
+  it('записи нет — found: false, снимок всё равно снят: сообщить об этом решает потребитель', async () => {
+    const missing = { type: 'product', asked: 'нет-такого', found: false, title: null };
+    const { deps } = setup({}, () => Promise.resolve(htmlResponse(sampleHtml({ v: 1, record: missing }))));
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ page: 'product', record: 'нет-такого' })));
+
+    expect(snapshot.record?.found).toBe(false);
+    expect(snapshot.devices[0]?.images).toHaveLength(1);
+  });
+
+  it('страница корзины: число строк корзины снимка; без тега в превью record и cart — null', async () => {
+    const line = {
+      id: 'look-line-1',
+      productId: 'p1',
+      variantCombinationId: null,
+      quantity: 1,
+      unitPriceCents: 100,
+      name: 'Шарф',
+      imageUrl: null,
+      options: {},
+    };
+    const withCart = setup({}, () =>
+      Promise.resolve(htmlResponse(sampleHtml({ v: 1, cart: { lines: [line, line] } }))),
+    );
+    expect(snapshotOf(await runLookJob(withCart.deps, job({ page: 'page-cart' }))).cart).toEqual({ lines: 2 });
+
+    const plain = setup();
+    const snapshot = snapshotOf(await runLookJob(plain.deps, job()));
+    expect([snapshot.record, snapshot.cart]).toEqual([null, null]);
+  });
+
+  it('тег не по форме не ломает снимок: считается, что превью ничего не сообщило', async () => {
+    const { deps } = setup({}, () => Promise.resolve(htmlResponse(sampleHtml({ v: 2, cart: 'x' }))));
+    const snapshot = snapshotOf(await runLookJob(deps, job({ page: 'page-cart' })));
+    expect([snapshot.record, snapshot.cart]).toEqual([null, null]);
+  });
+
+  it('clips: false — находки вёрстки текстом, без вырезок; по умолчанию вырезки как раньше', async () => {
+    const layout = [layoutFinding('row-unequal', 0), layoutFinding('overflow-x', 1)];
+    const quiet = setup({ mobile: { pageHeight: 844, layout } });
+    const without = snapshotOf(await runLookJob(quiet.deps, job({ clips: false })));
+    const found = without.findings.filter((finding) => finding.source === 'layout');
+    expect(found).toHaveLength(2);
+    expect(found.every((finding) => finding.image === null && finding.clip !== null)).toBe(true);
+
+    const usual = setup({ mobile: { pageHeight: 844, layout } });
+    const withClips = snapshotOf(await runLookJob(usual.deps, job()));
+    expect(withClips.findings.filter((finding) => finding.image !== null)).toHaveLength(2);
+  });
+
+  it('record не по форме (пустой, длиннее 200) — invalid, превью не читается', async () => {
+    const { deps, fetch } = setup();
+    expect(errorOf(await runLookJob(deps, job({ record: '' })))?.code).toBe('invalid');
+    expect(errorOf(await runLookJob(deps, job({ record: 'x'.repeat(201) })))?.code).toBe('invalid');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
 describe('настройки проверяющего процесса', () => {
   it('SITES_SERVICE_URL необязателен: нет — снимки выключены', () => {
     expect(readCheckerSettings({ RABBITMQ_URL: 'amqp://x' }).sitesUrl).toBeNull();

@@ -219,10 +219,28 @@ const decodedPath = (path: string): string => {
   }
 };
 
-// Запись по id или по адресу от корня — ссылке, нажатой в превью (как есть или раскодированной); чужой вид — нет.
+// Адрес по одному слову (handle): у статьи он из двух частей — по одному слову её не найти.
+const HANDLE_PATH: Readonly<Partial<Record<RecordType, (handle: string) => string>>> = {
+  product: recordPath.product,
+  collection: recordPath.collection,
+  blog: recordPath.blog,
+  policy: recordPath.policy,
+};
+
+// Запись по id, по адресу от корня — ссылке, нажатой в превью (как есть или раскодированной), или по handle («пальто»);
+// чужой вид — нет.
 function recordById(index: RecordIndex, type: RecordType, id: string): RecordEntry | null {
-  const found = id.startsWith('/') ? (index.atPath(id) ?? index.atPath(decodedPath(id))) : index.find(type, id);
+  const byHandle = (): RecordEntry | null => index.atPath(HANDLE_PATH[type]?.(id) ?? '');
+  const found = id.startsWith('/')
+    ? (index.atPath(id) ?? index.atPath(decodedPath(id)))
+    : (index.find(type, id) ?? byHandle());
   return found?.type === type ? found : null;
+}
+
+// Запись превью, которую просят явно (id, адрес или handle), без запасной по умолчанию: нет такой — null. Для снимка
+// черновика (`look`): он должен сказать, что записи нет, а не показать другую.
+export function findPreviewRecord(inputs: BuildInputs, type: RecordType, id: string): RecordEntry | null {
+  return recordById(previewIndex(inputs), type, id);
 }
 
 // Адрес записи шаблона в превью (часть 8б-2): запись record, иначе запись по умолчанию (record-preview.ts).

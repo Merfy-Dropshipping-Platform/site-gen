@@ -111,6 +111,7 @@ const API = [
   'routeDuplicates',
   'isRecordType',
   'previewRecordPath',
+  'findPreviewRecord',
   'CATALOG_PAGE_ID',
   'CATALOG_PATH',
   'catalogUrlOf',

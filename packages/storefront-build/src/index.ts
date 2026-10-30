@@ -24,7 +24,7 @@ export { NOT_FOUND_ROUTE, OVERLAY_LIST, SHOP_ROUTES, pageInfoById, routeOf, type
 // Страницы записей (блок 8 «Секций и SDK», часть 8б)
 export { recordIndex, routeDuplicates, shopRoutes, templateShown, type RouteDuplicate } from './routes';
 // Превью шаблонов записей (часть 8б-2)
-export { isRecordType, previewRecordPath } from './routes';
+export { findPreviewRecord, isRecordType, previewRecordPath } from './routes';
 // Каталог, страницы списка и параметры списка (блок 11 «Секций и SDK», часть 11а)
 export { CATALOG_PAGE_ID, CATALOG_PATH, catalogUrlOf } from './routes';
 export { listSourceAt, type ListRequest } from './page';

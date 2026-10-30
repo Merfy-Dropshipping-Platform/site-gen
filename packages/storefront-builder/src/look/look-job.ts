@@ -6,6 +6,7 @@ import { MAX_CONCURRENT_RENDERS } from './look-browser';
 import { BUDGET_BYTES, fitShots, type DeviceShots } from './look-fit';
 import { runLayoutChecks } from './look-layout';
 import { LOOK_PATTERN, LOOKS_QUEUE } from './look-queue';
+import { parseSample, type LookSample } from './look-sample';
 import { cutOf, locateSection, shootSections, type SectionCut } from './look-section';
 import {
   LookError,
@@ -60,6 +61,11 @@ const lookJobSchema = z.strictObject({
     .string()
     .regex(/^[A-Za-z0-9_.:-]{1,100}$/)
     .optional(),
+  // Запись шаблона страницы (товар, коллекция…): id, адрес или handle — как `record=` у превью конструктора. Нет — запись
+  // по умолчанию. Нашлась ли она, сказано в ответе (`record`): снимок не подменяет её молча.
+  record: z.string().min(1).max(200).optional(),
+  // Вырезки мест находок вёрстки: нет ключа или true — как раньше, false — только экраны, находки текстом.
+  clips: z.boolean().optional(),
   // Время (мс с 1970), после которого вызывающий ответа уже не ждёт.
   deadline: z.int().positive(),
 });
@@ -95,6 +101,10 @@ export interface LookSnapshot {
   full: boolean;
   // id секции из задания; null — снимок страницы.
   section: string | null;
+  // Запись, которую просили (`record` задания): нашлась ли и как называется; не просили — null. Корзина снимка — на
+  // страницах корзины и оформления: сколько строк товаров магазина в ней стоит, у остальных страниц null.
+  record: { type: string; asked: string; found: boolean; title: string | null } | null;
+  cart: { lines: number } | null;
   devices: LookDeviceShots[];
   detector: { ok: true } | { ok: false; reason: string };
   // Проверки вёрстки (`look-layout.ts`): отказ одного устройства не мешает остальным, причина — сюда.
@@ -132,8 +142,10 @@ export function parseLookJob(body: unknown): LookJob | null {
   return job.success ? job.data : null;
 }
 
-export const previewUrl = (sitesUrl: string, job: LookJob): string =>
-  `${sitesUrl.replace(/\/+$/, '')}/api/sites/${encodeURIComponent(job.siteId)}/preview?page=${encodeURIComponent(job.page)}`;
+export const previewUrl = (sitesUrl: string, job: LookJob): string => {
+  const base = `${sitesUrl.replace(/\/+$/, '')}/api/sites/${encodeURIComponent(job.siteId)}/preview?page=${encodeURIComponent(job.page)}`;
+  return job.record === undefined ? base : `${base}&record=${encodeURIComponent(job.record)}`;
+};
 
 type Preview = { ok: true; html: string } | LookFailure;
 
@@ -231,10 +243,21 @@ function sectionShots(session: PageSession, place: SectionPlace | null, shot: Ui
   };
 }
 
+// Что превью сообщило о странице (`look-sample.ts`): показанная запись и корзина.
+const factsOf = (sample: LookSample | null): Pick<LookSnapshot, 'record' | 'cart'> => ({
+  record: sample?.record ?? null,
+  cart: sample?.cart === undefined ? null : { lines: sample.cart.lines.length },
+});
+
 // Снимок страницы: экраны, детектор дизайна и проверки вёрстки.
-async function pageSnapshot(sessions: PageSession[], first: PageSession, job: LookJob): Promise<LookSnapshot> {
+async function pageSnapshot(
+  sessions: PageSession[],
+  first: PageSession,
+  job: LookJob,
+  sample: LookSample | null,
+): Promise<LookSnapshot> {
   // Вырезки мест идут в тот же предел веса, что и экраны: сначала они, экранам остаётся остальное.
-  const checks = await runLayoutChecks(sessions);
+  const checks = await runLayoutChecks(sessions, undefined, job.clips !== false);
   const shots = await fitShots(sessions, job.full, BUDGET_BYTES - checks.clipBytes);
   const { detector, findings } = await detectOn(first);
   const devices = sessions.map((session, index) =>
@@ -246,6 +269,7 @@ async function pageSnapshot(sessions: PageSession[], first: PageSession, job: Lo
     page: job.page,
     full: job.full,
     section: null,
+    ...factsOf(sample),
     devices,
     detector,
     layout: checks.status,
@@ -275,9 +299,10 @@ async function sectionSnapshot(
   job: LookJob,
   section: string,
   now: () => number,
+  sample: LookSample | null,
 ): Promise<LookSnapshot> {
   const places = await locateSection(sessions, section);
-  const checks = await runLayoutChecks(sessions, section);
+  const checks = await runLayoutChecks(sessions, section, job.clips !== false);
   const { shots } = await shootSections(sessions, places, section, BUDGET_BYTES - checks.clipBytes);
   const { detector, findings } = await detectInSection(sessions, places, section, job.deadline - now());
   const devices = sessions.map((session, index) => sectionShots(session, places[index] ?? null, shots[index] ?? null));
@@ -287,6 +312,7 @@ async function sectionSnapshot(
     page: job.page,
     full: false,
     section,
+    ...factsOf(sample),
     devices,
     detector,
     layout: checks.status,
@@ -294,12 +320,17 @@ async function sectionSnapshot(
   };
 }
 
-async function snapshotOf(sessions: PageSession[], job: LookJob, now: () => number): Promise<LookSnapshot> {
+async function snapshotOf(
+  sessions: PageSession[],
+  job: LookJob,
+  now: () => number,
+  sample: LookSample | null,
+): Promise<LookSnapshot> {
   const [first] = sessions;
   if (first === undefined) throw new Error('отрисовщик не открыл ни одного экрана');
   return job.section === undefined
-    ? pageSnapshot(sessions, first, job)
-    : sectionSnapshot(sessions, job, job.section, now);
+    ? pageSnapshot(sessions, first, job, sample)
+    : sectionSnapshot(sessions, job, job.section, now, sample);
 }
 
 function renderFailure(error: unknown): LookReply {
@@ -316,7 +347,7 @@ async function render(deps: LookDeps, job: LookJob, html: string): Promise<LookR
     return renderFailure(error);
   }
   try {
-    return { ok: true, snapshot: await snapshotOf(rendered.sessions, job, deps.now) };
+    return { ok: true, snapshot: await snapshotOf(rendered.sessions, job, deps.now, parseSample(html)) };
   } catch (error) {
     return renderFailure(error);
   } finally {

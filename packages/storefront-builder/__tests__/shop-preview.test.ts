@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import standInputsJson from '../../storefront-build/fixtures/stand-inputs.json';
 import panelJson from '../../theme-contract/panel/theme-panel.json';
 import novaThemeJson from '../../theme-nova/theme.json';
+import { parseSample } from '../src/look/look-sample';
 import { PREVIEW_POLICY_META } from '../src/preview-policy';
 import { sectionPreview, shopPreview, shopSections, type ShopPreviewDeps } from '../src/shop-preview';
 import type { VisibleSection } from '../src/section-extension';
@@ -598,6 +599,39 @@ describe('превью шаблонов записей (блок 8 «Секци�
     const example = await shopPreview(depsOf().deps, url(`shop=${SHOP}&page=product`));
     expect(example.status).toBe(200);
     expect(example.body).toContain('<title>Пример товара</title>');
+  });
+
+  it('снимок черновика: record по handle — тег со сведениями о записи; нет такой — found: false; без record тега нет', async () => {
+    const { deps } = recordDeps();
+    const sampleOf = async (query: string) => {
+      const answer = await shopPreview(deps, url(`shop=${SHOP}&page=product${query}`));
+      return parseSample(answer.body);
+    };
+    expect((await sampleOf('&record=pled'))?.record).toEqual({
+      type: 'product',
+      asked: 'pled',
+      found: true,
+      title: 'Плед',
+    });
+    expect((await sampleOf('&record=net-takogo'))?.record).toEqual({
+      type: 'product',
+      asked: 'net-takogo',
+      found: false,
+      title: null,
+    });
+    expect(await sampleOf('')).toBeNull();
+  });
+
+  it('снимок черновика: корзина и оформление — две строки из товаров магазина; другие страницы тега не получают', async () => {
+    const { deps } = recordDeps();
+    const cart = parseSample((await shopPreview(deps, url(`shop=${SHOP}&page=page-cart`))).body);
+    expect(cart?.cart?.lines.map((line) => [line.productId, line.name, line.unitPriceCents, line.quantity])).toEqual([
+      [P1, 'Шарф', 190000, 1],
+      [P2, 'Плед', 190000, 1],
+    ]);
+    const checkout = parseSample((await shopPreview(deps, url(`shop=${SHOP}&page=page-checkout`))).body);
+    expect(checkout?.cart?.lines).toHaveLength(2);
+    expect(parseSample((await shopPreview(deps, url(`shop=${SHOP}&page=page-wishlist`))).body)).toBeNull();
   });
 
   it('page=policy без секций и без политик — текст примера от платформы', async () => {

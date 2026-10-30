@@ -12,6 +12,7 @@ import type { BrowserContext, Page, Route } from 'playwright';
 import { z } from 'zod';
 import { isAllowedRequest } from './look-guard';
 import { layoutSource, parseLayout } from './look-layout';
+import { SAMPLE_CART_ID, SAMPLE_CART_PARAM, cartBodyOf, parseSample, type LookCartLine } from './look-sample';
 import {
   VIEWPORTS,
   type DetectorFinding,
@@ -67,13 +68,45 @@ const DetectorOutput = z.array(
   }),
 );
 
-function entryRoute(entry: string, html: string): (route: Route) => Promise<void> {
+// Чтение корзины витрины: `GET <шлюз>/store/carts/<номер снимка>`. Шлюз — любой публичный адрес из конфига страницы.
+const CART_READ_PATH = new RegExp(`/store/carts/${SAMPLE_CART_ID}/?$`);
+const CORS_HEADERS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, OPTIONS',
+  'access-control-allow-headers': '*',
+};
+
+// Страница корзины или оформления: в корзине строки товаров магазина (их положило превью, `look-sample.ts`), а не пусто.
+// Корзину на шлюзе не создаём — чтение подменяется здесь, магазин и заказы остаются как были.
+async function answerCart(route: Route, lines: readonly LookCartLine[]): Promise<boolean> {
+  const request = route.request();
+  if (!CART_READ_PATH.test(new URL(request.url()).pathname)) return false;
+  if (request.method() === 'OPTIONS') {
+    await route.fulfill({ status: 204, headers: CORS_HEADERS });
+    return true;
+  }
+  if (request.method() !== 'GET') return false;
+  await route.fulfill({
+    status: 200,
+    headers: CORS_HEADERS,
+    contentType: 'application/json',
+    body: JSON.stringify(cartBodyOf(lines)),
+  });
+  return true;
+}
+
+function entryRoute(
+  entry: string,
+  html: string,
+  cart: readonly LookCartLine[] | null,
+): (route: Route) => Promise<void> {
   return async (route) => {
     const url = route.request().url();
     if (url === entry) {
       await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html });
       return;
     }
+    if (cart !== null && (await answerCart(route, cart))) return;
     if (!isAllowedRequest(url)) {
       await route.abort('blockedbyclient');
       return;
@@ -353,8 +386,11 @@ async function shootClip(page: Page, viewport: Viewport, finding: LayoutFinding,
 // Открывает страницу под нужный экран и возвращает её готовой к снимкам. Контекст закрывает вызывающий.
 export async function openPage(context: BrowserContext, device: LookDevice, html: string): Promise<PageSession> {
   const viewport = VIEWPORTS[device];
-  const entry = entryUrlOf(html);
-  await context.route('**/*', entryRoute(entry, html));
+  const base = entryUrlOf(html);
+  // Корзина снимка: номер в адресе, как у превью конструктора, а строки подставляет `answerCart`.
+  const cart = parseSample(html)?.cart?.lines ?? null;
+  const entry = cart === null ? base : `${base}?${SAMPLE_CART_PARAM}=${SAMPLE_CART_ID}`;
+  await context.route('**/*', entryRoute(entry, html, cart));
   const page = await context.newPage();
   const collector = collect(page);
 

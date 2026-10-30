@@ -156,12 +156,13 @@ export interface LayoutResult {
 }
 
 // Проверки вёрстки на всех устройствах и вырезки первых по важности находок. С `section` — только находки этой секции.
-export async function runLayoutChecks(sessions: PageSession[], section?: string): Promise<LayoutResult> {
+// `clips: false` — без вырезок (по умолчанию в `merfy_pages look`, шаг 4): находки идут текстом, картинки не снимаются.
+export async function runLayoutChecks(sessions: PageSession[], section?: string, clips = true): Promise<LayoutResult> {
   const results = await Promise.all(sessions.map((session) => layoutOf(session, section)));
   const layouts = results.map((result) => result.layout);
   const reason = results.find((result) => result.failure !== null)?.failure ?? null;
   const shots = new Map<LayoutFinding, Uint8Array>();
-  for (const { layout, finding } of chooseForClips(layouts)) {
+  for (const { layout, finding } of clips ? chooseForClips(layouts) : []) {
     shots.set(finding, await shootWithin(layout.session, finding));
   }
   const findings = layouts.flatMap((layout) =>

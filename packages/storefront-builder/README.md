@@ -146,12 +146,14 @@
 - сообщение `{ pattern: 'storefront.look', id, data }`, свойства `replyTo` (прямой ответ `amq.rabbitmq.reply-to`),
   `correlationId`, `expiration` (мс, столько шлюз ждёт ответа — непрочитанное задание брокер потом удалит сам);
 - `data` (строго, лишние поля — отказ): `{ v: 1, siteId, page, devices: 'mobile' | 'desktop' | 'both', full: boolean,
-  section?, deadline }`, `deadline` — время (мс с 1970), после которого ответа уже не ждут; `section` — id экземпляра
-  секции, см. «Снимок одной секции»;
+  section?, record?, clips?, deadline }`, `deadline` — время (мс с 1970), после которого ответа уже не ждут; `section` —
+  id экземпляра секции, см. «Снимок одной секции»; `record` — запись шаблона страницы (id, адрес или handle товара,
+  коллекции…; 1–200 знаков), уходит в `record=` превью; `clips: false` — без вырезок мест находок вёрстки (нет ключа или
+  `true` — как раньше);
 - ответ на `replyTo` с тем же `correlationId`: `{ err: null, isDisposed: true, id, response }`, где `response` —
   `{ ok: true, snapshot }` или `{ ok: false, error: { code, message, status? } }`.
 
-`snapshot`: `{ v: 1, siteId, page, full, section, devices: [{ device, viewport, facts: { pageHeight, brokenImages,
+`snapshot`: `{ v: 1, siteId, page, full, section, record, cart, devices: [{ device, viewport, facts: { pageHeight, brokenImages,
 consoleErrors (до 50, каждое до 500 знаков), sideScroll }, screens: { total, shown }, images: [JPEG base64], cut }],
 detector: { ok: true } | { ok: false, reason }, layout: { ok: true } | { ok: false, reason }, findings: [{ source, code,
 name, text, device, section, clip, image }] }`. `findings` — сначала детектор, потом проверки вёрстки (телефон первым,
@@ -160,6 +162,13 @@ name, text, device, section, clip, image }] }`. `findings` — сначала д
 не выше 480 px), `image` — вырезка этого места JPEG base64 (у находок вёрстки, не у всех: см. «Проверки вёрстки»); у
 детектора `section`, `clip` и `image` — `null`. Детектор запускается на первом устройстве (телефон, если он есть); его
 отказ не роняет снимки, отказ проверок вёрстки — тоже (причина в `layout`).
+
+**Запись и корзина (30.10).** Превью кладёт в страницу JSON-тег `merfy-look-sample` (`src/preview-sample.ts`, разбор —
+`src/look/look-sample.ts`): с `record=` — `{ type, asked, found, title }` (нашлась ли запись и как называется;
+записи нет — страница показывает запись по умолчанию, `found: false` говорит об этом); на страницах `page-cart` и
+`page-checkout` — строки корзины из первых двух товаров магазина (с остатком первыми). Снимок отдаёт это как `record`
+и `cart: { lines }` (иначе `null`). Корзину на шлюзе не создаём: страница открывается с `?merfy-cart=<номер снимка>`, как
+превью конструктора, а чтение `GET <шлюз>/store/carts/<номер>` подменяется ответом со строками (`look-page.ts`).
 
 **Проверки вёрстки (28.10).** Выполняются в странице на каждом устройстве (`src/look/browser/layout-checks.js`; запуск,
 пределы и вырезки — `src/look/look-layout.ts`). Порог и правило каждой проверки — в таблице `RULES` и комментариях этого

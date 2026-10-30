@@ -22,6 +22,9 @@ export const PROBLEM_CODES = [
   'class-dark',
   'class-theme-token',
   'class-dynamic',
+  // Класс из словаря, который на экране ничего не рисует: точки градиента без направления и наоборот, прозрачный
+  // текст на вырезке фона без фона (inert-classes.ts).
+  'class-inert',
   'token-invalid',
   'render-failed',
   'script-invalid',

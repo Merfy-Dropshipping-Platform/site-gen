@@ -2,6 +2,7 @@ import type { ClassSystem } from '@merfy/storefront-build';
 import { classesOf, type Dictionary } from '@merfy/tokens';
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
 import { TEMPLATE_FILE } from './format';
+import { inertFindings } from './inert-classes';
 import { positionAt } from './position';
 import { problem, type SectionProblem } from './problems';
 
@@ -383,6 +384,29 @@ function attributeClasses(node: AstNode, fields: ClassFields, dynamic: Found[]):
   return isNode(expression) ? expressionClasses(expression, fields, { classes: [], dynamic }) : [];
 }
 
+// Классы без стилей на экране (inert-classes.ts): по элементам, у которых каждый класс прошёл проверку выше — иначе
+// отказ уже есть, второй про тот же класс только шумит.
+function inertFindingsOf(
+  ast: unknown,
+  fields: ClassFields,
+  system: ClassSystem,
+  dictionary: Dictionary,
+): { at: number; code: 'class-inert'; message: string }[] {
+  const fills = (utility: string): boolean => system.cssOf([utility])[0]?.includes('background-color') === true;
+  return nodesOf(ast)
+    .filter((node) => node.type === 'JSXOpeningElement')
+    .flatMap((element) => {
+      const attributes = fieldOf(element, 'attributes');
+      const list = Array.isArray(attributes) ? attributes.filter(isNode) : [];
+      const classes = list
+        .filter((attribute) => attribute.type === 'JSXAttribute' && CLASS_ATTRIBUTES.has(nameOf(attribute)))
+        .flatMap((attribute) => attributeClasses(attribute, fields, []));
+      if (classes.some((item) => classProblem(item.name, system, dictionary) !== undefined)) return [];
+      const named = classes.map((item) => ({ ...item, utility: partsOf(item.name).utility }));
+      return inertFindings(named, fills).map((item) => ({ ...item, code: 'class-inert' as const }));
+    });
+}
+
 export async function classProblems(
   text: string,
   fields: ClassFields,
@@ -404,7 +428,7 @@ export async function classProblems(
     code: 'class-dynamic' as const,
     message: item.message,
   }));
-  return [...classFindings, ...dynamicFindings]
+  return [...classFindings, ...dynamicFindings, ...inertFindingsOf(ast, fields, system, dictionary)]
     .sort((left, right) => left.at - right.at)
     .map((item) => problem(item.code, TEMPLATE_FILE, item.message, positionAt(text, item.at)));
 }

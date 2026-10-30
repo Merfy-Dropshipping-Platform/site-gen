@@ -85,6 +85,12 @@ export const PROBLEM_CODES = [
   'taste-long-condition',
   'taste-class-branches',
   'taste-repeated-condition',
+  // Содержимое секции (markup-literals.ts, dead-settings.ts, library-copy.ts): надписи и адреса картинок прямо в
+  // разметке, параметр, который шаблон не читает, копия библиотечной секции без изменений — тоже предупреждения.
+  'taste-literal-text',
+  'taste-literal-image',
+  'taste-dead-setting',
+  'taste-library-copy',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];
 
@@ -100,6 +106,10 @@ const WARNING_CODES: ReadonlySet<ProblemCode> = new Set([
   'taste-long-condition',
   'taste-class-branches',
   'taste-repeated-condition',
+  'taste-literal-text',
+  'taste-literal-image',
+  'taste-dead-setting',
+  'taste-library-copy',
 ]);
 
 export const sectionProblemSchema = z.strictObject({

@@ -1,13 +1,14 @@
 # Merfy · SDK секций витрины
 
 > Как написать секцию магазина Merfy: section.json, template.astro, script.ts.
-> SDK 1 · документация 1.20.0 · 2026-10-30. Читай эту документацию, а не память: SDK новый.
+> SDK 1 · документация 1.21.0 · 2026-10-30. Читай эту документацию, а не память: SDK новый.
 
 ## Гайд
 - [Из чего состоит секция](anatomy.md): section.json, template.astro и script.ts, как они связаны, откуда секция берёт данные и как общается со страницей
 - [Путь секции до витрины](path.md): написал, проверка, сохранение, публикация и сборка магазина, витрина: что происходит на каждом шаге
 
 ## Начать
+- [Шпаргалка: секция с нуля](quick.md): файлы, поля и имена, шаблон, классы, данные, скрипт и пределы на одной странице (до 10 000 знаков)
 - [Как сделать секцию](start.md): порядок работы, адреса проверки и сохранения, разобранный пример
 - [Шаблон секции](template/AGENTS.md): правила для ИИ и файлы, с которых начинать
 - [Как писать код секции](code.md): декларативный шаблон и скрипт: правила «плохо → хорошо», предупреждения taste-*
@@ -33,6 +34,9 @@
 - [Лимиты](limits.md): пределы файлов, полей, скрипта, проверки
 - [Что нового](changelog.md): изменения по версиям
 
+## Данные
+- [names.json](names.json): словарь имён полей данными — ключ, виды, подпись, смысл, слова просьбы
+
 ## Всё одним файлом
 - [llms-full.txt](llms-full.txt): все страницы подряд
 
@@ -40,7 +44,7 @@
 
 # Из чего состоит секция
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Секция — один блок страницы магазина: шапка, баннер, список товаров, подвал. Секция хранится как папка с файлами.
 Описание нужно любой секции, разметка — обычной, скрипт — только той, у которой что-то меняется после загрузки. Эта страница объясняет, за что отвечает каждый файл, как они связаны и
@@ -164,7 +168,7 @@
 
 # Путь секции до витрины
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Эта страница описывает путь секции: файлы написаны → проверка → сохранение → публикация магазина и сборка → витрина.
 На каждом шаге сказано, какая часть платформы работает и что остаётся, если шаг не прошёл.
@@ -271,9 +275,152 @@
 
 ---
 
+# Шпаргалка: секция с нуля
+
+> SDK 1 · документация 1.21.0 · 2026-10-30
+
+Шпаргалка: как написать секцию с нуля и не открывать остальные файлы. Подробности — по ссылкам внизу; каждый абзац ниже
+сверен с проверкой при сохранении.
+
+## Порядок
+
+1. Реши вид: что секция показывает и что из этого мерчант захочет менять — это параметры.
+2. `section.json` — поля; `template.astro` — разметка, которая только выводит `{settings.<имя>}`; `script.ts` — только если
+   после загрузки что-то меняется.
+3. Проверь (`merfy_sections check` или `POST /api/sites/<магазин>/sections/check`), исправь по ответу, сохрани.
+   Ответ: `problems` — отказ, `warnings` — секция сохраняется, но стоит поправить.
+
+## Минимум
+
+```json
+{
+  "sdk": 1, "name": "benefits", "kind": "section", "title": "Преимущества",
+  "settings": [
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Почему мы" } }
+  ],
+  "blocks": {
+    "item": { "title": "Пункт", "limit": 6, "settings": [
+      { "id": "text", "label": "Текст", "setting": { "kind": "text", "default": "Доставка за день" } }
+    ] }
+  },
+  "defaultBlocks": [{ "type": "item", "settings": { "text": "Доставка за день" } }]
+}
+```
+
+```astro
+---
+const { settings, blocks } = Astro.props;
+---
+<div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
+  {settings.heading && <h2 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h2>}
+  {blocks.map((block) => <p class="m-0 text-foreground">{block.settings.text}</p>)}
+</div>
+```
+
+## Параметры: что вынести
+
+Мерчант захочет выключить или поменять — параметр: надписи, картинки, ссылки, колонки, линия, регистр, автопрокрутка.
+Текст и адрес картинки в разметке — не параметр, мерчант их не поменяет (предупреждения `taste-literal-text`,
+`taste-literal-image`). Поле, которого шаблон не читает, — `taste-dead-setting`: после переделки убери лишние.
+
+- Виды поля: `string`, `text`, `richtext`, `url`, `image`, `image-pair`, `video`, `select`, `radio`, `toggle`, `range`,
+  `alignment`, `color-scheme`, `padding`, `menu`, `product`, `collection`, `blog`, `policy`, `hint`. Обязательные ключи:
+  `default` у всех, кроме `product`/`collection`/`blog`/`policy`/`hint`; `maxBytes` у `image`, `image-pair`, `video`;
+  `options` у `select`/`radio`; `labels` `{ "on", "off" }` у `toggle`; `min`, `max`, `step` у `range`
+  ([section-json.md](section-json.md)).
+- `settings` — ссылка `{ "wrapper": "padding" }` ставит общие «Отступы» и «Цветовую схему» (по умолчанию они уже есть).
+- Условия: `visibleWhen` и `disabledWhen` — `{ "setting": "<id>", "equals": <значение> }` по полю `toggle`, `select`,
+  `radio`, `alignment` своего списка.
+- `blocks`: до 8 типов, до 50 блоков; `limit` — сколько блоков типа; в блоке нет видов `blog`, `policy`, `menu`.
+- `uses`: `["theme"]`, `["shop"]` открывают `theme` и `shop` в шаблоне; `groups`: `header`, `page`, `footer` — куда ставить.
+
+## Имена полей
+
+Имя поля — kebab-case из словаря, вид — из его столбца «Виды». Не из словаря — отказ `setting-name-unknown`, ответ
+называет до трёх ближайших имён. Искать имя: `merfy_sections action=names find="<слово>"` (до шести записей); весь
+словарь — [names.md](names.md) (около 19 тыс. знаков, целиком не читай) и данные [names.json](names.json). Нет
+подходящего — своё имя в `names` секции (до 12): `{ "sku-label": { "kinds": ["string"], "label": "Артикул", "about":
+"Подпись артикула", "asks": ["артикул"] } }`. Нельзя имена `show-*`, `hide-*`, `variant`, `color`, `font`, `margin`,
+`gap` и другие из раздела «Нет в словаре» ([names.md](names.md)).
+
+## Шаблон
+
+- Frontmatter — одна строка `const { settings, blocks } = Astro.props;` (`theme` и `shop` — только с `uses`).
+  Операторов, `import`, функций и переменных нет.
+- Можно: `{settings.x}`, `{settings['kebab-id']}`, `&&`, `?:` (не вложенный), `blocks.map(...)`, `class:list`,
+  `data-*`, `set:html` — только у `richtext` и у `string`/`text` с `"ai"`; HTML-текст — в элементе с классом `rich-text`.
+- Нельзя: `<script>`, `<style>`, `<iframe>`, `<link>`, `<meta>`, `<title>` и другие служебные теги, компоненты, `on…`-обработчики, `javascript:`,
+  `{...}` в атрибутах, атрибут `style`, `Date`, `Intl`, префикс `__merfy`.
+- Любое поле мерчант может стереть: `{settings.heading && <h2>…</h2>}`. Деньги — объект: `{price.text}`, не `{price}`
+  (`render-leak`). Один `<h1>` на странице, у поля формы — `<label>`.
+- Условия: вложенный `?:`, четыре и больше частей через `&&`/`||`, ветка на каждое значение поля в `class:list` и
+  одно условие в трёх местах — предупреждения `taste-*`; вместо этого `data-<поле>={…}` на предке и варианты
+  `data-[поле=значение]:` и `in-data-[…]:` у потомков ([code.md](code.md)).
+
+## Классы и токены
+
+Своего CSS нет: только классы Tailwind из словаря ([styles.md](styles.md)). Цвета, шрифты, радиусы — токены:
+`bg-primary`, `text-heading`, `text-foreground`, `font-body`, `font-heading weight-heading`, `rounded-button`,
+`rounded-card`, `max-w-page`. Нельзя: произвольные значения `bg-[#c9a227]`, `dark:`, класс из строки
+(`class-dynamic`), токены одной темы. Нужен свой цвет — `tokens` в `section.json` с меткой `custom`. Градиент —
+направление и точки на одном элементе (`bg-linear-to-r from-… to-…`), иначе `class-inert`. Вёрстка телефоном
+вперёд: классы без префикса — телефон, `md:` и `lg:` добавляют; кнопки от `h-11`, без прокрутки вбок.
+
+## Частые приёмы
+
+Включатель (`toggle`) и выбор (`select`) меняют вид без веток в разметке: значение — в `data-*`, классы — вариантами.
+Картинка и кнопка исчезают, когда поле пустое.
+
+```astro
+<section class="mx-auto max-w-page px-4" data-capitals={settings.capitals}>
+  {settings.image && <img src={settings.image} alt="" class="aspect-4/5 w-full object-cover" />}
+  <h2 class="m-0 text-heading in-data-[capitals=true]:uppercase">{settings.heading}</h2>
+  {settings['button-label'] && (
+    <a href={settings['button-link']} class="inline-flex h-11 items-center rounded-button bg-primary px-6 text-primary-foreground">
+      {settings['button-label']}
+    </a>
+  )}
+</section>
+```
+
+## Данные
+
+- `settings.<id>` — значения полей; `blocks[i].settings.<id>` — поля блока.
+- Поля `product`, `collection`, `blog`, `policy` дают запись или `null`: у товара `title`, `url`, `price`, `compareAtPrice`,
+  `images`, `available`, `preorder` (под заказ: остатка нет, заказ разрешён), `options`, `variants`; у коллекции
+  `products` (карточки до 24). Скрипту записи отдаёт `data` в `section.json` ([data.md](data.md)).
+- `theme` — сквозные настройки темы (`uses: ["theme"]`), `shop` — публичные данные магазина: название, контакты, адрес
+  (`uses: ["shop"]`).
+
+## Скрипт и готовое поведение
+
+Сначала без скрипта: `data-behavior` — `accordion`, `dialog`, `carousel`, `tabs`, `nav-menu`, `quantity`, `card-photos`,
+`sticky-header`, `video`, `catalog`, `search`, `zoom` с частями `data-part` ([behaviors.md](behaviors.md)); появление —
+`data-animate`; действия SDK — `data-action="cart.add"`, `favorites.toggle` и другие ([actions.md](actions.md)).
+
+Свой скрипт — `export default defineSection({ mount(el, ctx) {}, actions: { имя(button, ctx) {} } })`, импорт только
+`@merfy/shell` и свои `.ts`. Нельзя `window`, `document`, `fetch`, `setTimeout`: всё через `ctx` (`ref`, `refs`, `on`,
+`every`, `watch`, `listen`, `state`, `storage`); элемент `El` — `text`, `attr`, `toggleClass`, `show`, `hide`, `value`
+([script.md](script.md)). Модули — `uses` ([modules.md](modules.md)).
+
+## Пределы
+
+Файлов до 50, файл до 64 КБ, все вместе до 256 КБ; полей секции до 20, блока до 16; вариантов списка от 2 до 10;
+подпись до 32 знаков; скрипт после сжатия до 50 КБ; проверка до 10 с ([limits.md](limits.md)). Проверок и сохранений —
+до 30 в минуту на магазин.
+
+## Дальше
+
+[start.md](start.md) — адреса и разобранный пример · [anatomy.md](anatomy.md) — как связаны файлы · [errors.md](errors.md)
+— справка по кодам проверки · [template.md](template.md) · [section-json.md](section-json.md) · [events.md](events.md).
+
+
+
+---
+
 # Как сделать секцию
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Секция — папка с файлами: `section.json` (поля), `template.astro` (разметка) и `script.ts` — только если на странице
 что-то меняется после загрузки. Секцию проверяют и сохраняют в магазин через шлюз Merfy с входом мерчанта; на витрину
@@ -318,8 +465,9 @@
 
 ## Пример: «Подбор шарфа по цвету пальто»
 
-Покупательница выбирает цвет пальто — в списке остаются шарфы, которые к нему подходят. Поля: заголовок и блоки
-«Шарф» — название и подпись с цветами пальто. Скрипт — одно действие `pick` на кнопках пальто.
+Покупательница выбирает цвет пальто — в списке остаются шарфы, которые к нему подходят. Поля: заголовок и два типа
+блоков: «Пальто» — цвет на кнопке и «Шарф» — название и подпись с цветами пальто. Надписей в разметке нет: всё, что
+видит покупательница, мерчант меняет в панели. Скрипт — одно действие `pick` на кнопках пальто.
 
 scarf-match/
 
@@ -352,6 +500,13 @@ export default defineSection<State>({
     { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Подберите шарф к пальто" } }
   ],
   "blocks": {
+    "coat": {
+      "title": "Пальто",
+      "limit": 6,
+      "settings": [
+        { "id": "label", "label": "Цвет пальто", "setting": { "kind": "string", "default": "серое" } }
+      ]
+    },
     "scarf": {
       "title": "Шарф",
       "limit": 12,
@@ -362,6 +517,9 @@ export default defineSection<State>({
     }
   },
   "defaultBlocks": [
+    { "type": "coat", "settings": { "label": "серое" } },
+    { "type": "coat", "settings": { "label": "чёрное" } },
+    { "type": "coat", "settings": { "label": "бежевое" } },
     { "type": "scarf", "settings": { "label": "Шарф цвета кэмел", "caption": "серое, чёрное" } },
     { "type": "scarf", "settings": { "label": "Графитовый шарф", "caption": "бежевое" } },
     { "type": "scarf", "settings": { "label": "Молочный шарф", "caption": "чёрное, бежевое" } }
@@ -376,16 +534,18 @@ const { settings, blocks } = Astro.props;
 ---
 <div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
   {settings.heading && <h2 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h2>}
-  <div class="flex gap-4">
-    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="серое" data-action="pick">Серое пальто</button>
-    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="чёрное" data-action="pick">Чёрное пальто</button>
-    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="бежевое" data-action="pick">Бежевое пальто</button>
-  </div>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-wrap gap-4">
     {blocks.map((block) => (
-      <div class="rounded-button bg-card p-4 text-card-foreground" data-ref="scarf" data-coats={block.settings.caption}>
-        <p class="m-0 text-lg">{block.settings.label}</p>
-        <p class="m-0 mt-2">К пальто: {block.settings.caption}</p>
+      <div class="contents">
+        {block.type === 'coat' && (
+          <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat={block.settings.label} data-action="pick">{block.settings.label}</button>
+        )}
+        {block.type === 'scarf' && (
+          <div class="w-full rounded-button bg-card p-4 text-card-foreground" data-ref="scarf" data-coats={block.settings.caption}>
+            <p class="m-0 text-lg">{block.settings.label}</p>
+            <p class="m-0 mt-2">{block.settings.caption}</p>
+          </div>
+        )}
       </div>
     ))}
   </div>
@@ -487,7 +647,7 @@ const { settings } = Astro.props;
 
 # Как писать код секции
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Шаблон описывает вид секции, а не программу: значение настройки попадает в атрибут, вид по значению задают классы
 словаря. Ветвление остаётся там, где меняется сама разметка: есть блок или нет, есть фото или нет. Переменных и функций
@@ -799,6 +959,9 @@ const { settings, blocks } = Astro.props;
 | `taste-repeated-condition` | одно сравнение или вызов вроде `blocks.some(…)` в трёх местах и больше | [Повтор условия](#повтор-условия) |
 
 Остальные `taste-*` — кнопки от 44 px, прокрутка вбок, «уменьшить движение» — в [errors.md](errors.md#taste-button-height).
+Состав секции — надписи и адреса картинок в разметке ([`taste-literal-text`](errors.md#taste-literal-text),
+[`taste-literal-image`](errors.md#taste-literal-image)), поле без чтения ([`taste-dead-setting`](errors.md#taste-dead-setting)),
+копия библиотечной секции ([`taste-library-copy`](errors.md#taste-library-copy)) — тоже предупреждения.
 
 Вёрстка секции — телефон первым: классы без префикса для телефона, `sm:`/`md:`/`lg:` добавляют; карточки в ряду одной
 высоты, полоски и вкладки на ширину ряда. Этого проверка не ловит, правила и пример сетки — в
@@ -810,7 +973,7 @@ const { settings, blocks } = Astro.props;
 
 # section.json
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Ключи файла `section.json` и формы полей каждого вида. Формат хранит та же схема, по которой работает проверка при сохранении.
 
@@ -878,7 +1041,7 @@ const { settings, blocks } = Astro.props;
 
 # Имена полей
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 # Имена полей секций
 
@@ -1013,7 +1176,7 @@ const { settings, blocks } = Astro.props;
 
 # template.astro
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 `template.astro` — разметка секции на Astro. Сборка рендерит её на сервере со значениями полей мерчанта.
 
@@ -1069,7 +1232,7 @@ const { settings, blocks } = Astro.props;
 
 # Классы и токены
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Своего CSS у секции нет. Только классы Tailwind из словаря магазина — так секция выглядит в цветах и шрифтах любой
 темы и меняется вместе с «Настройками темы».
@@ -1253,7 +1416,7 @@ const { settings, blocks } = Astro.props;
 
 # script.ts
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 `script.ts` — поведение секции в браузере. Нужен, только если на странице что-то меняется после загрузки: выбор,
 фильтр, счётчик. Открыть, переключить, прокрутить — готовые [поведения](behaviors.md) без скрипта.
@@ -1337,7 +1500,7 @@ export default defineSection<State>({
 
 # Модули SDK
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Ключ `uses` в `section.json` открывает секции данные и модули SDK. Значения:
 
@@ -1416,7 +1579,7 @@ export default defineSection<State>({
 
 # События
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 События витрины отправляет ядро SDK; секция слушает их через `ctx.listen`, свой код мерчанта — на `document`.
 
@@ -1470,7 +1633,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 # Действия
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Действия SDK вызывает ядро по `data-action="<имя>"` в разметке секции — без скрипта. Ответ каждого действия — в его описании; при сбое секция получает ошибку, покупатель — уведомление.
 
@@ -1503,7 +1666,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 # Поведения и анимации
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Готовое поведение вешается на элемент атрибутом `data-behavior="<имя>"` — без скрипта. Части поведения отмечаются `data-part`, параметры — своими `data-…` на том же элементе.
 
@@ -1581,7 +1744,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 # Настройки темы
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Сквозные настройки общие у всех секций: их задаёт мерчант в «Настройках темы», секция читает значения. Список — из общих настроек платформы.
 
@@ -1632,7 +1795,7 @@ const { settings, theme } = Astro.props;
 
 # Страницы
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 ## Группы страницы
 
@@ -1663,7 +1826,7 @@ const { settings, theme } = Astro.props;
 
 # Данные магазина
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
 
@@ -1734,14 +1897,27 @@ const { settings } = Astro.props;
 
 | Вид          | Публичные поля записи                                                                                                                                                                                                                                                                                             |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `product`    | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `options`, `variants`, `collections`, `updatedAt`                                                                                                                                                                  |
-| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `images`, `available`, `variantId`, `colors`; `image` — первое фото, `images` — первые два, для `data-photos` поведения `card-photos`: `{product.images.join(' ')}`; `variantId` — сочетание вариантов по умолчанию для `cart.add`, у товара без вариантов `null`; `colors` — образцы цвета `{ title, swatch }`, `swatch` — `#rrggbb`, до 6, без цветов `[]`) |
+| `product`    | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `preorder`, `options`, `variants`, `collections`, `updatedAt`                                                                                                                                                                  |
+| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `images`, `available`, `preorder`, `variantId`, `colors`; `image` — первое фото, `images` — первые два, для `data-photos` поведения `card-photos`: `{product.images.join(' ')}`; `variantId` — сочетание вариантов по умолчанию для `cart.add`, у товара без вариантов `null`; `colors` — образцы цвета `{ title, swatch }`, `swatch` — `#rrggbb`, до 6, без цветов `[]`) |
 | `blog`       | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `publishedText`, `cover`, `excerpt`)                                                                                                                                                   |
 | `policy`     | `type`, `title`, `url`, `html`                                                                                                                                                                                                                                                                                    |
 
 Дата статьи — в двух видах: `publishedAt` (время ISO, для `datetime`) и `publishedText` (она же словами по Москве,
 «20 октября 2026 г.», для показа). У статьи без даты `publishedAt` — `null`, `publishedText` — пустая строка. Форматировать
 дату в шаблоне не нужно: `Date` и `Intl` там недоступны.
+
+### Товар под заказ
+
+`available` — товар можно положить в корзину: он в наличии или продаётся под заказ. `preorder` у товара и у карточки —
+`true`, когда остатка нет, а заказ разрешён (мерчант включил «Продавать, когда закончился»); у товара в наличии и у
+товара, которого нельзя заказать, — `false`. Данных нет (магазин собран до поля) — тоже `false`. Надпись «Под заказ»
+вместо «В наличии» — по `preorder`, обе надписи — поля секции:
+
+```astro
+{settings.product && settings.product.available && (
+  <p class="m-0">{settings.product.preorder ? settings['preorder-text'] : settings['stock-text']}</p>
+)}
+```
 
 ### Образцы цвета на карточке
 
@@ -1828,7 +2004,7 @@ const { page } = Astro.props;
 
 # Коды ошибок
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Справка по кодам проверки секции: когда бывает код и как исправить.
 
@@ -2056,8 +2232,8 @@ const { page } = Astro.props;
 
 Когда: Своё имя в `names` записано неверно: не строчная латиница через дефис, длиннее 32 знаков или из списка «Нет в словаре».
 
-Как исправить: Назови по образцу `sku` или `show-sku`: строчные латинские буквы и цифры через одиночный дефис, до 32 знаков..
-Пример: было `"names": { "ShowSku": … }` → стало `"names": { "show-sku": … }`.
+Как исправить: Назови по образцу `sku` или `sku-label`: строчные латинские буквы и цифры через одиночный дефис, до 32 знаков; имена `show-*`, `hide-*` и другие из «Нет в словаре» нельзя..
+Пример: было `"names": { "ShowSku": … }` → стало `"names": { "sku-label": … }`.
 
 
 ## name-own-in-dictionary
@@ -2282,12 +2458,42 @@ const { page } = Astro.props;
 Правило с примерами: [code.md#повтор-условия](code.md#повтор-условия).
 
 
+## taste-literal-text
+
+Когда: В template.astro между тегами набран текст-надпись (от трёх букв): мерчант не может его поменять в панели; секция сохраняется.
+
+Как исправить: Объяви поле string или text в section.json и выведи его {settings.<имя>}; имя — из словаря (names.md), служебные надписи, которые менять не нужно, можно оставить..
+Пример: было `<h2>Наши товары</h2>` → стало `<h2>{settings.heading}</h2>`.
+
+
+## taste-literal-image
+
+Когда: В src, srcset или poster шаблона, а также в строке кода шаблона стоит готовый адрес картинки (https://… или файл .jpg, .png, .webp, .svg); секция сохраняется.
+
+Как исправить: Объяви поле вида image в section.json (имя `image`) и выведи его {settings.image}: картинку мерчант заменит сам..
+Пример: было `<img src="https://example.com/a.jpg">` → стало `<img src={settings.image}>`.
+
+
+## taste-dead-setting
+
+Когда: Поле объявлено в section.json (у секции или блока), а шаблон ни разу не читает settings.<его id>; секция сохраняется.
+
+Как исправить: Выведи поле в шаблоне {settings.<имя>} или убери его из section.json: иначе мерчант крутит настройку, а вид не меняется..
+Пример: было `поле "subheading" в section.json, а в шаблоне его нет` → стало `<p>{settings.subheading}</p> в шаблоне`.
+
+
+## taste-library-copy
+
+Когда: Файлы секции совпадают с секцией нашей библиотеки (кроме name и title): копия без изменений под другим именем; секция сохраняется.
+
+Как исправить: Поставь библиотечную секцию как есть либо измени копию: параметры, разметку, вид..
+
 
 ---
 
 # Лимиты
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Пределы, которые проверка секции применяет при сохранении. Числа — из констант проверки.
 
@@ -2320,7 +2526,25 @@ const { page } = Astro.props;
 
 # Что нового
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
+
+## 1.21.0 — 2026-10-30
+
+- Четыре предупреждения проверки о составе секции (секция сохраняется): [`taste-literal-text`](errors.md#taste-literal-text)
+  — надписи прямо в разметке шаблона, [`taste-literal-image`](errors.md#taste-literal-image) — готовый адрес картинки в
+  шаблоне, [`taste-dead-setting`](errors.md#taste-dead-setting) — поле в `section.json`, которого не читают ни шаблон, ни
+  скрипт, [`taste-library-copy`](errors.md#taste-library-copy) — секция совпадает с библиотечной без изменений, только под
+  другим именем. Предупреждения приходят у принятой секции; отказ ими не обрастает.
+- Отказ имени [`setting-name-unknown`](errors.md#setting-name-unknown) называет до трёх ближайших имён словаря (по ключу,
+  подписи и просьбам `asks`) и узнаёт опечатку в слове: `titel` → `heading`.
+- Словарь имён данными: [`names.json`](names.json) (тот же формат, что `names.json` пакета секций) — рядом с
+  [`names.md`](names.md), которую целиком читать не нужно.
+- Шпаргалка [`quick.md`](quick.md) (до 10 000 знаков): как написать секцию с нуля — файлы, поля, имена, шаблон, классы,
+  данные, скрипт, пределы; полные страницы — по ссылкам.
+- Данные товара и карточки: поле `preorder` — под заказ (остатка нет, заказ разрешён; `available` при этом `true`),
+  без данных — `false` ([data.md](data.md)).
+- Справка [`name-own-invalid`](errors.md#name-own-invalid): образец `show-sku` был сам недопустимым именем (`show-*` — в
+  разделе «Нет в словаре»); пример — `sku-label`.
 
 ## 1.20.0 — 2026-10-30
 

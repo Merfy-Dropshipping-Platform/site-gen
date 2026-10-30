@@ -150,6 +150,7 @@ describe('в приёме секции', () => {
       prefix: 'shop',
       files: { 'section.json': manifest, 'template.astro': good },
     });
-    expect(result.ok && result.section.warnings).toEqual([]);
+    // Остаётся только предупреждение о надписи «Товаров: 3» в разметке (authoring-check.ts): правил кода шаблона нет.
+    expect(result.ok && result.section.warnings.map((item) => item.code)).toEqual(['taste-literal-text']);
   });
 });

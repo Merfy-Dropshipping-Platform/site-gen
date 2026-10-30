@@ -187,7 +187,8 @@ describe('в приёме секции', () => {
   it('кнопка 32 px, ширина 600 px и анимация: секция принята, три предупреждения', async () => {
     const result = await prepareSection({ prefix: 'shop', files: { 'section.json': manifest, 'template.astro': bad } });
     expect(result.ok).toBe(true);
-    const warnings = result.ok ? result.section.warnings : [];
+    // Надписи «Купить» и «Скоро» в разметке — предупреждение о составе секции (authoring-check.ts), здесь не в счёт.
+    const warnings = (result.ok ? result.section.warnings : []).filter((item) => item.code !== 'taste-literal-text');
     expect(warnings.map((item) => item.code)).toEqual(['taste-overflow', 'taste-button-height', 'taste-motion']);
     expect(warnings.every((item) => isWarning(item))).toBe(true);
   });
@@ -197,6 +198,7 @@ describe('в приёме секции', () => {
       prefix: 'shop',
       files: { 'section.json': manifest, 'template.astro': good },
     });
-    expect(result.ok && result.section.warnings).toEqual([]);
+    // Остаётся только предупреждение о надписях в разметке (authoring-check.ts): правил вкуса нет.
+    expect(result.ok && result.section.warnings.map((item) => item.code)).toEqual(['taste-literal-text']);
   });
 });

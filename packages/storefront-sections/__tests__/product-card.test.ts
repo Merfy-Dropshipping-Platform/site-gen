@@ -100,6 +100,7 @@ const CARDS: ListProductCard[] = [
     compareAtPrice: money(250000),
     image: 'https://s3.merfy.ru/p/1.jpg',
     available: true,
+    preorder: false,
     images: ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg'],
     variantId: 'v-1',
     colors: [
@@ -116,6 +117,7 @@ const CARDS: ListProductCard[] = [
     compareAtPrice: null,
     image: null,
     available: false,
+    preorder: false,
     images: [],
     variantId: null,
     colors: [],
@@ -129,6 +131,7 @@ const CARDS: ListProductCard[] = [
     compareAtPrice: null,
     image: 'https://s3.merfy.ru/p/3.jpg',
     available: true,
+    preorder: false,
     images: ['https://s3.merfy.ru/p/3.jpg'],
     variantId: null,
     colors: [],

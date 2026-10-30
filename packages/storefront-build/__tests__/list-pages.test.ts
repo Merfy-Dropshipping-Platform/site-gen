@@ -302,6 +302,7 @@ describe('сочетание по умолчанию — правило прод
     compareAtPrice: null,
     images: [],
     available: true,
+    preorder: false,
     options,
     variants,
     collections: [],

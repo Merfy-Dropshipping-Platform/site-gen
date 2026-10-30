@@ -43,6 +43,7 @@ const EXAMPLE_PRODUCT: ProductData = {
   compareAtPrice: null,
   images: [EXAMPLE_IMAGE],
   available: true,
+  preorder: false,
   options: [],
   variants: [],
   collectionIds: [],

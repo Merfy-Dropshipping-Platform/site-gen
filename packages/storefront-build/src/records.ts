@@ -33,6 +33,8 @@ export type ProductData = {
   compareAtPrice: number | null;
   images: string[];
   available: boolean;
+  // Остатка нет, заказ разрешён (product отдаёт preorder); без поля в данных — false.
+  preorder: boolean;
   options: ProductOptionData[];
   variants: ProductVariantData[];
   collectionIds: string[];
@@ -102,6 +104,8 @@ export interface ProductRecord {
   compareAtPrice: Money | null;
   images: string[];
   available: boolean;
+  // Под заказ: остатка нет, заказ разрешён (available при этом true); без данных — false.
+  preorder: boolean;
   options: ProductOption[];
   variants: ProductVariant[];
   // Коллекции товара, у которых есть запись.
@@ -121,6 +125,8 @@ export interface ProductCard {
   compareAtPrice: Money | null;
   image: string | null;
   available: boolean;
+  // Под заказ: остатка нет, заказ разрешён (как у товара).
+  preorder: boolean;
   // Первые два фото — «второе фото при наведении» у карточек секций (поведение card-photos); image — первое.
   images: string[];
   // Сочетание по умолчанию (defaultVariantId): его кладёт в корзину «В корзину» на карточке; без вариантов — null.
@@ -197,6 +203,7 @@ export const RECORD_FIELDS = {
     'compareAtPrice',
     'images',
     'available',
+    'preorder',
     'options',
     'variants',
     'collections',
@@ -327,6 +334,8 @@ const productDataSchema = z.object({
   compareAtPrice: z.number().nullable(),
   images: z.array(z.string()),
   available: z.boolean(),
+  // Записи, сохранённые до поля, и каталог без него — не под заказ.
+  preorder: z.boolean().catch(false),
   options: z.array(
     z.object({
       id: z.string(),
@@ -476,6 +485,7 @@ function productRecordOf(item: Placed<ProductItem>, collections: readonly Record
     compareAtPrice: compareAtOf(data.compareAtPrice),
     images: data.images,
     available: data.available,
+    preorder: data.preorder,
     options: data.options,
     variants: data.variants.map(variantOf),
     collections: [...collections],
@@ -520,6 +530,7 @@ export function cardOfRecord(record: ProductRecord): ProductCard {
     compareAtPrice: record.compareAtPrice,
     image: firstImage(record.images),
     available: record.available,
+    preorder: record.preorder,
     images: record.images.slice(0, 2),
     variantId: defaultVariantId(record),
     colors: colorsOf(record),

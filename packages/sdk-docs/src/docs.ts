@@ -20,7 +20,10 @@ export interface DocsMeta {
   api: string;
 }
 
-const CODE_FENCE: Readonly<Record<string, string>> = { '.json': 'json', '.astro': 'astro', '.ts': 'ts', '.js': 'ts' };
+// Словарь имён данными: копия names.json пакета секций; отдаётся тем же адресом, что страницы (names.json в docs.json).
+export const NAMES_JSON = 'names.json';
+
+const CODE_FENCE:Readonly<Record<string, string>> = { '.json': 'json', '.astro': 'astro', '.ts': 'ts', '.js': 'ts' };
 
 const fenceOf = (path: string): string => {
   const extension = path.slice(path.lastIndexOf('.'));
@@ -114,6 +117,9 @@ function llmsText(sources: DocsSources, date: string): string {
     `> SDK ${SDK_VERSION} · документация ${sources.version} · ${date}. Читай эту документацию, а не память: SDK новый.`,
     ...lines,
     '',
+    '## Данные',
+    `- [${NAMES_JSON}](${NAMES_JSON}): словарь имён полей данными — ключ, виды, подпись, смысл, слова просьбы`,
+    '',
     '## Всё одним файлом',
     '- [llms-full.txt](llms-full.txt): все страницы подряд',
     '',
@@ -149,6 +155,7 @@ export function docsFiles(sources: DocsSources): DocsFiles {
   }
   for (const [path, text] of Object.entries(sources.template)) files[`template/${path}`] = text;
   files['section.schema.json'] = sources.schema;
+  files[NAMES_JSON] = sources.namesJson;
   files['llms.txt'] = llmsText(sources, date);
   files['llms-full.txt'] = llmsFullText(sources, date);
   files['docs.json'] = docsJson(sources, date, Object.keys(files));

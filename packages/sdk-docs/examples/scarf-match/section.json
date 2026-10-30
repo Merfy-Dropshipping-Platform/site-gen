@@ -7,6 +7,13 @@
     { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Подберите шарф к пальто" } }
   ],
   "blocks": {
+    "coat": {
+      "title": "Пальто",
+      "limit": 6,
+      "settings": [
+        { "id": "label", "label": "Цвет пальто", "setting": { "kind": "string", "default": "серое" } }
+      ]
+    },
     "scarf": {
       "title": "Шарф",
       "limit": 12,
@@ -17,6 +24,9 @@
     }
   },
   "defaultBlocks": [
+    { "type": "coat", "settings": { "label": "серое" } },
+    { "type": "coat", "settings": { "label": "чёрное" } },
+    { "type": "coat", "settings": { "label": "бежевое" } },
     { "type": "scarf", "settings": { "label": "Шарф цвета кэмел", "caption": "серое, чёрное" } },
     { "type": "scarf", "settings": { "label": "Графитовый шарф", "caption": "бежевое" } },
     { "type": "scarf", "settings": { "label": "Молочный шарф", "caption": "чёрное, бежевое" } }

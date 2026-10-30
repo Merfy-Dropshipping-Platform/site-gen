@@ -25,6 +25,12 @@ export const CODE_TASTE_CODES: ReadonlySet<ProblemCode> = new Set([
   'taste-long-condition',
   'taste-class-branches',
   'taste-repeated-condition',
+  // Содержимое секции (markup-literals.ts, dead-settings.ts, library-copy.ts): библиотека хранит служебные надписи в
+  // разметке, а часть параметров читает платформа, — её тесты эти предупреждения тоже не считают.
+  'taste-literal-text',
+  'taste-literal-image',
+  'taste-dead-setting',
+  'taste-library-copy',
 ]);
 
 const isJsx = (node: AstNode): boolean => node.type === 'JSXElement' || node.type === 'JSXFragment';

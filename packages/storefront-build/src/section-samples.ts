@@ -44,6 +44,7 @@ export const SAMPLE_ENTITIES: readonly Entity[] = [
     compareAtPrice: 420000,
     images: [image('2'), image('2-b'), image('2-c')],
     available: true,
+    preorder: false,
     options: [
       {
         id: 'o-size',
@@ -88,6 +89,7 @@ export const SAMPLE_ENTITIES: readonly Entity[] = [
     compareAtPrice: null,
     images: [image('1'), image('1-b')],
     available: true,
+    preorder: false,
     options: [],
     variants: [],
     collectionIds: ['c-1'],
@@ -101,6 +103,7 @@ export const SAMPLE_ENTITIES: readonly Entity[] = [
     compareAtPrice: 150000,
     images: [image('3')],
     available: false,
+    preorder: false,
     options: [],
     variants: [],
     collectionIds: [],

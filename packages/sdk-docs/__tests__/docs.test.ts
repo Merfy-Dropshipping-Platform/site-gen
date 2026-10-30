@@ -95,7 +95,7 @@ describe('документация SDK', () => {
 
   it('llms.txt: страницы по порядку PAGES; адреса — адрес документации прода', () => {
     const order = [...(files['llms.txt'] ?? '').matchAll(/^- \[[^\]]+\]\(([^)]+)\)/gm)].map((match) => match[1]);
-    expect(order).toEqual([...PAGES.map((page) => page.file), 'llms-full.txt']);
+    expect(order).toEqual([...PAGES.map((page) => page.file), 'names.json', 'llms-full.txt']);
     expect(files['template/AGENTS.md']).toContain(`${DOCS_BASE}llms.txt`);
     expect(JSON.parse(files['docs.json'] ?? '{}')).toMatchObject({
       sdk: 1,

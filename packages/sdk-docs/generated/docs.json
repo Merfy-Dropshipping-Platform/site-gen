@@ -1,6 +1,6 @@
 {
   "sdk": 1,
-  "version": "1.20.0",
+  "version": "1.21.0",
   "date": "2026-10-30",
   "api": "https://gateway.merfy.ru/api/",
   "files": [
@@ -16,9 +16,11 @@
     "llms-full.txt",
     "llms.txt",
     "modules.md",
+    "names.json",
     "names.md",
     "pages.md",
     "path.md",
+    "quick.md",
     "script.md",
     "section-json.md",
     "section.schema.json",

@@ -1,0 +1,331 @@
+{
+  "$schema": "./generated/names.schema.json",
+  "v": 1,
+  "groups": [
+    { "id": "content", "title": "Содержимое" },
+    { "id": "look", "title": "Вид" },
+    { "id": "behavior", "title": "Поведение" }
+  ],
+  "names": {
+    "heading": {
+      "kinds": ["string"], "label": "Заголовок", "group": "content",
+      "about": "Заголовок секции или блока; у «Страницы» — `<h1>`",
+      "asks": ["заголовок", "название", "title", "headline", "header"]
+    },
+    "subheading": {
+      "kinds": ["string"], "label": "Подзаголовок", "group": "content",
+      "about": "Строка над или под заголовком",
+      "asks": ["подзаголовок", "надзаголовок", "subtitle", "eyebrow", "tagline"]
+    },
+    "text": {
+      "kinds": ["text", "richtext"], "label": "Текст", "group": "content",
+      "about": "Основной текст секции или блока",
+      "asks": ["текст", "описание", "абзац", "description", "content", "body", "paragraph"]
+    },
+    "button-label": {
+      "kinds": ["string"], "label": "Текст кнопки", "group": "content",
+      "about": "Надпись на кнопке",
+      "asks": ["текст кнопки", "надпись на кнопке", "cta", "text"]
+    },
+    "button-link": {
+      "kinds": ["url"], "label": "Ссылка кнопки", "group": "content",
+      "about": "Куда ведёт кнопка: страница магазина или свой адрес",
+      "asks": ["ссылка кнопки", "адрес кнопки", "cta"]
+    },
+    "button-second-label": {
+      "kinds": ["string"], "label": "Текст дополнительной кнопки", "group": "content",
+      "about": "Надпись на второй, дополнительной кнопке рядом с основной (`button-label`); пустая — кнопка не выводится",
+      "asks": ["текст второй кнопки", "текст дополнительной кнопки", "вторая кнопка", "secondary-button", "button-2"]
+    },
+    "button-second-link": {
+      "kinds": ["url"], "label": "Ссылка дополнительной кнопки", "group": "content",
+      "about": "Куда ведёт дополнительная кнопка (`button-second-label`): страница магазина или свой адрес",
+      "asks": ["ссылка второй кнопки", "адрес дополнительной кнопки", "secondary-link"]
+    },
+    "image": {
+      "kinds": ["image"], "label": "Картинка", "group": "content",
+      "about": "Картинка секции или блока",
+      "asks": ["картинка", "изображение", "фото", "picture", "pic", "banner"]
+    },
+    "images": {
+      "kinds": ["image-pair"], "label": "Картинки", "group": "content",
+      "about": "Две картинки: для компьютера и для телефона",
+      "asks": ["картинки", "для компьютера", "для телефона", "desktop", "mobile", "pair"]
+    },
+    "label": {
+      "kinds": ["string"], "label": "Подпись", "group": "content",
+      "about": "Подпись пункта, ссылки или значка",
+      "asks": ["подпись", "надпись", "badge", "tag"]
+    },
+    "link": {
+      "kinds": ["url"], "label": "Ссылка", "group": "content",
+      "about": "Куда ведёт пункт, карточка или картинка",
+      "asks": ["ссылка", "адрес", "url", "href"]
+    },
+    "question": {
+      "kinds": ["string"], "label": "Вопрос", "group": "content",
+      "about": "Вопрос в блоке вопросов и ответов",
+      "asks": ["вопрос", "faq"]
+    },
+    "answer": {
+      "kinds": ["richtext"], "label": "Ответ", "group": "content",
+      "about": "Ответ на вопрос, текст с форматированием",
+      "asks": ["ответ", "faq"]
+    },
+    "author": {
+      "kinds": ["string"], "label": "Имя", "group": "content",
+      "about": "Кто написал отзыв или цитату",
+      "asks": ["имя", "автор", "name", "person"]
+    },
+    "caption": {
+      "kinds": ["string"], "label": "Подпись", "group": "content",
+      "about": "Город, должность или товар под именем или картинкой",
+      "asks": ["подпись", "должность", "город", "role"]
+    },
+    "rating": {
+      "kinds": ["range"], "label": "Оценка", "group": "content",
+      "about": "Звёзды отзыва, 0 — без звёзд",
+      "asks": ["оценка", "звёзды", "stars", "score"]
+    },
+    "video": {
+      "kinds": ["video"], "label": "Видео", "group": "content",
+      "about": "Видеофайл секции: мерчант загружает его в панели, на витрине он играет в плеере браузера. Ссылки на YouTube и Vimeo не поддерживаются — тег `iframe` в шаблоне запрещён",
+      "asks": ["видео", "ролик", "файл видео", "загрузить видео", "clip", "mp4"]
+    },
+    "poster": {
+      "kinds": ["image"], "label": "Обложка", "group": "content",
+      "about": "Кадр, который виден, пока видео не началось",
+      "asks": ["обложка", "постер", "превью видео", "poster", "cover", "thumbnail"]
+    },
+    "logo": {
+      "kinds": ["image"], "label": "Логотип", "group": "content",
+      "about": "Своя картинка логотипа в секции. Логотип магазина — настройка темы `logo-image`",
+      "asks": ["логотип", "лого", "brand"]
+    },
+    "newsletter": {
+      "kinds": ["toggle"], "label": "Рассылка", "group": "content",
+      "about": "Показать форму подписки на рассылку",
+      "asks": ["рассылка", "подписка", "subscribe", "subscription", "email"]
+    },
+    "menu": {
+      "kinds": ["menu"], "label": "Меню", "group": "content",
+      "about": "Меню магазина: в ревизии — id меню, в шаблоне — дерево `{ title, items }`",
+      "asks": ["меню", "навигация", "nav", "navigation", "links"]
+    },
+    "product": {
+      "kinds": ["product"], "label": "Выбор товара", "group": "content",
+      "about": "Товар магазина: в ревизии — id или адрес товара, в шаблоне — публичные поля товара или null. Пусто — товар страницы на шаблоне «Товар», на других страницах — первый товар магазина",
+      "asks": ["товар", "продукт", "product", "item", "goods"]
+    },
+    "collection": {
+      "kinds": ["collection"], "label": "Выбор коллекции", "group": "content",
+      "about": "Коллекция магазина: в ревизии — id или адрес, в шаблоне — коллекция с первыми 24 товарами или null. Пусто — коллекция страницы на шаблоне «Коллекция», на других страницах — все товары магазина",
+      "asks": ["коллекция", "категория", "подборка", "collection", "category", "catalog"]
+    },
+    "posts": {
+      "kinds": ["blog"], "label": "Выбор публикации", "group": "content",
+      "about": "Блог магазина: в ревизии — id или адрес блога, в шаблоне — блог с 12 новыми записями или null. Пусто — блог страницы на шаблоне «Блог», на других страницах — записи всех блогов",
+      "asks": ["публикации", "блог", "статьи", "новости", "записи", "blog", "articles", "news"]
+    },
+    "policy": {
+      "kinds": ["policy"], "label": "Выбор страницы", "group": "content",
+      "about": "Политика магазина: в ревизии — тип (refund, privacy, tos, shipping), в шаблоне — `{ type, title, url, html }` или null. Пусто — политика страницы на шаблоне «Политика», на других страницах — свой текст секции",
+      "asks": ["политика", "оферта", "условия", "правила", "policy", "terms", "legal"]
+    },
+    "price": {
+      "kinds": ["hint"], "label": "Стоимость", "group": "content",
+      "about": "Подсказка вместо поля: цена товара меняется в кабинете, на странице «Товары». Значения нет",
+      "asks": ["цена", "стоимость", "price", "cost"]
+    },
+    "heading-size": {
+      "kinds": ["select", "radio"], "label": "Размер заголовка", "group": "look",
+      "about": "Размер заголовка: варианты задаёт секция",
+      "asks": ["размер заголовка", "size"]
+    },
+    "text-size": {
+      "kinds": ["select", "radio"], "label": "Размер текста", "group": "look",
+      "about": "Размер основного текста: варианты задаёт секция",
+      "asks": ["размер текста", "size"]
+    },
+    "align": {
+      "kinds": ["alignment"], "label": "Выравнивание", "group": "look",
+      "about": "Выравнивание текста: слева, по центру или справа",
+      "asks": ["выравнивание", "alignment", "text-align", "justify"]
+    },
+    "content-position": {
+      "kinds": ["select"], "label": "Где текст", "group": "look",
+      "about": "Где текст поверх картинки: девять мест",
+      "asks": ["положение текста", "placement", "text-position"]
+    },
+    "image-position": {
+      "kinds": ["radio"], "label": "Картинка", "group": "look",
+      "about": "Картинка слева или справа от текста",
+      "asks": ["картинка слева", "картинка справа", "side", "media-position"]
+    },
+    "height": {
+      "kinds": ["radio", "select"], "label": "Высота", "group": "look",
+      "about": "Высота секции",
+      "asks": ["высота", "min-height", "tall"]
+    },
+    "overlay": {
+      "kinds": ["range"], "label": "Затемнение", "group": "look",
+      "about": "Затемнение картинки под текстом, в процентах",
+      "asks": ["затемнение", "opacity", "dim", "shade", "darken"]
+    },
+    "space": {
+      "kinds": ["padding"], "label": "Отступы", "group": "look",
+      "about": "Отступы секции сверху и снизу, в пикселях",
+      "asks": ["отступы", "отступ", "поля", "padding", "spacing"]
+    },
+    "columns": {
+      "kinds": ["range"], "label": "Колонки", "group": "look",
+      "about": "Сколько карточек в ряд на компьютере",
+      "asks": ["колонки", "в ряд", "per-row", "grid", "cols"]
+    },
+    "per-page": {
+      "kinds": ["range"], "label": "Карточки", "group": "content",
+      "about": "Сколько карточек на странице списка, от 2 до 24: по ней платформа делит список на страницы",
+      "asks": ["карточек на странице", "товаров на странице", "per-page", "page-size"]
+    },
+    "paging": {
+      "kinds": ["select"], "label": "Как листать", "group": "behavior",
+      "about": "Листание списка: `pages` — номера страниц, `more` — «Показать ещё», `scroll` — бесконечная прокрутка; значение — параметр `data-paging` поведения `catalog`",
+      "asks": ["как листать", "пагинация", "показать ещё", "бесконечная прокрутка", "pagination", "load-more", "infinite"]
+    },
+    "filter-position": {
+      "kinds": ["radio"], "label": "Вид фильтра", "group": "look",
+      "about": "Где фильтры списка: `top` — сверху, `side` — сбоку",
+      "asks": ["вид фильтра", "фильтры сбоку", "фильтры сверху", "filter-layout"]
+    },
+    "next-photo": {
+      "kinds": ["toggle"], "label": "Следующее фото при наведении", "group": "behavior",
+      "about": "Второе фото карточки при наведении — параметр `data-hover-next` поведения `card-photos`",
+      "asks": ["следующее фото", "фото при наведении", "second-image", "hover-image"]
+    },
+    "quick-add": {
+      "kinds": ["select"], "label": "Быстрое добавление", "group": "look",
+      "about": "Кнопка «В корзину» на карточке списка: варианты вида задаёт секция; кнопка — `data-action=\"cart.add\"` с сочетанием по умолчанию",
+      "asks": ["быстрое добавление", "в корзину с карточки", "quick-add", "quick-buy"]
+    },
+    "cards": {
+      "kinds": ["range"], "label": "Карточки", "group": "content",
+      "about": "Сколько карточек показать в секции, от 2 до 24: секция берёт их из выбранной коллекции, список страницы по ним не делится (для этого — `per-page`)",
+      "asks": ["сколько карточек", "сколько товаров", "число карточек", "cards", "limit"]
+    },
+    "columns-mobile": {
+      "kinds": ["radio"], "label": "Колонки на телефоне", "group": "look",
+      "about": "Сколько карточек в ряд на телефоне: одна или две; на компьютере — `columns`",
+      "asks": ["колонки на телефоне", "в ряд на телефоне", "mobile-columns"]
+    },
+    "button-style": {
+      "kinds": ["select", "radio"], "label": "Стиль кнопки", "group": "look",
+      "about": "Как выглядит кнопка секции: основная (заливка), дополнительная (контур) или ссылка; варианты задаёт секция",
+      "asks": ["стиль кнопки", "вид кнопки", "кнопка-ссылка", "button-style", "outline"]
+    },
+    "text-box": {
+      "kinds": ["toggle"], "label": "Контейнер", "group": "look",
+      "about": "Плашка под текстом или колонкой: фон схемы, скруглённые углы, поля; выключена — текст прямо на картинке или фоне секции",
+      "asks": ["контейнер", "плашка под текстом", "подложка под текстом", "подложка под колонкой", "рамка вокруг текста"]
+    },
+    "capitals": {
+      "kinds": ["toggle", "select"], "label": "Заглавные буквы", "group": "look",
+      "about": "Что набрано заглавными: переключатель — весь текст секции, выбор — какие части (логотип, меню, заголовки); варианты задаёт секция",
+      "asks": ["заглавные", "капс", "прописные", "uppercase", "caps"]
+    },
+    "text-style": {
+      "kinds": ["select"], "label": "Стиль текста", "group": "look",
+      "about": "Начертание заголовка и текста секции: обычное или курсив, как на vanilla",
+      "asks": ["стиль текста", "курсив", "наклонный текст", "italic", "text style"]
+    },
+    "image-fit": {
+      "kinds": ["select", "radio"], "label": "Подгонка фото", "group": "look",
+      "about": "Как фото ложится в рамку заданных пропорций: `cover` — заполняет рамку и обрезается, `contain` — помещается целиком",
+      "asks": ["подгонка фото", "обрезка фото", "вписать фото", "object-fit", "cover", "contain"]
+    },
+    "swatches": {
+      "kinds": ["select"], "label": "Образцы цветов", "group": "look",
+      "about": "Образцы цвета товара на карточке: кружки, квадраты или без образцов; цвета — из `card.colors`",
+      "asks": ["образцы цветов", "свотчи", "цвета товара", "swatches", "colors"]
+    },
+    "caption-case": {
+      "kinds": ["select"], "label": "Регистр подписи", "group": "look",
+      "about": "Регистр названия на карточке товара: как набрано или заглавными; значение — `normal` или `uppercase`",
+      "asks": ["регистр подписи", "заглавные буквы", "капс", "uppercase", "text-transform"]
+    },
+    "favorite": {
+      "kinds": ["toggle"], "label": "Избранное", "group": "behavior",
+      "about": "Сердечко «В избранное» на карточке: `data-action=\"favorites.toggle\"`; показано, пока избранное включено в «Настройках темы» (`wishlist-enabled`)",
+      "asks": ["избранное", "сердечко", "в избранное", "wishlist", "favorite"]
+    },
+    "sold-out": {
+      "kinds": ["select"], "label": "Распроданное", "group": "behavior",
+      "about": "Значения вариантов, которых нет в наличии: `show` — показывать, `hide` — прятать",
+      "asks": ["распроданное", "нет в наличии", "sold-out", "out-of-stock"]
+    },
+    "aspect-ratio": {
+      "kinds": ["select"], "label": "Пропорции", "group": "look",
+      "about": "Пропорции картинок в сетке",
+      "asks": ["пропорции", "соотношение сторон", "ratio", "crop"]
+    },
+    "color-scheme": {
+      "kinds": ["color-scheme"], "label": "Цветовая схема", "group": "look",
+      "about": "Цветовая схема части секции: меню, карточек, плашки с текстом. Схема всей секции — общая настройка",
+      "asks": ["цвет", "палитра", "color", "palette"]
+    },
+    "logo-position": {
+      "kinds": ["select"], "label": "Положение логотипа", "group": "look",
+      "about": "Где логотип в шапке: сверху слева, сверху в центре, слева или по центру",
+      "asks": ["положение логотипа", "logo-align"]
+    },
+    "menu-type": {
+      "kinds": ["select"], "label": "Тип меню", "group": "look",
+      "about": "Боковое, выпадающее или расширенное меню",
+      "asks": ["тип меню", "вид меню", "nav-style", "dropdown", "mega"]
+    },
+    "active-link": {
+      "kinds": ["select", "radio"], "label": "Активный пункт меню", "group": "look",
+      "about": "Как отмечен пункт меню открытой страницы, например подчёркиванием: варианты задаёт секция",
+      "asks": ["активная ссылка", "текущий пункт", "подчёркивание пункта", "active-link", "current-page"]
+    },
+    "layout": {
+      "kinds": ["select", "radio"], "label": "Раскладка", "group": "look",
+      "about": "Раскладка той же секции: в одну или две строки, число и порядок колонок; варианты задаёт секция, у каждого — своя разметка в шаблоне",
+      "asks": ["раскладка", "макет", "вариант вида", "в две строки", "колонки подвала", "layout", "variant"]
+    },
+    "open-first": {
+      "kinds": ["toggle"], "label": "Первый открыт", "group": "behavior",
+      "about": "Первый вопрос раскрыт при загрузке",
+      "asks": ["раскрыт", "открыт", "expanded", "expand"]
+    },
+    "autoplay": {
+      "kinds": ["toggle"], "label": "Листать сами", "group": "behavior",
+      "about": "Слайды меняются без нажатия",
+      "asks": ["автопрокрутка", "auto", "rotate", "slideshow"]
+    },
+    "video-autoplay": {
+      "kinds": ["toggle"], "label": "Автозапуск", "group": "behavior",
+      "about": "Видео начинает играть само, без звука: браузеры не запускают видео со звуком без нажатия",
+      "asks": ["автозапуск", "автоплей", "играть само", "включать сразу", "autoplay video"]
+    },
+    "video-muted": {
+      "kinds": ["toggle"], "label": "Без звука", "group": "behavior",
+      "about": "Видео играет без звука; поле показано при выключенном `video-autoplay` — с автозапуском звука нет всегда",
+      "asks": ["без звука", "выключить звук", "mute", "muted"]
+    },
+    "video-loop": {
+      "kinds": ["toggle"], "label": "Повтор", "group": "behavior",
+      "about": "Закончившись, видео начинается сначала",
+      "asks": ["повтор", "по кругу", "зациклить", "loop", "repeat video"]
+    },
+    "interval": {
+      "kinds": ["range"], "label": "Интервал", "group": "behavior",
+      "about": "Секунд между слайдами; поле показано при `autoplay`",
+      "asks": ["интервал", "задержка", "delay", "speed", "seconds"]
+    },
+    "zoom": {
+      "kinds": ["radio"], "label": "Увеличение", "group": "behavior",
+      "about": "Увеличение главного фото товара: `hover` — лупа при наведении, `click` — окно по нажатию; значение — параметр `data-mode` поведения `zoom`",
+      "asks": ["увеличение", "лупа", "зум", "фото крупно", "zoom", "lightbox", "magnifier"]
+    }
+  }
+}

@@ -76,21 +76,64 @@ export function levenshteinOf(left: string, right: string): number {
   return row[right.length];
 }
 
-// Очки имени (Р3.6): слово совпало со словом имени — 2, со словом из asks — 1.
-const WORD_SCORE: Readonly<Record<string, number>> = { name: 2, ask: 1, none: 0 };
+// Расстояние с перестановкой соседних букв за одну правку: «titel» от «title» — 1 (у Левенштейна 2). Для опечаток в слове.
+export function typoDistanceOf(left: string, right: string): number {
+  const rows = [Array.from({ length: right.length + 1 }, (_, index) => index)];
+  const cell = (row: readonly number[], i: number, j: number): number => {
+    const plain = Math.min(
+      rows[i - 1][j] + 1,
+      row[j - 1] + 1,
+      rows[i - 1][j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1),
+    );
+    const swapped = i > 1 && j > 1 && left[i - 1] === right[j - 2] && left[i - 2] === right[j - 1];
+    return swapped ? Math.min(plain, rows[i - 2][j - 2] + 1) : plain;
+  };
+  for (let i = 1; i <= left.length; i += 1) {
+    const row = [i];
+    for (let j = 1; j <= right.length; j += 1) row.push(cell(row, i, j));
+    rows.push(row);
+  }
+  return rows[left.length][right.length];
+}
+
+// Очки имени (Р3.6): слово совпало со словом имени — 4, со словом из подписи или asks — 2, с опечаткой в одном из них — 1.
+const WORD_SCORE: Readonly<Record<string, number>> = { name: 4, ask: 2, typo: 1, none: 0 };
+const TYPO_MIN_LENGTH = 5;
+
+// Слова без замен (Р3.6) тоже в наборе: «title» из asks — слово, на которое похожа опечатка «titel».
+const rawWordsOf = (text: string): string[] => text.split(WORD_SPLIT);
+const namesWordsOf = (entry: NameEntry): Set<string> =>
+  new Set(entry.name.split('-').flatMap((word) => [...wordsOf(word), word]));
+const asksWordsOf = (entry: NameEntry): Set<string> =>
+  new Set([...entry.asks, entry.label.toLowerCase()].flatMap((ask) => [...wordsOf(ask), ...rawWordsOf(ask)]));
+
+// Все слова словаря: слово id, которое тут есть, — не опечатка, а слово с другим назначением.
+const DICTIONARY_WORDS: ReadonlySet<string> = new Set(
+  NAMES.names.flatMap((entry) => [...namesWordsOf(entry), ...asksWordsOf(entry)]),
+);
+
+const isTypoOf = (word: string, known: ReadonlySet<string>): boolean =>
+  word.length >= TYPO_MIN_LENGTH &&
+  !DICTIONARY_WORDS.has(word) &&
+  [...known].some((other) => other.length >= TYPO_MIN_LENGTH && typoDistanceOf(word, other) <= 1);
 
 function scoreOf(entry: NameEntry, idWords: readonly string[]): number {
-  const nameWords = new Set(entry.name.split('-').flatMap((word) => wordsOf(word)));
-  const askWords = new Set(entry.asks.flatMap((ask) => wordsOf(ask)));
+  const nameWords = namesWordsOf(entry);
+  const askWords = asksWordsOf(entry);
   const scoreOfWord = (word: string): number => {
     if (nameWords.has(word)) return WORD_SCORE.name;
     if (askWords.has(word)) return WORD_SCORE.ask;
+    if (isTypoOf(word, nameWords) || isTypoOf(word, askWords)) return WORD_SCORE.typo;
     return WORD_SCORE.none;
   };
   return idWords.reduce((score, word) => score + scoreOfWord(word), 0);
 }
 
-const nearestOf = (kebab: string, kind: string): string | undefined => {
+// До трёх ближайших имён словаря (по ключу, подписи и asks): первое — лучшее, остальные — того же вида поля и не слабее
+// половины очков первого.
+const NEAREST_MAX = 3;
+
+const nearestOf = (kebab: string, kind: string): string[] => {
   const idWords = wordsOf(kebab);
   const ranked = NAMES.names
     .map((entry, index) => ({
@@ -101,7 +144,6 @@ const nearestOf = (kebab: string, kind: string): string | undefined => {
       hasKind: entry.kinds.some((own) => own === kind),
     }))
     .filter((item) => item.score > 0 || item.distance <= 2);
-  if (ranked.length === 0) return undefined;
   const better = (a: (typeof ranked)[number], b: (typeof ranked)[number]): number => {
     if (a.hasKind !== b.hasKind) return a.hasKind ? -1 : 1;
     const byScore = b.score - a.score;
@@ -110,7 +152,16 @@ const nearestOf = (kebab: string, kind: string): string | undefined => {
     if (byDistance !== 0) return byDistance;
     return a.index - b.index;
   };
-  return ranked.sort(better)[0]?.entry.name;
+  ranked.sort(better);
+  const [top] = ranked;
+  if (top === undefined) return [];
+  const close = (item: (typeof ranked)[number]): boolean =>
+    item.hasKind === top.hasKind &&
+    (top.score === 0 ? item.score === 0 && item.distance <= top.distance : item.score * 4 >= top.score * 3);
+  return ranked
+    .filter((item) => item === top || close(item))
+    .slice(0, NEAREST_MAX)
+    .map((item) => item.entry.name);
 };
 
 const UNKNOWN = 'такого имени нет в словаре';
@@ -128,9 +179,9 @@ const HINT_STEPS: readonly ((id: string, kebab: string, kind: string) => string 
   },
   (id, kebab, kind) => {
     const nearest = nearestOf(kebab, kind);
-    return nearest === undefined
+    return nearest.length === 0
       ? `поле \`${id}\`: ${UNKNOWN}, ближе всего — нет; имена — \`merfy section names\``
-      : `поле \`${id}\`: ${UNKNOWN}, ближе всего — \`${nearest}\``;
+      : `поле \`${id}\`: ${UNKNOWN}, ближе всего — ${quoteList(nearest, ', ')}`;
   },
 ];
 

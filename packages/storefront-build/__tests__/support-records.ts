@@ -25,6 +25,7 @@ export function product(id: string, data: Partial<ProductData> = {}, updatedAt =
     compareAtPrice: null,
     images: ['https://s3.merfy.ru/p/1.jpg'],
     available: true,
+    preorder: false,
     options: [],
     variants: [],
     collectionIds: [C1],

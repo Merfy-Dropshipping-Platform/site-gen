@@ -1,6 +1,6 @@
 # Данные магазина
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
 
@@ -71,14 +71,27 @@ const { settings } = Astro.props;
 
 | Вид          | Публичные поля записи                                                                                                                                                                                                                                                                                             |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `product`    | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `options`, `variants`, `collections`, `updatedAt`                                                                                                                                                                  |
-| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `images`, `available`, `variantId`, `colors`; `image` — первое фото, `images` — первые два, для `data-photos` поведения `card-photos`: `{product.images.join(' ')}`; `variantId` — сочетание вариантов по умолчанию для `cart.add`, у товара без вариантов `null`; `colors` — образцы цвета `{ title, swatch }`, `swatch` — `#rrggbb`, до 6, без цветов `[]`) |
+| `product`    | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `preorder`, `options`, `variants`, `collections`, `updatedAt`                                                                                                                                                                  |
+| `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` (первые 24 — карточки: `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `images`, `available`, `preorder`, `variantId`, `colors`; `image` — первое фото, `images` — первые два, для `data-photos` поведения `card-photos`: `{product.images.join(' ')}`; `variantId` — сочетание вариантов по умолчанию для `cart.add`, у товара без вариантов `null`; `colors` — образцы цвета `{ title, swatch }`, `swatch` — `#rrggbb`, до 6, без цветов `[]`) |
 | `blog`       | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` (первые 12, новые сверху: `id`, `title`, `url`, `publishedAt`, `publishedText`, `cover`, `excerpt`)                                                                                                                                                   |
 | `policy`     | `type`, `title`, `url`, `html`                                                                                                                                                                                                                                                                                    |
 
 Дата статьи — в двух видах: `publishedAt` (время ISO, для `datetime`) и `publishedText` (она же словами по Москве,
 «20 октября 2026 г.», для показа). У статьи без даты `publishedAt` — `null`, `publishedText` — пустая строка. Форматировать
 дату в шаблоне не нужно: `Date` и `Intl` там недоступны.
+
+### Товар под заказ
+
+`available` — товар можно положить в корзину: он в наличии или продаётся под заказ. `preorder` у товара и у карточки —
+`true`, когда остатка нет, а заказ разрешён (мерчант включил «Продавать, когда закончился»); у товара в наличии и у
+товара, которого нельзя заказать, — `false`. Данных нет (магазин собран до поля) — тоже `false`. Надпись «Под заказ»
+вместо «В наличии» — по `preorder`, обе надписи — поля секции:
+
+```astro
+{settings.product && settings.product.available && (
+  <p class="m-0">{settings.product.preorder ? settings['preorder-text'] : settings['stock-text']}</p>
+)}
+```
 
 ### Образцы цвета на карточке
 

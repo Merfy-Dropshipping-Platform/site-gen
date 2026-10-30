@@ -1,6 +1,6 @@
 # Как сделать секцию
 
-> SDK 1 · документация 1.20.0 · 2026-10-30
+> SDK 1 · документация 1.21.0 · 2026-10-30
 
 Секция — папка с файлами: `section.json` (поля), `template.astro` (разметка) и `script.ts` — только если на странице
 что-то меняется после загрузки. Секцию проверяют и сохраняют в магазин через шлюз Merfy с входом мерчанта; на витрину
@@ -45,8 +45,9 @@
 
 ## Пример: «Подбор шарфа по цвету пальто»
 
-Покупательница выбирает цвет пальто — в списке остаются шарфы, которые к нему подходят. Поля: заголовок и блоки
-«Шарф» — название и подпись с цветами пальто. Скрипт — одно действие `pick` на кнопках пальто.
+Покупательница выбирает цвет пальто — в списке остаются шарфы, которые к нему подходят. Поля: заголовок и два типа
+блоков: «Пальто» — цвет на кнопке и «Шарф» — название и подпись с цветами пальто. Надписей в разметке нет: всё, что
+видит покупательница, мерчант меняет в панели. Скрипт — одно действие `pick` на кнопках пальто.
 
 scarf-match/
 
@@ -79,6 +80,13 @@ export default defineSection<State>({
     { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Подберите шарф к пальто" } }
   ],
   "blocks": {
+    "coat": {
+      "title": "Пальто",
+      "limit": 6,
+      "settings": [
+        { "id": "label", "label": "Цвет пальто", "setting": { "kind": "string", "default": "серое" } }
+      ]
+    },
     "scarf": {
       "title": "Шарф",
       "limit": 12,
@@ -89,6 +97,9 @@ export default defineSection<State>({
     }
   },
   "defaultBlocks": [
+    { "type": "coat", "settings": { "label": "серое" } },
+    { "type": "coat", "settings": { "label": "чёрное" } },
+    { "type": "coat", "settings": { "label": "бежевое" } },
     { "type": "scarf", "settings": { "label": "Шарф цвета кэмел", "caption": "серое, чёрное" } },
     { "type": "scarf", "settings": { "label": "Графитовый шарф", "caption": "бежевое" } },
     { "type": "scarf", "settings": { "label": "Молочный шарф", "caption": "чёрное, бежевое" } }
@@ -103,16 +114,18 @@ const { settings, blocks } = Astro.props;
 ---
 <div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
   {settings.heading && <h2 class="m-0 font-heading weight-heading text-3xl text-heading">{settings.heading}</h2>}
-  <div class="flex gap-4">
-    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="серое" data-action="pick">Серое пальто</button>
-    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="чёрное" data-action="pick">Чёрное пальто</button>
-    <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat="бежевое" data-action="pick">Бежевое пальто</button>
-  </div>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-wrap gap-4">
     {blocks.map((block) => (
-      <div class="rounded-button bg-card p-4 text-card-foreground" data-ref="scarf" data-coats={block.settings.caption}>
-        <p class="m-0 text-lg">{block.settings.label}</p>
-        <p class="m-0 mt-2">К пальто: {block.settings.caption}</p>
+      <div class="contents">
+        {block.type === 'coat' && (
+          <button type="button" class="rounded-button bg-primary px-4 py-2 text-primary-foreground" data-ref="coat" data-coat={block.settings.label} data-action="pick">{block.settings.label}</button>
+        )}
+        {block.type === 'scarf' && (
+          <div class="w-full rounded-button bg-card p-4 text-card-foreground" data-ref="scarf" data-coats={block.settings.caption}>
+            <p class="m-0 text-lg">{block.settings.label}</p>
+            <p class="m-0 mt-2">{block.settings.caption}</p>
+          </div>
+        )}
       </div>
     ))}
   </div>

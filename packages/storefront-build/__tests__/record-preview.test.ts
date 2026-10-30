@@ -3,7 +3,7 @@ import type { BuildInputs } from '../src/inputs';
 import { renderShopPage, type ShopTheme } from '../src/page';
 import { DEFAULT_BLOG_HANDLE, EXAMPLE_IDS, EXAMPLE_IMAGE } from '../src/record-preview';
 import { money, type RecordType } from '../src/records';
-import { isRecordType, pageInfoById, previewRecordPath, routeOf, shopRoutes } from '../src/routes';
+import { findPreviewRecord, isRecordType, pageInfoById, previewRecordPath, routeOf, shopRoutes } from '../src/routes';
 import type { PageRender, SectionRenderRequest } from '../src/sections-render';
 import { HOME_PAGE } from '../src/special-pages';
 import { errorOf } from './support';
@@ -85,6 +85,19 @@ describe('запись шаблона в превью', () => {
     expect(previewRecordPath(inputs, 'product', encodeURI('/product/плед'))).toBe('/product/плед');
     expect(previewRecordPath(inputs, 'product', `/product/${P1}`)).toBe('/product/sharf');
     expect(previewRecordPath(inputs, 'collection', '/product/sharf')).toBe('/collections/primer-kollekcii');
+  });
+
+  it('record — handle («sharf»): запись находится и по нему; findPreviewRecord без запасной — нет такой, null', () => {
+    const inputs = recordInputs([product(P2, { handle: 'pled' }), product(P1), collection(C1)]);
+    expect(previewRecordPath(inputs, 'product', 'sharf')).toBe('/product/sharf');
+    expect(findPreviewRecord(inputs, 'product', 'pled')?.id).toBe(P2);
+    expect(findPreviewRecord(inputs, 'product', P1)?.id).toBe(P1);
+    expect(findPreviewRecord(inputs, 'product', '/product/sharf')?.id).toBe(P1);
+    expect(findPreviewRecord(inputs, 'product', 'missing')).toBeNull();
+    // Чужой вид по тому же слову не находится: у коллекции «pled» нет.
+    expect(findPreviewRecord(inputs, 'collection', 'pled')).toBeNull();
+    // Статье по одному слову адрес не собрать — только id или адрес от корня.
+    expect(findPreviewRecord(inputs, 'article', 'sharf')).toBeNull();
   });
 
   it('блог по умолчанию — «Новости», в нём пусто — блог самой свежей записи; запись — самая свежая', () => {

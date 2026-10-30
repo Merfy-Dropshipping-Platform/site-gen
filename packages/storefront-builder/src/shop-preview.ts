@@ -59,6 +59,7 @@ import {
 } from './preview-code';
 import { inlineFonts } from './preview-fonts';
 import { withPreviewPolicy } from './preview-policy';
+import { previewSampleTag } from './preview-sample';
 import { readSnapshot, type ProductRequest } from './snapshot';
 import { answer, isAnswer, jsonAnswer, standPreview, standShop, type PreviewDeps } from './stand-preview';
 
@@ -221,7 +222,9 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   // код страницы (блок 5, часть 5г): JSON-тег бандла превью и скрипт превью; нет снимка кода — без них.
   const agents = `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script>`;
   const code = await previewTags(inputs, assets);
-  const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), `${agents}${code}`);
+  // Снимок черновика (`look/look-sample.ts`): какая запись показана и строки корзины — данными, скрипта в теге нет.
+  const sample = previewSampleTag(inputs, page, recordOf(url));
+  const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), `${agents}${code}${sample}`);
   return answer(200, withPreviewPolicy(found.inline(withoutFontPreloads(await inlinePageFonts(html, deps)))));
 }
 

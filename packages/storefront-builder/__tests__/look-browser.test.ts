@@ -161,6 +161,43 @@ describe.skipIf(!hasChromium)('снимок черновика · настоящ
     }
   }, 60_000);
 
+  it('страница корзины: строки товаров магазина подставлены вместо пустой корзины, шлюз не зовётся', async () => {
+    const lines = [1, 2].map((n) => ({
+      id: `look-line-${n}`,
+      productId: `p${n}`,
+      variantCombinationId: null,
+      quantity: 1,
+      unitPriceCents: 1000 * n,
+      name: `Товар ${n}`,
+      imageUrl: null,
+      options: {},
+    }));
+    // Страница читает корзину так же, как ядро витрины: номер — из адреса `?merfy-cart=`, строки — `GET <шлюз>/store/carts/<номер>`.
+    const cartPage = (sample: string) => `<!doctype html><html><head>
+<script type="application/json" id="merfy-config">{"shop":{"url":"https://shop.example.com/"}}</script></head><body><h1>Корзина</h1>
+${sample}
+<script>
+const id = new URLSearchParams(location.search).get('merfy-cart');
+fetch('https://api.example.com/store/carts/' + id)
+  .then((r) => r.json())
+  .then((body) => console.error('CART:' + body.items.map((i) => i.name + ' x' + i.quantity).join('|') + ';' + body.cart.totalCents))
+  .catch((e) => console.error('CART-FAIL:' + e.message));
+</script></body></html>`;
+    const tag = `<script type="application/json" id="merfy-look-sample">${JSON.stringify({ v: 1, cart: { lines } })}</script>`;
+
+    const withCart = await renderer.open({ html: cartPage(tag), devices: ['desktop'] });
+    const without = await renderer.open({ html: cartPage(''), devices: ['desktop'] });
+    try {
+      expect(withCart.sessions[0]?.facts.consoleErrors).toContain('CART:Товар 1 x1|Товар 2 x1;3000');
+      // Без тега превью корзина не подменяется: запрос идёт к настоящему адресу и здесь, без сети, падает.
+      const failed = without.sessions[0]?.facts.consoleErrors ?? [];
+      expect(failed.some((text) => text.startsWith('CART:'))).toBe(false);
+    } finally {
+      await withCart.close();
+      await without.close();
+    }
+  }, 60_000);
+
   it('срок вышел — отказ timeout, место в очереди освобождено', async () => {
     const short = new ChromiumRenderer({ timeoutMs: 1, maxConcurrent: 1 });
     try {

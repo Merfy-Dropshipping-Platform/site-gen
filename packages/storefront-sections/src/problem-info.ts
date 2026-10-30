@@ -89,6 +89,11 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
       after: "class:list={{ 'text-3xl': settings['heading-size'] === 'medium' }}",
     },
   },
+  'class-inert': {
+    when: 'Класс из словаря ничего не рисует: from-*, via-*, to-* без направления bg-linear-*, направление без точек, text-transparent с bg-clip-text без градиента и без фона.',
+    fix: 'Собери градиент целиком на одном элементе, точки бери разных ролей: в схемах тем primary и foreground часто одного цвета, и градиент между ними плоский.',
+    example: { before: 'from-primary to-foreground', after: 'bg-linear-to-r from-destructive to-foreground' },
+  },
   'token-invalid': {
     when: 'Токен секции в ключе tokens записан неверно: имя без метки custom, чужой вид, больше предела.',
     fix: 'Исправь токен, названный в ответе; правила — на странице styles.md.',

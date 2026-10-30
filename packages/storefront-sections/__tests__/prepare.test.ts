@@ -17,7 +17,8 @@ describe('одна функция приёма', () => {
     expect(section?.name).toBe('shop:color-match');
     expect(section?.template).toBe(COLOR_MATCH['template.astro']);
     expect(section?.script).not.toContain('@merfy/shell');
-    expect(section?.warnings).toEqual([]);
+    // Надпись «Выберите цвет пальто» набрана в разметке — это единственное предупреждение.
+    expect(section?.warnings.map((item) => item.code)).toEqual(['taste-literal-text']);
     expect(section?.manifest.settings).toEqual([]);
   });
 

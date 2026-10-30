@@ -20,6 +20,7 @@ const CARD = {
   compareAtPrice: null,
   image: 'https://s3.merfy.ru/p/1.jpg',
   available: true,
+  preorder: false,
   images: ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg'],
   variantId: 'v-1',
   colors: [],

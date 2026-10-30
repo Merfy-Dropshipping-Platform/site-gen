@@ -197,6 +197,9 @@
 | `taste-repeated-condition` | одно сравнение или вызов вроде `blocks.some(…)` в трёх местах и больше | [Повтор условия](#повтор-условия) |
 
 Остальные `taste-*` — кнопки от 44 px, прокрутка вбок, «уменьшить движение» — в [errors.md](errors.md#taste-button-height).
+Состав секции — надписи и адреса картинок в разметке ([`taste-literal-text`](errors.md#taste-literal-text),
+[`taste-literal-image`](errors.md#taste-literal-image)), поле без чтения ([`taste-dead-setting`](errors.md#taste-dead-setting)),
+копия библиотечной секции ([`taste-library-copy`](errors.md#taste-library-copy)) — тоже предупреждения.
 
 Вёрстка секции — телефон первым: классы без префикса для телефона, `sm:`/`md:`/`lg:` добавляют; карточки в ряду одной
 высоты, полоски и вкладки на ширину ряда. Этого проверка не ловит, правила и пример сетки — в

@@ -41,6 +41,8 @@ const productItemSchema = z.object({
   images: z.array(z.string()).catch([]),
   slug: z.string().catch(''),
   available: z.boolean().catch(false),
+  // Остатка нет, заказ разрешён: сервис product отдаёт поле с части «под заказ»; без него — не под заказ.
+  preorder: z.boolean().catch(false),
   metaTitle: z.string().nullable().catch(null),
   metaDescription: z.string().nullable().catch(null),
   variantGroups: z.array(groupSchema).catch([]),
@@ -105,6 +107,7 @@ export function productEntityOf(raw: unknown): Entity | null {
     compareAtPrice: priceOrNull(item.compareAtPrice),
     images: item.images,
     available: item.available,
+    preorder: item.preorder,
     options: optionsOf(item),
     variants: variantsOf(item),
     collectionIds: item.collections.flatMap((collection) => (collection.id === undefined ? [] : [collection.id])),

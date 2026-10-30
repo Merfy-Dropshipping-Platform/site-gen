@@ -10,6 +10,7 @@ export interface DocsSources {
   examples: Readonly<Record<string, SectionFiles>>; // examples/<имя>/ → readSectionFolder
   template: SectionFiles; // template/ — все четыре файла, с AGENTS.md и CLAUDE.md (readdir, не readSectionFolder)
   names: string; // ../storefront-sections/generated/NAMES.md
+  namesJson: string; // ../storefront-sections/names.json — словарь данными, копия без изменений
   schema: string; // ../storefront-sections/generated/section.schema.json
   shared: unknown; // JSON ../storefront-sections/generated/shared-settings.json
   tokens: string; // ../tokens/generated/TOKENS.md
@@ -58,6 +59,7 @@ export async function readSources(packageDir: string = PACKAGE_DIR): Promise<Doc
     examples: await readExamples(packageDir),
     template: await readTemplate(packageDir),
     names: await readText(join(sectionsDir, 'generated', 'NAMES.md')),
+    namesJson: await readText(join(sectionsDir, 'names.json')),
     schema: await readText(join(sectionsDir, 'generated', 'section.schema.json')),
     shared: await readShared(sectionsDir),
     tokens: await readText(join(packageDir, '../tokens/generated/TOKENS.md')),

@@ -108,6 +108,7 @@ describe('JSON вариантов страницы', () => {
       compareAtPrice: null,
       images: [],
       available: true,
+      preorder: false,
       options: [{ id: 'g', name: '</script>', values: [] }],
       variants: [],
       collections: [],

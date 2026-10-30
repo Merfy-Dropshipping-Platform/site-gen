@@ -6,6 +6,7 @@ import { readManifest, type SectionManifest } from '../src/format';
 import { readSectionFolder } from '../src/read-folder';
 import { startSectionRenderer, type SectionRenderer } from '../src/render';
 import { prepareInWorker } from '../src/sandbox';
+import { CODE_TASTE_CODES } from '../src/taste-code';
 
 // «Публикации» и «Список коллекций» — сводные секции пяти тем (базовые секции, 29.10): панель прода в её порядке, новые
 // параметры — после, в группе «Вид»; раскладка — признаками data-* на корне.
@@ -158,7 +159,9 @@ describe('приём: без проблем и предупреждений', ()
     '%s',
     async (name) => {
       const result = await prepareInWorker({ prefix: 'shop', files: await readSectionFolder(`${SHOP}/${name}`) });
-      expect(result.ok ? result.section.warnings : result.problems).toEqual([]);
+      // Служебные надписи библиотеки лежат в разметке: предупреждения о составе секции её тесты не считают.
+      const items = result.ok ? result.section.warnings : result.problems;
+      expect(items.filter((item) => !CODE_TASTE_CODES.has(item.code))).toEqual([]);
     },
     30_000,
   );

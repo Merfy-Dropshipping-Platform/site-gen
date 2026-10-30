@@ -126,6 +126,7 @@ describe('товар product.list → сущность', () => {
         compareAtPrice: 250000,
         images: ['https://s3.merfy.ru/p/1.jpg'],
         available: true,
+        preorder: false,
         options: [
           {
             id: 'g-1',
@@ -190,12 +191,21 @@ describe('товар product.list → сущность', () => {
         compareAtPrice: null,
         images: [],
         available: false,
+        preorder: false,
         options: [],
         variants: [],
         collectionIds: [],
         seo: { title: '', description: '' },
       },
     });
+  });
+
+  it('preorder из ответа product — в данных товара; без поля или не булево — false', () => {
+    const data = (raw: unknown) => (productEntityOf(raw)?.data as { preorder?: boolean } | undefined)?.preorder;
+    expect(data({ ...ITEM, available: true, preorder: true })).toBe(true);
+    expect(data({ ...ITEM, preorder: false })).toBe(false);
+    expect(data(ITEM)).toBe(false);
+    expect(data({ ...ITEM, preorder: 'yes' })).toBe(false);
   });
 
   it('старая цена 0 — её нет; 1900,5 ₽ — 190050 копеек; дата с поясом — в UTC', () => {

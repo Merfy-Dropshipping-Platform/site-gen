@@ -6,6 +6,7 @@ import {
   COLOR_SWATCHES_MAX,
   POLICY_PAGES,
   RECORD_FIELDS,
+  cardOfRecord,
   money,
   policyTextToHtml,
   publishedTextOf,
@@ -38,6 +39,7 @@ function product(id: string, data: Partial<ProductData> = {}, updatedAt = AT): E
     compareAtPrice: 250000,
     images: ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg'],
     available: true,
+    preorder: false,
     options: [{ id: 'g-1', name: 'Цвет', values: [{ id: 'o-1', value: 'Синий', images: [], swatch: '#1d4ed8' }] }],
     variants: [
       { id: 'v-1', title: 'Синий', price: 190000, compareAtPrice: null, available: true, options: { Цвет: 'Синий' } },
@@ -149,6 +151,7 @@ describe('товар', () => {
       compareAtPrice: money(250000),
       images: ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg'],
       available: true,
+      preorder: false,
       options: [{ id: 'g-1', name: 'Цвет', values: [{ id: 'o-1', value: 'Синий', images: [], swatch: '#1d4ed8' }] }],
       variants: [
         {
@@ -164,6 +167,15 @@ describe('товар', () => {
       updatedAt: AT,
     });
     expect(Object.keys(entry?.record ?? {}).sort()).toEqual([...RECORD_FIELDS.product].sort());
+  });
+
+  it('preorder — в записи товара и в карточке; запись, сохранённая без поля, — false', () => {
+    const under = recordIndexOf([product(P1, { available: true, preorder: true })]).find('product', P1);
+    expect(under?.type === 'product' && [under.record.preorder, cardOfRecord(under.record).preorder]).toEqual([true, true]);
+    const stored = product(P2);
+    const withoutField = Object.fromEntries(Object.entries(stored.data).filter(([key]) => key !== 'preorder'));
+    const old = recordIndexOf([{ ...stored, data: withoutField }]).find('product', P2);
+    expect(old?.type === 'product' && [old.record.preorder, cardOfRecord(old.record).preorder]).toEqual([false, false]);
   });
 
   it('зависимости — сама запись и её коллекции; дата — последняя правка среди них', () => {
@@ -244,6 +256,7 @@ describe('коллекция', () => {
           compareAtPrice: null,
           image: null,
           available: false,
+          preorder: false,
           images: [],
           variantId: 'v-1',
           colors: [{ title: 'Синий', swatch: '#1d4ed8' }],
@@ -256,6 +269,7 @@ describe('коллекция', () => {
           compareAtPrice: money(250000),
           image: 'https://s3.merfy.ru/p/1.jpg',
           available: true,
+          preorder: false,
           images: ['https://s3.merfy.ru/p/1.jpg', 'https://s3.merfy.ru/p/2.jpg'],
           variantId: 'v-1',
           colors: [{ title: 'Синий', swatch: '#1d4ed8' }],

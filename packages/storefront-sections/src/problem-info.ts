@@ -204,6 +204,26 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     },
     doc: 'code.md#повтор-условия',
   },
+  // Содержимое секции (markup-literals.ts, dead-settings.ts, library-copy.ts): предупреждения, секция сохраняется.
+  'taste-literal-text': {
+    when: 'В template.astro между тегами набран текст-надпись (от трёх букв): мерчант не может его поменять в панели; секция сохраняется.',
+    fix: 'Объяви поле string или text в section.json и выведи его {settings.<имя>}; имя — из словаря (names.md), служебные надписи, которые менять не нужно, можно оставить.',
+    example: { before: '<h2>Наши товары</h2>', after: '<h2>{settings.heading}</h2>' },
+  },
+  'taste-literal-image': {
+    when: 'В src, srcset или poster шаблона, а также в строке кода шаблона стоит готовый адрес картинки (https://… или файл .jpg, .png, .webp, .svg); секция сохраняется.',
+    fix: 'Объяви поле вида image в section.json (имя `image`) и выведи его {settings.image}: картинку мерчант заменит сам.',
+    example: { before: '<img src="https://example.com/a.jpg">', after: '<img src={settings.image}>' },
+  },
+  'taste-dead-setting': {
+    when: 'Поле объявлено в section.json (у секции или блока), а шаблон ни разу не читает settings.<его id>; секция сохраняется.',
+    fix: 'Выведи поле в шаблоне {settings.<имя>} или убери его из section.json: иначе мерчант крутит настройку, а вид не меняется.',
+    example: { before: 'поле "subheading" в section.json, а в шаблоне его нет', after: '<p>{settings.subheading}</p> в шаблоне' },
+  },
+  'taste-library-copy': {
+    when: 'Файлы секции совпадают с секцией нашей библиотеки (кроме name и title): копия без изменений под другим именем; секция сохраняется.',
+    fix: 'Поставь библиотечную секцию как есть либо измени копию: параметры, разметку, вид.',
+  },
   'release-changed': {
     when: 'Выпуск расширения с этой версией уже сохранён с другими файлами.',
     fix: 'Новая версия файлов — новый номер выпуска.',
@@ -220,8 +240,8 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'name-own-invalid': {
     when: 'Своё имя в `names` записано неверно: не строчная латиница через дефис, длиннее 32 знаков или из списка «Нет в словаре».',
-    fix: 'Назови по образцу `sku` или `show-sku`: строчные латинские буквы и цифры через одиночный дефис, до 32 знаков.',
-    example: { before: '"names": { "ShowSku": … }', after: '"names": { "show-sku": … }' },
+    fix: 'Назови по образцу `sku` или `sku-label`: строчные латинские буквы и цифры через одиночный дефис, до 32 знаков; имена `show-*`, `hide-*` и другие из «Нет в словаре» нельзя.',
+    example: { before: '"names": { "ShowSku": … }', after: '"names": { "sku-label": … }' },
   },
   'name-own-in-dictionary': {
     when: 'Имя в `names` секции уже есть в словаре имён.',

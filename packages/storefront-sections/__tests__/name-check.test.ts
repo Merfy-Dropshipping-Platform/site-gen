@@ -36,6 +36,16 @@ describe('имя поля — по словарю', () => {
     });
   });
 
+  it.each([
+    ['titel', 'string', ['heading']], // опечатка в слове из asks: «title» → heading
+    ['subtitel', 'string', ['subheading']],
+    ['button-title', 'string', ['button-label', 'button-second-label', 'heading']], // до трёх имён
+  ])('%s (%s) → ближе всего %j: до трёх имён по ключу, подписи и asks', (id, kind, nearest) => {
+    expect(nameIssue(id, kind)?.message).toBe(
+      `поле \`${id}\`: ${UNKNOWN}, ближе всего — ${nearest.map((name) => `\`${name}\``).join(', ')}`,
+    );
+  });
+
   it('ничего похожего — ближе всего нет, имена — командой', () => {
     expect(nameIssue('zzz', 'string')?.message).toBe(
       `поле \`zzz\`: ${UNKNOWN}, ближе всего — нет; имена — \`merfy section names\``,

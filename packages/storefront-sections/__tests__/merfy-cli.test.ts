@@ -136,7 +136,7 @@ describe('шапка, подвал и страница тест-магазина
 
 describe('страница не найдена тест-магазина (блок 7 «Секций и SDK», часть 7а)', () => {
   it('«Страница не найдена» из fixtures/shop проходит без предупреждений', async () => {
-    expect(await merfy('section', 'check', 'fixtures/shop/error-404')).toEqual({
+    expect(withoutCode(await merfy('section', 'check', 'fixtures/shop/error-404'))).toEqual({
       code: 0,
       stdout: 'shop:error-404: проверка прошла\n',
     });

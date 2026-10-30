@@ -9,6 +9,7 @@ import { defaultSettings } from '../src/settings';
 import type { SectionField, SectionValue } from '../src/fields';
 import { startSectionRenderer, type SectionRenderer } from '../src/render';
 import { prepareInWorker } from '../src/sandbox';
+import { CODE_TASTE_CODES } from '../src/taste-code';
 
 // «Товар» — сводная секция пяти тем (базовые секции, 29.10): панель прода в её порядке (выбор товара, макет, размер,
 // позиция фото, увеличение, динамическая кнопка, цветовая схема, отступы; подпанели прода — блоки), новые параметры —
@@ -47,6 +48,7 @@ const SCARF: ProductRecord = {
   compareAtPrice: money(250000),
   images: PHOTOS,
   available: true,
+  preorder: false,
   options: [
     {
       id: 'g-color',
@@ -117,7 +119,9 @@ const groupOf = (id: string): string | undefined => fields().find((field) => fie
 describe('приём: без проблем и предупреждений', () => {
   it('product', async () => {
     const result = await prepareInWorker({ prefix: 'shop', files: await readSectionFolder(FOLDER) });
-    expect(result.ok ? result.section.warnings : result.problems).toEqual([]);
+    // Служебные надписи библиотеки лежат в разметке: предупреждения о составе секции её тесты не считают.
+    const items = result.ok ? result.section.warnings : result.problems;
+    expect(items.filter((item) => !CODE_TASTE_CODES.has(item.code))).toEqual([]);
   }, 30_000);
 });
 

@@ -21,6 +21,7 @@ import {
   type SectionManifest,
 } from './format';
 import { authorProblems } from './author-rules';
+import { authoringProblems } from './authoring-check';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
 import { buildScript, type BuiltScript } from './script';
 import { NO_FACTS, type ScriptFacts } from './script-facts';
@@ -158,15 +159,15 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
   const manifest = readManifest(files);
   const template = files[TEMPLATE_FILE];
   const entry = scriptEntryOf(files);
-  const [checked, script, styles, taste] = await Promise.all([
+  const [checked, script, styles, taste, authoring] = await Promise.all([
     template === undefined
       ? null
       : checkTemplate(template, manifest.ok ? templateOptionsOf(manifest.value) : NO_TEMPLATE_OPTIONS),
     entry === null ? null : buildScript(files, entry),
     manifest.ok && template !== undefined ? styleProblems(manifest.value, files, template) : [],
-    // Предупреждения вкуса: кнопки от 44 px, прокрутка вбок, «уменьшить движение» (taste-check.ts) и код шаблона
-    // (taste-code.ts).
+    // Вкус: кнопки 44 px, прокрутка вбок, движение (taste-check.ts), код шаблона (taste-code.ts); состав: authoring-check.ts.
     manifest.ok ? tasteProblems(files) : [],
+    authoringProblems(files),
   ]);
   const problems = [
     ...fileProblems(files),
@@ -180,6 +181,7 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
     ...(manifest.ok ? authorProblems(manifest.value, input.prefix) : []),
   ];
   if (!manifest.ok || problems.some((item) => !isWarning(item))) return refuse(problems);
-  const name = `${input.prefix}:${manifest.value.name}`;
-  return { ok: true, section: preparedOf(name, manifest.value, { template, checked, script, warnings: problems }) };
+  // Предупреждения о составе секции — только принятой: отказ не обрастает советами, пока в нём есть ошибки.
+  const checks = { template, checked, script, warnings: [...problems, ...authoring] };
+  return { ok: true, section: preparedOf(`${input.prefix}:${manifest.value.name}`, manifest.value, checks) };
 }

@@ -4,7 +4,7 @@ import { MANIFEST_FILE } from './format';
 import { limitIssues } from './limits';
 import { nameIssues } from './name-check';
 import { problem, type SectionProblem } from './problems';
-import { valuePosition } from './position';
+import { valuePosition, type Position } from './position';
 import type { FieldList, JsonPath, RuleSection } from './rule-types';
 import { disabledWhenIssues, visibleWhenIssues } from './visibility';
 
@@ -46,12 +46,16 @@ export function fieldRuleProblems(manifest: SectionManifest, text: string): Sect
     ...disabledWhenIssues(section),
   ];
   // Пути правил — по списку полей без ссылок { "wrapper": … }; место в файле — по номеру элемента settings.
+  return issues.map((item) => problem(item.code, MANIFEST_FILE, item.message, settingPlace(manifest, text, item.path)));
+}
+
+// Место значения по пути правил: путь адресует поля по индексу в списке полей, а в файле поле — элемент settings
+// (ссылки на общие настройки тоже занимают элемент).
+export function settingPlace(manifest: SectionManifest, text: string, path: JsonPath): Position | undefined {
   const at = settingsIndexes(manifest.settings);
-  const placed = (path: JsonPath): JsonPath =>
-    path[0] === 'settings' && typeof path[1] === 'number'
-      ? ['settings', at[path[1]] ?? path[1], ...path.slice(2)]
-      : path;
-  return issues.map((item) => problem(item.code, MANIFEST_FILE, item.message, valuePosition(text, placed(item.path))));
+  const placed: JsonPath =
+    path[0] === 'settings' && typeof path[1] === 'number' ? ['settings', at[path[1]] ?? path[1], ...path.slice(2)] : path;
+  return valuePosition(text, placed);
 }
 
 // Номера элементов settings, которые являются полями, по порядку: правила адресуют поля по индексу в списке полей,

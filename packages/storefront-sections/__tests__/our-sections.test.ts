@@ -4,6 +4,7 @@ import { sectionGroupsOf, sectionLimitOf } from '../src/format';
 import { prepareSection } from '../src/prepare';
 import { readSectionFolder } from '../src/read-folder';
 import { ROLE_PLACES, type SectionRole } from '../src/roles';
+import { CODE_TASTE_CODES } from '../src/taste-code';
 
 // Наши секции блока 9 «Секций и SDK» (часть 9б) проходят проверку при сохранении так же, как секция мерчанта:
 // «Значок корзины» и «Уведомления» — без отказов и предупреждений; место (groups, limit) и script_meta — по section.json.
@@ -12,7 +13,11 @@ const OUR_SECTIONS = fileURLToPath(new URL('../../storefront-shell/sections', im
 async function prepared(folder: string) {
   const result = await prepareSection({ prefix: 'shop', files: await readSectionFolder(`${OUR_SECTIONS}/${folder}`) });
   const problems = result.ok ? [] : result.problems.map((item) => `${item.code} ${item.file} ${item.message}`);
-  return { problems, section: result.ok ? result.section : null };
+  // Служебные надписи библиотеки лежат в разметке: предупреждения о составе секции её тесты не считают.
+  const section = result.ok
+    ? { ...result.section, warnings: result.section.warnings.filter((item) => !CODE_TASTE_CODES.has(item.code)) }
+    : null;
+  return { problems, section };
 }
 
 describe('наши секции блока 9 — проверка при сохранении', () => {

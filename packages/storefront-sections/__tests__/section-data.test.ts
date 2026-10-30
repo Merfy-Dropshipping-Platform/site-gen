@@ -34,7 +34,7 @@ const problemsOf = (data: unknown): string[] => {
   return result.ok ? [] : result.problems.map((item) => `${item.code} ${item.message}`).sort();
 };
 const PRODUCT_FIELDS =
-  'id, title, slug, url, description, price, compareAtPrice, images, available, options, variants, ' +
+  'id, title, slug, url, description, price, compareAtPrice, images, available, preorder, options, variants, ' +
   'collections, updatedAt';
 const FROM_KINDS = 'from: page.record или settings.<id поля вида product, collection, blog или policy>';
 

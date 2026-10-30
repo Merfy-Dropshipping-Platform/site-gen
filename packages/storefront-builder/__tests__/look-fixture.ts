@@ -19,6 +19,11 @@ export interface FakeSessionOptions {
   facts?: Partial<PageFacts>;
   findings?: DetectorFinding[];
   detectError?: Error;
+  // Находки детектора по id секции (запуск с `section`): отбор по элементам внутри секции делает страница, в проверке
+  // с подменой — этот список. Настоящий отбор проверяет `look-browser.test.ts` в Chromium.
+  sectionFindings?: Record<string, DetectorFinding[]>;
+  // Детектор не отвечает.
+  detectHangs?: boolean;
   shootError?: Error;
   // Находки проверок вёрстки, которые вернёт страница; `layoutError` — проверки падают.
   layout?: LayoutFinding[];
@@ -41,6 +46,8 @@ export interface SectionCalls {
   located: Array<{ device: LookDevice; section: string }>;
   shot: Array<{ device: LookDevice; section: string; quality: number }>;
   layout: Array<{ device: LookDevice; section: string | undefined }>;
+  // Запуски детектора: с id секции — в снимке секции, без него — в снимке страницы.
+  detect: Array<{ device: LookDevice; section: string | undefined }>;
 }
 
 const PLACE: SectionPlace = { x: 0, y: 0, width: 390, height: 600, fullHeight: 600, pinned: false };
@@ -49,7 +56,7 @@ export function fakeSession(
   device: LookDevice,
   options: FakeSessionOptions,
   calls: ShootCall[],
-  sectionCalls: SectionCalls = { located: [], shot: [], layout: [] },
+  sectionCalls: SectionCalls = { located: [], shot: [], layout: [], detect: [] },
 ): PageSession {
   const bytes = options.shotBytes ?? 1_000;
   return {
@@ -68,9 +75,14 @@ export function fakeSession(
       const size = typeof bytes === 'function' ? bytes(index, quality) : bytes;
       return Promise.resolve(new Uint8Array(size).fill(index + 1));
     },
-    detect() {
+    detect(section) {
+      sectionCalls.detect.push({ device, section });
       if (options.detectError) return Promise.reject(options.detectError);
-      return Promise.resolve(options.findings ?? []);
+      // Детектор завис: ответа нет, пока страницу не закроют.
+      if (options.detectHangs) return new Promise<DetectorFinding[]>(() => undefined);
+      // Находки по секциям, как отбирает их страница: с `section` — только своя секция.
+      const own = section === undefined ? options.findings : (options.sectionFindings?.[section] ?? []);
+      return Promise.resolve(own ?? []);
     },
     layout(section) {
       sectionCalls.layout.push({ device, section });
@@ -101,7 +113,7 @@ export interface FakeRendererOptions {
 
 export function fakeRenderer(options: FakeRendererOptions = {}) {
   const calls: ShootCall[] = [];
-  const sectionCalls: SectionCalls = { located: [], shot: [], layout: [] };
+  const sectionCalls: SectionCalls = { located: [], shot: [], layout: [], detect: [] };
   const opened: RenderInput[] = [];
   const state = { closed: 0 };
   const renderer: PageRenderer = {

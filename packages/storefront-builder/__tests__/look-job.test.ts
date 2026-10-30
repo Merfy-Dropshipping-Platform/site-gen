@@ -6,6 +6,7 @@ import {
   LOOKS_QUEUE,
   LOOK_PATTERN,
   MIN_BUDGET_MS,
+  SECTION_DETECTOR_TIMEOUT_MS,
   nestReply,
   previewUrl,
   runLookJob,
@@ -216,11 +217,12 @@ describe('снимок черновика · проверки вёрстки', (
 });
 
 describe('снимок черновика · одна секция', () => {
-  it('картинка — вырезка секции, а не экраны страницы; находки только её; детектор не запускается', async () => {
+  it('картинка — вырезка секции, а не экраны страницы; находки только её', async () => {
     const { deps, fake } = setup({
       mobile: {
         pageHeight: 844 * 6,
-        findings: [{ rule: 'gradient-text', name: 'Gradient text', detail: 'h1' }],
+        findings: [{ rule: 'page-only', name: 'Page only', detail: 'вся страница' }],
+        sectionFindings: { 'hero-1': [{ rule: 'gradient-text', name: 'Gradient text', detail: 'h1' }] },
         layout: [layoutFinding('tap-small', 0, 'hero-1')],
         section: { place: { x: 0, y: 900, width: 390, height: 700, fullHeight: 700, pinned: false }, bytes: 900 },
       },
@@ -234,12 +236,14 @@ describe('снимок черновика · одна секция', () => {
     expect(snapshot.devices[0]?.images.map((image) => Buffer.from(image, 'base64').length)).toEqual([900]);
     expect(snapshot.devices[0]?.screens).toEqual({ total: 1, shown: 1 });
     expect(snapshot.devices[0]?.cut).toEqual({ height: 700, shown: 700, pinned: false });
-    // Экраны страницы не снимались, детектор не запускался: находок нет, причина названа.
+    // Экраны страницы не снимались; детектор запущен с id секции — находки страницы целиком в ответ не попали.
     expect(fake.calls).toEqual([]);
-    expect(snapshot.detector).toEqual({ ok: false, reason: 'не запускался: снимок одной секции' });
+    expect(snapshot.detector).toEqual({ ok: true });
     expect(snapshot.findings.map((finding) => [finding.source, finding.code, finding.section])).toEqual([
+      ['impeccable', 'gradient-text', null],
       ['layout', 'tap-small', 'hero-1'],
     ]);
+    expect(fake.sectionCalls.detect).toEqual([{ device: 'mobile', section: 'hero-1' }]);
     expect(fake.sectionCalls.layout).toEqual([{ device: 'mobile', section: 'hero-1' }]);
     expect(fake.sectionCalls.shot).toEqual([{ device: 'mobile', section: 'hero-1', quality: 80 }]);
   });
@@ -333,6 +337,142 @@ describe('снимок черновика · одна секция', () => {
     await broker.deliver({ exchange: '', body: job({ devices: 'mobile', section: 'hero-1' }) });
 
     expect(log).toHaveBeenCalledWith('look-done', expect.objectContaining({ section: 'hero-1', images: 1 }));
+  });
+});
+
+describe('снимок черновика · детектор в снимке секции', () => {
+  const gradient = { rule: 'gradient-text', name: 'Gradient text', detail: 'background-clip: text + gradient' };
+  const sideTab = { rule: 'side-tab', name: 'Side-tab accent border', detail: 'border-left: 6px' };
+  // Даёт заданию дойти до ожидания детектора (таймеры подменены, а setImmediate — настоящий), потом двигает часы.
+  const pass = async (ms: number) => {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    await vi.advanceTimersByTimeAsync(ms);
+  };
+
+  it('находки только своей секции, в форме находок страницы; детектор зовётся один раз', async () => {
+    const { deps, fake } = setup({
+      mobile: {
+        findings: [gradient, sideTab],
+        sectionFindings: { 'hero-1': [gradient], 'cards-2': [sideTab] },
+      },
+    });
+
+    const hero = snapshotOf(await runLookJob(deps, job({ devices: 'mobile', section: 'hero-1' })));
+    const cards = snapshotOf(await runLookJob(deps, job({ devices: 'mobile', section: 'cards-2' })));
+    const empty = snapshotOf(await runLookJob(deps, job({ devices: 'mobile', section: 'footer-3' })));
+
+    const asPage = (rule: string, name: string, text: string) => ({
+      source: 'impeccable',
+      code: rule,
+      name,
+      text,
+      device: 'mobile',
+      section: null,
+      clip: null,
+      image: null,
+    });
+    expect(hero.detector).toEqual({ ok: true });
+    expect(hero.findings).toEqual([asPage('gradient-text', 'Gradient text', 'background-clip: text + gradient')]);
+    expect(cards.findings).toEqual([asPage('side-tab', 'Side-tab accent border', 'border-left: 6px')]);
+    expect(empty.detector).toEqual({ ok: true });
+    expect(empty.findings).toEqual([]);
+    expect(fake.sectionCalls.detect.map((call) => call.section)).toEqual(['hero-1', 'cards-2', 'footer-3']);
+  });
+
+  it('два устройства: детектор на первом, где секцию видно; находки детектора идут перед проверками вёрстки', async () => {
+    const { deps, fake } = setup({
+      mobile: { section: { place: null } },
+      desktop: {
+        sectionFindings: { 'menu-1': [gradient] },
+        layout: [layoutFinding('overlap', 0, 'menu-1')],
+      },
+    });
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ section: 'menu-1' })));
+
+    expect(fake.sectionCalls.detect).toEqual([{ device: 'desktop', section: 'menu-1' }]);
+    expect(snapshot.findings.map((finding) => [finding.source, finding.code, finding.device])).toEqual([
+      ['impeccable', 'gradient-text', 'desktop'],
+      ['layout', 'overlap', 'desktop'],
+    ]);
+  });
+
+  it('детектор упал — первая строка ошибки в причине, снимок секции и проверки вёрстки на месте', async () => {
+    const { deps, fake } = setup({
+      mobile: {
+        detectError: new Error('WASM не загрузился\nстек'),
+        layout: [layoutFinding('tap-small', 0, 'hero-1')],
+      },
+    });
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ devices: 'mobile', section: 'hero-1' })));
+
+    expect(snapshot.detector).toEqual({ ok: false, reason: 'WASM не загрузился' });
+    expect(snapshot.layout).toEqual({ ok: true });
+    expect(snapshot.findings.map((finding) => finding.source)).toEqual(['layout']);
+    expect(snapshot.devices[0]?.images).toHaveLength(1);
+    expect(fake.state.closed).toBe(1);
+  });
+
+  it('детектор не уложился в предел — «не успел за 3 с», остальное отдаётся как раньше', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { deps, fake } = setup({
+        mobile: { detectHangs: true, layout: [layoutFinding('tap-small', 0, 'hero-1')] },
+      });
+
+      const running = runLookJob(deps, job({ devices: 'mobile', section: 'hero-1' }));
+      await pass(SECTION_DETECTOR_TIMEOUT_MS);
+      const snapshot = snapshotOf(await running);
+
+      expect(SECTION_DETECTOR_TIMEOUT_MS).toBe(3_000);
+      expect(snapshot.detector).toEqual({ ok: false, reason: 'не успел за 3 с' });
+      expect(snapshot.findings.map((finding) => finding.source)).toEqual(['layout']);
+      expect(snapshot.devices[0]?.images).toHaveLength(1);
+      expect(fake.state.closed).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('до срока задания мало времени — предел короче, а при остатке меньше запаса детектор не зовётся', async () => {
+    // Часы после открытия страницы: до срока 2 с (предел 0,5 с) и 1 с (детектор не запускается).
+    const withClock = (left: number) => {
+      const made = setup({ mobile: { detectHangs: true } });
+      const open = made.deps.renderer.open.bind(made.deps.renderer);
+      made.deps.renderer = {
+        open: async (input) => {
+          const rendered = await open(input);
+          made.deps.now = () => NOW + 55_000 - left;
+          return rendered;
+        },
+      };
+      return made;
+    };
+
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const short = withClock(2_000);
+      const running = runLookJob(short.deps, job({ devices: 'mobile', section: 'hero-1' }));
+      await pass(500);
+      expect(snapshotOf(await running).detector).toEqual({ ok: false, reason: 'не успел за 0.5 с' });
+
+      const none = withClock(1_000);
+      const skipped = snapshotOf(await runLookJob(none.deps, job({ devices: 'mobile', section: 'hero-1' })));
+      expect(skipped.detector).toEqual({ ok: false, reason: 'не успел: срок снимка почти вышел' });
+      expect(none.fake.sectionCalls.detect).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('снимок страницы без секции: детектор без id секции, предела нет', async () => {
+    const { deps, fake } = setup({ mobile: { findings: [gradient], sectionFindings: { 'hero-1': [sideTab] } } });
+
+    const snapshot = snapshotOf(await runLookJob(deps, job({ devices: 'mobile' })));
+
+    expect(fake.sectionCalls.detect).toEqual([{ device: 'mobile', section: undefined }]);
+    expect(snapshot.findings.map((finding) => finding.code)).toEqual(['gradient-text']);
   });
 });
 

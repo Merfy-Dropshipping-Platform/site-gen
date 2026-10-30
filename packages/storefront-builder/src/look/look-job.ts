@@ -34,6 +34,12 @@ export const MIN_BUDGET_MS = 5_000;
 // Сообщения консоли в ответе: первые и не длиннее предела — ответ идёт через брокер.
 const MAX_CONSOLE_ERRORS = 50;
 const MAX_CONSOLE_LENGTH = 500;
+// Предел времени детектора в снимке одной секции: шлюз ждёт такой снимок 15 с, merfy-mcp — 16 с, а сам снимок секции идёт
+// около 2 с. Замер детектора на главной nova — в README пакета, «Снимок черновика»; предел — с запасом. Не успел — снимок
+// и проверки вёрстки отдаются без находок детектора. В снимке страницы предела нет: там срок всего задания.
+export const SECTION_DETECTOR_TIMEOUT_MS = 3_000;
+// До срока задания детектор секции оставляет не меньше этого: ответ шлюз должен успеть принять.
+const DETECTOR_DEADLINE_MARGIN_MS = 1_500;
 
 const DEVICE_SETS: Record<'mobile' | 'desktop' | 'both', LookDevice[]> = {
   mobile: ['mobile'],
@@ -150,12 +156,33 @@ async function readPreview(deps: LookDeps, job: LookJob, budgetMs: number): Prom
   return { ok: true, html: await response.text() };
 }
 
-// Детектор не должен ронять снимки: его отказ идёт в ответ причиной.
+class DetectorLate extends Error {}
+
+// Работа, которой отведено `ms`: дальше — `DetectorLate`. Саму работу это не прерывает (она закончится вместе со страницей).
+async function within<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new DetectorLate()), ms);
+  });
+  try {
+    return await Promise.race([work, late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const secondsText = (ms: number): string => String(Math.round(ms / 100) / 10);
+
+// Детектор не должен ронять снимки: его отказ идёт в ответ причиной. С `section` — только находки внутри секции и
+// не дольше `limitMs`.
 async function detectOn(
   session: PageSession,
+  section?: string,
+  limitMs?: number,
 ): Promise<{ detector: LookSnapshot['detector']; findings: LookFinding[] }> {
   try {
-    const found = await session.detect();
+    const running = session.detect(section);
+    const found = limitMs === undefined ? await running : await within(running, limitMs);
     const findings = found.map((finding) => ({
       source: 'impeccable' as const,
       code: finding.rule,
@@ -169,7 +196,9 @@ async function detectOn(
     return { detector: { ok: true }, findings };
   } catch (error) {
     if (error instanceof LookError) throw error;
-    return { detector: { ok: false, reason: firstLine(errorText(error)) }, findings: [] };
+    const reason =
+      error instanceof DetectorLate ? `не успел за ${secondsText(limitMs ?? 0)} с` : firstLine(errorText(error));
+    return { detector: { ok: false, reason }, findings: [] };
   }
 }
 
@@ -224,12 +253,33 @@ async function pageSnapshot(sessions: PageSession[], first: PageSession, job: Lo
   };
 }
 
-// Снимок одной секции: её вырезка и находки вёрстки в ней. Детектор дизайна смотрит страницу целиком и находок по
-// секциям не даёт — он не запускается (это быстрее: снимок после правки ждут секунды).
-async function sectionSnapshot(sessions: PageSession[], job: LookJob, section: string): Promise<LookSnapshot> {
+// Детектор в снимке секции (после снимков и проверок): тот же, что у страницы, на первом устройстве, где секцию видно, —
+// находки только внутри неё (`look-page.ts`, `DETECT_IN_SECTION_BODY`), в пределе времени. Секции не видно нигде
+// (на всех устройствах скрыта) сюда не доходят: `locateSection` уже ответил отказом.
+async function detectInSection(
+  sessions: PageSession[],
+  places: Array<SectionPlace | null>,
+  section: string,
+  room: number,
+): ReturnType<typeof detectOn> {
+  const session = sessions.find((_, index) => places[index] != null);
+  if (session === undefined) return { detector: { ok: false, reason: 'секции не видно' }, findings: [] };
+  const limit = Math.min(SECTION_DETECTOR_TIMEOUT_MS, room - DETECTOR_DEADLINE_MARGIN_MS);
+  if (limit <= 0) return { detector: { ok: false, reason: 'не успел: срок снимка почти вышел' }, findings: [] };
+  return detectOn(session, section, limit);
+}
+
+// Снимок одной секции: её вырезка, находки вёрстки в ней и находки детектора дизайна по её элементам.
+async function sectionSnapshot(
+  sessions: PageSession[],
+  job: LookJob,
+  section: string,
+  now: () => number,
+): Promise<LookSnapshot> {
   const places = await locateSection(sessions, section);
   const checks = await runLayoutChecks(sessions, section);
   const { shots } = await shootSections(sessions, places, section, BUDGET_BYTES - checks.clipBytes);
+  const { detector, findings } = await detectInSection(sessions, places, section, job.deadline - now());
   const devices = sessions.map((session, index) => sectionShots(session, places[index] ?? null, shots[index] ?? null));
   return {
     v: 1,
@@ -238,16 +288,18 @@ async function sectionSnapshot(sessions: PageSession[], job: LookJob, section: s
     full: false,
     section,
     devices,
-    detector: { ok: false, reason: 'не запускался: снимок одной секции' },
+    detector,
     layout: checks.status,
-    findings: checks.findings,
+    findings: [...findings, ...checks.findings],
   };
 }
 
-async function snapshotOf(sessions: PageSession[], job: LookJob): Promise<LookSnapshot> {
+async function snapshotOf(sessions: PageSession[], job: LookJob, now: () => number): Promise<LookSnapshot> {
   const [first] = sessions;
   if (first === undefined) throw new Error('отрисовщик не открыл ни одного экрана');
-  return job.section === undefined ? pageSnapshot(sessions, first, job) : sectionSnapshot(sessions, job, job.section);
+  return job.section === undefined
+    ? pageSnapshot(sessions, first, job)
+    : sectionSnapshot(sessions, job, job.section, now);
 }
 
 function renderFailure(error: unknown): LookReply {
@@ -264,7 +316,7 @@ async function render(deps: LookDeps, job: LookJob, html: string): Promise<LookR
     return renderFailure(error);
   }
   try {
-    return { ok: true, snapshot: await snapshotOf(rendered.sessions, job) };
+    return { ok: true, snapshot: await snapshotOf(rendered.sessions, job, deps.now) };
   } catch (error) {
     return renderFailure(error);
   } finally {

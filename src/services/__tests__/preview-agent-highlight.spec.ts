@@ -182,6 +182,56 @@ describe("агент превью — рамки выделения", () => {
     expect(layer("sub-hover").dataset.visible).toBe("true");
   });
 
+  // 31.10, dev: у выбранного «Заголовка» (Hero, индекс 100) рамка 2px пропадала. Причина на стороне
+  // конструктора: доскролл к секции (CustomOutline.scrollToComponent) слал set-selection с подсекцией
+  // null через DEBOUNCE после выбора строки в дереве. Агент выполняет такое сообщение как «подсекции
+  // нет» — это его контракт. Тесты фиксируют обе стороны: рамка постоянна, пока выбор не сменился,
+  // а сообщение без подсекции её честно снимает (поэтому конструктор обязан слать текущую).
+  describe("рамка выбранной подсекции постоянна", () => {
+    const selectHeading = () =>
+      send({ type: "set-selection", sectionId: "Hero-1", sectionType: "Hero", subsectionParentId: "Hero-1", subsectionIndex: 100, cookieBanner: false });
+
+    it("держится при наведении на соседей, уходе курсора, скролле и повторных сообщениях", () => {
+      bootAgent();
+      layout();
+      selectHeading();
+      expect(layer("sub-selected").dataset.visible).toBe("true");
+
+      hover(para());
+      hover(section());
+      document.dispatchEvent(new MouseEvent("mouseleave"));
+      window.dispatchEvent(new Event("resize"));
+      send({ type: "set-labels" });
+      expect(layer("sub-selected").dataset.visible).toBe("true");
+
+      // Доскролл конструктора с тем же выбором (scrollSelectionMessage) — рамка на месте.
+      selectHeading();
+      expect(layer("sub-selected").dataset.visible).toBe("true");
+      expect(layer("sub-selected").style.top).toBe("198px");
+      expect(h1().getAttribute("data-puck-subsection-selected")).toBe("true");
+    });
+
+    it("клик по h1 в превью: рамка появляется после ответа конструктора и остаётся под курсором", () => {
+      bootAgent();
+      layout();
+      h1().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      expect(posted).toContainEqual({ type: "select-subsection", parentId: "Hero-1", index: 100, field: "heading" });
+      selectHeading(); // ответ конструктора на select-subsection
+      hover(h1()); // курсор остался над h1
+      expect(layer("sub-selected").dataset.visible).toBe("true");
+      expect(layer("sub-hover").dataset.visible).toBe("false");
+    });
+
+    it("сообщение без подсекции (старый доскролл конструктора) снимает рамку — контракт агента", () => {
+      bootAgent();
+      layout();
+      selectHeading();
+      send({ type: "set-selection", sectionId: "Hero-1", sectionType: "Hero", subsectionParentId: null, subsectionIndex: null });
+      expect(layer("sub-selected").dataset.visible).toBe("false");
+      expect(layer("section-selected").dataset.visible).toBe("true");
+    });
+  });
+
   it("смена выбора снимает прежние рамки", () => {
     bootAgent();
     layout();

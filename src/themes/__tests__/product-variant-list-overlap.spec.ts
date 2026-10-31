@@ -463,15 +463,23 @@ describe("раскрытый список вариаций лежит повер
       resolve(SITES_ROOT, "src/services/preview.service.ts"),
       "utf-8",
     );
-    expect(agent).toMatch(/function ensureSubsectionPositioned\(el\)/);
-    expect(agent).toMatch(/el\.style\.position = 'relative'/);
+    //
+    // 31.10: рамки подсекций и секции рисуют плавающие слои `.__merfy_hl`
+    // (position:fixed у body), а не outline на узле, — агент больше не трогает
+    // position подсекций совсем. Опора проверки — слой существует и не лежит
+    // внутри секции, а правил подсветки на самих обёртках нет.
+    expect(agent).not.toMatch(/function ensureSubsectionPositioned/);
+    expect(agent).not.toMatch(/el\.style\.position = 'relative'/);
+    expect(
+      OVERLAY.some((r) => r.selector.includes("__merfy_hl")),
+    ).toBe(true);
     expect(
       OVERLAY.some((r) =>
         SUBSECTION_STATE.some((attr) =>
           r.selector.includes(attr.split("=")[0]),
         ),
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   describe.each(THEMES)("%s", (theme) => {

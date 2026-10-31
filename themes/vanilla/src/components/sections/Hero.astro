@@ -72,18 +72,18 @@ const sectionSize = typeof p.size === "string" ? p.size : undefined;
 // Лестница hero h1 (§9): large/отсутствие = text-2xl (24px); medium 20, small 17.
 const headingClsFor = (s?: string) =>
 	s === "small"
-		? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[17px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap"
+		? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[17px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
 		: s === "medium"
-			? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[20px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap"
-			: "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-2xl font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap";
+			? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[20px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
+			: "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-2xl font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
 
 // Лестница hero-текста (§9): large/отсутствие = text-base (16); medium 14, small 11.
 const textClsFor = (s?: string) =>
 	s === "small"
-		? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[11px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap"
+		? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[11px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]"
 		: s === "medium"
-			? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[14px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap"
-			: "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap";
+			? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[14px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]"
+			: "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]";
 
 // «Размер» → высота полотна (min-height viewport). large (canon-default vanilla) =
 // прежняя лестница min-h-[520px] md:620 xl:790 байт-в-байт; medium ≈0.82×,
@@ -294,7 +294,9 @@ const layoutFor = (posInput: unknown, alignInput: unknown, contentAlignInput: un
 				: "left";
 	const alignItemsCls = align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start";
 	const textAlignCls = align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left";
-	const copyWrapCls = `pointer-events-auto flex w-full ${panelMaxWCls} flex-col ${panelGapCls} md:overflow-visible ${hMarginCls} ${alignItemsCls} ${textAlignCls}`;
+	// vanilla-hero-copy — носитель правил ширины «не больше 6 из 12 колонок» и
+	// переноса длинных слов (<style is:global> внизу файла).
+	const copyWrapCls = `vanilla-hero-copy pointer-events-auto flex w-full ${panelMaxWCls} flex-col ${panelGapCls} md:overflow-visible ${hMarginCls} ${alignItemsCls} ${textAlignCls}`;
 	return { vItemsCls, copyWrapCls };
 };
 
@@ -517,9 +519,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 									data-puck-subsection-parent={id}
 									data-puck-subsection-index="100"
 									data-puck-subsection-field="heading"
-								>
-									<Fragment set:html={inlineFormat(slides[0].title)} />
-								</h1>
+								><Fragment set:html={inlineFormat(slides[0].title)} /></h1>
 							)}
 							{field === 'text' && !isFieldHidden('text') && (
 								<p
@@ -528,9 +528,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 									data-puck-subsection-parent={id}
 									data-puck-subsection-index="101"
 									data-puck-subsection-field="text"
-								>
-									<Fragment set:html={inlineFormat(slides[0].subtitle)} />
-								</p>
+								><Fragment set:html={inlineFormat(slides[0].subtitle)} /></p>
 							)}
 							{field === 'buttons' && !isFieldHidden('buttons') && (
 							<a
@@ -693,9 +691,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 									data-puck-subsection-parent={id}
 									data-puck-subsection-index="100"
 									data-puck-subsection-field="heading"
-								>
-									<Fragment set:html={inlineFormat(singleTitle)} />
-								</h1>
+								><Fragment set:html={inlineFormat(singleTitle)} /></h1>
 							)}
 							{field === 'text' && showHeroSubtitle && (
 								<p
@@ -703,9 +699,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 									data-puck-subsection-parent={id}
 									data-puck-subsection-index="101"
 									data-puck-subsection-field="text"
-								>
-									<Fragment set:html={inlineFormat(singleSubtitle)} />
-								</p>
+								><Fragment set:html={inlineFormat(singleSubtitle)} /></p>
 							)}
 							{field === 'buttons' && !isFieldHidden('buttons') && (secondaryText ? (
 								<div class="inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3">
@@ -764,6 +758,37 @@ const heroOrder = sectionFieldOrder("Hero", p);
 		line-height: 1.35;
 		font-synthesis: none;
 		text-transform: none;
+	}
+</style>
+
+<style is:global>
+	/* Дизайнер: «на экране темы отобразить длину текста равной 6 столбцам по сетке»
+	   (кадр 1280, 12 колонок). В теме сетки нет — есть .vanilla-container (ширина
+	   контента) и .vanilla-pad. Шесть колонок из двенадцати при зазоре g:
+	   (W − 11g)/2 + 5g = (W − g)/2, g = 24px. Выше md — не больше этой ширины, на
+	   мобильном блок во всю ширину. Плашка «Контейнер» — тот же элемент, поэтому её
+	   текст не растягивает. !important: утилита max-w-[min(100%,52rem)] из лестницы
+	   «Размера» иначе перебивает (в превью Tailwind не в @layer). */
+	.vanilla-hero-copy {
+		min-width: 0;
+	}
+	@media (min-width: 768px) {
+		.vanilla-hero-copy {
+			max-width: calc((100% - 24px) / 2) !important;
+		}
+	}
+	/* Строка без пробелов переносится по символам; anywhere (не break-word) ещё и
+	   сжимает min-content, поэтому flex-потомок не раздувает блок.
+	   pre-line: поле «Заголовок»/«Текст» в конструкторе многострочное, Enter кладёт
+	   \n в значение — пробелы схлопываются как обычно, а перенос строки виден.
+	   Значение может быть обёрнуто в <b>/<i>/<strong>/<em> (inlineFormat): white-space
+	   наследуется, поэтому \n внутри тега тоже работает. */
+	.vanilla-hero-copy h1,
+	.vanilla-hero-copy p {
+		min-width: 0;
+		max-width: 100%;
+		white-space: pre-line;
+		overflow-wrap: anywhere;
 	}
 </style>
 

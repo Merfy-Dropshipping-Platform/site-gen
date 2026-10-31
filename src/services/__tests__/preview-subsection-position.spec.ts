@@ -16,22 +16,15 @@
  * Тема ставит `data-puck-subsection-parent` на абсолютный слайд законно: это
  * кликабельная подсекция. Значит уступать должно превью, а не тема.
  *
- * ДВЕ ПОПРАВКИ ПОСЛЕ ВЫКАТКИ (19.09).
+ * ИСТОРИЯ ПОПРАВОК (19.09): `:where()` и `@layer base` не помогли / роняли
+ * jsdom-гарды (jsdom не разбирает `@layer`). Агент ставил `position: relative`
+ * точечно через ensureSubsectionPositioned.
  *
- * 1. Версия с `:where()` уехала в прод и НЕ помогла — замер на выкаченном
- *    превью дал тот же схлопнутый слайд. Проба в том же документе объяснила
- *    почему: пустой `div` с `absolute inset-0` резолвится в `absolute`, а тот
- *    же `div` с `data-puck-subsection-parent` — в `relative`. Специфичность ни
- *    при чём: утилиты Tailwind v4 лежат внутри `@layer`, а правило вне слоёв
- *    сильнее любого слоя при любом селекторе.
- * 2. `@layer base` в живом браузере сработал (проверено подменой стилей на
- *    месте: слайд поднялся с 0 до 790px), но jsdom не разбирает `@layer` и
- *    роняет соседние гарды агента с «Could not parse CSS stylesheet».
- *
- * ИТОГОВОЕ РЕШЕНИЕ: правила `position` в стилях превью НЕТ вовсе. Агент ставит
- * `position: relative` точечно и только тем подсекциям, у которых computed
- * position === 'static' — позиционированный элемент не трогается, он и так
- * годится в предки для ::after-подсветки.
+ * 31.10: рамки выделения переехали с outline/::after на плавающие слои
+ * `.__merfy_hl` (position:fixed у body, pointer-events:none). Слою нужны только
+ * координаты узла, поэтому агент не трогает ни position, ни z-index тем:
+ * ensureSubsectionPositioned удалён. Поведение слоёв — в
+ * preview-agent-highlight.spec.ts.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -50,31 +43,22 @@ describe("превью: правило подсекции уступает ра�
     expect(SRC).not.toMatch(/'@layer[^'\n]*data-puck-subsection-parent/);
   });
 
-  it("агент ставит relative точечно и только статичным подсекциям", () => {
-    expect(SRC).toMatch(/function ensureSubsectionPositioned\(el\)/);
-    // Уже позиционированный элемент не трогаем — иначе вернётся тот же баг.
-    expect(SRC).toMatch(/cs\.position !== 'static'\) return/);
-    expect(SRC).toMatch(/el\.style\.position = 'relative'/);
-  });
-
-  it("простановка вызвана на обоих путях подсветки — hover и выделение", () => {
-    const hover = SRC.indexOf("setAttribute('data-puck-subsection-hover', 'true')");
-    const sel = SRC.indexOf("setAttribute('data-puck-subsection-selected', 'true')");
-    expect(hover).toBeGreaterThan(-1);
-    expect(sel).toBeGreaterThan(-1);
-    // Вызов стоит непосредственно перед простановкой атрибута.
-    expect(SRC.slice(hover - 200, hover)).toContain("ensureSubsectionPositioned");
-    expect(SRC.slice(sel - 200, sel)).toContain("ensureSubsectionPositioned");
+  it("агент не меняет position подсекций темы", () => {
+    expect(SRC).not.toMatch(/function ensureSubsectionPositioned/);
+    expect(SRC).not.toMatch(/el\.style\.position = 'relative'/);
   });
 
   it("cursor:pointer остался — кликабельность подсекции не потеряна", () => {
     expect(SRC).toMatch(/\[data-puck-subsection-parent\]\{cursor:pointer\}/);
   });
 
-  it("САБОТАЖ-ОПОРА: подсветка подсекции по-прежнему рисуется ::after поверх", () => {
-    // Если убрать саму подсветку, три проверки выше станут бессмысленными:
+  it("САБОТАЖ-ОПОРА: рамки выделения рисуются плавающими слоями, не outline на узле", () => {
+    // Если убрать сами рамки, проверки выше станут бессмысленными:
     // сторожить будет нечего.
-    expect(SRC).toMatch(/\[data-puck-subsection-hover="true"\]\{outline:2px solid/);
-    expect(SRC).toMatch(/\[data-puck-subsection-selected="true"\]\{outline:2px solid/);
+    expect(SRC).toMatch(/'\.__merfy_hl\{position:fixed;/);
+    expect(SRC).toMatch(/pointer-events:none;z-index:2147483000/);
+    expect(SRC).toMatch(/section-selected"\]\{border:2px solid #71C0FF/);
+    expect(SRC).toMatch(/sub-selected"\]\{border:2px solid #71C0FF/);
+    expect(SRC).not.toMatch(/\[data-puck-(sub)?section-(hover|selected)="true"\]\{outline/);
   });
 });

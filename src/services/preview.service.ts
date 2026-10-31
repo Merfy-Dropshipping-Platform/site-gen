@@ -1406,12 +1406,26 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // Подсветка наведения — ТОЛЬКО рамка. Полупрозрачная заливка поверх секции
       // читалась как «свечение» на самом контенте (пользователь: «убрать свечение»)
       // и мешала оценивать цвета секции под курсором.
-      '[data-puck-section-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:-2px}',
-      '[data-puck-section-selected="true"]{outline:2px solid #88b0da !important;outline-offset:-2px}',
+      //
+      // Рамки секции и подсекции рисуют отдельные плавающие слои .__merfy_hl
+      // (position:fixed у body, pointer-events:none, потолок z-index), а НЕ
+      // outline на самом элементе. Жалоба владельца: «при выбранной секции она
+      // никак не выделяется, также плохо работает выделение более мелких
+      // элементов». outline внутри секции (offset:-2px) перекрывали дочерние слои
+      // с z-index/absolute (Hero z-0/z-10), а блёклый #cfdff0/#88b0da на белом
+      // почти не читался. Слою нужны только координаты элемента (agent: placeHl),
+      // поэтому ни position:relative, ни z-index на обёртках секции не нужны —
+      // контексты наложения темы остаются нетронутыми (см. NB ниже).
+      // Цвет — #71C0FF, цвет выбора в конструкторе; наведение 1px, выбор 2px.
+      '.__merfy_hl{position:fixed;display:none;box-sizing:border-box;margin:0;padding:0;pointer-events:none;z-index:2147483000;background:transparent}',
+      '.__merfy_hl[data-visible="true"]{display:block}',
+      '.__merfy_hl[data-kind="section-hover"],.__merfy_hl[data-kind="sub-hover"]{border:1px solid #71C0FF}',
+      '.__merfy_hl[data-kind="section-selected"]{border:2px solid #71C0FF;box-shadow:inset 0 0 0 1px rgba(255,255,255,.75)}',
+      '.__merfy_hl[data-kind="sub-selected"]{border:2px solid #71C0FF;box-shadow:0 0 0 1px rgba(255,255,255,.75)}',
       // Баннер cookie («Настройки темы» → «Баннер»): не секция страницы, но
       // выделяется так же — рамка наведения, клик открывает его настройки.
       '[data-cookie-consent]{cursor:pointer}',
-      '[data-cookie-consent]:hover{outline:2px solid #cfdff0 !important;outline-offset:-2px}',
+      '[data-cookie-consent]:hover{outline:1px solid #71C0FF !important;outline-offset:-1px}',
       // NB (тот же урок, что строкой выше, но для ПОДСЕКЦИИ): z-index не ставим.
       // position:relative + z-index = контекст наложения на КАЖДОЙ обёртке
       // параметра; у соседних обёрток он такой же, при равном z-index порядок
@@ -1427,8 +1441,6 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // Гард — src/themes/__tests__/product-variant-list-overlap.spec.ts.
 
       '[data-puck-subsection-parent]{cursor:pointer}',
-      '[data-puck-subsection-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:2px}',
-      '[data-puck-subsection-selected="true"]{outline:2px solid #88b0da !important;outline-offset:2px}',
       // Puck ActionBar styling (1:1 with @measured/puck DraggableComponent action overlay).
       '.__merfy_pill{position:fixed;display:none;align-items:center;cursor:default;padding:4px;border-radius:8px;background:#181818;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto;z-index:9999;user-select:none;white-space:nowrap}',
       '.__merfy_pill[data-visible="true"]{display:inline-flex}',
@@ -2230,53 +2242,92 @@ const PREVIEW_NAV_AGENT_INLINE = `
   var hoveredSubsection = null;
   var selectedSectionEl = null;
   var selectedSubsectionEl = null;
+  // Что выбрано, по id — не по узлу. Горячая правка (update-block) заменяет
+  // разметку секции целиком: старый узел отсоединяется, а в новом нет ни
+  // data-puck-section-selected, ни ссылки на него здесь — рамка выбора пропадала
+  // после первой же правки поля. По id узел находится заново.
+  var selectedSectionId = '';
+  var selectedSectionType = '';
+  var selectedSubParents = [];
+  var selectedSubIndex = null;
+
+  function liveSelectedSection() {
+    if (selectedSectionEl && !selectedSectionEl.isConnected && selectedSectionId) {
+      selectedSectionEl = resolveComponentEl(selectedSectionId, selectedSectionType);
+      if (selectedSectionEl) selectedSectionEl.setAttribute('data-puck-section-selected', 'true');
+    }
+    // Баннер cookie выбирается без selectedSectionEl — его несёт только атрибут.
+    return selectedSectionEl || document.querySelector('[data-puck-section-selected="true"]');
+  }
+  function liveSelectedSub() {
+    if (selectedSubsectionEl && !selectedSubsectionEl.isConnected && selectedSubIndex !== null) {
+      selectedSubsectionEl = null;
+      for (var i = 0; i < selectedSubParents.length && !selectedSubsectionEl; i++) {
+        selectedSubsectionEl = document.querySelector('[data-puck-subsection-parent="' + selectedSubParents[i] + '"][data-puck-subsection-index="' + selectedSubIndex + '"]');
+      }
+      if (selectedSubsectionEl) selectedSubsectionEl.setAttribute('data-puck-subsection-selected', 'true');
+    }
+    return selectedSubsectionEl;
+  }
+
+  // Рамки: по одному плавающему слою на вид (см. стили .__merfy_hl). Слой лежит
+  // у body и ничего не знает о раскладке секции — ему нужны только координаты.
+  var HL_KINDS = ['section-hover', 'section-selected', 'sub-hover', 'sub-selected'];
+  var hlEls = {};
+  function hlEl(kind) {
+    if (hlEls[kind]) return hlEls[kind];
+    var el = document.createElement('div');
+    el.className = '__merfy_hl';
+    el.setAttribute('data-kind', kind);
+    el.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(el);
+    hlEls[kind] = el;
+    return el;
+  }
+  // grow — на сколько пикселей рамка выходит за элемент: у подсекции наружу
+  // (рамка не закрывает сам параметр), у секции 0 (рамка по её границе).
+  function placeHl(kind, target, grow) {
+    var el = hlEl(kind);
+    if (!target || !target.isConnected) { el.dataset.visible = 'false'; return; }
+    var r = target.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) { el.dataset.visible = 'false'; return; }
+    var g = grow || 0;
+    el.style.top = (r.top - g) + 'px';
+    el.style.left = (r.left - g) + 'px';
+    el.style.width = (r.width + g * 2) + 'px';
+    el.style.height = (r.height + g * 2) + 'px';
+    el.dataset.visible = 'true';
+  }
+  function refreshHighlights() {
+    var selSec = liveSelectedSection();
+    var selSub = liveSelectedSub();
+    // Под курсором рисуем только то, что ещё не выбрано: выбранное и так с
+    // толстой рамкой, две рамки на одном узле сливались бы.
+    placeHl('section-hover', hoveredSection && hoveredSection !== selSec ? hoveredSection : null, 0);
+    placeHl('section-selected', selSec, 0);
+    placeHl('sub-hover', hoveredSubsection && hoveredSubsection !== selSub ? hoveredSubsection : null, 2);
+    placeHl('sub-selected', selSub, 2);
+  }
+  for (var hk = 0; hk < HL_KINDS.length; hk++) hlEl(HL_KINDS[hk]);
 
   function refreshPills() {
-    var secTarget = hoveredSection || selectedSectionEl;
+    var secTarget = hoveredSection || liveSelectedSection();
     if (secTarget) positionPill(sectionPill, secTarget); else hidePill(sectionPill);
+    refreshHighlights();
   }
 
-  // Pupa parity: при hover на секцию подсвечиваем ВСЕ её subsection-параметры
-  // вторым слоем. У секции без параметров — подсвечивается только секция.
-  // Подсветка подсекции рисуется ::after с inset:0 — ей нужен позиционированный
-  // предок. Раньше это выдавалось всем подсекциям правилом CSS
-  // общим CSS-правилом на этот data-атрибут, и оно ЛОМАЛО раскладку
-  // тем: у элемента, размеченного absolute inset-0, position становился
-  // relative, inset переставал его растягивать, высота падала в 0 вместе с
-  // картинкой внутри. Так пропадали слайды слайд-шоу vanilla (замер 18.09:
-  // слайд 1280x0 при загруженной картинке 1920x960).
-  //
-  // Каскадом это не лечится: утилиты Tailwind v4 живут в @layer, а правило
-  // превью — вне слоёв, и правило вне слоёв сильнее любого слоя при любом
-  // селекторе (проверено пробой в живом превью: :where() не помог). @layer
-  // помог бы, но jsdom его не разбирает и роняет соседние гарды агента.
-  //
-  // Поэтому ставим точечно и только тем, кому действительно нужно: элемент уже
-  // позиционирован — не трогаем, он и так годится в предки для ::after.
-  function ensureSubsectionPositioned(el) {
-    if (!el || !el.style) return;
-    var cs = null;
-    try { cs = window.getComputedStyle(el); } catch (e) { return; }
-    if (!cs || cs.position !== 'static') return;
-    el.style.position = 'relative';
-  }
-
-  function hintAllSubsections(sectionEl) {
-    if (!sectionEl) return;
-    var sectionId = sectionEl.getAttribute('data-puck-component-id');
-    if (!sectionId) return;
-    var subs = document.querySelectorAll('[data-puck-subsection-parent="' + sectionId + '"]');
-    for (var i = 0; i < subs.length; i++) {
-      ensureSubsectionPositioned(subs[i]);
-      subs[i].setAttribute('data-puck-subsection-hover', 'true');
-    }
-  }
-  function clearAllSubsectionHints(sectionEl) {
-    if (!sectionEl) return;
-    var sectionId = sectionEl.getAttribute('data-puck-component-id');
-    if (!sectionId) return;
-    var subs = document.querySelectorAll('[data-puck-subsection-parent="' + sectionId + '"]');
-    for (var i = 0; i < subs.length; i++) subs[i].removeAttribute('data-puck-subsection-hover');
+  // Подсвечиваем ту подсекцию, что под курсором (ближайший предок с
+  // data-puck-subsection-parent), а не все параметры секции сразу: при «всех
+  // сразу» не видно, на какой именно элемент нажмёшь. Рамка — отдельный слой
+  // (.__merfy_hl), поэтому position:relative на подсекциях больше не нужен: он
+  // раньше ломал раскладку тем (absolute inset-0 → relative, высота 0, пропадали
+  // слайды слайд-шоу vanilla, замер 18.09), и агент ставил его точечно через
+  // ensureSubsectionPositioned. Раскладку темы агент теперь не трогает вовсе.
+  function setHoveredSubsection(el) {
+    if (hoveredSubsection === el) return;
+    if (hoveredSubsection) hoveredSubsection.removeAttribute('data-puck-subsection-hover');
+    hoveredSubsection = el;
+    if (el) el.setAttribute('data-puck-subsection-hover', 'true');
   }
 
   // Checkout-мегаблоки (CheckoutForm «Оформление заказа» / CheckoutSummary
@@ -2304,39 +2355,29 @@ const PREVIEW_NAV_AGENT_INLINE = `
     if (openSubmenu) {
       var headerSec = openSubmenu.closest('[data-puck-component-id]');
       if (headerSec && hoveredSection !== headerSec) {
-        if (hoveredSection) {
-          hoveredSection.removeAttribute('data-puck-section-hover');
-          clearAllSubsectionHints(hoveredSection);
-        }
+        if (hoveredSection) hoveredSection.removeAttribute('data-puck-section-hover');
         headerSec.setAttribute('data-puck-section-hover', 'true');
-        hintAllSubsections(headerSec);
         hoveredSection = headerSec;
       }
+      // Открыто подменю шапки: подсекции под панелью не подсвечиваем.
+      setHoveredSubsection(null);
       refreshPills();
       return;
     }
     var sec = resolveSection(t);
     if (sec !== hoveredSection) {
-      if (hoveredSection) {
-        hoveredSection.removeAttribute('data-puck-section-hover');
-        clearAllSubsectionHints(hoveredSection);
-      }
-      if (sec) {
-        sec.setAttribute('data-puck-section-hover', 'true');
-        hintAllSubsections(sec);
-      }
+      if (hoveredSection) hoveredSection.removeAttribute('data-puck-section-hover');
+      if (sec) sec.setAttribute('data-puck-section-hover', 'true');
       hoveredSection = sec;
     }
-    // Track current direct subsection (для click handler).
-    hoveredSubsection = t.closest('[data-puck-subsection-parent]');
+    // Подсекция под курсором: рамка только у неё.
+    setHoveredSubsection(t.closest('[data-puck-subsection-parent]'));
     refreshPills();
   }, true);
   document.addEventListener('mouseleave', function () {
-    if (hoveredSection) {
-      hoveredSection.removeAttribute('data-puck-section-hover');
-      clearAllSubsectionHints(hoveredSection);
-    }
-    hoveredSection = null; hoveredSubsection = null;
+    if (hoveredSection) hoveredSection.removeAttribute('data-puck-section-hover');
+    hoveredSection = null;
+    setHoveredSubsection(null);
     refreshPills();
   });
 
@@ -2536,6 +2577,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
       var subIndex = ev.data.subsectionIndex;
       selectedSectionEl = null;
       selectedSubsectionEl = null;
+      selectedSectionId = sectionId || '';
+      selectedSectionType = ev.data.sectionType || '';
+      selectedSubParents = [];
+      selectedSubIndex = null;
       if (sectionId) {
         var sectionEl = resolveComponentEl(sectionId, ev.data.sectionType);
         if (sectionEl) {
@@ -2560,8 +2605,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
         if (!subEl && resolvedParent !== subParent) {
           subEl = document.querySelector('[data-puck-subsection-parent="' + subParent + '"][data-puck-subsection-index="' + subIndex + '"]');
         }
+        // Для повторного поиска после горячей замены разметки секции.
+        selectedSubParents = resolvedParent !== subParent ? [resolvedParent, subParent] : [subParent];
+        selectedSubIndex = subIndex;
         if (subEl) {
-          ensureSubsectionPositioned(subEl);
           subEl.setAttribute('data-puck-subsection-selected', 'true');
           scrollSelfTo(subEl, 'center');
           selectedSubsectionEl = subEl;
@@ -2958,6 +3005,25 @@ const PREVIEW_NAV_AGENT_INLINE = `
   }
   window.addEventListener('scroll', scheduleRefresh, true);
   window.addEventListener('resize', scheduleRefresh);
+  // Рамки — плавающие слои по координатам: разметка сдвинулась (подгрузилась
+  // картинка, горячая правка заменила секцию, раскрылся список) — переставляем.
+  // Мутации самих пилюль и рамок не считаем, иначе refreshPills (он пишет текст
+  // подписи пилюли) запускал бы сам себя в каждом кадре.
+  try {
+    if (document.body && typeof MutationObserver === 'function') {
+      new MutationObserver(function (muts) {
+        for (var mi = 0; mi < muts.length; mi++) {
+          var mt = muts[mi].target;
+          if (mt && mt.closest && mt.closest('.__merfy_pill,.__merfy_hl')) continue;
+          scheduleRefresh();
+          return;
+        }
+      }).observe(document.body, { childList: true, subtree: true });
+    }
+  } catch (e) {}
+  try {
+    if (typeof ResizeObserver === 'function') new ResizeObserver(scheduleRefresh).observe(document.documentElement);
+  } catch (e) {}
 
   // Signal readiness so the parent can send 'init'.
   post({ type: 'ready' });

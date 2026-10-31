@@ -618,10 +618,59 @@ const showHeadWrap = !isFieldHidden('heading') && (showHeading || showSubtitle);
 	   здесь перекрываем aspect-square карточки-ссылки по значению data-card-aspect
 	   грида. Дефолт (square/без атрибута) — правило не срабатывает, aspect-square
 	   остаётся дословно. !important бьёт tailwind-класс aspect-square карточки. */
-	[data-nt="popular-grid"][data-card-aspect="430/500"] li > article > div > a {
+	/* ТОЛЬКО ссылка-фото: `div:first-child`. Раньше стояло `article > div > a`, и под
+	   правило попадала ещё и ссылка-НАЗВАНИЕ в блоке «название + цена» (тоже
+	   `article > div > a`): при «Портрете» у каждого названия появлялась высота
+	   по пропорции 430/500 (замер 31.10: 312px при ширине карточки 268px), карточки
+	   разъезжались. Это и была основная причина «не выровнены совсем». */
+	[data-nt="popular-grid"][data-card-aspect="430/500"] li > article > div:first-child > a {
 		aspect-ratio: 430 / 500 !important;
 	}
-	[data-nt="popular-grid"][data-card-aspect="16/9"] li > article > div > a {
+	[data-nt="popular-grid"][data-card-aspect="16/9"] li > article > div:first-child > a {
 		aspect-ratio: 16 / 9 !important;
+	}
+
+	/* Выравнивание карточек в ряду при любом «Виде изображения». Названия товаров
+	   (Wildberries) длинные и разной длины: без этого высота карточки зависела от
+	   числа строк названия, цена и кнопки «В корзину»/счётчик ехали вразнобой.
+	   Работает одинаково для SSR (VanillaProductCard), гидрации (renderCardHtml) и
+	   плейсхолдера: у всех трёх `li > article`, а блок «название + цена» —
+	   последний `div` карточки (название — первый потомок, цена — второй).
+	   Фото в ряду на одной линии (все карточки начинаются сверху li); li тянется до
+	   высоты ряда (align-items: stretch у грида), article занимает остаток li, цена
+	   прижата вниз блока, а кнопка/счётчик после article стоят у нижнего края li. */
+	[data-nt="popular-grid"] > li {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+	[data-nt="popular-grid"] > li > article {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	[data-nt="popular-grid"] > li > article > div:last-child {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	/* Название — не больше 2 строк, дальше многоточие. line-height 1.2 вместо
+	   leading-none (1.0): при overflow:hidden единица срезает выносные элементы
+	   букв (у, д, р). !important — как у правил aspect выше. */
+	[data-nt="popular-grid"] > li > article > div:last-child > :first-child {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
+		overflow-wrap: anywhere;
+		line-height: 1.2 !important;
+	}
+	[data-nt="popular-grid"] > li > article > div:last-child > :nth-child(2) {
+		margin-top: auto;
+	}
+	/* Кнопка и счётчик после article не сжимаются: их высота фиксирована, поэтому
+	   у всех карточек ряда они на одной линии. */
+	[data-nt="popular-grid"] > li > [data-qa-stepper],
+	[data-nt="popular-grid"] > li > [data-add-to-cart] {
+		flex-shrink: 0;
 	}
 </style>

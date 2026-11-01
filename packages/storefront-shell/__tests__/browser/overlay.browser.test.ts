@@ -51,8 +51,10 @@ const call = (page: Page, id: string, method: 'open' | 'close', options?: unknow
 const isOpen = (page: Page, id: string) =>
   page.$eval(`[data-section-id="${id}"]`, (el) => el.matches(':popover-open') && !el.hasAttribute('hidden'));
 const active = (page: Page) => page.evaluate(() => document.activeElement?.id ?? '');
+// Размер — после анимации появления: в её начале окно чуть уменьшено (под нагрузкой машины замер попадал на неё).
 const rect = (page: Page, id: string) =>
-  page.$eval(`[data-section-id="${id}"]`, (el) => {
+  page.$eval(`[data-section-id="${id}"]`, async (el) => {
+    await Promise.all(el.getAnimations().map((animation) => animation.finished));
     const box = el.getBoundingClientRect();
     return {
       left: Math.round(box.left),

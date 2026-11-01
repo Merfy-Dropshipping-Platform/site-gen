@@ -38,7 +38,13 @@ describe('список уведомлений', () => {
     expect(closedNotices(list, 'в')).toEqual(list);
   });
 
-  it('роль: error — alert, warning — status', () => {
-    expect([roleOf('error'), roleOf('warning')]).toEqual(['alert', 'status']);
+  it('роль: error — alert, warning и info — status', () => {
+    expect([roleOf('error'), roleOf('warning'), roleOf('info')]).toEqual(['alert', 'status', 'status']);
+  });
+
+  it('info живёт в списке как остальные: новое — в конец, одинаковый текст — на своём месте', () => {
+    const info = (message: string): Notice => ({ level: 'info', message });
+    expect(shownNotices([error('а')], info('б'))).toEqual([error('а'), info('б')]);
+    expect(shownNotices([info('а'), error('б')], warning('а'))).toEqual([warning('а'), error('б')]);
   });
 });

@@ -59,6 +59,7 @@ describe('таблица действий', () => {
       'orders.get',
       'orders.list',
       'search.open',
+      'share.copy',
       'share.page',
       'variants.pick',
     ]);

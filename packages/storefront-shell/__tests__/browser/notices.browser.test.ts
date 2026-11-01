@@ -142,7 +142,7 @@ async function openShop() {
   return { page, errors, warnings };
 }
 
-const notify = (page: Page, level: 'error' | 'warning', message: string): Promise<unknown> =>
+const notify = (page: Page, level: 'error' | 'warning' | 'info', message: string): Promise<unknown> =>
   page.evaluate(`window.__notify(${JSON.stringify({ level, message })})`);
 const list = (page: Page) => page.locator('merfy-section[data-section="shop:notices"] [data-ref="list"]');
 const rows = (page: Page) => list(page).locator(':scope > [role]');
@@ -163,6 +163,17 @@ describe('секция «Уведомления» в Chromium', () => {
       'Нет связи с магазином. Проверьте интернет и попробуйте ещё раз',
       'Добавили 2 шт. — больше нет в наличии',
     ]);
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('info — role="status" и data-level="info" (красный вид только у data-level="error")', async () => {
+    const { page, errors } = await openShop();
+    await notify(page, 'info', 'Скопировано');
+    const row = rows(page).first();
+    expect(await row.getAttribute('role')).toBe('status');
+    expect(await row.getAttribute('data-level')).toBe('info');
+    expect(await texts(page)).toEqual(['Скопировано']);
     expect(errors).toEqual([]);
     await page.close();
   });

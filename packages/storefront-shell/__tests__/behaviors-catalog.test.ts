@@ -19,21 +19,32 @@ const using = (library: Library): string[] =>
     .sort();
 
 describe('каталог поведений', () => {
-  it('двенадцать поведений: catalog и search — блок 11, zoom — блок 15 (часть 15в)', () => {
+  it('четырнадцать поведений: catalog и search — блок 11, zoom — блок 15, countdown и scratch — для расширений', () => {
     expect(Object.keys(BEHAVIORS).sort()).toEqual([
       'accordion',
       'card-photos',
       'carousel',
       'catalog',
+      'countdown',
       'dialog',
       'nav-menu',
       'quantity',
+      'scratch',
       'search',
       'sticky-header',
       'tabs',
       'video',
       'zoom',
     ]);
+  });
+
+  it('scratch: часть reveal («Показать»), цвет слоя data-color — токен по умолчанию; без библиотек', () => {
+    expect(BEHAVIORS.scratch).toEqual({
+      libraries: [],
+      parts: ['reveal'],
+      params: { color: { kind: 'string', default: 'var(--muted-foreground)' } },
+      onSection: false,
+    });
   });
 
   it('zoom: часть image, режим hover или click (по умолчанию hover), список фото; без библиотек', () => {

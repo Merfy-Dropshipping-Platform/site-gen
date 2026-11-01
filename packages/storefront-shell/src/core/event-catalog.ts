@@ -56,6 +56,11 @@ export const EVENT_CATALOG = {
   'merfy:page:visible': { about: 'вкладку вернули', fields: {} },
   'merfy:page:restore': { about: '«Назад»: браузер достал страницу из кеша', fields: {} },
   'merfy:page:leave': { about: 'уход со страницы', fields: {} },
+  'merfy:page:leaving': {
+    about:
+      'посетитель собирается уйти: курсор вышел за верхний край окна, а без курсора — резкая прокрутка вверх к верху страницы (модуль page; стор `$leaving`)',
+    fields: {},
+  },
   'merfy:cart:add': {
     about: 'товар добавлен в корзину — после ответа сервера; quantity — сколько добавилось, price — за штуку',
     fields: { ...LINE, price: 'money' },
@@ -90,12 +95,21 @@ export const EVENT_CATALOG = {
   'merfy:notice:show': {
     about: 'показать уведомление покупателю — его выводит секция «Уведомления»',
     fields: {
-      level: { oneOf: ['error', 'warning'] },
+      level: { oneOf: ['error', 'warning', 'info'] },
       message: 'text',
       code: { oneOf: ERROR_CODES, optional: true },
     },
   },
   'merfy:consent:change': { about: 'выбор в баннере cookie', fields: { state: { oneOf: ['accepted', 'declined'] } } },
+  'merfy:countdown:end': {
+    about: 'таймер `data-behavior="countdown"` дошёл до нуля по времени сервера; section и id — секция с таймером',
+    fields: { section: 'text', id: 'text' },
+  },
+  'merfy:scratch:done': {
+    about:
+      'посетитель стёр слой `data-behavior="scratch"` больше чем наполовину или нажал «Показать»; section и id — секция со слоем',
+    fields: { section: 'text', id: 'text' },
+  },
 } as const satisfies { readonly [E in EventName]: EventSpec<EventMap[E]> };
 
 export const EVENT_NAMES: readonly string[] = Object.keys(EVENT_CATALOG);

@@ -114,3 +114,9 @@ export function reportWarning(core: CoreHandle, message: string, options?: Actio
   if (options?.quiet === true) return;
   core.emit('merfy:notice:show', { level: 'warning', message });
 }
+
+// Сообщение покупателю, которое не ошибка и не предупреждение («Скопировано»).
+export function reportInfo(core: CoreHandle, message: string, options?: ActionOptions): void {
+  if (options?.quiet === true) return;
+  core.emit('merfy:notice:show', { level: 'info', message });
+}

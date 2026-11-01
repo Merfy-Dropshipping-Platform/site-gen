@@ -46,7 +46,14 @@ function attach(mode: Mode = 'live', extPoints: StorefrontConfig['extPoints'] = 
     mode,
     signal: new AbortController().signal,
   };
-  purchase.attach?.(purchase.create({ config: configOf(mode, extPoints), mode, emit: vi.fn(), part: partOf() }), host);
+  const core: CoreHandle = {
+    config: configOf(mode, extPoints),
+    mode,
+    emit: vi.fn(),
+    part: partOf(),
+    watch: () => () => undefined,
+  };
+  purchase.attach?.(purchase.create(core), host);
   return element;
 }
 

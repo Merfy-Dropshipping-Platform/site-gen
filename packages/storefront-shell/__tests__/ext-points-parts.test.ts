@@ -38,6 +38,7 @@ function coreOf(mode: Mode = 'live'): CoreHandle {
     mode,
     emit: vi.fn(),
     part: partOf(),
+    watch: () => () => undefined,
   };
 }
 

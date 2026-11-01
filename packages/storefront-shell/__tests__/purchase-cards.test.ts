@@ -33,6 +33,7 @@ function coreOf(mode: Mode = 'live'): CoreHandle {
     part: () => {
       throw new Error('part не нужен этому тесту');
     },
+    watch: () => () => undefined,
   };
 }
 

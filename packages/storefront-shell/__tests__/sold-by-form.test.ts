@@ -32,6 +32,7 @@ function coreOf(mode: Mode = 'live', extPoints: StorefrontConfig['extPoints'] = 
     part: () => {
       throw new Error('part не нужен этому тесту');
     },
+    watch: () => () => undefined,
   };
 }
 

@@ -39,6 +39,7 @@ function coreOf(extPoints?: StorefrontConfig['extPoints']): CoreHandle {
     part: () => {
       throw new Error('part не нужен этому тесту');
     },
+    watch: () => () => undefined,
   };
 }
 

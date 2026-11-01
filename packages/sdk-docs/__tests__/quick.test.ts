@@ -65,10 +65,10 @@ describe('quick.md', () => {
     expect(result.ok ? result.section.warnings : result.problems).toEqual([]);
   });
 
-  it('свои токены секции: по примеру каждого из восьми видов, строки те же, что в тексте отказа, проверка принимает', async () => {
+  it('свои токены секции: по примеру каждого из девяти видов, строки те же, что в тексте отказа, проверка принимает', async () => {
     const text = files['quick.md'] ?? '';
     const lines = Object.values(SECTION_TOKEN_EXAMPLES);
-    expect(lines).toHaveLength(8);
+    expect(lines).toHaveLength(9);
     for (const line of lines) expect(text).toContain(line);
     const tokens: unknown = JSON.parse(`{${lines.join(',')}}`);
     const manifest = { sdk: 1, name: 'tokens-demo', kind: 'section', title: 'Токены', settings: [], tokens };
@@ -76,10 +76,39 @@ describe('quick.md', () => {
       prefix: 'shop',
       files: {
         'section.json': JSON.stringify(manifest),
-        'template.astro': '---\nconst { settings } = Astro.props;\n---\n<div class="bg-custom-plate text-custom-display"></div>',
+        'template.astro':
+          '---\nconst { settings } = Astro.props;\n---\n<div class="bg-custom-plate text-custom-display shadow-custom-plate"></div>',
       },
     });
     expect(result.ok ? [] : result.problems).toEqual([]);
+  });
+});
+
+// Шаг 6 (01.11): пример «Плакат, слои, движение» из styles.md — свои значения, слои, бегущая строка, видео фоном —
+// проходит проверку без отказов и предупреждений.
+describe('styles.md: плакат', () => {
+  it('пример раздела проходит проверку', async () => {
+    const section = (files['styles.md'] ?? '').split('## Плакат, слои, движение')[1] ?? '';
+    const manifest = {
+      sdk: 1,
+      name: 'poster',
+      kind: 'section',
+      title: 'Плакат',
+      settings: [
+        field('heading', 'string', { default: 'Лето', ai: 'title' }),
+        field('video', 'video', { maxBytes: 50_000_000 }),
+      ],
+      blocks: { word: { title: 'Слово', limit: 8, settings: [field('text', 'text', { default: 'Скидки' })] } },
+      defaultBlocks: [{ type: 'word', settings: { text: 'Скидки' } }],
+    };
+    const result = await prepareSection({
+      prefix: 'shop',
+      files: {
+        'section.json': JSON.stringify(manifest),
+        'template.astro': `---\nconst { settings, blocks } = Astro.props;\n---\n${blockOf(section, 'astro')}`,
+      },
+    });
+    expect(result.ok ? result.section.warnings : result.problems).toEqual([]);
   });
 });
 

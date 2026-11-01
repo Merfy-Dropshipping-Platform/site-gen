@@ -27,7 +27,7 @@ export {
 export type { TokenMigrationStep, TokenMigrations } from './migrations';
 
 // Генераторы
-export { tailwindCss, type TailwindOptions } from './generate/tailwind';
+export { MOTION_UTILITIES, tailwindCss, type TailwindOptions } from './generate/tailwind';
 export { tokensMarkdown } from './generate/markdown';
 export { dictionaryJsonSchema, themeTokensJsonSchema } from './generate/json-schema';
 

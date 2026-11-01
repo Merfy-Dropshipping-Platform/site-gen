@@ -52,10 +52,10 @@ describe('расчёт образца', () => {
     expect(resolved.schemes['scheme-2']['primary-hover']).toBe('#e0e0e0');
   });
 
-  it('все 32 цвета в каждой схеме и 43 значения в корне: три схемы деталей не заданы', () => {
+  it('все 32 цвета в каждой схеме и 48 значений в корне: три схемы деталей не заданы', () => {
     expect(Object.keys(resolved.schemes['scheme-1'])).toHaveLength(32);
     expect(Object.keys(resolved.schemes['scheme-2'])).toHaveLength(32);
-    expect(Object.keys(resolved.root)).toHaveLength(43);
+    expect(Object.keys(resolved.root)).toHaveLength(48);
     expect('scheme-card' in resolved.root).toBe(false);
   });
 

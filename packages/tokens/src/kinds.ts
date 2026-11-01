@@ -56,8 +56,10 @@ const fluidSchema = (max: number) =>
     .refine(isOrdered);
 const lengthSchema = (max: number): z.ZodType<TokenValue> => z.union([range(0, max), fluidSchema(max)]);
 const lengthLimits = (max: number): string => `от 0 до ${max} px или { min, max }, min ≤ max`;
+// До 320 px — заголовок-плакат во всю ширину экрана (шаг 6, 01.11: потолок шкалы был 160 px и text-5xl).
+const TEXT_MAX_PX = 320;
 const textSchema = z
-  .object({ min: range(8, 160), max: range(8, 160), leading: range(0.8, 3) })
+  .object({ min: range(8, TEXT_MAX_PX), max: range(8, TEXT_MAX_PX), leading: range(0.8, 3) })
   .strict()
   .refine(isOrdered);
 
@@ -105,7 +107,7 @@ export const KINDS: Record<TokenKind, KindSpec> = {
     scope: ROOT,
     prefix: 'text-',
     label: 'размер',
-    limits: () => '{ min, max, leading }: размеры от 8 до 160 px, min ≤ max, leading от 0,8 до 3',
+    limits: () => `{ min, max, leading }: размеры от 8 до ${TEXT_MAX_PX} px, min ≤ max, leading от 0,8 до 3`,
     schema: () => textSchema,
     classes: (suffix) => [`text-${suffix}`],
   },

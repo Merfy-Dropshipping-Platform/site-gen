@@ -32,15 +32,31 @@ describe('readSectionTokens', () => {
       { 'custom-x': { kind: 'color', about: 'Цвет x', derive: { rule: 'alias', from: 'theme-gold' } } },
       ['tokens.custom-x', 'theme-gold'],
     ],
-    ['вид font', { 'font-custom-x': { kind: 'font', about: 'Шрифт x', default: 'serif' } }, ['tokens.font-custom-x', 'font']],
+    [
+      'вид font',
+      { 'font-custom-x': { kind: 'font', about: 'Шрифт x', default: 'serif' } },
+      ['tokens.font-custom-x', 'font'],
+    ],
     [
       'правило mix',
-      { 'custom-x': { kind: 'color', about: 'Цвет x', derive: { rule: 'mix', from: ['primary', 'background'], weight: 0.5 } } },
+      {
+        'custom-x': {
+          kind: 'color',
+          about: 'Цвет x',
+          derive: { rule: 'mix', from: ['primary', 'background'], weight: 0.5 },
+        },
+      },
       ['tokens.custom-x', 'alias'],
     ],
     [
       'тень без alias',
-      { 'shadow-custom-x': { kind: 'shadow', about: 'Тень x', default: { x: 0, y: 1, blur: 2, spread: 0, opacity: 0.2 } } },
+      {
+        'shadow-custom-x': {
+          kind: 'shadow',
+          about: 'Тень x',
+          default: { x: 0, y: 1, blur: 2, spread: 0, opacity: 0.2 },
+        },
+      },
       ['tokens.shadow-custom-x', 'alias'],
     ],
     ['не объект', [], ['tokens']],
@@ -48,6 +64,34 @@ describe('readSectionTokens', () => {
     const reading = read(raw);
     expect(reading.problems.length).toBeGreaterThan(0);
     for (const part of parts) expect(reading.problems.join('\n')).toContain(part);
+  });
+
+  // Шаг 6 (01.11): обязательных теней в словаре нет — тень секции берёт любую тень словаря, общая — shadow-raised.
+  it('тень — alias от любой тени словаря: shadow-raised и shadow-popover', () => {
+    const reading = read({
+      'shadow-custom-plate': { kind: 'shadow', about: 'Тень плашки', derive: { rule: 'alias', from: 'shadow-raised' } },
+      'shadow-custom-pop': { kind: 'shadow', about: 'Тень окна', derive: { rule: 'alias', from: 'shadow-popover' } },
+    });
+    expect(reading.problems).toEqual([]);
+    expect(sectionTailwindTheme(reading.tokens)).toContain('--shadow-custom-plate: var(--shadow-custom-plate);');
+    const css = sectionTokensCss([{ section: 'shop:poster', tokens: reading.tokens }], {});
+    expect(css).toContain('--shadow-custom-plate: var(--shadow-raised);');
+  });
+
+  it('у остальных видов alias — по-прежнему от базового: цвет от card (правило словаря) — отказ', () => {
+    const reading = read({ 'custom-x': { kind: 'color', about: 'Цвет x', derive: { rule: 'alias', from: 'card' } } });
+    expect(reading.problems.join('\n')).toContain('не базовый');
+  });
+
+  it('размер текста — до 320 px: плакатный заголовок', () => {
+    const big = {
+      'text-custom-poster': { kind: 'text', about: 'Плакат', default: { min: 72, max: 320, leading: 0.85 } },
+    };
+    expect(read(big).problems).toEqual([]);
+    const tooBig = {
+      'text-custom-poster': { kind: 'text', about: 'Плакат', default: { min: 72, max: 400, leading: 0.85 } },
+    };
+    expect(read(tooBig).problems.join('\n')).toContain('320 px');
   });
 
   it(`не больше ${SECTION_TOKENS_MAX} токенов`, () => {
@@ -75,7 +119,9 @@ describe('sectionTailwindTheme', () => {
 
   it('насыщенность — своей утилитой; токенов нет — пусто', () => {
     const bold = read({ 'weight-custom-bold': { kind: 'weight', about: 'Жирность подписи', default: 700 } }).tokens;
-    expect(sectionTailwindTheme(bold)).toContain('@utility weight-custom-bold { font-weight: var(--weight-custom-bold); }');
+    expect(sectionTailwindTheme(bold)).toContain(
+      '@utility weight-custom-bold { font-weight: var(--weight-custom-bold); }',
+    );
     expect(sectionTailwindTheme({})).toBe('');
   });
 });
@@ -102,7 +148,9 @@ describe('sectionTokensCss', () => {
   });
 
   it('alias размера текста — со строкой высоты строки', () => {
-    const big = read({ 'text-custom-big': { kind: 'text', about: 'Крупная цена', derive: { rule: 'alias', from: 'text-5xl' } } });
+    const big = read({
+      'text-custom-big': { kind: 'text', about: 'Крупная цена', derive: { rule: 'alias', from: 'text-5xl' } },
+    });
     const css = sectionTokensCss([{ section: 'shop:price', tokens: big.tokens }], {});
     expect(css).toContain('  --text-custom-big: var(--text-5xl);');
     expect(css).toContain('  --text-custom-big--line-height: var(--text-5xl--line-height);');
@@ -118,7 +166,11 @@ describe('правки токенов секций', () => {
   it('по виду токена; чужие секции и токены — мимо; неверное значение — в problems', () => {
     const reading = readSectionEdits(SECTIONS, {
       sections: {
-        'shop:scarf-match': { 'custom-swatch': 'red;} body{color:red', 'radius-custom-swatch': 12, 'custom-nope': '#000000' },
+        'shop:scarf-match': {
+          'custom-swatch': 'red;} body{color:red',
+          'radius-custom-swatch': 12,
+          'custom-nope': '#000000',
+        },
         'shop:gone': { 'custom-swatch': '#000000' },
       },
     });

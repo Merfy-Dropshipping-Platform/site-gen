@@ -39,15 +39,51 @@ describe('классы словаря проходят', () => {
   });
 });
 
+// Потолок SDK (шаг 6, 01.11): шкала текста до text-9xl, свои значения без цвета, движение и наложения словаря.
+describe('потолок SDK: плакат, свои значения, слои, движение', () => {
+  it.each([
+    'text-6xl md:text-9xl',
+    'text-[clamp(4rem,18vw,16rem)] leading-[0.85] tracking-[-0.04em]',
+    'top-[12%] left-[8%] -translate-y-[20%] z-[3] aspect-[3/4] w-[min(40vw,28rem)] min-h-[80svh]',
+    'grid grid-cols-[1fr_2fr] gap-[clamp(1rem,4vw,3rem)] rounded-[2rem] p-[13px]',
+    'absolute inset-0 -z-10 isolate mix-blend-multiply backdrop-blur-sm bg-background/40',
+    'animate-marquee hover:animate-paused parallax motion-safe:animate-pulse shadow-raised',
+    'duration-[900ms] ease-[cubic-bezier(0.2,0,0,1)] opacity-[0.85] blur-[2px]',
+  ])('проходит: %s', async (classes) => {
+    expect(await check(`<div class="${classes}">x</div>`)).toEqual([]);
+  });
+
+  it.each([
+    ['text-[#ff0000]', 'class-arbitrary', 'цвет — только токеном схемы'],
+    ['bg-[rgb(10,20,30)]', 'class-arbitrary', 'цвет — только токеном схемы'],
+    ['text-[red]', 'class-arbitrary', 'Своё значение'],
+    ['bg-[10px]', 'class-arbitrary', 'Своё значение'],
+    ['shadow-[0_0_10px]', 'class-arbitrary', 'Своё значение'],
+    ['w-[var(--x)]', 'class-arbitrary', 'Своё значение'],
+    ['bg-[url(x.png)]', 'class-arbitrary', 'Своё значение'],
+    ['md:text-[#fff]', 'class-arbitrary', 'цвет — только токеном схемы'],
+    ['min-[900px]:flex', 'class-arbitrary', 'токен секции'],
+  ])('цвет и свой CSS — отказ: %s', async (name, code, part) => {
+    const problems = await check(`<div class="flex ${name}">x</div>`);
+    expect(codes(problems)).toEqual([code]);
+    expect(problems[0]?.message).toContain(part);
+  });
+
+  it('своё значение, которое Tailwind прочитал как цвет (text-[auto] → color), — отказ как у цвета', async () => {
+    const problems = await check('<div class="text-[auto]">x</div>');
+    expect(codes(problems)).toEqual(['class-arbitrary']);
+    expect(problems[0]?.message).toContain('цвет — только токеном схемы');
+  });
+});
+
 describe('правила и подсказки (таблица design.md 4.1)', () => {
   it.each([
-    ['text-6xl', 'class-unknown', ['text-6xl', 'text-5xl']],
+    ['text-10xl', 'class-unknown', ['text-10xl', 'text-9xl']],
     ['text-primay', 'class-unknown', ['text-primary']],
     ['rounded-lg', 'class-unknown', ['rounded-card']],
     ['js-open', 'class-unknown', ['data-ref']],
     ['color-scheme-2', 'class-unknown', ['color-scheme-2']],
     ['bg-[#c9a227]', 'class-arbitrary', ['токен секции']],
-    ['p-[13px]', 'class-arbitrary', ['p-3', 'p-section']],
     ['[&>li]:p-2', 'class-arbitrary', ['data-']],
     ['p-4!', 'class-arbitrary', ['p-4!']],
     ['dark:bg-foreground', 'class-dark', ['схема']],
@@ -59,12 +95,12 @@ describe('правила и подсказки (таблица design.md 4.1)', 
   });
 
   it('место — строка и колонка начала класса', async () => {
-    const [found] = await check('<div class="flex\n  text-6xl">x</div>');
+    const [found] = await check('<div class="flex\n  text-10xl">x</div>');
     expect(found).toMatchObject({ file: 'template.astro', line: 2, column: 3 });
   });
 
   it('повтор класса в двух местах — две проблемы', async () => {
-    expect(codes(await check('<p class="text-6xl">a</p><p class="text-6xl">b</p>'))).toEqual([
+    expect(codes(await check('<p class="text-10xl">a</p><p class="text-10xl">b</p>'))).toEqual([
       'class-unknown',
       'class-unknown',
     ]);
@@ -80,7 +116,7 @@ describe('классы из выражений', () => {
   });
 
   it('ветка ?: с классом вне словаря — одна проблема', async () => {
-    const problems = await check(`${FRONT}<div class={settings.dark ? 'text-6xl' : 'p-4'}>x</div>`, fields);
+    const problems = await check(`${FRONT}<div class={settings.dark ? 'text-10xl' : 'p-4'}>x</div>`, fields);
     expect(codes(problems)).toEqual(['class-unknown']);
   });
 

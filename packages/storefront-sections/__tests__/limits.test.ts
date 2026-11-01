@@ -35,7 +35,7 @@ describe('лимиты полей секции', () => {
     expect(SETTINGS_LIMITS).toEqual({
       sectionFields: 20,
       blockFields: 16,
-      blockTypes: 8,
+      blockTypes: 16,
       blocksTotal: 50,
       optionsMin: 2,
       optionsMax: 10,
@@ -66,14 +66,14 @@ describe('лимиты полей секции', () => {
     ]);
   });
 
-  it('8 типов блоков — можно', () => {
-    expect(limitIssues(sectionOf([], [], types(8, 6)))).toEqual([]);
+  it('16 типов блоков — можно (шаг 6: было 8)', () => {
+    expect(limitIssues(sectionOf([], [], types(16, 3)))).toEqual([]);
   });
 
-  it('9 типов блоков, сумма limit — 51', () => {
-    const blocks = [...types(8, 6), { type: 't9', title: 'Тип 9', limit: 3 }];
+  it('17 типов блоков, сумма limit — 51', () => {
+    const blocks = [...types(16, 3), { type: 't17', title: 'Тип 17', limit: 3 }];
     expect(limitIssues(sectionOf([], [], blocks))).toEqual([
-      { code: 'settings-limit', path: ['blocks'], message: 'типов блоков — 9, можно не больше 8' },
+      { code: 'settings-limit', path: ['blocks'], message: 'типов блоков — 17, можно не больше 16' },
       { code: 'settings-limit', path: ['blocks'], message: 'блоков по `limit` — 51, можно не больше 50' },
     ]);
   });

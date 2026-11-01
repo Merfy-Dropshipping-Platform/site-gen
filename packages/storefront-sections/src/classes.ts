@@ -2,6 +2,7 @@ import type { ClassSystem } from '@merfy/storefront-build';
 import { classesOf, type Dictionary } from '@merfy/tokens';
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
 import { TEMPLATE_FILE } from './format';
+import { isFreeValue, paintsColor } from './free-values';
 import { inertFindings } from './inert-classes';
 import { positionAt } from './position';
 import { problem, type SectionProblem } from './problems';
@@ -48,11 +49,16 @@ const CLASS_ATTRIBUTES: ReadonlySet<string> = new Set(['class', 'class:list']);
 const ATTRIBUTE_VARIANT: RegExp = /^(?:group-|peer-|in-|not-)?(?:data-|aria-)\[/;
 const DARK_VARIANT = 'dark';
 const THEME_MARK = /-theme(?:-|$)/;
-const SPACING_STEP = 4;
+// Значение похоже на цвет: #…, rgb(), hsl(), oklch() и подобные — подсказка «цвет только токеном».
+const COLOR_VALUE = /#|rgb|hsl|hwb|lab\(|lch\(|oklab|oklch|color/;
 
 const TEXT = {
   unknown: (name: string, hint: string) => `класс ${name} не из словаря${hint}`,
   arbitrary: (name: string, hint: string) => `${name} — произвольное значение, это свой CSS${hint}`,
+  colorOnlyToken: (name: string) =>
+    `${name}: цвет — только токеном схемы, иначе цветовые схемы магазина его не перекрасят. Класс словаря (bg-primary, text-heading) или токен секции "custom-…" в section.json`,
+  freeOnly:
+    '. Своё значение — у размера, отступа, положения, слоя, интервалов, пропорций, сетки, размытия: числа, единицы, calc/clamp/min/max — text-[clamp(3rem,12vw,10rem)], top-[12%], aspect-[3/4]',
   selector: (name: string) =>
     `${name} — свой селектор. Дочерним элементам — вариант *:p-2, состояниям — data-* и aria-*`,
   important: (name: string) => `${name} — важность !: убери её, класс перекрой токеном`,
@@ -67,8 +73,6 @@ const TEXT = {
   family: (names: readonly string[]) => ` Семейство словаря: ${names.join(', ')}.`,
   close: (name: string) => ` Может, ${name}?`,
   sectionToken: ' Нужен свой — токен секции "custom-…" в section.json',
-  spacing: (name: string, near: string, px: number) =>
-    ` Шкала отступов — шаг ${SPACING_STEP} px: ${near} — ${px} px; отступ секции — p-section`,
   scriptHook: ' Скрипту — атрибут data-ref, виду — классы словаря',
 } as const;
 
@@ -101,12 +105,14 @@ const hasArbitrary = (segment: string): boolean => /[[(]|!/.test(segment);
 const isAttributeVariant = (variant: string): boolean => ATTRIBUTE_VARIANT.test(variant);
 
 // Правила — по тексту класса, первое сработавшее (design.md 4.1): arbitrary, dark, токен темы; утилита — до «!».
+// Своё значение без цвета (free-values.ts, шаг 6) — не arbitrary: дальше его проверяет Tailwind.
 function textProblem(name: string): RuleFinding | undefined {
   const { variants, utility } = partsOf(name);
   const plainUtility = utility.replace(/!+$/, '');
   const withImportant = utility.includes('!');
   if (variants.includes(DARK_VARIANT)) return { code: 'class-dark', message: TEXT.dark(name) };
-  if (hasArbitrary(plainUtility)) return { code: 'class-arbitrary', message: arbitraryMessage(name, plainUtility) };
+  if (hasArbitrary(plainUtility) && !isFreeValue(plainUtility))
+    return { code: 'class-arbitrary', message: arbitraryMessage(name, plainUtility) };
   if (withImportant) return { code: 'class-arbitrary', message: TEXT.important(name) };
   const wrongVariant = variants.find((variant) => hasArbitrary(variant) && !isAttributeVariant(variant));
   if (wrongVariant !== undefined) return { code: 'class-arbitrary', message: variantMessage(name, wrongVariant) };
@@ -116,14 +122,10 @@ function textProblem(name: string): RuleFinding | undefined {
 }
 
 function arbitraryMessage(name: string, utility: string): string {
-  const spacing = /^p-\[(\d+)px\]$/.exec(name);
-  if (spacing !== null) {
-    const step = Math.round(Number(spacing[1]) / SPACING_STEP);
-    return TEXT.arbitrary(name, TEXT.spacing(name, `p-${step}`, step * SPACING_STEP));
-  }
   if (utility.startsWith('[')) return TEXT.selector(name);
+  if (COLOR_VALUE.test(utility)) return TEXT.colorOnlyToken(name);
   if (utility !== name) return TEXT.important(name);
-  return TEXT.arbitrary(name, TEXT.sectionToken);
+  return TEXT.arbitrary(name, TEXT.freeOnly);
 }
 
 function variantMessage(name: string, variant: string): string {
@@ -195,6 +197,9 @@ export function classProblem(name: string, system: ClassSystem, dictionary: Dict
     return { code: 'class-unknown', message: TEXT.unknown(name, ` ${name} ставит только платформа на обёртку`) };
   }
   const css = system.cssOf([name])[0];
+  // Своё значение, которое Tailwind прочитал как цвет (text-[auto] → color: auto), — тот же отказ, что у цвета.
+  const free = isFreeValue(partsOf(name).utility.replace(/!+$/, ''));
+  if (free && css !== null && paintsColor(css)) return { code: 'class-arbitrary', message: TEXT.colorOnlyToken(name) };
   if (css !== null) return undefined;
   return { code: 'class-unknown', message: unknownMessage(name, system) };
 }

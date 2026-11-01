@@ -20,7 +20,11 @@ export const EXPRESSION_GLOBALS: ReadonlySet<string> = new Set([
   'Boolean',
   'JSON',
   'Array',
+  'Object',
 ]);
+// Object — только чтение (шаг 6, 01.11): ключи, значения и пары объекта, объект из пар, своё ли свойство, группы.
+// Методы, которые меняют объект или его прототип (assign, defineProperty, setPrototypeOf, freeze…), — отказ.
+const OBJECT_READ: ReadonlySet<string> = new Set(['keys', 'values', 'entries', 'fromEntries', 'hasOwn', 'groupBy']);
 const FORBIDDEN_PROPERTIES: ReadonlySet<string> = new Set([
   'constructor',
   'prototype',
@@ -66,7 +70,9 @@ const LABELS: Partial<Record<string, string>> = {
 
 const TEXT = {
   name: (name: string) =>
-    `имя ${name}: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array`,
+    `имя ${name}: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array, Object`,
+  objectMethod: (name: string) =>
+    `Object.${name}: в шаблоне — только чтение: Object.keys, values, entries, fromEntries, hasOwn, groupBy`,
   property: (name: string) => `свойство ${name}: в шаблоне секции нельзя`,
   computed: 'ключ в [ ]: в шаблоне секции — только строка или число',
   node: (label: string) => `${label}: в шаблоне секции нельзя — выражение только читает данные секции`,
@@ -118,9 +124,20 @@ function keyFound(key: unknown, computed: boolean): Found[] {
   return FORBIDDEN_PROPERTIES.has(name) ? [{ at: key.start, message: TEXT.property(name) }] : [];
 }
 
+// Object.<метод> — только из OBJECT_READ; своё имя Object (параметр функции) этим правилом не проверяется.
+function objectMethodFound(node: AstNode, scope: Scope): Found[] {
+  const object = fieldOf(node, 'object');
+  const isObject = isNode(object) && object.type === 'Identifier' && stringOf(fieldOf(object, 'name')) === 'Object';
+  if (!isObject || scope.has('Object')) return [];
+  const property = fieldOf(node, 'property');
+  const name = keyName(property);
+  return OBJECT_READ.has(name) ? [] : [{ at: node.start, message: TEXT.objectMethod(name === '' ? '[…]' : name) }];
+}
+
 function memberStep(node: AstNode, scope: Scope): Step {
   const computed = fieldOf(node, 'computed') === true;
-  return { found: keyFound(fieldOf(node, 'property'), computed), next: [item(fieldOf(node, 'object'), scope)] };
+  const problems = [...keyFound(fieldOf(node, 'property'), computed), ...objectMethodFound(node, scope)];
+  return { found: problems, next: [item(fieldOf(node, 'object'), scope)] };
 }
 
 // Свойство объекта ({ a: … }) или шаблона параметра (({ a }) => …): ключ проверяется, значение — по своей роли.

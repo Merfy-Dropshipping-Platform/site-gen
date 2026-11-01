@@ -44,7 +44,7 @@ describe('стенд темы nova', () => {
     expect(results.filter((result) => !result.ok)).toEqual([]);
   });
 
-  it('на :root все 71 переменная набора base — значения из theme.json', () => {
+  it('на :root все 76 переменных набора base — значения из theme.json', () => {
     expect(Object.keys(stand.passport.tokens)).toHaveLength(TOKEN_SETS.base.length);
     expect(stand.passport.tokens['--background']).toBe('#ffffff');
     expect(stand.passport.tokens['--radius-button']).toBe('0.75rem');
@@ -56,11 +56,11 @@ describe('стенд темы nova', () => {
     expect(onest).toEqual(['Onest 100 900 normal']);
   });
 
-  it('каждый из 78 токенов словаря — класс хотя бы одного образца', () => {
+  it('каждый из 83 токенов словаря — класс хотя бы одного образца', () => {
     const classes = pageClasses(standHtml);
     const tokens = Object.entries(platformDictionary.tokens);
     const missing = tokens.filter(([name, def]) => !classesOf(name, def).some((own) => shown(classes, own)));
-    expect(tokens).toHaveLength(78);
+    expect(tokens).toHaveLength(83);
     expect(missing.map(([name]) => name)).toEqual([]);
   });
 

@@ -73,18 +73,23 @@ const contextOf = (base: Dictionary, defs: readonly Shaped[]): CheckContext => (
   origin: 'section',
 });
 
+// Тень — alias от любой тени словаря (шаг 6, 01.11): обязательных теней в словаре нет и не будет — у каждой своё
+// умолчание, иначе прошлые версии тем без этого значения не прочитать. Общая тень для своих — shadow-raised.
+const ANY_SOURCE_KINDS: ReadonlySet<TokenKind> = new Set(['shadow']);
+
 function aliasSourceProblems(name: string, def: TokenDef, base: Dictionary): string[] {
   const from = def.derive?.rule === 'alias' ? def.derive.from : '';
   const source = tokenDef(base, from);
   if (source === undefined) return [`tokens.${name}: источника «${from}» нет в словаре платформы`];
   if (source.kind !== def.kind) return [`tokens.${name}: «${from}» — другого вида`];
-  return isBaseToken(source) ? [] : [`tokens.${name}: умолчание — из базового токена, «${from}» — не базовый`];
+  if (ANY_SOURCE_KINDS.has(def.kind) || isBaseToken(source)) return [];
+  return [`tokens.${name}: умолчание — из базового токена, «${from}» — не базовый`];
 }
 
 // Значение токена секции — default или alias от базового токена словаря того же вида; у тени — только alias.
 function deriveProblems(name: string, def: TokenDef, base: Dictionary): string[] {
   if (def.kind === 'shadow' && def.derive === undefined)
-    return [`tokens.${name}: у тени — только alias от токена словаря`];
+    return [`tokens.${name}: у тени — только alias от тени словаря, например shadow-raised`];
   if (def.derive === undefined) return [];
   if (def.derive.rule !== 'alias') return [`tokens.${name}: правило ${def.derive.rule} — только alias`];
   return aliasSourceProblems(name, def, base);

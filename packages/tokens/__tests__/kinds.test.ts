@@ -64,7 +64,7 @@ describe('проверка значений по видам', () => {
     expect(KINDS.choice.limits(context)).toBe('standard или card');
     expect(KINDS.scheme.limits(context)).toBe('scheme-1 или scheme-2');
     expect(KINDS.text.limits(context)).toBe(
-      '{ min, max, leading }: размеры от 8 до 160 px, min ≤ max, leading от 0,8 до 3',
+      '{ min, max, leading }: размеры от 8 до 320 px, min ≤ max, leading от 0,8 до 3',
     );
   });
 

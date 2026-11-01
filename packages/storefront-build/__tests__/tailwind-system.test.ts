@@ -21,7 +21,7 @@ const WITH_CSS = [
   'font-body',
 ];
 const WITHOUT_CSS = [
-  'text-6xl',
+  'text-10xl',
   'bg-red-600',
   'bg-white',
   'text-white',
@@ -63,10 +63,18 @@ describe('classSystem', () => {
     ).toEqual([]);
   });
 
-  it('имена для подсказки: есть text-5xl, нет text-6xl', async () => {
+  it('имена для подсказки: шкала текста до text-9xl (шаг 6), встроенных text-red-600 нет', async () => {
     const names = (await classSystem(platformDictionary, '')).classNames();
     expect(names).toContain('text-5xl');
-    expect(names).not.toContain('text-6xl');
+    expect(names).toContain('text-9xl');
+    expect(names).not.toContain('text-red-600');
+  });
+
+  it('свои значения размеров и движение словаря — с CSS', async () => {
+    const system = await classSystem(platformDictionary, '');
+    const [poster, marquee] = system.cssOf(['text-[clamp(4rem,18vw,16rem)]', 'animate-marquee']);
+    expect(poster).toContain('font-size: clamp(4rem, 18vw, 16rem)');
+    expect(marquee).toContain('merfy-marquee');
   });
 
   it('класс токена секции — только со строками @theme секции; кэш по паре', async () => {

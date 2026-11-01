@@ -55,6 +55,12 @@ const OWN = [
   'text-xs',
   'text-2xl',
   'text-5xl',
+  'text-6xl',
+  'text-9xl',
+  'shadow-raised',
+  'animate-marquee',
+  'hover:animate-paused',
+  'parallax',
   'tracking-heading',
   'rounded-button',
   'rounded-input',
@@ -85,7 +91,7 @@ const CLOSED = [
   'text-red-600',
   'bg-white',
   'bg-black',
-  'text-6xl',
+  'shadow-2xl',
   'font-sans',
   'font-mono',
   'rounded-lg',
@@ -121,8 +127,8 @@ const EXTENSION_OWN = [
 describe('Tailwind по словарю платформы', () => {
   const css = tailwindCss(platformDictionary);
 
-  it('файл — 132 строки', () => {
-    expect(css.trimEnd().split('\n')).toHaveLength(132);
+  it('файл — 153 строки', () => {
+    expect(css.trimEnd().split('\n')).toHaveLength(153);
   });
 
   it.each(OWN)('класс словаря собирается: %s', async (cls) => {
@@ -140,6 +146,29 @@ describe('Tailwind по словарю платформы', () => {
   it('переменные словаря Tailwind в :root не печатает — значения даёт только tokensCss', async () => {
     const output = await buildClasses(css, ['bg-primary', 'rounded-button', 'shadow-card']);
     expect(output).not.toMatch(/--(primary|radius-button|shadow-card):/);
+  });
+});
+
+describe('движение: бегущая строка и параллакс (шаг 6)', () => {
+  const css = tailwindCss(platformDictionary);
+
+  it.each(['animate-marquee', 'animate-marquee-fast', 'parallax', 'parallax-strong'])(
+    '%s движется только без «уменьшить движение», кадры — в выводе',
+    async (cls) => {
+      const output = await buildClasses(css, [cls]);
+      expect(output).toContain('prefers-reduced-motion: no-preference');
+      expect(output).toMatch(/@keyframes merfy-(?:marquee|parallax)/);
+    },
+  );
+
+  it('параллакс — анимация по прокрутке за @supports: без поддержки элемент стоит', async () => {
+    const output = await buildClasses(css, ['parallax']);
+    expect(output).toContain('@supports (animation-timeline: view())');
+    expect(output).toContain('animation-timeline: view()');
+  });
+
+  it('без класса движения кадров в CSS нет', async () => {
+    expect(await buildClasses(css, ['flex'])).not.toContain('@keyframes');
   });
 });
 

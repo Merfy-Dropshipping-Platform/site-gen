@@ -1,6 +1,6 @@
 # template.astro
 
-> SDK 1 · документация 1.26.0 · 2026-11-01
+> SDK 1 · документация 1.27.0 · 2026-11-01
 
 `template.astro` — разметка секции на Astro. Сборка рендерит её на сервере со значениями полей мерчанта.
 
@@ -22,7 +22,9 @@ const { settings, blocks } = Astro.props;
 
 ## Что можно
 
-- Выражения `{…}`: поля (`settings.heading`, `settings['heading-size']`), сравнения, `&&`, `?:`, `blocks.map`.
+- Выражения `{…}`: поля (`settings.heading`, `settings['heading-size']`), сравнения, `&&`, `?:`, `blocks.map`; встроенные
+  `Math`, `Number`, `String`, `Boolean`, `JSON`, `Array` и `Object` — только чтение: `Object.keys`, `values`, `entries`,
+  `fromEntries`, `hasOwn`, `groupBy` (`Object.assign`, `defineProperty` и другие — отказ `template-forbidden`).
 - `class:list` — классы по условию: `class:list={['m-0', { 'text-5xl': settings['heading-size'] === 'large' }]}`.
 - `set:html` — только у поля вида `richtext` и у `string` и `text` с `ai`: `<div set:html={block.settings.answer}></div>`,
   `<h2 set:html={block.settings.heading} />`. Значение поля с `ai` — текст с начертаниями: кнопки «К» и «Ж» конструктора

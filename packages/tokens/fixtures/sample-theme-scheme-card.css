@@ -21,6 +21,14 @@
   --text-4xl--line-height: 1.15;
   --text-5xl: clamp(2.5rem, 1.913rem + 2.6087vw, 4rem);
   --text-5xl--line-height: 1.1;
+  --text-6xl: clamp(2.75rem, 1.6739rem + 4.7826vw, 5.5rem);
+  --text-6xl--line-height: 1;
+  --text-7xl: clamp(3.25rem, 1.7826rem + 6.5217vw, 7rem);
+  --text-7xl--line-height: 0.95;
+  --text-8xl: clamp(3.75rem, 1.6957rem + 9.1304vw, 9rem);
+  --text-8xl--line-height: 0.92;
+  --text-9xl: clamp(4.5rem, 1.5652rem + 13.0435vw, 12rem);
+  --text-9xl--line-height: 0.88;
   --tracking-body: 0;
   --tracking-heading: 0;
   --radius-button: 0.5rem;
@@ -81,6 +89,7 @@
   --shadow-media: none;
   --shadow-popover: 0 0.5rem 1.5rem 0 #0000001f;
   --shadow-drawer: 0 0 2rem 0 #00000029;
+  --shadow-raised: 0 0.75rem 2rem -0.5rem #0000002e;
 }
 .color-scheme-2 {
   --background: #111111;
@@ -121,6 +130,7 @@
   --shadow-media: none;
   --shadow-popover: 0 0.5rem 1.5rem 0 #0000001f;
   --shadow-drawer: 0 0 2rem 0 #00000029;
+  --shadow-raised: 0 0.75rem 2rem -0.5rem #0000002e;
 }
 .scheme-card {
   --background: #111111;
@@ -161,6 +171,7 @@
   --shadow-media: none;
   --shadow-popover: 0 0.5rem 1.5rem 0 #0000001f;
   --shadow-drawer: 0 0 2rem 0 #00000029;
+  --shadow-raised: 0 0.75rem 2rem -0.5rem #0000002e;
 }
 @layer base {
   :root, .color-scheme-1, .color-scheme-2, .scheme-card {

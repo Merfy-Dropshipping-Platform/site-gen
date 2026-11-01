@@ -64,12 +64,12 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'class-unknown': {
     when: 'Класса нет в словаре классов магазина.',
-    fix: 'Возьми класс словаря из подсказки или styles.md; крупнее text-5xl — токен секции в tokens: "text-custom-display": { "kind": "text", "about": "…", "default": { "min": 40, "max": 72, "leading": 1.05 } } и класс text-custom-display.',
-    example: { before: 'md:text-6xl', after: 'md:text-custom-display' },
+    fix: 'Возьми класс словаря из подсказки или styles.md. Шкала текста — до text-9xl; свой размер — значением: text-[clamp(4rem,16vw,14rem)].',
+    example: { before: 'md:text-10xl', after: 'md:text-9xl' },
   },
   'class-arbitrary': {
-    when: 'Класс с произвольным значением: […], (…) или !.',
-    fix: 'Возьми класс словаря; нужен свой цвет или размер — токен секции в ключе tokens.',
+    when: 'Своё значение там, где его нельзя: цвет, утилита с цветом (bg-, ring-, shadow-), свой селектор […]:, var(), url() или !.',
+    fix: 'Цвет — классом токена или токеном секции custom-… в tokens. Своё значение можно у размера, отступа, положения, интервалов, пропорций: числа и единицы (styles.md).',
     example: { before: 'bg-[#c9a227]', after: 'bg-primary' },
   },
   'class-dark': {
@@ -96,7 +96,7 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'token-invalid': {
     when: 'Токен секции в ключе tokens записан неверно: имя без метки custom, чужой вид, больше предела.',
-    fix: 'Исправь токен из ответа: имя с custom- (custom-plate, text-custom-display), вид из восьми (color, weight, text, tracking, radius, border-width, spacing, width), значение — в default; пример каждого вида — quick.md.',
+    fix: 'Исправь токен из ответа: имя с custom- (custom-plate, text-custom-display), вид из девяти (color, weight, text, tracking, radius, border-width, spacing, width, shadow), значение — в default, у тени — alias; примеры — quick.md.',
     example: { before: '"plate": { "kind": "color", "default": "#f1ece4" }', after: '"custom-plate": { "kind": "color", "about": "Подложка", "default": "#f1ece4" }' },
   },
   'render-failed': {

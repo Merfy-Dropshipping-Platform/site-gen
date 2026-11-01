@@ -12,7 +12,7 @@ import { bundlePage, type BundleKit, type BundleSection, type PageBundle } from 
 import { kitPlanOf } from './features';
 import { sha256 } from './canonical';
 import { StorefrontBuildError } from './errors';
-import type { BuildInputs, CodeSection, ShellInput } from './inputs';
+import { STORE_USE_PREFIX, type BuildInputs, type CodeSection, type ShellInput } from './inputs';
 import { recordKeysOf } from './section-records';
 import { pageListsOf } from './routes';
 import type { PageContent, PageRender, PlacedSection } from './sections-render';
@@ -103,7 +103,29 @@ export const NO_ASSETS: CodeAssets = { shell: null, modules: new Map(), renders:
 
 const hexOf = (hash: string): string => hash.slice(HASH_PREFIX.length);
 
-// Секции страницы: места мерчанта по порядку, потом глобальные скрипты; имя — один раз, хоть секция и стоит дважды.
+// Свои сторы, которые читает код (свои сторы): "store:<имя>" из meta.uses — и сторы, которые читают они сами.
+const storeNamesOf = (section: CodeSection): string[] =>
+  (section.meta?.uses ?? []).flatMap((use) =>
+    use.startsWith(STORE_USE_PREFIX) ? [use.slice(STORE_USE_PREFIX.length)] : [],
+  );
+
+function withStores(code: readonly CodeSection[], byName: ReadonlyMap<string, CodeSection>): CodeSection[] {
+  const names = new Set(code.map((section) => section.name));
+  const found: CodeSection[] = [];
+  const queue = code.flatMap(storeNamesOf);
+  for (let name = queue.shift(); name !== undefined; name = queue.shift()) {
+    const store = byName.get(name);
+    if (names.has(name) || store?.kind !== 'store') continue;
+    names.add(name);
+    found.push(store);
+    queue.push(...storeNamesOf(store));
+  }
+  return [...code, ...found];
+}
+
+// Секции страницы: места мерчанта по порядку, потом глобальные скрипты, потом свои сторы, которые они читают (сами или
+// через другие сторы); имя — один раз, хоть секция и стоит дважды. Стор, который на странице никто не читает, в неё
+// не идёт.
 function pageCode(inputs: BuildInputs, pageId: string): CodeSection[] {
   const byName = new Map(inputs.code.sections.map((section): [string, CodeSection] => [section.name, section]));
   // Шапка, страница и подвал (часть 4 блока 1): код секций всех трёх списков — и в стилях, и в бандле страницы.
@@ -111,7 +133,10 @@ function pageCode(inputs: BuildInputs, pageId: string): CodeSection[] {
     (inputs.code.pages[list] ?? []).map((instance) => instance.section),
   );
   const names = new Set([...placed, ...inputs.code.globals]);
-  return [...names].flatMap((name) => byName.get(name) ?? []);
+  return withStores(
+    [...names].flatMap((name) => byName.get(name) ?? []),
+    byName,
+  );
 }
 
 // CSS секций страницы — классы Tailwind из их разметки (section-css.ts). </style внутри CSS закрыл бы тег раньше

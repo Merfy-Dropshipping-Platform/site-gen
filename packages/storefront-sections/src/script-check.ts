@@ -23,7 +23,10 @@ import { SHELL_MODULE, isShellImport, placeOf, staticKey, traverse } from './scr
 export const SERVICE_PREFIX = '__merfy';
 const SCRIPT_FILE = /\.(?:ts|js)$/;
 const RELATIVE = /^\.\.?\//;
-const DEFINE = 'defineSection';
+// Определения из @merfy/shell: defineSection — секция и глобальный скрипт, defineStore — свой стор (свои сторы).
+export const DEFINE_SECTION = 'defineSection';
+export const DEFINE_STORE = 'defineStore';
+const DEFINES: ReadonlySet<string> = new Set([DEFINE_SECTION, DEFINE_STORE]);
 // TS-узлы, у которых поле expression — значение, а не тип: x as T, x!, x satisfies T, <T>x, f<T>.
 const VALUE_TS: ReadonlySet<string> = new Set([
   'TSAsExpression',
@@ -49,11 +52,13 @@ export interface ScriptCheck {
 interface FileState {
   file: string;
   entry: boolean;
+  // Какое определение ждёт вид из section.json: defineSection или defineStore; null — вид не известен, годится любое.
+  define: string | null;
   problems: SectionProblem[];
   definition: NodePath<ObjectExpression> | null;
 }
 
-type Code = 'sdk-only' | 'script-invalid';
+type Code = 'sdk-only' | 'script-invalid' | 'kind-mismatch';
 
 function report(state: FileState, node: Node, message: string, code: Code = 'sdk-only'): void {
   state.problems.push(problem(code, state.file, message, placeOf(node)));
@@ -92,12 +97,13 @@ function valueBinding(path: NodePath<Identifier>): Binding | undefined {
   return binding === undefined || binding.kind === 'unknown' ? undefined : binding;
 }
 
-function isDefineBinding(binding: Binding | undefined): boolean {
+// Имя определения из @merfy/shell (defineSection, defineStore), на которое ссылается привязка; иначе null.
+function defineNameOf(binding: Binding | undefined): string | null {
   const specifier = binding?.path;
-  if (binding?.kind !== 'module' || specifier === undefined || !specifier.isImportSpecifier()) return false;
+  if (binding?.kind !== 'module' || specifier === undefined || !specifier.isImportSpecifier()) return null;
   const imported = specifier.node.imported;
   const name = imported.type === 'Identifier' ? imported.name : imported.value;
-  return name === DEFINE && isShellImport(specifier.parentPath);
+  return DEFINES.has(name) && isShellImport(specifier.parentPath) ? name : null;
 }
 
 function isAssigned(path: NodePath): boolean {
@@ -159,7 +165,8 @@ function checkIdentifier(path: NodePath<Identifier>, state: FileState): void {
   const binding = valueBinding(path);
   const text = binding === undefined ? freeNameProblem(path) : null;
   if (text !== null) report(state, path.node, text);
-  if (isDefineBinding(binding) && !isDefinitionCallee(path, state)) report(state, path.node, SDK_TEXT.defineOnly);
+  const define = defineNameOf(binding);
+  if (define !== null && !isDefinitionCallee(path, state)) report(state, path.node, SDK_TEXT.defineOnly(define));
 }
 
 const isStaticKey = (node: Node): boolean => node.type === 'StringLiteral' || node.type === 'NumericLiteral';
@@ -272,7 +279,7 @@ function shellSpecifiers(node: Statement, state: FileState): void {
   if (node.type !== 'ImportDeclaration') return;
   for (const item of node.specifiers) {
     const name = item.type === 'ImportSpecifier' && item.imported.type === 'Identifier' ? item.imported.name : '';
-    const fine = item.type === 'ImportSpecifier' && (item.importKind === 'type' || name === DEFINE);
+    const fine = item.type === 'ImportSpecifier' && (item.importKind === 'type' || DEFINES.has(name));
     if (!fine) report(state, item, SDK_TEXT.importShell);
   }
 }
@@ -291,7 +298,7 @@ const isStaticConst = (node: Statement): boolean =>
   node.kind === 'const' &&
   node.declarations.every((item) => item.id.type === 'Identifier' && isStaticValue(item.init));
 
-// export default в файле входа — defineSection({ … }); в своём файле — только function.
+// export default в файле входа — defineSection({ … }) или у стора defineStore({ … }); в своём файле — только function.
 function checkDefaultExport(statement: NodePath<Statement>, state: FileState): void {
   if (!statement.isExportDefaultDeclaration()) return;
   const declaration = statement.get('declaration');
@@ -299,16 +306,20 @@ function checkDefaultExport(statement: NodePath<Statement>, state: FileState): v
     if (!declaration.isFunctionDeclaration()) report(state, statement.node, SDK_TEXT.topLevel);
     return;
   }
-  if (!declaration.isCallExpression()) return report(state, statement.node, SDK_TEXT.defineForm, 'script-invalid');
+  const expected = state.define ?? DEFINE_SECTION;
+  if (!declaration.isCallExpression())
+    return report(state, statement.node, SDK_TEXT.defineForm(expected), 'script-invalid');
   const callee = declaration.get('callee');
-  const define = callee.isIdentifier() && isDefineBinding(callee.scope.getBinding(callee.node.name));
-  if (!define) return report(state, statement.node, SDK_TEXT.defineForm, 'script-invalid');
+  const define = callee.isIdentifier() ? defineNameOf(callee.scope.getBinding(callee.node.name)) : null;
+  if (define === null) return report(state, statement.node, SDK_TEXT.defineForm(expected), 'script-invalid');
+  if (state.define !== null && define !== state.define)
+    return report(state, declaration.node, SDK_TEXT.defineKind(define, state.define), 'kind-mismatch');
   const args = declaration.get('arguments');
   const [first] = args;
   if (args.length !== 1 || first?.isStringLiteral() === true)
-    return report(state, declaration.node, SDK_TEXT.defineName, 'script-invalid');
+    return report(state, declaration.node, SDK_TEXT.defineName(define), 'script-invalid');
   if (first === undefined || !first.isObjectExpression())
-    return report(state, declaration.node, SDK_TEXT.defineForm, 'script-invalid');
+    return report(state, declaration.node, SDK_TEXT.defineForm(define), 'script-invalid');
   state.definition = first;
 }
 
@@ -339,8 +350,13 @@ function checkTopLevel(statement: NodePath<Statement>, state: FileState): void {
   if (!isQuietStatement(node) && !isStaticConst(node)) report(state, node, SDK_TEXT.topLevel);
 }
 
-function checkFile(file: string, ast: File, entry: boolean): { state: FileState; facts: FileFacts } {
-  const state: FileState = { file, entry, problems: [], definition: null };
+function checkFile(
+  file: string,
+  ast: File,
+  entry: boolean,
+  define: string | null,
+): { state: FileState; facts: FileFacts } {
+  const state: FileState = { file, entry, define, problems: [], definition: null };
   traverse(ast, {
     Program: (program) => {
       for (const statement of program.get('body')) checkTopLevel(statement, state);
@@ -355,15 +371,16 @@ const byPlace = (left: SectionProblem, right: SectionProblem): number =>
   (left.line ?? 0) - (right.line ?? 0) ||
   (left.column ?? 0) - (right.column ?? 0);
 
-// Все файлы .ts/.js секции; entry — вход скрипта (script.ts или script.js). Файл не разобрался — parsed: false.
-export function checkScriptSource(files: SectionFiles, entry: string): ScriptCheck {
+// Все файлы .ts/.js секции; entry — вход скрипта (script.ts или script.js); define — определение по виду из
+// section.json (null — вид не известен). Файл не разобрался — parsed: false.
+export function checkScriptSource(files: SectionFiles, entry: string, define: string | null = null): ScriptCheck {
   const failures: SectionProblem[] = [];
   const checked: { state: FileState; facts: FileFacts }[] = [];
   for (const [file, text] of Object.entries(files)) {
     if (!SCRIPT_FILE.test(file)) continue;
     const parsed = parseFile(file, text);
     if ('failure' in parsed) failures.push(parsed.failure);
-    else checked.push(checkFile(file, parsed.ast, file === entry));
+    else checked.push(checkFile(file, parsed.ast, file === entry, define));
   }
   const entryFacts = checked.find((item) => item.state.entry)?.facts ?? null;
   return {

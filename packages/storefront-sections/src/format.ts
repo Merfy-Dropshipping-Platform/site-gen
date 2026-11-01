@@ -1,5 +1,5 @@
 import { MODULE_NAMES } from '@merfy/shell/actions';
-import { BLOCK_RECORD_KINDS } from '@merfy/storefront-build';
+import { BLOCK_RECORD_KINDS, STORE_USE_PREFIX, storeUseSchema } from '@merfy/storefront-build';
 import { EXT_POINTS } from '@merfy/shell/ext-points';
 import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
@@ -37,7 +37,8 @@ const JSON_PLACE = /line (\d+) column (\d+)/;
 export const sectionIdSchema = z
   .string()
   .regex(SECTION_ID, { error: 'нужны строчные латинские буквы и цифры через одиночный дефис' });
-export const SECTION_KINDS = ['section', 'global'] as const;
+// store — свой стор (свои сторы, 01.11): код без места, как глобальный скрипт, со значением для секций и других сторов.
+export const SECTION_KINDS = ['section', 'global', 'store'] as const;
 export type SectionKind = (typeof SECTION_KINDS)[number];
 
 // Тип блока секции (часть 3, design.md 3.16, Р53): подпись в конструкторе, сколько блоков типа в секции, поля. Имя типа
@@ -77,10 +78,15 @@ export const EXT_PART = 'ext' as const;
 export const extUseSchema = z.templateLiteral([EXT_USE_PREFIX, z.string().regex(/^[a-z][a-z0-9-]{2,31}$/)]);
 export type ExtUse = z.infer<typeof extUseSchema>;
 export const isExtUse = (value: string): value is ExtUse => extUseSchema.safeParse(value).success;
+// "store:<префикс>:<имя>" (свои сторы): скрипту нужен ctx.stores['<префикс>:<имя>'] — свой стор магазина (shop:…) или
+// расширения (<id>:…). Правило — storeUseSchema входов сборки; в шаблон не идёт, в script_meta — в uses.
+export { STORE_USE_PREFIX, storeUseSchema };
+export type StoreUse = z.infer<typeof storeUseSchema>;
+export const isStoreUse = (value: string): value is StoreUse => storeUseSchema.safeParse(value).success;
 const USES_LIMIT = 12;
-// Текст подсказки фиксированный (тест ext-uses.test.ts): список модулей — как в MANIFEST_USES (consent — отдельной строкой).
-const USES_TEXT =
-  'нужно theme, shop, cart, favorites, customer, auth, newsletter, variants, search, catalog или ext:<id расширения>';
+// Текст подсказки собирается из MANIFEST_USES и видов ext:/store: — новый модуль SDK попадает в него сам (тест
+// ext-uses.test.ts сверяет каждое имя).
+export const USES_TEXT = `нужно ${MANIFEST_USES.join(', ')}, ${EXT_USE_PREFIX}<id расширения> или ${STORE_USE_PREFIX}<префикс>:<имя стора>`;
 const isSectionUse = (value: string): value is SectionUse => SECTION_USES.some((use) => use === value);
 export const propsUsesOf = (manifest: Pick<SectionManifest, 'uses'>): SectionUse[] =>
   (manifest.uses ?? []).filter(isSectionUse);
@@ -109,7 +115,7 @@ export const sectionManifestSchema = z.strictObject({
   limit: z.int().min(1).max(50).optional(),
   removable: z.literal(false).optional(),
   uses: z
-    .array(z.union([z.enum(MANIFEST_USES), extUseSchema], { error: USES_TEXT }))
+    .array(z.union([z.enum(MANIFEST_USES), extUseSchema, storeUseSchema], { error: USES_TEXT }))
     .max(USES_LIMIT)
     .refine(unique, { error: 'значение дважды' })
     .optional(),
@@ -273,10 +279,10 @@ function roleUnknownProblems(value: unknown): SectionProblem[] {
   return [problem('role-unknown', MANIFEST_FILE, text)];
 }
 
-// Место секции с ролью (блок 12, 12.1): записанные groups и limit должны совпадать с местом роли. У глобального скрипта —
-// ничего: роль у него ловит placeProblems по PLACE_KEYS.
+// Место секции с ролью (блок 12, 12.1): записанные groups и limit должны совпадать с местом роли. У глобального скрипта и
+// стора — ничего: роль у них ловит placeProblems по PLACE_KEYS.
 function rolePlaceProblems(manifest: SectionManifest): string[] {
-  if (manifest.kind === 'global' || manifest.role === undefined) return [];
+  if (manifest.kind !== 'section' || manifest.role === undefined) return [];
   const place = ROLE_PLACES[manifest.role];
   const groups =
     manifest.groups === undefined || sameGroups(manifest.groups, place.group)
@@ -372,7 +378,7 @@ export function readManifest(files: SectionFiles): Checked<SectionManifest> {
   return problems.length > 0 ? { ok: false, problems } : { ok: true, value: parsed.data };
 }
 
-// Секция — с шаблоном; глобальный скрипт (С7-21 А) — секция без места: без шаблона, со скриптом.
+// Секция — с шаблоном; глобальный скрипт (С7-21 А) и свой стор — код без места: без шаблона, со скриптом.
 interface KindRule {
   broken: (files: SectionFiles) => boolean;
   file: string;
@@ -393,6 +399,18 @@ const KIND_RULES: Record<SectionKind, readonly KindRule[]> = {
       broken: (files) => scriptEntryOf(files) === null,
       file: 'script.ts',
       message: 'у глобального скрипта нужен script.ts или script.js',
+    },
+  ],
+  store: [
+    {
+      broken: (files) => has(files, TEMPLATE_FILE),
+      file: TEMPLATE_FILE,
+      message: 'у стора нет места на странице: template.astro не нужен',
+    },
+    {
+      broken: (files) => scriptEntryOf(files) === null,
+      file: 'script.ts',
+      message: 'у стора нужен script.ts или script.js с export default defineStore({ value, start })',
     },
   ],
 };
@@ -450,15 +468,21 @@ function autoPlaceProblems(manifest: SectionManifest): string[] {
   return sectionGroupsOf(manifest).includes('page') ? [] : ['autoPlace: секция встаёт на страницу — нужна группа page'];
 }
 
-// У глобального скрипта места на странице нет — ключи места ему не нужны; uses — только модули SDK: шаблона у него нет,
-// theme и shop читать негде (часть 5в).
+// У глобального скрипта и стора места на странице нет — ключи места им не нужны; uses — только модули SDK и сторы:
+// шаблона у них нет, theme и shop читать негде (часть 5в).
+const PLACELESS: Readonly<Record<Exclude<SectionKind, 'section'>, string>> = {
+  global: 'у глобального скрипта',
+  store: 'у стора',
+};
+
 function placeProblems(manifest: SectionManifest): string[] {
-  if (manifest.kind !== 'global') return [...newPageProblems(manifest), ...autoPlaceProblems(manifest)];
+  if (manifest.kind === 'section') return [...newPageProblems(manifest), ...autoPlaceProblems(manifest)];
+  const who = PLACELESS[manifest.kind];
   return [
     ...PLACE_KEYS.filter((key) => key !== 'uses' && manifest[key] !== undefined).map(
-      (key) => `${key}: у глобального скрипта нет места на странице`,
+      (key) => `${key}: ${who} нет места на странице`,
     ),
-    ...propsUsesOf(manifest).map((use) => `uses: ${use} — данные шаблона, у глобального скрипта шаблона нет`),
+    ...propsUsesOf(manifest).map((use) => `uses: ${use} — данные шаблона, ${who} шаблона нет`),
   ];
 }
 

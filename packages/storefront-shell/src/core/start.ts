@@ -26,8 +26,9 @@ import type {
   Stop,
 } from './types';
 
-// Старт ядра секций (design.md блока 5, раздел 3.6): все секции разом в порядке страницы, глобальные скрипты — в конце
-// body; после прохода — merfy:page:ready и merfy:page:view. Снятие — микрозадачей позже, перенос узла не перезапускает.
+// Старт ядра секций (design.md блока 5, раздел 3.6): свои сторы страницы — первыми, потом все секции разом в порядке
+// страницы, глобальные скрипты — в конце body; после прохода — merfy:page:ready и merfy:page:view. Снятие — микрозадачей
+// позже, перенос узла не перезапускает.
 
 export interface CoreEnv {
   readonly window: Window;
@@ -270,7 +271,9 @@ export function start(options: StartOptions, env: CoreEnv = { window }): Started
   if (read.config !== null && read.mode === 'live')
     watchSectionErrors(win, read.config, controller.signal); // до запуска секций: сбой старта — в пачке
   const parts = createCoreParts(read.config, read.mode, bus, options);
-  const runtime = runtimeOf(win, read.mode, bus, page, parts);
+  const base = runtimeOf(win, read.mode, bus, page, parts);
+  // Свои сторы — до секций (секции читают их в mount); код сторов — только в бандле страниц, где они есть.
+  const runtime = options.stores?.(base, controller.signal) ?? base;
   addGlobals(win, options.sections);
   return runCore(win, options, runtime, controller, read);
 }

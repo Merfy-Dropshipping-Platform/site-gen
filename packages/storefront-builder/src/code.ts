@@ -36,6 +36,7 @@ import {
   isDefaultWrapperView,
   resolveWrapperView,
   settingFieldsOf,
+  storeReadsOf,
 } from '@merfy/storefront-sections';
 import { z } from 'zod';
 import { StorefrontBuilderError, errorText } from './errors';
@@ -414,6 +415,35 @@ function codeExtras(
   };
 }
 
+interface StoreSearch {
+  readonly visible: ReadonlyMap<string, VisibleRow>;
+  readonly names: Set<string>;
+  readonly context: CodeContext;
+}
+
+// Стор store, который читает код section: ещё не найденный — его строка; нет среди видимых — строка журнала.
+function storeRowOf(search: StoreSearch, section: string, store: string): VisibleRow[] {
+  if (search.names.has(store)) return [];
+  search.names.add(store);
+  const found = search.visible.get(store);
+  if (found !== undefined && found[0].kind === 'store') return [found];
+  search.context.log('section-store-missing', { shopId: search.context.shopId, section, store });
+  return [];
+}
+
+// Код магазина в сборке: стоящие секции, глобальные скрипты и свои сторы, которые они читают (свои сторы) — сами или
+// через другие сторы, по одному разу. Стора нет среди видимых (свой не опубликован, расширение выключено) — строка
+// журнала section-store-missing на каждую пару «код, стор», сборка идёт: на витрине такой код получит отказ
+// part-unknown, как при выключенном расширении.
+function usedRows(visible: ReadonlyMap<string, VisibleRow>, placed: ReadonlySet<string>, context: CodeContext) {
+  const used = [...visible.values()].filter(([row]) => row.kind === 'global' || placed.has(row.name));
+  const search: StoreSearch = { visible, names: new Set(used.map(([row]) => row.name)), context };
+  // for…of видит строки, добавленные по ходу: сторы, которые читают найденные сторы.
+  for (const [row, current] of used)
+    used.push(...storeReadsOf(current.scriptMeta).flatMap((store) => storeRowOf(search, row.name, store)));
+  return used;
+}
+
 // Код из видимых строк: экземпляры секций на страницах (экземпляр без видимой секции пропускается: расширение
 // выключили, своя секция ещё не опубликована) и все глобальные скрипты. Ядро секций — всегда (часть 5б): аналитика — в
 // бандле каждой страницы опубликованного сайта.
@@ -432,7 +462,7 @@ export function codeOf(
     Object.entries(placement).map(([page, instances]): [string, CodeInstance[]] => [page, placedOn(page, instances)]),
   );
   const placed = new Set(Object.values(pages).flatMap((instances) => instances.map((instance) => instance.section)));
-  const used = [...visible.values()].filter(([row]) => row.kind === 'global' || placed.has(row.name));
+  const used = usedRows(visible, placed, context);
   const globals = used.filter(([row]) => row.kind === 'global').map(([row]) => row.name);
   const modules = new Map(used.flatMap(moduleOf));
   const renders = new Map(used.flatMap(renderOf));

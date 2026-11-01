@@ -52,6 +52,10 @@ const moduleSection = (module: ModuleName): string => {
 const EXT_USE_ABOUT =
   '- `"ext:<id>"` — сторы и методы расширения магазина в `ctx.ext.<id>` (id расширения — строчные латинские буквы, цифры и дефис, 3–32 знака); раздел «ext:<id>» в конце страницы.';
 
+// store:<префикс>:<имя> (свои сторы, 01.11): стор автора, а не модуль ядра — подробности в stores.md.
+const STORE_USE_ABOUT =
+  '- `"store:<префикс>:<имя>"` — свой стор магазина (`store:shop:<имя>`) или расширения (`store:<id>:<имя>`) в `ctx.stores[\'<префикс>:<имя>\']`, только для чтения — [stores.md](stores.md).';
+
 const EXT_SECTION = [
   '## ext:<id>',
   '',
@@ -67,6 +71,7 @@ export function modulesPage(): string {
     '',
     uses,
     EXT_USE_ABOUT,
+    STORE_USE_ABOUT,
     '',
     'Имя модуля SDK из разделов ниже — `ctx.<модуль>` в `script.ts`.',
     '',

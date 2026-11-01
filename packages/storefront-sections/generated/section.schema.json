@@ -18,7 +18,8 @@
       "type": "string",
       "enum": [
         "section",
-        "global"
+        "global",
+        "store"
       ]
     },
     "title": {
@@ -16024,6 +16025,10 @@
           {
             "type": "string",
             "pattern": "^ext:[a-z][a-z0-9-]{2,31}$"
+          },
+          {
+            "type": "string",
+            "pattern": "^store:[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*$"
           }
         ]
       }

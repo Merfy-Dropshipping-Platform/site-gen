@@ -46,8 +46,8 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     fix: 'Убери лишние файлы и повторы; пределы — на странице limits.md.',
   },
   'kind-mismatch': {
-    when: 'Файлы не подходят виду: у секции нет template.astro, у глобального скрипта он есть или нет скрипта.',
-    fix: 'У "kind": "section" нужен template.astro; у "kind": "global" — только script.ts.',
+    when: 'Файлы не подходят виду: у секции нет template.astro, у глобального скрипта или стора он есть или нет скрипта, у стора — не defineStore.',
+    fix: 'У "kind": "section" нужен template.astro; у "kind": "global" — только script.ts; у "kind": "store" — script.ts с export default defineStore({ value, start }).',
   },
   'template-forbidden': {
     when: 'В template.astro запрещённое: тег, компонент, обработчик on…, директива, {...} в атрибутах или адрес javascript:.',
@@ -359,5 +359,25 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: 'Секция расширения подключает в uses чужое расширение.',
     fix: 'Оставь в uses только "ext:<id своего расширения>".',
     example: { before: '"uses": ["ext:foreign"]', after: '"uses": ["ext:own"]' },
+  },
+  'store-foreign': {
+    when: 'Секция, глобальный скрипт или стор расширения читает в uses стор другого автора: магазина или чужого расширения.',
+    fix: 'Оставь в uses только сторы своего расширения — "store:<id своего расширения>:<имя>"; данные магазина — модули SDK.',
+    example: { before: '"uses": ["store:shop:visits"]', after: '"uses": ["store:popups:visits"]' },
+    doc: 'stores.md#кто-что-читает',
+  },
+  'store-cycle': {
+    when: 'Стор через другие сторы читает сам себя: shop:a читает shop:b, а shop:b — shop:a. Такой стор не запустится.',
+    fix: 'Убери одно чтение из круга: общее для двух сторов вынеси в третий стор, который читают оба.',
+    example: {
+      before: 'стор a: "uses": ["store:shop:b"], стор b: "uses": ["store:shop:a"]',
+      after: 'сторы a и b: "uses": ["store:shop:base"]',
+    },
+    doc: 'stores.md#порядок-запуска-и-круг',
+  },
+  'store-unknown': {
+    when: 'Скрипт читает ctx.stores[\'<префикс>:<имя>\'], а в uses нет "store:<префикс>:<имя>": такого стора в ctx.stores не будет.',
+    fix: 'Добавь "store:<префикс>:<имя>" в uses section.json.',
+    example: { before: '"uses": ["cart"]', after: '"uses": ["cart", "store:shop:exit-offer"]' },
   },
 };

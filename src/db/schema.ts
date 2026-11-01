@@ -759,7 +759,7 @@ export const storefrontSection = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
-    kindCheck: check("storefront_section_kind_check", sql`${table.kind} IN ('section', 'global')`),
+    kindCheck: check("storefront_section_kind_check", sql`${table.kind} IN ('section', 'global', 'store')`),
     authorCheck: check(
       "storefront_section_author_check",
       sql`${table.author} IN ('platform', 'theme', 'shop', 'extension')`,

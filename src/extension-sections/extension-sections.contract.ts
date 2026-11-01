@@ -3,8 +3,9 @@
  * __tests__/fixtures/extension-sections.examples.json — один файл, байт в байт.
  *
  * 1. RPC sites.extension.section.accept (sites_queue): при регистрации версии
- *    расширения сервис extensions отправляет каждую секцию и каждый
- *    глобальный скрипт манифеста; sites сохраняет его способом extension
+ *    расширения сервис extensions отправляет каждую секцию, каждый
+ *    глобальный скрипт и каждый свой стор манифеста (kind: section, global,
+ *    store); sites сохраняет его способом extension
  *    (release — версия расширения) и отвечает итогом. Хоть один не сохранён —
  *    версия не регистрируется.
  * 2. Событие sites.extension.toggled (sites_queue, без ответа): после enable и
@@ -33,7 +34,7 @@ export type SectionFiles = z.infer<typeof SectionFilesSchema>;
 export const SectionAcceptRequestSchema = z.strictObject({
   extensionId: z.string().regex(EXTENSION_ID_RE),
   release: z.string().regex(RELEASE_RE),
-  kind: z.enum(["section", "global"]),
+  kind: z.enum(["section", "global", "store"]),
   name: z.string().max(40).regex(SECTION_NAME_RE),
   files: SectionFilesSchema,
 });

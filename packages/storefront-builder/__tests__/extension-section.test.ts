@@ -113,6 +113,19 @@ describe('POST /sections/extension', () => {
     });
   });
 
+  // Свои сторы: стор расширения приходит с kind=store из storefront.scriptStores манифеста.
+  it('kind=store, а в section.json секция — 422 manifest-invalid со списком storefront.scriptStores', async () => {
+    const { deps, accept } = probe();
+    const answer = await send(deps, { files: FILES }, urlOf({ ...QUERY, kind: 'store' }));
+    expect(answer.status).toBe(422);
+    expect(json(answer)).toMatchObject({
+      problems: [
+        { message: 'kind в section.json — «section», а в манифесте расширения секция в storefront.scriptStores' },
+      ],
+    });
+    expect(accept).not.toHaveBeenCalled();
+  });
+
   it.each<[string, Record<string, string>]>([
     ['занятое имя shop', { ...QUERY, extension: 'shop' }],
     ['версия не semver', { ...QUERY, release: '0.1' }],

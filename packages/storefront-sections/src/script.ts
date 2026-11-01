@@ -6,7 +6,7 @@ import type * as EsbuildApi from 'esbuild-wasm';
 import type { Message, OnResolveArgs, OnResolveResult, Plugin } from 'esbuild-wasm';
 import type { SectionFiles } from './format';
 import { isWarning, problem, when, type Checked, type SectionProblem } from './problems';
-import { checkScriptSource } from './script-check';
+import { DEFINE_STORE, checkScriptSource } from './script-check';
 import type { ScriptFacts } from './script-facts';
 import { rewriteModule } from './script-rewrite';
 import { SHELL_MODULE } from './script-tree';
@@ -131,12 +131,20 @@ async function finish(code: string): Promise<string> {
   return (await (await esbuildOf()).transform(rewriteModule(code), options)).code;
 }
 
-function weightProblems(entry: string, exports: readonly string[], brotliBytes: number): SectionProblem[] {
+function weightProblems(
+  entry: string,
+  exports: readonly string[],
+  brotliBytes: number,
+  define: string | null,
+): SectionProblem[] {
   const { warnBytes, maxBytes } = SCRIPT_LIMITS;
+  // У стора (свои сторы) — про defineStore.
+  const noDefault =
+    define === DEFINE_STORE
+      ? 'нет export default: стору нужен export default defineStore({ value, start })'
+      : 'нет export default: секции нужен export default defineSection({ mount })';
   return [
-    ...when(!exports.includes('default'), () =>
-      problem('script-invalid', entry, 'нет export default: секции нужен export default defineSection({ mount })'),
-    ),
+    ...when(!exports.includes('default'), () => problem('script-invalid', entry, noDefault)),
     ...when(brotliBytes > maxBytes, () =>
       problem('script-too-heavy', entry, `скрипт весит ${brotliBytes} Б brotli, предел ${maxBytes} Б`),
     ),
@@ -146,16 +154,21 @@ function weightProblems(entry: string, exports: readonly string[], brotliBytes: 
   ];
 }
 
-// Проверка исходника и сборка: не разобрался файл — только его ошибка; остальные проблемы — разом.
-export async function buildScript(files: SectionFiles, entry: string): Promise<Checked<BuiltScript>> {
-  const source = checkScriptSource(files, entry);
+// Проверка исходника и сборка: не разобрался файл — только его ошибка; остальные проблемы — разом. define — определение
+// по виду из section.json (defineSection или у стора defineStore); null — вид не известен.
+export async function buildScript(
+  files: SectionFiles,
+  entry: string,
+  define: string | null = null,
+): Promise<Checked<BuiltScript>> {
+  const source = checkScriptSource(files, entry, define);
   if (!source.parsed) return { ok: false, problems: source.problems };
   const bundled = await bundle(files, entry);
   const early = [...source.problems, ...(bundled.ok ? [] : bundled.problems)];
   if (!bundled.ok || early.length > 0) return { ok: false, problems: early };
   const code = await finish(bundled.value.code);
   const brotliBytes = brotliCompressSync(code).length;
-  const problems = weightProblems(entry, bundled.value.exports, brotliBytes);
+  const problems = weightProblems(entry, bundled.value.exports, brotliBytes, define);
   if (problems.some((item) => !isWarning(item))) return { ok: false, problems };
   return { ok: true, value: { code, brotliBytes, warnings: problems, facts: source.facts } };
 }

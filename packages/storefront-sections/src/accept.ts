@@ -5,16 +5,19 @@ import { MANIFEST_FILE, readManifest, type SectionFiles } from './format';
 import type { PreparedSection } from './prepare';
 import { problem, type SectionProblem } from './problems';
 import {
+  assertNoStoreCycle,
   currentDraft,
   findRelease,
   insertRelease,
   RoleTakenError,
   saveDraft,
+  StoreCycleError,
   type Database,
   type NewSection,
   type SectionRow,
 } from './registry';
 import { DEFAULT_SANDBOX, prepareInWorker, type SandboxOptions } from './sandbox';
+import { storeCycleText } from './store-cycle';
 
 // Приём секции целиком (design.md блока 7, п. 21: «Все двери зовут одну функцию приёма в sites: разбор section.json,
 // проверка, сборка, запись версии в реестр»). Дверь даёт автора, приставку и выпуск, дальше путь один: отпечаток
@@ -57,8 +60,26 @@ function knownRelease(row: SectionRow, sourceHash: string): AcceptResult {
   return refused([problem('release-changed', '', text)]);
 }
 
-// Два сборщика стартовали разом и приняли один выпуск: строка — у первого, второй сверяет свой исходник с ней.
+// Круг чтений своих сторов (свои сторы) — отказ приёма с путём круга.
+const cycleRefused = (error: StoreCycleError): AcceptResult =>
+  refused([problem('store-cycle', MANIFEST_FILE, storeCycleText(error.cycle))]);
+
+const editOf = (row: NewSection) => ({
+  door: row.door,
+  name: row.section.name,
+  kind: row.section.manifest.kind,
+  scriptMeta: row.section.scriptMeta,
+});
+
+// Два сборщика стартовали разом и приняли один выпуск: строка — у первого, второй сверяет свой исходник с ней. Стор
+// выпуска сверяется со сторами того же выпуска: сервис extensions шлёт их по одному.
 async function saveRelease(db: Database, row: NewSection): Promise<AcceptResult> {
+  try {
+    await assertNoStoreCycle(db, editOf(row));
+  } catch (error) {
+    if (error instanceof StoreCycleError) return cycleRefused(error);
+    throw error;
+  }
   const inserted = await insertRelease(db, row);
   if (inserted !== null) return { status: 'accepted', row: inserted };
   const existing = await findRelease(db, row.door, row.section.name);
@@ -80,6 +101,7 @@ const DRAFT: Storage = {
       const saved = await saveDraft(db, row, options.expectDraft);
       return { status: saved.created ? 'accepted' : 'unchanged', row: saved.row };
     } catch (error) {
+      if (error instanceof StoreCycleError) return cycleRefused(error);
       // Блок 12, часть 12а: роль занята другой секцией магазина — отказ приёма с её именем.
       if (!(error instanceof RoleTakenError)) throw error;
       const text = `в магазине уже есть секция с ролью ${error.role} — ${error.holder}, измени её`;

@@ -54,6 +54,12 @@ export const PAGES: readonly PageSpec[] = [
   { file: 'template.md', title: 'template.astro', about: 'frontmatter, выражения, что нельзя', section: 'Справочник' },
   { file: 'styles.md', title: 'Классы и токены', about: 'словарь классов, токены секции', section: 'Справочник' },
   { file: 'script.md', title: 'script.ts', about: 'defineSection, ctx, El, вызов функции расширения (ctx.ext)', section: 'Справочник' },
+  {
+    file: 'stores.md',
+    title: 'Свои сторы',
+    about: 'defineStore: значение JSON вне секций, uses "store:…", кто что читает, порядок запуска, сбой, превью',
+    section: 'Справочник',
+  },
   { file: 'modules.md', title: 'Модули SDK', about: 'uses и действия по модулям', section: 'Справочник' },
   { file: 'events.md', title: 'События', about: 'события витрины и их данные', section: 'Справочник' },
   { file: 'actions.md', title: 'Действия', about: 'data-action и ответы действий', section: 'Справочник' },

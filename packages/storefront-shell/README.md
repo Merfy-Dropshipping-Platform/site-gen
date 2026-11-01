@@ -301,3 +301,16 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 - Превью: выбор секции в конструкторе — `OVERLAY_SHOW_EVENT` на её `<merfy-section>` от скрипта секций превью, ядро
   открывает окно с параметрами последнего `open()`, фокус не берёт; снятие выбора — `OVERLAY_HIDE_EVENT`.
 - Тесты: `__tests__/overlay.test.ts` (jsdom, popover подставлен) и `__tests__/browser/overlay.browser.test.ts` (Chromium).
+
+## Свои сторы: `defineStore`, `ctx.stores` (01.11)
+
+- Стор — `section.json` с `"kind": "store"` и `script.ts` с `defineStore({ value, start(ctx, set) })`. Секция, глобальный
+  скрипт или другой стор читает его по `uses: ["store:<префикс>:<имя>"]` в `ctx.stores['<префикс>:<имя>']` — только
+  `get` и `ctx.watch`, пишет только `set` самого стора.
+- Код сторов (`src/core/own-stores.ts`: запуск по зависимостям, ctx стора, круг, разбор uses `store:…`) — в бандле только
+  страниц, где они есть: сборка импортирует `pageStores` и передаёт `start({ …, stores: pageStores([…]) })`; ядро зовёт
+  его до секций и берёт runtime, в котором `store:…` — фасады сторов. В ядре от сторов — только `ctx.stores` (пустой у
+  секций без таких uses); доля кода сторов — до 2 КБ brotli (`__tests__/own-stores-budget.test.ts`).
+- Сбой стора — `merfy:section:error` с его именем, страница работает. В превью хранилище стора — в памяти.
+- Тесты: `__tests__/own-stores.test.ts` (jsdom), `storefront-build/__tests__/browser/own-stores-bundle.test.ts` (Chromium,
+  витрина и превью).

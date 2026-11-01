@@ -87,7 +87,7 @@ describe('проверить', () => {
       problems: [{ ...UNKNOWN, doc: DOC }],
       warnings: [],
     });
-    expect(deps.check).toHaveBeenCalledWith({ prefix: 'shop', files: FILES });
+    expect(deps.check).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES);
     expect(deps.logged).toEqual(['section-checked']);
   });
 });

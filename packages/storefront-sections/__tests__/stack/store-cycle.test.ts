@@ -1,7 +1,7 @@
 import { createS3Store, type ObjectStore } from '@merfy/storefront-storage';
 import type { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { acceptSection } from '../../src/accept';
+import { acceptSection, checkSection } from '../../src/accept';
 import type { Door } from '../../src/doors';
 import type { SectionFiles } from '../../src/format';
 import { StoreCycleError, currentDraft, rollbackSection, sectionHistory } from '../../src/registry';
@@ -54,6 +54,19 @@ describe('круг чтений сторов — отказ приёма', () =>
       ],
     });
     expect(await currentDraft(db, SHOP, 'shop:a')).toBeNull();
+  }, 60_000);
+
+  // Проверка без записи (POST /sections/check) говорит то же, что сохранение: автор и MCP идут check → save.
+  it('проверка круга — тот же отказ store-cycle, что у сохранения; ничего не записано; без круга — ok', async () => {
+    const deps = { db, store };
+    expect((await acceptSection(deps, SHOP_DOOR, storeFiles('b', ['shop:a']))).status).toBe('accepted');
+    const files = storeFiles('a', ['shop:b']);
+    const checked = await checkSection({ db }, SHOP_DOOR, files);
+    const saved = await acceptSection(deps, SHOP_DOOR, files);
+    expect(checked).toEqual({ ok: false, problems: saved.status === 'refused' ? saved.problems : [] });
+    expect(checked.ok ? [] : checked.problems.map((item) => item.code)).toEqual(['store-cycle']);
+    expect(await currentDraft(db, SHOP, 'shop:a')).toBeNull();
+    expect((await checkSection({ db }, SHOP_DOOR, storeFiles('a', []))).ok).toBe(true);
   }, 60_000);
 
   it('стор сам себя — отказ; цепочка без круга и правка, которая круг разрывает, — принимаются', async () => {

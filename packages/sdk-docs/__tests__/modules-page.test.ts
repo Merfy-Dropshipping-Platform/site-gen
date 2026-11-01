@@ -19,6 +19,13 @@ describe('modules.md', () => {
       expect(sectionOf(name), name).toContain(core.includes(name) ? 'бандле каждой страницы' : 'бандле только страниц, где секция объявила');
   });
 
+  it('ext:<id> — в списке uses и отдельным разделом, со ссылкой на форму ответа в script.md', () => {
+    expect(page).toContain('- `"ext:<id>"` — ');
+    expect(page).toContain('\n## ext:<id>\n');
+    expect(sectionOf('ext:<id>')).toContain('{ ok: true, data }');
+    expect(sectionOf('ext:<id>')).toContain('script.md#вызов-функции-расширения');
+  });
+
   it('customer — «кто вошёл» для шапки; auth — вход по коду, выход, профиль и совет взять customer', () => {
     expect(sectionOf('customer')).toContain('$customer');
     expect(sectionOf('auth')).toContain('requestCode');

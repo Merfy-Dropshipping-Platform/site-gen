@@ -1,7 +1,7 @@
 # Merfy · SDK секций витрины
 
 > Как написать секцию магазина Merfy: section.json, template.astro, script.ts.
-> SDK 1 · документация 1.21.0 · 2026-10-30. Читай эту документацию, а не память: SDK новый.
+> SDK 1 · документация 1.22.0 · 2026-11-01. Читай эту документацию, а не память: SDK новый.
 
 ## Гайд
 - [Из чего состоит секция](anatomy.md): section.json, template.astro и script.ts, как они связаны, откуда секция берёт данные и как общается со страницей
@@ -18,7 +18,7 @@
 - [Имена полей](names.md): словарь имён и что вместо имён не из словаря
 - [template.astro](template.md): frontmatter, выражения, что нельзя
 - [Классы и токены](styles.md): словарь классов, токены секции
-- [script.ts](script.md): defineSection, ctx, El
+- [script.ts](script.md): defineSection, ctx, El, вызов функции расширения (ctx.ext)
 - [Модули SDK](modules.md): uses и действия по модулям
 - [События](events.md): события витрины и их данные
 - [Действия](actions.md): data-action и ответы действий

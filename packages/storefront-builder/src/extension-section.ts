@@ -16,7 +16,7 @@ export const EXTENSION_SECTION_ROUTE = '/sections/extension';
 const querySchema = z.strictObject({
   extension: z.string(),
   release: z.string(),
-  kind: z.enum(['section', 'global']),
+  kind: z.enum(['section', 'global', 'store']),
   name: z.string().regex(SECTION_ID),
 });
 type SectionQuery = z.infer<typeof querySchema>;
@@ -29,13 +29,18 @@ export interface ExtensionSectionAnswer {
 }
 
 const TEXT = {
-  query: 'нужны ?extension=<id>&release=<semver>&kind=section|global&name=<имя секции>',
+  query: 'нужны ?extension=<id>&release=<semver>&kind=section|global|store&name=<имя секции>',
   body: 'нужно тело JSON { "files": { "<путь>": "<текст>" } }',
   closed: 'загрузка секций на этом контуре выключена: песочница процессов рендера не закрыта',
   failed: 'сохранение секции расширения упало: повтор — следующей регистрацией версии',
 } as const;
 
-const LISTS = { section: 'storefront.sections', global: 'storefront.globals' } as const;
+// Свой стор расширения (свои сторы) — в storefront.scriptStores: storefront.stores манифеста — сторы функций расширения.
+const LISTS = {
+  section: 'storefront.sections',
+  global: 'storefront.globals',
+  store: 'storefront.scriptStores',
+} as const;
 
 const manifestProblem = (message: string): SectionProblem => ({
   code: 'manifest-invalid',

@@ -2,6 +2,7 @@ import {
   DEFAULT_SANDBOX,
   SECTION_ID,
   RoleTakenError,
+  StoreCycleError,
   acceptSection,
   draftSource,
   prepareInWorker,
@@ -9,6 +10,7 @@ import {
   rollbackSection,
   sectionAnswer,
   sectionHistory,
+  storeCycleText,
   withoutAiFiles,
   type AcceptResult,
   type Database,
@@ -44,6 +46,7 @@ export type ToolErrorCode =
   | 'section-not-found'
   | 'edit-not-found'
   | 'role-taken'
+  | 'store-cycle'
   | 'tool-failed';
 
 export interface ToolError {
@@ -217,7 +220,8 @@ function editWithErrors(row: SectionRow, errors: SectionEditError[]): HistoryAns
   };
 }
 
-// Вернуть прежнюю правку: она снова текущая, новых строк нет. Роль прежней правки занята другой секцией — 409.
+// Вернуть прежнюю правку: она снова текущая, новых строк нет. Роль прежней правки занята другой секцией — 409; прежняя
+// правка стора замкнула бы круг чтений сторов — тоже 409 (свои сторы).
 async function rollback(deps: SectionToolsDeps, request: ToolRequest): Promise<DrawAnswer> {
   const parsed = rollbackBodySchema.safeParse(readJson(request.body));
   if (!parsed.success) return toolError(400, 'body-invalid', TEXT.rollback);
@@ -226,6 +230,7 @@ async function rollback(deps: SectionToolsDeps, request: ToolRequest): Promise<D
     row = await deps.rollback(request.shopId, request.name, parsed.data.id);
   } catch (error) {
     if (error instanceof RoleTakenError) return toolError(409, 'role-taken', TEXT.role(error.role, error.holder));
+    if (error instanceof StoreCycleError) return toolError(409, 'store-cycle', storeCycleText(error.cycle));
     throw error;
   }
   if (row === null) return toolError(404, 'edit-not-found', TEXT.edit(parsed.data.id));

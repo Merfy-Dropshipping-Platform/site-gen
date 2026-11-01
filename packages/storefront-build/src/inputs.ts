@@ -52,8 +52,13 @@ const jsonObject = z.record(z.string(), z.json());
 const SECTION_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // Часть ядра секций — имя экспорта dist/core.js (auth, cart, favorites): в бандл страницы оно идёт кодом как есть.
 const PART_NAME = /^[a-z][a-z0-9]*$/;
-const CODE_KINDS = ['section', 'global'] as const;
+// store — свой стор (свои сторы): код без места на странице, его читают секции и другие сторы.
+const CODE_KINDS = ['section', 'global', 'store'] as const;
 const sectionNameSchema = z.string().regex(SECTION_NAME, { error: 'нужно полное имя секции: nova:scarf-colors' });
+// Свой стор в uses и script_meta (свои сторы): "store:<полное имя стора>" — store:shop:exit-offer. То же правило берёт
+// приём секции (@merfy/storefront-sections, format.ts).
+export const STORE_USE_PREFIX = 'store:';
+export const storeUseSchema = z.templateLiteral([STORE_USE_PREFIX, sectionNameSchema]);
 export const partNameSchema = z.string().regex(PART_NAME, { error: 'нужно имя части ядра: cart' });
 // Класс, который ставит скрипт секции (часть 5в блока 5): имя утилиты без скобок, кавычек и пробелов — то же правило,
 // что SCRIPT_CLASS пакета секций.
@@ -102,7 +107,7 @@ const codeSectionSchema = z.strictObject({
   meta: z
     .strictObject({
       // "ext:<id>" (блок 9 «Секций и SDK», часть 9в; Р9в-20) — модуль расширения ctx.ext.<id>; его часть — ext в parts.
-      uses: z.array(z.union([partNameSchema, extUseSchema])),
+      uses: z.array(z.union([partNameSchema, extUseSchema, storeUseSchema])),
       parts: z.array(partNameSchema),
       classes: z.array(z.string().regex(SCRIPT_CLASS, { error: 'нужно имя класса утилиты: opacity-40' })),
     })
@@ -282,11 +287,13 @@ interface CodeIssue {
 interface Place {
   path: string;
   name: string;
-  kind: CodeKind;
+  kind: PlaceKind;
 }
 
-const MISSING_TEXT: Record<CodeKind, string> = { section: 'такой секции', global: 'такого глобального скрипта' };
-const place = (path: string, name: string, kind: CodeKind): Place => ({ path, name, kind });
+// У своего стора места нет ни на странице, ни в globals: его ставит в бандл чтение из uses (code.ts).
+type PlaceKind = Exclude<CodeKind, 'store'>;
+const MISSING_TEXT: Record<PlaceKind, string> = { section: 'такой секции', global: 'такого глобального скрипта' };
+const place = (path: string, name: string, kind: PlaceKind): Place => ({ path, name, kind });
 
 // Где код ставит имя: место на странице ждёт секцию, строка globals — глобальный скрипт.
 const placesOf = (code: CodeInput): Place[] => [
@@ -318,11 +325,12 @@ function scriptsWithoutShell(inputs: BuildInputs): CodeIssue[] {
   );
 }
 
-// Модуль рендера есть у секции и нет у глобального скрипта: сборщик такого не пишет.
-const HAS_RENDER: Record<CodeKind, boolean> = { section: true, global: false };
+// Модуль рендера есть у секции и нет у глобального скрипта и стора: сборщик такого не пишет.
+const HAS_RENDER: Record<CodeKind, boolean> = { section: true, global: false, store: false };
 const RENDER_TEXT: Record<CodeKind, string> = {
   section: 'у секции нет модуля рендера',
   global: 'у глобального скрипта модуля рендера не бывает',
+  store: 'у стора модуля рендера не бывает',
 };
 
 const renderIssues = (code: CodeInput): CodeIssue[] =>

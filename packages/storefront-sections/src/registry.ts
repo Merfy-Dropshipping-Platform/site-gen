@@ -6,6 +6,7 @@ import { SECTION_KINDS, type SectionFiles } from './format';
 import type { PreparedSection } from './prepare';
 import { sectionProblemSchema } from './problems';
 import { isSectionRole, type SectionRole } from './roles';
+import { storeCycleOf, storeReadsOf } from './store-cycle';
 
 // Реестр секций (design.md блока 7, С7-10 Б «одна общая таблица», С7-20 Б) — таблица storefront_section базы sites
 // (drizzle/0024). Строка — принятая правка секции или глобального скрипта любого автора. Выпуск платформы, темы и
@@ -219,6 +220,44 @@ export class DraftChangedError extends Error {
   }
 }
 
+// Круг чтений своих сторов (свои сторы): новая правка стора через другие сторы того же автора читает сама себя — отказ,
+// ничего не записано. cycle — путь круга: shop:a → shop:b → shop:a.
+export class StoreCycleError extends Error {
+  constructor(readonly cycle: readonly string[]) {
+    super(`store-cycle: ${cycle.join(' → ')}`);
+    this.name = 'StoreCycleError';
+  }
+}
+
+// Сторы автора, с которыми сверяется правка: у магазина — текущие правки (draft), у расширения — тот же выпуск.
+const SHOP_STORES_SQL = `SELECT name, script_meta AS "scriptMeta" FROM storefront_section
+  WHERE author = 'shop' AND owner = $1 AND draft AND kind = 'store' AND name <> $2`;
+const RELEASE_STORES_SQL = `SELECT name, script_meta AS "scriptMeta" FROM storefront_section
+  WHERE author = $1 AND owner = $2 AND release = $3 AND kind = 'store' AND name <> $4`;
+const storeRow = z.object({ name: z.string(), scriptMeta: z.unknown() });
+
+interface StoreEdit {
+  door: Pick<DoorFields, 'author' | 'owner' | 'release'>;
+  name: string;
+  kind: string;
+  scriptMeta: unknown;
+}
+
+// Правка стора не замыкает круг чтений; у секции и глобального скрипта круга не бывает — их никто не читает.
+export async function assertNoStoreCycle(client: Queryable, edit: StoreEdit): Promise<void> {
+  if (edit.kind !== 'store') return;
+  const { door, name } = edit;
+  const { rows } =
+    door.release === null
+      ? await client.query(SHOP_STORES_SQL, [door.owner, name])
+      : await client.query(RELEASE_STORES_SQL, [door.author, door.owner, door.release, name]);
+  const graph = new Map(
+    rows.map((item) => storeRow.parse(item)).map((row): [string, string[]] => [row.name, storeReadsOf(row.scriptMeta)]),
+  );
+  const cycle = storeCycleOf(name, storeReadsOf(edit.scriptMeta), graph);
+  if (cycle !== null) throw new StoreCycleError(cycle);
+}
+
 const ROLE_HOLDER_SQL = `SELECT name FROM storefront_section
   WHERE author = 'shop' AND owner = $1 AND draft AND name <> $2 AND manifest->>'role' = $3 ORDER BY name LIMIT 1`;
 
@@ -242,6 +281,12 @@ export async function saveDraft(db: Database, row: NewSection, expectDraft?: str
     if (expectDraft !== undefined && (current?.sourceHash ?? null) !== expectDraft)
       throw new DraftChangedError(row.section.name, current?.sourceHash ?? null);
     await assertRoleFree(client, owner, row.section);
+    await assertNoStoreCycle(client, {
+      door: row.door,
+      name: row.section.name,
+      kind: row.section.manifest.kind,
+      scriptMeta: row.section.scriptMeta,
+    });
     await client.query(CLEAR_DRAFT_SQL, [owner, row.section.name]);
     const [inserted] = await select(client, DRAFT_INSERT_SQL, insertParams(row, true));
     return { row: inserted, created: true };
@@ -308,7 +353,7 @@ async function assertRowRoleFree(client: Queryable, shopId: string, row: Section
 
 // «Верни как было» (С7-20 Б): прежняя строка снова текущая — новой строки и нового файла нет. Такой строки у секции
 // магазина нет — null, текущая правка остаётся. Роль прежней строки занята другой секцией — RoleTakenError, текущая
-// правка остаётся (часть 12в).
+// правка остаётся (часть 12в). Прежняя правка стора замкнула бы круг чтений — StoreCycleError (свои сторы).
 export async function rollbackSection(
   db: Database,
   shopId: string,
@@ -319,6 +364,12 @@ export async function rollbackSection(
     const target = first(await select(client, BY_ID_SQL, [shopId, name, id]));
     if (target === null) return null;
     await assertRowRoleFree(client, shopId, target);
+    await assertNoStoreCycle(client, {
+      door: { author: 'shop', owner: shopId, release: null },
+      name,
+      kind: target.kind,
+      scriptMeta: target.scriptMeta,
+    });
     await client.query(CLEAR_DRAFT_SQL, [shopId, name]);
     return first(await select(client, PICK_DRAFT_SQL, [shopId, name, id]));
   });

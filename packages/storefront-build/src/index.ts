@@ -4,8 +4,10 @@
 // Входы, ключ, сборка
 export {
   ENTITY_TYPES,
+  STORE_USE_PREFIX,
   checkoutBlockSchema,
   parseBuildInputs,
+  storeUseSchema,
   type BuildInputs,
   type CheckoutBlock,
   type CodeInput,

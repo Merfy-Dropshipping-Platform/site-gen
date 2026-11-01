@@ -1,6 +1,6 @@
 import { ACTIONS, ACTION_EVENTS, ACTION_NAMES, isActionName } from '@merfy/shell/actions';
 import { EVENT_NAMES } from '@merfy/shell/events';
-import { EXT_USE_PREFIX, TEMPLATE_FILE, type SectionManifest } from './format';
+import { EXT_USE_PREFIX, STORE_USE_PREFIX, TEMPLATE_FILE, type SectionManifest } from './format';
 import { levenshteinOf } from './name-check';
 import { NAMES } from './names';
 import { problem, type SectionProblem } from './problems';
@@ -150,6 +150,16 @@ const sectionThemeSettingUnknown: NameRule = ({ manifest }) =>
 // ctx.data.<имя> без объявления в data section.json (блок 8 «Секций и SDK», часть 8г; Р8г-6).
 const dataUnknown: NameRule = ({ manifest, facts }) => dataUnknownProblems(manifest, facts?.reads ?? []);
 
+// ctx.stores['<префикс>:<имя>'] без "store:<префикс>:<имя>" в uses (свои сторы): ядро даёт в ctx.stores только сторы из
+// uses. ctx.stores целиком и имя из выражения не сверяются.
+const storeUnknown: NameRule = ({ manifest, facts }) =>
+  (facts?.reads ?? []).flatMap((item) => {
+    const name = item.path[0] === 'stores' ? item.path[1] : undefined;
+    if (name === undefined || (manifest.uses ?? []).some((use) => use === `${STORE_USE_PREFIX}${name}`)) return [];
+    const text = `стора «${name}» нет в ctx.stores — добавьте "${STORE_USE_PREFIX}${name}" в uses section.json`;
+    return [problem('store-unknown', item.file, text, item)];
+  });
+
 export const NAME_RULES: readonly NameRule[] = [
   eventUnknown,
   actionUnknown,
@@ -157,6 +167,7 @@ export const NAME_RULES: readonly NameRule[] = [
   sectionThemeSettingUnknown,
   scriptClasses,
   dataUnknown,
+  storeUnknown,
 ];
 
 export const nameProblems = (input: NameInput): SectionProblem[] => NAME_RULES.flatMap((rule) => rule(input));

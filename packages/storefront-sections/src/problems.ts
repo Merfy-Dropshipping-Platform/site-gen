@@ -77,6 +77,11 @@ export const PROBLEM_CODES = [
   'ext-foreign',
   // Окно поверх страницы (01.11): секция без роли в группе overlay — только в ней, без header, page и footer.
   'overlay-place',
+  // Свои сторы (01.11): код расширения читает чужой стор, стор читает сам себя по кругу (приём, registry.ts),
+  // ctx.stores['…'] без "store:…" в uses.
+  'store-foreign',
+  'store-cycle',
+  'store-unknown',
   // Проверки вкуса (кнопки от 44 px, прокрутка вбок, «уменьшить движение») — только предупреждения.
   'taste-button-height',
   'taste-overflow',

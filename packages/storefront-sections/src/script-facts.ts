@@ -38,7 +38,7 @@ export interface ScriptFacts {
 export type FileFacts = ScriptFacts;
 export const NO_FACTS: ScriptFacts = { actions: null, listens: [], reads: [], classes: [] };
 
-const CTX_TYPE_NAMES = new Set(['Ctx', 'BaseCtx']);
+const CTX_TYPE_NAMES = new Set(['Ctx', 'BaseCtx', 'StoreCtx']);
 const LISTEN = 'listen';
 const TOGGLE_CLASS = 'toggleClass';
 
@@ -61,26 +61,28 @@ function handlerParamsOf(property: Node): readonly Node[] | null {
   return property.type === 'ObjectProperty' && isHandlerNode(property.value) ? property.value.params : null;
 }
 
-// Второй параметр mount, unmount и каждой функции в actions — ctx (design.md 3.2).
+// Второй параметр mount, unmount и каждой функции в actions — ctx (design.md 3.2); у стора — первый параметр start
+// (свои сторы).
 function addDefinitionCtx(definition: NodePath<ObjectExpression> | null, names: Set<string>): void {
   if (definition === null) return;
   for (const property of definition.node.properties) {
     const key = keyOf(property);
-    if (key === 'mount' || key === 'unmount') addSecondParam(property, names);
+    if (key === 'mount' || key === 'unmount') addParam(property, 1, names);
+    if (key === 'start') addParam(property, 0, names);
     if (key === 'actions') addActionParams(property, names);
   }
 }
 
-function addSecondParam(property: Node, names: Set<string>): void {
+function addParam(property: Node, index: number, names: Set<string>): void {
   const params = handlerParamsOf(property);
-  const param = params === null ? null : paramAt(params, 1);
+  const param = params === null ? null : paramAt(params, index);
   if (param !== null) names.add(param.name);
 }
 
 function addActionParams(property: Node, names: Set<string>): void {
   const value = property.type === 'ObjectProperty' ? property.value : null;
   if (value === null || value.type !== 'ObjectExpression') return;
-  for (const action of value.properties) addSecondParam(action, names);
+  for (const action of value.properties) addParam(action, 1, names);
 }
 
 // Параметр с типом Ctx<…> или BaseCtx<…>, если тип импортирован из @merfy/shell (isShellImport).

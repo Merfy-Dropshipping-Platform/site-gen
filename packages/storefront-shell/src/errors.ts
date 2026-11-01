@@ -2,7 +2,8 @@
 // определения секции; ядро тяжелее бюджета (сборка, build/build.ts). Ядро секций (блок 5): атрибут писать нельзя
 // (El.attr, El.cssVar); тег входных данных не разобрать; помощник ctx вызван с неверными аргументами. Поведения
 // (блок 6): файл dist/behaviors тяжелее бюджета (build/behaviors.ts). Скрипт превью (блок 5, часть 5г): в
-// dist/preview.js текст, который закрыл бы <script> страницы (build/preview.ts).
+// dist/preview.js текст, который закрыл бы <script> страницы (build/preview.ts). Свои сторы: стор читает сам себя по
+// кругу (own-stores.ts).
 export type ShellErrorCode =
   | 'modules-invalid'
   | 'part-unknown'
@@ -12,7 +13,8 @@ export type ShellErrorCode =
   | 'input-invalid'
   | 'sdk-call-invalid'
   | 'behavior-too-heavy'
-  | 'preview-unsafe';
+  | 'preview-unsafe'
+  | 'store-cycle';
 
 type ErrorDetails = { path?: string; cause?: unknown };
 

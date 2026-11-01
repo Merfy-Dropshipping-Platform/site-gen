@@ -1,7 +1,10 @@
 // @merfy/shell и @merfy/shell/core — ядро секций в браузере (design.md блока 5). Бандл страницы (часть 5б) импортирует
 // отсюда start и части SDK, в том числе analytics — её получает каждая страница опубликованного сайта; код секции —
 // defineSection и типы.
-export { defineSection } from './define';
+export { defineSection, defineStore } from './define';
+// Свои сторы: бандл страницы, где стор нужен, передаёт start({ …, stores: pageStores([…]) }); код секции — defineStore.
+export { pageStores, type PageStores } from './own-stores';
+export type { StoreCtx, StoreDef, StoreEntry, StoreUse } from './types';
 export { SECTION_FAILURE_EVENT } from './events';
 export { start, type CoreEnv, type StartedCore } from './start';
 export { auth } from './parts/auth';

@@ -43,10 +43,11 @@ const ESBUILD_OPTIONS = {
   charset: 'utf8',
 } as const;
 
-// Строка списка секций бандла: имя, вид, sha256 модуля (64 знака hex) и модули SDK для ctx.
+// Строка списка секций бандла: имя, вид, sha256 модуля (64 знака hex) и модули SDK для ctx. Свой стор (kind: store)
+// идёт не в sections, а в pageStores([…]) — ядро запускает сторы до секций (свои сторы).
 export interface BundleSection {
   name: string;
-  kind: 'section' | 'global';
+  kind: 'section' | 'global' | 'store';
   script: string;
   uses: readonly string[];
 }
@@ -132,12 +133,16 @@ export function bundleEntry(
   const imports = sections.map(
     (section, index) => `import s${index} from ${JSON.stringify(SECTION_IMPORT + section.script)};\n`,
   );
-  const entries = sections.map(
-    (section, index) =>
-      `{ name: ${JSON.stringify(section.name)}, kind: ${JSON.stringify(section.kind)}, script: ${JSON.stringify(section.script)}, uses: ${JSON.stringify(section.uses)}, definition: s${index} }`,
-  );
-  const names = ['start', ...parts, ...(preview ? ['watchPreviewReplace'] : [])].join(', ');
-  const tail = preview ? ', preview: watchPreviewReplace' : '';
+  // Строка секции — как до своих сторов (те же байты бандла у магазинов без них); у стора поля kind нет.
+  const entryOf = (section: BundleSection, index: number): string => {
+    const kind = section.kind === 'store' ? '' : `kind: ${JSON.stringify(section.kind)}, `;
+    return `{ name: ${JSON.stringify(section.name)}, ${kind}script: ${JSON.stringify(section.script)}, uses: ${JSON.stringify(section.uses)}, definition: s${index} }`;
+  };
+  const entries = sections.flatMap((section, index) => (section.kind === 'store' ? [] : [entryOf(section, index)]));
+  const stores = sections.flatMap((section, index) => (section.kind === 'store' ? [entryOf(section, index)] : []));
+  const extra = [...(preview ? ['watchPreviewReplace'] : []), ...(stores.length > 0 ? ['pageStores'] : [])];
+  const names = ['start', ...parts, ...extra].join(', ');
+  const tail = `${preview ? ', preview: watchPreviewReplace' : ''}${stores.length > 0 ? `, stores: pageStores([${stores.join(', ')}])` : ''}`;
   const kitCode = kit === undefined ? null : kitEntry(kit);
   const partList = [...parts, ...(kitCode === null ? [] : [kitCode.part])].join(', ');
   return `import { ${names} } from ${CORE_SPECIFIER};\n${kitCode?.imports ?? ''}${imports.join('')}start({ parts: [${partList}], sections: [${entries.join(', ')}]${tail} });\n`;

@@ -86,10 +86,16 @@ export const SDK_TEXT = {
   computedPattern: 'вычисляемый ключ в деструктуризации и слева от for…of нельзя: возьми значение a[k] отдельно',
   optionalComputed: 'a?.[k] нельзя: сначала проверь a, потом a[k]',
   topLevel: 'вне defineSection — только объявления: import, const, function, type',
-  importShell: 'из @merfy/shell — только defineSection и типы; модули — uses и ctx',
+  importShell: 'из @merfy/shell — только defineSection, defineStore и типы; модули — uses и ctx',
   importStar: 'свои файлы — импорт по именам: import { show } from "./show"',
   declare: 'declare, enum и namespace в коде секции нет',
-  defineOnly: 'defineSection — только в export default defineSection({ … })',
-  defineForm: 'нужен export default defineSection({ … }) — объект определения прямо в вызове',
-  defineName: 'имя секции пишется в section.json: export default defineSection({ … })',
+  defineOnly: (define: string): string => `${define} — только в export default ${define}({ … })`,
+  defineForm: (define: string): string => `нужен export default ${define}({ … }) — объект определения прямо в вызове`,
+  defineName: (define: string): string =>
+    `имя ${define === 'defineStore' ? 'стора' : 'секции'} пишется в section.json: export default ${define}({ … })`,
+  // Определение не того вида (свои сторы): "kind": "store" — defineStore, секция и глобальный скрипт — defineSection.
+  defineKind: (define: string, expected: string): string =>
+    expected === 'defineStore'
+      ? `у стора ("kind": "store") — export default defineStore({ value, start }), а не ${define}`
+      : `${define} — только у стора ("kind": "store"); здесь — export default ${expected}({ … })`,
 } as const;

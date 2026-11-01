@@ -21,6 +21,7 @@ import type {
   ReadableStore,
   SectionEvent,
   Stop,
+  StoreCtx,
   ThemeSettings,
 } from './types';
 
@@ -48,6 +49,8 @@ export interface CtxDeps {
 const DOM_EVENTS: ReadonlySet<string> = new Set(['keydown', 'keyup', 'scroll', 'resize', 'pointerdown']);
 // ctx.ext без модулей расширений (блок 9, часть 9в): модули по uses ставит instance.ts поверх.
 const NO_EXT: Readonly<Record<string, ExtModule>> = Object.freeze({});
+// ctx.stores без своих сторов: сторы по uses ["store:…"] ставят поверх instance.ts и own-stores.ts.
+const NO_STORES: Readonly<Record<string, ReadableStore<Json>>> = Object.freeze({});
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -169,6 +172,7 @@ export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknow
     signal: deps.signal,
     storage: createSectionStorage(deps.name, deps.page),
     ext: NO_EXT,
+    stores: NO_STORES,
     theme: deps.theme,
     overlay: deps.overlay ?? null,
     ...methodsOf(deps, deps.signal),
@@ -178,6 +182,34 @@ export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknow
     set state(next: Partial<Record<string, unknown>>) {
       if (typeof next === 'object' && next !== null) state = next;
     },
+  };
+  Object.assign(ctx, modules);
+  return Object.freeze(ctx);
+}
+
+// ctx своего стора (свои сторы): те же таймеры, подписки, события и хранилище на сигнале стора, без элементов и
+// входных данных секции. События стора уходят как '<имя стора>:<name>', хранилище — merfy:s:<имя стора>:<ключ>.
+export type StoreCtxDeps = Pick<
+  CtxDeps,
+  'win' | 'bus' | 'owner' | 'run' | 'signal' | 'page' | 'name' | 'mode' | 'theme'
+>;
+
+export function createStoreCtx(deps: StoreCtxDeps, modules: Readonly<Record<string, unknown>>): StoreCtx<never> {
+  const ctx: StoreCtx<never> & Record<string, unknown> = {
+    name: deps.name,
+    mode: deps.mode,
+    page: pageOf(deps.win),
+    signal: deps.signal,
+    storage: createSectionStorage(deps.name, deps.page),
+    ext: NO_EXT,
+    stores: NO_STORES,
+    theme: deps.theme,
+    every: everyOf(deps.win, deps.run, deps.signal),
+    after: afterOf(deps.win, deps.run, deps.signal),
+    watch: watchOf(deps.run, deps.signal),
+    listen: listenOf(deps.bus, deps.owner, deps.run, deps.signal),
+    emit: (emitName: string, detail?: Json): void => deps.bus.emit(`${deps.name}:${emitName}`, detail ?? null),
+    log: (...values: unknown[]) => sectionLog(deps.mode, deps.name, deps.name, values),
   };
   Object.assign(ctx, modules);
   return Object.freeze(ctx);

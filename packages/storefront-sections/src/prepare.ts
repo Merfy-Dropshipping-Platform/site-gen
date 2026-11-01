@@ -25,6 +25,7 @@ import { authoringProblems } from './authoring-check';
 import { listSectionProblems } from './list-section';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
 import { buildScript, type BuiltScript } from './script';
+import { DEFINE_SECTION, DEFINE_STORE } from './script-check';
 import { NO_FACTS, type ScriptFacts } from './script-facts';
 import { scriptMetaOf, scriptMetaSchema } from './script-meta';
 import { nameProblems } from './script-names';
@@ -160,6 +161,9 @@ const sectionRuleProblems = (
   template: string | undefined,
 ): SectionProblem[] => [...authorProblems(manifest, prefix), ...listSectionProblems(manifest, template)];
 
+// Определение скрипта по виду (свои сторы): у стора — defineStore, у секции и глобального скрипта — defineSection.
+const defineOf = (manifest: SectionManifest): string => (manifest.kind === 'store' ? DEFINE_STORE : DEFINE_SECTION);
+
 export async function prepareSection(input: PrepareInput): Promise<PrepareResult> {
   const { files } = input;
   // Больше пределов — сразу отказ: такие файлы не разбираем. Дальше проблемы собираются все разом.
@@ -172,7 +176,7 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
     template === undefined
       ? null
       : checkTemplate(template, manifest.ok ? templateOptionsOf(manifest.value) : NO_TEMPLATE_OPTIONS),
-    entry === null ? null : buildScript(files, entry),
+    entry === null ? null : buildScript(files, entry, manifest.ok ? defineOf(manifest.value) : null),
     manifest.ok && template !== undefined ? styleProblems(manifest.value, files, template) : [],
     // Вкус: кнопки 44 px, прокрутка вбок, движение (taste-check.ts), код шаблона (taste-code.ts); состав: authoring-check.ts.
     manifest.ok ? tasteProblems(files) : [],

@@ -20,13 +20,23 @@
           "section.json": "{\"sdk\":1,\"name\":\"mark\",\"kind\":\"global\",\"title\":\"Отметка\"}",
           "script.ts": "export default {};"
         }
+      },
+      {
+        "extensionId": "test-ext",
+        "release": "0.1.2",
+        "kind": "store",
+        "name": "seen",
+        "files": {
+          "section.json": "{\"sdk\":1,\"name\":\"seen\",\"kind\":\"store\",\"title\":\"Уже видели\"}",
+          "script.ts": "export default { value: false };"
+        }
       }
     ],
     "invalid": [
       { "why": "id расширения с заглавной", "request": { "extensionId": "Test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "files": {} } },
       { "why": "версия не semver", "request": { "extensionId": "test-ext", "release": "0.1", "kind": "section", "name": "reviews", "files": {} } },
       { "why": "версия со сборкой +build", "request": { "extensionId": "test-ext", "release": "0.1.0+build.1", "kind": "section", "name": "reviews", "files": {} } },
-      { "why": "вид не section и не global", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "page", "name": "reviews", "files": {} } },
+      { "why": "вид не section, не global и не store", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "page", "name": "reviews", "files": {} } },
       { "why": "имя вместе с id расширения", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "test-ext:reviews", "files": {} } },
       { "why": "лишний ключ shopId", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "files": {}, "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b" } },
       { "why": "файл не текст", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "files": { "section.json": 1 } } }

@@ -133,6 +133,9 @@ const API = [
   'DATA_NAME',
   'RECORD_FIELD_KINDS',
   'BLOCK_RECORD_KINDS',
+  // Свои сторы (01.11): uses "store:<префикс>:<имя>" во входах сборки.
+  'STORE_USE_PREFIX',
+  'storeUseSchema',
   'searchFlaggedBetween',
   'sectionCss',
   'seoProblems',

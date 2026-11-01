@@ -1,4 +1,5 @@
 import type { StorefrontConfig } from '@merfy/storefront-config';
+import type { PageStores } from './own-stores';
 import type { ReplaceDeps } from './replace';
 
 // Договор ядра секций (design.md блока 5, разделы 3.1–3.8): что видит код секции и что дают части SDK. Только типы.
@@ -463,6 +464,8 @@ export interface ExtModule {
   readonly [method: `${LowerLetter}${string}`]: ExtMethod;
 }
 export type ExtUse = `ext:${string}`;
+// Свой стор в uses (свои сторы, 01.11): "store:<префикс автора>:<имя>" — ctx.stores['<префикс автора>:<имя>'].
+export type StoreUse = `store:${string}`;
 
 // Сквозные настройки темы — ctx.theme (блок 9, часть 9б; design.md блока 9, п. 16): значения из theme.settings конфига
 // страницы, те же, что у шаблона в Astro.props.theme. Только чтение; нет значения — undefined.
@@ -541,6 +544,8 @@ export interface BaseCtx<State extends object> {
   readonly theme: Readonly<ThemeSettings>;
   // 01.11: окно секции поверх страницы (группа overlay без роли); у остальных секций и глобальных скриптов — null.
   readonly overlay: OverlayWindow | null;
+  // Свои сторы из uses: ["store:<префикс>:<имя>"] — ctx.stores['<префикс>:<имя>'], только чтение; без таких uses — {}.
+  readonly stores: Readonly<Record<string, ReadableStore<Json>>>;
 }
 
 export type Ctx<State extends object = Record<string, unknown>, Uses extends ModuleName = ModuleName> = BaseCtx<State> &
@@ -555,6 +560,33 @@ export interface SectionDef<State extends object = Record<string, unknown>, Uses
   mount?(el: El, ctx: Ctx<State, Uses>): void | Promise<void>;
   actions?: Readonly<Record<string, Action<State, Uses>>>;
   unmount?(el: El, ctx: Ctx<State, Uses>): void;
+}
+
+// Свой стор (свои сторы, 01.11): код без места на странице, как глобальный скрипт, но вместо mount — start(ctx, set).
+// Значение — JSON: начальное — value, дальше пишет только set самого стора; секции и другие сторы читают ctx.watch и get.
+// У ctx стора нет элементов, настроек и данных секции: таймеры, хранилище, события, сторы и модули из uses, ctx.ext.
+export type StoreCtx<Uses extends ModuleName = ModuleName> = Pick<
+  BaseCtx<object>,
+  | 'name'
+  | 'mode'
+  | 'page'
+  | 'signal'
+  | 'storage'
+  | 'every'
+  | 'after'
+  | 'watch'
+  | 'listen'
+  | 'emit'
+  | 'log'
+  | 'ext'
+  | 'theme'
+  | 'stores'
+> &
+  Readonly<Pick<Modules, Uses>>;
+
+export interface StoreDef<Value extends Json = Json, Uses extends ModuleName = ModuleName> {
+  readonly value: Value;
+  start?(ctx: StoreCtx<Uses>, set: (value: Value) => void): void | Promise<void>;
 }
 
 // Действие SDK в разметке: data-action="cart.add" → params из data-* элемента → call (раздел 3.4).
@@ -606,13 +638,23 @@ export interface SectionEntry {
   readonly name: string;
   readonly kind: 'section' | 'global';
   readonly script: string; // sha256 модуля секции, 64 знака
-  readonly uses: readonly (ModuleName | ExtUse)[];
+  readonly uses: readonly (ModuleName | ExtUse | StoreUse)[];
   readonly definition: SectionDef<object, never>;
+}
+
+// Строка списка своих сторов бандла страницы (свои сторы): те же поля, что у секции, определение — стора.
+export interface StoreEntry {
+  readonly name: string;
+  readonly script: string;
+  readonly uses: readonly (ModuleName | ExtUse | StoreUse)[];
+  readonly definition: StoreDef<Json, never>;
 }
 
 export interface StartOptions {
   readonly parts: readonly SdkPart<string, unknown>[];
   readonly sections: readonly SectionEntry[];
+  // Свои сторы страницы (свои сторы): pageStores([…]) из бандла страниц, где они нужны; ядро запускает их до секций.
+  readonly stores?: PageStores;
   // Бандл превью (часть 5г): замена экземпляра — watchPreviewReplace; ядро зовёт её только в режиме preview.
   readonly preview?: (deps: ReplaceDeps) => void;
 }

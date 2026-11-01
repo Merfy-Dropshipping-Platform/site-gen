@@ -7,6 +7,7 @@ import { createGuard, type Guard } from './guard';
 import { createCtx, type CtxDeps } from './ctx';
 import { EXT_USE_PREFIX } from './ext-registry';
 import { readSectionInput, type SectionInput } from './input';
+import { STORE_USE_PREFIX } from './own-stores';
 import type { OverlayApi } from './parts/overlay';
 import { OVERLAY_ATTRIBUTE, OVERLAY_PART } from './roles';
 import type { KeyValue } from './storage';
@@ -174,17 +175,20 @@ function partOf(state: InstanceState, use: string): unknown {
 }
 
 // Модули по uses (11г А): части нет — сбой стадии mount, код секции не вызывается. "ext:<id>" — в ctx.ext.<id> (блок 9,
-// часть 9в); ctx.ext есть у каждой секции, без таких uses — пустой.
+// часть 9в), "store:<префикс>:<имя>" — в ctx.stores (свои сторы); ctx.ext и ctx.stores есть у каждой секции, без таких
+// uses — пустые.
 function modulesOf(state: InstanceState): Record<string, unknown> | null {
   const modules: Record<string, unknown> = {};
   const ext: Record<string, unknown> = {};
+  const stores: Record<string, unknown> = {};
   for (const use of state.entry?.uses ?? []) {
     const api = partOf(state, use);
     if (api === NO_PART) return null;
     if (use.startsWith(EXT_USE_PREFIX)) ext[use.slice(EXT_USE_PREFIX.length)] = api;
+    else if (use.startsWith(STORE_USE_PREFIX)) stores[use.slice(STORE_USE_PREFIX.length)] = api;
     else modules[use] = api;
   }
-  return { ...modules, ext: Object.freeze(ext) };
+  return { ...modules, ext: Object.freeze(ext), stores: Object.freeze(stores) };
 }
 
 function stateOf(

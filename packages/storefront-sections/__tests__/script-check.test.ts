@@ -124,10 +124,10 @@ describe('верхний уровень, импорты, определение'
     expect(found.map((line) => line.split(' ')[1])).toEqual(['4:1', '5:1', '6:1']);
   });
 
-  it('из @merfy/shell — только defineSection и типы; свой файл — по именам', () => {
+  it('из @merfy/shell — только defineSection, defineStore и типы; свой файл — по именам', () => {
     const text = `import { defineSection, part, type Ctx } from '@merfy/shell';\nimport * as lib from './lib.ts';\nexport default defineSection({ mount() {} });\n`;
     expect(lines(text)).toEqual([
-      'sdk-only 1:25 из @merfy/shell — только defineSection и типы; модули — uses и ctx',
+      'sdk-only 1:25 из @merfy/shell — только defineSection, defineStore и типы; модули — uses и ctx',
       'sdk-only 2:8 свои файлы — импорт по именам: import { show } from "./show"',
     ]);
   });

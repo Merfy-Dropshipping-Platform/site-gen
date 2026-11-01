@@ -78,6 +78,7 @@ describe('checkEventDetail', () => {
     ['merfy:page:view', { path: '/products/scarf' }],
     ['merfy:notice:show', { level: 'error', message: 'Этого товара нет в наличии', code: 'out-of-stock' }],
     ['merfy:notice:show', { level: 'warning', message: 'Добавили 2 шт. — больше нет в наличии' }],
+    ['merfy:notice:show', { level: 'info', message: 'Скопировано' }],
     ['merfy:catalog:page', { page: 2 }],
     ['merfy:page:leaving', {}],
     ['merfy:countdown:end', { section: 'shop:promo', id: 'promo-1' }],
@@ -103,7 +104,7 @@ describe('checkEventDetail', () => {
     ['merfy:cart:add', { ...CART_ADD, variantId: 7 }, 'merfy:cart:add: variantId — строка или null'],
     ['merfy:page:view', {}, 'merfy:page:view: path — строка'],
     ['merfy:page:ready', { path: '/' }, 'merfy:page:ready: лишнее поле path'],
-    ['merfy:notice:show', { level: 'info', message: 'x' }, 'merfy:notice:show: level — одно из: error, warning'],
+    ['merfy:notice:show', { level: 'debug', message: 'x' }, 'merfy:notice:show: level — одно из: error, warning, info'],
     [
       'merfy:notice:show',
       { level: 'error', message: 'x', code: 'oops' },

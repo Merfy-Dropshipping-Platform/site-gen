@@ -85,7 +85,7 @@ export interface Money {
   readonly amount: number;
   readonly currency: string;
 }
-export type NoticeLevel = 'error' | 'warning';
+export type NoticeLevel = 'error' | 'warning' | 'info'; // info — сообщение, не ошибка и не предупреждение («Скопировано»)
 export type ConsentState = 'accepted' | 'declined';
 // Ответ покупателя на баннер cookie (блок 13 «Секций и SDK», 13.2): unknown — ещё не ответил.
 export type ConsentAnswer = 'unknown' | ConsentState;

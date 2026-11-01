@@ -1,4 +1,4 @@
-import { type Failure, failed, failureOf, reportFailure, reportWarning } from '../failures';
+import { type Failure, failed, failureOf, reportFailure, reportInfo } from '../failures';
 import type { ActionOptions, CoreHandle, NoData, Result, SdkPart, ShareModule, ShareResult } from '../types';
 
 // Часть share (базовые секции, 29.10; «Поделиться» у «Товара» пяти тем): окно «Поделиться» системы (navigator.share) с
@@ -79,7 +79,7 @@ async function copyText(core: CoreHandle, text: string, options?: ActionOptions)
   }
   if (!(await writeToClipboard(text)))
     return fail(core, COPY, 'ни буфер обмена, ни запасной способ не записали текст', options);
-  reportWarning(core, COPIED_TEXT, options);
+  reportInfo(core, COPIED_TEXT, options);
   return { ok: true, data: {} };
 }
 

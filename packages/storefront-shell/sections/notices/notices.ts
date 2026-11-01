@@ -21,5 +21,5 @@ export function shownNotices(list: readonly Notice[], next: Notice): Notice[] {
 export const closedNotices = (list: readonly Notice[], message: string): Notice[] =>
   list.filter((notice) => notice.message !== message);
 
-// error — 'alert', warning — 'status'.
+// error — 'alert', warning и info — 'status'.
 export const roleOf = (level: NoticeLevel): 'alert' | 'status' => (level === 'error' ? 'alert' : 'status');

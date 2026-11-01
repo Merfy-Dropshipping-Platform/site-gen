@@ -131,7 +131,7 @@ describe('copy: скопировать текст', () => {
     const fake = fakeCore();
     expect(await share.create(fake.core).copy({ text: TEXT })).toEqual({ ok: true, data: {} });
     expect(stub.written).toEqual([TEXT]);
-    expect(fake.named('merfy:notice:show')).toEqual([{ level: 'warning', message: 'Скопировано' }]);
+    expect(fake.named('merfy:notice:show')).toEqual([{ level: 'info', message: 'Скопировано' }]);
   });
 
   it('буфера нет: запасной способ — скрытое поле с текстом, команда copy, поле убрано', async () => {
@@ -141,7 +141,7 @@ describe('copy: скопировать текст', () => {
     expect(await share.create(fake.core).copy({ text: TEXT })).toEqual({ ok: true, data: {} });
     expect(calls).toEqual([`copy:${TEXT}`]);
     expect(document.querySelector('textarea')).toBeNull();
-    expect(fake.named('merfy:notice:show')).toEqual([{ level: 'warning', message: 'Скопировано' }]);
+    expect(fake.named('merfy:notice:show')).toEqual([{ level: 'info', message: 'Скопировано' }]);
   });
 
   it('буфер отказал (нет разрешения): запасной способ, фокус возвращается на кнопку', async () => {

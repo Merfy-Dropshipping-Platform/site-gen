@@ -95,7 +95,7 @@ export const EVENT_CATALOG = {
   'merfy:notice:show': {
     about: 'показать уведомление покупателю — его выводит секция «Уведомления»',
     fields: {
-      level: { oneOf: ['error', 'warning'] },
+      level: { oneOf: ['error', 'warning', 'info'] },
       message: 'text',
       code: { oneOf: ERROR_CODES, optional: true },
     },

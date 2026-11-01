@@ -7,7 +7,7 @@ import {
 } from '@merfy/tokens';
 import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
-import { pageBundle, placedSections, withoutHidden } from './code';
+import { globalClasses, pageBundle, placedSections, withoutHidden } from './code';
 import { emptyShopHtml, mcpUrlOf } from './empty-shop';
 import { entityKey } from './entities';
 import { pageLocals, shopName } from './head';
@@ -303,7 +303,13 @@ async function renderSectionsOf(
   const pageList = pageListAt(shown, route, lists[1] ?? [], base, list);
   const props = pageList === null ? base : { ...base, page: { ...base.page, list: pageList } };
   const placed = lists.flat();
-  const rendered = await renderPlacedSections(placed, theme.tokens.dictionary, { ...page, props }, sectionThemeOf(shown, placed));
+  const rendered = await renderPlacedSections(
+    placed,
+    theme.tokens.dictionary,
+    { ...page, props },
+    sectionThemeOf(shown, placed),
+    globalClasses(shown),
+  );
   return { rendered, props, pageList, placed };
 }
 

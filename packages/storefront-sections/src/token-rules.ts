@@ -21,7 +21,8 @@ function splitPath(item: string): { path: readonly string[]; message: string } {
 // Верный пример своего токена каждого вида, который сейчас можно записать (1 ноября, повтор «ювелирного»: агент трижды
 // ошибался — значение text-токена лежало рядом с видом, а не в default, у цвета не было custom-, вид «size» не бывает).
 // Те же строки — в quick.md SDK (тест sdk-docs сверяет), в тексте отказа token-invalid подставляется строка вида,
-// который назвал автор. Значение — в default; имя — приставка вида + custom-. Тени здесь нет: см. exampleTail.
+// который назвал автор. Значение — в default; имя — приставка вида + custom-. Тень — только alias от тени словаря
+// (шаг 6, 01.11: общая тень shadow-raised).
 export const SECTION_TOKEN_EXAMPLES: Readonly<Record<string, string>> = {
   color: '"custom-plate": { "kind": "color", "about": "Подложка под фото", "default": "#f1ece4" }',
   weight: '"weight-custom-display": { "kind": "weight", "about": "Насыщенность витринного заголовка", "default": 300 }',
@@ -31,9 +32,11 @@ export const SECTION_TOKEN_EXAMPLES: Readonly<Record<string, string>> = {
   'border-width': '"border-width-custom-line": { "kind": "border-width", "about": "Толщина линии", "default": 1 }',
   spacing: '"spacing-custom-row": { "kind": "spacing", "about": "Отступ между рядами", "default": { "min": 24, "max": 64 } }',
   width: '"width-custom-narrow": { "kind": "width", "about": "Узкая колонка", "default": 640 }',
+  shadow: '"shadow-custom-plate": { "kind": "shadow", "about": "Тень плашки", "derive": { "rule": "alias", "from": "shadow-raised" } }',
 };
 
 const KIND_PREFIX: Readonly<Record<string, string>> = {
+  shadow: 'shadow-',
   color: '',
   weight: 'weight-',
   text: 'text-',
@@ -57,9 +60,6 @@ function ownName(kind: string, name: string): string {
 // вид не бывает у токена секции или не назван — перечень видов и пример цвета.
 function exampleTail(raw: unknown, name: string | undefined, message: string): string {
   const kind = typeof raw === 'object' && raw !== null && 'kind' in raw ? raw.kind : undefined;
-  // Тень: вид допустим, но значение у неё только alias от базового токена тени, а в словаре платформы базовых теней нет
-  // (у всех шести есть умолчание) — свой токен тени сейчас записать нельзя. Потолок платформы, не ошибка автора.
-  if (kind === 'shadow') return ` · Тень своим токеном сейчас не задать: в словаре нет базовой тени. Возьми класс тени словаря (styles.md)`;
   if (ownedKind(kind)) {
     const example = SECTION_TOKEN_EXAMPLES[kind];
     const own = name === undefined ? undefined : ownName(kind, name);
@@ -68,7 +68,7 @@ function exampleTail(raw: unknown, name: string | undefined, message: string): s
     const loose = message.includes('Нераспознанные ключи') ? ' (значение — в default, не рядом с kind)' : '';
     return ` · Верно: ${shown}${loose}`;
   }
-  return ` · Виды токена секции: ${Object.keys(SECTION_TOKEN_EXAMPLES).join(', ')} (тень — классом словаря). Верно: ${SECTION_TOKEN_EXAMPLES.color}`;
+  return ` · Виды токена секции: ${Object.keys(SECTION_TOKEN_EXAMPLES).join(', ')}. Верно: ${SECTION_TOKEN_EXAMPLES.color}`;
 }
 
 // Проблемы записи токенов — код token-invalid, файл section.json, место — valuePosition(text, ['tokens', <имя>])

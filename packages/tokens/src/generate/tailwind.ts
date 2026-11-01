@@ -66,9 +66,37 @@ const RICH_TEXT_RULES = [
 
 export const RICH_TEXT_UTILITY = `@utility rich-text {\n${RICH_TEXT_RULES.map((rule) => `  ${rule}`).join('\n')}\n}`;
 
+// Движение секций (шаг 6, 01.11): бегущая строка и параллакс — CSS без скрипта и библиотек. Движение каждой утилиты —
+// только под prefers-reduced-motion: no-preference, при «уменьшить движение» элемент стоит. Бегущая строка сдвигает
+// элемент на половину его ширины: в нём два одинаковых ряда подряд (второй — aria-hidden). Параллакс — анимация по
+// прокрутке (animation-timeline: view()); браузер без неё оставляет элемент на месте. Кадры лежат в @theme: Tailwind
+// печатает их, только когда класс есть в разметке. Паузу даёт animate-paused с вариантом: hover:animate-paused.
+const NO_PREFERENCE = '@media (prefers-reduced-motion: no-preference)';
+const MOTION_KEYFRAMES = [
+  '@keyframes merfy-marquee { to { translate: -50% 0; } }',
+  '@keyframes merfy-parallax { from { translate: 0 -8%; } to { translate: 0 8%; } }',
+  '@keyframes merfy-parallax-strong { from { translate: 0 -16%; } to { translate: 0 16%; } }',
+];
+const MOTION_RULES: Readonly<Record<string, string>> = {
+  'animate-marquee': `${NO_PREFERENCE} { animation: merfy-marquee 40s linear infinite; }`,
+  'animate-marquee-slow': `${NO_PREFERENCE} { animation: merfy-marquee 80s linear infinite; }`,
+  'animate-marquee-fast': `${NO_PREFERENCE} { animation: merfy-marquee 20s linear infinite; }`,
+  'animate-marquee-reverse': `${NO_PREFERENCE} { animation: merfy-marquee 40s linear infinite reverse; }`,
+  parallax: `${NO_PREFERENCE} { @supports (animation-timeline: view()) { animation: merfy-parallax linear both; animation-timeline: view(); } }`,
+  'parallax-strong': `${NO_PREFERENCE} { @supports (animation-timeline: view()) { animation: merfy-parallax-strong linear both; animation-timeline: view(); } }`,
+  'animate-paused': 'animation-play-state: paused;',
+};
+// Классы движения, которые сами учитывают «уменьшить движение» (проверка вкуса секций их не отмечает).
+export const MOTION_UTILITIES: readonly string[] = Object.keys(MOTION_RULES);
+const MOTION_CSS = [
+  block('@theme inline', MOTION_KEYFRAMES),
+  ...Object.entries(MOTION_RULES).map(([name, rule]) => `@utility ${name} { ${rule} }`),
+].join('\n');
+
 // Строки одного токена для @theme и @utility (блок 4 «Секций и SDK», Р4-10): те же таблицы, по одному токену секции.
 export const tokenThemeLines = (kind: TokenKind, name: string): string[] => TAILWIND_THEME[kind]?.(name) ?? [];
-export const tokenUtilityLine = (kind: TokenKind, name: string): string | null => TAILWIND_UTILITY[kind]?.(name) ?? null;
+export const tokenUtilityLine = (kind: TokenKind, name: string): string | null =>
+  TAILWIND_UTILITY[kind]?.(name) ?? null;
 
 // Тени drop-shadow, text-shadow и inset-shadow у Tailwind — сырой чёрный мимо токенов (блок 4 «Секций и SDK», 4.6).
 const TAILWIND_RESETS = [
@@ -120,5 +148,6 @@ export function tailwindCss(dictionary: Dictionary, options: TailwindOptions = {
     .flatMap((name) => choiceVariants(name, dictionary.tokens[name].values ?? []));
   const theme = block('@theme inline reference', [...TAILWIND_RESETS, ...themeLines]);
   const base = options.base ? [BASE_LAYER] : [];
-  return `${[`/* ${GENERATED_NOTE} */`, theme, ...utilities, RICH_TEXT_UTILITY, ...variants, ...base].join('\n')}\n`;
+  const parts = [`/* ${GENERATED_NOTE} */`, theme, ...utilities, RICH_TEXT_UTILITY, MOTION_CSS, ...variants, ...base];
+  return `${parts.join('\n')}\n`;
 }

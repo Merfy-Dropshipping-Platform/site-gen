@@ -1,6 +1,6 @@
 # Классы и токены
 
-> SDK 1 · документация 1.26.0 · 2026-11-01
+> SDK 1 · документация 1.27.0 · 2026-11-01
 
 Своего CSS у секции нет. Только классы Tailwind из словаря магазина — так секция выглядит в цветах и шрифтах любой
 темы и меняется вместе с «Настройками темы».
@@ -8,10 +8,53 @@
 - Цвета, шрифты, радиусы — классы токенов (таблица ниже): `bg-primary`, `text-heading`, `font-body`,
   `rounded-button`.
 - Отступы и сетка — обычные классы Tailwind: `flex`, `gap-4`, `px-4`, `mx-auto`, `max-w-page`.
-- Нельзя: `style`, `<style>`, произвольные значения `bg-[#c9a227]` (`class-arbitrary`), `dark:` (`class-dark`), токены
-  одной темы (`class-theme-token`), класс, собранный из строки (`class-dynamic`).
-- Нужен свой цвет или размер — токен секции: ключ `tokens` в `section.json`, имя с меткой `custom`
-  (`custom-swatch`); мерчант меняет его в «Настройках темы».
+- Свои значения — у размера, отступа, положения, слоя, межбуквенного и межстрочного, пропорций, сетки, прозрачности,
+  размытия и времени: `text-[clamp(4rem,16vw,14rem)]`, `leading-[0.85]`, `tracking-[-0.04em]`, `top-[12%]`,
+  `aspect-[3/4]`, `grid-cols-[1fr_2fr]`, `w-[min(40vw,28rem)]`. Значение — числа, единицы и `calc`, `clamp`, `min`,
+  `max`, `minmax`, `repeat`; пробел — `_`.
+- Цвет — только токеном: класс словаря или токен секции. `bg-[#c9a227]`, `text-[red]`, `shadow-[…]`, `var(…)`, `url(…)`
+  — отказ `class-arbitrary`: цвет мимо токена не перекрасит цветовая схема мерчанта.
+- Нельзя: `style`, `<style>`, свой селектор `[&_p]:…`, `dark:` (`class-dark`), токены одной темы (`class-theme-token`),
+  класс, собранный из строки (`class-dynamic`).
+- Нужен свой цвет или размер, который меняет мерчант, — токен секции: ключ `tokens` в `section.json`, имя с меткой
+  `custom` (`custom-swatch`); мерчант меняет его в «Настройках темы».
+
+## Плакат, слои, движение
+
+- **Шкала текста** — до `text-9xl`: `text-6xl`…`text-9xl` резиновые (растут с шириной экрана), межстрочный — плотный.
+  Крупнее или своей кривой — `text-[clamp(5rem,22vw,20rem)]`.
+- **Слои**: `relative isolate` на секции, слои — `absolute inset-0`, порядок — `-z-10`, `z-10`, `z-[3]`; смешение —
+  `mix-blend-multiply`, `mix-blend-screen`, `mix-blend-difference`; размытая подложка — `backdrop-blur-md bg-background/60`.
+  Тень поднятой плашки — `shadow-raised`.
+- **Появление при прокрутке** — `data-animate="appear"` ([behaviors.md](behaviors.md)); играет, когда в «Настройках темы»
+  включено «Появление секций» (`choice-motion-reveal: on`).
+- **Бегущая строка** — `animate-marquee` (`-slow`, `-fast`, `-reverse`) на ряду из двух одинаковых половин: ряд едет на
+  половину своей ширины. Пауза под курсором — `hover:animate-paused`.
+- **Параллакс** — `parallax` или `parallax-strong` на фоне внутри `overflow-hidden`: фон смещается при прокрутке; браузер
+  без анимаций по прокрутке оставляет его на месте.
+- **«Уменьшить движение»**: бегущая строка и параллакс сами стоят, появления не играют. Своё `animate-*` и `transition-*`
+  — с `motion-safe:` или `motion-reduce:animate-none` (иначе `taste-motion`).
+- **Видео фоном** — поле `video`, `<video autoplay muted loop playsinline aria-hidden="true">` слоем `absolute inset-0
+  -z-10 size-full object-cover`; без звука и элементов управления, текст поверх — на подложке.
+
+```astro
+<div class="relative isolate flex min-h-[80svh] flex-col justify-end overflow-hidden font-body">
+  {settings.video && (
+    <video class="absolute inset-0 -z-10 size-full object-cover motion-reduce:hidden" src={settings.video} autoplay muted loop playsinline aria-hidden="true"></video>
+  )}
+  <div class="absolute inset-0 -z-10 bg-background/40 backdrop-blur-sm"></div>
+  {settings.heading && (
+    <h2 class="m-0 px-4 font-heading text-[clamp(4rem,18vw,16rem)] leading-[0.85] tracking-[-0.04em] text-heading weight-heading" data-animate="appear" set:html={settings.heading} />
+  )}
+  <div class="overflow-hidden border-y border-border py-3">
+    <ul class="m-0 flex w-max list-none gap-8 p-0 animate-marquee hover:animate-paused">
+      {[0, 1].map((copy) => blocks.map((block) => (
+        <li class="text-2xl text-foreground md:text-4xl" aria-hidden={copy === 1 ? 'true' : undefined}>{block.settings.text}</li>
+      )))}
+    </ul>
+  </div>
+</div>
+```
 
 ## Градиент и градиентный текст
 
@@ -144,6 +187,10 @@
 | `text-3xl` | размер | Заголовок секции | задаёт тема | `text-3xl` | — |
 | `text-4xl` | размер | Заголовок страницы | задаёт тема | `text-4xl` | — |
 | `text-5xl` | размер | Главный заголовок первого экрана | задаёт тема | `text-5xl` | — |
+| `text-6xl` | размер | Крупный заголовок-плакат | `44–88 px, межстрочный 1` | `text-6xl` | — |
+| `text-7xl` | размер | Заголовок-плакат на весь экран | `52–112 px, межстрочный 0.95` | `text-7xl` | — |
+| `text-8xl` | размер | Плакатное слово: название, лозунг | `60–144 px, межстрочный 0.92` | `text-8xl` | — |
+| `text-9xl` | размер | Самый крупный: слово во всю ширину | `72–192 px, межстрочный 0.88` | `text-9xl` | — |
 | `tracking-body` | межбуквенное | Межбуквенное расстояние текста, em | `0 em` | `tracking-body` | — |
 | `tracking-heading` | межбуквенное | Межбуквенное расстояние заголовков, em | `0 em` | `tracking-heading` | — |
 | `radius-button` | скругление | Скругление кнопок | задаёт тема | `rounded-button` | — |
@@ -163,6 +210,7 @@
 | `shadow-media` | тень | Тень фото и видео | `без тени` | `shadow-media` | — |
 | `shadow-popover` | тень | Тень всплывающего | `0 8 24 0, 12 %` | `shadow-popover` | — |
 | `shadow-drawer` | тень | Тень шторки | `0 0 32 0, 16 %` | `shadow-drawer` | — |
+| `shadow-raised` | тень | Тень поднятого блока: плашка поверх фото, карточка над фоном | `0 12 32 -8, 18 %` | `shadow-raised` | — |
 | `spacing-section` | отступ | Отступ сверху и снизу секции | задаёт тема | `p-section` `gap-section` | — |
 | `spacing-section-gap` | отступ | Отступ между секциями | `0 px` | `p-section-gap` `gap-section-gap` | — |
 | `spacing-card` | отступ | Внутренний отступ карточки товара | `0 px` | `p-card` `gap-card` | — |

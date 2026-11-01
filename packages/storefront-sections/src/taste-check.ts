@@ -1,3 +1,4 @@
+import { MOTION_UTILITIES } from '@merfy/tokens';
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
 import { MANIFEST_FILE, TEMPLATE_FILE, readManifest, type SectionFiles } from './format';
 import { positionAt } from './position';
@@ -106,8 +107,18 @@ function isButton(element: Element): boolean {
   return plainUtilities(element).some((utility) => BUTTON_LOOK.test(utility));
 }
 
+// Своё значение в px или rem (шаг 6): h-[40px], w-[30rem] — в пикселях; другое (%, vw, clamp) — не считаем.
+const ROOT_PX = 16;
+function freePx(value: string): number | undefined {
+  const match = /^\[(\d+(?:\.\d+)?)(px|rem)\]$/.exec(value);
+  if (match === null) return undefined;
+  return match[2] === 'rem' ? Number(match[1]) * ROOT_PX : Number(match[1]);
+}
+
 function heightPx(utility: string): number | undefined {
   if (/^(?:min-)?h-px$/.test(utility)) return 1;
+  const free = /^(?:min-h|h|size)-(\[.+\])$/.exec(utility);
+  if (free !== null) return freePx(free[1] ?? '');
   const match = /^(?:min-h|h|size)-(\d+(?:\.\d+)?)$/.exec(utility);
   return match === null ? undefined : Number(match[1]) * SPACING_PX;
 }
@@ -132,6 +143,7 @@ function isWide(utility: string): boolean {
   const named = /^(?:min-)?w-(.+)$/.exec(utility)?.[1];
   if (named === undefined) return false;
   if (NAMED_WIDE.has(named)) return true;
+  if (named.startsWith('[')) return (freePx(named) ?? 0) > PHONE_PX;
   return /^\d+(?:\.\d+)?$/.test(named) && Number(named) * SPACING_PX > PHONE_PX;
 }
 
@@ -160,7 +172,11 @@ function overflowFound(element: Element): Found[] {
 const MOTION_GUARDS = { animate: 'animate-none', transition: 'transition-none', scroll: 'scroll-auto' } as const;
 type Motion = keyof typeof MOTION_GUARDS;
 
+// Бегущая строка и параллакс словаря (MOTION_UTILITIES, шаг 6) сами стоят при «уменьшить движение».
+const SELF_GUARDED: ReadonlySet<string> = new Set(MOTION_UTILITIES);
+
 function motionOf(utility: string): Motion | undefined {
+  if (SELF_GUARDED.has(utility)) return undefined;
   if (utility.startsWith('animate-') && utility !== 'animate-none') return 'animate';
   if ((utility === 'transition' || utility.startsWith('transition-')) && utility !== 'transition-none')
     return 'transition';

@@ -4,6 +4,7 @@ import * as api from '../src/index';
 describe('API пакета (design.md, раздел 9)', () => {
   it('отдаёт ровно эти имена', () => {
     expect(Object.keys(api).sort()).toEqual([
+      'MOTION_UTILITIES',
       'NO_MIGRATIONS',
       'SECTION_TOKENS_MAX',
       'TokenError',

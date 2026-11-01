@@ -85,6 +85,20 @@ describe('«уменьшить движение»: шаблон', () => {
     expect(await found(template('<div class="transition-none animate-none">a</div>'))).toEqual([]);
   });
 
+  it('бегущая строка и параллакс словаря сами стоят при «уменьшить движение» — без предупреждений (шаг 6)', async () => {
+    const body = '<ul class="animate-marquee hover:animate-paused"><li class="parallax-strong">a</li></ul>';
+    expect(await found(template(body))).toEqual([]);
+  });
+
+  it('своё значение ширины и высоты в px и rem считается, как шкала (шаг 6)', async () => {
+    expect(await found(template('<div class="w-[30rem]">a</div>'))).toEqual(['taste-overflow template.astro:1:13']);
+    expect(await found(template('<div class="w-[30rem] max-w-full">a</div>'))).toEqual([]);
+    expect(await found(template('<button class="h-[36px]">a</button>'))).toEqual([
+      'taste-button-height template.astro:1:16',
+    ]);
+    expect(await found(template('<div class="w-[80vw]">a</div>'))).toEqual([]);
+  });
+
   it('отмена другого вида движения не закрывает остальное', async () => {
     expect(
       await found(template('<div class="animate-pulse transition-all motion-reduce:transition-none">a</div>')),

@@ -86,13 +86,16 @@ describe('токены секции в section.json', () => {
     expect(found?.message).toContain('"text-custom-size"');
   });
 
-  it('тень своим токеном не записать — отказ говорит это прямо, а не предлагает невозможное', () => {
-    const text = textOf({ 'shadow-custom-lift': { kind: 'shadow', about: 'Тень', derive: { rule: 'alias', from: 'shadow-card' } } });
-    const [found] = tokenProblems(manifestOf(text), text);
-    expect(found?.message).toContain('Тень своим токеном сейчас не задать');
+  it('тень — alias от тени словаря проходит; тень с default — отказ с верной строкой от shadow-raised (шаг 6)', () => {
+    const good = textOf({ 'shadow-custom-lift': { kind: 'shadow', about: 'Тень', derive: { rule: 'alias', from: 'shadow-card' } } });
+    expect(tokenProblems(manifestOf(good), good)).toEqual([]);
+    const bad = textOf({ 'shadow-lift': { kind: 'shadow', about: 'Тень', default: { x: 0, y: 4, blur: 8, spread: 0, opacity: 0.2 } } });
+    const messages = tokenProblems(manifestOf(bad), bad).map((item) => item.message).join('\n');
+    expect(messages).toContain('"shadow-custom-lift"');
+    expect(messages).toContain('"from": "shadow-raised"');
   });
 
-  it('все восемь примеров принимает проверка токенов', () => {
+  it('все девять примеров принимает проверка токенов', () => {
     const text = textOf(JSON.parse(`{${Object.values(SECTION_TOKEN_EXAMPLES).join(',')}}`));
     expect(tokenProblems(manifestOf(text), text)).toEqual([]);
   });

@@ -4,6 +4,7 @@ import { templateProblems } from '../src/template';
 
 const HERO = readFileSync(new URL('../fixtures/sections/hero/template.astro', import.meta.url), 'utf8');
 const FRONT = '---\nconst { settings } = Astro.props;\n---\n';
+const FRONT_BLOCKS = '---\nconst { settings, blocks } = Astro.props;\n---\n';
 const textsOf = async (text: string) => (await templateProblems(text)).map((item) => item.message);
 
 describe('запреты шаблона секции', () => {
@@ -61,13 +62,31 @@ describe('запреты шаблона секции', () => {
     expect(await templateProblems(text)).toEqual([]);
   });
 
+  // Шаг 6 (01.11): Object — только чтение.
+  it('выражения: Object.keys, values, entries, fromEntries, hasOwn, groupBy — можно', async () => {
+    const read =
+      '{Object.keys(settings).length}{Object.values(settings).join()}{Object.entries(settings).map(([key, value]) => <i data-k={key}>{String(value)}</i>)}' +
+      "{Object.fromEntries([['a', 1]]).a}{Object.hasOwn(settings, 'x') && 'x'}{Object.groupBy(blocks, (block) => block.type).card?.length}";
+    expect(await templateProblems(`${FRONT_BLOCKS}<p>${read}</p>`)).toEqual([]);
+  });
+
+  it('выражения: Object.assign, defineProperty, setPrototypeOf, Object[…] — отказ', async () => {
+    const write =
+      "{Object.assign(settings, {})}{Object.defineProperty(settings, 'a', {})}{Object.setPrototypeOf(settings, null)}{Object['keys'](settings)}";
+    expect(await textsOf(`${FRONT}<p>${write}</p>`)).toEqual([
+      'Object.assign: в шаблоне — только чтение: Object.keys, values, entries, fromEntries, hasOwn, groupBy',
+      'Object.defineProperty: в шаблоне — только чтение: Object.keys, values, entries, fromEntries, hasOwn, groupBy',
+      'Object.setPrototypeOf: в шаблоне — только чтение: Object.keys, values, entries, fromEntries, hasOwn, groupBy',
+    ]);
+  });
+
   it('выражения: чужие имена, new, this, import(), присваивание, функции с телом, function, async', async () => {
     const body = "{process.env.X}{fetch('x')}{new Function('a')}{this}{import('x')}{settings.a = 1}";
     const functions = '{(() => { while (true) {} })()}{function () {}}{async () => 1}';
     const only = 'выражение только читает данные секции';
     expect(await textsOf(`${FRONT}<p>${body}${functions}</p>`)).toEqual([
-      'имя process: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array',
-      'имя fetch: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array',
+      'имя process: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array, Object',
+      'имя fetch: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array, Object',
       `new: в шаблоне секции нельзя — ${only}`,
       `this: в шаблоне секции нельзя — ${only}`,
       `import(): в шаблоне секции нельзя — ${only}`,

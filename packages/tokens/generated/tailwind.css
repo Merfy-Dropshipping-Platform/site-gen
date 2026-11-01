@@ -60,6 +60,14 @@
   --text-4xl--line-height: var(--text-4xl--line-height);
   --text-5xl: var(--text-5xl);
   --text-5xl--line-height: var(--text-5xl--line-height);
+  --text-6xl: var(--text-6xl);
+  --text-6xl--line-height: var(--text-6xl--line-height);
+  --text-7xl: var(--text-7xl);
+  --text-7xl--line-height: var(--text-7xl--line-height);
+  --text-8xl: var(--text-8xl);
+  --text-8xl--line-height: var(--text-8xl--line-height);
+  --text-9xl: var(--text-9xl);
+  --text-9xl--line-height: var(--text-9xl--line-height);
   --tracking-body: var(--tracking-body);
   --tracking-heading: var(--tracking-heading);
   --radius-button: var(--radius-button);
@@ -74,6 +82,7 @@
   --shadow-media: var(--shadow-media);
   --shadow-popover: var(--shadow-popover);
   --shadow-drawer: var(--shadow-drawer);
+  --shadow-raised: var(--shadow-raised);
   --spacing-section: var(--spacing-section);
   --spacing-section-gap: var(--spacing-section-gap);
   --spacing-card: var(--spacing-card);
@@ -116,6 +125,18 @@
   & img { display: block; max-width: 100%; height: auto; border-radius: var(--radius-media); }
   & figcaption { margin-top: 0.5rem; color: var(--muted-foreground); font-size: var(--text-sm); line-height: var(--text-sm--line-height); }
 }
+@theme inline {
+  @keyframes merfy-marquee { to { translate: -50% 0; } }
+  @keyframes merfy-parallax { from { translate: 0 -8%; } to { translate: 0 8%; } }
+  @keyframes merfy-parallax-strong { from { translate: 0 -16%; } to { translate: 0 16%; } }
+}
+@utility animate-marquee { @media (prefers-reduced-motion: no-preference) { animation: merfy-marquee 40s linear infinite; } }
+@utility animate-marquee-slow { @media (prefers-reduced-motion: no-preference) { animation: merfy-marquee 80s linear infinite; } }
+@utility animate-marquee-fast { @media (prefers-reduced-motion: no-preference) { animation: merfy-marquee 20s linear infinite; } }
+@utility animate-marquee-reverse { @media (prefers-reduced-motion: no-preference) { animation: merfy-marquee 40s linear infinite reverse; } }
+@utility parallax { @media (prefers-reduced-motion: no-preference) { @supports (animation-timeline: view()) { animation: merfy-parallax linear both; animation-timeline: view(); } } }
+@utility parallax-strong { @media (prefers-reduced-motion: no-preference) { @supports (animation-timeline: view()) { animation: merfy-parallax-strong linear both; animation-timeline: view(); } } }
+@utility animate-paused { animation-play-state: paused; }
 @custom-variant card-style-standard (&:where([data-card-style="standard"], [data-card-style="standard"] *));
 @custom-variant card-style-card (&:where([data-card-style="card"], [data-card-style="card"] *));
 @custom-variant card-align-left (&:where([data-card-align="left"], [data-card-align="left"] *));

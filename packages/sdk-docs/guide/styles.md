@@ -4,10 +4,53 @@
 - Цвета, шрифты, радиусы — классы токенов (таблица ниже): `bg-primary`, `text-heading`, `font-body`,
   `rounded-button`.
 - Отступы и сетка — обычные классы Tailwind: `flex`, `gap-4`, `px-4`, `mx-auto`, `max-w-page`.
-- Нельзя: `style`, `<style>`, произвольные значения `bg-[#c9a227]` (`class-arbitrary`), `dark:` (`class-dark`), токены
-  одной темы (`class-theme-token`), класс, собранный из строки (`class-dynamic`).
-- Нужен свой цвет или размер — токен секции: ключ `tokens` в `section.json`, имя с меткой `custom`
-  (`custom-swatch`); мерчант меняет его в «Настройках темы».
+- Свои значения — у размера, отступа, положения, слоя, межбуквенного и межстрочного, пропорций, сетки, прозрачности,
+  размытия и времени: `text-[clamp(4rem,16vw,14rem)]`, `leading-[0.85]`, `tracking-[-0.04em]`, `top-[12%]`,
+  `aspect-[3/4]`, `grid-cols-[1fr_2fr]`, `w-[min(40vw,28rem)]`. Значение — числа, единицы и `calc`, `clamp`, `min`,
+  `max`, `minmax`, `repeat`; пробел — `_`.
+- Цвет — только токеном: класс словаря или токен секции. `bg-[#c9a227]`, `text-[red]`, `shadow-[…]`, `var(…)`, `url(…)`
+  — отказ `class-arbitrary`: цвет мимо токена не перекрасит цветовая схема мерчанта.
+- Нельзя: `style`, `<style>`, свой селектор `[&_p]:…`, `dark:` (`class-dark`), токены одной темы (`class-theme-token`),
+  класс, собранный из строки (`class-dynamic`).
+- Нужен свой цвет или размер, который меняет мерчант, — токен секции: ключ `tokens` в `section.json`, имя с меткой
+  `custom` (`custom-swatch`); мерчант меняет его в «Настройках темы».
+
+## Плакат, слои, движение
+
+- **Шкала текста** — до `text-9xl`: `text-6xl`…`text-9xl` резиновые (растут с шириной экрана), межстрочный — плотный.
+  Крупнее или своей кривой — `text-[clamp(5rem,22vw,20rem)]`.
+- **Слои**: `relative isolate` на секции, слои — `absolute inset-0`, порядок — `-z-10`, `z-10`, `z-[3]`; смешение —
+  `mix-blend-multiply`, `mix-blend-screen`, `mix-blend-difference`; размытая подложка — `backdrop-blur-md bg-background/60`.
+  Тень поднятой плашки — `shadow-raised`.
+- **Появление при прокрутке** — `data-animate="appear"` ([behaviors.md](behaviors.md)); играет, когда в «Настройках темы»
+  включено «Появление секций» (`choice-motion-reveal: on`).
+- **Бегущая строка** — `animate-marquee` (`-slow`, `-fast`, `-reverse`) на ряду из двух одинаковых половин: ряд едет на
+  половину своей ширины. Пауза под курсором — `hover:animate-paused`.
+- **Параллакс** — `parallax` или `parallax-strong` на фоне внутри `overflow-hidden`: фон смещается при прокрутке; браузер
+  без анимаций по прокрутке оставляет его на месте.
+- **«Уменьшить движение»**: бегущая строка и параллакс сами стоят, появления не играют. Своё `animate-*` и `transition-*`
+  — с `motion-safe:` или `motion-reduce:animate-none` (иначе `taste-motion`).
+- **Видео фоном** — поле `video`, `<video autoplay muted loop playsinline aria-hidden="true">` слоем `absolute inset-0
+  -z-10 size-full object-cover`; без звука и элементов управления, текст поверх — на подложке.
+
+```astro
+<div class="relative isolate flex min-h-[80svh] flex-col justify-end overflow-hidden font-body">
+  {settings.video && (
+    <video class="absolute inset-0 -z-10 size-full object-cover motion-reduce:hidden" src={settings.video} autoplay muted loop playsinline aria-hidden="true"></video>
+  )}
+  <div class="absolute inset-0 -z-10 bg-background/40 backdrop-blur-sm"></div>
+  {settings.heading && (
+    <h2 class="m-0 px-4 font-heading text-[clamp(4rem,18vw,16rem)] leading-[0.85] tracking-[-0.04em] text-heading weight-heading" data-animate="appear" set:html={settings.heading} />
+  )}
+  <div class="overflow-hidden border-y border-border py-3">
+    <ul class="m-0 flex w-max list-none gap-8 p-0 animate-marquee hover:animate-paused">
+      {[0, 1].map((copy) => blocks.map((block) => (
+        <li class="text-2xl text-foreground md:text-4xl" aria-hidden={copy === 1 ? 'true' : undefined}>{block.settings.text}</li>
+      )))}
+    </ul>
+  </div>
+</div>
+```
 
 ## Градиент и градиентный текст
 

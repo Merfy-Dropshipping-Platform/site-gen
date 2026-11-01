@@ -35,9 +35,9 @@ describe('расширение темой', () => {
   it('дописывает свои токены после базовых, в порядке записи', () => {
     const dictionary = extendDictionary(platformDictionary, EXTEND);
     const names = dictionaryNames(dictionary);
-    expect(names).toHaveLength(83);
-    expect(names.slice(78)).toEqual(Object.keys(EXTEND));
-    expect(names.slice(0, 78)).toEqual(dictionaryNames(platformDictionary));
+    expect(names).toHaveLength(88);
+    expect(names.slice(83)).toEqual(Object.keys(EXTEND));
+    expect(names.slice(0, 83)).toEqual(dictionaryNames(platformDictionary));
   });
 
   it('свои токены без раздела попадают в раздел theme', () => {
@@ -56,7 +56,7 @@ describe('расширение темой', () => {
 
   it('словарь платформы не меняется', () => {
     extendDictionary(platformDictionary, EXTEND);
-    expect(dictionaryNames(platformDictionary)).toHaveLength(78);
+    expect(dictionaryNames(platformDictionary)).toHaveLength(83);
   });
 });
 

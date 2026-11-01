@@ -255,12 +255,12 @@
             "min": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "max": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "leading": {
               "type": "number",
@@ -282,12 +282,12 @@
             "min": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "max": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "leading": {
               "type": "number",
@@ -309,12 +309,12 @@
             "min": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "max": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "leading": {
               "type": "number",
@@ -336,12 +336,12 @@
             "min": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "max": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "leading": {
               "type": "number",
@@ -363,12 +363,12 @@
             "min": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "max": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "leading": {
               "type": "number",
@@ -390,12 +390,12 @@
             "min": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "max": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "leading": {
               "type": "number",
@@ -417,12 +417,12 @@
             "min": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "max": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "leading": {
               "type": "number",
@@ -444,12 +444,12 @@
             "min": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "max": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "leading": {
               "type": "number",
@@ -471,12 +471,12 @@
             "min": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "max": {
               "type": "number",
               "minimum": 8,
-              "maximum": 160
+              "maximum": 320
             },
             "leading": {
               "type": "number",
@@ -491,6 +491,114 @@
           ],
           "additionalProperties": false,
           "description": "Главный заголовок первого экрана"
+        },
+        "text-6xl": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 8,
+              "maximum": 320
+            },
+            "max": {
+              "type": "number",
+              "minimum": 8,
+              "maximum": 320
+            },
+            "leading": {
+              "type": "number",
+              "minimum": 0.8,
+              "maximum": 3
+            }
+          },
+          "required": [
+            "min",
+            "max",
+            "leading"
+          ],
+          "additionalProperties": false,
+          "description": "Крупный заголовок-плакат"
+        },
+        "text-7xl": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 8,
+              "maximum": 320
+            },
+            "max": {
+              "type": "number",
+              "minimum": 8,
+              "maximum": 320
+            },
+            "leading": {
+              "type": "number",
+              "minimum": 0.8,
+              "maximum": 3
+            }
+          },
+          "required": [
+            "min",
+            "max",
+            "leading"
+          ],
+          "additionalProperties": false,
+          "description": "Заголовок-плакат на весь экран"
+        },
+        "text-8xl": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 8,
+              "maximum": 320
+            },
+            "max": {
+              "type": "number",
+              "minimum": 8,
+              "maximum": 320
+            },
+            "leading": {
+              "type": "number",
+              "minimum": 0.8,
+              "maximum": 3
+            }
+          },
+          "required": [
+            "min",
+            "max",
+            "leading"
+          ],
+          "additionalProperties": false,
+          "description": "Плакатное слово: название, лозунг"
+        },
+        "text-9xl": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 8,
+              "maximum": 320
+            },
+            "max": {
+              "type": "number",
+              "minimum": 8,
+              "maximum": 320
+            },
+            "leading": {
+              "type": "number",
+              "minimum": 0.8,
+              "maximum": 3
+            }
+          },
+          "required": [
+            "min",
+            "max",
+            "leading"
+          ],
+          "additionalProperties": false,
+          "description": "Самый крупный: слово во всю ширину"
         },
         "tracking-body": {
           "type": "number",
@@ -1181,6 +1289,84 @@
           ],
           "additionalProperties": false,
           "description": "Тень шторки"
+        },
+        "shadow-raised": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 100
+            },
+            "y": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 100
+            },
+            "blur": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 200
+            },
+            "spread": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 100
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "color": {
+              "type": "string",
+              "enum": [
+                "background",
+                "foreground",
+                "card",
+                "card-foreground",
+                "popover",
+                "popover-foreground",
+                "primary",
+                "primary-foreground",
+                "primary-hover",
+                "primary-hover-foreground",
+                "primary-border",
+                "secondary",
+                "secondary-foreground",
+                "secondary-hover",
+                "secondary-hover-foreground",
+                "secondary-border",
+                "muted",
+                "muted-foreground",
+                "accent",
+                "accent-foreground",
+                "destructive",
+                "destructive-foreground",
+                "border",
+                "input",
+                "ring",
+                "heading",
+                "price",
+                "price-old",
+                "sale",
+                "sale-foreground",
+                "badge",
+                "badge-foreground",
+                "theme-gold",
+                "theme-gold-foreground"
+              ]
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "blur",
+            "spread",
+            "opacity"
+          ],
+          "additionalProperties": false,
+          "description": "Тень поднятого блока: плашка поверх фото, карточка над фоном"
         },
         "spacing-section": {
           "anyOf": [

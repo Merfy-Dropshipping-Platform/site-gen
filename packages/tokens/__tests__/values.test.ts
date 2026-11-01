@@ -49,7 +49,7 @@ describe('значения темы', () => {
       (raw) => {
         raw.root['text-2xl'] = { min: 40, max: 32, leading: 1.25 };
       },
-      ['root.text-2xl: нужно { min, max, leading }: размеры от 8 до 160 px, min ≤ max, leading от 0,8 до 3'],
+      ['root.text-2xl: нужно { min, max, leading }: размеры от 8 до 320 px, min ≤ max, leading от 0,8 до 3'],
     ],
     [
       'опечатка в имени',
@@ -139,9 +139,9 @@ describe('значения темы', () => {
 });
 
 describe('тема с расширением', () => {
-  it('словарь темы — 83 токена, свой цвет задан в каждой схеме', () => {
+  it('словарь темы — 88 токенов, свой цвет задан в каждой схеме', () => {
     const theme = parseTheme(themeWithExtension.tokens);
-    expect(dictionaryNames(theme.dictionary)).toHaveLength(83);
+    expect(dictionaryNames(theme.dictionary)).toHaveLength(88);
     expect(theme.tokens.schemes['scheme-2']['theme-gold']).toBe('#e0b93a');
   });
 

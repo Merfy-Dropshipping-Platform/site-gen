@@ -33,8 +33,8 @@ function problemsOf(raw: unknown): readonly string[] {
 }
 
 describe('словарь платформы', () => {
-  it('разбирается: 78 токенов, из них 20 базовых, 13 разделов', () => {
-    expect(dictionaryNames(platformDictionary)).toHaveLength(78);
+  it('разбирается: 83 токена, из них 20 базовых, 13 разделов', () => {
+    expect(dictionaryNames(platformDictionary)).toHaveLength(83);
     const base = dictionaryNames(platformDictionary).filter((name) => isBaseToken(platformDictionary.tokens[name]));
     expect(base).toHaveLength(20);
     expect(platformDictionary.groups).toHaveLength(13);
@@ -48,11 +48,11 @@ describe('словарь платформы', () => {
       color: 32,
       font: 2,
       weight: 2,
-      text: 9,
+      text: 13,
       tracking: 2,
       radius: 6,
       'border-width': 5,
-      shadow: 6,
+      shadow: 7,
       spacing: 5,
       width: 2,
       choice: 4,
@@ -60,16 +60,16 @@ describe('словарь платформы', () => {
     });
   });
 
-  it('33 достраиваются правилом, 22 берут умолчание, 3 схемы деталей наследуют родителя', () => {
+  it('33 достраиваются правилом, 27 берут умолчание, 3 схемы деталей наследуют родителя', () => {
     const defs = Object.values(platformDictionary.tokens);
     expect(defs.filter((def) => def.derive !== undefined)).toHaveLength(33);
-    expect(defs.filter((def) => def.default !== undefined)).toHaveLength(22);
+    expect(defs.filter((def) => def.default !== undefined)).toHaveLength(27);
     expect(defs.filter((def) => def.kind === 'scheme')).toHaveLength(3);
   });
 
-  it('в схеме 32 цвета, в корне 46 токенов; порядок расчёта ставит источник раньше токена', () => {
+  it('в схеме 32 цвета, в корне 51 токен; порядок расчёта ставит источник раньше токена', () => {
     expect(namesIn(platformDictionary, 'scheme')).toHaveLength(32);
-    expect(namesIn(platformDictionary, 'root')).toHaveLength(46);
+    expect(namesIn(platformDictionary, 'root')).toHaveLength(51);
     const order = platformDictionary.order;
     expect(order.indexOf('primary-hover-foreground')).toBeLessThan(order.indexOf('primary-hover'));
     expect(order.indexOf('muted-foreground')).toBeLessThan(order.indexOf('price-old'));

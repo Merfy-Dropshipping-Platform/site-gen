@@ -1,6 +1,6 @@
 # Шпаргалка: секция с нуля
 
-> SDK 1 · документация 1.26.0 · 2026-11-01
+> SDK 1 · документация 1.27.0 · 2026-11-01
 
 Шпаргалка: как написать секцию с нуля и не открывать остальные файлы. Подробности — по ссылкам внизу; каждый абзац ниже
 сверен с проверкой при сохранении.
@@ -54,7 +54,7 @@ const { settings, blocks } = Astro.props;
 - `settings` — ссылка `{ "wrapper": "padding" }` ставит общие «Отступы» и «Цветовую схему» (по умолчанию они уже есть).
 - Условия: `visibleWhen` и `disabledWhen` — `{ "setting": "<id>", "equals": <значение> }` по полю `toggle`, `select`,
   `radio`, `alignment` своего списка.
-- `blocks`: до 8 типов, до 50 блоков; `limit` — сколько блоков типа; в блоке нет видов `blog`, `policy`, `menu`.
+- `blocks`: до 16 типов, до 50 блоков; `limit` — сколько блоков типа; в блоке нет видов `blog`, `policy`, `menu`.
 - `uses`: `["theme"]`, `["shop"]` открывают `theme` и `shop` в шаблоне; `groups`: `header`, `page`, `footer` — куда ставить.
 
 ## Имена полей
@@ -70,7 +70,7 @@ const { settings, blocks } = Astro.props;
 
 - Frontmatter — одна строка `const { settings, blocks } = Astro.props;` (`theme` и `shop` — только с `uses`).
   Операторов, `import`, функций и переменных нет.
-- Можно: `{settings.x}`, `{settings['kebab-id']}`, `&&`, `?:` (не вложенный), `blocks.map(...)`, `class:list`,
+- Можно: `{settings.x}`, `{settings['kebab-id']}`, `&&`, `?:` (не вложенный), `blocks.map(...)`, `Object.entries(...)`, `class:list`,
   `data-*`, `set:html` — только у `richtext` и у `string`/`text` с `"ai"`; HTML-текст — в элементе с классом `rich-text`.
 - Нельзя: `<script>`, `<style>`, `<iframe>`, `<link>`, `<meta>`, `<title>` и другие служебные теги, компоненты, `on…`-обработчики, `javascript:`,
   `{...}` в атрибутах, атрибут `style`, `Date`, `Intl`, префикс `__merfy`.
@@ -84,17 +84,19 @@ const { settings, blocks } = Astro.props;
 
 Своего CSS нет: только классы Tailwind из словаря ([styles.md](styles.md)). Цвета, шрифты, радиусы — токены:
 `bg-primary`, `text-heading`, `text-foreground`, `font-body`, `font-heading weight-heading`, `rounded-button`,
-`rounded-card`, `max-w-page`. Нельзя: произвольные значения `bg-[#c9a227]`, `dark:`, класс из строки
-(`class-dynamic`), токены одной темы. Нужен свой цвет, размер, насыщенность — токен секции (ниже). Градиент —
+`rounded-card`, `max-w-page`. Цвет — только токеном: `bg-[#c9a227]` — отказ. Свои значения размера, отступа, положения,
+интервалов, пропорций можно: `text-[clamp(4rem,16vw,14rem)]`, `top-[12%]`, `aspect-[3/4]`; шкала текста — до `text-9xl`.
+Слои, бегущая строка, параллакс, видео фоном — [styles.md](styles.md#плакат-слои-движение). Нельзя: `dark:`, класс из
+строки (`class-dynamic`), токены одной темы. Свой цвет мерчанту — токен секции (ниже). Градиент —
 направление и точки на одном элементе (`bg-linear-to-r from-… to-…`), иначе `class-inert`. Вёрстка телефоном
 вперёд: классы без префикса — телефон, `md:` и `lg:` добавляют; кнопки от `h-11`, без прокрутки вбок.
 
 ### Свой токен секции
 
 Ключ `tokens` в `section.json`, до 10. Имя — приставка вида и `custom-` (цвет — без приставки: `custom-plate`); вид — один
-из восьми ниже; значение — только в `default`, рядом с `kind` лежат лишь `about` и `default` (`min`, `max`, `leading` —
+из девяти ниже; значение — только в `default`, рядом с `kind` лежат лишь `about` и `default` (`min`, `max`, `leading` —
 внутри `default`). Класс в шаблоне — то же имя: `bg-custom-plate`, `text-custom-display`, `rounded-custom-pill`,
-`max-w-custom-narrow`. Тень своим токеном сейчас не задать (в словаре нет базовой тени) — класс тени словаря.
+`max-w-custom-narrow`, `shadow-custom-plate`. У тени — только `derive` от тени словаря (`shadow-raised`).
 
 ```json
 "tokens": {
@@ -105,7 +107,8 @@ const { settings, blocks } = Astro.props;
   "radius-custom-pill": { "kind": "radius", "about": "Скругление плашки", "default": 999 },
   "border-width-custom-line": { "kind": "border-width", "about": "Толщина линии", "default": 1 },
   "spacing-custom-row": { "kind": "spacing", "about": "Отступ между рядами", "default": { "min": 24, "max": 64 } },
-  "width-custom-narrow": { "kind": "width", "about": "Узкая колонка", "default": 640 }
+  "width-custom-narrow": { "kind": "width", "about": "Узкая колонка", "default": 640 },
+  "shadow-custom-plate": { "kind": "shadow", "about": "Тень плашки", "derive": { "rule": "alias", "from": "shadow-raised" } }
 }
 ```
 

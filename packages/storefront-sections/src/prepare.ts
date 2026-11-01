@@ -22,6 +22,7 @@ import {
 } from './format';
 import { authorProblems } from './author-rules';
 import { authoringProblems } from './authoring-check';
+import { listSectionProblems } from './list-section';
 import { isWarning, sectionProblemSchema, type Checked, type SectionProblem } from './problems';
 import { buildScript, type BuiltScript } from './script';
 import { NO_FACTS, type ScriptFacts } from './script-facts';
@@ -151,6 +152,14 @@ async function styleProblems(
   return [...tokenProblems(manifest, files[MANIFEST_FILE] ?? ''), ...classes];
 }
 
+// Правила секции по её section.json: роль и ctx.ext секции расширения — по префиксу имени от двери (блок 12, часть
+// 12а); список товаров каталога и коллекции — с фильтрами, сортировкой и листанием (шаг 5, list-section.ts).
+const sectionRuleProblems = (
+  manifest: SectionManifest,
+  prefix: string,
+  template: string | undefined,
+): SectionProblem[] => [...authorProblems(manifest, prefix), ...listSectionProblems(manifest, template)];
+
 export async function prepareSection(input: PrepareInput): Promise<PrepareResult> {
   const { files } = input;
   // Больше пределов — сразу отказ: такие файлы не разбираем. Дальше проблемы собираются все разом.
@@ -177,8 +186,7 @@ export async function prepareSection(input: PrepareInput): Promise<PrepareResult
     ...namesOf(manifest, checked, script, entry),
     ...styles,
     ...taste,
-    // Блок 12, часть 12а: роль и ctx.ext секции расширения — по префиксу имени от двери.
-    ...(manifest.ok ? authorProblems(manifest.value, input.prefix) : []),
+    ...(manifest.ok ? sectionRuleProblems(manifest.value, input.prefix, template) : []),
   ];
   if (!manifest.ok || problems.some((item) => !isWarning(item))) return refuse(problems);
   // Предупреждения о составе секции — только принятой: отказ не обрастает советами, пока в нём есть ошибки.

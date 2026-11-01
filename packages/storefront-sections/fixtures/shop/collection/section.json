@@ -7,6 +7,7 @@
   "themeSettings": ["wishlist-enabled"],
   "settings": [
     { "id": "collection", "label": "Выбор коллекции", "setting": { "kind": "collection" } },
+    { "id": "per-page", "label": "Карточки", "setting": { "kind": "range", "default": 12, "min": 2, "max": 24, "step": 1 } },
     { "id": "columns", "label": "Колонки", "setting": { "kind": "range", "default": 3, "min": 1, "max": 6, "step": 1 } },
     {
       "id": "columns-mobile",
@@ -17,6 +18,19 @@
         "options": [
           { "value": "1", "label": "Одна" },
           { "value": "2", "label": "Две" }
+        ]
+      }
+    },
+    {
+      "id": "paging",
+      "label": "Как листать",
+      "setting": {
+        "kind": "select",
+        "default": "more",
+        "options": [
+          { "value": "pages", "label": "Номера страниц" },
+          { "value": "more", "label": "Показать ещё" },
+          { "value": "scroll", "label": "Бесконечная прокрутка" }
         ]
       }
     },
@@ -110,5 +124,30 @@
       "label": "Избранное",
       "setting": { "kind": "toggle", "default": true, "labels": { "on": "Показать", "off": "Скрыть" } }
     }
+  ],
+  "blocks": {
+    "filters": {
+      "title": "Фильтры",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "filter-position",
+          "label": "Вид фильтра",
+          "setting": {
+            "kind": "radio",
+            "default": "side",
+            "options": [
+              { "value": "top", "label": "Сверху" },
+              { "value": "side", "label": "Сбоку" }
+            ]
+          }
+        }
+      ]
+    },
+    "sort": { "title": "Сортировка", "addTitle": "сортировку", "limit": 1, "settings": [] }
+  },
+  "defaultBlocks": [
+    { "type": "filters", "settings": {} },
+    { "type": "sort", "settings": {} }
   ]
 }

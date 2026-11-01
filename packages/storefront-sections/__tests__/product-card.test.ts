@@ -181,7 +181,10 @@ const BLOCKS: Record<Name, RenderBlock[]> = {
     { id: 'filters-1', type: 'filters', settings: { 'filter-position': 'side' } },
     { id: 'sort-1', type: 'sort', settings: {} },
   ],
-  collection: [],
+  collection: [
+    { id: 'filters-1', type: 'filters', settings: { 'filter-position': 'side' } },
+    { id: 'sort-1', type: 'sort', settings: {} },
+  ],
   'collection-products': [
     {
       id: 'view-all-1',
@@ -235,10 +238,25 @@ interface Variant {
   collection?: object | null;
 }
 
+// Страница секции: «Каталог» — /catalog со списком, «Коллекция» — страница коллекции со своим списком (без фильтра по
+// коллекциям: он только у /catalog), «Коллекция товаров» — главная без списка.
+const COLLECTION_LIST = (overrides: Partial<PageList> = {}): PageList =>
+  LIST({
+    url: '/collections/pledy',
+    links: [{ page: 1, url: '/collections/pledy', current: true }],
+    sorts: LIST().sorts.map((sort) => ({ ...sort, selected: false })),
+    facets: { ...(LIST().facets ?? { price: null, groups: [] }), collections: [] },
+    ...overrides,
+  });
+function pageOf(name: Name, list: PageList | undefined): { id: string; path: string; list?: PageList } {
+  if (name === 'catalog') return { id: 'catalog', path: '/catalog', list: list ?? LIST() };
+  if (name === 'collection') return { id: 'collection', path: '/collections/pledy', list: list ?? COLLECTION_LIST() };
+  return { id: 'home', path: '/' };
+}
+
 async function html(name: Name, variant: Variant = {}): Promise<string> {
   const item = renderers.get(name);
   if (item === undefined) throw new Error(name);
-  const onList = name === 'catalog';
   return item.renderer.render({
     section: `shop:${name}`,
     hash: item.hash,
@@ -246,11 +264,7 @@ async function html(name: Name, variant: Variant = {}): Promise<string> {
     settings: { ...defaultsOf(item.manifest), ...variant.settings },
     blocks: variant.blocks ?? BLOCKS[name],
     theme: variant.theme ?? {},
-    page: variant.page ?? {
-      id: onList ? 'catalog' : 'home',
-      path: onList ? '/catalog' : '/',
-      ...(onList ? { list: variant.list ?? LIST() } : {}),
-    },
+    page: variant.page ?? pageOf(name, variant.list),
     records: { collection: variant.collection === undefined ? COLLECTION : variant.collection },
   });
 }
@@ -680,16 +694,81 @@ describe('«Коллекция товаров»', () => {
 });
 
 describe('«Коллекция»: страница коллекции', () => {
-  it('название, описание и число товаров из записи, затем сетка карточек', async () => {
+  // Фильтры, список и листание — та же разметка, что у «Каталога»: от формы фильтров до конца секции. Шаблон не
+  // импортирует куски (template.md), поэтому одинаковость держит этот тест, как карточку выше.
+  const listMarkup = (name: Name): string => {
+    const template = read(name, 'template.astro');
+    return flat(template.slice(template.indexOf('{page.list && blocks.some(')));
+  };
+
+  it('фильтры, сортировка, список и листание — та же разметка, что у «Каталога»', () => {
+    expect(listMarkup('collection')).toBe(listMarkup('catalog'));
+    expect(listMarkup('catalog')).toContain('data-part="filters"');
+    expect(read('collection', 'template.astro')).toContain('data-behavior="catalog"');
+  });
+
+  it.each(['per-page', 'paging'])('поле «%s» — как у «Каталога»', (id) => {
+    expect(shapeOf('collection', id)).toEqual(shapeOf('catalog', id));
+  });
+
+  it('блоки «Фильтры» и «Сортировка» — как у «Каталога», новые секции получают оба', () => {
+    expect(manifestOf('collection').blocks).toEqual(manifestOf('catalog').blocks);
+    expect(manifestOf('collection').defaultBlocks).toEqual(manifestOf('catalog').defaultBlocks);
+  });
+
+  it('название и описание из записи — h1 и текст; карточки — из списка страницы, число — под списком', async () => {
     const source = await html('collection');
     expect(source).toMatch(/<h1[^>]*>Пледы<\/h1>/);
     expect(source).toContain('Для холодных вечеров');
-    expect(source).toContain('Товаров: 3');
     expect(cardTags(source)).toHaveLength(3);
+    expect(source).toMatch(/<\/ul>\s*<p class="[^"]*">3 товара<\/p>/);
+    // Карточки — из page.list, а не из первых 24 товаров записи.
+    expect(
+      cardTags(await html('collection', { list: COLLECTION_LIST({ items: CARDS.slice(0, 1), total: 1 }) })),
+    ).toHaveLength(1);
   });
 
-  it('у коллекции нет товаров — сообщение', async () => {
-    const source = await html('collection', { collection: { ...COLLECTION, products: [], productsCount: 0 } });
-    expect(source).toContain('В этой коллекции пока нет товаров');
+  it('фильтры и сортировка: форма на адрес коллекции, без группы «Коллекции», ни одна сортировка не выбрана', async () => {
+    const source = await html('collection');
+    const [form = ''] = tags(source, 'form\\b[^>]*data-part="filters"');
+    expect(attr(form, 'action')).toBe('/collections/pledy');
+    expect(attr(form, 'method')).toBe('get');
+    const groups = tags(source, 'details\\b[^>]*data-group=').map((tag) => attr(tag, 'data-group'));
+    expect([...groups].sort()).toEqual(['availability', 'filter.цвет', 'price', 'sort']);
+    const sorts = tags(source, 'input\\b[^>]*name="sort"');
+    expect(sorts).toHaveLength(3);
+    expect(sorts.some((tag) => /\schecked/.test(tag))).toBe(false);
+  });
+
+  it.each([
+    ['more', 'data-part="next" href="/collections/pledy/page/2"'],
+    ['pages', 'data-part="pages"'],
+  ])('листание «%s»: следующая страница коллекции — /collections/<адрес>/page/2', async (paging, part) => {
+    const list = COLLECTION_LIST({
+      pages: 2,
+      next: '/collections/pledy/page/2',
+      links: [
+        { page: 1, url: '/collections/pledy', current: true },
+        { page: 2, url: '/collections/pledy/page/2', current: false },
+      ],
+    });
+    const source = await html('collection', { settings: { paging }, list });
+    expect(attr(tags(source, 'div\\b[^>]*data-behavior="catalog"')[0] ?? '', 'data-paging')).toBe(paging);
+    expect(source).toContain(part);
+    expect(source).not.toContain('Смотреть все');
+  });
+
+  it('без блоков — список без формы фильтров', async () => {
+    const source = await html('collection', { blocks: [] });
+    expect(source).not.toContain('data-part="filters"');
+    expect(source).toContain('data-part="list"');
+  });
+
+  it('пустой список — «Ничего не нашли» со ссылкой на всю коллекцию', async () => {
+    const source = await html('collection', {
+      list: COLLECTION_LIST({ items: [], total: 0, totalLabel: '0 товаров' }),
+    });
+    expect(source).toContain('Ничего не нашли');
+    expect(source).toMatch(/<a [^>]*href="\/collections\/pledy"[^>]*>Показать все товары<\/a>/);
   });
 });

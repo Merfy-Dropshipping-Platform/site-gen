@@ -167,3 +167,95 @@ const { page } = Astro.props;
   )}
 </div>
 ```
+
+## Список страницы
+
+`page.list` — список страницы: карточки этой страницы, номера страниц, фильтры и сортировки. `uses` для него не нужен.
+Он есть у каталога (`/catalog`, все товары магазина), у страницы коллекции (`/collections/<адрес>`, товары коллекции в
+порядке мерчанта), у страницы блога (статьи, новые сверху) и у любой своей страницы, где стоит секция с полем `per-page`
+(товары её поля `collection`, пустое — все товары). На страницах товара, статьи и политики и без такой секции —
+`null`: проверяйте `page.list &&`.
+
+Размер страницы — поле `per-page` вида `range` от 2 до 24 (имя словаря «Карточки»): его читает сама платформа, первой
+сверху секции страницы. Без поля — 24 товара или 12 статей.
+
+| Поле         | Что в нём                                                                                                   |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| `kind`       | `'products'` или `'articles'`                                                                               |
+| `items`      | карточки этой страницы: у товаров — поля карточки коллекции и `hasVariants`, у статей — карточки блога       |
+| `total`      | сколько всего с выбранными фильтрами; `totalLabel` — число со словом: «1 товар», «3 товара», «12 товаров»      |
+| `page`       | номер этой страницы, с 1; `pages` — сколько страниц; `perPage` — размер страницы                             |
+| `url`        | адрес списка без номера и параметров: `/catalog`, `/collections/kashemir`                                   |
+| `prev`       | адрес предыдущей страницы или `null`; `next` — следующей или `null`                                         |
+| `links`      | номера для навигации: `{ page, url, current }`; `page: null` и `url: null` — многоточие                      |
+| `query`      | выбранное покупателем: `sort`, `minPrice`, `maxPrice` (рубли), `availability`, `collections`, `filters`, `q`, `page` |
+| `sorts`      | сортировки: `{ value, label, selected }`; у статей — `[]`                                                   |
+| `facets`     | значения фильтров: `price` (`{ min, max }` — `Money`) или `null`, `groups` (`{ key, name, values: [{ value, selected }] }`), `collections` (`{ slug, title, selected }`, только у `/catalog`); у статей — `null` |
+
+### Страницы списка
+
+Каждая следующая страница — отдельная страница сайта: `/catalog/page/2`, `/collections/<адрес>/page/2`,
+`/blogs/<адрес>/page/2`. Платформа собирает их сама по `per-page` и числу товаров; ссылки на них — в `next`, `prev` и
+`links`. Это обычные ссылки `<a href>`: они работают и без скрипта.
+
+### Фильтры и сортировка
+
+Фильтры и сортировка — обычная форма `GET` на `page.list.url`. Имена полей формы:
+
+| Имя                    | Значение                                                              |
+| ---------------------- | --------------------------------------------------------------------- |
+| `sort`                 | `popular`, `newest`, `price_desc`, `price_asc` — из `page.list.sorts` |
+| `availability`         | `in_stock`, `sold_out`; пусто — все                                   |
+| `min_price`, `max_price` | рубли                                                                 |
+| `filter.<key>`         | значение группы вариантов (флажок на каждое) — из `facets.groups`      |
+| `collection`           | адрес коллекции — только у `/catalog`, из `facets.collections`        |
+| `q`                    | поиск — передайте скрытым полем, если он есть в `query.q`              |
+
+Страницу с параметрами (`/collections/kashemir?sort=price_asc&filter.цвет=Синий`) платформа рисует по запросу: секция
+получает тот же `page.list`, только с выбранным. Отмечать выбранное — по `selected` и `query`.
+
+### Поведение `catalog`
+
+На корне секции списка — `data-behavior="catalog"` и `data-paging={settings.paging}` (поле «Как листать»: `pages` —
+номера, `more` — «Показать ещё», `scroll` — бесконечная прокрутка). Поведение дописывает строки следующей страницы без
+перехода, применяет фильтры при выборе и меняет адрес. Части: строки — `data-part="list"` (с `data-page={page.list.page}`),
+`data-part="next"` и `data-part="prev"` — ссылки на `page.list.next` и `prev`, `data-part="pages"` — номера,
+`data-part="filters"` — форма, `data-part="empty"` — пусто, `data-part="status"` — объявление для экранного диктора
+([behaviors.md](behaviors.md)). Фильтры и сортировка «Каталога» и «Коллекции» — блоки `filters` и `sort`: мерчант
+убирает и добавляет их в конструкторе.
+
+```astro
+---
+const { settings, page } = Astro.props;
+---
+<div class="mx-auto max-w-page px-4" data-behavior="catalog" data-paging={settings.paging}>
+  {page.list && (
+    <form data-part="filters" method="get" action={page.list.url}>
+      {page.list.sorts.map((sort) => (
+        <label><input type="radio" name="sort" value={sort.value} checked={sort.selected} /> {sort.label}</label>
+      ))}
+      {page.list.facets && page.list.facets.groups.map((group) => group.values.map((value) => (
+        <label><input type="checkbox" name={`filter.${group.key}`} value={value.value} checked={value.selected} /> {value.value}</label>
+      )))}
+    </form>
+  )}
+  {page.list && (
+    <ul class="m-0 grid list-none grid-cols-2 gap-4 p-0" data-part="list" data-page={page.list.page}>
+      {page.list.items.map((card) => <li><a href={card.url}>{card.title}</a> {card.price.text}</li>)}
+    </ul>
+  )}
+  {page.list && page.list.next && <a data-part="next" href={page.list.next}>Показать ещё</a>}
+</div>
+```
+
+### Каталог и коллекция не теряют фильтры и листание
+
+Секция — список товаров страницы каталога или коллекции, если её имя `catalog`, `collection` или оканчивается на
+`-catalog`, `-collection`; если у неё есть «Карточки» (`per-page`) и поле вида `collection`; или если она читает
+`page.list.facets` или `page.list.sorts`. Такой секции нужны: поле `per-page`, корень `data-behavior="catalog"`, строки
+`data-part="list"` из `page.list.items`, переход дальше по `page.list.next` или `page.list.links`, форма
+`data-part="filters"` с `page.list.facets` и сортировка из `page.list.sorts`; шаблон, который показывает их по типу
+блока, — блоки `filters` и `sort` в `section.json`. Чего-то нет — проверка отказывает кодом
+[`list-incomplete`](errors.md#list-incomplete) и называет, чего не хватает. Образец — библиотечные `catalog` и
+`collection`. Витрине товаров на главной листание не нужно: назовите её иначе (`featured-products`) и берите товары из
+поля `collection` — `settings.collection.products`.

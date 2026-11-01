@@ -161,6 +161,13 @@ export function placedSections(inputs: BuildInputs, pageId: string): PlacedSecti
   });
 }
 
+// Классы глобальных скриптов магазина (meta.classes): скрипт грузится на каждой странице, значит, и CSS их классов —
+// на каждой, как у классов разметки. Места у глобального скрипта нет, поэтому в placedSections его классы не попадают.
+export function globalClasses(inputs: BuildInputs): string[] {
+  const byName = new Map(inputs.code.sections.map((section): [string, CodeSection] => [section.name, section]));
+  return inputs.code.globals.flatMap((name) => byName.get(name)?.meta?.classes ?? []);
+}
+
 // removable и uses секции (часть 4 блока 1) и классы её скрипта (часть 5в блока 5) — из кода магазина по имени: у
 // секции без них ключей нет.
 function placeFlags(inputs: BuildInputs, name: string): Pick<PlacedSection, 'removable' | 'uses' | 'classes' | 'role'> {

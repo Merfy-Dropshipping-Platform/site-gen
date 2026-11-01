@@ -342,15 +342,17 @@ async function reportUnknownClasses(
 // Классы скриптов секций страницы (часть 5в блока 5) — к классам разметки: скрипт ставит их уже в браузере.
 const scriptClassesOf = (placed: readonly PlacedSection[]): string[] => placed.flatMap((entry) => entry.classes ?? []);
 
-// Секции страницы по порядку и CSS их классов. Секций нет — процесс рендера не нужен, Tailwind не собирается. Секции
+// Секции страницы по порядку и CSS их классов. Секций нет — процесс рендера не нужен; Tailwind не собирается, если нет
+// и классов глобальных скриптов (globalClasses — классы их скриптов, у них места на странице нет). Секции
 // рендерятся по одной: процесс рендера держит в работе один запрос, предел страницы считается по порядку.
 export async function renderPlacedSections(
   placed: readonly PlacedSection[],
   dictionary: Dictionary,
   page: PageRender,
   sectionTheme = '',
+  globalClasses: readonly string[] = [],
 ): Promise<PageContent> {
-  if (placed.length === 0) return { ...EMPTY_PAGE_CONTENT, mode: page.mode };
+  if (placed.length === 0 && globalClasses.length === 0) return { ...EMPTY_PAGE_CONTENT, mode: page.mode };
   const sections: string[] = [];
   let left = PAGE_SECTIONS_BYTES;
   for (const entry of placed) {
@@ -358,7 +360,8 @@ export async function renderPlacedSections(
     left -= Buffer.byteLength(html);
     sections.push(html);
   }
-  const sectionsCss = await sectionCss(sections.join(''), dictionary, sectionTheme, scriptClassesOf(placed));
+  const scriptClasses = [...scriptClassesOf(placed), ...globalClasses];
+  const sectionsCss = await sectionCss(sections.join(''), dictionary, sectionTheme, scriptClasses);
   if (page.classUnknown !== undefined) {
     await reportUnknownClasses(placed, sections, dictionary, sectionTheme, page.classUnknown);
   }

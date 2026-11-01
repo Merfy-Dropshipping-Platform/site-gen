@@ -21,7 +21,10 @@ export type BehaviorName =
   | 'catalog'
   | 'search'
   // Блок 15, часть 15в (Р15в-3): увеличение фото товара — лупа при наведении или окно по нажатию.
-  | 'zoom';
+  | 'zoom'
+  // Общие части для разработчика расширения: таймер до даты (время сервера, модуль page) и стираемый слой.
+  | 'countdown'
+  | 'scratch';
 
 export type Library = 'embla' | 'motion';
 
@@ -122,6 +125,20 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
       mode: { kind: 'enum', values: ['hover', 'click'], default: 'hover' },
       photos: { kind: 'list', default: [] },
     },
+    onSection: false,
+  },
+  // until — дата окончания, ISO 8601 с поясом; идёт по времени сервера ($now модуля page, uses: ["page"]).
+  countdown: {
+    libraries: [],
+    parts: ['days', 'hours', 'minutes', 'seconds'],
+    params: { until: { kind: 'string', default: null } },
+    onSection: false,
+  },
+  // color — цвет слоя (любой цвет CSS, в том числе var(--токен)); reveal — кнопка «Показать» для клавиатуры.
+  scratch: {
+    libraries: [],
+    parts: ['reveal'],
+    params: { color: { kind: 'string', default: 'var(--muted-foreground)' } },
     onSection: false,
   },
 };

@@ -101,6 +101,7 @@ export interface EventMap {
   'merfy:page:visible': NoDetail;
   'merfy:page:restore': NoDetail;
   'merfy:page:leave': NoDetail;
+  'merfy:page:leaving': NoDetail; // модуль page: посетитель собирается уйти (курсор за верхним краем окна, рывок вверх)
   'merfy:cart:add': {
     readonly lineId: string;
     readonly productId: string;
@@ -137,6 +138,9 @@ export interface EventMap {
   'merfy:block:deselect': { readonly blockId: string };
   'merfy:notice:show': { readonly level: NoticeLevel; readonly message: string; readonly code?: ErrorCode };
   'merfy:consent:change': { readonly state: ConsentState };
+  // Готовые поведения countdown и scratch: какая секция (имя и id экземпляра), как у merfy:section:error.
+  'merfy:countdown:end': { readonly section: string; readonly id: string };
+  'merfy:scratch:done': { readonly section: string; readonly id: string };
 }
 export type EventName = keyof EventMap;
 export type EventDetail<E extends EventName> = EventMap[E];
@@ -404,6 +408,21 @@ export interface ShareResult {
 }
 export interface ShareModule {
   page(options?: ActionOptions): Promise<Result<ShareResult>>;
+  // Скопировать текст (код, ссылку) в буфер обмена; нет буфера — запасной способ; успех — уведомление «Скопировано».
+  copy(args: { readonly text: string }, options?: ActionOptions): Promise<Result<NoData>>;
+}
+
+// Страница целиком (ctx.page с uses: ["page"]): те же path и query, что у ctx.page без модуля, и три стора. Скрипту секции
+// window и document недоступны, а ctx.on('window', 'scroll') отдаёт событие без положения прокрутки — поэтому здесь.
+export interface PageModule extends PageInfo {
+  readonly $scroll: ReadableStore<number>; // доля прокрутки страницы, целое от 0 до 100; обновляется не чаще кадра
+  // Посетитель собирается уйти: курсор вышел за верхний край окна (к вкладкам и адресной строке) или, без курсора,
+  // резкая прокрутка вверх к верху страницы. true — с этого момента и до возвращения курсора или касания экрана; в начале
+  // true приходит вместе с событием merfy:page:leaving.
+  readonly $leaving: ReadableStore<boolean>;
+  // Время по серверу магазина, мс. null — ответ сервера ещё не пришёл (часам устройства верить нельзя); в превью и без
+  // ответа сервера — часы устройства. Обновляется раз в секунду, пока на стор есть подписчики.
+  readonly $now: ReadableStore<number | null>;
 }
 
 export interface Modules {
@@ -422,6 +441,8 @@ export interface Modules {
   readonly files: FilesModule;
   // Базовые секции, 29.10: «Поделиться» у «Товара».
   readonly share: ShareModule;
+  // Страница целиком: сторы прокрутки, ухода и времени сервера. Объявленный в uses, заменяет ctx.page на PageModule.
+  readonly page: PageModule;
 }
 export type ModuleName = keyof Modules;
 

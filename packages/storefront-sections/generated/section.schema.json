@@ -16017,7 +16017,8 @@
               "catalog",
               "orders",
               "files",
-              "share"
+              "share",
+              "page"
             ]
           },
           {

@@ -122,6 +122,12 @@ export const ACTIONS = {
       'поделиться страницей: окно «Поделиться» системы с названием и адресом страницы, нет окна — адрес в буфер обмена; ответ — { method: "share" | "copy" }',
     markup: {},
   },
+  'share.copy': {
+    module: 'share',
+    about:
+      'скопировать текст в буфер обмена (промокод, ссылку); аргументы { text }, ответ — {}; нет буфера — запасной способ; успех — уведомление «Скопировано»',
+    markup: { text: 'text' },
+  },
 } as const satisfies Readonly<Record<string, ActionSpec>>;
 
 export type ActionName = keyof typeof ACTIONS;
@@ -151,6 +157,7 @@ export const MODULE_NAMES = [
   'orders',
   'files',
   'share',
+  'page',
 ] as const satisfies readonly ModuleName[];
 type MissingModule = Exclude<ModuleName, (typeof MODULE_NAMES)[number]>;
 export const MODULE_NAMES_COMPLETE: [MissingModule] extends [never] ? true : never = true;

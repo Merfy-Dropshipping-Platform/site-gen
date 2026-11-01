@@ -44,6 +44,9 @@ export const BEHAVIOR_BUDGETS: Readonly<Record<BundleName | 'total', number>> = 
   search: 3072,
   // Блок 15, часть 15в (Р15в-3) — решение основного треда (Р6-12).
   zoom: 2048,
+  // Таймер до даты и стираемый слой: без библиотек, как остальные малые поведения; общий предел прежний.
+  countdown: 2048,
+  scratch: 2048,
   total: 36864,
 };
 
@@ -60,6 +63,8 @@ const BUNDLE_NAMES: readonly BundleName[] = [
   'catalog',
   'search',
   'zoom',
+  'countdown',
+  'scratch',
   'part',
   'reveal',
   'animate',
@@ -78,6 +83,8 @@ const ENTRY_OF: Readonly<Record<BundleName, string>> = {
   catalog: 'catalog-list.ts',
   search: 'search.ts',
   zoom: 'zoom.ts',
+  countdown: 'countdown.ts',
+  scratch: 'scratch.ts',
   part: 'part.ts',
   reveal: 'reveal.ts',
   animate: 'motion.ts',
@@ -179,6 +186,8 @@ function entriesOf(metafile: Metafile, sizes: Sizes): Record<BundleName, BundleI
     catalog: of('catalog'),
     search: of('search'),
     zoom: of('zoom'),
+    countdown: of('countdown'),
+    scratch: of('scratch'),
     part: of('part'),
     reveal: of('reveal'),
     animate: of('animate'),

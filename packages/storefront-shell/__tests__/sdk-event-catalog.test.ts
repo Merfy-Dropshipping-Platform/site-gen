@@ -5,7 +5,8 @@ import type { ErrorCode, EventName } from '../src/core/types';
 
 // Каталог событий (блок 9: 13а А, «Решил сам» п. 11) — публичный интерфейс: имена и поля только добавляются.
 // merfy:geo:change отложено 20.10 вместе с городом по IP; события превью «выбран блок» и «выбор снят» — блок 6, часть 6в.
-// В каталоге 24 имени: merfy:cart:open — блок 10, часть 10а; merfy:search:open — блок 11, часть 11б.
+// В каталоге 27 имён: merfy:cart:open — блок 10, часть 10а; merfy:search:open — блок 11, часть 11б; merfy:page:leaving —
+// модуль page; merfy:countdown:end и merfy:scratch:done — готовые поведения countdown и scratch.
 const NAMES = [
   'merfy:page:ready',
   'merfy:page:view',
@@ -13,6 +14,7 @@ const NAMES = [
   'merfy:page:visible',
   'merfy:page:restore',
   'merfy:page:leave',
+  'merfy:page:leaving',
   'merfy:cart:add',
   'merfy:cart:remove',
   'merfy:cart:change',
@@ -31,6 +33,8 @@ const NAMES = [
   'merfy:block:deselect',
   'merfy:notice:show',
   'merfy:consent:change',
+  'merfy:countdown:end',
+  'merfy:scratch:done',
 ];
 
 const CART_ADD = {
@@ -42,7 +46,7 @@ const CART_ADD = {
 };
 
 describe('каталог событий', () => {
-  it('24 имени merfy:объект:действие; каталог и типы EventMap — одно и то же', () => {
+  it('27 имён merfy:объект:действие; каталог и типы EventMap — одно и то же', () => {
     expect([...EVENT_NAMES].sort()).toEqual([...NAMES].sort());
     expectTypeOf<keyof typeof EVENT_CATALOG>().toEqualTypeOf<EventName>();
     expect(isEventName('merfy:cart:add')).toBe(true);
@@ -75,6 +79,9 @@ describe('checkEventDetail', () => {
     ['merfy:notice:show', { level: 'error', message: 'Этого товара нет в наличии', code: 'out-of-stock' }],
     ['merfy:notice:show', { level: 'warning', message: 'Добавили 2 шт. — больше нет в наличии' }],
     ['merfy:catalog:page', { page: 2 }],
+    ['merfy:page:leaving', {}],
+    ['merfy:countdown:end', { section: 'shop:promo', id: 'promo-1' }],
+    ['merfy:scratch:done', { section: 'shop:promo', id: 'promo-1' }],
     ['merfy:consent:change', { state: 'accepted' }],
     ['merfy:section:error', { section: 'shop:a', id: 'a-1', script: '', stage: 'runtime', message: 'сломалась' }],
     ['merfy:block:select', { blockId: 'slide-2' }],
@@ -103,6 +110,8 @@ describe('checkEventDetail', () => {
       'merfy:notice:show: code — одно из: out-of-stock, limit, unauthorized, network, server, invalid, refused',
     ],
     ['merfy:consent:change', {}, 'merfy:consent:change: нет поля state'],
+    ['merfy:countdown:end', { section: 'shop:promo' }, 'merfy:countdown:end: id — строка'],
+    ['merfy:scratch:done', {}, 'merfy:scratch:done: section — строка'],
     ['merfy:block:select', {}, 'merfy:block:select: blockId — строка'],
     ['merfy:block:deselect', { blockId: 2 }, 'merfy:block:deselect: blockId — строка'],
     ['merfy:block:select', { blockId: 'slide-2', index: 1 }, 'merfy:block:select: лишнее поле index'],

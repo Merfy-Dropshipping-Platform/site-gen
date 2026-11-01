@@ -24,16 +24,20 @@ export type BehaviorExport =
   | 'cardPhotos'
   | 'stickyHeader'
   | 'video'
-  | 'zoom';
+  | 'zoom'
+  | 'countdown'
+  | 'scratch';
 
 export interface SectionModule {
   readonly name: string;
   readonly code: string; // модуль секции: export default { mount(el, ctx) { … } }
+  readonly uses?: readonly string[]; // модули SDK секции (ctx.page и другие); части нужны в PageOptions.core
 }
 
 export interface PageOptions {
   readonly body: string;
   readonly behaviors?: readonly BehaviorExport[];
+  readonly core?: readonly string[]; // части ядра рядом с behaviors: 'page', 'share' — экспорты src/core/index.ts
   readonly reveal?: boolean;
   readonly animate?: boolean;
   readonly sections?: readonly SectionModule[];
@@ -45,6 +49,8 @@ export interface PageOptions {
   readonly beforeCore?: string; // обычный скрипт до бандла: заглушки браузера
   readonly withoutCore?: boolean; // страница без бандла — проверка запасного CSS
   readonly viewport?: { readonly width: number; readonly height: number };
+  readonly touch?: boolean; // телефон: касания, hover: none; в head — viewport width=device-width
+  readonly prepare?: (page: Page) => Promise<void>; // до перехода на страницу: маршруты шлюза и подобное
   readonly preview?: boolean; // бандл превью (часть 6в): start получает preview: watchPreviewReplace; с mode: 'preview'
 }
 
@@ -99,16 +105,17 @@ export async function pageBundle(options: PageOptions): Promise<string> {
   const extra = [...(options.reveal ? ['reveal'] : []), ...(options.animate ? ['animate'] : [])];
   const rows = sections.map(
     (section, index) =>
-      `{ name: ${JSON.stringify(section.name)}, kind: 'section', script: '${'a'.repeat(64)}', uses: [], definition: s${index} }`,
+      `{ name: ${JSON.stringify(section.name)}, kind: 'section', script: '${'a'.repeat(64)}', uses: ${JSON.stringify(section.uses ?? [])}, definition: s${index} }`,
   );
   const preview = options.preview === true;
+  const core = options.core ?? [];
   const entry = [
-    `import { start${preview ? ', watchPreviewReplace' : ''} } from ${JSON.stringify(CORE)};`,
+    `import { start${preview ? ', watchPreviewReplace' : ''}${core.map((name) => `, ${name}`).join('')} } from ${JSON.stringify(CORE)};`,
     `import { ${['behaviors', ...list, ...extra].join(', ')} } from ${JSON.stringify(BEHAVIORS)};`,
     ...sections.map((_section, index) => `import s${index} from 'section:${index}';`),
     `const base = behaviors({ list: [${list.join(', ')}]${extra.map((name) => `, ${name}`).join('')} });`,
     'const part = { ...base, create: (core) => (window.__behaviorsApi = base.create(core)) };',
-    `start({ parts: [part], sections: [${rows.join(', ')}]${preview ? ', preview: watchPreviewReplace' : ''} });`,
+    `start({ parts: [${['part', ...core].join(', ')}], sections: [${rows.join(', ')}]${preview ? ', preview: watchPreviewReplace' : ''} });`,
     'window.__ready = true;',
   ].join('\n');
   const result = await build({
@@ -127,6 +134,7 @@ export async function pageBundle(options: PageOptions): Promise<string> {
 export function pageHtml(options: PageOptions): string {
   const head = [
     '<meta charset="utf-8">',
+    options.touch ? '<meta name="viewport" content="width=device-width, initial-scale=1">' : '',
     configTag(options.mode ?? 'live'),
     // Геометрические проверки (верх немодального окна, появления) считают от края окна: у страницы тестов нет отступа.
     '<style>body{margin:0}</style>',
@@ -222,7 +230,11 @@ export interface OpenedPage {
 }
 
 export async function openPage(browser: Browser, options: PageOptions): Promise<OpenedPage> {
-  const page = await browser.newPage({ viewport: options.viewport ?? { width: 1280, height: 800 } });
+  const viewport = options.viewport ?? { width: 1280, height: 800 };
+  const page =
+    options.touch === true
+      ? await (await browser.newContext({ viewport, hasTouch: true, isMobile: true })).newPage()
+      : await browser.newPage({ viewport });
   if (options.reducedMotion) await page.emulateMedia({ reducedMotion: 'reduce' });
   const errors: string[] = [];
   page.on('console', (message) => {
@@ -238,6 +250,7 @@ export async function openPage(browser: Browser, options: PageOptions): Promise<
     if (path === '/page.js') return route.fulfill({ contentType: 'text/javascript', body: bundle });
     return route.fulfill({ status: 404, body: '' });
   });
+  await options.prepare?.(page);
   await page.goto(`${ORIGIN}/`);
   if (!options.withoutCore) await page.waitForFunction(() => window.__ready === true);
   return { page, errors };

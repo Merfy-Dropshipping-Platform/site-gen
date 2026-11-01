@@ -34,3 +34,6 @@ export { catalog } from './catalog-list';
 export { search } from './search';
 // Блок 15, часть 15в: увеличение фото товара.
 export { zoom } from './zoom';
+// Таймер до даты по времени сервера и стираемый слой.
+export { countdown } from './countdown';
+export { scratch } from './scratch';

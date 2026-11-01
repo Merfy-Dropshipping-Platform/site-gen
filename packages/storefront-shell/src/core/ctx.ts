@@ -6,6 +6,7 @@ import type { Guard } from './guard';
 import { checkKeyframes } from './keyframes';
 import type { SectionInput } from './input';
 import { sectionLog } from './log';
+import { pageInfoOf } from './page-info';
 import { createSectionStorage, type KeyValue } from './storage';
 import { watchSource } from './stores';
 import type {
@@ -48,12 +49,6 @@ const NO_EXT: Readonly<Record<string, ExtModule>> = Object.freeze({});
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const pageOf = (win: Window) =>
-  Object.freeze({
-    path: win.location.pathname,
-    query: Object.freeze(Object.fromEntries(new URLSearchParams(win.location.search))),
-  });
 
 // Событие страницы для кода секции: замороженная копия с проверкой «изнутри ли элемент».
 const sectionEventOf = (event: Event, scope: ElScope): SectionEvent => {
@@ -168,7 +163,7 @@ export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknow
     settings: deps.input.settings,
     blocks: deps.input.blocks,
     data: deps.input.data,
-    page: pageOf(deps.win),
+    page: pageInfoOf(deps.win),
     signal: deps.signal,
     storage: createSectionStorage(deps.name, deps.page),
     ext: NO_EXT,

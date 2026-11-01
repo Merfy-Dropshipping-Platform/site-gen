@@ -584,6 +584,10 @@ export interface CoreHandle {
   readonly mode: Mode;
   emit<E extends EventName>(name: E, detail: EventDetail<E>): void;
   part<N extends ModuleName>(name: N): Modules[N]; // нет такой части на странице — ShellError part-unknown
+  // Подписка на стор модуля SDK для кода платформы, который собран отдельно от ядра (поведения блока 6): фасады сторов
+  // знает только модуль stores.ts ядра, его копия в файле поведения их не видит. Слушатель зовётся при смене значения,
+  // текущее значение читает вызывающий (store.get()). Стор не из модулей SDK — ShellError sdk-call-invalid, как у ctx.watch.
+  watch<T>(store: ReadableStore<T>, listener: (value: T) => void): Stop;
 }
 
 // Часть SDK (раздел 3.8): фабрика на страницу, действия разметки и запуск на экземпляре до mount (блок 6).

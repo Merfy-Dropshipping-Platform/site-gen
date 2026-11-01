@@ -75,7 +75,14 @@ function attach(mode: Mode = 'live'): HTMLElement {
     mode,
     signal: new AbortController().signal,
   };
-  records.attach?.(records.create({ config: configOf(mode), mode, emit: vi.fn(), part: partOf() }), host);
+  const core: CoreHandle = {
+    config: configOf(mode),
+    mode,
+    emit: vi.fn(),
+    part: partOf(),
+    watch: () => () => undefined,
+  };
+  records.attach?.(records.create(core), host);
   const place = element.querySelector<HTMLElement>('[data-ext-point="orders"]');
   if (place === null) throw new Error('нет места orders');
   return place;

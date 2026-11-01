@@ -37,6 +37,7 @@ export function fakeCore(mode: Mode = 'live', config: StorefrontConfig | null = 
     part: <N extends ModuleName>(name: N): Modules[N] => {
       throw new Error(`части ${name} в тесте нет`);
     },
+    watch: () => () => undefined,
   };
   const named = (name: string): unknown[] => events.filter((event) => event.name === name).map((event) => event.detail);
   return { core, events, named };

@@ -4,7 +4,7 @@ import { countdown } from '../src/core/behaviors/countdown';
 import { behaviors } from '../src/core/behaviors/part';
 import { page } from '../src/core/parts/page';
 import { start, type StartedCore } from '../src/core/start';
-import { configTag } from './core-support';
+import { configTag, corePart, errorOf } from './core-support';
 import { fakeGateway, settle } from './sdk-support';
 
 // Поведение countdown: таймер до даты. Дата окончания — data-until (ISO 8601 с поясом), части days, hours, minutes,
@@ -25,8 +25,8 @@ let errors: ReturnType<typeof quietErrors>;
 
 const onEnd = (event: Event): void => void ended.push(event instanceof CustomEvent ? event.detail : null);
 
-function open(html: string, options: { withModule?: boolean } = {}): void {
-  document.head.innerHTML = configTag('live');
+function open(html: string, options: { withModule?: boolean; mode?: 'live' | 'preview' } = {}): void {
+  document.head.innerHTML = configTag(options.mode ?? 'live');
   document.body.innerHTML = `<merfy-section data-section="shop:promo" data-section-id="promo-1">${html}</merfy-section>`;
   const list = behaviors({ list: [countdown] });
   started = start({ parts: options.withModule === false ? [list] : [page, list], sections: [] });
@@ -147,6 +147,34 @@ describe('поведение countdown', () => {
     open(timer(UNTIL), { withModule: false });
     expect(clock()).toBe('');
     expect(errors.mock.calls.map((call) => String(call[0])).join('\n')).toContain('"uses": ["page"]');
+  });
+
+  it('внутри нет ни одной части: строка для автора, событие конца не уходит', () => {
+    open(timer('2026-10-31T00:00:00Z', '<i>без частей</i>'));
+    expect(errors.mock.calls.map((call) => String(call[0])).join('\n')).toContain('нет ни одной части');
+    expect(ended).toEqual([]);
+  });
+
+  it('core.watch: стор модуля page отдаёт значения каждую секунду, чужой стор — ShellError sdk-call-invalid', () => {
+    const spy = corePart();
+    document.head.innerHTML = configTag('preview');
+    started = start({ parts: [page, spy.part], sections: [] });
+    const seen: (number | null)[] = [];
+    const stop = spy.box.core?.watch(spy.box.core.part('page').$now, (value) => seen.push(value));
+    vi.advanceTimersByTime(2000);
+    stop?.();
+    expect(seen).toEqual([SERVER_NOW + 1000, SERVER_NOW + 2000]);
+    expect(errorOf(() => spy.box.core?.watch({ get: () => 1 }, () => undefined))).toMatchObject({
+      code: 'sdk-call-invalid',
+    });
+  });
+
+  it('в превью конструктора: часы устройства, запроса времени нет, цифры сразу', () => {
+    open(timer(UNTIL), { mode: 'preview' });
+    expect(clock()).toBe('2:00:30:45');
+    expect(gateway.calls).toEqual([]);
+    vi.advanceTimersByTime(1000);
+    expect(clock()).toBe('2:00:30:44');
   });
 
   it('таймер ничего не анимирует: ни обычно, ни при «уменьшить движение»', async () => {

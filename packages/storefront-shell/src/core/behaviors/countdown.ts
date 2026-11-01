@@ -1,5 +1,4 @@
-import { watchSource } from '../stores';
-import type { PageModule } from '../types';
+import type { CoreHandle, PageModule, Stop } from '../types';
 import { sectionRefOf } from './section-ref';
 import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
 
@@ -11,6 +10,9 @@ import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
 
 const NO_MODULE_TEXT =
   'Поведение countdown: на странице нет модуля page — в section.json секции нужен "uses": ["page"]';
+const NO_CORE_TEXT = 'Поведение countdown: нет ядра страницы — таймер работает только на странице с ядром SDK';
+const NO_PARTS_TEXT =
+  'Поведение countdown: внутри нет ни одной части — нужен хотя бы один из data-part="days", "hours", "minutes", "seconds"';
 const BAD_DATE_TEXT = (raw: string | null): string =>
   `Поведение countdown: data-until=${raw === null ? 'не задан' : `"${raw}"`} — нужна дата ISO 8601 с поясом, например 2026-12-31T23:59:59+03:00`;
 
@@ -53,44 +55,49 @@ function render(slots: readonly Slot[], left: number): void {
   });
 }
 
-function pageOf(host: BehaviorHost): PageModule | null {
+function pageOf(core: CoreHandle): PageModule | null {
   try {
-    if (host.core === undefined) throw new Error('нет ядра');
-    return host.core.part('page');
+    return core.part('page');
   } catch {
     console.error(NO_MODULE_TEXT);
     return null;
   }
 }
 
+// Таймер идёт по $now. Подписку на стор ведёт ядро (core.watch): поведение собрано отдельно от ядра и фасады сторов само
+// не найдёт — со своей копией stores.ts оно молча не получало ни одного значения. Первое значение читается сразу.
+function follow(host: BehaviorHost, core: CoreHandle, page: PageModule, end: number, slots: readonly Slot[]): void {
+  let ended = false;
+  let stop: Stop = () => undefined;
+  const update = (now: number | null): void => {
+    if (now === null || ended) return; // время сервера ещё не пришло: часам устройства конец не доверен
+    const left = end - now;
+    render(slots, left);
+    if (left > 0) return;
+    ended = true;
+    stop();
+    core.emit('merfy:countdown:end', sectionRefOf(host));
+  };
+  stop = core.watch(page.$now, update);
+  if (ended) stop(); // время в сторе уже было и вышло, пока шла подписка
+  host.signal.addEventListener('abort', () => stop(), { once: true });
+  update(page.$now.get());
+}
+
+// Каждая причина, по которой таймер стоит, — строка для автора в консоли.
 export const countdown: Behavior<'countdown'> = {
   name: 'countdown',
   attach(host: BehaviorHost): BehaviorInstance {
     const raw = host.params.until;
     const end = endOf(typeof raw === 'string' ? raw : null);
-    if (end === null) {
-      console.error(BAD_DATE_TEXT(typeof raw === 'string' ? raw : null));
-      return {};
-    }
-    const page = pageOf(host);
-    const source = page === null ? null : watchSource(page.$now);
-    if (page === null || source === null) return {};
     const slots = slotsOf(host);
-    let ended = false;
-    let stop: () => void = () => undefined;
-    const update = (now: number | null): void => {
-      if (now === null || ended) return; // время сервера ещё не пришло: часам устройства конец не доверен
-      const left = end - now;
-      render(slots, left);
-      if (left > 0) return;
-      ended = true;
-      stop();
-      host.core?.emit('merfy:countdown:end', sectionRefOf(host));
-    };
-    stop = source.listen(update);
-    if (ended) stop(); // время в сторе уже было и вышло, пока шла подписка
-    host.signal.addEventListener('abort', () => stop(), { once: true });
-    update(page.$now.get());
+    if (end === null) console.error(BAD_DATE_TEXT(typeof raw === 'string' ? raw : null));
+    else if (slots.length === 0) console.error(NO_PARTS_TEXT);
+    else if (host.core === undefined) console.error(NO_CORE_TEXT);
+    else {
+      const page = pageOf(host.core);
+      if (page !== null) follow(host, host.core, page, end, slots);
+    }
     return {};
   },
 };

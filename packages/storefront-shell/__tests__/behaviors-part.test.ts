@@ -242,6 +242,7 @@ describe('API части', () => {
       part: () => {
         throw new Error('нет частей');
       },
+      watch: () => () => undefined,
     };
     expect(behaviors({ list: [] }).create(core).animate).toBeNull();
   });

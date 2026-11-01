@@ -11,6 +11,7 @@ import { navigationType, watchPage } from './page-events';
 import { leavePrivatePage } from './private-pages';
 import { pageStorage, type KeyValue } from './storage';
 import { emitCore } from './notice-fallback';
+import { watchSource } from './stores';
 import type {
   CoreHandle,
   EventDetail,
@@ -19,8 +20,10 @@ import type {
   Mode,
   ModuleName,
   Modules,
+  ReadableStore,
   SdkPart,
   StartOptions,
+  Stop,
 } from './types';
 
 // Старт ядра секций (design.md блока 5, раздел 3.6): все секции разом в порядке страницы, глобальные скрипты — в конце
@@ -85,6 +88,14 @@ interface CoreParts {
   apiOf<N extends ModuleName>(name: N): Modules[N]; // нет такой части на странице — ShellError part-unknown
 }
 
+// CoreHandle.watch: подписку на фасад стора ищет модуль stores.ts ядра — код платформы из отдельного файла (поведения)
+// своей копией модуля фасад не найдёт.
+function watchStore<T>(store: ReadableStore<T>, listener: (value: T) => void): Stop {
+  const source = watchSource(store);
+  if (source === null) throw new ShellError('sdk-call-invalid', 'core.watch: стор — из модулей SDK по uses');
+  return source.listen(listener);
+}
+
 // Части — create(core) один раз на страницу, по порядку options.parts, до запуска секций; API части замораживается.
 function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: EventBus, options: StartOptions): CoreParts {
   const byName = new Map<string, StartedPart>();
@@ -94,6 +105,7 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
     mode,
     emit: <E extends EventName>(name: E, detail: EventDetail<E>): void => emitCore(bus, name, detail),
     part: <N extends ModuleName>(name: N): Modules[N] => apiOf(name),
+    watch: watchStore,
   });
 
   function apiOf<N extends ModuleName>(name: N): Modules[N] {

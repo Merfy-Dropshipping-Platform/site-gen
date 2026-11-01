@@ -1,11 +1,10 @@
 import {
-  DEFAULT_SANDBOX,
   SECTION_ID,
   RoleTakenError,
   StoreCycleError,
   acceptSection,
+  checkSection,
   draftSource,
-  prepareInWorker,
   problemDoc,
   rollbackSection,
   sectionAnswer,
@@ -16,7 +15,6 @@ import {
   type Database,
   type Door,
   type DraftSource,
-  type PrepareInput,
   type PrepareResult,
   type SandboxReport,
   type SectionAnswer,
@@ -91,7 +89,8 @@ export interface SectionToolsDeps {
   shop: (rawShop: string | null) => Promise<string | null>;
   // Песочница процессов закрыта (Р14-13): иначе проверить и сохранить — 503.
   open: () => boolean;
-  check: (input: PrepareInput) => Promise<PrepareResult>;
+  // Проверка без записи — те же отказы, что у accept, в том числе по реестру (круг чтений сторов).
+  check: (door: Door, files: SectionFiles) => Promise<PrepareResult>;
   accept: (door: Door, files: SectionFiles) => Promise<AcceptResult>;
   source: (shopId: string, name: string) => Promise<DraftSource | null>;
   history: (shopId: string, name: string) => Promise<SectionRow[]>;
@@ -150,7 +149,7 @@ async function check(deps: SectionToolsDeps, request: ToolRequest): Promise<Draw
   const parsed = filesBodySchema.safeParse(readJson(request.body));
   if (!parsed.success) return toolError(400, 'body-invalid', TEXT.body);
   const files = withoutAiFiles(parsed.data.files);
-  const result = await deps.check({ prefix: SECTION_TOOL_PREFIX, files });
+  const result = await deps.check({ author: 'shop', shopId: request.shopId }, files);
   const answer = sectionAnswer(SECTION_TOOL_PREFIX, files, result);
   deps.log('section-checked', {
     shopId: request.shopId,
@@ -303,7 +302,7 @@ export function sectionToolsDeps(base: SectionToolsBase): SectionToolsDeps {
       return rows.length === 0 ? null : shop.data;
     },
     open: () => base.open,
-    check: (input) => prepareInWorker(input, DEFAULT_SANDBOX),
+    check: (door, files) => checkSection({ db: base.db }, door, files),
     accept: (door, files) => acceptSection({ db: base.db, store: base.store }, door, files),
     source: (shopId, name) => draftSource(base.db, shopId, name),
     history: (shopId, name) => sectionHistory(base.db, shopId, name),

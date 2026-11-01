@@ -243,9 +243,10 @@ interface StoreEdit {
   scriptMeta: unknown;
 }
 
-// Правка стора не замыкает круг чтений; у секции и глобального скрипта круга не бывает — их никто не читает.
-export async function assertNoStoreCycle(client: Queryable, edit: StoreEdit): Promise<void> {
-  if (edit.kind !== 'store') return;
+// Круг чтений, который замкнула бы правка стора, или null; у секции и глобального скрипта круга не бывает — их никто не
+// читает. Проверка (check) зовёт её без замка, сохранение — под замком владельца (assertNoStoreCycle).
+export async function findStoreCycle(client: Queryable, edit: StoreEdit): Promise<string[] | null> {
+  if (edit.kind !== 'store') return null;
   const { door, name } = edit;
   const { rows } =
     door.release === null
@@ -254,7 +255,12 @@ export async function assertNoStoreCycle(client: Queryable, edit: StoreEdit): Pr
   const graph = new Map(
     rows.map((item) => storeRow.parse(item)).map((row): [string, string[]] => [row.name, storeReadsOf(row.scriptMeta)]),
   );
-  const cycle = storeCycleOf(name, storeReadsOf(edit.scriptMeta), graph);
+  return storeCycleOf(name, storeReadsOf(edit.scriptMeta), graph);
+}
+
+// Правка стора не замыкает круг чтений — иначе StoreCycleError.
+export async function assertNoStoreCycle(client: Queryable, edit: StoreEdit): Promise<void> {
+  const cycle = await findStoreCycle(client, edit);
   if (cycle !== null) throw new StoreCycleError(cycle);
 }
 

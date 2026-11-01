@@ -1,5 +1,5 @@
 // @merfy/storefront-sections — приём кода секций (блок 7): одна функция приёма для всех авторов, двери, реестр секций.
-export { acceptSection, type AcceptDeps, type AcceptOptions, type AcceptResult } from './accept';
+export { acceptSection, checkSection, type AcceptDeps, type AcceptOptions, type AcceptResult } from './accept';
 export { doorFields, doorSchema, type Door, type DoorFields, type SectionAuthor } from './doors';
 export {
   SECTION_GROUPS,

@@ -2,18 +2,19 @@ import { hashOf, sha256 } from '@merfy/storefront-build';
 import { blobKey, contentTypeOf, type ObjectStore } from '@merfy/storefront-storage';
 import { doorFields, type Door, type DoorFields } from './doors';
 import { MANIFEST_FILE, readManifest, type SectionFiles } from './format';
-import type { PreparedSection } from './prepare';
+import type { PreparedSection, PrepareResult } from './prepare';
 import { problem, type SectionProblem } from './problems';
 import {
-  assertNoStoreCycle,
   currentDraft,
   findRelease,
+  findStoreCycle,
   insertRelease,
   RoleTakenError,
   saveDraft,
   StoreCycleError,
   type Database,
   type NewSection,
+  type Queryable,
   type SectionRow,
 } from './registry';
 import { DEFAULT_SANDBOX, prepareInWorker, type SandboxOptions } from './sandbox';
@@ -60,26 +61,29 @@ function knownRelease(row: SectionRow, sourceHash: string): AcceptResult {
   return refused([problem('release-changed', '', text)]);
 }
 
-// Круг чтений своих сторов (свои сторы) — отказ приёма с путём круга.
-const cycleRefused = (error: StoreCycleError): AcceptResult =>
-  refused([problem('store-cycle', MANIFEST_FILE, storeCycleText(error.cycle))]);
+// Круг чтений своих сторов (свои сторы) — отказ с путём круга: тот же у проверки и у сохранения.
+const cycleProblem = (cycle: readonly string[]): SectionProblem =>
+  problem('store-cycle', MANIFEST_FILE, storeCycleText(cycle));
+const cycleRefused = (error: StoreCycleError): AcceptResult => refused([cycleProblem(error.cycle)]);
 
-const editOf = (row: NewSection) => ({
-  door: row.door,
-  name: row.section.name,
-  kind: row.section.manifest.kind,
-  scriptMeta: row.section.scriptMeta,
-});
+// Круг, который замкнула бы правка стора, — среди сторов того же автора в реестре (у магазина — текущие правки, у
+// расширения — тот же выпуск). Проверка зовёт её без замка, выпуск — перед записью; правка магазина сверяется ещё раз
+// под замком владельца (saveDraft).
+export async function storeCycleProblems(
+  db: Queryable,
+  door: DoorFields,
+  section: PreparedSection,
+): Promise<SectionProblem[]> {
+  const edit = { door, name: section.name, kind: section.manifest.kind, scriptMeta: section.scriptMeta };
+  const cycle = await findStoreCycle(db, edit);
+  return cycle === null ? [] : [cycleProblem(cycle)];
+}
 
 // Два сборщика стартовали разом и приняли один выпуск: строка — у первого, второй сверяет свой исходник с ней. Стор
 // выпуска сверяется со сторами того же выпуска: сервис extensions шлёт их по одному.
 async function saveRelease(db: Database, row: NewSection): Promise<AcceptResult> {
-  try {
-    await assertNoStoreCycle(db, editOf(row));
-  } catch (error) {
-    if (error instanceof StoreCycleError) return cycleRefused(error);
-    throw error;
-  }
+  const cycle = await storeCycleProblems(db, row.door, row.section);
+  if (cycle.length > 0) return refused(cycle);
   const inserted = await insertRelease(db, row);
   if (inserted !== null) return { status: 'accepted', row: inserted };
   const existing = await findRelease(db, row.door, row.section.name);
@@ -178,4 +182,18 @@ export async function acceptSection(
   if (!prepared.ok) return refused(prepared.problems);
   const scriptHash = await uploadScript(deps.store, prepared.section.script);
   return storage.save(deps.db, newRow(fields, prepared.section, files, scriptHash), options);
+}
+
+// Проверка без записи (POST /sections/check): та же проверка в процессе, что у приёма, и те же отказы, которые видны
+// только по реестру, — круг чтений сторов (storeCycleProblems). Порядок check → save даёт один ответ.
+export async function checkSection(
+  deps: Pick<AcceptDeps, 'db' | 'sandbox'>,
+  door: Door,
+  files: SectionFiles,
+): Promise<PrepareResult> {
+  const fields = doorFields(door);
+  const prepared = await prepareInWorker({ prefix: fields.prefix, files }, deps.sandbox ?? DEFAULT_SANDBOX);
+  if (!prepared.ok) return prepared;
+  const [first, ...rest] = await storeCycleProblems(deps.db, fields, prepared.section);
+  return first === undefined ? prepared : { ok: false, problems: [first, ...rest] };
 }

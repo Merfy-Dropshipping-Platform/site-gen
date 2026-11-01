@@ -198,7 +198,7 @@ export function createStoreCtx(deps: StoreCtxDeps, modules: Readonly<Record<stri
   const ctx: StoreCtx<never> & Record<string, unknown> = {
     name: deps.name,
     mode: deps.mode,
-    page: pageOf(deps.win),
+    page: pageInfoOf(deps.win),
     signal: deps.signal,
     storage: createSectionStorage(deps.name, deps.page),
     ext: NO_EXT,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MANIFEST_FILE, readManifest } from '../src/format';
 import { PROBLEM_CODES } from '../src/problems';
-import { sectionTokensOf, tokenProblems } from '../src/token-rules';
+import { SECTION_TOKEN_EXAMPLES, sectionTokensOf, tokenProblems } from '../src/token-rules';
 
 // Свои токены секции в section.json (блок 4 «Секций и SDK», Р4-9).
 const textOf = (tokens?: unknown): string =>
@@ -55,5 +55,37 @@ describe('токены секции в section.json', () => {
     expect(problems[0]).toMatchObject({ code: 'token-invalid', file: MANIFEST_FILE });
     expect(problems[0]?.line).not.toBeNull();
     expect(problems[0]?.message).toContain('gold');
+    expect(problems[0]?.message).toContain('Верно: "custom-gold": { "kind": "color"');
+  });
+
+  it('значение рядом с kind — отказ с верной строкой того же вида и именем автора', () => {
+    const text = textOf({ 'custom-hero': { kind: 'text', about: 'Заголовок', min: 40, max: 72, leading: 1.1 } });
+    const [found] = tokenProblems(manifestOf(text), text);
+    expect(found?.message).toContain('Верно: "text-custom-hero": { "kind": "text"');
+    expect(found?.message).toContain('"default": { "min": 40, "max": 72, "leading": 1.05 }');
+  });
+
+  it('вид «size» не бывает — перечень видов и пример цвета', () => {
+    const text = textOf({ 'custom-big': { kind: 'size', about: 'Размер', default: 10 } });
+    const [found] = tokenProblems(manifestOf(text), text);
+    expect(found?.message).toContain('Виды токена секции: color, weight, text');
+    expect(found?.message).toContain(SECTION_TOKEN_EXAMPLES.color);
+  });
+
+  it('plate без custom- у любого вида получает верное имя с приставкой', () => {
+    const text = textOf({ 'text-size': { kind: 'text', about: 'Размер', default: { min: 10, max: 20, leading: 1.2 } } });
+    const [found] = tokenProblems(manifestOf(text), text);
+    expect(found?.message).toContain('"text-custom-size"');
+  });
+
+  it('тень своим токеном не записать — отказ говорит это прямо, а не предлагает невозможное', () => {
+    const text = textOf({ 'shadow-custom-lift': { kind: 'shadow', about: 'Тень', derive: { rule: 'alias', from: 'shadow-card' } } });
+    const [found] = tokenProblems(manifestOf(text), text);
+    expect(found?.message).toContain('Тень своим токеном сейчас не задать');
+  });
+
+  it('все восемь примеров принимает проверка токенов', () => {
+    const text = textOf(JSON.parse(`{${Object.values(SECTION_TOKEN_EXAMPLES).join(',')}}`));
+    expect(tokenProblems(manifestOf(text), text)).toEqual([]);
   });
 });

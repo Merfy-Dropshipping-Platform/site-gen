@@ -1,3 +1,14 @@
+## 1.23.0 — 2026-11-01
+
+- [`quick.md`](quick.md#свой-токен-секции): раздел «Свой токен секции» — верная строка токена каждого из восьми видов
+  (`color`, `weight`, `text`, `tracking`, `radius`, `border-width`, `spacing`, `width`): имя с `custom-`, значение в
+  `default`. Тень своим токеном сейчас не задать (в словаре нет базовой тени) — это сказано там же.
+- Отказ [`token-invalid`](errors.md#token-invalid) дописывает готовую строку верного токена того же вида и имя с `custom-`;
+  у вида, которого у токена секции нет, — перечень видов.
+- Справка кодов [`class-unknown`](errors.md#class-unknown), [`setting-name-unknown`](errors.md#setting-name-unknown),
+  [`manifest-invalid`](errors.md#manifest-invalid), [`template-forbidden`](errors.md#template-forbidden) и `token-invalid`
+  несёт готовую правку: что поставить вместо отказанного. Сами проверки и пределы SDK не менялись.
+
 ## 1.22.0 — 2026-11-01
 
 - [`script.ts`](script.md#вызов-функции-расширения): раздел «Вызов функции расширения» — `ctx.ext.<id>.<метод>(input, options)`

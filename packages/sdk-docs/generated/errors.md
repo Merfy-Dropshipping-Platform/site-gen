@@ -1,6 +1,6 @@
 # Коды ошибок
 
-> SDK 1 · документация 1.22.0 · 2026-11-01
+> SDK 1 · документация 1.23.0 · 2026-11-01
 
 Справка по кодам проверки секции: когда бывает код и как исправить.
 
@@ -16,8 +16,8 @@
 
 Когда: `section.json` — не JSON, в нём лишний или пропущенный ключ, не тот вид значения или ключ старого формата.
 
-Как исправить: Исправь ключ, названный в ответе; ключи и их виды — на странице section-json.md..
-Пример: было `"fields": [...]` → стало `"settings": [...]`.
+Как исправить: Исправь ключ из ответа; у типа блока нужны title, limit (число) и settings: "fact": { "title": "Факт", "limit": 6, "settings": [] }; остальные ключи — на странице section-json.md..
+Пример: было `"fact": { "title": "Факт" }` → стало `"fact": { "title": "Факт", "limit": 6, "settings": [] }`.
 
 
 ## sdk-unsupported
@@ -64,8 +64,8 @@
 
 Когда: В template.astro запрещённое: тег, компонент, обработчик on…, директива, {...} в атрибутах или адрес javascript:.
 
-Как исправить: Убери запрещённое; события и поведение — в script.ts или data-behavior; что можно — на странице template.md..
-Пример: было `<button onclick="open()">` → стало `<button data-action="open">`.
+Как исправить: Убери запрещённое; события — в script.ts или data-behavior; значение поля или блока выводи как {block.settings.text}, set:html — только у richtext (template.md)..
+Пример: было `<p set:html={block.settings.text}></p>` → стало `<p>{block.settings.text}</p>`.
 
 
 ## template-too-deep
@@ -84,8 +84,8 @@
 
 Когда: Класса нет в словаре классов магазина.
 
-Как исправить: Возьми класс из подсказки или из страницы styles.md..
-Пример: было `text-6xl` → стало `text-5xl`.
+Как исправить: Возьми класс словаря из подсказки или styles.md; крупнее text-5xl — токен секции в tokens: "text-custom-display": { "kind": "text", "about": "…", "default": { "min": 40, "max": 72, "leading": 1.05 } } и класс text-custom-display..
+Пример: было `md:text-6xl` → стало `md:text-custom-display`.
 
 
 ## class-arbitrary
@@ -130,7 +130,9 @@
 
 Когда: Токен секции в ключе tokens записан неверно: имя без метки custom, чужой вид, больше предела.
 
-Как исправить: Исправь токен, названный в ответе; правила — на странице styles.md..
+Как исправить: Исправь токен из ответа: имя с custom- (custom-plate, text-custom-display), вид из восьми (color, weight, text, tracking, radius, border-width, spacing, width), значение — в default; пример каждого вида — quick.md..
+Пример: было `"plate": { "kind": "color", "default": "#f1ece4" }` → стало `"custom-plate": { "kind": "color", "about": "Подложка", "default": "#f1ece4" }`.
+
 
 ## render-failed
 
@@ -212,8 +214,8 @@
 
 Когда: Имени поля нет в словаре имён.
 
-Как исправить: Возьми имя из подсказки «ближе всего» или из names.md; подходящего нет — объяви своё в `names` секции (names.md, «Своё имя секции»)..
-Пример: было `"id": "title"` → стало `"id": "heading"`.
+Как исправить: Возьми имя из «ближе всего» или найди: merfy_sections names find="слово"; нет такого — свой пункт в names: "my-id": { "kinds": ["string"], "label": "Подпись", "about": "Для чего", "asks": ["слово"] }..
+Пример: было `"id": "all-label"` → стало `"id": "button-label"`.
 
 
 ## setting-name-kind

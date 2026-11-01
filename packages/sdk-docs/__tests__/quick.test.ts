@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { NAMES, prepareSection } from '@merfy/storefront-sections';
+import { NAMES, prepareSection, SECTION_TOKEN_EXAMPLES } from '@merfy/storefront-sections';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { docsFiles, NAMES_JSON, type DocsFiles } from '../src/docs';
 import { PACKAGE_DIR } from '../src/meta';
@@ -63,6 +63,23 @@ describe('quick.md', () => {
       },
     });
     expect(result.ok ? result.section.warnings : result.problems).toEqual([]);
+  });
+
+  it('свои токены секции: по примеру каждого из восьми видов, строки те же, что в тексте отказа, проверка принимает', async () => {
+    const text = files['quick.md'] ?? '';
+    const lines = Object.values(SECTION_TOKEN_EXAMPLES);
+    expect(lines).toHaveLength(8);
+    for (const line of lines) expect(text).toContain(line);
+    const tokens: unknown = JSON.parse(`{${lines.join(',')}}`);
+    const manifest = { sdk: 1, name: 'tokens-demo', kind: 'section', title: 'Токены', settings: [], tokens };
+    const result = await prepareSection({
+      prefix: 'shop',
+      files: {
+        'section.json': JSON.stringify(manifest),
+        'template.astro': '---\nconst { settings } = Astro.props;\n---\n<div class="bg-custom-plate text-custom-display"></div>',
+      },
+    });
+    expect(result.ok ? [] : result.problems).toEqual([]);
   });
 });
 

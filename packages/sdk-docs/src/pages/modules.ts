@@ -46,6 +46,17 @@ const moduleSection = (module: ModuleName): string => {
   return `## ${module}\n\n${MODULE_ABOUT[module]}. ${placeOf(module)}\n\n${actionsText}`;
 };
 
+// ext:<id> (блок 9, часть 9в; обещание блока 14): не модуль ядра, а расширение магазина — id задаёт мерчант, поэтому
+// в MODULE_NAMES его нет. Подробности вызова — script.md.
+const EXT_USE_ABOUT =
+  '- `"ext:<id>"` — сторы и методы расширения магазина в `ctx.ext.<id>` (id расширения — строчные латинские буквы, цифры и дефис, 3–32 знака); раздел «ext:<id>» в конце страницы.';
+
+const EXT_SECTION = [
+  '## ext:<id>',
+  '',
+  'Расширение магазина: `"uses": ["ext:<id>"]` в `section.json` открывает скрипту секции `ctx.ext.<id>`. Сторы `$имя` читаются через `ctx.watch`, методы `имя(input, options)` вызывают функцию расширения и возвращают `Result`: `{ ok: true, data }` (`data` — выход функции) или `{ ok: false, error: { code, message } }`, вызов не бросает. Набор сторов и методов задаёт манифест расширения (`storefront.stores`, `storefront.methods`), SDK его заранее не знает. Коды ошибок, отказ расширения `refused` и `{ quiet: true }` — в [script.md](script.md#вызов-функции-расширения). Действия разметки: `data-action="ext.<id>.<метод>"`.',
+].join('\n');
+
 export function modulesPage(): string {
   const uses = SECTION_USES.map((use) => `- \`"${use}"\` — ${USES_ABOUT[use] ?? ''}.`).join('\n');
   const coreList = CORE.map((name) => `\`${name}\``).join(', ');
@@ -54,6 +65,7 @@ export function modulesPage(): string {
     'Ключ `uses` в `section.json` открывает секции данные и модули SDK. Значения:',
     '',
     uses,
+    EXT_USE_ABOUT,
     '',
     'Имя модуля SDK из разделов ниже — `ctx.<модуль>` в `script.ts`.',
     '',
@@ -62,5 +74,7 @@ export function modulesPage(): string {
     `Модули ядра — ${coreList} — в бандле каждой страницы магазина. Остальные — только страниц, где секция объявила модуль в \`uses\` или поставила его действие в \`data-action\`: лишний модуль в \`uses\` — лишний код на каждой странице с этой секцией.`,
     '',
     ...modules,
+    '',
+    EXT_SECTION,
   ].join('\n');
 }

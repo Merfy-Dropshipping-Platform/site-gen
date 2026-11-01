@@ -55,7 +55,7 @@ function ownName(kind: string, name: string): string {
 
 // Хвост отказа: готовая строка токена. Вид известен — пример этого вида с именем автора, поправленным под правило;
 // вид не бывает у токена секции или не назван — перечень видов и пример цвета.
-function exampleTail(raw: unknown, name: string | undefined): string {
+function exampleTail(raw: unknown, name: string | undefined, message: string): string {
   const kind = typeof raw === 'object' && raw !== null && 'kind' in raw ? raw.kind : undefined;
   // Тень: вид допустим, но значение у неё только alias от базового токена тени, а в словаре платформы базовых теней нет
   // (у всех шести есть умолчание) — свой токен тени сейчас записать нельзя. Потолок платформы, не ошибка автора.
@@ -64,7 +64,9 @@ function exampleTail(raw: unknown, name: string | undefined): string {
     const example = SECTION_TOKEN_EXAMPLES[kind];
     const own = name === undefined ? undefined : ownName(kind, name);
     const shown = own === undefined ? example : example.replace(/^"[^"]+"/, `"${own}"`);
-    return ` · Верно: ${shown} (значение — в default, не рядом с kind)`;
+    // Напоминание про default — только когда значение и правда лежит рядом с kind («Нераспознанные ключи: min, max, leading»).
+    const loose = message.includes('Нераспознанные ключи') ? ' (значение — в default, не рядом с kind)' : '';
+    return ` · Верно: ${shown}${loose}`;
   }
   return ` · Виды токена секции: ${Object.keys(SECTION_TOKEN_EXAMPLES).join(', ')} (тень — классом словаря). Верно: ${SECTION_TOKEN_EXAMPLES.color}`;
 }
@@ -78,7 +80,7 @@ export function tokenProblems(manifest: SectionManifest, text: string): SectionP
   return reading.problems.map((item) => {
     const { path, message } = splitPath(item);
     const name = path[1];
-    const tail = name === undefined ? '' : exampleTail(manifest.tokens?.[name], name);
+    const tail = name === undefined ? '' : exampleTail(manifest.tokens?.[name], name, message);
     return problem('token-invalid', MANIFEST_FILE, `${message}${tail}`, valuePosition(text, path));
   });
 }

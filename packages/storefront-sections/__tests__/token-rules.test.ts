@@ -63,6 +63,14 @@ describe('токены секции в section.json', () => {
     const [found] = tokenProblems(manifestOf(text), text);
     expect(found?.message).toContain('Верно: "text-custom-hero": { "kind": "text"');
     expect(found?.message).toContain('"default": { "min": 40, "max": 72, "leading": 1.05 }');
+    expect(found?.message).toContain('значение — в default, не рядом с kind');
+  });
+
+  it('напоминание про default — только когда значение лежит рядом с kind, а не при ошибке имени', () => {
+    const text = textOf({ plate: { kind: 'color', about: 'Подложка', default: '#f1ece4' } });
+    const [found] = tokenProblems(manifestOf(text), text);
+    expect(found?.message).toContain('"custom-plate": { "kind": "color"');
+    expect(found?.message).not.toContain('не рядом с kind');
   });
 
   it('вид «size» не бывает — перечень видов и пример цвета', () => {

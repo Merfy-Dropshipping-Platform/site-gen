@@ -8,5 +8,5 @@ const baseTokens = Object.entries(platformDictionary.tokens).filter(([, token]) 
 const baseVariables = baseTokens.map(([name]) => `--${name}`);
 
 // Имена CSS-переменных, которые стенд снимает с :root и проверяет в tokens-present.
-// Набор base — базовые токены словаря @merfy/tokens: 78 токенов без 4 выборов и 3 схем деталей, 71 переменная.
+// Набор base — базовые токены словаря @merfy/tokens: 83 токена без 4 выборов и 3 схем деталей, 76 переменных.
 export const TOKEN_SETS: Readonly<Record<TokenSetName, readonly string[]>> = { base: baseVariables };

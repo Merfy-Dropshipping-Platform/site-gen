@@ -4,8 +4,8 @@ import themeJson from '../../theme-nova/theme.json';
 import { TOKEN_SETS } from '../src/token-sets';
 
 describe('набор токенов base', () => {
-  it('71 CSS-переменная: все токены словаря, кроме выбора и схем деталей', () => {
-    expect(TOKEN_SETS.base).toHaveLength(71);
+  it('76 CSS-переменных: все токены словаря, кроме выбора и схем деталей', () => {
+    expect(TOKEN_SETS.base).toHaveLength(76);
     expect(TOKEN_SETS.base).toEqual(
       expect.arrayContaining(['--background', '--font-body', '--text-5xl', '--shadow-card', '--width-page']),
     );

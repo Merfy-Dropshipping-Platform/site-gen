@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MANIFEST_FILE, readManifest, type SectionFiles } from '../src/format';
+import { MANIFEST_FILE, readManifest, USES_TEXT, type SectionFiles } from '../src/format';
 import { prepareSection, type PrepareResult } from '../src/prepare';
 import type { SectionProblem } from '../src/problems';
 import { storeCycleOf, storeCycleText, storeReadsOf } from '../src/store-cycle';
@@ -82,9 +82,7 @@ describe('"kind": "store" — свой стор', () => {
     '%s в uses — manifest-invalid с подсказкой',
     (use) => {
       const read = readManifest({ [MANIFEST_FILE]: manifest({ uses: [use] }) });
-      expect(read.ok ? [] : read.problems.map((item) => item.message)).toEqual([
-        'uses.0: нужно theme, shop, cart, favorites, customer, auth, newsletter, variants, search, catalog, ext:<id расширения> или store:<префикс>:<имя стора>',
-      ]);
+      expect(read.ok ? [] : read.problems.map((item) => item.message)).toEqual([`uses.0: ${USES_TEXT}`]);
     },
   );
 

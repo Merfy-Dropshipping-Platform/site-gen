@@ -1,7 +1,14 @@
 import { parse } from '@astrojs/compiler-rs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { MANIFEST_FILE, propsUsesOf, readManifest, type SectionManifest } from '../src/format';
+import {
+  MANIFEST_FILE,
+  MANIFEST_USES,
+  propsUsesOf,
+  readManifest,
+  USES_TEXT,
+  type SectionManifest,
+} from '../src/format';
 import { prepareSection, type PrepareResult } from '../src/prepare';
 import type { Checked, SectionProblem } from '../src/problems';
 import { readSectionFolder } from '../src/read-folder';
@@ -13,8 +20,6 @@ import { NO_MARKUP, templateMarkup } from '../src/template-markup';
 // входы сборки не идёт, в script_meta — вместе с частью ext. Правило id — то же, что extUseSchema в
 // @merfy/storefront-config (те же строки проверяет его extensions.test.ts). Расширение — test-ext «Отзывы-тест».
 const FIXTURES = fileURLToPath(new URL('../fixtures', import.meta.url));
-const USES_TEXT =
-  'нужно theme, shop, cart, favorites, customer, auth, newsletter, variants, search, catalog, ext:<id расширения> или store:<префикс>:<имя стора>';
 const FORM_TEXT =
   'метод расширения — ext.<id>.<метод>, id — из "ext:<id>" в uses, метод — из storefront.methods манифеста';
 const UNDECLARED_TEXT =
@@ -39,6 +44,17 @@ const lines = (found: readonly SectionProblem[]): string[] =>
   found.map((item) => `${item.code} ${item.file}:${item.line}:${item.column} ${item.message}`);
 const prepared = async (folder: string): Promise<PrepareResult> =>
   prepareSection({ prefix: 'shop', files: await readSectionFolder(`${FIXTURES}/${folder}`) });
+
+// Текст отказа собран из MANIFEST_USES: новый модуль SDK (consent, orders, files, share, page…) в нём есть сам.
+describe('uses: текст отказа', () => {
+  it.each(MANIFEST_USES)('%s — в тексте отказа отдельным словом', (use) => {
+    expect(USES_TEXT.replace(/^нужно /, '').split(/, | или /)).toContain(use);
+  });
+
+  it('виды ext:<id> и store:<префикс>:<имя> — в конце текста', () => {
+    expect(USES_TEXT).toMatch(/, ext:<id расширения> или store:<префикс>:<имя стора>$/);
+  });
+});
 
 describe('uses: ext:<id>', () => {
   it.each([[['ext:test-ext']], [['ext:loyalty']], [['theme', 'cart', 'ext:test-ext', 'ext:loyalty']]])(

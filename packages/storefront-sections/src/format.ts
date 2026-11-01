@@ -84,9 +84,9 @@ export { STORE_USE_PREFIX, storeUseSchema };
 export type StoreUse = z.infer<typeof storeUseSchema>;
 export const isStoreUse = (value: string): value is StoreUse => storeUseSchema.safeParse(value).success;
 const USES_LIMIT = 12;
-// Текст подсказки фиксированный (тест ext-uses.test.ts): список модулей — как в MANIFEST_USES (consent — отдельной строкой).
-const USES_TEXT =
-  'нужно theme, shop, cart, favorites, customer, auth, newsletter, variants, search, catalog, ext:<id расширения> или store:<префикс>:<имя стора>';
+// Текст подсказки собирается из MANIFEST_USES и видов ext:/store: — новый модуль SDK попадает в него сам (тест
+// ext-uses.test.ts сверяет каждое имя).
+export const USES_TEXT = `нужно ${MANIFEST_USES.join(', ')}, ${EXT_USE_PREFIX}<id расширения> или ${STORE_USE_PREFIX}<префикс>:<имя стора>`;
 const isSectionUse = (value: string): value is SectionUse => SECTION_USES.some((use) => use === value);
 export const propsUsesOf = (manifest: Pick<SectionManifest, 'uses'>): SectionUse[] =>
   (manifest.uses ?? []).filter(isSectionUse);

@@ -55,6 +55,7 @@ export {
   wrapperView,
   type WrapperId,
   type WrapperSpec,
+  type WrapperTarget,
   type WrapperValues,
 } from './wrapper';
 export { MAIN_MENU, menuTreeOf, revisionMenusSchema, sectionMenus, type RevisionMenu } from './menus';

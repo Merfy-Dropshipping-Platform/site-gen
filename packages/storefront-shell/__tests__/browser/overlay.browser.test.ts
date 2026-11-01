@@ -63,6 +63,19 @@ const rect = (page: Page, id: string) =>
       width: Math.round(box.width),
     };
   });
+// Окно, которое видит посетитель, — корень шаблона внутри слоя места; замер тоже после анимации слоя.
+const windowRect = (page: Page, id: string) =>
+  page.$eval(`[data-section-id="${id}"] > *`, async (el) => {
+    await Promise.all((el.parentElement?.getAnimations() ?? []).map((animation) => animation.finished));
+    const box = el.getBoundingClientRect();
+    return {
+      left: Math.round(box.left),
+      right: Math.round(box.right),
+      top: Math.round(box.top),
+      bottom: Math.round(box.bottom),
+      width: Math.round(box.width),
+    };
+  });
 const reasons = (page: Page) =>
   page.evaluate(() => (window.__closed ?? []).map((detail): unknown => Reflect.get(Object(detail), 'reason')));
 
@@ -79,7 +92,7 @@ describe('окно по центру', () => {
     ]);
     expect(attrs).toEqual(['dialog', 'true']);
     expect(await active(page)).toBe('a-email');
-    const box = await rect(page, 'a');
+    const box = await windowRect(page, 'a');
     expect([box.left, box.right]).toEqual([(1280 - 320) / 2, (1280 + 320) / 2]);
     expect(errors).toEqual([]);
     await page.close();
@@ -161,6 +174,108 @@ describe('угол и шторка', () => {
     await call(page, 'a', 'close');
     await call(page, 'c', 'open', { position: 'corner' });
     expect(await rect(page, 'c')).toMatchObject({ left: 0, width: 375, bottom: 700 });
+    await page.close();
+  });
+});
+
+// Ширина окна — классами корня шаблона, как пишет автор (живая проверка #431: w-full max-w-md давало окно по содержимому).
+// Классы — в @layer utilities, как Tailwind сборки; py-section — общая настройка «Отступы» на обёртке.
+const UTILITIES = `@layer theme, base, components, utilities;
+@layer utilities { .w-full { width: 100% } .max-w-md { max-width: 28rem } .bg-white { background: #fff } .py-section { padding-block: 4rem } }`;
+const sized = (id: string): string =>
+  `<merfy-section data-section="shop:promo" data-section-id="${id}" data-overlay hidden class="py-section">
+  <div class="w-full max-w-md bg-white"><h2 id="${id}-title">Скидка 10%</h2><button id="${id}-ok">Забрать</button></div>
+</merfy-section>`;
+const SIZED_BODY = `<button id="outside" style="position:fixed;left:24px;bottom:24px">Под окном</button>${sized('w')}`;
+const PAGE_CLICKS = `window.__clicks = 0; addEventListener('DOMContentLoaded', () =>
+  document.getElementById('outside').addEventListener('click', () => { window.__clicks += 1; }));`;
+const pageClicks = (page: Page) => page.evaluate((): unknown => Reflect.get(window, '__clicks'));
+const openSized = (options: Partial<PageOptions> = {}) =>
+  open({ body: SIZED_BODY, css: UTILITIES, reducedMotion: true, beforeCore: `${LOG}${PAGE_CLICKS}`, ...options });
+
+describe('ширина окна по классам шаблона', () => {
+  it('по центру: w-full max-w-md — 28rem посередине экрана; на телефоне — экран минус поля 16px', async () => {
+    const { page, errors } = await openSized();
+    await call(page, 'w', 'open');
+    const box = await windowRect(page, 'w');
+    expect([box.left, box.width, box.right]).toEqual([(1280 - 448) / 2, 448, (1280 + 448) / 2]);
+    expect(Math.abs(box.top + box.bottom - 800)).toBeLessThanOrEqual(1);
+    await page.close();
+    const phone = await openSized({ viewport: { width: 375, height: 700 } });
+    await call(phone.page, 'w', 'open');
+    expect(await windowRect(phone.page, 'w')).toMatchObject({ left: 16, width: 375 - 32 });
+    expect(errors).toEqual([]);
+    await phone.page.close();
+  });
+
+  it('по центру: клик рядом с окном закрывает его (backdrop), клик по окну — нет; страница под ним не нажимается', async () => {
+    const { page } = await openSized();
+    for (const backdrop of [true, false]) {
+      await call(page, 'w', 'open', { backdrop });
+      await page.click('#w-title');
+      expect(await isOpen(page, 'w')).toBe(true);
+      await page.mouse.click(40, 800 - 34);
+      expect(await isOpen(page, 'w')).toBe(false);
+    }
+    expect(await reasons(page)).toEqual(['backdrop', 'backdrop']);
+    expect(await pageClicks(page)).toBe(0);
+    await page.close();
+  });
+
+  it('шторка — корень во всю ширину и при max-w-md; угол — 28rem справа, страница рядом с окном нажимается', async () => {
+    const { page } = await openSized();
+    await call(page, 'w', 'open', { position: 'sheet' });
+    expect(await windowRect(page, 'w')).toMatchObject({ left: 0, width: 1280, bottom: 800 });
+    await call(page, 'w', 'close');
+    await call(page, 'w', 'open', { position: 'corner' });
+    expect(await windowRect(page, 'w')).toMatchObject({ width: 448, right: 1280 - 16, bottom: 800 - 16 });
+    await page.mouse.click(40, 800 - 34);
+    expect(await pageClicks(page)).toBe(1);
+    expect(await isOpen(page, 'w')).toBe(true);
+    await call(page, 'w', 'close');
+    await call(page, 'w', 'open', { position: 'corner', side: 'left' });
+    expect(await windowRect(page, 'w')).toMatchObject({ left: 16, width: 448 });
+    await page.close();
+  });
+});
+
+// Общие настройки секции на обёртке окна — как их ставит сборщик (wrapper.ts пакета секций): класс схемы и отступы с
+// вариантом *:. CSS — как у токенов nova (переменные схемы и покраска в @layer base) и Tailwind (preflight с border-box,
+// вложенное правило *:).
+const SCHEMED = `@layer theme, base, components, utilities;
+:root, .color-scheme-1 { --background: #ffffff; --foreground: #111111 }
+.color-scheme-2 { --background: #123456; --foreground: #fafafa }
+@layer base { *, ::before, ::after { box-sizing: border-box }
+  :root, .color-scheme-1, .color-scheme-2 { background-color: var(--background); color: var(--foreground) } }
+@layer utilities { .w-full { width: 100% } .max-w-md { max-width: 28rem } .p-6 { padding: 1.5rem }
+  .py-section { padding-block: 4rem }
+  .\\*\\:pt-10 { :is(& > *) { padding-top: 2.5rem } } .\\*\\:pb-6 { :is(& > *) { padding-bottom: 1.5rem } } }`;
+const SCHEMED_BODY = `<merfy-section data-section="shop:promo" data-section-id="s" data-overlay hidden class="color-scheme-2 *:pt-10 *:pb-6">
+  <div class="w-full max-w-md p-6"><h2 id="s-title">Скидка 10%</h2><button id="s-ok">Забрать</button></div>
+</merfy-section>`;
+
+describe('общие настройки секции у окна', () => {
+  it('«Цветовая схема» и «Отступы» — у окна (корня шаблона); слой прозрачный, ширина по классам корня', async () => {
+    const { page, errors } = await open({ body: SCHEMED_BODY, css: SCHEMED, reducedMotion: true });
+    await call(page, 's', 'open');
+    const look = await page.$eval('[data-section-id="s"]', (host) => {
+      const root = host.firstElementChild;
+      const layer = getComputedStyle(host);
+      const box = root === null ? null : getComputedStyle(root);
+      const hit = document.elementFromPoint(8, 8);
+      return {
+        layer: [layer.backgroundColor, layer.paddingTop],
+        window: [box?.backgroundColor, box?.color, box?.paddingTop, box?.paddingBottom, box?.paddingLeft],
+        hit: hit?.hasAttribute('data-merfy-overlay-backdrop') ?? false,
+      };
+    });
+    expect(look).toEqual({
+      layer: ['rgba(0, 0, 0, 0)', '16px'],
+      window: ['rgb(18, 52, 86)', 'rgb(250, 250, 250)', '40px', '24px', '24px'],
+      hit: true,
+    });
+    expect(await windowRect(page, 's')).toMatchObject({ left: (1280 - 448) / 2, width: 448 });
+    expect(errors).toEqual([]);
     await page.close();
   });
 });

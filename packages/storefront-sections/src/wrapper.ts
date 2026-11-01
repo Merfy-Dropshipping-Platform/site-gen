@@ -194,19 +194,31 @@ export function resolveWrapper(
 // Схема цвета — класс `color-<id>` (Р1-5-7): CSS даёт токены магазина. Отступ — шаг Tailwind 4 px: { top: 40 } →
 // `pt-10`; нет правки и padding в списке — токен темы `py-section`; padding нет в списке — отступа нет совсем. Ширина —
 // WIDTH_VIEW. Порядок классов: схема, отступы, ширина, закрепление; атрибуты — из таблицы закрепления.
+// Окно поверх страницы (01.11): <merfy-section> — прозрачный слой места, окно — корень шаблона, и общие настройки
+// относятся к нему. Отступы — тем же классом с вариантом Tailwind `*:` (прямые дети обёртки, то есть корень шаблона);
+// класс схемы остаётся на обёртке: её токены корень наследует, красит его ядро (parts/overlay.ts).
 const SCHEME_CLASS_PREFIX = 'color-';
 const PADDING_UNIT = 4;
+const WINDOW_VARIANT = '*:';
 
-export function wrapperView(listed: readonly WrapperId[], values: WrapperValues): WrapperView {
+// Чему обёртка задаёт вид: секции на странице или окну поверх страницы (секция без роли в группе overlay).
+export type WrapperTarget = 'section' | 'window';
+
+export function wrapperView(
+  listed: readonly WrapperId[],
+  values: WrapperValues,
+  target: WrapperTarget = 'section',
+): WrapperView {
   const classes: string[] = [];
   if (listed.includes('scheme') && values.scheme !== undefined && values.scheme !== '')
     classes.push(`${SCHEME_CLASS_PREFIX}${values.scheme}`);
-  if (listed.includes('padding'))
-    classes.push(
-      ...(values.padding === undefined
+  if (listed.includes('padding')) {
+    const padding =
+      values.padding === undefined
         ? ['py-section']
-        : [`pt-${values.padding.top / PADDING_UNIT}`, `pb-${values.padding.bottom / PADDING_UNIT}`]),
-    );
+        : [`pt-${values.padding.top / PADDING_UNIT}`, `pb-${values.padding.bottom / PADDING_UNIT}`];
+    classes.push(...(target === 'window' ? padding.map((name) => `${WINDOW_VARIANT}${name}`) : padding));
+  }
   if (listed.includes('width')) classes.push(...WIDTH_VIEW[values.width ?? WIDTH_DEFAULT]);
   // Нет правки: sticky в списке секции — умолчание объявления (scroll-up), нет в списке — без закрепления.
   const sticky = STICKY_VIEW[values.sticky ?? (listed.includes('sticky') ? STICKY_DEFAULT : 'none')];
@@ -218,15 +230,16 @@ export const isDefaultWrapperView = (view: WrapperView): boolean =>
   view.classes.length === 1 && view.classes[0] === 'py-section' && Object.keys(view.attributes).length === 0;
 
 // Одна функция для сборки и превью: правки экземпляра поверх умолчаний секции (wrapperSpec) → вид обёртки (и проблемы
-// для журнала). У секции без wrapperSpec — как раньше: умолчания платформы.
+// для журнала). У секции без wrapperSpec — как раньше: умолчания платформы. target — как у wrapperView.
 export function resolveWrapperView(
   manifest: Pick<SectionManifest, 'wrapper' | 'wrapperSpec'>,
   edits: unknown,
+  target: WrapperTarget = 'section',
 ): { view: WrapperView; invalid: string[] } {
   const listed = wrapperIdsOf(manifest);
   const resolved = resolveWrapper(listed, edits, manifest.wrapperSpec);
   const values = { ...specDefaults(manifest.wrapperSpec), ...resolved.values };
-  return { view: wrapperView(listed, values), invalid: resolved.invalid };
+  return { view: wrapperView(listed, values, target), invalid: resolved.invalid };
 }
 
 // wrapperSpec: только общие настройки из списка секции; умолчание — значение по объявлению с ключами секции (у

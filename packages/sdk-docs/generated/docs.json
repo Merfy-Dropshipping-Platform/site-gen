@@ -1,6 +1,6 @@
 {
   "sdk": 1,
-  "version": "1.28.0",
+  "version": "1.29.0",
   "date": "2026-11-01",
   "api": "https://gateway.merfy.ru/api/",
   "files": [
@@ -25,6 +25,7 @@
     "section-json.md",
     "section.schema.json",
     "start.md",
+    "stores.md",
     "styles.md",
     "template.md",
     "template/AGENTS.md",

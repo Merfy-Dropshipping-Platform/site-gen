@@ -10,7 +10,7 @@ const KEY_NOTES: Readonly<Record<string, string>> = {
   $schema: 'адрес JSON Schema для подсказок редактора; проверка ключ не читает',
   sdk: 'версия SDK: 1',
   name: 'имя секции: строчные латинские буквы и цифры через одиночный дефис',
-  kind: 'вид: section или global',
+  kind: 'вид: section, global или store — свой стор, stores.md',
   title: 'название секции в конструкторе, до 80 знаков',
   settings: 'поля секции; имя каждого — из словаря имён или из `names` секции (names.md)',
   names:

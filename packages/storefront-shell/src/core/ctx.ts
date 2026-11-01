@@ -17,6 +17,7 @@ import type {
   ExtModule,
   Json,
   Mode,
+  OverlayWindow,
   ReadableStore,
   SectionEvent,
   Stop,
@@ -40,6 +41,7 @@ export interface CtxDeps {
   readonly theme: Readonly<ThemeSettings>; // сквозные настройки темы страницы (блок 9, часть 9б)
   readonly input: SectionInput;
   readonly animate: AnimateProvider | null; // провайдер части behaviors (блок 6); нет — ctx.animate бросает part-unknown
+  readonly overlay?: OverlayWindow | null; // 01.11: окно секции поверх страницы (часть overlay ядра); нет — null
   readonly state?: Readonly<Record<string, unknown>>; // начальный ctx.state — копия при замене в превью (часть 5г)
 }
 
@@ -168,6 +170,7 @@ export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknow
     storage: createSectionStorage(deps.name, deps.page),
     ext: NO_EXT,
     theme: deps.theme,
+    overlay: deps.overlay ?? null,
     ...methodsOf(deps, deps.signal),
     get state(): Partial<Record<string, unknown>> {
       return state; // свой объект экземпляра; ctx заморожен, а аксессор — работает

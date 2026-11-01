@@ -110,6 +110,11 @@ export const EVENT_CATALOG = {
       'посетитель стёр слой `data-behavior="scratch"` больше чем наполовину или нажал «Показать»; section и id — секция со слоем',
     fields: { section: 'text', id: 'text' },
   },
+  'merfy:overlay:close': {
+    about:
+      'окно секции поверх страницы закрылось: button — data-action="overlay.close", escape — Esc, backdrop — клик мимо окна, code — ctx.overlay.close()',
+    fields: { section: 'text', id: 'text', reason: { oneOf: ['button', 'escape', 'backdrop', 'code'] } },
+  },
 } as const satisfies { readonly [E in EventName]: EventSpec<EventMap[E]> };
 
 export const EVENT_NAMES: readonly string[] = Object.keys(EVENT_CATALOG);

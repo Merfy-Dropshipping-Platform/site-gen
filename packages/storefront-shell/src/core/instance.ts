@@ -7,12 +7,15 @@ import { createGuard, type Guard } from './guard';
 import { createCtx, type CtxDeps } from './ctx';
 import { EXT_USE_PREFIX } from './ext-registry';
 import { readSectionInput, type SectionInput } from './input';
+import type { OverlayApi } from './parts/overlay';
+import { OVERLAY_ATTRIBUTE, OVERLAY_PART } from './roles';
 import type { KeyValue } from './storage';
 import type {
   BaseCtx,
   FailureStage,
   InstanceHost,
   Mode,
+  OverlayWindow,
   Result,
   SectionEntry,
   SectionEvent,
@@ -23,13 +26,14 @@ import type {
 // Запуск и снятие экземпляра секции (design.md блока 5, разделы 3.6 и 3.7): входные данные, ctx, attach частей до
 // mount, предохранитель на весь код секции, сбой — на экземпляр. Экземпляр есть и у секции без скрипта с разметкой SDK.
 
-// Разметка SDK без скрипта секции (раздел 3.6, шаг 2): действие части с точкой, готовое поведение, анимация.
-export const SDK_MARKUP_SELECTOR = '[data-action*="."], [data-behavior], [data-animate]';
+// Разметка SDK без скрипта секции (раздел 3.6, шаг 2): действие части с точкой, готовое поведение, анимация; окно поверх
+// страницы (01.11) — его открывает выбор в превью и у секции без скрипта.
+export const SDK_MARKUP_SELECTOR = `[data-action*="."], [data-behavior], [data-animate], [${OVERLAY_ATTRIBUTE}]`;
 
 // Действие части в разметке, привязанное к API созданной части (сами слушатели — задача 5а-5, actions.ts).
 export interface MarkupCall {
   readonly params: readonly string[];
-  call(values: Readonly<Record<string, string>>, event?: SectionEvent): Promise<Result<unknown>>;
+  call(values: Readonly<Record<string, string>>, event?: SectionEvent, section?: HTMLElement): Promise<Result<unknown>>;
 }
 
 // Стартовое окружение экземпляров одной страницы: окно, шина, хранилище, части.
@@ -243,6 +247,23 @@ function animateOfPart(runtime: InstanceRuntime): AnimateProvider | null {
   return isAnimateProvider(api.animate) ? api.animate : null;
 }
 
+// Окна поверх страницы (01.11) — часть overlay: в бандле только страниц с такой секцией, поэтому здесь — только её тип.
+const isOverlayApi = (value: unknown): value is OverlayApi =>
+  typeof value === 'object' && value !== null && 'windowOf' in value && typeof value.windowOf === 'function';
+
+// ctx.overlay — у части overlay по узлу экземпляра; части нет на странице или это не окно поверх страницы — null.
+function overlayOfPart(runtime: InstanceRuntime, state: InstanceState): OverlayWindow | null {
+  const api = runtime.apiOfPart(OVERLAY_PART);
+  if (!isOverlayApi(api)) return null;
+  return api.windowOf({
+    element: state.element,
+    name: state.name,
+    id: state.id,
+    mode: runtime.mode,
+    signal: state.controller.signal,
+  });
+}
+
 const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: SectionInput): CtxDeps => ({
   win: runtime.win,
   bus: runtime.bus,
@@ -257,6 +278,7 @@ const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: Sectio
   mode: runtime.mode,
   input,
   animate: animateOfPart(runtime),
+  overlay: overlayOfPart(runtime, state),
   state: state.initial,
 });
 

@@ -1,4 +1,4 @@
-import type { SectionRole } from '@merfy/shell/roles';
+import { OVERLAY_ATTRIBUTE, type SectionRole } from '@merfy/shell/roles';
 import { classesOf, type Dictionary } from '@merfy/tokens';
 import type { CodeNoticed } from './bundle';
 import { sha256 } from './canonical';
@@ -148,6 +148,9 @@ export interface PlacedSection {
   // Роль секции (блок 12 «Секций и SDK», 12.1): на обёртке — data-role, по нему ядро находит секцию; ошибка рендера —
   // ошибка сборки, как у removable: false (12.4, п. 14).
   role?: SectionRole;
+  // Окно поверх страницы (01.11): секция без роли в группе overlay — на обёртке data-overlay и hidden; до open() скрипта
+  // окна не видно. Ошибка рендера — как у остальных секций: окна нет.
+  overlay?: true;
   // Часть 4: деревья меню по id настройки вида menu; что шаблон читает сверх settings и blocks ("uses").
   menus?: Readonly<Record<string, MenuTree>>;
   uses?: readonly PropsUse[];
@@ -229,7 +232,8 @@ const wrapper = (placed: PlacedSection, html: string): string => {
     .map(([name, value]) => ` ${name}="${escapeHtml(value)}"`)
     .join('');
   const role = placed.role === undefined ? '' : ` data-role="${escapeHtml(placed.role)}"`;
-  return `<merfy-section data-section="${escapeHtml(placed.name)}" data-section-id="${escapeHtml(placed.id)}"${role}${classes}${attributes}>${html}</merfy-section>`;
+  const overlay = placed.overlay === true ? ` ${OVERLAY_ATTRIBUTE} hidden` : '';
+  return `<merfy-section data-section="${escapeHtml(placed.name)}" data-section-id="${escapeHtml(placed.id)}"${role}${overlay}${classes}${attributes}>${html}</merfy-section>`;
 };
 
 // Ошибка рендера секции. На опубликованном сайте (В2-1 А, «Решил сам» п. 7) упавшей секции нет, об ошибке сообщается;

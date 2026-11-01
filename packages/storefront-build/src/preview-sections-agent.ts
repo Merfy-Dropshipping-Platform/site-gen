@@ -2,11 +2,14 @@ import {
   BLOCK_DESELECT_EVENT,
   BLOCK_SELECT_EVENT,
   MESSAGE_MAX_LENGTH,
+  OVERLAY_HIDE_EVENT,
+  OVERLAY_SHOW_EVENT,
   PREVIEW_LIST_EVENT,
   PREVIEW_UPDATE_EVENT,
   PREVIEW_UPDATED_EVENT,
   SECTION_ERROR_EVENT,
 } from '@merfy/shell/preview';
+import { OVERLAY_ATTRIBUTE } from '@merfy/shell/roles';
 
 // Код секций (блок 5, часть 5г): правку секции с кодом получает скрипт превью (dist/preview.js) — событие
 // merfy:preview:update на узле секции, рамка выбора — по merfy:preview:updated; сбой скрипта секции — красная рамка и
@@ -37,6 +40,10 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var DESELECT_EVENT = ${JSON.stringify(BLOCK_DESELECT_EVENT)};
   // Блок 11, часть 11а-2: модуль «Каталог» просит список с параметрами — тоже из протокола превью.
   var LIST_EVENT = ${JSON.stringify(PREVIEW_LIST_EVENT)};
+  // 01.11: окно выбранной секции поверх страницы — ядру; атрибут окна — у ядра (@merfy/shell/roles).
+  var OVERLAY_SHOW_EVENT = ${JSON.stringify(OVERLAY_SHOW_EVENT)};
+  var OVERLAY_HIDE_EVENT = ${JSON.stringify(OVERLAY_HIDE_EVENT)};
+  var OVERLAY_ATTRIBUTE = ${JSON.stringify(OVERLAY_ATTRIBUTE)};
   // Кнопки и поля секции — как в превью пяти тем (src/services/preview.service.ts): нажатие — коду секции, выбора нет.
   var CONTROLS = 'button, input, select, textarea, label[for], [data-action]';
   // «Ошибка в скрипте секции «» — escape-последовательностями, как подсказки кнопок рамки.
@@ -175,8 +182,19 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     var label = frame.querySelector('[data-merfy-label]');
     label.style.top = rect.top + window.scrollY < label.offsetHeight + 2 ? '0' : '';
   }
+  // Окно поверх страницы (01.11): выбранная секция с data-overlay — ядру «открыть окно», чтобы мерчант видел и правил
+  // его; прежняя — «закрыть». Повтор для той же секции (после замены) ядро открывает заново или оставляет открытым.
+  var overlayShown = null;
+  function showOverlay() {
+    var node = selected === null ? null : byId(selected);
+    var next = node && node.hasAttribute(OVERLAY_ATTRIBUTE) ? node : null;
+    if (overlayShown && overlayShown !== next && overlayShown.isConnected) overlayShown.dispatchEvent(new Event(OVERLAY_HIDE_EVENT));
+    overlayShown = next;
+    if (next) next.dispatchEvent(new Event(OVERLAY_SHOW_EVENT));
+  }
   function select(id) {
     selected = id;
+    showOverlay();
     ensureFrame();
     place();
     var block = showBlock();
@@ -264,6 +282,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         setCss(instance.id, answer.css);
         if (handOver(old, answer.html, answer.script, false)) return;
         old.parentNode.replaceChild(fresh, old);
+        if (instance.id === selected) showOverlay();
         place();
         showBlock();
       })
@@ -347,6 +366,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         fresh.forEach(function (item) {
           if (item.node && item.node.isConnected) handOver(item.node, item.html, item.script, true);
         });
+        showOverlay();
         place();
         showBlock();
         post({ type: 'reconcile-ack', version: data.version, ok: true, applied: changed.length });
@@ -492,6 +512,8 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     // Часть 6в: заменили секцию с выбранным блоком — новый экземпляр получает «выбран блок».
     var detail = event.detail || {};
     if (announced !== null && detail.id === announced.section) announce(true);
+    // 01.11: заменили выбранное окно поверх страницы — новый экземпляр открывает его снова.
+    if (detail.id === selected) showOverlay();
   });
   // Сбой скрипта секции (design.md блока 5, 3.7): красная рамка (STYLE) и подпись первым элементом секции, тем же видом,
   // что ошибка рендера в превью. Сбой при снятии (unmount) подписи не даёт: секции уже нет или её меняют.

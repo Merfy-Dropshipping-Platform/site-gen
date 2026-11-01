@@ -1,6 +1,6 @@
 # События
 
-> SDK 1 · документация 1.25.0 · 2026-11-01
+> SDK 1 · документация 1.26.0 · 2026-11-01
 
 События витрины отправляет ядро SDK; секция слушает их через `ctx.listen`, свой код мерчанта — на `document`.
 
@@ -33,6 +33,7 @@
 | `merfy:consent:change` | выбор в баннере cookie | state — одно из: accepted, declined |
 | `merfy:countdown:end` | таймер `data-behavior="countdown"` дошёл до нуля по времени сервера; section и id — секция с таймером | section — строка; id — строка |
 | `merfy:scratch:done` | посетитель стёр слой `data-behavior="scratch"` больше чем наполовину или нажал «Показать»; section и id — секция со слоем | section — строка; id — строка |
+| `merfy:overlay:close` | окно секции поверх страницы закрылось: button — data-action="overlay.close", escape — Esc, backdrop — клик мимо окна, code — ctx.overlay.close() | section — строка; id — строка; reason — одно из: button, escape, backdrop, code |
 
 ## Коды ошибок
 

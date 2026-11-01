@@ -193,6 +193,21 @@ describe('превью одного блока', () => {
     expect(blockAnswerSchema.parse(JSON.parse(plain.body)).html).not.toContain('data-role');
   });
 
+  it('окно поверх страницы (01.11) — data-overlay и hidden на обёртке, как у полного рендера', async () => {
+    const promo: CurrentSection = {
+      name: 'shop:promo',
+      manifest: { sdk: 1, name: 'promo', kind: 'section', title: 'Скидка', groups: ['overlay'], settings: [] },
+      render: MODULE,
+      renderHash: HASH,
+    };
+    const { deps } = depsOf(new Map([[promo.name, promo]]));
+    const answer = await sectionPreview(deps, SHOP, block({ id: 'promo-1', section: 'shop:promo', settings: {} }));
+    expect(answer.status).toBe(200);
+    expect(blockAnswerSchema.parse(JSON.parse(answer.body)).html).toMatch(
+      /^<merfy-section data-section="shop:promo" data-section-id="promo-1" data-overlay hidden class="py-section">/,
+    );
+  });
+
   it('тело не по форме — 400; секции у магазина нет — 404; расширения не ответили — 502', async () => {
     expect((await sectionPreview(depsOf().deps, SHOP, '{"instance":1}')).status).toBe(400);
     const unknown = block({ id: 'faq-1', section: 'shop:faq', settings: {} });

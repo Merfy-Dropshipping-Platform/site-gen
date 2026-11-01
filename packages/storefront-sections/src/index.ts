@@ -4,6 +4,7 @@ export { doorFields, doorSchema, type Door, type DoorFields, type SectionAuthor 
 export {
   SECTION_GROUPS,
   SECTION_KINDS,
+  isOverlaySection,
   propsUsesOf,
   readManifest,
   sectionGroupsOf,

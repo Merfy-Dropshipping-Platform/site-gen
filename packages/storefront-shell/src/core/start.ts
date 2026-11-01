@@ -157,7 +157,10 @@ function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts
     const local = name.slice(at + 1);
     const action = found?.part.markup?.[local] ?? found?.part.markupOf?.(found.api, local) ?? undefined;
     if (found === undefined || action === undefined) return null;
-    return { params: action.params, call: (values, event) => action.call(found.api, values, event) };
+    return {
+      params: action.params,
+      call: (values, event, section) => action.call(found.api, values, event, section),
+    };
   };
   const partApi = (name: string): unknown => {
     if (name.startsWith(EXT_USE_PREFIX)) return extPartApi(parts, name.slice(EXT_USE_PREFIX.length));

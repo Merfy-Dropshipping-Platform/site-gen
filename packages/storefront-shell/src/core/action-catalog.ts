@@ -1,3 +1,4 @@
+import { OVERLAY_PART } from './roles';
 import type { ModuleName } from './types';
 
 // Действия SDK (блок 9: 14а А, «Решил сам» п. 18) — таблица имён: имя → модуль, функция и параметры разметки. По ней
@@ -8,8 +9,12 @@ import type { ModuleName } from './types';
 // Параметр разметки — data-<имя> элемента: строка, целое число от 1 или целое от 0.
 export type ParamRule = 'text' | 'count-from-1' | 'count-from-0';
 
+// Окно секции поверх страницы (01.11): ctx.overlay — не модуль по uses, а часть OVERLAY_PART, её ставит в бандл сборка
+// страницы с такой секцией; действие overlay.close — в той же таблице, в uses и script_meta секции не идёт.
+export { OVERLAY_PART };
+
 export interface ActionSpec {
-  readonly module: ModuleName;
+  readonly module: ModuleName | typeof OVERLAY_PART;
   readonly about: string;
   // Параметры data-action; null — действие только из скрипта секции.
   readonly markup: Readonly<Record<string, ParamRule>> | null;
@@ -127,6 +132,13 @@ export const ACTIONS = {
     about:
       'скопировать текст в буфер обмена (промокод, ссылку); аргументы { text }, ответ — {}; нет буфера — запасной способ; успех — уведомление «Скопировано»',
     markup: { text: 'text' },
+  },
+  // 01.11: крестик и кнопки «Закрыть» окна поверх страницы — закрывает окно своей секции, merfy:overlay:close с button.
+  'overlay.close': {
+    module: OVERLAY_PART,
+    about:
+      'закрыть окно своей секции поверх страницы: фокус возвращается туда, где был до открытия, потом merfy:overlay:close с reason "button"; ответ — {}',
+    markup: {},
   },
 } as const satisfies Readonly<Record<string, ActionSpec>>;
 

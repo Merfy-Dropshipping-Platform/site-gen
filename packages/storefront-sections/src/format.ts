@@ -60,7 +60,7 @@ const defaultBlockSchema = z.strictObject({
 // что шаблон читает сверх settings и blocks: theme — настройки темы, shop — публичные данные магазина; newPage — id
 // настройки вида string: секция ставится на новую страницу, в эту настройку пишется имя страницы.
 // overlay «Поверх страницы» (блок 12 «Секций и SDK», 12.2, п. 7): общая для всех страниц, рендер после подвала; в ней —
-// только секции с ролью поверх страницы (role-place).
+// секции с ролью поверх страницы (role-place) и, с 01.11, окна — секции без роли (isOverlaySection, overlay-place).
 export const SECTION_GROUPS = ['header', 'page', 'footer', 'overlay'] as const;
 export type SectionGroup = (typeof SECTION_GROUPS)[number];
 export const SECTION_USES = ['theme', 'shop'] as const;
@@ -273,14 +273,10 @@ function roleUnknownProblems(value: unknown): SectionProblem[] {
   return [problem('role-unknown', MANIFEST_FILE, text)];
 }
 
-// Место секции с ролью (блок 12, 12.1): группа overlay — только у секции с ролью поверх страницы; записанные groups и
-// limit должны совпадать с местом роли. У глобального скрипта — ничего: роль у него ловит placeProblems по PLACE_KEYS.
+// Место секции с ролью (блок 12, 12.1): записанные groups и limit должны совпадать с местом роли. У глобального скрипта —
+// ничего: роль у него ловит placeProblems по PLACE_KEYS.
 function rolePlaceProblems(manifest: SectionManifest): string[] {
-  if (manifest.kind === 'global') return [];
-  if (manifest.role === undefined)
-    return (manifest.groups ?? []).includes('overlay')
-      ? ['groups: группа overlay — только у секции с ролью поверх страницы']
-      : [];
+  if (manifest.kind === 'global' || manifest.role === undefined) return [];
   const place = ROLE_PLACES[manifest.role];
   const groups =
     manifest.groups === undefined || sameGroups(manifest.groups, place.group)
@@ -295,6 +291,17 @@ function rolePlaceProblems(manifest: SectionManifest): string[] {
 
 const sameGroups = (groups: readonly SectionGroup[], group: 'page' | 'overlay'): boolean =>
   groups.length === 1 && groups[0] === group;
+
+// Окно поверх страницы (01.11): секция без роли в группе overlay. Окно — свойство секции, как место у роли: сборка ставит
+// на обёртку data-overlay и hidden, скрипт получает ctx.overlay — по section.json, где бы экземпляр ни стоял.
+export const isOverlaySection = (manifest: Pick<SectionManifest, 'kind' | 'role' | 'groups'>): boolean =>
+  manifest.kind === 'section' && manifest.role === undefined && (manifest.groups ?? []).includes('overlay');
+
+// Окно не делит группы с шапкой, страницей и подвалом: на странице секция была бы закрыта, пока скрипт её не откроет.
+function overlayPlaceProblems(manifest: SectionManifest): string[] {
+  if (!isOverlaySection(manifest) || sameGroups(manifest.groups ?? [], 'overlay')) return [];
+  return ['groups: секция поверх страницы — окно, группа overlay без header, page и footer'];
+}
 
 // Ключ inlineEdit (часть 6, Р1-6-1) — только у видов string, text и richtext, в настройках секции и блоков. Сырой JSON,
 // до разбора формой: у другого вида форма сказала бы «лишний ключ», а автору нужен setting-invalid с путём. Ссылки на
@@ -360,6 +367,7 @@ export function readManifest(files: SectionFiles): Checked<SectionManifest> {
     ...blockMenuProblems(parsed.data).map((message) => problem('setting-invalid', MANIFEST_FILE, message)),
     ...wrapperProblems(parsed.data).map((message) => problem('manifest-invalid', MANIFEST_FILE, message)),
     ...rolePlaceProblems(parsed.data).map((message) => problem('role-place', MANIFEST_FILE, message)),
+    ...overlayPlaceProblems(parsed.data).map((message) => problem('overlay-place', MANIFEST_FILE, message)),
   ];
   return problems.length > 0 ? { ok: false, problems } : { ok: true, value: parsed.data };
 }

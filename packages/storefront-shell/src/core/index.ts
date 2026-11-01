@@ -58,6 +58,9 @@ export type { ShareModule, ShareResult } from './types';
 // Сторы страницы — ctx.page с uses: ["page"]: прокрутка, уход посетителя, время сервера.
 export { page } from './parts/page';
 export type { PageModule } from './types';
+// 01.11: окно секции поверх страницы — ctx.overlay; часть overlay — в бандле страниц, где стоит такая секция.
+export { overlay } from './parts/overlay';
+export type { OverlayCloseReason, OverlayOptions, OverlayPosition, OverlayWindow } from './types';
 export type { ConsentAnswer, ConsentModule, ConsentState, Money, NewsletterModule, NoticeLevel } from './types';
 export {
   EMPTY_INPUT,

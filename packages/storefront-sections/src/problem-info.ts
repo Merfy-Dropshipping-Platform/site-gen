@@ -336,9 +336,15 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     example: { before: '"role": "minicart"', after: '"role": "cart-drawer"' },
   },
   'role-place': {
-    when: 'У секции с ролью groups или limit не совпадают с местом роли, или группа overlay — у секции без роли.',
-    fix: 'Убери groups и limit: место и один экземпляр задаёт роль; группа overlay — только у секции с ролью.',
+    when: 'У секции с ролью groups или limit не совпадают с местом роли.',
+    fix: 'Убери groups и limit: место и один экземпляр задаёт роль.',
     example: { before: '"role": "cart-drawer", "groups": ["footer"]', after: '"role": "cart-drawer"' },
+  },
+  'overlay-place': {
+    when: 'У секции без роли группа overlay стоит вместе с header, page или footer: секция поверх страницы — окно, ctx.overlay открывает его, на странице такой секции места нет.',
+    fix: 'Оставь в groups только overlay — тогда секция стоит поверх каждой страницы и открывается окном из скрипта (ctx.overlay.open()); для показа на странице сделай отдельную секцию без overlay.',
+    example: { before: '"groups": ["overlay", "page"]', after: '"groups": ["overlay"]' },
+    doc: 'script.md#окно-поверх-страницы',
   },
   'role-not-allowed': {
     when: 'Роль у секции расширения: роли бывают только у секций магазина.',

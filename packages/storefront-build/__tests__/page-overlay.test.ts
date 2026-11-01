@@ -108,6 +108,42 @@ describe('группа overlay', () => {
     expect(seen[0]?.sections.join('')).toBe('');
   });
 
+  it('окно — секция без роли в overlay (01.11): один раз на каждой странице после подвала, data-overlay и hidden; классы шаблона — в CSS', async () => {
+    const inputs = changedInputs((draft) => {
+      const base = shopInputs();
+      draft.revision = base.revision;
+      draft.code = {
+        ...base.code,
+        sections: [...base.code.sections, section('shop:promo', { overlay: true })],
+        pages: { ...base.code.pages, overlay: [...(base.code.pages.overlay ?? []), instance('promo-1', 'shop:promo')] },
+      };
+    });
+    const page = (requests: SectionRenderRequest[]): PageRender => ({
+      ...pageOf(requests),
+      sections: {
+        modules: new Map([[HASH, MODULE]]),
+        render: (request) => {
+          requests.push(request);
+          const html = request.section === 'shop:promo' ? '<div class="flex items-center">Скидка</div>' : '<p></p>';
+          return Promise.resolve(html);
+        },
+      },
+    });
+    for (const path of ['/', '/o-nas']) {
+      const seen: ShopPageLocals[] = [];
+      const requests: SectionRenderRequest[] = [];
+      await renderShopPage(inputs, path, themeOf(seen), page(requests));
+      expect(requests.filter((request) => request.section === 'shop:promo')).toHaveLength(1);
+      const footer = seen[0]?.footer ?? [];
+      expect(namesOf(footer).at(-1)).toBe('shop:promo');
+      expect(footer.at(-1)).toContain('data-section="shop:promo" data-section-id="promo-1" data-overlay hidden');
+      expect(footer.slice(0, -1).join('')).not.toContain('data-overlay');
+      expect(namesOf(seen[0]?.sections ?? [])).not.toContain('shop:promo');
+      expect(seen[0]?.head.codeHtml).toContain('.items-center');
+    }
+    expect(parseBuildInputs(inputs).code.sections.at(-1)).toMatchObject({ overlay: true });
+  });
+
   it('входы: role — из списка платформы; другая — inputs-invalid; страница с id overlay — занят', () => {
     expect(parseBuildInputs(shopInputs()).code.sections[2]).toMatchObject({ role: 'cart-drawer' });
     const wrongRole = changedInputs((inputs) => {

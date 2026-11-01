@@ -7,7 +7,6 @@ import { messageOf } from '../report';
 import { createEventBus, type EventBus } from './events';
 import { EXT_PART_NAME, EXT_USE_PREFIX, extModuleOf } from './ext-registry';
 import { SDK_MARKUP_SELECTOR, startInstance, type Instance, type InstanceRuntime, type MarkupCall } from './instance';
-import { STORE_USE_PREFIX } from './own-stores';
 import { navigationType, watchPage } from './page-events';
 import { leavePrivatePage } from './private-pages';
 import { pageStorage, type KeyValue } from './storage';
@@ -18,7 +17,6 @@ import type {
   EventDetail,
   EventName,
   InstanceHost,
-  Json,
   Mode,
   ModuleName,
   Modules,
@@ -187,19 +185,6 @@ function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts
   return { win, mode, bus, page, partApi, apiOfPart, attachAll, markup, theme: themeOf(parts.core.config) };
 }
 
-// Свои сторы страницы в partApi (свои сторы): uses "store:<префикс>:<имя>" — фасад из списка сторов (own-stores.ts),
-// остальное — как у частей. Стора нет в бандле — ShellError part-unknown, как у незнакомой части.
-function withStores(runtime: InstanceRuntime, stores: ReadonlyMap<string, ReadableStore<Json>>): InstanceRuntime {
-  const partApi = (name: string): unknown => {
-    if (!name.startsWith(STORE_USE_PREFIX)) return runtime.partApi(name);
-    const store = stores.get(name.slice(STORE_USE_PREFIX.length));
-    if (store === undefined)
-      throw new ShellError('part-unknown', `стора ${name.slice(STORE_USE_PREFIX.length)} на странице нет`);
-    return store;
-  };
-  return { ...runtime, partApi };
-}
-
 const startFor = (
   runtime: InstanceRuntime,
   byName: Map<string, StartOptions['sections'][number]>,
@@ -286,9 +271,9 @@ export function start(options: StartOptions, env: CoreEnv = { window }): Started
   if (read.config !== null && read.mode === 'live')
     watchSectionErrors(win, read.config, controller.signal); // до запуска секций: сбой старта — в пачке
   const parts = createCoreParts(read.config, read.mode, bus, options);
-  const stores = new Map<string, ReadableStore<Json>>();
-  const runtime = withStores(runtimeOf(win, read.mode, bus, page, parts), stores);
-  options.stores?.(runtime, stores, controller.signal); // свои сторы — до секций: секции читают их в mount
+  const base = runtimeOf(win, read.mode, bus, page, parts);
+  // Свои сторы — до секций (секции читают их в mount); код сторов — только в бандле страниц, где они есть.
+  const runtime = options.stores?.(base, controller.signal) ?? base;
   addGlobals(win, options.sections);
   return runCore(win, options, runtime, controller, read);
 }

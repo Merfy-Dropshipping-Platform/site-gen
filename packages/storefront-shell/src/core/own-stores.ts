@@ -17,11 +17,9 @@ import type { FailureStage, Json, ReadableStore, SectionFailureDetail, StoreEntr
 // снимаются, значение остаётся последним — секции читают его дальше.
 export const STORE_USE_PREFIX = 'store:';
 
-export type PageStores = (
-  runtime: InstanceRuntime,
-  into: Map<string, ReadableStore<Json>>,
-  signal: AbortSignal,
-) => void;
+// Ядро отдаёт runtime страницы и сигнал, получает runtime, в котором uses "store:…" — фасады сторов: так весь код
+// сторов, и разбор этих uses тоже, живёт здесь, а не в core.js.
+export type PageStores = (runtime: InstanceRuntime, signal: AbortSignal) => InstanceRuntime;
 
 interface StoreState {
   readonly entry: StoreEntry;
@@ -150,22 +148,48 @@ function launch(runtime: InstanceRuntime, state: StoreState): void {
   run('mount', () => entry.definition.start?.(ctx, set));
 }
 
+// uses "store:<префикс>:<имя>" — фасад из списка сторов, остальное — как у частей. Стора нет в бандле — ShellError
+// part-unknown, как у незнакомой части.
+function withStores(base: InstanceRuntime, stores: ReadonlyMap<string, ReadableStore<Json>>): InstanceRuntime {
+  const partApi = (name: string): unknown => {
+    if (!name.startsWith(STORE_USE_PREFIX)) return base.partApi(name);
+    const store = stores.get(name.slice(STORE_USE_PREFIX.length));
+    if (store === undefined)
+      throw new ShellError('part-unknown', `стора ${name.slice(STORE_USE_PREFIX.length)} на странице нет`);
+    return store;
+  };
+  return { ...base, partApi };
+}
+
+// Все сторы списка: фасад каждого — в into до запуска; сигнал ядра снимает их вместе со страницей.
+function launchAll(
+  list: readonly StoreEntry[],
+  runtime: InstanceRuntime,
+  into: Map<string, ReadableStore<Json>>,
+  signal: AbortSignal,
+): void {
+  const { ordered, cycles } = orderOf(list);
+  const stateOf = (entry: StoreEntry): StoreState => {
+    const state: StoreState = { entry, atom: atom<Json>(null), controller: new AbortController(), failed: false };
+    signal.addEventListener('abort', () => state.controller.abort(), { once: true });
+    into.set(entry.name, readable(state.atom));
+    return state;
+  };
+  // Сторы в круге — первыми: их фасады (значение null) уже есть, когда запускаются сторы, которые их читают.
+  cycles.forEach((circle, name) => {
+    const entry = list.find((item) => item.name === name);
+    if (entry === undefined) return;
+    const text = `стор ${name} читает сам себя по кругу: ${circle.join(' → ')}`;
+    failOf(runtime, stateOf(entry))('mount', new ShellError('store-cycle', text));
+  });
+  ordered.forEach((entry) => launch(runtime, stateOf(entry)));
+}
+
 export function pageStores(list: readonly StoreEntry[]): PageStores {
-  return (runtime, into, signal) => {
-    const { ordered, cycles } = orderOf(list);
-    const stateOf = (entry: StoreEntry): StoreState => {
-      const state: StoreState = { entry, atom: atom<Json>(null), controller: new AbortController(), failed: false };
-      signal.addEventListener('abort', () => state.controller.abort(), { once: true });
-      into.set(entry.name, readable(state.atom));
-      return state;
-    };
-    // Сторы в круге — первыми: их фасады (значение null) уже есть, когда запускаются сторы, которые их читают.
-    cycles.forEach((circle, name) => {
-      const entry = list.find((item) => item.name === name);
-      if (entry === undefined) return;
-      const text = `стор ${name} читает сам себя по кругу: ${circle.join(' → ')}`;
-      failOf(runtime, stateOf(entry))('mount', new ShellError('store-cycle', text));
-    });
-    ordered.forEach((entry) => launch(runtime, stateOf(entry)));
+  return (base, signal) => {
+    const into = new Map<string, ReadableStore<Json>>();
+    const runtime = withStores(base, into);
+    launchAll(list, runtime, into, signal);
+    return runtime;
   };
 }

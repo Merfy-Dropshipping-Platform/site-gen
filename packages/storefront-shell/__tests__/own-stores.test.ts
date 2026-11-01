@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineSection, defineStore } from '../src/core/define';
-import { pageStores } from '../src/core/own-stores';
+import { pageStores, type PageStores } from '../src/core/own-stores';
 import { start, type StartedCore } from '../src/core/start';
 import { STORAGE_PREFIX } from '../src/core/storage';
 import { atom, readable } from '../src/core/stores';
@@ -239,23 +239,33 @@ describe('сбой стора не роняет страницу', () => {
 });
 
 describe('видимость и среда', () => {
-  it('стора нет в бандле (выключенное расширение, не опубликован) — сбой секции part-unknown, страница работает', () => {
-    const mount = vi.fn();
-    document.head.innerHTML = configTag('live');
-    placeSection('shop:popup', 'popup-1');
-    placeSection('shop:other', 'other-1');
-    core = start({
-      parts: [],
-      sections: [
-        entry('shop:popup', defineSection({ mount }), { uses: ['store:popups:seen'] }),
-        entry('shop:other', defineSection({ mount })),
-      ],
-    });
-    expect(failures.details.map((item) => [item.section, item.message])).toEqual([
-      ['shop:popup', 'стора popups:seen на странице нет'],
-    ]);
-    expect(mount).toHaveBeenCalledTimes(1);
-  });
+  // Сторов на странице нет совсем — кода сторов в бандле тоже нет, uses "store:…" ядро не знает, как незнакомую часть.
+  it.each<[string, PageStores | undefined, string]>([
+    ['сторов на странице нет', undefined, 'части store:popups:seen на странице нет'],
+    [
+      'есть другие сторы',
+      pageStores([store('shop:other-store', defineStore({ value: 1 }))]),
+      'стора popups:seen на странице нет',
+    ],
+  ])(
+    'стора нет в бандле (выключенное расширение, не опубликован), %s — сбой секции part-unknown, страница работает',
+    (_title, stores, message) => {
+      const mount = vi.fn();
+      document.head.innerHTML = configTag('live');
+      placeSection('shop:popup', 'popup-1');
+      placeSection('shop:other', 'other-1');
+      core = start({
+        parts: [],
+        sections: [
+          entry('shop:popup', defineSection({ mount }), { uses: ['store:popups:seen'] }),
+          entry('shop:other', defineSection({ mount })),
+        ],
+        ...(stores === undefined ? {} : { stores }),
+      });
+      expect(failures.details.map((item) => [item.section, item.message])).toEqual([['shop:popup', message]]);
+      expect(mount).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('ctx стора: хранилище — merfy:s:<имя стора>, события — «<имя стора>:<имя>», таймеры снимает остановка ядра', () => {
     vi.useFakeTimers();

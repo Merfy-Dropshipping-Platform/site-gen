@@ -6,6 +6,7 @@ import { sha256 } from '../../src/canonical';
 import type { CodeAssets } from '../../src/code';
 import type { CodeSection } from '../../src/inputs';
 import { renderShopPage, type RenderedPage } from '../../src/page';
+import { previewCode } from '../../src/preview-bundle';
 import type { PageRender } from '../../src/sections-render';
 import { readShellBuild, type ShellBuild } from '../../src/shell';
 import { changedInputs } from '../support';
@@ -59,8 +60,8 @@ let closeServer: () => Promise<void> = () => Promise.resolve();
 const pages = new Map<string, Uint8Array>();
 let rendered: RenderedPage;
 
-async function renderHome(core: ShellBuild): Promise<RenderedPage> {
-  const inputs = changedInputs((changed) => {
+const inputsOf = (core: ShellBuild) =>
+  changedInputs((changed) => {
     changed.shell = { version: core.version, hash: core.hash, parts: core.parts };
     changed.env = { apiUrl: `${origin}/api`, analyticsUrl: `${origin}/a` };
     changed.code = {
@@ -69,16 +70,34 @@ async function renderHome(core: ShellBuild): Promise<RenderedPage> {
       globals: [],
     };
   });
-  const renders = new Map([[sha256(RENDER_MODULE), RENDER_MODULE]]);
-  const modules = new Map(SECTIONS.map(([, script]): [string, Uint8Array] => [sha256(script), Buffer.from(script)]));
-  const assets: CodeAssets = { shell: core, modules, renders };
-  const render = (): Promise<string> => Promise.resolve(TEMPLATE);
-  const page: PageRender = { sections: { modules: renders, render }, mode: 'live', code: assets };
-  return renderShopPage(inputs, '/', { tokens: novaTokens, render: fakeRender }, page);
+const renders = new Map([[sha256(RENDER_MODULE), RENDER_MODULE]]);
+const render = (): Promise<string> => Promise.resolve(TEMPLATE);
+const assetsOf = (core: ShellBuild): CodeAssets => ({
+  shell: core,
+  modules: new Map(SECTIONS.map(([, script]): [string, Uint8Array] => [sha256(script), Buffer.from(script)])),
+  renders,
+});
+
+async function renderHome(core: ShellBuild): Promise<RenderedPage> {
+  const page: PageRender = { sections: { modules: renders, render }, mode: 'live', code: assetsOf(core) };
+  return renderShopPage(inputsOf(core), '/', { tokens: novaTokens, render: fakeRender }, page);
 }
 
-async function openHome(page: Page): Promise<void> {
-  await page.goto(`${origin}/`);
+// Превью — как его отдаёт сборщик (storefront-builder, shop-preview.ts): страница в режиме preview без бандла, перед
+// </body> — JSON-тег бандла превью и скрипт превью (previewCode).
+async function renderPreview(core: ShellBuild): Promise<Uint8Array> {
+  const inputs = inputsOf(core);
+  const page: PageRender = { sections: { modules: renders, render }, mode: 'preview' };
+  const html = new TextDecoder().decode(
+    (await renderShopPage(inputs, '/', { tokens: novaTokens, render: fakeRender }, page)).file.content,
+  );
+  const { tags } = await previewCode(inputs, assetsOf(core));
+  // Замена функцией: в коде превью есть «$'» и «$&», строкой замены они бы раскрылись.
+  return new TextEncoder().encode(html.replace('</body>', () => `${tags}</body>`));
+}
+
+async function openHome(page: Page, path = '/'): Promise<void> {
+  await page.goto(`${origin}${path}`);
   await page.waitForFunction(() => document.querySelector('[data-ref="offer"]')?.textContent !== '…');
 }
 
@@ -98,8 +117,10 @@ beforeAll(async () => {
       server.closeAllConnections();
       server.close(() => resolve());
     });
-  rendered = await renderHome(await readShellBuild(ROOT));
+  const core = await readShellBuild(ROOT);
+  rendered = await renderHome(core);
   pages.set('/', rendered.file.content);
+  pages.set('/preview', await renderPreview(core));
   if (rendered.bundle !== undefined) pages.set(`/${rendered.bundle.path}`, rendered.bundle.content);
   browser = await chromium.launch();
 });
@@ -153,6 +174,19 @@ describe('свои сторы в Chromium', () => {
     const bundle = rendered.bundle === undefined ? '' : new TextDecoder().decode(rendered.bundle.content);
     expect(bundle).not.toContain('unusedStore');
     expect(bundle).toContain('стор сломался');
+    await page.close();
+  });
+
+  it('превью: сторы считают и читают друг друга, хранилище — в памяти, в браузер ничего не пишется', async () => {
+    const page = await browser.newPage();
+    await openHome(page, '/preview');
+    expect(await page.textContent('[data-ref="offer"]')).toBe('нет');
+    await page.click('[data-action="click"]');
+    await page.click('[data-action="click"]');
+    await page.waitForFunction(() => document.querySelector('[data-ref="offer"]')?.textContent === 'показать');
+    expect(await page.evaluate(() => localStorage.getItem('merfy:s:shop:clicks:count'))).toBeNull();
+    await openHome(page, '/preview');
+    expect(await page.textContent('[data-ref="clicks"]')).toBe('0');
     await page.close();
   });
 });

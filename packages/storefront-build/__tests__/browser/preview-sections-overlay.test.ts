@@ -30,9 +30,29 @@ const WATCH = `window.overlayEvents = [];
     window.overlayEvents.push(name.slice(name.lastIndexOf('-') + 1) + ':' + event.target.getAttribute('data-section-id'));
   }, true);
 });`;
+// Окно с раскладкой, как её даёт ядро (parts/overlay.ts): <merfy-section> — прозрачный слой на весь экран в верхнем слое
+// страницы, окно — корень шаблона по центру; ядро красит корень схемой в @layer base. Здесь ядра нет — его «открыть окно»
+// делает тот же showPopover.
+const LAYER_CSS = `merfy-section[data-overlay]{position:fixed;inset:0;margin:0;border:0;padding:16px;background:transparent;
+width:auto;height:auto;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+merfy-section[data-overlay]:popover-open{display:flex}
+merfy-section[data-overlay] > *{pointer-events:auto}
+@layer base { merfy-section[data-overlay] > * { background-color: #fff } }`;
+const LAYER = `document.addEventListener('${OVERLAY_SHOW_EVENT}', function (event) {
+  var host = event.target;
+  if (host.getAttribute('data-section-id') !== 'window-1') return;
+  host.setAttribute('popover', 'manual');
+  host.hidden = false;
+  if (!host.matches(':popover-open')) host.showPopover();
+}, true);
+document.addEventListener('${OVERLAY_HIDE_EVENT}', function (event) {
+  if (event.target.matches(':popover-open')) event.target.hidePopover();
+  event.target.hidden = true;
+}, true);`;
+const WINDOW_HTML = `<merfy-section data-section="shop:window" data-section-id="window-1" data-overlay hidden><div data-root style="width:448px;height:200px"><h2>Окно</h2></div></merfy-section>`;
 const FRAME_HTML =
-  `<!doctype html><html><head><meta charset="utf-8"><script>${WATCH}</script></head><body style="margin:0">` +
-  `<main>${sectionHtml('hero', 'hero-1', false)}</main>${sectionHtml('promo', 'promo-1', true)}${sectionHtml('chat', 'chat-1', true)}` +
+  `<!doctype html><html><head><meta charset="utf-8"><style>${LAYER_CSS}</style><script>${WATCH}${LAYER}</script></head><body style="margin:0">` +
+  `<main>${sectionHtml('hero', 'hero-1', false)}</main>${sectionHtml('promo', 'promo-1', true)}${sectionHtml('chat', 'chat-1', true)}${WINDOW_HTML}` +
   `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script></body></html>`;
 const PARENT_HTML = `<!doctype html><html><body><iframe id="preview" src="${FRAME}" style="width:1200px;height:800px"></iframe><script>
 window.received = [];
@@ -47,7 +67,10 @@ const send = (message: unknown): Promise<void> => page.evaluate((value) => windo
 const ready = async (): Promise<boolean> =>
   (await page.evaluate(() => window.received)).some((message) => message.type === 'ready');
 const overlayEvents = (): Promise<string[]> =>
-  page.frameLocator('#preview').locator('body').evaluate(() => window.overlayEvents.splice(0));
+  page
+    .frameLocator('#preview')
+    .locator('body')
+    .evaluate(() => window.overlayEvents.splice(0));
 const select = (sectionId: string | null): Promise<void> => send({ type: 'set-selection', sectionId, actions: {} });
 
 beforeAll(async () => {
@@ -87,6 +110,45 @@ describe('окно поверх страницы в превью', () => {
     expect(await eventsAfter(() => select('chat-1'), 2)).toEqual(['hide:promo-1', 'show:chat-1']);
     expect(await eventsAfter(() => select('hero-1'), 1)).toEqual(['hide:chat-1']);
     expect(await eventsAfter(() => select(null), 0)).toEqual([]);
+  });
+
+  it('рамка и подпись выбора — по окну (корню шаблона) внутри слоя, а не по слою на весь экран; «Удалить» нажимается', async () => {
+    await eventsAfter(() => select('window-1'), 1);
+    const preview = page.frameLocator('#preview');
+    const look = await preview.locator('body').evaluate(() => {
+      const selection = document.getElementById('merfy-selection');
+      const root = document.querySelector('[data-section-id="window-1"] > [data-root]');
+      const box = (node: Element | null) => {
+        const rect = node?.getBoundingClientRect();
+        return rect
+          ? [Math.round(rect.left), Math.round(rect.top), Math.round(rect.width), Math.round(rect.height)]
+          : [];
+      };
+      return {
+        frame: box(selection),
+        window: box(root),
+        inLayer: selection?.parentElement?.getAttribute('data-section-id') ?? null,
+        background: selection ? getComputedStyle(selection).backgroundColor : '',
+      };
+    });
+    expect(look).toEqual({
+      frame: [376, 300, 448, 200],
+      window: [376, 300, 448, 200],
+      inLayer: 'window-1',
+      background: 'rgba(0, 0, 0, 0)',
+    });
+    await preview.locator('#merfy-selection [data-merfy-delete]').click();
+    await expect
+      .poll(async () => (await page.evaluate(() => window.received)).at(-1))
+      .toEqual({
+        type: 'delete-block',
+        blockId: 'window-1',
+      });
+    // Выбор секции страницы — рамка снова в body, вокруг секции.
+    await eventsAfter(() => select('hero-1'), 1);
+    expect(
+      await preview.locator('body').evaluate(() => document.getElementById('merfy-selection')?.parentElement?.tagName),
+    ).toBe('BODY');
   });
 
   it('правка выбранного окна (update-block без кода) — новый узел получает show', async () => {

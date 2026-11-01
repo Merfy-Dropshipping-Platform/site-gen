@@ -48,7 +48,8 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var CONTROLS = 'button, input, select, textarea, label[for], [data-action]';
   // «Ошибка в скрипте секции «» — escape-последовательностями, как подсказки кнопок рамки.
   var SCRIPT_ERROR = '\\u041e\\u0448\\u0438\\u0431\\u043a\\u0430 \\u0432 \\u0441\\u043a\\u0440\\u0438\\u043f\\u0442\\u0435 \\u0441\\u0435\\u043a\\u0446\\u0438\\u0438 \\u00ab';
-  var STYLE = '#merfy-selection{position:absolute;display:none;pointer-events:none;box-sizing:border-box;border:2px solid #88b0da;z-index:2147483646}'
+  // Рамка окна лежит в его слое (frameBox): фон, отступы и размеры, которые слой даёт корню окна, рамке не нужны.
+  var STYLE = '#merfy-selection{position:absolute;display:none;pointer-events:none;box-sizing:border-box;margin:0;padding:0;max-width:none;background:none;border:2px solid #88b0da;z-index:2147483646}'
     + '#merfy-selection [data-merfy-label]{position:absolute;left:-2px;top:-26px;display:flex;align-items:center;gap:8px;height:24px;padding:0 8px;border-radius:8px 8px 0 0;background:#181818;color:#c3c3c3;font:500 12px/24px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:auto;white-space:nowrap}'
     + '#merfy-selection [data-merfy-delete],#merfy-selection [data-merfy-duplicate]{display:flex;align-items:center;gap:4px;border:0;padding:0;background:none;color:inherit;font:inherit;cursor:pointer}'
     + '[data-merfy-block][data-merfy-block-hint]{outline:2px solid #cfdff0 !important;outline-offset:2px}'
@@ -170,17 +171,36 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       frame.style.display = 'none';
       return;
     }
-    var rect = section.getBoundingClientRect();
     var name = section.getAttribute('data-section') || '';
+    var box = frameBox(section);
+    if (frame.parentNode !== box.layer) box.layer.appendChild(frame);
     frame.style.display = 'block';
-    frame.style.top = rect.top + window.scrollY + 'px';
-    frame.style.left = rect.left + window.scrollX + 'px';
-    frame.style.width = rect.width + 'px';
-    frame.style.height = rect.height + 'px';
+    frame.style.top = box.top + 'px';
+    frame.style.left = box.left + 'px';
+    frame.style.width = box.width + 'px';
+    frame.style.height = box.height + 'px';
     frame.querySelector('[data-merfy-name]').textContent = labels[name] || name;
-    // У верхнего края страницы подпись — внутри рамки: над рамкой её не видно и «Удалить» не нажать.
+    // У верхнего края страницы (или слоя окна) подпись — внутри рамки: над рамкой её не видно и «Удалить» не нажать.
     var label = frame.querySelector('[data-merfy-label]');
-    label.style.top = rect.top + window.scrollY < label.offsetHeight + 2 ? '0' : '';
+    label.style.top = box.top < label.offsetHeight + 2 ? '0' : '';
+  }
+  // Что обводит рамка и в каком слое она лежит. Секция страницы — сама секция, рамка в body по координатам документа.
+  // Окно поверх страницы (01.11) — корень шаблона: <merfy-section> окна — прозрачный слой на весь экран в верхнем слое
+  // страницы, и рамка в body была бы вокруг экрана и под окном и подложкой. Поэтому рамка окна — внутри его слоя, по
+  // координатам раскладки корня (offset*): с ними рамку масштабирует та же анимация, что и окно.
+  function frameBox(section) {
+    var root = section.hasAttribute(OVERLAY_ATTRIBUTE) ? section.firstElementChild : null;
+    if (root && root !== frame) {
+      return { layer: section, top: root.offsetTop, left: root.offsetLeft, width: root.offsetWidth, height: root.offsetHeight };
+    }
+    var rect = section.getBoundingClientRect();
+    return {
+      layer: document.body,
+      top: rect.top + window.scrollY,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+      height: rect.height,
+    };
   }
   // Окно поверх страницы (01.11): выбранная секция с data-overlay — ядру «открыть окно», чтобы мерчант видел и правил
   // его; прежняя — «закрыть». Повтор для той же секции (после замены) ядро открывает заново или оставляет открытым.

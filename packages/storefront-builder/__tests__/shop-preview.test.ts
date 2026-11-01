@@ -193,7 +193,7 @@ describe('превью одного блока', () => {
     expect(blockAnswerSchema.parse(JSON.parse(plain.body)).html).not.toContain('data-role');
   });
 
-  it('окно поверх страницы (01.11) — data-overlay и hidden на обёртке, как у полного рендера', async () => {
+  it('окно поверх страницы (01.11) — data-overlay и hidden на обёртке; отступы — корню окна вариантом *:', async () => {
     const promo: CurrentSection = {
       name: 'shop:promo',
       manifest: { sdk: 1, name: 'promo', kind: 'section', title: 'Скидка', groups: ['overlay'], settings: [] },
@@ -201,11 +201,21 @@ describe('превью одного блока', () => {
       renderHash: HASH,
     };
     const { deps } = depsOf(new Map([[promo.name, promo]]));
-    const answer = await sectionPreview(deps, SHOP, block({ id: 'promo-1', section: 'shop:promo', settings: {} }));
-    expect(answer.status).toBe(200);
-    expect(blockAnswerSchema.parse(JSON.parse(answer.body)).html).toMatch(
-      /^<merfy-section data-section="shop:promo" data-section-id="promo-1" data-overlay hidden class="py-section">/,
+    const plain = await sectionPreview(deps, SHOP, block({ id: 'promo-1', section: 'shop:promo', settings: {} }));
+    expect(plain.status).toBe(200);
+    expect(blockAnswerSchema.parse(JSON.parse(plain.body)).html).toMatch(
+      /^<merfy-section data-section="shop:promo" data-section-id="promo-1" data-overlay hidden class="\*:py-section">/,
     );
+    const edited = {
+      id: 'promo-1',
+      section: 'shop:promo',
+      settings: {},
+      wrapper: { padding: { top: 40, bottom: 24 } },
+    };
+    const answer = blockAnswerSchema.parse(JSON.parse((await sectionPreview(deps, SHOP, block(edited))).body));
+    expect(answer.html).toContain('data-overlay hidden class="*:pt-10 *:pb-6"');
+    // CSS класса с вариантом — правило для прямых детей обёртки, то есть корня шаблона.
+    expect(answer.css).toMatch(/\\\*\\:pt-10 \{\s*:is\(& > \*\) \{\s*padding-top:/);
   });
 
   it('тело не по форме — 400; секции у магазина нет — 404; расширения не ответили — 502', async () => {

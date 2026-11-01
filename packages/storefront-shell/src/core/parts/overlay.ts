@@ -44,8 +44,11 @@ const ok = (): Result<NoData> => ({ ok: true, data: {} });
 // корень шаблона: ширину задают его классы (w-full max-w-md — до 28rem, не шире слоя), без них — по содержимому; у
 // шторки корень во всю ширину. Слой — колонка flex, поэтому w-full корня считается от слоя, а не от ширины по содержимому
 // (у popover браузер ставит fit-content). display — только у :popover-open: без popover окно остаётся hidden. Телефон —
-// до 48rem, как у панели фильтров каталога (behaviors/catalog-list.ts). Функцией, а не значением модуля: модуль без окон
-// на странице не оставляет в бандле ядра ничего.
+// до 48rem, как у панели фильтров каталога (behaviors/catalog-list.ts). Общие настройки секции — окну: правила слоя вне
+// слоёв CSS главнее покраски схемы (@layer base) и отступов (@layer utilities) на обёртке, поэтому слой прозрачен и без
+// отступов; токены схемы корень наследует, и ядро красит его так же, как токены красят секцию, — в @layer base, где
+// классы шаблона (bg-*, text-*) главнее; отступы сборщик ставит корню вариантом `*:` (wrapper.ts пакета секций).
+// Функцией, а не значением модуля: модуль без окон на странице не оставляет в бандле ядра ничего.
 const OVERLAY = 'merfy-section[data-overlay]';
 const FULL_WIDTH = 'width:100%;max-width:none';
 const cssText = (): string => `:where(${OVERLAY}){border:0;padding:0;color:inherit;background:transparent}\
@@ -60,7 +63,8 @@ ${OVERLAY}[data-position="corner"][data-side="left"]{align-items:flex-start}\
 [${BACKDROP_ATTRIBUTE}]{position:fixed;inset:0;width:auto;height:auto;margin:0;padding:0;border:0;background:transparent}\
 [${BACKDROP_ATTRIBUTE}][data-dim]{background:rgb(0 0 0 / 0.5)}\
 @media (max-width:47.99rem){${OVERLAY}[data-position="corner"]{inset:auto 0 0 0;align-items:stretch}\
-${OVERLAY}[data-position="corner"]>*{${FULL_WIDTH}}}`;
+${OVERLAY}[data-position="corner"]>*{${FULL_WIDTH}}}\
+@layer base{${OVERLAY}>*{background-color:var(--background);color:var(--foreground)}}`;
 
 interface Placement {
   readonly position: OverlayPosition;

@@ -367,7 +367,9 @@ export function wrapperOf(
   current: CurrentSection,
   context?: Pick<CodeContext, 'log' | 'shopId'>,
 ): Pick<CodeInstance, 'wrapper'> {
-  const resolved = resolveWrapperView(current.manifest, instance.wrapper);
+  // У окна поверх страницы общие настройки — окну, корню шаблона (wrapper.ts пакета секций).
+  const target = isOverlaySection(current.manifest) ? 'window' : 'section';
+  const resolved = resolveWrapperView(current.manifest, instance.wrapper, target);
   if (resolved.invalid.length > 0 && context !== undefined)
     context.log('section-wrapper-invalid', {
       shopId: context.shopId,

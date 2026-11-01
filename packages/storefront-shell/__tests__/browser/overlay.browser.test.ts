@@ -239,6 +239,47 @@ describe('ширина окна по классам шаблона', () => {
   });
 });
 
+// Общие настройки секции на обёртке окна — как их ставит сборщик (wrapper.ts пакета секций): класс схемы и отступы с
+// вариантом *:. CSS — как у токенов nova (переменные схемы и покраска в @layer base) и Tailwind (preflight с border-box,
+// вложенное правило *:).
+const SCHEMED = `@layer theme, base, components, utilities;
+:root, .color-scheme-1 { --background: #ffffff; --foreground: #111111 }
+.color-scheme-2 { --background: #123456; --foreground: #fafafa }
+@layer base { *, ::before, ::after { box-sizing: border-box }
+  :root, .color-scheme-1, .color-scheme-2 { background-color: var(--background); color: var(--foreground) } }
+@layer utilities { .w-full { width: 100% } .max-w-md { max-width: 28rem } .p-6 { padding: 1.5rem }
+  .py-section { padding-block: 4rem }
+  .\\*\\:pt-10 { :is(& > *) { padding-top: 2.5rem } } .\\*\\:pb-6 { :is(& > *) { padding-bottom: 1.5rem } } }`;
+const SCHEMED_BODY = `<merfy-section data-section="shop:promo" data-section-id="s" data-overlay hidden class="color-scheme-2 *:pt-10 *:pb-6">
+  <div class="w-full max-w-md p-6"><h2 id="s-title">Скидка 10%</h2><button id="s-ok">Забрать</button></div>
+</merfy-section>`;
+
+describe('общие настройки секции у окна', () => {
+  it('«Цветовая схема» и «Отступы» — у окна (корня шаблона); слой прозрачный, ширина по классам корня', async () => {
+    const { page, errors } = await open({ body: SCHEMED_BODY, css: SCHEMED, reducedMotion: true });
+    await call(page, 's', 'open');
+    const look = await page.$eval('[data-section-id="s"]', (host) => {
+      const root = host.firstElementChild;
+      const layer = getComputedStyle(host);
+      const box = root === null ? null : getComputedStyle(root);
+      const hit = document.elementFromPoint(8, 8);
+      return {
+        layer: [layer.backgroundColor, layer.paddingTop],
+        window: [box?.backgroundColor, box?.color, box?.paddingTop, box?.paddingBottom, box?.paddingLeft],
+        hit: hit?.hasAttribute('data-merfy-overlay-backdrop') ?? false,
+      };
+    });
+    expect(look).toEqual({
+      layer: ['rgba(0, 0, 0, 0)', '16px'],
+      window: ['rgb(18, 52, 86)', 'rgb(250, 250, 250)', '40px', '24px', '24px'],
+      hit: true,
+    });
+    expect(await windowRect(page, 's')).toMatchObject({ left: (1280 - 448) / 2, width: 448 });
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+});
+
 describe('движение', () => {
   it('переход окна и подложки — 200 мс; «уменьшить движение» — без анимаций', async () => {
     const moving = await open();

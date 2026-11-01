@@ -89,3 +89,17 @@ describe('wrapperView', () => {
     }
   });
 });
+
+describe('wrapperView окна поверх страницы (01.11)', () => {
+  it('отступы — корню шаблона, вариантом *:; схема — классом на обёртке; без правки — *:py-section, не умолчание', () => {
+    expect(wrapperView(BOTH, { scheme: 'scheme-2', padding: { top: 40, bottom: 24 } }, 'window').classes).toEqual([
+      'color-scheme-2',
+      '*:pt-10',
+      '*:pb-6',
+    ]);
+    const plain = wrapperView(BOTH, {}, 'window');
+    expect(plain.classes).toEqual(['*:py-section']);
+    expect(isDefaultWrapperView(plain)).toBe(false);
+    expect(wrapperView(['scheme'], { scheme: 'scheme-1' }, 'window').classes).toEqual(['color-scheme-1']);
+  });
+});

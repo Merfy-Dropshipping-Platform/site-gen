@@ -18,6 +18,7 @@ import {
 } from '@merfy/storefront-config';
 import {
   currentSection,
+  isOverlaySection,
   propsUsesOf,
   resolveSectionBlocks,
   resolveSectionSettings,
@@ -279,6 +280,8 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   ...(current.manifest.removable === undefined ? {} : { removable: current.manifest.removable }),
   // Блок 12, часть 12а: роль секции — только если объявлена, иначе входы и ключ прежние.
   ...(current.manifest.role === undefined ? {} : { role: current.manifest.role }),
+  // 01.11: окно поверх страницы — только у такой секции, иначе входы и ключ прежние.
+  ...(isOverlaySection(current.manifest) ? { overlay: true as const } : {}),
   // uses с модулями SDK (часть 5в блока 5): во входы сборки — только theme и shop, модули идут через script_meta.
   ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),
   // Свои токены секции (блок 4, Р4-10) — только если объявлены в section.json.

@@ -283,3 +283,21 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 `records` (часть 12е) — свой код ядра, как `points`: записи расширений в «Моих заказах» отдельным списком в месте
 `orders`, страница записи — `/account/orders?ext=<id>&id=<запись>`; функции — `orders.list` и `orders.get` карты, с
 токеном покупательницы. Рантайма theme-base нет.
+
+## Окна поверх страницы: `ctx.overlay` (01.11)
+
+- Секция без роли с `"groups": ["overlay"]` — окно. Сборка ставит на обёртку `data-overlay` и `hidden`
+  (`OVERLAY_ATTRIBUTE` в `@merfy/shell/roles`): до `open()` окна не видно, и без ядра тоже. Часть `overlay`
+  (`src/core/parts/overlay.ts`) — в бандле только страниц с такой секцией (`overlayPartsOf` сборки), в `core.json` её
+  нет; её доля — до 3 КБ brotli (`__tests__/overlay-budget.test.ts`), ядро без неё — в прежнем бюджете.
+- `ctx.overlay.open({ position, side, backdrop })` → `Result`: `center` (умолчание) и `sheet` — модальные: `role="dialog"`,
+  `aria-modal`, подложка-popover под окном (клик — закрыть, `backdrop` — затемнение), фокус внутрь и по кругу на Tab,
+  запрет прокрутки (`src/core/scroll-lock.ts`, общий с поведением `dialog`); `corner` — немодальное, справа или слева
+  внизу, на телефоне (уже 48rem) — шторкой снизу. Модальное — одно на страницу, угловое — одно; второе — `refused`.
+  Неверные параметры — `invalid` и строка в консоли; браузер без popover — `refused`.
+- Закрытие: `data-action="overlay.close"` (действие получает `<merfy-section>` — 4-й аргумент `MarkupAction.call`), Esc,
+  клик мимо модального окна, `ctx.overlay.close()`; фокус — назад, событие `merfy:overlay:close` с
+  `{ section, id, reason }`. «Уменьшить движение» — без анимаций (окно и подложка — 200 мс, уход — 150 мс, WAAPI).
+- Превью: выбор секции в конструкторе — `OVERLAY_SHOW_EVENT` на её `<merfy-section>` от скрипта секций превью, ядро
+  открывает окно с параметрами последнего `open()`, фокус не берёт; снятие выбора — `OVERLAY_HIDE_EVENT`.
+- Тесты: `__tests__/overlay.test.ts` (jsdom, popover подставлен) и `__tests__/browser/overlay.browser.test.ts` (Chromium).

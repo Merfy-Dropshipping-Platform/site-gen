@@ -1,3 +1,4 @@
+import { lockScroll as lockPageScroll, unlockScroll as unlockPageScroll } from '../scroll-lock';
 import type { Animation, EasingName, Keyframes } from '../types';
 import { animateNode } from './motion';
 import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
@@ -73,20 +74,9 @@ const TRANSITIONS: Readonly<Record<string, (side: string) => TransitionSpec>> = 
 
 const transitionOf = (name: string, side: string): TransitionSpec => (TRANSITIONS[name] ?? TRANSITIONS.drawer)(side);
 
-// Запрет прокрутки (Р6-7): счётчик открытых окон страницы, прежнее значение возвращается после последнего.
-let lockCount = 0;
-let previousOverflow = '';
-
-function lockScroll(): void {
-  if (lockCount === 0) previousOverflow = document.documentElement.style.overflow;
-  lockCount += 1;
-  document.documentElement.style.overflow = 'hidden';
-}
-
-function unlockScroll(): void {
-  lockCount = Math.max(0, lockCount - 1);
-  if (lockCount === 0) document.documentElement.style.overflow = previousOverflow;
-}
+// Запрет прокрутки (Р6-7): счётчик окон страницы — общий с окнами поверх страницы ядра (scroll-lock.ts).
+const lockScroll = (): void => lockPageScroll(document);
+const unlockScroll = (): void => unlockPageScroll(document);
 
 type BoxState = 'closed' | 'opening' | 'open' | 'closing';
 type Anchor = 'section' | 'header' | 'cart';

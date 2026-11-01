@@ -86,6 +86,9 @@ const codeSectionSchema = z.strictObject({
   // Роль секции из section.json (блок 12 «Секций и SDK», 12.1) — только если объявлена: data-role на обёртке, ошибка
   // рендера — ошибка сборки.
   role: z.enum(SECTION_ROLES).optional(),
+  // Окно поверх страницы (01.11): секция без роли в группе overlay — data-overlay и hidden на обёртке, часть overlay в
+  // бандле страницы. Только у такой секции, иначе входы и ключ прежние.
+  overlay: z.literal(true).optional(),
   // Блок 8 «Секций и SDK», часть 8г: поля с записями (id настройки → вид) и data для скрипта — только если объявлены.
   recordFields: z.record(z.string().min(1), z.enum(RECORD_FIELD_KINDS)).optional(),
   // Поля с записями в типах блоков (базовые секции, 29.10): тип блока → id поля → вид; только если объявлены.

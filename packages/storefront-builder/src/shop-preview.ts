@@ -27,6 +27,7 @@ import {
   type ShopTheme,
 } from '@merfy/storefront-build';
 import {
+  isOverlaySection,
   propsUsesOf,
   resolveSectionBlocks,
   resolveSectionSettings,
@@ -289,6 +290,8 @@ function previewPlaced(
     // Роль секции (блок 12, 12.1): data-role на обёртке и у одиночного блока — роль из манифеста секции, тот же
     // источник, что у полного рендера страницы; без неё вставленную секцию не находит ядро витрины.
     ...(current.manifest.role === undefined ? {} : { role: current.manifest.role }),
+    // 01.11: окно поверх страницы — data-overlay и hidden, как у полного рендера: окно открывает выбор секции в превью.
+    ...(isOverlaySection(current.manifest) ? { overlay: true as const } : {}),
     ...wrapperOf(instance, current),
     ...sectionRecordKeys(current.manifest),
     ...blocks,

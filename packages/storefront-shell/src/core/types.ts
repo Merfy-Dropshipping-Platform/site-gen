@@ -141,6 +141,8 @@ export interface EventMap {
   // Готовые поведения countdown и scratch: какая секция (имя и id экземпляра), как у merfy:section:error.
   'merfy:countdown:end': { readonly section: string; readonly id: string };
   'merfy:scratch:done': { readonly section: string; readonly id: string };
+  // 01.11: окно секции поверх страницы закрылось — имя и id секции, причина.
+  'merfy:overlay:close': { readonly section: string; readonly id: string; readonly reason: OverlayCloseReason };
 }
 export type EventName = keyof EventMap;
 export type EventDetail<E extends EventName> = EventMap[E];
@@ -466,6 +468,24 @@ export type ExtUse = `ext:${string}`;
 // страницы, те же, что у шаблона в Astro.props.theme. Только чтение; нет значения — undefined.
 export type ThemeSettings = NonNullable<StorefrontConfig['theme']['settings']>;
 
+// Окно поверх страницы — ctx.overlay (01.11): секция без роли в группе overlay открывается окном. Поведение окна — у ядра
+// (parts/overlay.ts): center и sheet — модальные (role="dialog", aria-modal, фокус внутри, Esc, запрет прокрутки), таких
+// открыто не больше одного; corner — немодальное, одно, может стоять рядом с модальным; на телефоне corner — шторкой снизу.
+export type OverlayPosition = 'center' | 'corner' | 'sheet';
+export interface OverlayOptions {
+  readonly position?: OverlayPosition; // по умолчанию 'center'
+  readonly side?: 'left' | 'right'; // угол у corner, по умолчанию 'right'
+  readonly backdrop?: boolean; // затемнение страницы у center и sheet, по умолчанию true; у corner фона нет
+}
+// Почему окно закрылось: button — data-action="overlay.close", escape — Esc, backdrop — клик мимо окна, code —
+// ctx.overlay.close().
+export type OverlayCloseReason = 'button' | 'escape' | 'backdrop' | 'code';
+export interface OverlayWindow {
+  readonly $open: ReadableStore<boolean>;
+  open(options?: OverlayOptions): Result<NoData>; // уже открыто — ok, параметры прежние
+  close(): Result<NoData>; // уже закрыто — ok
+}
+
 // Анимация кода секции — ctx.animate (блок 6, design.md раздел 10): Motion внутри SDK, код секции его не импортирует.
 // Кривая — по имени (значения — EASINGS в behaviors/catalog.ts) или массивом Безье; свойства — из списка keyframes.ts.
 export type EasingName =
@@ -519,6 +539,8 @@ export interface BaseCtx<State extends object> {
   readonly ext: Readonly<Record<string, ExtModule>>;
   // Блок 9, часть 9б: сквозные настройки темы страницы — ctx.theme['cart-type']; читать в момент действия.
   readonly theme: Readonly<ThemeSettings>;
+  // 01.11: окно секции поверх страницы (группа overlay без роли); у остальных секций и глобальных скриптов — null.
+  readonly overlay: OverlayWindow | null;
 }
 
 export type Ctx<State extends object = Record<string, unknown>, Uses extends ModuleName = ModuleName> = BaseCtx<State> &
@@ -539,7 +561,13 @@ export interface SectionDef<State extends object = Record<string, unknown>, Uses
 export interface MarkupAction<Api> {
   readonly params: readonly string[]; // ['product-id', 'quantity'] — без префикса data-
   // event — событие нажатия (блок 10, Р10а-4): cart.open и cart.checkout отменяют переход по ссылке до первого await.
-  call(api: Api, values: Readonly<Record<string, string>>, event?: SectionEvent): Promise<Result<unknown>>;
+  // section — <merfy-section> элемента с data-action (01.11: overlay.close закрывает окно своей секции).
+  call(
+    api: Api,
+    values: Readonly<Record<string, string>>,
+    event?: SectionEvent,
+    section?: HTMLElement,
+  ): Promise<Result<unknown>>;
 }
 
 // Экземпляр для кода платформы (готовое поведение блока 6): узел, режим и сигнал снятия.

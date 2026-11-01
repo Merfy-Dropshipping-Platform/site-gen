@@ -2,7 +2,14 @@ import { SECTION_ROLES as SHELL_ROLES } from '@merfy/shell/roles';
 import { OVERLAY_LIST as BUILD_OVERLAY_LIST, SPECIAL_PAGE_IDS } from '@merfy/storefront-build';
 import { describe, expect, it } from 'vitest';
 import { authorProblems } from '../src/author-rules';
-import { readManifest, sectionGroupsOf, sectionLimitOf, sectionListAllowed, type SectionManifest } from '../src/format';
+import {
+  isOverlaySection,
+  readManifest,
+  sectionGroupsOf,
+  sectionLimitOf,
+  sectionListAllowed,
+  type SectionManifest,
+} from '../src/format';
 import { prepareSection } from '../src/prepare';
 import { PROBLEM_CODES } from '../src/problems';
 import { OVERLAY_LIST, ROLE_PLACES, SECTION_ROLES, roleKeysOf } from '../src/roles';
@@ -73,8 +80,7 @@ describe('role в section.json', () => {
     expect(codesOf({ role: 'search', limit: 2 })).toEqual(['role-place']);
   });
 
-  it('группа overlay без роли — role-place; неизвестная роль — role-unknown со списком ролей', () => {
-    expect(codesOf({ groups: ['overlay'] })).toEqual(['role-place']);
+  it('неизвестная роль — role-unknown со списком ролей', () => {
     const unknown = read({ role: 'minicart' });
     expect(unknown.ok ? [] : unknown.problems).toEqual([problemLike('role-unknown', 'cart-drawer')]);
   });
@@ -85,6 +91,40 @@ describe('role в section.json', () => {
       ['manifest-invalid', 'role: у глобального скрипта нет места на странице'],
     ]);
   });
+});
+
+// Окно поверх страницы (01.11): секция без роли в группе overlay — только в ней; роль в overlay — как раньше.
+describe('окно поверх страницы — секция без роли в overlay', () => {
+  it('groups: ["overlay"] без роли — принимается, это окно; overlay вместе с page — overlay-place', () => {
+    const window = manifestOf({ groups: ['overlay'] });
+    expect([
+      isOverlaySection(window),
+      sectionListAllowed(window, 'overlay'),
+      sectionListAllowed(window, 'home'),
+    ]).toEqual([true, true, false]);
+    const mixed = read({ groups: ['overlay', 'page'] });
+    expect(mixed.ok ? [] : mixed.problems).toEqual([problemLike('overlay-place', 'группа overlay без header')]);
+    expect(PROBLEM_CODES).toContain('overlay-place');
+  });
+
+  it('секция с ролью поверх страницы и секция страницы — не окна', () => {
+    expect(isOverlaySection(manifestOf({ role: 'cart-drawer' }))).toBe(false);
+    expect(isOverlaySection(manifestOf({ role: 'cart-drawer', groups: ['overlay'] }))).toBe(false);
+    expect(isOverlaySection(manifestOf({ groups: ['page', 'footer'] }))).toBe(false);
+  });
+
+  it('приём: окно у секции магазина и у секции расширения — без отказов; роль у расширения — по-прежнему отказ', async () => {
+    const files = (extra: Record<string, unknown>) => ({
+      'section.json': manifestText(extra),
+      'template.astro': '<div class="p-4"><h2>Скидка</h2><button data-action="overlay.close">Закрыть</button></div>',
+    });
+    for (const prefix of ['shop', 'reviews']) {
+      const result = await prepareSection({ prefix, files: files({ groups: ['overlay'] }) });
+      expect(result.ok ? [] : result.problems.map((item) => item.code)).toEqual([]);
+    }
+    const role = await prepareSection({ prefix: 'reviews', files: files({ role: 'cart-drawer' }) });
+    expect(role.ok ? [] : role.problems.map((item) => item.code)).toEqual(['role-not-allowed']);
+  }, 30_000);
 });
 
 describe('список ревизии и место секции', () => {

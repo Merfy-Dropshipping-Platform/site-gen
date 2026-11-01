@@ -188,7 +188,9 @@
 - `role` в `section.json` — одна из семи ролей платформы (`src/roles.ts`, список — `@merfy/shell/roles`): `cart`,
   `cart-drawer`, `cart-added`, `login`, `search`, `notices`, `cookie-banner`. Роль задаёт место — особая страница
   (`page-cart`, `page-login`) или группа `overlay` «Поверх страницы» — и один экземпляр; `groups` и `limit` не нужны.
-- Отказы: `role-unknown` — роль не из списка; `role-place` — `groups`/`limit` не по роли или `overlay` без роли;
+- Окно поверх страницы (01.11): секция без роли с `"groups": ["overlay"]` — окно, его открывает скрипт `ctx.overlay`
+  (`isOverlaySection`); `overlay` вместе с `header`, `page` или `footer` — `overlay-place`.
+- Отказы: `role-unknown` — роль не из списка; `role-place` — `groups`/`limit` не по роли;
   `role-not-allowed` — роль у секции расширения; `ext-foreign` — `ext:<чужой id>` в `uses` секции расширения;
   `role-taken` — в магазине уже есть секция с этой ролью (приём, `registry.ts`): правят её новой версией.
 - Второй экземпляр секции с ролью в ревизии — ошибка записи `role-duplicate` в `sites` (`src/content/section-roles.ts`).

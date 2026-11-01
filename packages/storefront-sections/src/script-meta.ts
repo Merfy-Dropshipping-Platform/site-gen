@@ -25,11 +25,13 @@ export const isSdkModule = (value: string): value is SdkModule => MODULE_NAMES.s
 
 const sorted = <T extends string>(values: readonly T[]): T[] => [...new Set(values)].sort();
 
-// Модуль действия SDK в разметке: «click:cart.add» → cart; своё действие и незнакомое имя — ничего.
+// Модуль действия SDK в разметке: «click:cart.add» → cart; своё действие и незнакомое имя — ничего. overlay.close
+// (01.11) — действие окна поверх страницы: не модуль, его часть в бандл ставит сборка по месту секции.
 function markupModules(markup: TemplateMarkup): SdkModule[] {
   return markup.actions.flatMap((token) => {
     const name = token.name.split(':').at(-1) ?? '';
-    return isActionName(name) ? [ACTIONS[name].module] : [];
+    const module = isActionName(name) ? ACTIONS[name].module : '';
+    return isSdkModule(module) ? [module] : [];
   });
 }
 

@@ -8,6 +8,7 @@ import { consent } from '../src/core/parts/consent';
 import { favorites } from '../src/core/parts/favorites';
 import { newsletter } from '../src/core/parts/newsletter';
 import { orders } from '../src/core/parts/orders';
+import { overlay } from '../src/core/parts/overlay';
 import { search } from '../src/core/parts/search';
 import { share } from '../src/core/parts/share';
 import { variants } from '../src/core/parts/variants';
@@ -24,6 +25,7 @@ const PARTS: readonly SdkPart<string, unknown>[] = [
   favorites,
   newsletter,
   orders,
+  overlay,
   search,
   share,
   variants,
@@ -58,6 +60,7 @@ describe('таблица действий', () => {
       'orders.cancel',
       'orders.get',
       'orders.list',
+      'overlay.close',
       'search.open',
       'share.copy',
       'share.page',

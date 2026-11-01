@@ -15,6 +15,13 @@ export const ROLE_ATTRIBUTE = 'data-role';
 
 export const isSectionRole = (value: unknown): value is SectionRole => SECTION_ROLES.some((role) => role === value);
 
+// Окно поверх страницы (01.11): секция без роли в группе overlay. Сборка ставит на обёртку экземпляра data-overlay и
+// hidden — до запуска ядра окна не видно; ядро находит окно по атрибуту и даёт его скрипту ctx.overlay (parts/overlay.ts).
+export const OVERLAY_ATTRIBUTE = 'data-overlay';
+// Имя части окон в ядре и в таблице действий (overlay.close). Здесь, а не в action-catalog.ts: таблица действий с текстами
+// в бандл страницы не идёт.
+export const OVERLAY_PART = 'overlay';
+
 // Экземпляр секции с этой ролью на странице; нет — null. Экземпляр на роль один (role-duplicate), берётся первый.
 export const roleSection = (root: ParentNode, role: SectionRole): HTMLElement | null =>
   root.querySelector<HTMLElement>(`merfy-section[${ROLE_ATTRIBUTE}="${role}"]`);

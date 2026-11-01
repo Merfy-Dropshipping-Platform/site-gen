@@ -1,5 +1,6 @@
 import { MOTION_CSS, MOTION_HEAD_SCRIPT } from '@merfy/shell/behaviors/motion-css';
 import { EXT_POINTS, EXT_POINT_PARTS, type ExtPointPart } from '@merfy/shell/ext-points';
+import { OVERLAY_PART } from '@merfy/shell/roles';
 import {
   EXT_USE_PREFIX,
   type ExtensionPoints,
@@ -170,13 +171,18 @@ export function globalClasses(inputs: BuildInputs): string[] {
 
 // removable и uses секции (часть 4 блока 1) и классы её скрипта (часть 5в блока 5) — из кода магазина по имени: у
 // секции без них ключей нет.
-function placeFlags(inputs: BuildInputs, name: string): Pick<PlacedSection, 'removable' | 'uses' | 'classes' | 'role'> {
+function placeFlags(
+  inputs: BuildInputs,
+  name: string,
+): Pick<PlacedSection, 'removable' | 'uses' | 'classes' | 'role' | 'overlay'> {
   const section = inputs.code.sections.find((candidate) => candidate.name === name);
   const classes = section?.meta?.classes ?? [];
   return {
     ...(section?.removable === undefined ? {} : { removable: section.removable }),
     // Роль секции (блок 12, 12.1): data-role на обёртке, ошибка рендера — ошибка сборки.
     ...(section?.role === undefined ? {} : { role: section.role }),
+    // Окно поверх страницы (01.11): data-overlay и hidden на обёртке.
+    ...(section?.overlay === true ? { overlay: true } : {}),
     ...(section?.uses === undefined ? {} : { uses: section.uses }),
     ...(classes.length === 0 ? {} : { classes }),
   };
@@ -215,6 +221,11 @@ interface ScriptSection {
 function withScript(section: CodeSection): ScriptSection[] {
   return section.script === null ? [] : [{ section, hash: section.script }];
 }
+
+// Часть окон поверх страницы (01.11): в бандле страницы, где стоит секция-окно (CodeSection.overlay). Её нет в core.json:
+// бюджет ядра 16 КБ — без неё; список overlay общий для всех страниц, так что у магазина с окном она на каждой странице.
+export const overlayPartsOf = (sections: readonly CodeSection[]): string[] =>
+  sections.some((section) => section.overlay === true) ? [OVERLAY_PART] : [];
 
 // Части бандла страницы (design.md блока 5, раздел 3.8): части ядра из core.json — всегда (С7-3 Б), потом части из
 // script_meta секций страницы, которых в ядре нет, по алфавиту, последними — части без API для секций (LIVE_PARTS).
@@ -260,7 +271,7 @@ export async function pageBundle(
   const kit = kitOf(built.kit, content, [...modules.values()]);
   // Части мест расширений (части 15г, 15д, Р15д-2, Р15д-3): не из meta.parts секций напрямую, а по pageExtPointParts —
   // только включённые у магазина; вместе с частями самой страницы, дубль pageParts убирает сам.
-  const parts = [...pageExtPointParts(inputs, pageId), ...additionalParts];
+  const parts = [...pageExtPointParts(inputs, pageId), ...overlayPartsOf(code), ...additionalParts];
   const source = { core, parts: pageParts(shell.parts, withoutExtPointParts(code), parts), sections, modules };
   const bundle = await bundlePage(kit === undefined ? source : { ...source, kit });
   bundle.notices.forEach((notice) => page.notice?.(pageId, notice));

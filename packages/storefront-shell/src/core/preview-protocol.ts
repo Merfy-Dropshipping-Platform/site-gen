@@ -19,6 +19,11 @@ export const SECTION_ERROR_EVENT = 'merfy:section:error';
 // каталога событий: ядро отдаёт событие только экземпляру этой секции, секция слушает его через ctx.listen.
 export const BLOCK_SELECT_EVENT = 'merfy:block:select';
 export const BLOCK_DESELECT_EVENT = 'merfy:block:deselect';
+// Скрипт секций превью → ядру (01.11): мерчант выбрал секцию поверх страницы (data-overlay) — её окно открывается, чтобы
+// его было видно и можно было править; выбор снят — закрывается. Событие на <merfy-section>, без detail. В каталог
+// событий не входит: окно открывает ядро, а не код секции.
+export const OVERLAY_SHOW_EVENT = 'merfy:preview:overlay-show';
+export const OVERLAY_HIDE_EVENT = 'merfy:preview:overlay-hide';
 // JSON-тег с текстом бандла страницы превью: строка JSON, её пишет сборщик перед dist/preview.js.
 export const PREVIEW_BUNDLE_TAG_ID = 'merfy-preview-bundle';
 // Загрузок кода секций без перезагрузки превью: старые модули остаются в памяти страницы. Двадцатая — перезагрузка.

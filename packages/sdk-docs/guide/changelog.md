@@ -1,3 +1,12 @@
+## 1.26.0 — 2026-11-01
+
+- [Окно поверх страницы](script.md#окно-поверх-страницы): секция без роли с `"groups": ["overlay"]` — окно поверх
+  каждой страницы, закрытое, пока скрипт не вызовет `ctx.overlay.open({ position, side, backdrop })`; `close()`, стор
+  `$open`, `data-action="overlay.close"`, событие `merfy:overlay:close` с `reason`. Модальное окно (`center`, `sheet`) —
+  одно на страницу, угловое (`corner`) — одно, рядом с модальным; второе — `refused`. Группа `overlay` у секции без роли
+  — только одна: новый отказ [`overlay-place`](errors.md#overlay-place); у [`role-place`](errors.md#role-place) этого
+  случая больше нет.
+
 ## 1.25.0 — 2026-11-01
 
 - Новый модуль [`page`](modules.md#page) (`"uses": ["page"]`): `ctx.page` получает рядом с `path` и `query` три стора —

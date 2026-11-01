@@ -80,6 +80,30 @@ describe('секции с ролью в коде магазина', () => {
   });
 });
 
+// Окно поверх страницы (01.11): секция без роли с groups: ["overlay"] — во входах overlay: true, экземпляр — только в
+// списке overlay; у секции с ролью и у обычной секции ключа нет.
+describe('окно поверх страницы в коде магазина', () => {
+  it('overlay: true во входах; экземпляр не в overlay — section-group-invalid, сборка идёт', () => {
+    const { context, logged } = contextOf();
+    const PROMO = row('shop:promo', { groups: ['overlay'] });
+    const DRAWER = row('shop:cart-drawer', { role: 'cart-drawer' });
+    const HERO = row('shop:hero');
+    const placement = {
+      overlay: [instance('promo-1', 'shop:promo'), instance('drawer-1', 'shop:cart-drawer')],
+      home: [instance('promo-2', 'shop:promo'), instance('hero-1', 'shop:hero')],
+    };
+    const shop = codeOf([PROMO, DRAWER, HERO], placement, context);
+    expect(idsOf(shop.code.pages)).toEqual({ overlay: ['promo-1', 'drawer-1'], home: ['hero-1'] });
+    expect(logged.map(([event, fields]) => [event, fields.id])).toEqual([['section-group-invalid', 'promo-2']]);
+    expect(shop.code.sections.map((section) => [section.name, section.overlay])).toEqual([
+      ['shop:promo', true],
+      ['shop:cart-drawer', undefined],
+      ['shop:hero', undefined],
+    ]);
+    expect(shop.code.sections[1]).not.toHaveProperty('overlay');
+  });
+});
+
 describe('ответ /sections', () => {
   const current = (name: string, manifest: Record<string, unknown> = {}): CurrentSection => ({
     name,

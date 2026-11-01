@@ -11,10 +11,11 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts', 'build/**/*.ts'],
       // Поведения и появления (блок 6) работают с вёрсткой и WAAPI — их покрывают тесты Chromium (проект browser).
+      // scratch — canvas и pointer events: тесты scratch.browser.test.ts.
       exclude: [
         'src/core/index.ts',
         'src/core/behaviors/index.ts',
-        'src/core/behaviors/{accordion,dialog,carousel,tabs,nav-menu,quantity,card-photos,sticky-header,video,reveal,motion}.ts',
+        'src/core/behaviors/{accordion,dialog,carousel,tabs,nav-menu,quantity,card-photos,sticky-header,video,reveal,motion,scratch}.ts',
         // Вход скрипта превью (часть 5г): blob: и import() — тест в браузере preview-replace.browser.test.ts.
         'src/preview/entry.ts',
       ],

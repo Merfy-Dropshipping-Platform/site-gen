@@ -20,8 +20,8 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'manifest-invalid': {
     when: '`section.json` — не JSON, в нём лишний или пропущенный ключ, не тот вид значения или ключ старого формата.',
-    fix: 'Исправь ключ, названный в ответе; ключи и их виды — на странице section-json.md.',
-    example: { before: '"fields": [...]', after: '"settings": [...]' },
+    fix: 'Исправь ключ из ответа; у типа блока нужны title, limit (число) и settings: "fact": { "title": "Факт", "limit": 6, "settings": [] }; остальные ключи — на странице section-json.md.',
+    example: { before: '"fact": { "title": "Факт" }', after: '"fact": { "title": "Факт", "limit": 6, "settings": [] }' },
   },
   'sdk-unsupported': {
     when: 'В section.json версия SDK, которой проверка не знает.',
@@ -51,8 +51,8 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'template-forbidden': {
     when: 'В template.astro запрещённое: тег, компонент, обработчик on…, директива, {...} в атрибутах или адрес javascript:.',
-    fix: 'Убери запрещённое; события и поведение — в script.ts или data-behavior; что можно — на странице template.md.',
-    example: { before: '<button onclick="open()">', after: '<button data-action="open">' },
+    fix: 'Убери запрещённое; события — в script.ts или data-behavior; значение поля или блока выводи как {block.settings.text}, set:html — только у richtext (template.md).',
+    example: { before: '<p set:html={block.settings.text}></p>', after: '<p>{block.settings.text}</p>' },
   },
   'template-too-deep': {
     when: 'Шаблон вложен глубже предела: теги и скобки считаются вместе.',
@@ -64,8 +64,8 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'class-unknown': {
     when: 'Класса нет в словаре классов магазина.',
-    fix: 'Возьми класс из подсказки или из страницы styles.md.',
-    example: { before: 'text-6xl', after: 'text-5xl' },
+    fix: 'Возьми класс словаря из подсказки или styles.md; крупнее text-5xl — токен секции в tokens: "text-custom-display": { "kind": "text", "about": "…", "default": { "min": 40, "max": 72, "leading": 1.05 } } и класс text-custom-display.',
+    example: { before: 'md:text-6xl', after: 'md:text-custom-display' },
   },
   'class-arbitrary': {
     when: 'Класс с произвольным значением: […], (…) или !.',
@@ -96,7 +96,8 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'token-invalid': {
     when: 'Токен секции в ключе tokens записан неверно: имя без метки custom, чужой вид, больше предела.',
-    fix: 'Исправь токен, названный в ответе; правила — на странице styles.md.',
+    fix: 'Исправь токен из ответа: имя с custom- (custom-plate, text-custom-display), вид из восьми (color, weight, text, tracking, radius, border-width, spacing, width), значение — в default; пример каждого вида — quick.md.',
+    example: { before: '"plate": { "kind": "color", "default": "#f1ece4" }', after: '"custom-plate": { "kind": "color", "about": "Подложка", "default": "#f1ece4" }' },
   },
   'render-failed': {
     when: 'Шаблон упал при пробном рендере со значениями полей по умолчанию.',
@@ -230,8 +231,8 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'setting-name-unknown': {
     when: 'Имени поля нет в словаре имён.',
-    fix: 'Возьми имя из подсказки «ближе всего» или из names.md; подходящего нет — объяви своё в `names` секции (names.md, «Своё имя секции»).',
-    example: { before: '"id": "title"', after: '"id": "heading"' },
+    fix: 'Возьми имя из «ближе всего» или найди: merfy_sections names find="слово"; нет такого — свой пункт в names: "my-id": { "kinds": ["string"], "label": "Подпись", "about": "Для чего", "asks": ["слово"] }.',
+    example: { before: '"id": "all-label"', after: '"id": "button-label"' },
   },
   'setting-name-kind': {
     when: 'Имя из словаря, но вид поля не из его столбца «Виды».',

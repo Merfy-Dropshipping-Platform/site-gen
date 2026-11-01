@@ -81,9 +81,29 @@ const { settings, blocks } = Astro.props;
 Своего CSS нет: только классы Tailwind из словаря ([styles.md](styles.md)). Цвета, шрифты, радиусы — токены:
 `bg-primary`, `text-heading`, `text-foreground`, `font-body`, `font-heading weight-heading`, `rounded-button`,
 `rounded-card`, `max-w-page`. Нельзя: произвольные значения `bg-[#c9a227]`, `dark:`, класс из строки
-(`class-dynamic`), токены одной темы. Нужен свой цвет — `tokens` в `section.json` с меткой `custom`. Градиент —
+(`class-dynamic`), токены одной темы. Нужен свой цвет, размер, насыщенность — токен секции (ниже). Градиент —
 направление и точки на одном элементе (`bg-linear-to-r from-… to-…`), иначе `class-inert`. Вёрстка телефоном
 вперёд: классы без префикса — телефон, `md:` и `lg:` добавляют; кнопки от `h-11`, без прокрутки вбок.
+
+### Свой токен секции
+
+Ключ `tokens` в `section.json`, до 10. Имя — приставка вида и `custom-` (цвет — без приставки: `custom-plate`); вид — один
+из восьми ниже; значение — только в `default`, рядом с `kind` лежат лишь `about` и `default` (`min`, `max`, `leading` —
+внутри `default`). Класс в шаблоне — то же имя: `bg-custom-plate`, `text-custom-display`, `rounded-custom-pill`,
+`max-w-custom-narrow`. Тень своим токеном сейчас не задать (в словаре нет базовой тени) — класс тени словаря.
+
+```json
+"tokens": {
+  "custom-plate": { "kind": "color", "about": "Подложка под фото", "default": "#f1ece4" },
+  "weight-custom-display": { "kind": "weight", "about": "Насыщенность витринного заголовка", "default": 300 },
+  "text-custom-display": { "kind": "text", "about": "Витринный заголовок", "default": { "min": 40, "max": 72, "leading": 1.05 } },
+  "tracking-custom-caps": { "kind": "tracking", "about": "Разрядка капса, em", "default": 0.12 },
+  "radius-custom-pill": { "kind": "radius", "about": "Скругление плашки", "default": 999 },
+  "border-width-custom-line": { "kind": "border-width", "about": "Толщина линии", "default": 1 },
+  "spacing-custom-row": { "kind": "spacing", "about": "Отступ между рядами", "default": { "min": 24, "max": 64 } },
+  "width-custom-narrow": { "kind": "width", "about": "Узкая колонка", "default": 640 }
+}
+```
 
 ## Частые приёмы
 

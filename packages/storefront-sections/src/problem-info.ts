@@ -320,6 +320,16 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     fix: 'Объяви имя в `data` section.json или исправь имя в скрипте.',
     example: { before: 'ctx.data.prodcut', after: 'ctx.data.product' },
   },
+  'list-incomplete': {
+    when: 'Секция — список товаров каталога или коллекции (имя `…catalog`, `…collection` или «Карточки» с полем коллекции), а фильтров, сортировки или листания нет.',
+    fix: 'Верни названные в ответе части по образцу библиотечных `catalog` и `collection`: `per-page`, `data-behavior="catalog"`, `page.list.items`, `next`, `facets`, `sorts`.',
+    example: {
+      before: '{settings.collection.products.map((card) => …)}',
+      after:
+        '<ul data-part="list">{page.list.items.map((card) => …)}</ul> {page.list.next && <a data-part="next" href={page.list.next}>Показать ещё</a>}',
+    },
+    doc: 'data.md#список-страницы',
+  },
   'role-unknown': {
     when: 'В section.json роль не из списка платформы.',
     fix: 'Возьми роль из списка: cart, cart-drawer, cart-added, login, search, notices, cookie-banner — или убери ключ role.',

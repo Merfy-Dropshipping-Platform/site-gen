@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { money, sampleRecord, sha256, type RenderBlock } from '@merfy/storefront-build';
+import { SAMPLE_PAGES, money, sampleRecord, sha256, type RenderBlock } from '@merfy/storefront-build';
 import { afterEach, describe, expect, it } from 'vitest';
 import { checkTemplate, templateOptionsOf } from '../src/compile';
 import { readManifest } from '../src/format';
@@ -68,18 +68,26 @@ describe('наши секции с записями', () => {
     expect(await renderer.render({ ...request, settings, blocks, records: { product: null } })).not.toContain('<h1');
   }, 30_000);
 
-  it('«Коллекция»: название и карточки товаров; «все товары» — без заголовка', async () => {
+  // Карточки «Коллекции» — из списка страницы (page.list, шаг 5): страница коллекции примеров со своим списком.
+  it('«Коллекция»: название и карточки товаров списка страницы; «все товары» — без заголовка', async () => {
     const renderer = rendererOf();
     const request = await requestOf('collection');
+    const page = SAMPLE_PAGES.find((item) => item.id === 'collection');
     const html = await renderer.render({
       ...request,
       settings: { collection: 'pledy' },
       records: { collection: COLLECTION },
+      page,
     });
     expect(html).toContain('Пледы');
     expect(html).toMatch(/<a class="[^"]*" href="\/product\/pled">Плед «Нова»<\/a>/);
     const all = { ...COLLECTION, id: '', title: '', slug: '', url: '', description: '' };
-    const allHtml = await renderer.render({ ...request, settings: { collection: null }, records: { collection: all } });
+    const allHtml = await renderer.render({
+      ...request,
+      settings: { collection: null },
+      records: { collection: all },
+      page,
+    });
     expect(allHtml).not.toContain('<h1');
     expect(allHtml).toContain('href="/product/pled"');
   }, 30_000);

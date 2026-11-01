@@ -1,6 +1,6 @@
 # Коды ошибок
 
-> SDK 1 · документация 1.23.0 · 2026-11-01
+> SDK 1 · документация 1.24.0 · 2026-11-01
 
 Справка по кодам проверки секции: когда бывает код и как исправить.
 
@@ -342,6 +342,16 @@
 
 Как исправить: Объяви имя в `data` section.json или исправь имя в скрипте..
 Пример: было `ctx.data.prodcut` → стало `ctx.data.product`.
+
+
+## list-incomplete
+
+Когда: Секция — список товаров каталога или коллекции (имя `…catalog`, `…collection` или «Карточки» с полем коллекции), а фильтров, сортировки или листания нет.
+
+Как исправить: Верни названные в ответе части по образцу библиотечных `catalog` и `collection`: `per-page`, `data-behavior="catalog"`, `page.list.items`, `next`, `facets`, `sorts`..
+Пример: было `{settings.collection.products.map((card) => …)}` → стало `<ul data-part="list">{page.list.items.map((card) => …)}</ul> {page.list.next && <a data-part="next" href={page.list.next}>Показать ещё</a>}`.
+
+Правило с примерами: [data.md#список-страницы](data.md#список-страницы).
 
 
 ## role-unknown

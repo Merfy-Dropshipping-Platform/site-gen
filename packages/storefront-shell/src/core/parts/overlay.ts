@@ -39,19 +39,28 @@ const FOCUSABLE =
 // Новый объект на каждый ответ: ответ уходит в код секции.
 const ok = (): Result<NoData> => ({ ok: true, data: {} });
 
-// Место окна. Сброс браузерных стилей popover — через :where: общие настройки секции (схема, отступы) на обёртке главнее.
-// Телефон — до 48rem, как у панели фильтров каталога (behaviors/catalog-list.ts). Функцией, а не значением модуля:
-// модуль без окон на странице не оставляет в бандле ядра ничего.
+// Место окна. <merfy-section> — прозрачный слой места: по центру — весь экран с полями 16px, в углу — полоса над низом
+// экрана, шторка — низ во всю ширину; клики слой пропускает (pointer-events), их ловят окно, подложка или страница. Окно —
+// корень шаблона: ширину задают его классы (w-full max-w-md — до 28rem, не шире слоя), без них — по содержимому; у
+// шторки корень во всю ширину. Слой — колонка flex, поэтому w-full корня считается от слоя, а не от ширины по содержимому
+// (у popover браузер ставит fit-content). display — только у :popover-open: без popover окно остаётся hidden. Телефон —
+// до 48rem, как у панели фильтров каталога (behaviors/catalog-list.ts). Функцией, а не значением модуля: модуль без окон
+// на странице не оставляет в бандле ядра ничего.
 const OVERLAY = 'merfy-section[data-overlay]';
+const FULL_WIDTH = 'width:100%;max-width:none';
 const cssText = (): string => `:where(${OVERLAY}){border:0;padding:0;color:inherit;background:transparent}\
-${OVERLAY}{position:fixed;inset:auto;margin:0;box-sizing:border-box;max-width:100vw;max-height:100dvh;overflow:auto}\
-${OVERLAY}[data-position="center"]{inset:0;margin:auto}\
-${OVERLAY}[data-position="sheet"]{inset:auto 0 0 0;width:100%}\
-${OVERLAY}[data-position="corner"]{right:16px;bottom:16px;max-width:calc(100vw - 32px)}\
-${OVERLAY}[data-position="corner"][data-side="left"]{right:auto;left:16px}\
+${OVERLAY}{position:fixed;inset:auto;margin:0;box-sizing:border-box;width:auto;height:auto;max-width:100vw;max-height:100dvh;overflow:auto;flex-direction:column;pointer-events:none}\
+${OVERLAY}:popover-open{display:flex}\
+:where(${OVERLAY})>*{pointer-events:auto}\
+${OVERLAY}[data-position="center"]{inset:0;padding:16px;align-items:center;justify-content:center;justify-content:safe center}\
+${OVERLAY}[data-position="sheet"]{inset:auto 0 0 0}\
+${OVERLAY}[data-position="sheet"]>*{${FULL_WIDTH}}\
+${OVERLAY}[data-position="corner"]{left:16px;right:16px;bottom:16px;align-items:flex-end}\
+${OVERLAY}[data-position="corner"][data-side="left"]{align-items:flex-start}\
 [${BACKDROP_ATTRIBUTE}]{position:fixed;inset:0;width:auto;height:auto;margin:0;padding:0;border:0;background:transparent}\
 [${BACKDROP_ATTRIBUTE}][data-dim]{background:rgb(0 0 0 / 0.5)}\
-@media (max-width:47.99rem){${OVERLAY}[data-position="corner"]{inset:auto 0 0 0;width:100%;max-width:100%}}`;
+@media (max-width:47.99rem){${OVERLAY}[data-position="corner"]{inset:auto 0 0 0;align-items:stretch}\
+${OVERLAY}[data-position="corner"]>*{${FULL_WIDTH}}}`;
 
 interface Placement {
   readonly position: OverlayPosition;

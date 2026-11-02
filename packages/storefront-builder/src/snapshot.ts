@@ -324,6 +324,8 @@ export interface Platform {
   analyticsUrl: string;
   // Хранилище файлов покупательницы для CSP (часть 15е): STOREFRONT_UPLOAD_URL, origin. Нет — во входах нет.
   uploadUrl?: string;
+  // Магазины для поиска (STOREFRONT_INDEXABLE): во входах — ради ключа, robots.txt и карту кладёт выкладка.
+  indexable?: boolean;
 }
 
 export interface InputsParts {
@@ -428,6 +430,7 @@ export const buildInputsOf = (parts: InputsParts) => ({
     apiUrl: parts.platform.apiUrl,
     analyticsUrl: parts.platform.analyticsUrl,
     ...(parts.platform.uploadUrl === undefined ? {} : { uploadUrl: parts.platform.uploadUrl }),
+    ...(parts.platform.indexable === undefined ? {} : { indexable: parts.platform.indexable }),
   },
   year: parts.year,
   data: { status: parts.received ? 'received' : 'failed', entities: parts.entities },

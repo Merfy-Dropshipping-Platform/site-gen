@@ -59,6 +59,16 @@ describe('buildKey', () => {
     expect(buildKey(changed)).not.toBe(buildKey(standInputs));
   });
 
+  // 02.11.2026: флаг поиска контура не входил в ключ — включили на dev, а живые магазины отдавали прежний robots.txt
+  // (сборка «skipped»). Входы без флага — прежний ключ.
+  it('флаг поиска env.indexable — вход ключа: true, false и «нет» дают разные ключи', () => {
+    const open = changedInputs((inputs) => (inputs.env.indexable = true));
+    const closed = changedInputs((inputs) => (inputs.env.indexable = false));
+    expect(parseBuildInputs(open)).toEqual(open);
+    const keys = new Set([buildKey(open), buildKey(closed), buildKey(standInputs)]);
+    expect(keys.size).toBe(3);
+  });
+
   it('снимок данных в другом порядке — тот же ключ', () => {
     expect(buildKey(changedInputs((inputs) => inputs.data.entities.reverse()))).toBe(buildKey(standInputs));
   });

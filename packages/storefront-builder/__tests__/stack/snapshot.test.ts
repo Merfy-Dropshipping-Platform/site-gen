@@ -36,6 +36,7 @@ const deps = (): SnapshotDeps => ({
     renderHash: `sha256:${'b'.repeat(64)}`,
     apiUrl: 'https://gateway.dev.merfy.ru/api',
     analyticsUrl: 'https://analytics.dev.merfy.ru',
+    indexable: true,
   },
   themes: new Map([['nova', THEME]]),
   pins: {
@@ -85,6 +86,8 @@ describe('снимок входов', () => {
     const inputs = parseBuildInputs(snapshot.inputs);
     expect(inputs.site).toMatchObject({ name: 'Шарфы и пледы', updatedAt: '2026-10-08T09:00:00.000Z' });
     expect(inputs.year).toBe(2027);
+    // Флаг поиска контура — во входах (env), чтобы его смена меняла ключ сборки.
+    expect(inputs.env.indexable).toBe(true);
     expect(inputs.data.entities.map((entity) => `${entity.type}:${entity.id}`)).toEqual([
       'policy:refund',
       'contacts:main',

@@ -40,6 +40,12 @@ import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 import { insertDefaultBlog } from "./publications/blogs.service";
 import { StorefrontHandoff } from "./storefront-handoff/storefront-handoff.service";
+import {
+  finishedBuildStatus,
+  parseStorefrontBuildNumber,
+  pendingBuildStatus,
+  type StorefrontBuildStatus,
+} from "./storefront-handoff/storefront-build-status";
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
 import { rewriteCurrent } from "./content/rewrite-current";
 import { toStoreContentSite } from "./content/store-content.port";
@@ -3384,24 +3390,17 @@ export class SitesDomainService {
 
   /**
    * Get build status/progress for a specific build.
+   *
+   * Номер — число: сборка нового сборщика витрин (storefront_build /
+   * storefront_shop), uuid — старая сборка (site_build). `status`: queued |
+   * running | failed | uploaded, для новых сборок ещё `paused` (сборка готова,
+   * выкладка магазина на паузе); что значит итог — в `message`.
    */
   async getBuildStatus(
     tenantId: string,
     siteId: string,
     buildId: string,
-  ): Promise<{
-    buildId: string;
-    siteId: string;
-    status: string;
-    stage: string | null;
-    percent: number;
-    message: string | null;
-    error: string | null;
-    retryCount: number;
-    startedAt: Date | null;
-    completedAt: Date | null;
-    createdAt: Date;
-  } | null> {
+  ): Promise<StorefrontBuildStatus | null> {
     // Verify site belongs to tenant
     const [siteRow] = await this.db
       .select({ id: schema.site.id })
@@ -3411,6 +3410,11 @@ export class SitesDomainService {
       );
 
     if (!siteRow) return null;
+
+    const storefrontBuild = parseStorefrontBuildNumber(buildId);
+    if (storefrontBuild !== null) {
+      return this.getStorefrontBuildStatus(siteId, storefrontBuild);
+    }
 
     const [build] = await this.db
       .select({
@@ -3449,6 +3453,32 @@ export class SitesDomainService {
       completedAt: build.completedAt,
       createdAt: build.createdAt,
     };
+  }
+
+  /**
+   * Статус сборки нового сборщика витрин: кончилась — строка storefront_build,
+   * ещё нет — строка магазина storefront_shop (в очереди / идёт).
+   */
+  private async getStorefrontBuildStatus(
+    siteId: string,
+    build: number,
+  ): Promise<StorefrontBuildStatus | null> {
+    const [finished] = await this.db
+      .select()
+      .from(schema.storefrontBuild)
+      .where(
+        and(
+          eq(schema.storefrontBuild.siteId, siteId),
+          eq(schema.storefrontBuild.build, build),
+        ),
+      );
+    if (finished) return finishedBuildStatus(finished);
+
+    const [shop] = await this.db
+      .select()
+      .from(schema.storefrontShop)
+      .where(eq(schema.storefrontShop.siteId, siteId));
+    return shop ? pendingBuildStatus(shop, build) : null;
   }
 
   // ==================== Domain Switching ====================

@@ -101,6 +101,7 @@ const platform = {
   apiUrl: settings.apiUrl,
   analyticsUrl: settings.analyticsUrl,
   uploadUrl: settings.uploadUrl,
+  indexable: settings.indexable,
 };
 const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 // Код магазина (блок 7): реестр секций, места из ревизии, включённые расширения; тайм-аут — как у товаров.

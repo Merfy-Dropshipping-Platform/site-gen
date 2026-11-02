@@ -3,6 +3,7 @@ import specialPagesJson from '../special-pages.json';
 import { RECORD_TYPES } from '../src/records';
 import {
   HOME_PAGE,
+  NOINDEX_PATHS,
   NOT_FOUND_PAGE_ID,
   SPECIAL_PAGES,
   SPECIAL_PAGE_IDS,
@@ -12,14 +13,15 @@ import {
 } from '../src/special-pages';
 
 // Особые страницы блока 10 (часть 10а, Р10а-14, Р10а-15): id и адреса пяти тем; копии адресов и страницы не из секций.
+// Все они служебные (02.11.2026): index: false — noindex и нет в карте сайта.
 const BLOCK10_PAGES = [
-  { id: 'page-cart', name: 'Корзина', slug: '/cart' },
-  { id: 'page-checkout', name: 'Оформление заказа', slug: '/checkout', sections: false },
-  { id: 'page-checkout-result', name: 'Спасибо за заказ', slug: '/checkout-result', sections: false },
-  { id: 'page-profile', name: 'Профиль', slug: '/account/profile', aliases: ['/account'] },
-  { id: 'page-wishlist', name: 'Избранное', slug: '/wishlist' },
-  { id: 'page-orders', name: 'Заказы', slug: '/account/orders' },
-  { id: 'page-login', name: 'Вход', slug: '/login', aliases: ['/verify'] },
+  { id: 'page-cart', name: 'Корзина', slug: '/cart', index: false },
+  { id: 'page-checkout', name: 'Оформление заказа', slug: '/checkout', sections: false, index: false },
+  { id: 'page-checkout-result', name: 'Спасибо за заказ', slug: '/checkout-result', sections: false, index: false },
+  { id: 'page-profile', name: 'Профиль', slug: '/account/profile', aliases: ['/account'], index: false },
+  { id: 'page-wishlist', name: 'Избранное', slug: '/wishlist', index: false },
+  { id: 'page-orders', name: 'Заказы', slug: '/account/orders', index: false },
+  { id: 'page-login', name: 'Вход', slug: '/login', aliases: ['/verify'], index: false },
 ];
 
 // Особые страницы платформы (блок 7 «Секций и SDK», часть 7а): постоянные id и адреса. Шаблоны записей (блок 8, часть
@@ -35,7 +37,19 @@ describe('особые страницы платформы', () => {
       { id: 'article', name: 'Запись блога', slug: '/blogs/:blog/:slug' },
       { id: 'policy', name: 'Политика', slug: '/legal/:slug' },
       ...BLOCK10_PAGES,
-      { id: 'not-found', name: 'Страница 404', slug: '/404' },
+      { id: 'not-found', name: 'Страница 404', slug: '/404', index: false },
+    ]);
+    expect([...NOINDEX_PATHS]).toEqual([
+      '/cart',
+      '/checkout',
+      '/checkout-result',
+      '/account/profile',
+      '/account',
+      '/wishlist',
+      '/account/orders',
+      '/login',
+      '/verify',
+      '/404',
     ]);
     // Каталог (блок 11, Р11а-1) — после «Коллекции».
     expect([...SPECIAL_PAGE_IDS]).toEqual([

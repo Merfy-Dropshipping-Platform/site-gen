@@ -49,12 +49,14 @@ describe('настройки', () => {
     expect(RETRY_DELAYS_MS).toEqual([5000, 30_000]);
   });
 
-  it('страница стенда в сборке — из STOREFRONT_STAND_PAGE; вместе с поиском — settings-invalid', () => {
+  // 02.11.2026: dev как прод — стенд и поиск вместе; стенда нет в карте сайта (storefront-storage, sitemap.ts).
+  it('страница стенда в сборке — из STOREFRONT_STAND_PAGE, и вместе с поиском', () => {
     expect(readSettings({ ...ENV, STOREFRONT_STAND_PAGE: 'true' }).standPage).toBe(true);
     expect(readSettings({ ...ENV, STOREFRONT_INDEXABLE: 'true' }).standPage).toBe(false);
-    expect(() => readSettings({ ...ENV, STOREFRONT_STAND_PAGE: 'true', STOREFRONT_INDEXABLE: 'true' })).toThrow(
-      'env#STOREFRONT_STAND_PAGE: стенд в сборке — только у магазинов не для поиска (STOREFRONT_INDEXABLE=false)',
-    );
+    expect(readSettings({ ...ENV, STOREFRONT_STAND_PAGE: 'true', STOREFRONT_INDEXABLE: 'true' })).toMatchObject({
+      standPage: true,
+      indexable: true,
+    });
   });
 
   it('нет STOREFRONT_UPLOAD_URL — settings-invalid с именем переменной (часть 15е, И4: запасного адреса нет)', () => {

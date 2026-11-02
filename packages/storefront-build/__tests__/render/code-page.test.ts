@@ -59,6 +59,25 @@ describe('код секций на рисовальщике nova', () => {
     expect(main).not.toContain('<h1>');
   });
 
+  // Замер PageSpeed 02.11.2026: картинки скрытых меню грузились наравне с главной, LCP 19 с.
+  it('картинки: главная в <main> — eager и high, остальные — lazy; preconnect к шлюзу и хосту картинки', async () => {
+    const withImages = (request: SectionRenderRequest): Promise<string> =>
+      Promise.resolve(
+        `<img src="https://minio.example/${request.section}.jpg" loading="eager" alt=""><p class="flex">${request.section}</p>`,
+      );
+    const page: PageRender = { ...pageOf('live'), sections: { modules: RENDERS, render: withImages } };
+    const html = text((await renderShopPage(codeInputs(), '/', theme, page)).file.content);
+    const main = html.slice(html.indexOf('<main>'), html.indexOf('</main>'));
+    expect(main).toContain(
+      '<img src="https://minio.example/shop:cart-badge.jpg" alt="" loading="eager" fetchpriority="high" decoding="async">',
+    );
+    expect(main).toContain('<img src="https://minio.example/shop:hero.jpg" alt="" loading="lazy" decoding="async">');
+    expect(main.match(/fetchpriority/g)).toHaveLength(1);
+    const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
+    expect(head).toContain('<link rel="preconnect" href="http://localhost:4321" crossorigin>');
+    expect(head).toContain('<link rel="preconnect" href="https://minio.example">');
+  });
+
   it('магазин без кода — ни стилей секций, ни ядра, ни <merfy-section>', async () => {
     const html = text((await renderShopPage(standInputs, '/', theme)).file.content);
     expect(html).not.toContain('merfy-sections');

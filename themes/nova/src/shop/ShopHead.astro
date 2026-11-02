@@ -17,11 +17,15 @@ const { head } = Astro.props;
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+{(head.preconnect ?? []).map((link) => link.crossorigin
+  ? <link rel="preconnect" href={link.href} crossorigin />
+  : <link rel="preconnect" href={link.href} />)}
 <Fragment set:html={head.configHtml} />
 <title>{head.title}</title>
 {head.description && <meta name="description" content={head.description} />}
 {head.keywords && <meta name="keywords" content={head.keywords} />}
 <link rel="canonical" href={head.canonical} />
+<link rel="icon" href={head.favicon} />
 <meta property="og:type" content={head.social.type} />
 <meta property="og:title" content={head.title} />
 {head.description && <meta property="og:description" content={head.description} />}

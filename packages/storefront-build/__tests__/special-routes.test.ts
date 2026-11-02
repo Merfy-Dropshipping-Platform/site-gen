@@ -70,6 +70,17 @@ describe('страницы блока 10 в сборке', () => {
     expect(Object.keys(manifest.files)).toEqual(expect.arrayContaining(['account/index.html', 'account/profile/index.html']));
   });
 
+  // 02.11.2026: служебные страницы (special-pages.json, index: false) — не для поиска.
+  it('корзина, кабинет и оформление — с noindex; главная — без', async () => {
+    const inputs = withLists({ 'page-cart': [instance('c-1')], 'page-profile': [instance('p-1')] });
+    const renderSection = (): Promise<string> => Promise.resolve('<p>секция</p>');
+    const { files } = await buildStorefront(inputs, REFERENCES, THEME, ASSETS, renderSection);
+    const noindex = '<meta name="robots" content="noindex">';
+    for (const file of ['cart/index.html', 'account/profile/index.html', 'account/index.html', 'checkout/index.html'])
+      expect(text(files, file), file).toContain(noindex);
+    expect(text(files, 'index.html')).not.toContain('name="robots"');
+  });
+
   it('вход revision.checkout: четыре типа блоков; другой тип — inputs-invalid', () => {
     const header = { type: 'CheckoutHeader', props: { colorScheme: 'scheme-1', padding: { top: 32, bottom: 16 } } };
     const ok = rawInputs((json) => Object.assign(json.revision, { checkout: { blocks: [header] } }));

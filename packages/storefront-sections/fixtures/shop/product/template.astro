@@ -56,7 +56,7 @@ const { settings, blocks, page, theme } = Astro.props;
                     <span class="absolute inset-0 flex items-center justify-center text-muted-foreground">
                       <svg class="size-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
                     </span>
-                    <img class="relative size-full object-cover" data-part="image" data-ref={position === 0 ? 'photo' : undefined} src={src === '' ? undefined : src} alt={settings.product.title} loading="eager" hidden={src === ''} />
+                    <img class="relative size-full object-cover" data-part="image" data-ref={position === 0 ? 'photo' : undefined} src={src === '' ? undefined : src} alt={settings.product.title} hidden={src === ''} />
                   </div>
                 ))}
               </div>
@@ -66,7 +66,7 @@ const { settings, blocks, page, theme } = Astro.props;
                   <svg class="size-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
                 </span>
                 <div class="relative size-full" data-behavior="card-photos" data-photos={settings.product.images.join(' ')} data-hover-next="false">
-                  <img class="size-full object-cover" data-part="image" data-ref="photo" src={settings.product.images[0]} alt={settings.product.title} loading="eager" hidden={settings.product.images.length === 0} />
+                  <img class="size-full object-cover" data-part="image" data-ref="photo" src={settings.product.images[0]} alt={settings.product.title} hidden={settings.product.images.length === 0} />
                 </div>
               </div>
             )}

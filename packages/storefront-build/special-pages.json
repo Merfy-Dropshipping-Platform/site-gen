@@ -6,12 +6,12 @@
   { "id": "blog", "name": "Блог", "slug": "/blogs/:slug" },
   { "id": "article", "name": "Запись блога", "slug": "/blogs/:blog/:slug" },
   { "id": "policy", "name": "Политика", "slug": "/legal/:slug" },
-  { "id": "page-cart", "name": "Корзина", "slug": "/cart" },
-  { "id": "page-checkout", "name": "Оформление заказа", "slug": "/checkout", "sections": false },
-  { "id": "page-checkout-result", "name": "Спасибо за заказ", "slug": "/checkout-result", "sections": false },
-  { "id": "page-profile", "name": "Профиль", "slug": "/account/profile", "aliases": ["/account"] },
-  { "id": "page-wishlist", "name": "Избранное", "slug": "/wishlist" },
-  { "id": "page-orders", "name": "Заказы", "slug": "/account/orders" },
-  { "id": "page-login", "name": "Вход", "slug": "/login", "aliases": ["/verify"] },
-  { "id": "not-found", "name": "Страница 404", "slug": "/404" }
+  { "id": "page-cart", "name": "Корзина", "slug": "/cart", "index": false },
+  { "id": "page-checkout", "name": "Оформление заказа", "slug": "/checkout", "sections": false, "index": false },
+  { "id": "page-checkout-result", "name": "Спасибо за заказ", "slug": "/checkout-result", "sections": false, "index": false },
+  { "id": "page-profile", "name": "Профиль", "slug": "/account/profile", "aliases": ["/account"], "index": false },
+  { "id": "page-wishlist", "name": "Избранное", "slug": "/wishlist", "index": false },
+  { "id": "page-orders", "name": "Заказы", "slug": "/account/orders", "index": false },
+  { "id": "page-login", "name": "Вход", "slug": "/login", "aliases": ["/verify"], "index": false },
+  { "id": "not-found", "name": "Страница 404", "slug": "/404", "index": false }
 ]

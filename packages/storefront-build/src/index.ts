@@ -70,6 +70,7 @@ export {
 } from './section-records';
 export {
   HOME_PAGE,
+  NOINDEX_PATHS,
   NOT_FOUND_PAGE_ID,
   SPECIAL_PAGES,
   SPECIAL_PAGE_IDS,

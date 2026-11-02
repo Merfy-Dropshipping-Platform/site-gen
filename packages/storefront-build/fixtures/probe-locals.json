@@ -5,6 +5,7 @@
     "description": "Магазин-стенд новой темы",
     "keywords": "шарфы, лён",
     "canonical": "https://nova-stand.example/",
+    "favicon": "data:,",
     "configHtml": "<script type=\"application/json\" id=\"merfy-config\">{\"v\":1}</script>",
     "fontsCss": "",
     "baseCss": "",

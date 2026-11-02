@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { themeTokensCss } from '../src/fonts';
-import { pageLocals } from '../src/head';
+import { NO_FAVICON, pageLocals } from '../src/head';
 import { routeOf } from '../src/routes';
+import { EMPTY_PAGE_CONTENT, type PageContent } from '../src/sections-render';
 import { changedInputs, errorOf, standInputs } from './support';
 import { novaTokens } from './support-theme';
 
@@ -53,12 +54,16 @@ describe('pageLocals', () => {
 
   // Незаполненное мерчантом сборку не валит (владелец 08.10): описания и ключевых слов нет — теги не рисуются; ни
   // SEO-заголовка, ни имени — в заголовке, конфиге и на странице адрес магазина.
-  it('имя и SEO из пробелов — описания и ключевых слов нет, вместо заголовка и имени адрес магазина', () => {
+  it('имя и SEO из пробелов — ключевых слов нет, описание платформы, вместо заголовка и имени адрес магазина', () => {
     const empty = changedInputs((inputs) =>
       Object.assign(inputs.site, { name: '  ', description: ' ', seoTitle: ' ', keywords: ' ' }),
     );
     const { head, shop } = pageLocals(empty, HOME, novaTokens);
-    expect(head).toMatchObject({ title: 'nova-stand.example', description: '', keywords: '' });
+    expect(head).toMatchObject({
+      title: 'nova-stand.example',
+      description: 'nova-stand.example — интернет-магазин',
+      keywords: '',
+    });
     expect(shop).toEqual({ name: 'nova-stand.example' });
     expect(configOf(head.configHtml)).toMatchObject({ shop: { name: 'nova-stand.example' } });
   });
@@ -139,5 +144,45 @@ describe('pageLocals: «свой код» мерчанта (блок 13 «Сек
       },
     });
     expect(locals.head.configHtml).not.toContain('"custom"');
+  });
+});
+
+// Замер PageSpeed 02.11.2026: /favicon.ico — 404 на 185 КБ, без preconnect к шлюзу ~0,5 с.
+describe('иконка вкладки и ранние соединения', () => {
+  const content = (parts: Partial<PageContent>): PageContent => ({ ...EMPTY_PAGE_CONTENT, ...parts });
+
+  it('иконки нет — пустая data:,; своя https — она; http и мусор — пустая', () => {
+    expect(locals.head.favicon).toBe(NO_FAVICON);
+    const at = (favicon: string) =>
+      pageLocals(
+        changedInputs((inputs) => (inputs.site.favicon = favicon)),
+        HOME,
+        novaTokens,
+      ).head.favicon;
+    expect(at(' https://s3.merfy.ru/merfy/branding/favicon-1.png ')).toBe(
+      'https://s3.merfy.ru/merfy/branding/favicon-1.png',
+    );
+    expect(at('http://s3.merfy.ru/f.png')).toBe(NO_FAVICON);
+    expect(at('не адрес')).toBe(NO_FAVICON);
+  });
+
+  it('страница с бандлом — к шлюзу с crossorigin, к хосту главной картинки — без', () => {
+    const page = content({
+      bundleTag: '<script type="module" src="/_merfy/b/x.js"></script>',
+      mainImage: 'https://minio.dev.merfy.ru/a.jpg',
+    });
+    expect(pageLocals(standInputs, HOME, novaTokens, undefined, page).head.preconnect).toEqual([
+      { href: 'http://localhost:4321', crossorigin: true },
+      { href: 'https://minio.dev.merfy.ru', crossorigin: false },
+    ]);
+  });
+
+  it('без бандла и без картинки соединений нет; картинка с адреса магазина и не https — тоже', () => {
+    expect(locals.head.preconnect).toEqual([]);
+    const at = (mainImage: string) =>
+      pageLocals(standInputs, HOME, novaTokens, undefined, content({ mainImage })).head.preconnect;
+    expect(at('/uploads/a.jpg')).toEqual([]);
+    expect(at('https://nova-stand.example/a.jpg')).toEqual([]);
+    expect(at('http://cdn.example/a.jpg')).toEqual([]);
   });
 });

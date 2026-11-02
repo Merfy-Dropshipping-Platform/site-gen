@@ -1,12 +1,14 @@
 import { MANIFEST_FILE, TEMPLATE_FILE, readManifest, type SectionFiles } from './format';
 import { deadSettingProblems } from './dead-settings';
 import { libraryCopyProblems } from './library-copy';
+import { imgLoadingFound } from './img-loading';
 import { literalFound } from './markup-literals';
 import { positionAt } from './position';
 import { problem, type SectionProblem } from './problems';
 
 // Предупреждения о том, как секция собрана (Н-«Оценка владельца» после «Лавренти», 30.10): надписи и адреса картинок
-// прямо в разметке, параметры, которых никто не читает, копия библиотечной секции без изменений. Секция
+// прямо в разметке, параметры, которых никто не читает, копия библиотечной секции без изменений, loading и
+// fetchpriority у картинок, которые снимет сборка (img-loading.ts). Секция
 // сохраняется, автор исправляет по ответу. Отдельно от taste-check.ts: те правила смотрят на вид и код шаблона, эти —
 // на содержимое и состав секции.
 const SCRIPT_FILE = /\.(?:ts|js)$/;
@@ -15,7 +17,7 @@ async function markupProblems(template: string): Promise<SectionProblem[]> {
   try {
     const { parse } = await import('@astrojs/compiler-rs');
     const { ast } = await Promise.resolve(parse(template));
-    return literalFound(ast, template)
+    return [...literalFound(ast, template), ...imgLoadingFound(ast)]
       .sort((left, right) => left.at - right.at)
       .map((item) => problem(item.code, TEMPLATE_FILE, item.message, positionAt(template, item.at)));
   } catch {

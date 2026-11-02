@@ -18,7 +18,7 @@ import { countersOf } from './counters';
 import { customCodesOf } from './custom-codes';
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
-import type { ShopPageHead, ShopPageLocals, ShopSocial } from './locals';
+import type { ShopPageHead, ShopPageLocals, ShopPreconnect, ShopSocial } from './locals';
 import type { RecordEntry, RecordType } from './records';
 import { CATALOG_PAGE_ID, type ShopRoute } from './routes';
 import { EMPTY_PAGE_CONTENT, type PageContent, type PageMode } from './sections-render';
@@ -48,11 +48,17 @@ export const shopName = (site: BuildInputs['site']): string => site.name.trim() 
 // 4, Р1-4-8) — её SEO из ревизии: без заголовка — имя страницы, нет и его — имя магазина. Пусто — мерчант не заполнил:
 // тема тег не рендерит (договор SEO, seo.ts).
 // Страница N списка (блок 11 «Секций и SDK», Р11а-12): «… — страница N» в <title>; canonical — её адрес (route.path).
+// Описание есть у каждой страницы (02.11.2026, PageSpeed: «Document does not have a meta description» — оценка SEO
+// ниже): своё пустое — описание магазина, пусто и оно — «<имя> — интернет-магазин». Заполнить своё мерчанту
+// подсказывает MCP.
 function seoOf(inputs: BuildInputs, route: ShopRoute, name: string) {
-  const seo = baseSeoOf(inputs, route, name);
+  const base = baseSeoOf(inputs, route, name);
+  const seo = { ...base, description: base.description || inputs.site.description.trim() || defaultDescription(name) };
   const page = route.list?.page ?? 1;
   return page > 1 ? { ...seo, title: `${seo.title} — страница ${page}` } : seo;
 }
+
+export const defaultDescription = (name: string): string => `${name} — интернет-магазин`;
 
 // Каталог (блок 11, Р11а-12): заголовок платформы «Каталог · <магазин>», описание — магазина, ключевых слов нет.
 const CATALOG_HEADING = 'Каталог';
@@ -198,22 +204,43 @@ const ANALYTICS_BY_MODE: Record<PageMode, (inputs: BuildInputs) => ConfigAnalyti
   preview: () => null,
 };
 
+// Иконка вкладки: своя мерчанта по адресу https; нет — пустая data:, — браузер не просит /favicon.ico и не качает
+// страницу 404 (02.11.2026: 185 КБ на каждый первый заход). data: и https: разрешены в img-src политики (csp.ts).
+export const NO_FAVICON = 'data:,';
+
+function faviconOf(favicon: string | undefined): string {
+  const url = URL.parse((favicon ?? '').trim());
+  return url !== null && url.protocol === 'https:' ? url.href : NO_FAVICON;
+}
+
+// Ранние соединения (02.11.2026, PageSpeed: «Preconnect to required origins», ~0,5 с): к шлюзу — у страницы с бандлом,
+// он ходит туда за данными (fetch без cookie — crossorigin); к хосту главной картинки <main> — если он не адрес
+// магазина. Больше двух не ставим: лишние соединения отнимают канал у первого экрана.
+function preconnectsOf(inputs: BuildInputs, content: PageContent): ShopPreconnect[] {
+  const own = new URL(inputs.site.publicUrl).origin;
+  const api: ShopPreconnect[] =
+    content.bundleTag === undefined ? [] : [{ href: new URL(inputs.env.apiUrl).origin, crossorigin: true }];
+  const image = URL.parse(content.mainImage ?? '', inputs.site.publicUrl);
+  const images: ShopPreconnect[] =
+    image !== null && image.protocol === 'https:' ? [{ href: image.origin, crossorigin: false }] : [];
+  return [...api, ...images].filter((link) => link.href !== own);
+}
+
+// Ссылки <head> сверх SEO: иконка вкладки и ранние соединения.
+const linksOf = (inputs: BuildInputs, content: PageContent): Pick<ShopPageHead, 'favicon' | 'preconnect'> => ({
+  favicon: faviconOf(inputs.site.favicon),
+  preconnect: preconnectsOf(inputs, content),
+});
+
 // Разметка для поиска (design.md блока 8, 8.6) — только у страницы товара; у остальных страниц поля нет.
 function structuredDataOf(route: ShopRoute, canonical: string): { structuredData?: string } {
   const data = productStructuredData(route.record, canonical);
   return data === '' ? {} : { structuredData: data };
 }
 
-// <head> страницы: язык, SEO, канонический адрес, конфиг, стили, код секций, теги соцсетей и разметка для поиска.
-function headOf(
-  inputs: BuildInputs,
-  route: ShopRoute,
-  theme: ParsedTheme,
-  migrations: TokenMigrations,
-  content: PageContent,
-  name: string,
-): ShopPageHead {
-  const config = buildStorefrontConfig({
+// Конфиг витрины страницы (блок 3).
+const pageConfigOf = (inputs: BuildInputs, route: ShopRoute, content: PageContent, name: string) =>
+  buildStorefrontConfig({
     site: { ...inputs.site, name },
     theme: { ...inputs.theme, settings: content.themeSettings },
     env: inputs.env,
@@ -224,11 +251,24 @@ function headOf(
     // Места блоков расширений для частей бандла страницы (блок 15, часть 15д, Р15д-1).
     extPoints: pageExtPoints(inputs, route.id),
   });
+
+// <head> страницы: язык, SEO, канонический адрес, иконка и ранние соединения, конфиг, стили, код секций, теги
+// соцсетей и разметка для поиска.
+function headOf(
+  inputs: BuildInputs,
+  route: ShopRoute,
+  theme: ParsedTheme,
+  migrations: TokenMigrations,
+  content: PageContent,
+  name: string,
+): ShopPageHead {
+  const config = pageConfigOf(inputs, route, content, name);
   const canonical = new URL(route.path, inputs.site.publicUrl).href;
   return {
     lang: config.locale,
     ...seoOf(inputs, route, name),
     canonical,
+    ...linksOf(inputs, content),
     configHtml: configTag(config),
     ...pageStyles(inputs, theme, migrations),
     // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены: стили секций и тег бандла (часть 5б).
@@ -254,7 +294,7 @@ export function pageLocals(
     header: content.header ?? [],
     sections: content.sections,
     // Секции поверх страницы (блок 12, Р12а-8) — сразу после подвала: тема печатает footer после <main>.
-        // Секции поверх страницы (блок 12, Р12а-8) — сразу после подвала: тема печатает footer после <main>.
+    // Секции поверх страницы (блок 12, Р12а-8) — сразу после подвала: тема печатает footer после <main>.
     footer: [...(content.footer ?? []), ...(content.overlay ?? [])],
   };
 }

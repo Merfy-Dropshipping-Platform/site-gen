@@ -6,7 +6,15 @@ export const REBUILD_EVENT_INPUTS: Readonly<Record<string, readonly string[]>> =
   'merchant-publish': ['revision', 'code'],
   'product-change': ['data.product'],
   'theme-change': ['theme', 'code'],
-  'branding-change': ['revision', 'site.description', 'site.seoTitle', 'site.keywords', 'site.logoUrl', 'site.signature'],
+  'branding-change': [
+    'revision',
+    'site.description',
+    'site.seoTitle',
+    'site.keywords',
+    'site.logoUrl',
+    'site.favicon',
+    'site.signature',
+  ],
   'theme-release': ['theme', 'code'],
   // Выпуски блока 10: платформа меняет код рендера, ядро и секции платформы, расширение — код своих секций.
   'platform-release': ['platform', 'shell', 'code'],

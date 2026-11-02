@@ -36,12 +36,23 @@ describe('страница магазина на рисовальщике nova',
   });
 
   // Владелец 08.10: «SEO-описание пользователь может не заполнить, но при этом сайт должен работать».
-  it('мерчант не заполнил SEO-описание — главная собрана, тега description нет', async () => {
+  it('мерчант не заполнил SEO-описание — главная собрана, описание платформы, ключевых слов нет', async () => {
     const plain = changedInputs((inputs) => (inputs.site.description = ''));
     const html = text((await renderShopPage(plain, '/', theme)).file.content);
     expect(html).toContain('<title>Стенд Nova</title>');
-    expect(html).not.toContain('name="description"');
+    expect(html).toContain('<meta name="description" content="Стенд Nova — интернет-магазин">');
     expect(html).not.toContain('name="keywords"');
+  });
+
+  // Замер PageSpeed 02.11.2026: без иконки браузер просил /favicon.ico и получал 404.
+  it('иконка вкладки: своя из брендинга, нет — пустая data:,', async () => {
+    const own = changedInputs((inputs) => (inputs.site.favicon = 'https://s3.merfy.ru/merfy/branding/favicon-1.png'));
+    expect(text((await renderShopPage(own, '/', theme)).file.content)).toContain(
+      '<link rel="icon" href="https://s3.merfy.ru/merfy/branding/favicon-1.png">',
+    );
+    expect(text((await renderShopPage(standInputs, '/', theme)).file.content)).toContain(
+      '<link rel="icon" href="data:,">',
+    );
   });
 
   // Заполненное мерчантом попадает в страницу (владелец 08.10).
@@ -68,13 +79,13 @@ describe('страница магазина на рисовальщике nova',
     expect(html).not.toContain('og:image');
   });
 
-  it('мерчант загрузил логотип PNG — он картинка для соцсетей; описания нет — og:description нет', async () => {
+  it('мерчант загрузил логотип PNG — он картинка для соцсетей; описания нет — og:description платформы', async () => {
     const logo = changedInputs((inputs) =>
       Object.assign(inputs.site, { description: '', logoUrl: 'https://s3.merfy.ru/merfy/branding/logo-1.png' }),
     );
     const html = text((await renderShopPage(logo, '/', theme)).file.content);
     expect(html).toContain('<meta property="og:image" content="https://s3.merfy.ru/merfy/branding/logo-1.png">');
-    expect(html).not.toContain('og:description');
+    expect(html).toContain('<meta property="og:description" content="Стенд Nova — интернет-магазин">');
   });
 
   it('конфиг магазина в живом режиме и CSS токенов с правкой мерчанта — в <head>', async () => {

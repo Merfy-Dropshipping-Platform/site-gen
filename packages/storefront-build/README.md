@@ -131,6 +131,13 @@
 - `special-pages.json`: шаблоны записей `product`, `collection`, `blog`, `article`, `policy` — особые страницы с
   адресом-образцом (`/product/:slug`); заняты id шаблона и первая часть адреса (`SPECIAL_PAGE_SLUGS`: `/product`,
   `/collections`, `/blogs`, `/legal`).
+- Служебные страницы (`"index": false`: корзина, оформление, кабинет, избранное, вход, 404; 02.11.2026) — с
+  `<meta name="robots" content="noindex">`; их адреса и копии — `NOINDEX_PATHS`, по нему карта сайта storefront-storage
+  их не берёт.
+- Порядок загрузки картинок (`src/image-loading.ts`, 02.11.2026): первая `<img>` в `<main>` — `loading="eager"` и
+  `fetchpriority="high"`, остальные — `loading="lazy"`; свои `loading` и `fetchpriority` секций снимаются. В `<head>` —
+  иконка вкладки (`branding.favicons.universal`, нет — `data:,`) и `preconnect` к шлюзу и хосту главной картинки;
+  пустое описание страницы — описание магазина, иначе «<имя> — интернет-магазин».
 - `src/routes.ts`: страница на каждую запись (`recordIndex`), если в списке шаблона есть видимая секция
   (`templateShown`); у политик — и с пустым шаблоном: в `<main>` текст от платформы (`src/policy-text.ts`, В8-1 А).
   Список страниц и индекс записей — один раз на входы; `routeDuplicates` — совпавшие адреса для журнала сборщика.

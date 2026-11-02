@@ -68,11 +68,11 @@ describe('SEO страницы записи', () => {
     expect(headAt(inputs, '/collections/kashemir').social.image).toBe('https://s3.merfy.ru/logo.png');
   });
 
-  it('политика: заголовок — её название, описания и ключевых слов нет', () => {
+  it('политика: заголовок — её название, описание — магазина, ключевых слов нет', () => {
     const inputs = recordInputs([policy('privacy', 'Мы бережём данные покупателей')]);
     expect(headAt(inputs, '/legal/privacy')).toMatchObject({
       title: 'Политика конфиденциальности',
-      description: '',
+      description: 'Магазин-стенд новой темы',
       keywords: '',
       canonical: 'https://nova-stand.example/legal/privacy',
     });

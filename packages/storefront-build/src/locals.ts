@@ -9,6 +9,11 @@ export interface ShopPageHead {
   // Ключевые слова мерчанта; пустая строка — не заполнил: тег <meta name="keywords"> не рисуется (seo.ts).
   keywords: string;
   canonical: string;
+  // Иконка вкладки для <link rel="icon">: своя мерчанта или пустая data:, (head.ts) — всегда есть.
+  favicon: string;
+  // Ранние соединения <link rel="preconnect"> (head.ts): шлюз и хост главной картинки; пусто — их нет. Нет поля —
+  // заготовки тестов до 02.11.
+  preconnect?: readonly ShopPreconnect[];
   configHtml: string;
   // База страницы (блок 4 «Секций и SDK», Р4-12): preflight и база словаря — <style id="merfy-base"> первым стилем.
   baseCss: string;
@@ -27,6 +32,13 @@ export interface ShopPageHead {
   // Разметка для поиска страницы записи (блок 8 «Секций и SDK», часть 8б-2): готовая строка
   // <script type="application/ld+json">…</script>, её пишет платформа (head.ts); тема печатает как есть. Нет — разметки нет.
   structuredData?: string;
+}
+
+// Раннее соединение: источник (схема и хост) и нужен ли crossorigin — запросы fetch без cookie идут по своему
+// соединению, картинки — по обычному.
+export interface ShopPreconnect {
+  href: string;
+  crossorigin: boolean;
 }
 
 // Теги для соцсетей (блок 9): og: и twitter:card. Заголовок, описание и адрес у них те же, что у страницы (title,

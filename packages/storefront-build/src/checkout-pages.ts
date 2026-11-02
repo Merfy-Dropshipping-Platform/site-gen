@@ -10,6 +10,7 @@ import type { SpecialFiles } from './platform-pages';
 import type { RenderedPage, ShopTheme } from './page';
 import type { PageContent, PageMode, PageRender } from './sections-render';
 import type { ShopRoute } from './routes';
+import { NOINDEX_META, NOINDEX_PAGE_IDS } from './special-pages';
 
 // Страницы оформления новой темы (блок 10, Р10а-17): пишутся в каждой сборке; строк в манифесте страниц нет.
 
@@ -64,7 +65,9 @@ export async function checkoutFiles(inputs: BuildInputs, theme: ShopTheme, page:
       const route = routeOf(checkout);
       // Бандл — до рендера: его тег идёт в <head> страницы (часть 5б), как у страниц секций.
       const bundle = await pageBundle(inputs, checkout.id, page, undefined, [...checkout.parts]);
-      const content: PageContent = { sections: [], sectionsCss: '', mode: 'live', bundleTag: bundle?.tag ?? '' };
+      // Оформление — служебная страница (special-pages.json, index: false): noindex перед бандлом, как у страниц секций.
+      const bundleTag = `${NOINDEX_PAGE_IDS.has(checkout.id) ? NOINDEX_META : ''}${bundle?.tag ?? ''}`;
+      const content: PageContent = { sections: [], sectionsCss: '', mode: 'live', bundleTag };
       const locals = {
         ...pageLocals(inputs, route, theme.tokens, theme.migrations, content),
         checkout: checkoutLocalsOf(inputs, theme, checkout.id === 'page-checkout-result', page.mode),

@@ -16,6 +16,8 @@ export type SpecialPage = {
   aliases?: string[];
   // Страница не из секций — её пишет сборка (оформление заказа и его результат).
   sections?: false;
+  // Служебная страница (корзина, вход, кабинет, оформление, 404): noindex и нет в карте сайта — решает сборка витрин.
+  index?: false;
 };
 
 type UnknownRecord = Record<string, unknown>;
@@ -46,6 +48,7 @@ function toSpecialPage(row: unknown, at: number): SpecialPage {
     // Блок 10, часть 10а (Р10а-15): копии адресов — статические; сборка проверяет список схемой.
     ...(isStringArray(row.aliases) ? { aliases: row.aliases } : {}),
     ...(row.sections === false ? { sections: false as const } : {}),
+    ...(row.index === false ? { index: false as const } : {}),
   };
 }
 

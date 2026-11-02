@@ -46,7 +46,7 @@ const zoned = (column: string): string => `to_char(${column} AT TIME ZONE 'UTC',
 const SHOP_SQL = `SELECT id, tenant_id, name, theme_id, theme_version, status, public_url,
   COALESCE(branding->'seo'->>'description', '') AS description, COALESCE(branding->'seo'->>'title', '') AS seo_title,
   COALESCE(branding->'seo'->>'keywords', '') AS keywords, COALESCE(branding->>'logoUrl', '') AS logo_url,
-  COALESCE(settings->>'themeBrandName', '') AS signature,
+  COALESCE(branding->'favicons'->>'universal', '') AS favicon, COALESCE(settings->>'themeBrandName', '') AS signature,
   ${plain('updated_at')} AS updated_at
   FROM site WHERE id = $1 AND deleted_at IS NULL`;
 
@@ -62,6 +62,7 @@ const shopRowSchema = z.object({
   seo_title: z.string(),
   keywords: z.string(),
   logo_url: z.string(),
+  favicon: z.string(),
   signature: z.string(),
   updated_at: z.string(),
 });
@@ -79,6 +80,8 @@ export interface Shop {
   seoTitle: string;
   keywords: string;
   logoUrl: string;
+  // Иконка вкладки (branding.favicons.universal); не загружена — пустая строка.
+  favicon: string;
   signature: string;
   updatedAt: string;
 }
@@ -99,6 +102,7 @@ export async function readShop(db: Queryable, siteId: string): Promise<Shop | nu
     seoTitle: row.seo_title,
     keywords: row.keywords,
     logoUrl: row.logo_url,
+    favicon: row.favicon,
     signature: row.signature,
     updatedAt: row.updated_at,
   };
@@ -416,6 +420,7 @@ export const buildInputsOf = (parts: InputsParts) => ({
     seoTitle: parts.shop.seoTitle,
     keywords: parts.shop.keywords,
     logoUrl: parts.shop.logoUrl,
+    favicon: parts.shop.favicon,
     signature: parts.shop.signature,
     updatedAt: parts.shop.updatedAt,
   },

@@ -11,6 +11,7 @@ import { globalClasses, pageBundle, placedSections, withoutHidden } from './code
 import { emptyShopHtml, mcpUrlOf } from './empty-shop';
 import { entityKey } from './entities';
 import { pageLocals, shopName } from './head';
+import { withImageLoading } from './image-loading';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
@@ -34,7 +35,7 @@ import {
 import { checkSeo } from './seo';
 import { policyTextHtml } from './policy-text';
 import { shopPropsOf } from './shop-props';
-import { HOME_PAGE, NOT_FOUND_PAGE_ID } from './special-pages';
+import { HOME_PAGE, NOINDEX_META, NOINDEX_PAGE_IDS, NOT_FOUND_PAGE_ID } from './special-pages';
 
 // Одна страница магазина (design.md блока 4, Св-1 В): рендерится по запросу без полной сборки и отдаётся строкой в
 // формате манифеста и файлом. Полная сборка рендерит каждую страницу так же, поэтому строки совпадают. Шапка, свой
@@ -139,9 +140,12 @@ function pageContentOf(
   route: ShopRoute,
   inputs: BuildInputs,
 ): PageContent {
-  const content = splitContent(
-    rendered,
-    lists.map((list) => list.length),
+  // Порядок загрузки картинок (image-loading.ts) — по готовой разметке трёх списков: главная картинка — в <main>.
+  const content = withImageLoading(
+    splitContent(
+      rendered,
+      lists.map((list) => list.length),
+    ),
   );
   if (route.record?.type === 'policy' && (lists[1] ?? []).length === 0)
     return { ...content, sections: [policyTextHtml(route.record.record)] };
@@ -256,7 +260,8 @@ const META_ESCAPES: Record<string, string> = { '&': '&amp;', '"': '&quot;', '<':
 const escapeMetaValue = (text: string): string => text.replace(/[&"<>]/g, (char) => META_ESCAPES[char] ?? char);
 
 // Теги страницы (блок 11, Р11а-13): noindex, follow и merfy-list с каноническим видом параметров — у страницы с
-// непустыми параметрами списка; JSON вариантов товаров страницы. Пусто — ''.
+// непустыми параметрами списка; noindex — у служебной страницы (special-pages.json, index: false); JSON вариантов
+// товаров страницы. Пусто — ''.
 function headTagsOf(
   route: ShopRoute,
   placed: readonly PlacedSection[],
@@ -264,10 +269,11 @@ function headTagsOf(
   list: ListRequest | undefined,
   page: PageRender,
 ): string {
-  const meta =
+  const listMeta =
     list !== undefined && !listQueryIsEmpty(list.query)
       ? `<meta name="robots" content="noindex, follow"><meta name="merfy-list" content="${escapeMetaValue(listQueryString(list.query))}">`
       : '';
+  const meta = NOINDEX_PAGE_IDS.has(route.id) ? NOINDEX_META : listMeta;
   const tag = variantsTagOf(pageVariantsOf(pageProductsOf(route, placed, props)));
   const bytes = Buffer.byteLength(tag, 'utf8');
   if (bytes > VARIANTS_NOTICE_BYTES)

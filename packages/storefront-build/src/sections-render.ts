@@ -184,6 +184,9 @@ export interface PageContent {
   // Теги перед бандлом (блок 11 «Секций и SDK», часть 11а): noindex и merfy-list страницы с параметрами списка, JSON
   // вариантов товаров страницы. Нет — без них.
   headTags?: string;
+  // Адрес главной картинки <main> как в src (image-loading.ts): к её хосту — <link rel="preconnect"> (head.ts). Нет —
+  // картинок в <main> нет или порядок загрузки не считали.
+  mainImage?: string;
   // Значения настроек темы страницы — те же, что у секций в Astro.props.theme: сквозные из них идут в theme.settings
   // конфига (блок 9 «Секций и SDK», часть 9б). Нет — поля в конфиге нет.
   themeSettings?: SettingValues;

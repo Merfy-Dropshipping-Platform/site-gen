@@ -12,6 +12,9 @@ export interface SpecialPage {
   aliases?: readonly string[];
   // Блок 10, часть 10а (Р10а-15): страница не из секций — её пишет сборка (оформление заказа и его результат).
   sections?: false;
+  // Служебная страница (корзина, вход, кабинет, оформление, 404; 02.11.2026): не для поиска — <meta name="robots"
+  // content="noindex"> и нет в карте сайта (storefront-storage, sitemap.ts).
+  index?: false;
 }
 
 // Страница, на которой стоит секция: Astro.props.page. У страницы 404 адреса нет — null.
@@ -40,6 +43,8 @@ const pageSchema = z.strictObject({
   aliases: z.array(aliasSchema).optional(),
   // Страница не из секций — только пометка false; true — ошибка схемы.
   sections: z.literal(false).optional(),
+  // Служебная страница — только пометка false, как у sections.
+  index: z.literal(false).optional(),
 });
 
 // Список один для сборки и sites: непустые id и адреса, без повторов; первая строка — главная с адресом «/».
@@ -73,6 +78,13 @@ const firstSegment = (address: string): string => `/${address.slice(1).split('/'
 export const SPECIAL_PAGE_SLUGS: ReadonlySet<string> = new Set(
   SPECIAL_PAGES.flatMap(addressesOf).map(firstSegment),
 );
+// Служебные страницы (index: false): id — для <meta name="robots" content="noindex"> (page.ts, checkout-pages.ts),
+// адреса и копии — чтобы карта сайта их не брала (storefront-storage, sitemap.ts).
+const NOINDEX_PAGES: readonly SpecialPage[] = SPECIAL_PAGES.filter((page) => page.index === false);
+export const NOINDEX_PAGE_IDS: ReadonlySet<string> = new Set(NOINDEX_PAGES.map((page) => page.id));
+export const NOINDEX_PATHS: ReadonlySet<string> = new Set(NOINDEX_PAGES.flatMap(addressesOf));
+export const NOINDEX_META = '<meta name="robots" content="noindex">';
+
 export const HOME_PAGE: PageInfo = { id: 'home', path: '/' };
 export const NOT_FOUND_TEXT = { heading: 'Страница не найдена', home: 'На главную' } as const;
 export const UNAVAILABLE_TEXT = { heading: 'Сайт временно недоступен', text: 'Попробуйте через минуту' } as const;

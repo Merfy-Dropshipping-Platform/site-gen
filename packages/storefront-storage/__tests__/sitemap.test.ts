@@ -22,6 +22,30 @@ describe('robots.txt и карта сайта', () => {
     ]);
   });
 
+  // 02.11.2026: служебные страницы nova (entity site) попадали в карту — корзина, вход, кабинет, избранное, 404.
+  it('служебные страницы (special-pages.json, index: false) — не в карте; свои страницы магазина — в ней', () => {
+    const service = [
+      '/cart',
+      '/wishlist',
+      '/login',
+      '/verify',
+      '/account',
+      '/account/profile/',
+      '/account/orders',
+      '/404',
+    ];
+    const pages = [
+      HOME,
+      { path: '/o-nas', entity: `site:${SHOP}` },
+      ...service.map((path) => ({ path, entity: `site:${SHOP}` })),
+    ];
+    const files = seoFiles({ manifest: buildOf(pages).manifest, publicUrl: PUBLIC_URL, indexable: true });
+    const map = textOf(files, '/sitemap-pages.xml') ?? '';
+    expect(map).toContain('<loc>https://scarf.merfy.ru/</loc>');
+    expect(map).toContain('<loc>https://scarf.merfy.ru/o-nas</loc>');
+    for (const path of service) expect(map, path).not.toContain(`scarf.merfy.ru${path}<`);
+  });
+
   it('robots.txt ссылается на индекс карты', () => {
     const files = seoFiles({ manifest: buildOf([HOME]).manifest, publicUrl: PUBLIC_URL, indexable: true });
     expect(textOf(files, '/robots.txt')).toBe(

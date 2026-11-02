@@ -1,4 +1,4 @@
-import type { PageEntityType, PageRow, StorefrontManifest } from '@merfy/storefront-build';
+import { NOINDEX_PATHS, type PageEntityType, type PageRow, type StorefrontManifest } from '@merfy/storefront-build';
 
 // robots.txt и карта сайта магазина новой темы (design.md блока 5, раздел 4, «Удалённое, коды ответа и карта сайта»):
 // публичные страницы из манифеста, lastmod — дата правки данных страницы (блок 4); отдельные файлы по типам, до 50 000
@@ -48,6 +48,9 @@ interface SitemapEntry {
 }
 
 const escapeXml = (text: string): string => text.replace(/[&<>"']/g, (char) => XML_ESCAPES[char]);
+// Служебная страница (корзина, вход, кабинет, 404; special-pages.json, index: false) — не в карте: у неё noindex.
+// Адрес сверяется без косой черты в конце.
+const isServicePage = (path: string): boolean => NOINDEX_PATHS.has(path.length > 1 ? path.replace(/\/$/, '') : path);
 // Адрес страницы — абсолютный, путь в нём закодирован (кириллица, пробелы): так требует формат карты.
 const urlOf = (publicUrl: string, path: string): string => new URL(path, publicUrl).href;
 const chunkPath = (group: SitemapGroup, index: number): string =>
@@ -76,7 +79,7 @@ function groupEntries(pages: readonly PageRow[], publicUrl: string): Map<Sitemap
   const sorted = [...pages].sort((left, right) => (left.path < right.path ? -1 : 1));
   sorted.forEach((page) => {
     const group = SITEMAP_GROUPS[page.entity.type];
-    if (group === null) return;
+    if (group === null || isServicePage(page.path)) return;
     // Страницы N списка (блок 11, п. 24) — не в карте сайта: в ней только первая страница.
     if ((page.list?.page ?? 1) > 1) return;
     const entries = groups.get(group) ?? [];

@@ -33,6 +33,27 @@ const UNREACHABLE: BuilderAnswer = {
   body: "сборщик витрин не ответил",
 };
 
+/** Указатель магазина в хранилище витрин (сборщик: GET /pointer). */
+export interface ShopPointer {
+  /** Номер выложенной сборки. */
+  build: number;
+  /** Выкладка магазина на паузе. */
+  paused: boolean;
+  /** Номер сборки, которая ждёт снятия паузы. */
+  pending: number | null;
+}
+
+const isNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+function shopPointerOf(value: unknown): ShopPointer | null {
+  if (typeof value !== "object" || value === null) return null;
+  const { build, paused, pending } = value as Record<string, unknown>;
+  if (!isNumber(build) || typeof paused !== "boolean") return null;
+  if (pending !== null && !isNumber(pending)) return null;
+  return { build, paused, pending };
+}
+
 @Injectable()
 export class StorefrontBuilderClient {
   private readonly baseUrl: string;
@@ -42,6 +63,22 @@ export class StorefrontBuilderClient {
       /\/+$/,
       "",
     );
+  }
+
+  /**
+   * Указатель магазина: что сейчас выложено и стоит ли выкладка на паузе.
+   * Сборщика нет в настройках, он недоступен, молчит дольше таймаута, у магазина
+   * нет указателя или ответ не по формату — null (текущее состояние неизвестно).
+   */
+  async pointerOf(siteId: string): Promise<ShopPointer | null> {
+    const answer = await this.call("/pointer", { shop: siteId });
+    if (answer.status !== 200) return null;
+    try {
+      const value: unknown = JSON.parse(answer.body);
+      return shopPointerOf(value);
+    } catch {
+      return null;
+    }
   }
 
   /** GET или POST к сборщику; сборщик молчит дольше 10 с или недоступен — 502. */

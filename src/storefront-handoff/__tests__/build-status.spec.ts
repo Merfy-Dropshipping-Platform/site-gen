@@ -22,7 +22,7 @@ const T2 = new Date("2026-11-01T23:44:13.552Z");
 type Rows = Partial<Record<"site" | "build" | "shop" | "old", unknown[]>>;
 
 /** Фейковая БД: select().from(таблица).where() отдаёт заготовленные строки таблицы. */
-function makeService(rows: Rows) {
+function makeService(rows: Rows, builder?: { pointerOf: jest.Mock }) {
   const wheres: Array<{ sql: string; params: unknown[] }> = [];
   const byTable = new Map<unknown, unknown[]>([
     [schema.site, rows.site ?? [{ id: SITE }]],
@@ -51,6 +51,10 @@ function makeService(rows: Rows) {
     dep,
     dep,
     dep,
+    undefined, // activityLogPublisher
+    undefined, // injectedStoreContent
+    undefined, // storefrontHandoff
+    builder as any,
   );
   return { service, wheres };
 }
@@ -286,6 +290,117 @@ describe("getBuildStatus: сборки нового сборщика витри�
     const { service } = makeService({ build: [buildRow("live")] });
 
     expect(await service.getBuildStatus(TENANT, SITE, OLD_ID)).toBeNull();
+  });
+});
+
+describe("getBuildStatus: итог paused сверяется с указателем магазина", () => {
+  const status = async (pointer: unknown) => {
+    const pointerOf = jest.fn().mockResolvedValue(pointer);
+    const { service } = makeService(
+      { build: [buildRow("paused")] },
+      {
+        pointerOf,
+      },
+    );
+    return {
+      res: await service.getBuildStatus(TENANT, SITE, String(BUILD)),
+      pointerOf,
+    };
+  };
+
+  it("сборка ждёт снятия паузы (pending совпал, пауза стоит) -> paused", async () => {
+    const { res, pointerOf } = await status({
+      build: BUILD - 1000,
+      paused: true,
+      pending: BUILD,
+    });
+
+    expect(pointerOf).toHaveBeenCalledWith(SITE);
+    expect(res).toMatchObject({
+      status: "paused",
+      message: expect.stringMatching(/на паузе.*пауза будет снята/),
+    });
+    expect(res?.message).not.toMatch(/проверить не удалось/);
+  });
+
+  it("паузу сняли, сборка стала живой -> uploaded «Сборка выложена»", async () => {
+    const { res } = await status({
+      build: BUILD,
+      paused: false,
+      pending: null,
+    });
+
+    expect(res).toMatchObject({
+      status: "uploaded",
+      percent: 100,
+      message: expect.stringMatching(/^Сборка выложена/),
+    });
+  });
+
+  it("на сайте уже более новая сборка -> uploaded «более новая сборка»", async () => {
+    const { res } = await status({
+      build: BUILD + 5000,
+      paused: false,
+      pending: null,
+    });
+
+    expect(res).toMatchObject({
+      status: "uploaded",
+      message: expect.stringMatching(/более новая сборка/),
+    });
+  });
+
+  it("пауза стоит, ждёт более новая сборка -> uploaded «более новая сборка»", async () => {
+    const { res } = await status({
+      build: BUILD - 1000,
+      paused: true,
+      pending: BUILD + 5000,
+    });
+
+    expect(res).toMatchObject({
+      status: "uploaded",
+      message: expect.stringMatching(/более новая сборка/),
+    });
+  });
+
+  it("сборка показана, но выкладка на паузе -> paused", async () => {
+    const { res } = await status({ build: BUILD, paused: true, pending: null });
+
+    expect(res?.status).toBe("paused");
+  });
+
+  it("указатель не прочитан (сборщик не ответил, null) -> paused с припиской", async () => {
+    const { res } = await status(null);
+
+    expect(res).toMatchObject({
+      status: "paused",
+      message: expect.stringMatching(
+        /на паузе.*Текущее состояние выкладки проверить не удалось/,
+      ),
+    });
+  });
+
+  it("сборщик не подключён (нет клиента) -> paused с припиской", async () => {
+    const { service } = makeService({ build: [buildRow("paused")] });
+
+    const res = await service.getBuildStatus(TENANT, SITE, String(BUILD));
+
+    expect(res).toMatchObject({
+      status: "paused",
+      message: expect.stringMatching(/проверить не удалось/),
+    });
+  });
+
+  it("указатель спрашивают только для paused", async () => {
+    const pointerOf = jest.fn();
+    const { service } = makeService(
+      { build: [buildRow("live")] },
+      { pointerOf },
+    );
+
+    await service.getBuildStatus(TENANT, SITE, String(BUILD));
+
+    expect(pointerOf).not.toHaveBeenCalled();
   });
 });
 

@@ -148,6 +148,42 @@ export function finishedBuildStatus(
   };
 }
 
+/** Указатель магазина (сборщик: GET /pointer) — то, что нужно для итога `paused`. */
+export interface PointerFacts {
+  build: number;
+  paused: boolean;
+  pending: number | null;
+}
+
+const PAUSED_UNKNOWN =
+  " Текущее состояние выкладки проверить не удалось: возможно, пауза уже снята и сборка выложена.";
+
+/**
+ * Итог `paused` записан при конце сборки и потом не меняется, а паузу снимают —
+ * тогда ждущая сборка становится живой. Поэтому статус сверяется с указателем
+ * магазина: ждёт снятия паузы — `paused`; уже выложена — `uploaded`; на сайте
+ * более новая — `uploaded`; указатель не прочитан (null) — `paused` с припиской.
+ */
+export function settlePausedStatus(
+  status: StorefrontBuildStatus,
+  pointer: PointerFacts | null,
+): StorefrontBuildStatus {
+  if (pointer === null) {
+    return { ...status, message: `${status.message ?? ""}${PAUSED_UNKNOWN}` };
+  }
+  const build = Number(status.buildId);
+  if (
+    pointer.paused &&
+    (pointer.pending === build || pointer.build === build)
+  ) {
+    return status;
+  }
+  if (pointer.build === build && !pointer.paused) {
+    return { ...status, ...OUTCOMES.live };
+  }
+  return { ...status, ...OUTCOMES.stale };
+}
+
 /** Ответ по строке магазина, если сборка с этим номером ещё не кончилась; иначе null. */
 export function pendingBuildStatus(
   shop: ShopRow,

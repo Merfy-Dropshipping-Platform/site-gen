@@ -44,8 +44,10 @@ import {
   finishedBuildStatus,
   parseStorefrontBuildNumber,
   pendingBuildStatus,
+  settlePausedStatus,
   type StorefrontBuildStatus,
 } from "./storefront-handoff/storefront-build-status";
+import { StorefrontBuilderClient } from "./storefront-preview/storefront-builder.client";
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
 import { rewriteCurrent } from "./content/rewrite-current";
 import { toStoreContentSite } from "./content/store-content.port";
@@ -334,6 +336,10 @@ export class SitesDomainService {
     // Optional — по той же причине, что и выше.
     @Optional()
     private readonly storefrontHandoff?: StorefrontHandoff,
+    // Указатель магазина в хранилище витрин — через сборщик (статус сборки с
+    // итогом paused). Optional — по той же причине, что и выше.
+    @Optional()
+    private readonly storefrontBuilder?: StorefrontBuilderClient,
   ) {}
 
   // Тип — конкретный класс, не порт StoreContent: R1 добавил на сервис
@@ -3472,7 +3478,13 @@ export class SitesDomainService {
           eq(schema.storefrontBuild.build, build),
         ),
       );
-    if (finished) return finishedBuildStatus(finished);
+    if (finished) {
+      const status = finishedBuildStatus(finished);
+      if (status === null || finished.outcome !== "paused") return status;
+      // «paused» записан при конце сборки, а паузу потом снимают: спрашиваем указатель.
+      const pointer = (await this.storefrontBuilder?.pointerOf(siteId)) ?? null;
+      return settlePausedStatus(status, pointer);
+    }
 
     const [shop] = await this.db
       .select()

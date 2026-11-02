@@ -1,4 +1,10 @@
-import { NOINDEX_PATHS, type PageEntityType, type PageRow, type StorefrontManifest } from '@merfy/storefront-build';
+import {
+  NOINDEX_PATHS,
+  STAND_PAGE_PATH,
+  type PageEntityType,
+  type PageRow,
+  type StorefrontManifest,
+} from '@merfy/storefront-build';
 
 // robots.txt и карта сайта магазина новой темы (design.md блока 5, раздел 4, «Удалённое, коды ответа и карта сайта»):
 // публичные страницы из манифеста, lastmod — дата правки данных страницы (блок 4); отдельные файлы по типам, до 50 000
@@ -48,9 +54,12 @@ interface SitemapEntry {
 }
 
 const escapeXml = (text: string): string => text.replace(/[&<>"']/g, (char) => XML_ESCAPES[char]);
-// Служебная страница (корзина, вход, кабинет, 404; special-pages.json, index: false) — не в карте: у неё noindex.
-// Адрес сверяется без косой черты в конце.
-const isServicePage = (path: string): boolean => NOINDEX_PATHS.has(path.length > 1 ? path.replace(/\/$/, '') : path);
+// Служебная страница (корзина, вход, кабинет, 404; special-pages.json, index: false) и стенд темы (/theme-stand на dev)
+// — не в карте: у них noindex. Адрес сверяется без косой черты в конце.
+function isServicePage(path: string): boolean {
+  const bare = path.length > 1 ? path.replace(/\/$/, '') : path;
+  return NOINDEX_PATHS.has(bare) || bare === STAND_PAGE_PATH;
+}
 // Адрес страницы — абсолютный, путь в нём закодирован (кириллица, пробелы): так требует формат карты.
 const urlOf = (publicUrl: string, path: string): string => new URL(path, publicUrl).href;
 const chunkPath = (group: SitemapGroup, index: number): string =>

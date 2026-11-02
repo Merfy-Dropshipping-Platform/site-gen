@@ -33,6 +33,7 @@ describe('robots.txt и карта сайта', () => {
       '/account/profile/',
       '/account/orders',
       '/404',
+      '/theme-stand',
     ];
     const pages = [
       HOME,

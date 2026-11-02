@@ -48,9 +48,9 @@ export const shopName = (site: BuildInputs['site']): string => site.name.trim() 
 // 4, Р1-4-8) — её SEO из ревизии: без заголовка — имя страницы, нет и его — имя магазина. Пусто — мерчант не заполнил:
 // тема тег не рендерит (договор SEO, seo.ts).
 // Страница N списка (блок 11 «Секций и SDK», Р11а-12): «… — страница N» в <title>; canonical — её адрес (route.path).
-// Описание есть у каждой страницы (02.11.2026, PageSpeed: «Document does not have a meta description» — минус баллы
-// SEO): своё пустое — описание магазина, пусто и оно — «<имя> — интернет-магазин». Заполнить своё мерчанту подсказывает
-// MCP.
+// Описание есть у каждой страницы (02.11.2026, PageSpeed: «Document does not have a meta description» — оценка SEO
+// ниже): своё пустое — описание магазина, пусто и оно — «<имя> — интернет-магазин». Заполнить своё мерчанту
+// подсказывает MCP.
 function seoOf(inputs: BuildInputs, route: ShopRoute, name: string) {
   const base = baseSeoOf(inputs, route, name);
   const seo = { ...base, description: base.description || inputs.site.description.trim() || defaultDescription(name) };

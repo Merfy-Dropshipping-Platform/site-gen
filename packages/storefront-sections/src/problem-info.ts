@@ -225,6 +225,15 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: 'Файлы секции совпадают с секцией нашей библиотеки (кроме name и title): копия без изменений под другим именем; секция сохраняется.',
     fix: 'Поставь библиотечную секцию как есть либо измени копию: параметры, разметку, вид.',
   },
+  'taste-img-loading': {
+    when: 'У <img> в шаблоне стоит loading="eager", loading={…} или fetchpriority: сборка их снимает — порядок загрузки картинок ставит платформа; секция сохраняется.',
+    fix: 'Убери атрибут: главной картинке страницы (первой в <main>) сборка ставит eager и fetchpriority="high", остальным, в том числе в меню, поиске и окнах, — lazy.',
+    example: {
+      before: '<img src={settings.image} alt="" loading="eager" fetchpriority="high" />',
+      after: '<img src={settings.image} alt="" />',
+    },
+    doc: 'styles.md#картинки',
+  },
   'release-changed': {
     when: 'Выпуск расширения с этой версией уже сохранён с другими файлами.',
     fix: 'Новая версия файлов — новый номер выпуска.',

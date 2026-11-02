@@ -100,6 +100,8 @@ export const PROBLEM_CODES = [
   'taste-literal-image',
   'taste-dead-setting',
   'taste-library-copy',
+  // loading="eager" и fetchpriority у <img> (img-loading.ts): порядок загрузки ставит сборка — предупреждение.
+  'taste-img-loading',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];
 
@@ -119,6 +121,7 @@ const WARNING_CODES: ReadonlySet<ProblemCode> = new Set([
   'taste-literal-image',
   'taste-dead-setting',
   'taste-library-copy',
+  'taste-img-loading',
 ]);
 
 export const sectionProblemSchema = z.strictObject({

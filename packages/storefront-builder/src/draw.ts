@@ -21,6 +21,7 @@ import { readSnapshot, type SnapshotDeps } from './snapshot';
 import type { ThemeCatalog } from './theme-catalog';
 import { sectionPreview, shopPreview, shopPreviewDeps, shopSections } from './shop-preview';
 import { EXTENSION_PLACES_ROUTE, extensionPlaces } from './extension-places';
+import { POINTER_ROUTE, pointerState, pointerStateDeps } from './pointer-state';
 import { standTokens, themePanel, type PreviewDeps } from './stand-preview';
 import { EXTENSION_SECTION_ROUTE, extensionSection } from './extension-section';
 import type { SdkDocs } from './sdk-docs';
@@ -241,6 +242,11 @@ async function route(deps: DrawDeps, request: IncomingMessage): Promise<DrawAnsw
   const url = new URL(request.url ?? '/', 'http://builder');
   if (url.pathname === '/health') return { status: 200, body: 'ok\n' };
   if (url.pathname in PREVIEW_ROUTES && deps.preview) return previewRoute(deps.preview, request, url);
+  // Указатель магазина для статуса сборки в sites: только чтение, база и хранилище — те же, что у дорисовки.
+  if (url.pathname === POINTER_ROUTE) {
+    if (request.method !== 'GET') return { status: 405, body: '' };
+    return pointerState(pointerStateDeps(deps.snapshot.db, deps.store, deps.log), url.searchParams.get('shop'));
+  }
   // Секция версии расширения от сервиса extensions через sites (блок 12 «Секций и SDK», 12.6).
   if (url.pathname === EXTENSION_SECTION_ROUTE && deps.sections) {
     const read = (): Promise<string> => bodyOf(request, SECTION_BODY_LIMIT_BYTES);

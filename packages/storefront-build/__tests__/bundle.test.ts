@@ -19,6 +19,7 @@ const CORE = [
   "export const cart = { name: 'cart' };",
   "export const favorites = { name: 'favorites' };",
   "export const analytics = { name: 'analytics' };",
+  'export const pageStores = (list) => list;',
   "export const unused = 'unused-export';",
 ].join('\n');
 // Ядро тяжелее порога встраивания: start хранит длинную строку — бандл идёт файлом.
@@ -58,13 +59,17 @@ function sourceOf(sections: readonly BundleSection[], core = CORE): BundleSource
 const entryOf = (entry: BundleSection, at: string): string =>
   `{name:${JSON.stringify(entry.name)},kind:${JSON.stringify(entry.kind)},script:${JSON.stringify(entry.script)},uses:["auth","cart","favorites"],definition:${at}`;
 
+const LOAD =
+  'const loadSection = (get, key) => { try { return get(); } catch (error) { return { [key]: () => { throw new Error(`скрипт секции не загрузился: ${error}`); } }; } };';
+
 describe('аргументы сборки бандла', () => {
   it('строка: импорт start и частей из @merfy/shell/core, модули по sha256, start со списком секций по порядку', () => {
     expect(bundleEntry(['auth', 'cart'], [BADGE, GEO])).toBe(
       [
         "import { start, auth, cart } from '@merfy/shell/core';",
-        `import s0 from "merfy-section:${BADGE.script}";`,
-        `import s1 from "merfy-section:${GEO.script}";`,
+        LOAD,
+        `const s0 = loadSection(() => require("merfy-section:${BADGE.script}").default, "mount");`,
+        `const s1 = loadSection(() => require("merfy-section:${GEO.script}").default, "mount");`,
         `start({ parts: [auth, cart], sections: [{ name: "shop:cart-badge", kind: "section", script: "${BADGE.script}", uses: ["auth","cart","favorites"], definition: s0 }, { name: "geo:locate", kind: "global", script: "${GEO.script}", uses: ["auth","cart","favorites"], definition: s1 }] });`,
         '',
       ].join('\n'),
@@ -122,6 +127,51 @@ describe('бандл страницы', () => {
     expect(text).toContain('badge-mounted');
     expect(text).toContain('reviews-mounted');
     expect(text).not.toContain('shop:old-badge');
+  });
+
+  // 03.11: секция расширения с голым defineSection(…) (ReferenceError на верхнем уровне модуля) обрывала весь бандл —
+  // скрипты остальных секций страницы не стартовали. Теперь упавший модуль — только сбой этой секции.
+  it('модуль падает на верхнем уровне (ReferenceError) — бандл грузится, остальные секции стартуют, у упавшей mount бросает', async () => {
+    const broken = 'var d = defineSection({ mount() {} });\nexport default d;';
+    const brokenStore = 'export default (() => { throw new TypeError("стор не собрался"); })();';
+    const modules = new Map(
+      [MODULES.badge, MODULES.reviews, broken, brokenStore].map((text): [string, string] => [hexOf(text), text]),
+    );
+    const entries = [
+      section('shop:broken', broken),
+      BADGE,
+      section('shop:broken-store', brokenStore, 'store'),
+      REVIEWS,
+    ];
+    const bundle = await bundlePage({ core: CORE, parts: PARTS, sections: entries, modules });
+    expect(bundle.notices).toEqual([]);
+    Reflect.deleteProperty(globalThis, 'merfyStarted');
+    const text = bundle.file === null ? bundle.tag.slice('<script type="module">'.length, -'</script>'.length) : '';
+    expect(text).not.toBe('');
+    await import(/* @vite-ignore */ `data:text/javascript;base64,${Buffer.from(text).toString('base64')}`);
+    const started: unknown = Reflect.get(globalThis, 'merfyStarted');
+    const listOf = (key: string): Record<string, unknown>[] => {
+      const list: unknown = typeof started === 'object' && started !== null ? Reflect.get(started, key) : undefined;
+      return Array.isArray(list) ? list.map((item: object) => ({ ...item })) : [];
+    };
+    const sections = listOf('sections');
+    expect(sections.map((item) => item.name)).toEqual(['shop:broken', 'shop:cart-badge', 'reviews:list']);
+    const stores = listOf('stores');
+    expect(stores.map((item) => item.name)).toEqual(['shop:broken-store']);
+    const hookOf = (entry: Record<string, unknown> | undefined, key: string): (() => void) => {
+      const definition: unknown = entry?.definition;
+      const hook: unknown = typeof definition === 'object' && definition !== null ? Reflect.get(definition, key) : null;
+      if (typeof hook !== 'function') throw new Error(`у определения нет ${key}`);
+      return () => void Reflect.apply(hook, undefined, []);
+    };
+    expect(hookOf(sections[0], 'mount')).toThrow(
+      'скрипт секции не загрузился: ReferenceError: defineSection is not defined',
+    );
+    expect(hookOf(stores[0], 'start')).toThrow('скрипт секции не загрузился: TypeError: стор не собрался');
+    hookOf(sections[1], 'mount')();
+    hookOf(sections[2], 'mount')();
+    expect(Reflect.get(globalThis, 'badge')).toBe('badge-mounted');
+    expect(Reflect.get(globalThis, 'reviews')).toBe('reviews-mounted');
   });
 
   it('ошибка не в модуле секции (части нет в ядре) — bundle-failed', async () => {

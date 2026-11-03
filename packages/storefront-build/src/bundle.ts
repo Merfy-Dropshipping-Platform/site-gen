@@ -123,6 +123,9 @@ function kitEntry(kit: KitPlan): { imports: string; part: string } | null {
   return { imports: `${lines.join('\n')}\n`, part: `kitBehaviors({ ${options.join(', ')} })` };
 }
 
+const LOAD_SECTION =
+  'const loadSection = (get, key) => { try { return get(); } catch (error) { return { [key]: () => { throw new Error(`скрипт секции не загрузился: ${error}`); } }; } };';
+
 // preview — бандл превью конструктора (часть 5г): ядро отдаёт watchPreviewReplace, start получает её в preview.
 export function bundleEntry(
   parts: readonly string[],
@@ -130,9 +133,16 @@ export function bundleEntry(
   kit?: KitPlan,
   preview = false,
 ): string {
-  const imports = sections.map(
-    (section, index) => `import s${index} from ${JSON.stringify(SECTION_IMPORT + section.script)};\n`,
-  );
+  // Модуль секции вычисляется не при загрузке бандла, а здесь, под try: ошибка его верхнего уровня (03.11: голый
+  // defineSection(…) — ReferenceError) не обрывает бандл страницы со скриптами остальных секций. Упавшая секция получает
+  // определение, у которого mount (у стора — start) бросает эту ошибку: ядро запишет сбой секции (консоль с её именем,
+  // data-merfy-state="failed", журнал ошибок), остальные секции работают. require — esbuild оборачивает такой модуль в
+  // отложенную функцию, а не вычисляет его при загрузке.
+  const loader = sections.length === 0 ? '' : `${LOAD_SECTION}\n`;
+  const imports = sections.map((section, index) => {
+    const key = section.kind === 'store' ? 'start' : 'mount';
+    return `const s${index} = loadSection(() => require(${JSON.stringify(SECTION_IMPORT + section.script)}).default, ${JSON.stringify(key)});\n`;
+  });
   // Строка секции — как до своих сторов (те же байты бандла у магазинов без них); у стора поля kind нет.
   const entryOf = (section: BundleSection, index: number): string => {
     const kind = section.kind === 'store' ? '' : `kind: ${JSON.stringify(section.kind)}, `;
@@ -145,7 +155,7 @@ export function bundleEntry(
   const tail = `${preview ? ', preview: watchPreviewReplace' : ''}${stores.length > 0 ? `, stores: pageStores([${stores.join(', ')}])` : ''}`;
   const kitCode = kit === undefined ? null : kitEntry(kit);
   const partList = [...parts, ...(kitCode === null ? [] : [kitCode.part])].join(', ');
-  return `import { ${names} } from ${CORE_SPECIFIER};\n${kitCode?.imports ?? ''}${imports.join('')}start({ parts: [${partList}], sections: [${entries.join(', ')}]${tail} });\n`;
+  return `import { ${names} } from ${CORE_SPECIFIER};\n${kitCode?.imports ?? ''}${loader}${imports.join('')}start({ parts: [${partList}], sections: [${entries.join(', ')}]${tail} });\n`;
 }
 
 // Импорт в бандле страницы: @merfy/shell и @merfy/shell/core — ядро, merfy-section:<hex> — модуль секции; иначе —

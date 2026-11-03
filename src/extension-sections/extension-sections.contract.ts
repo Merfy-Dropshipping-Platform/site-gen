@@ -11,6 +11,9 @@
  * 2. Событие sites.extension.toggled (sites_queue, без ответа): после enable и
  *    disable установки — sites ставит пересборку магазина (extension-toggle).
  * 3. Ответ контейнера на GET <адрес>/sections/<имя>: { files: { путь: текст } }.
+ * 4. RPC sites.extension.placements (sites_queue): где в магазине стоят секции
+ *    расширения — экземпляры из текущей ревизии, только секции этого расширения.
+ *    Ответ — { success, data } или { success: false, code, message }.
  */
 import { z } from "zod";
 
@@ -127,3 +130,54 @@ export function readSectionFiles(raw: unknown): SectionFilesRead {
   }
   return { ok: true, files: parsed.data.files };
 }
+
+// ---- sites.extension.placements: где стоят секции расширения ----
+
+export const PLACEMENTS_PATTERN = "sites.extension.placements";
+/** Экземпляров в одном ответе — не больше. */
+export const PLACEMENTS_LIMIT = 500;
+
+export const PlacementsRequestSchema = z.strictObject({
+  shopId: z.uuid(),
+  extensionId: z.string().regex(EXTENSION_ID_RE),
+  /** Имя секции без id расширения; нет — все секции расширения. */
+  section: z.string().max(40).regex(SECTION_NAME_RE).optional(),
+});
+export type PlacementsRequest = z.infer<typeof PlacementsRequestSchema>;
+
+export const PLACEMENT_LISTS = ["page", "header", "footer", "overlay"] as const;
+
+const PlacementItemSchema = z.strictObject({
+  /** id экземпляра в ревизии. */
+  id: z.string().min(1).max(200),
+  /** Имя секции без id расширения. */
+  section: z.string().max(40).regex(SECTION_NAME_RE),
+  list: z.enum(PLACEMENT_LISTS),
+  /** Страница экземпляра; у header, footer и overlay — null. */
+  page: z
+    .strictObject({ id: z.string().min(1), name: z.string().nullable() })
+    .nullable(),
+  hidden: z.boolean(),
+  /** Значения параметров экземпляра как в ревизии. */
+  settings: z.record(z.string(), z.unknown()),
+});
+export type PlacementItem = z.infer<typeof PlacementItemSchema>;
+
+export const PlacementsDataSchema = z.strictObject({
+  /** Текущая правка магазина; null — ревизии ещё нет. */
+  revision: z
+    .strictObject({ id: z.string().min(1), createdAt: z.string() })
+    .nullable(),
+  items: z.array(PlacementItemSchema).max(PLACEMENTS_LIMIT),
+});
+export type PlacementsData = z.infer<typeof PlacementsDataSchema>;
+
+export const PlacementsReplySchema = z.union([
+  z.object({ success: z.literal(true), data: PlacementsDataSchema }),
+  z.object({
+    success: z.literal(false),
+    code: z.enum(["not_found", "unavailable"]),
+    message: z.string(),
+  }),
+]);
+export type PlacementsReply = z.infer<typeof PlacementsReplySchema>;

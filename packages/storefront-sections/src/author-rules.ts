@@ -1,4 +1,6 @@
 import { SHOP_PREFIX } from './doors';
+import { EXT_RECORD_KIND } from './ext-record-field';
+import { settingFieldsOf } from './fields';
 import { EXT_USE_PREFIX, MANIFEST_FILE, STORE_USE_PREFIX, type SectionManifest } from './format';
 import { problem, type SectionProblem } from './problems';
 
@@ -12,6 +14,7 @@ export function authorProblems(manifest: SectionManifest, prefix: string): Secti
   return [
     ...roleNotAllowedProblems(manifest, prefix),
     ...foreignExtProblems(manifest, prefix),
+    ...foreignRecordProblems(manifest, prefix),
     ...foreignStoreProblems(manifest, prefix),
   ];
 }
@@ -29,6 +32,22 @@ function foreignExtProblems(manifest: SectionManifest, prefix: string): SectionP
     .map((use) =>
       problem('ext-foreign', MANIFEST_FILE, `uses: ${use} — секция расширения ${prefix} подключает только ${ownUse}`),
     );
+}
+
+// Параметр ext-record секции расширения указывает на записи только своего расширения: чужие записи секция не выбирает.
+// Секция магазина выбирает записи любого расширения (видны включённые).
+function foreignRecordProblems(manifest: SectionManifest, prefix: string): SectionProblem[] {
+  return settingFieldsOf(manifest.settings).flatMap((field) =>
+    field.setting.kind === EXT_RECORD_KIND && field.setting.ext !== prefix
+      ? [
+          problem(
+            'ext-foreign',
+            MANIFEST_FILE,
+            `settings: ${field.id} — запись расширения ${field.setting.ext}, а секция расширения ${prefix} выбирает только свои записи: ext должен быть ${prefix}`,
+          ),
+        ]
+      : [],
+  );
 }
 
 function foreignStoreProblems(manifest: SectionManifest, prefix: string): SectionProblem[] {

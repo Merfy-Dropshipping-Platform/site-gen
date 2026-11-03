@@ -17,6 +17,7 @@ const EXTENSIONS: NonNullable<StorefrontConfig['extensions']> = {
     stores: {
       summary: { fn: 'shopSummary', refreshOn: ['merfy:cart:add'] },
       rating: { fn: 'productRating', by: 'product' },
+      card: { fn: 'itemCard', by: 'record', record: 'item' },
       myVotes: { fn: 'customerVotes', customer: true },
     },
     methods: {
@@ -150,6 +151,53 @@ describe('сторы расширения', () => {
       return Array.isArray(ids) ? ids.length : -1;
     });
     expect(sizes).toEqual([100, 1]);
+  });
+
+  it('стор на запись: id записей секций — одним вызовом { recordIds }; каждая запись — своё значение', async () => {
+    const gateway = fakeGateway();
+    gateway.answer(FN('itemCard'), ok({ r1: { title: 'Первая' }, r2: { title: 'Вторая' } }));
+    const seen: Record<string, Json | null> = {};
+    openPage(
+      defineSection({
+        mount(_el, ctx) {
+          const card = ctx.ext['test-ext'].$card;
+          ctx.watch(card('r1'), (value) => (seen.r1 = value));
+          ctx.watch(card('r2'), (value) => (seen.r2 = value));
+          ctx.watch(card('r3'), (value) => (seen.r3 = value));
+        },
+      }),
+    );
+    await settle();
+    expect(extCalls(gateway)).toEqual([{ key: FN('itemCard'), body: { recordIds: ['r1', 'r2', 'r3'] } }]);
+    expect(seen).toEqual({ r1: { title: 'Первая' }, r2: { title: 'Вторая' }, r3: null });
+  });
+
+  it('стор на запись: запись не выбрана (null или "") — стор с null, запроса нет', async () => {
+    const gateway = fakeGateway();
+    const seen: (Json | null)[] = [];
+    openPage(
+      defineSection({
+        mount(_el, ctx) {
+          const card = ctx.ext['test-ext'].$card;
+          ctx.watch(card(null), (value) => seen.push(value));
+          ctx.watch(card(''), (value) => seen.push(value));
+        },
+      }),
+    );
+    await settle();
+    expect(seen).toEqual([null, null]);
+    expect(extCalls(gateway)).toEqual([]);
+  });
+
+  it('стор на запись: чужой по форме id — сбой mount sdk-call-invalid, запроса нет', async () => {
+    const gateway = fakeGateway();
+    const failures = watchFailures();
+    openPage(defineSection({ mount: (_el, ctx) => void ctx.ext['test-ext'].$card('r1 /../x') }));
+    await settle();
+    expect(failures.details.map((detail) => detail.stage)).toEqual(['mount']);
+    expect(failures.details[0]?.message).toContain('id записи');
+    expect(extCalls(gateway)).toEqual([]);
+    failures.stop();
   });
 
   it('customer: true у гостя — null без запроса; вошедший покупатель — запрос', async () => {

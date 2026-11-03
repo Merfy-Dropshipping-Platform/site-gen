@@ -105,6 +105,12 @@ describe('описания из ответа extensions.enabledForShop', () => {
     expect(extensionStorefrontOf({ ...TEST_EXT, cart: { note: 'Отзывов: {reviews}' } })).toEqual(TEST_EXT);
   });
 
+  it('стор на запись (by record + record) проходит как есть; by не из списка — null', () => {
+    const stores = { card: { fn: 'itemCard', by: 'record', record: 'item' } };
+    expect(extensionStorefrontOf({ stores })).toEqual({ stores, methods: {} });
+    expect(extensionStorefrontOf({ stores: { card: { fn: 'itemCard', by: 'order' } } })).toBeNull();
+  });
+
   it('нет stores и methods или storefront нет — пустые', () => {
     expect(extensionStorefrontOf({ product: { form: 'bookingForm', submit: 'bookingSubmit' } })).toEqual({
       stores: {},

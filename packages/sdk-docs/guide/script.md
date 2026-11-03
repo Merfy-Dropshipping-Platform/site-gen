@@ -67,7 +67,10 @@ export default defineSection<State>({
 ## Вызов функции расширения
 
 Секция с `"uses": ["ext:<id>"]` получает `ctx.ext.<id>`. Имена сторов (`$имя`) и методов (`имя`) задаёт манифест
-расширения (`storefront.stores`, `storefront.methods`). Метод вызывает функцию расширения на сервере:
+расширения (`storefront.stores`, `storefront.methods`). Стор с `by: "product"` читают как `$имя(productId)`, стор с
+`by: "record"` — как `$имя(recordId)`, где `recordId` — значение параметра секции вида `ext-record`
+([data.md](data.md#записи-магазина-в-полях-секции)); пустое значение (`null`, `""`) даёт стор с `null` без запроса, id не
+по форме (буквы, цифры, «-» и «_», до 200 знаков) — сбой `mount`. Метод вызывает функцию расширения на сервере:
 
 ```ts
 ctx.ext.<id>.<метод>(input?: { [ключ]: JSON }, options?: { quiet?: boolean }): Promise<Result>

@@ -7983,7 +7983,8 @@
                 "collection",
                 "blog",
                 "policy",
-                "hint"
+                "hint",
+                "ext-record"
               ]
             }
           },

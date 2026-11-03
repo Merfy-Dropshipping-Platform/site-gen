@@ -5,6 +5,7 @@ import { DocumentAdapter } from "../content/document.adapter";
 import { StoreContentService } from "../content/store-content.service";
 import { StorefrontBuilderClient } from "../storefront-preview/storefront-builder.client";
 import { ExtensionPlaces } from "./extension-places";
+import { ExtensionPlacements } from "./extension-placements";
 import { ExtensionSectionsController } from "./extension-sections.controller";
 
 // Секции и глобальные скрипты расширений от сервиса extensions (блок 12
@@ -20,6 +21,7 @@ import { ExtensionSectionsController } from "./extension-sections.controller";
     DocumentAdapter,
     StoreContentService,
     ExtensionPlaces,
+    ExtensionPlacements,
   ],
 })
 export class ExtensionSectionsModule {}

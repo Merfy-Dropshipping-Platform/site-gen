@@ -1,5 +1,6 @@
 import { settingFieldShape, settingProblem } from '@merfy/tokens';
 import { z } from 'zod';
+import { extRecordSpec, extRecordText } from './ext-record-field';
 import { MENU_ID, MENU_ID_MAX } from './menus';
 import {
   blogSpec,
@@ -122,6 +123,8 @@ export const sectionFieldShape = settingFieldShape.extend({
     blogSpec,
     policySpec,
     hintSpec,
+    // Запись расширения (ext-record-field.ts): ссылка на запись из records манифеста расширения, значение — её id.
+    extRecordSpec,
   ]),
 });
 
@@ -197,7 +200,17 @@ const richtextText = (path: string, value: unknown): string | undefined =>
     ? undefined
     : `${path}: нужно HTML до ${RICHTEXT_MAX} знаков`;
 
-type CheckedKind = 'menu' | 'richtext' | 'image-pair' | 'video' | 'radio' | 'range' | 'alignment' | 'color-scheme' | 'padding';
+type CheckedKind =
+  | 'menu'
+  | 'richtext'
+  | 'image-pair'
+  | 'video'
+  | 'radio'
+  | 'range'
+  | 'alignment'
+  | 'color-scheme'
+  | 'padding'
+  | 'ext-record';
 type CheckedSpec = Extract<SectionSettingSpec, { kind: CheckedKind }>;
 
 const KIND_CHECKS: {
@@ -221,6 +234,7 @@ const KIND_CHECKS: {
   alignment: (path, _spec, value) => oneOfText(path, ALIGNMENT_VALUES, value),
   'color-scheme': (path, _spec, value) => schemeText(path, value),
   padding: (path, spec, value) => paddingText(path, spec.max ?? PADDING_MAX_DEFAULT, value),
+  'ext-record': (path, _spec, value) => extRecordText(path, value),
 };
 
 function checkOf<K extends CheckedKind>(

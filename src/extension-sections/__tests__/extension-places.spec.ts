@@ -12,6 +12,7 @@ import {
   placedSections,
   type ExtensionPlace,
 } from "../extension-places";
+import type { ExtensionPlacements } from "../extension-placements";
 import { ExtensionSectionsController } from "../extension-sections.controller";
 
 // Секция расширения встаёт сама (блок 12 «Секций и SDK», часть 12д, Р12д-12…Р12д-14): после включения расширения —
@@ -171,6 +172,7 @@ describe("sites.extension.toggled и место по умолчанию", () => 
       { call: jest.fn() } as unknown as StorefrontBuilderClient,
       { notify, isNewTheme } as unknown as StorefrontHandoff,
       { place } as unknown as ExtensionPlaces,
+      { list: jest.fn() } as unknown as ExtensionPlacements,
     );
     return { controller, place, order };
   }

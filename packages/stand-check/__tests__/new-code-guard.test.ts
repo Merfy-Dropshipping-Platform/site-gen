@@ -63,7 +63,8 @@ const ALLOWED: readonly { rule: string; file: string; why: string }[] = [
   { rule: 'merfy-global', file: 'themes/nova/src/shop/CheckoutPage.astro', why: 'Р10а-17: адрес и магазин для theme-base (И10)' },
   {
     rule: 'merfy-global',
-    file: 'packages/storefront-shell/src/core/parts/checkout.ts',
+    // 03.11: прежняя часть оформления переехала в checkoutLegacy (у версий темы до "checkout": "sections").
+    file: 'packages/storefront-shell/src/core/parts/checkout-legacy.ts',
     why: 'Р10а-17, факт 33: настройки оформления для theme-base',
   },
   ...STAND_GLOBALS.map((file) => ({

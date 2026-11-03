@@ -1,4 +1,16 @@
-import type { AnimateOptions, Animation, CoreHandle, Json, Keyframes, Mode, SdkPart } from '../types';
+import type {
+  AnimateOptions,
+  Animation,
+  BehaviorHandleName,
+  BehaviorHandles,
+  CoreHandle,
+  Json,
+  Keyframes,
+  Mode,
+  NoData,
+  Result,
+  SdkPart,
+} from '../types';
 import type { BehaviorName } from './catalog';
 import type { Params } from './params';
 
@@ -22,9 +34,14 @@ export interface BehaviorHost {
   readonly core?: CoreHandle;
 }
 
+// Команда поведения для скрипта секции (ctx.behavior): аргумент уже проверен частью по виду из каталога (CommandSpec.arg).
+export type BehaviorCommand = (arg: unknown) => Result<NoData>;
+
 export interface BehaviorInstance {
   save?(): Json; // состояние для замены экземпляра в превью: номер слайда, открытые пункты, вкладка, окно
   restore?(state: Json): void;
+  // Команды из скрипта секции: имена — commands поведения в каталоге. Поведение без команд скрипту не подчиняется.
+  readonly commands?: Readonly<Record<string, BehaviorCommand>>;
 }
 
 export interface Behavior<N extends BehaviorName = BehaviorName> {
@@ -59,8 +76,19 @@ export interface BehaviorsOptions {
   readonly animate?: AnimateProvider;
 }
 
+// Поведения секции для ctx.behavior: section — экземпляр (узел, id, сигнал), within — узел этой секции, внутри которого
+// искать поведение (undefined — единственное с таким именем; null — узел не из этой секции, ядро не нашло его в области).
+// Ответ — команды каталога; нельзя управлять — Error с текстом для автора (его ловит предохранитель секции). Это обычный
+// Error, а не ShellError: ядро секций стоит в бюджете веса, а файл поведений не тянет лишний код.
+export type ControlProvider = <N extends BehaviorHandleName>(
+  section: { readonly element: HTMLElement; readonly id: string; readonly signal: AbortSignal },
+  name: N,
+  within: Element | null | undefined,
+) => BehaviorHandles[N];
+
 export interface BehaviorsApi {
   readonly animate: AnimateProvider | null; // null — скрипт секции, который вызывает ctx.animate, сборка не учла
+  readonly control: ControlProvider; // ctx.behavior скрипта секции
   save(sectionId: string): Json | null; // превью (часть 5б): состояние поведений экземпляра перед заменой
   restore(sectionId: string, state: Json): void; // превью: после запуска нового экземпляра с тем же id
 }

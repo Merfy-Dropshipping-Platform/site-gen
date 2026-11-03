@@ -350,10 +350,16 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     example: { before: '"role": "cart-drawer", "groups": ["footer"]', after: '"role": "cart-drawer"' },
   },
   'overlay-place': {
-    when: 'У секции без роли группа overlay стоит вместе с header, page или footer: секция поверх страницы — окно, ctx.overlay открывает его, на странице такой секции места нет.',
-    fix: 'Оставь в groups только overlay — тогда секция стоит поверх каждой страницы и открывается окном из скрипта (ctx.overlay.open()); для показа на странице сделай отдельную секцию без overlay.',
-    example: { before: '"groups": ["overlay", "page"]', after: '"groups": ["overlay"]' },
-    doc: 'script.md#окно-поверх-страницы',
+    when: 'У секции без роли группа overlay стоит вместе с header, page или footer: так объявляли окно поверх страницы, и оно не делит группы со страницей.',
+    fix: 'Убери overlay из groups и оставь header, page или footer; окно покажи поведением dialog из скрипта секции (ctx.behavior).',
+    example: { before: '"groups": ["overlay", "page"]', after: '"groups": ["page"]' },
+    doc: 'script.md#поведения-из-скрипта-секции',
+  },
+  'overlay-retired': {
+    when: 'У новой секции без роли в groups стоит overlay: в конструкторе три блока — шапка, тема и подвал, отдельного блока поверх страницы нет.',
+    fix: 'Поставь секцию в header, page или footer, а окно над экраном покажи поведением dialog: ctx.behavior("dialog").open() из скрипта секции.',
+    example: { before: '"groups": ["overlay"]', after: '"groups": ["page"]' },
+    doc: 'script.md#поведения-из-скрипта-секции',
   },
   'role-not-allowed': {
     when: 'Роль у секции расширения: роли бывают только у секций магазина.',

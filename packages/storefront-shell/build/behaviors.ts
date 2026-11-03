@@ -26,12 +26,14 @@ export interface BehaviorsManifest {
   readonly total: number;
 }
 
+// 03.11, команды поведений из скрипта секции (ctx.behavior): part — выбор поведения секции и проверка аргументов
+// (2816 → 3840), dialog — место окна поверх экрана, переходы, одно модальное окно и команды (6656 → 8448).
 export const BEHAVIOR_BUDGETS: Readonly<Record<BundleName | 'total', number>> = {
-  part: 2816,
+  part: 3840,
   animate: 4864,
   reveal: 6912,
   accordion: 5632,
-  dialog: 6656,
+  dialog: 8448,
   carousel: 15360,
   tabs: 2048,
   'nav-menu': 3072,

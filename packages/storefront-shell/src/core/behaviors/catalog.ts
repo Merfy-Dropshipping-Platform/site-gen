@@ -35,15 +35,28 @@ export type ParamSpec =
   | { readonly kind: 'string'; readonly default: string | null }
   | { readonly kind: 'list'; readonly default: readonly string[] };
 
+// Команды поведения для скрипта секции (03.11): ctx.behavior('<имя>').<команда>(аргумент). Что у поведения есть как
+// действие — то и команда; аргумент проверяет часть behaviors до вызова поведения. none — без аргумента; item — номер
+// (с 0) или id пункта; index — номер (с 0); value — строка; options — объект или ничего (поля проверяет само поведение).
+// Описание команд для людей — в документации SDK (sdk-docs, behaviors.md): в бандл страницы идёт только вид аргумента.
+export type CommandArg = 'none' | 'item' | 'index' | 'value' | 'options';
+
 export interface BehaviorSpec {
   readonly libraries: readonly Library[];
   readonly parts: readonly string[];
   readonly params: Readonly<Record<string, ParamSpec>>;
   readonly onSection: boolean; // может стоять на самой <merfy-section> (sticky-header, блок 7)
+  readonly commands?: Readonly<Record<string, CommandArg>>; // команда → её аргумент; нет — скрипт поведением не управляет
 }
 
 export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
-  accordion: { libraries: ['motion'], parts: ['content'], params: {}, onSection: false },
+  accordion: {
+    libraries: ['motion'],
+    parts: ['content'],
+    params: {},
+    onSection: false,
+    commands: { open: 'item', close: 'item', toggle: 'item' },
+  },
   dialog: {
     libraries: ['motion'],
     parts: ['open', 'content', 'close'],
@@ -60,8 +73,16 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
       // Место немодального окна: section — под низом своей секции, header — под шапкой страницы (секции перед <main>),
       // cart — под значком корзины страницы (cart.open), середина окна под серединой значка; значка нет — как header.
       anchor: { kind: 'enum', values: ['section', 'header', 'cart'], default: 'section' },
+      // Окно поверх экрана (03.11), где бы секция ни стояла — в шапке, теме или подвале. none — как раньше: место задают
+      // классы окна и anchor. center и sheet — модальные (затемнение, фокус внутри, Esc, запрет прокрутки), модальное
+      // окно на странице одно; corner — немодальное в углу (на телефоне шторкой снизу), страница под ним работает.
+      // С position параметры transition, modal и anchor не читаются: переход и модальность — от места окна.
+      position: { kind: 'enum', values: ['none', 'center', 'corner', 'sheet'], default: 'none' },
+      // Затемнение страницы под модальным окном с position; у corner его нет.
+      backdrop: { kind: 'bool', default: true },
     },
     onSection: false,
+    commands: { open: 'options', close: 'none', toggle: 'none' },
   },
   carousel: {
     libraries: ['embla', 'motion'],
@@ -74,6 +95,7 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
       drag: { kind: 'bool', default: true },
     },
     onSection: false,
+    commands: { next: 'none', prev: 'none', goTo: 'index', play: 'none', pause: 'none' },
   },
   tabs: {
     libraries: [],
@@ -83,6 +105,7 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
       orientation: { kind: 'enum', values: ['horizontal', 'vertical'], default: 'horizontal' },
     },
     onSection: false,
+    commands: { select: 'value' },
   },
   'nav-menu': {
     libraries: [],
@@ -103,7 +126,13 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
     params: { mode: { kind: 'enum', values: ['scroll-up', 'always', 'none'], default: 'scroll-up' } },
     onSection: true,
   },
-  video: { libraries: [], parts: ['video', 'play'], params: {}, onSection: false },
+  video: {
+    libraries: [],
+    parts: ['video', 'play'],
+    params: {},
+    onSection: false,
+    commands: { play: 'none', pause: 'none' },
+  },
   // Блок 11 (design.md 11.3, 11.5): paging — поле секции «Как листать»; limit — сколько подсказок.
   catalog: {
     libraries: [],

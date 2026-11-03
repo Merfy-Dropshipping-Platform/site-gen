@@ -1,8 +1,10 @@
 import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';
 import Autoplay, { type AutoplayType } from 'embla-carousel-autoplay';
 import Fade from 'embla-carousel-fade';
+import { done, refuse } from './command';
 import { animateNode } from './motion';
-import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
+import type { NoData, Result } from '../types';
+import type { Behavior, BehaviorCommand, BehaviorHost, BehaviorInstance } from './types';
 
 // Слайдер (design.md блока 6, раздел 3; факты 5, 7, 17): Embla с Autoplay и Fade, доступность по W3C APG, текст нового
 // слайда проявляется как у vanilla (факт 7). «Уменьшить движение» — без автопрокрутки, смена сразу (duration 0).
@@ -109,26 +111,49 @@ function listenControls(
   );
 }
 
-// Кнопка паузы автопрокрутки: aria-pressed и data-paused на корне поведения.
-function listenPlay(host: BehaviorHost, autoplay: AutoplayType | null): void {
+// Пауза автопрокрутки: aria-pressed у кнопки и data-paused на корне поведения. Кнопка и команды скрипта секции —
+// один переключатель.
+function pausing(host: BehaviorHost, autoplay: AutoplayType | null): ((paused: boolean) => void) | null {
+  if (autoplay === null) return null;
   const play = partOf(host, 'play');
-  if (play === null || autoplay === null) return;
-  play.setAttribute('aria-pressed', 'false');
-  play.addEventListener(
-    'click',
-    () => {
-      if (host.root.hasAttribute('data-paused')) {
-        host.root.removeAttribute('data-paused');
-        play.setAttribute('aria-pressed', 'false');
-        autoplay.play();
-        return;
-      }
-      host.root.setAttribute('data-paused', '');
-      play.setAttribute('aria-pressed', 'true');
-      autoplay.stop();
-    },
-    { signal: host.signal },
-  );
+  const set = (paused: boolean): void => {
+    host.root.toggleAttribute('data-paused', paused);
+    play?.setAttribute('aria-pressed', String(paused));
+    if (paused) autoplay.stop();
+    else autoplay.play();
+  };
+  play?.setAttribute('aria-pressed', 'false');
+  play?.addEventListener('click', () => set(!host.root.hasAttribute('data-paused')), { signal: host.signal });
+  return set;
+}
+
+// Команды для скрипта секции (ctx.behavior("carousel"), 03.11): смена слайда сбрасывает автопрокрутку, как нажатие стрелки.
+function commandsOf(
+  parts: Parts,
+  embla: EmblaCarouselType,
+  autoplay: AutoplayType | null,
+  pause: ((paused: boolean) => void) | null,
+): Readonly<Record<string, BehaviorCommand>> {
+  const move = (work: () => void): Result<NoData> => {
+    work();
+    autoplay?.reset();
+    return done();
+  };
+  const autoplayOnly = (paused: boolean): Result<NoData> => {
+    if (pause === null) return refuse('ctx.behavior("carousel"): автопрокрутки нет — нужен data-autoplay больше 0');
+    pause(paused);
+    return done();
+  };
+  return {
+    next: () => move(() => embla.scrollNext()),
+    prev: () => move(() => embla.scrollPrev()),
+    goTo: (index) =>
+      typeof index === 'number' && index < parts.slides.length
+        ? move(() => embla.scrollTo(index))
+        : refuse(`ctx.behavior("carousel").goTo: нет слайда ${JSON.stringify(index)}`),
+    play: () => autoplayOnly(false),
+    pause: () => autoplayOnly(true),
+  };
 }
 
 interface Started {
@@ -199,8 +224,9 @@ export const carousel: Behavior<'carousel'> = {
     embla.on('select', sync);
     embla.on('reInit', sync);
     listenControls(host, parts, embla, autoplay);
-    listenPlay(host, autoplay);
+    const pause = pausing(host, autoplay);
     return {
+      commands: commandsOf(parts, embla, autoplay, pause),
       save: () => ({ index: embla.selectedScrollSnap() }),
       restore: (state) => {
         if (typeof state !== 'object' || state === null || !('index' in state)) return;

@@ -1,4 +1,5 @@
-import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
+import { done, refuse } from './command';
+import type { Behavior, BehaviorCommand, BehaviorHost, BehaviorInstance } from './types';
 import { animateNode } from './motion';
 
 // Аккордеон (design.md блока 6, раздел 4; факт 10 — satin «Вопросы»): <details> и <summary> — браузер, поведение
@@ -105,6 +106,41 @@ function restoreItems(items: readonly Item[], state: unknown): void {
   });
 }
 
+// Нажатие на summary и команда toggle: свёрнутый раскрывается, раскрытый сворачивается; идёт анимация — ничего.
+function toggleItem(host: BehaviorHost, items: readonly Item[], item: Item): void {
+  if (item.busy) return;
+  if (item.details.open) {
+    closeItem(host, item);
+    return;
+  }
+  // Соседей по name закрываем до открытия: браузер закрывает их сам, как только у пункта появится open.
+  collapseGroup(host, items, item);
+  openItem(host, item);
+}
+
+// Команды для скрипта секции (ctx.behavior("accordion"), 03.11): пункт — номер с 0 или id его <details>.
+function commandsOf(host: BehaviorHost, items: readonly Item[]): Readonly<Record<string, BehaviorCommand>> {
+  const find = (ref: unknown): Item | undefined =>
+    typeof ref === 'number' ? items[ref] : items.find((item) => item.details.id === ref);
+  const on =
+    (act: (item: Item) => void): BehaviorCommand =>
+    (ref) => {
+      const item = find(ref);
+      if (item === undefined) return refuse(`ctx.behavior("accordion"): нет пункта ${JSON.stringify(ref)}`);
+      act(item);
+      return done();
+    };
+  return {
+    open: on((item) => {
+      if (!item.details.open) toggleItem(host, items, item);
+    }),
+    close: on((item) => {
+      if (item.details.open) toggleItem(host, items, item);
+    }),
+    toggle: on((item) => toggleItem(host, items, item)),
+  };
+}
+
 export const accordion: Behavior<'accordion'> = {
   name: 'accordion',
   attach(host: BehaviorHost): BehaviorInstance {
@@ -114,19 +150,13 @@ export const accordion: Behavior<'accordion'> = {
         'click',
         (event) => {
           event.preventDefault();
-          if (item.busy) return;
-          if (item.details.open) {
-            closeItem(host, item);
-            return;
-          }
-          // Соседей по name закрываем до открытия: браузер закрывает их сам, как только у пункта появится open.
-          collapseGroup(host, items, item);
-          openItem(host, item);
+          toggleItem(host, items, item);
         },
         { signal: host.signal },
       );
     });
     return {
+      commands: commandsOf(host, items),
       save: () => items.map((item, index) => (item.details.open ? index : -1)).filter((index) => index >= 0),
       restore: (state) => restoreItems(items, state),
     };

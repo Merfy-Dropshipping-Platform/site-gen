@@ -16,6 +16,10 @@ import { storeCycleOf, storeReadsOf } from './store-cycle';
 // идут под замком владельца: две правки разом не теряют друг друга, публикация не видит половину правки. Строки не
 // удаляются.
 export type Queryable = Pick<Pool, 'query'>;
+// Один запрос «строки по SQL и значениям»: Pool подходит как есть, а тесту без базы хватает подставки в одну функцию.
+export interface RowsQuery {
+  query(sql: string, values: unknown[]): Promise<{ rows: readonly unknown[] }>;
+}
 export type Database = Pick<Pool, 'query' | 'connect'>;
 // Авторы строк реестра. platform и theme — только у строк, сохранённых до блока 1 «Секций и SDK»: способов сохранения
 // для них больше нет, строки остаются в таблице (п. 27), магазину они не видны.
@@ -192,6 +196,17 @@ export async function findRelease(db: Queryable, door: DoorFields, name: string)
 
 export async function currentDraft(db: Queryable, shopId: string, name: string): Promise<SectionRow | null> {
   return first(await select(db, DRAFT_SQL, [shopId, name]));
+}
+
+// Окно поверх страницы, принятое раньше (три блока, 03.11): в реестре у этого автора уже есть секция с таким именем без
+// роли и с группой overlay — в любой правке или выпуске. Её новая правка группу сохраняет; у новой секции группы overlay нет.
+const OVERLAY_WINDOW_SQL = `SELECT 1 FROM storefront_section
+  WHERE author = $1 AND owner = $2 AND name = $3 AND manifest->'role' IS NULL
+    AND jsonb_typeof(manifest->'groups') = 'array' AND manifest->'groups' ? 'overlay' LIMIT 1`;
+
+export async function hasOverlayWindow(db: RowsQuery, door: DoorFields, name: string): Promise<boolean> {
+  const { rows } = await db.query(OVERLAY_WINDOW_SQL, [door.author, door.owner, name]);
+  return rows.length > 0;
 }
 
 // Одна секция на роль в магазине (блок 12 «Секций и SDK», 12.1, «Решил сам» п. 4): роль занимает текущая правка (draft)

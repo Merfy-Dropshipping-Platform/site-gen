@@ -3,6 +3,7 @@ import { blobKey, contentTypeOf, type ObjectStore } from '@merfy/storefront-stor
 import { doorFields, type Door, type DoorFields } from './doors';
 import { MANIFEST_FILE, readManifest, type SectionFiles } from './format';
 import type { PreparedSection, PrepareResult } from './prepare';
+import { overlayRetiredProblems } from './overlay-retired';
 import { problem, type SectionProblem } from './problems';
 import {
   currentDraft,
@@ -178,6 +179,8 @@ export async function acceptSection(
   const known = await storage.find(deps.db, fields, `${fields.prefix}:${manifest.value.name}`);
   const answer = known === null ? null : storage.known(known, hashOf(files));
   if (answer !== null) return answer;
+  const retired = await overlayRetiredProblems(deps.db, fields, manifest.value);
+  if (retired.length > 0) return refused(retired);
   const prepared = await prepareInWorker({ prefix: fields.prefix, files }, deps.sandbox ?? DEFAULT_SANDBOX);
   if (!prepared.ok) return refused(prepared.problems);
   const scriptHash = await uploadScript(deps.store, prepared.section.script);
@@ -194,6 +197,8 @@ export async function checkSection(
   const fields = doorFields(door);
   const prepared = await prepareInWorker({ prefix: fields.prefix, files }, deps.sandbox ?? DEFAULT_SANDBOX);
   if (!prepared.ok) return prepared;
+  const retired = await overlayRetiredProblems(deps.db, fields, prepared.section.manifest);
+  if (retired.length > 0) return { ok: false, problems: retired };
   const [first, ...rest] = await storeCycleProblems(deps.db, fields, prepared.section);
   return first === undefined ? prepared : { ok: false, problems: [first, ...rest] };
 }

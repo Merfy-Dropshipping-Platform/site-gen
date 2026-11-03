@@ -42,7 +42,10 @@ export interface CtxDeps {
   readonly theme: Readonly<ThemeSettings>; // сквозные настройки темы страницы (блок 9, часть 9б)
   readonly input: SectionInput;
   readonly animate: AnimateProvider | null; // провайдер части behaviors (блок 6); нет — ctx.animate бросает part-unknown
-  readonly overlay?: OverlayWindow | null; // 01.11: окно секции поверх страницы (часть overlay ядра); нет — null
+  // 03.11: ctx.behavior — команды поведений этой секции, их выбирает часть behaviors (instance.ts привязывает её к
+  // экземпляру); нельзя — Error с текстом для автора.
+  readonly behavior: BaseCtx<Record<string, unknown>>['behavior'];
+  readonly overlay?: OverlayWindow | null; // 01.11, устарело: окно секции поверх страницы (часть overlay ядра); нет — null
   readonly state?: Readonly<Record<string, unknown>>; // начальный ctx.state — копия при замене в превью (часть 5г)
 }
 
@@ -145,6 +148,7 @@ const methodsOf = (deps: CtxDeps, signal: AbortSignal) => ({
   emit: (emitName: string, detail?: Json): void => deps.bus.emit(`${deps.name}:${emitName}`, detail ?? null),
   log: (...values: unknown[]) => sectionLog(deps.mode, deps.name, deps.id, values),
   animate: animateOf(deps),
+  behavior: deps.behavior,
 });
 
 // ctx.animate (блок 6, design.md раздел 10): узел — только своей секции, кадры — из списка, провайдер — часть behaviors.

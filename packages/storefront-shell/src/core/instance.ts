@@ -1,6 +1,6 @@
 import { messageOf } from '../report';
 import { listenActions } from './actions';
-import type { AnimateProvider } from './behaviors/types';
+import type { AnimateProvider, BehaviorsApi } from './behaviors/types';
 import { createElScope, type ElScope } from './el';
 import { SECTION_FAILURE_EVENT, type EventBus } from './events';
 import { createGuard, type Guard } from './guard';
@@ -242,13 +242,28 @@ function listenActionsOf(runtime: InstanceRuntime, state: InstanceState, ctx: Ba
   });
 }
 
-// Провайдер ctx.animate — поле animate у API части behaviors (блок 6); нет части или поля — null.
-const isAnimateProvider = (value: unknown): value is AnimateProvider => typeof value === 'function';
-
-function animateOfPart(runtime: InstanceRuntime): AnimateProvider | null {
+// API части behaviors (блок 6): провайдер ctx.animate и команды ctx.behavior (03.11); части нет — null.
+const behaviorsOf = (runtime: InstanceRuntime): Partial<BehaviorsApi> | null => {
   const api = runtime.apiOfPart('behaviors');
-  if (typeof api !== 'object' || api === null || !('animate' in api)) return null;
-  return isAnimateProvider(api.animate) ? api.animate : null;
+  return typeof api === 'object' && api !== null ? api : null;
+};
+
+// Провайдер ctx.animate — поле animate; нет части или поля — null.
+const animateOfPart = (runtime: InstanceRuntime): AnimateProvider | null => {
+  const api = behaviorsOf(runtime);
+  return api?.animate ?? null;
+};
+
+// ctx.behavior — поле control, привязанное к экземпляру: команды поведений его разметки, поведение — только этой секции.
+// Элемент — из области секции: чужой (nodeOf даёт null) часть отказывает с текстом; без элемента поведение ищется одно
+// (undefined). Нет части или поля — Error: ни у одной секции страницы нет data-behavior.
+function behaviorOfPart(runtime: InstanceRuntime, state: InstanceState): CtxDeps['behavior'] {
+  const api = behaviorsOf(runtime);
+  const section = { element: state.element, id: state.id, signal: state.controller.signal };
+  return (name, el) => {
+    if (!api?.control) throw new Error('ctx.behavior: нет data-behavior');
+    return api.control(section, name, el === undefined ? undefined : state.scope.nodeOf(el));
+  };
 }
 
 // Окна поверх страницы (01.11) — часть overlay: в бандле только страниц с такой секцией, поэтому здесь — только её тип.
@@ -282,6 +297,7 @@ const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: Sectio
   mode: runtime.mode,
   input,
   animate: animateOfPart(runtime),
+  behavior: behaviorOfPart(runtime, state),
   overlay: overlayOfPart(runtime, state),
   state: state.initial,
 });

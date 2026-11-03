@@ -4,16 +4,26 @@
 export { behaviors } from './part';
 export { BEHAVIORS, EASINGS, PRESETS, PRESET_PARAMS } from './catalog';
 export { MOTION_CSS, MOTION_FLAG, MOTION_HEAD_SCRIPT } from './motion-css';
-export type { BehaviorName, BehaviorSpec, Library, ParamSpec, PresetName, PresetSpec } from './catalog';
+export type {
+  BehaviorName,
+  BehaviorSpec,
+  CommandArg,
+  Library,
+  ParamSpec,
+  PresetName,
+  PresetSpec,
+} from './catalog';
 export type { ParamValue, Params } from './params';
 export type {
   AnimateProvider,
   Behavior,
+  BehaviorCommand,
   BehaviorHost,
   BehaviorInstance,
   BehaviorsApi,
   BehaviorsOptions,
   BehaviorsPart,
+  ControlProvider,
   MotionPrefs,
   Reveal,
   RevealHost,

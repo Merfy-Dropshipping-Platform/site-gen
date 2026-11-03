@@ -49,12 +49,16 @@ export class StandPreviewMiddleware implements NestMiddleware {
     // Запись шаблона (блок 8 «Секций и SDK», часть 8б-2): id или адрес записи —
     // сборщику как есть; пустая — без ключа, как раньше.
     const record = typeof req.query.record === "string" ? req.query.record : "";
+    // Превью секции расширения в кабинете: секция входит в код страницы, будто стоит в магазине (сторы и части её
+    // расширения попадают в страницу). Имя проверяет сборщик.
+    const withSection = typeof req.query.with === "string" ? req.query.with : "";
     sendAnswer(
       res,
       await this.builder.call("/preview", {
         shop: siteId,
         page,
         ...(record === "" ? {} : { record }),
+        ...(withSection === "" ? {} : { with: withSection }),
       }),
     );
   }

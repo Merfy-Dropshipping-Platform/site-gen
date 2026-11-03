@@ -1,5 +1,8 @@
 import {
+  FOOTER_LIST,
+  HEADER_LIST,
   NO_ASSETS,
+  OVERLAY_LIST,
   partsOfExtPoints,
   type BuildInputs,
   type CodeAssets,
@@ -239,6 +242,28 @@ export interface CodeContext {
   extPointParts?: readonly string[];
   // Места блоков расширений по id (часть 15д): из них codeOf пишет code.extPoints; их пишет readShopCode.
   extPoints?: StorefrontExtPoints;
+  // Превью секции в кабинете расширения (`GET /preview?with=<секция>`): секция входит в код страницы, будто стоит в
+  // магазине, — тогда в страницу превью попадают её части ядра и описание её расширения (сторы, методы). Только превью.
+  previewSection?: string;
+}
+
+/** id экземпляра превью секции: тот же, под которым кабинет присылает блок в reconcile. */
+export const PREVIEW_SECTION_ID = 'preview-section';
+const PREVIEW_LISTS = ['home', HEADER_LIST, FOOTER_LIST, OVERLAY_LIST] as const;
+
+// Место секции превью: главная, а если секция только для шапки, подвала или окна поверх страницы — их список. Секции
+// нет среди видимых или ей негде стоять — места как есть, превью без её кода (её блок всё равно придёт по запросу).
+function withPreviewSection(
+  placement: Placement,
+  section: string,
+  visible: ReadonlyMap<string, VisibleRow>,
+): Placement {
+  const entry = visible.get(section);
+  if (entry === undefined || entry[0].kind !== 'section') return placement;
+  const list = PREVIEW_LISTS.find((candidate) => sectionListAllowed(entry[1].manifest, candidate));
+  if (list === undefined) return placement;
+  const instance: SectionInstance = { id: PREVIEW_SECTION_ID, section, settings: {} };
+  return { ...placement, [list]: [...(placement[list] ?? []), instance] };
 }
 
 const QUIET: Pick<CodeContext, 'log' | 'shopId'> = { log: () => undefined, shopId: '' };
@@ -454,12 +479,14 @@ export function codeOf(
   menus: readonly RevisionMenu[] = [],
 ): Omit<ShopCode, 'extensions'> {
   const visible = currentRows(rows, context);
+  const where =
+    context.previewSection === undefined ? placement : withPreviewSection(placement, context.previewSection, visible);
   const placedOn = (list: string, instances: readonly SectionInstance[]): CodeInstance[] =>
     allowedOn(list, instances, visible, context).map(([instance, current]) =>
       placedOf(instance, current, context, menus),
     );
   const pages = Object.fromEntries(
-    Object.entries(placement).map(([page, instances]): [string, CodeInstance[]] => [page, placedOn(page, instances)]),
+    Object.entries(where).map(([page, instances]): [string, CodeInstance[]] => [page, placedOn(page, instances)]),
   );
   const placed = new Set(Object.values(pages).flatMap((instances) => instances.map((instance) => instance.section)));
   const used = usedRows(visible, placed, context);
@@ -478,7 +505,11 @@ export function codeOf(
 }
 
 // Код магазина целиком. null — не получен: расширения не ответили или места не той формы.
-export async function readShopCode(deps: CodeDeps, shopId: string): Promise<ShopCode | null> {
+export async function readShopCode(
+  deps: CodeDeps,
+  shopId: string,
+  previewSection?: string,
+): Promise<ShopCode | null> {
   const [enabled, read] = await Promise.all([enabledForShop(deps, shopId), readPlacement(deps, shopId)]);
   if (enabled === null || read === null) return null;
   const extensions = enabled.map(({ id, version }) => ({ id, version }));
@@ -487,7 +518,15 @@ export async function readShopCode(deps: CodeDeps, shopId: string): Promise<Shop
   const storefronts = storefrontsOf(enabled, { log: deps.log, shopId });
   const extPoints = extPointsOf(enabled, { log: deps.log, shopId });
   const extPointParts = partsOfExtPoints(extPoints);
-  const context = { shell: deps.shell, log: deps.log, shopId, extensions: storefronts, extPointParts, extPoints };
+  const context = {
+    shell: deps.shell,
+    log: deps.log,
+    shopId,
+    extensions: storefronts,
+    extPointParts,
+    extPoints,
+    ...(previewSection === undefined ? {} : { previewSection }),
+  };
   return { ...codeOf(rows, read.placement, context, read.menus), extensions };
 }
 

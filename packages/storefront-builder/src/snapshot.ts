@@ -382,7 +382,8 @@ export interface Snapshot {
 }
 
 // Снимок целиком: строка сайта, его сущности, товары и код секций разом. Магазина нет — ошибка shop-invalid.
-export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<Snapshot> {
+// previewSection — только у превью секции расширения в кабинете: секция входит в код страницы, как будто стоит в магазине.
+export async function readSnapshot(deps: SnapshotDeps, siteId: string, previewSection?: string): Promise<Snapshot> {
   const shop = await readShop(deps.db, siteId);
   if (shop === null) throw new StorefrontBuilderError('shop-invalid', 'магазина нет', { path: `site/${siteId}` });
   const theme = await themeOf(deps, shop);
@@ -394,7 +395,7 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string): Promise<
     // Коллекции (блок 8 «Секций и SDK», часть 8а) — тем же RPC-клиентом; не ответил — снимок не получен.
     fetchCollections(deps.products, shop),
     readRevision(deps.db, siteId, deps.products.log),
-    readShopCode(deps.code, siteId),
+    readShopCode(deps.code, siteId, previewSection),
     fetchCounters(deps.counters, shop),
     fetchBilling(deps.products, siteId),
   ]);

@@ -46,6 +46,86 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var OVERLAY_ATTRIBUTE = ${JSON.stringify(OVERLAY_ATTRIBUTE)};
   // Кнопки и поля секции — как в превью пяти тем (src/services/preview.service.ts): нажатие — коду секции, выбора нет.
   var CONTROLS = 'button, input, select, textarea, label[for], [data-action]';
+  // Значения сторов расширений вместо ответов сервера (ext-store-values; превью секции в кабинете расширения). Кабинет
+  // присылает { extension, store, recordId, value }: store — имя стора из storefront.stores манифеста, функцию (fn) и
+  // by: "record" скрипт берёт из конфига страницы (#merfy-config). Запрос стора по записи к функции расширения
+  // (POST /store/extensions/<id>/fn/<fn>, тело { recordIds }) по такой записи отвечает присланное значение, а не сервер;
+  // остальные записи запроса идут на сервер как есть. Ничего не пишется: подмена живёт, пока открыта рамка.
+  var storeValues = {};
+  var realFetch = window.fetch ? window.fetch.bind(window) : null;
+  function configExtensions() {
+    var tag = document.getElementById('merfy-config');
+    if (!tag) return {};
+    try {
+      return JSON.parse(tag.textContent || '{}').extensions || {};
+    } catch (error) {
+      return {};
+    }
+  }
+  function setStoreValues(list) {
+    var extensions = configExtensions();
+    storeValues = {};
+    (Array.isArray(list) ? list : []).forEach(function (item) {
+      var extension = item && typeof item.extension === 'string' ? extensions[item.extension] : null;
+      var spec = extension && extension.stores && typeof item.store === 'string' ? extension.stores[item.store] : null;
+      if (!spec || spec.by !== 'record' || typeof item.recordId !== 'string' || item.recordId === '') return;
+      storeValues[item.extension + '/' + spec.fn + '/' + item.recordId] = item.value;
+    });
+  }
+  function jsonReply(data) {
+    return new Response(JSON.stringify({ success: true, data: data }), {
+      status: 201,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  function storeCall(url) {
+    var marker = '/store/extensions/';
+    var at = url.indexOf(marker);
+    if (at === -1) return null;
+    var parts = url.slice(at + marker.length).split('?')[0].split('/');
+    if (parts.length !== 3 || parts[1] !== 'fn') return null;
+    try {
+      return { extension: decodeURIComponent(parts[0]), fn: decodeURIComponent(parts[2]) };
+    } catch (error) {
+      return null;
+    }
+  }
+  function withStoreValues(input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    var call = Object.keys(storeValues).length === 0 || !init || typeof init.body !== 'string' ? null : storeCall(url);
+    var body = null;
+    if (call) {
+      try {
+        body = JSON.parse(init.body);
+      } catch (error) {
+        body = null;
+      }
+    }
+    var ids = body && Array.isArray(body.recordIds) ? body.recordIds : null;
+    if (!call || !ids) return realFetch(input, init);
+    var mine = {};
+    var rest = [];
+    ids.forEach(function (id) {
+      var key = call.extension + '/' + call.fn + '/' + id;
+      if (Object.prototype.hasOwnProperty.call(storeValues, key)) mine[id] = storeValues[key];
+      else rest.push(id);
+    });
+    if (Object.keys(mine).length === 0) return realFetch(input, init);
+    if (rest.length === 0) return Promise.resolve(jsonReply(mine));
+    var next = Object.assign({}, init, { body: JSON.stringify(Object.assign({}, body, { recordIds: rest })) });
+    return realFetch(input, next)
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (answer) {
+        var data = answer && answer.data && typeof answer.data === 'object' ? answer.data : {};
+        return jsonReply(Object.assign({}, data, mine));
+      })
+      .catch(function () {
+        return jsonReply(mine);
+      });
+  }
+  if (realFetch) window.fetch = withStoreValues;
   // «Ошибка в скрипте секции «» — escape-последовательностями, как подсказки кнопок рамки.
   var SCRIPT_ERROR = '\\u041e\\u0448\\u0438\\u0431\\u043a\\u0430 \\u0432 \\u0441\\u043a\\u0440\\u0438\\u043f\\u0442\\u0435 \\u0441\\u0435\\u043a\\u0446\\u0438\\u0438 \\u00ab';
   // Рамка окна лежит в его слое (frameBox): фон, отступы и размеры, которые слой даёт корню окна, рамке не нужны.
@@ -603,6 +683,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       showActions();
       announce(false);
     }
+    else if (data.type === 'ext-store-values') setStoreValues(data.values);
     else if (data.type === 'update-block') updateBlock(data);
     else if (data.type === 'reconcile') reconcile(data);
   });

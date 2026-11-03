@@ -23,6 +23,7 @@ import { DbThemeCatalog, THEME_CATALOG } from "./theme-catalog";
 import { StoreCommandsController } from "./store-commands.controller";
 import { SetThemeCommand } from "./theme-switch/set-theme.command";
 import { PlaceSkeletonCommand } from "./skeleton/place-skeleton.command";
+import { CheckoutSetJob } from "./skeleton/checkout-set.job";
 import {
   BuilderSkeletonSections,
   DrizzleSkeletonLock,
@@ -47,6 +48,8 @@ export const STORE_PROVIDERS: Provider[] = [
   { provide: SKELETON_SECTIONS, useClass: BuilderSkeletonSections },
   { provide: SKELETON_LOCK, useClass: DrizzleSkeletonLock },
   PlaceSkeletonCommand,
+  // Набор оформления заказа у существующих магазинов новой темы — фоном после старта (03.11).
+  CheckoutSetJob,
 ];
 
 export const STORE_CONTROLLERS: Type<unknown>[] = [StoreCommandsController];

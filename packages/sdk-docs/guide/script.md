@@ -333,3 +333,52 @@ mount(el, ctx) {
 Что показать при уходе, когда и сколько раз, решает секция: модуль только сообщает. Событие приходит один раз на уход,
 повторно — после того, как курсор вернулся, а потом ушёл снова. Готовый таймер до даты по времени сервера — поведение
 `countdown`, стираемый слой — `scratch` ([behaviors.md](behaviors.md)).
+
+## Оформление заказа
+
+Модуль `checkout` (`"uses": ["checkout"]`) — всё оформление заказа: секция рисует его сторы и зовёт действия, запросы
+к магазину, доставке, подсказкам адреса и оплате делает модуль. Базовые секции — «Оформление заказа» (роль
+`checkout`, страница `/checkout`) и «Спасибо за заказ» (роль `checkout-result`, `/checkout-result`).
+
+| Стор | Значение |
+|---|---|
+| `$form` | `{ values, errors }`: поля `email`, `phone`, `country`, `firstName`, `lastName`, `city`, `address`, `postalCode`; ошибка поля видна после ухода с него, все — после «Оплатить» |
+| `$settings` | что просит магазин: `phone`, `name` (`name`, `surname`, `name-surname`), `address` (физическая доставка), `signIn` (оформление только после входа), `offer` (оплата предложения по ссылке) |
+| `$hints` | подсказки адреса для поля `city` или `address`: `{ field, items: [{ id, text }] }` |
+| `$lines` | строки заказа: корзина или предложение по ссылке |
+| `$delivery` | `status`, `options` (`id`, `kind`, `title`, `about`, `price`, `cheapest`, `needsPoint`), `selected`, `message`, `points` — пункты выдачи выбранного способа |
+| `$payment` | способы оплаты магазина: `methods` (`bank_card`, `sbp`, `sberbank`, `tinkoff_bank` — только включённые), `selected`, `unavailable` — магазин оплату не принимает |
+| `$promo`, `$totals` | промокод (`code`, `busy`, `error`) и итоги с доставкой |
+| `$status` | `complete` — можно оплатить, `submitting`, `error` — текст под кнопкой, `signIn` — нужен вход |
+| `$order` | заказ для «Спасибо за заказ» по `?orderId=` или последний оформленный: номер, имя, контакты, доставка, адрес, оплата, строки, итоги |
+
+Поле пишет `checkout.set({ field, value })` (телефон модуль приводит к виду `+7 (…)`), уход с поля —
+`checkout.leave({ field })`, промокод — `checkout.applyPromo({ code })`: их зовёт скрипт. Выборы — действия в разметке:
+`checkout.pickHint` (`data-hint-id`, лучше на `pointerdown`, чтобы поле не потеряло фокус раньше), `checkout.selectDelivery`
+(`data-option-id`), `checkout.selectPoint` (`data-point-code`), `checkout.selectPayment` (`data-method`),
+`checkout.removePromo`, `checkout.submit`.
+
+Номер карты на витрине не вводится. `checkout.submit` проверяет поля, сохраняет покупателя и адрес, создаёт заказ и
+платёж выбранным способом и ведёт на страницу платёжки; вернувшись, покупатель попадает на `/checkout-result`. Пока
+заказ оформляется, второе нажатие ничего не делает, а повтор после ошибки не создаёт второй заказ. Успех — событие
+`merfy:checkout:order`. В превью заказ не оформляется, а `$order` — пример.
+
+```ts
+mount(_el, ctx) {
+  ctx.watch(ctx.checkout.$payment, (payment) =>
+    ctx.ref('methods')?.list(payment.methods, (row, method) => {
+      row.attr('data-method', method.key);
+      row.attr('aria-checked', method.key === payment.selected ? 'true' : 'false');
+      row.ref('title')?.text(method.title);
+    }),
+  );
+},
+actions: {
+  field(target, ctx) {
+    ctx.checkout.set({ field: target.attr('name') ?? '', value: target.value() });
+  },
+  async pay(_target, ctx) {
+    await ctx.checkout.submit();
+  },
+},
+```

@@ -1,6 +1,6 @@
 # Модули SDK
 
-> SDK 1 · документация 1.31.0 · 2026-11-03
+> SDK 1 · документация 1.32.0 · 2026-11-03
 
 Ключ `uses` в `section.json` открывает секции данные и модули SDK. Значения:
 
@@ -80,6 +80,11 @@
 Страница целиком: `$scroll` — доля прокрутки 0–100, `$leaving` — посетитель собирается уйти, `$now` — время сервера магазина в мс (до ответа сервера `null`). Секция с этим модулем получает вместо `ctx.page` объект с теми же `path` и `query` и этими тремя сторами. Скрипту секции без модуля `window` и `document` недоступны, поэтому положение прокрутки и время берутся отсюда. В бандле только страниц, где секция объявила модуль в `uses` или поставила его действие в `data-action`.
 
 Действий разметки нет.
+## checkout
+
+Оформление заказа: `$form` (поля и ошибки), `$settings` (какие поля нужны магазину), `$hints` (подсказки адреса), `$lines`, `$delivery` (способы и пункты выдачи), `$payment` (способы оплаты магазина: банковская карта, СБП, Sber Pay, T-Pay), `$promo`, `$totals`, `$status`, `$order` (заказ для «Спасибо»); `set`, `leave`, `pickHint`, `selectDelivery`, `selectPoint`, `selectPayment`, `applyPromo`, `removePromo`, `submit`. Все запросы оформления — внутри модуля; номер карты на витрине не вводится — `submit` создаёт заказ и ведёт на страницу платёжки выбранным способом. В бандле только страниц, где секция объявила модуль в `uses` или поставила его действие в `data-action`.
+
+Действия: `checkout.set`, `checkout.leave`, `checkout.pickHint`, `checkout.selectDelivery`, `checkout.selectPoint`, `checkout.selectPayment`, `checkout.applyPromo`, `checkout.removePromo`, `checkout.submit`.
 
 ## ext:<id>
 

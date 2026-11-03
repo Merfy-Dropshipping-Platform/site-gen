@@ -102,6 +102,7 @@ const platform = {
   analyticsUrl: settings.analyticsUrl,
   uploadUrl: settings.uploadUrl,
   indexable: settings.indexable,
+  ...(settings.dadataToken === null ? {} : { dadataToken: settings.dadataToken }),
 };
 const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 // Код магазина (блок 7): реестр секций, места из ревизии, включённые расширения; тайм-аут — как у товаров.

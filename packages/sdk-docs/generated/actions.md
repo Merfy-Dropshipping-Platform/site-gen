@@ -1,6 +1,6 @@
 # Действия
 
-> SDK 1 · документация 1.31.0 · 2026-11-03
+> SDK 1 · документация 1.32.0 · 2026-11-03
 
 Действия SDK вызывает ядро по `data-action="<имя>"` в разметке секции — без скрипта. Из `script.ts` то же действие вызывается как `ctx.<модуль>.<действие>(…)`. Ответ каждого действия — в его описании: это содержимое `data` ответа `Result`, а не весь ответ ([ответ действия](#ответ-действия)).
 
@@ -11,6 +11,15 @@
 | `cart.remove` | cart | убрать строку из корзины; аргументы { lineId }, ответ — CartState | `data-line-id` |
 | `cart.open` | cart | открыть корзину: при «Сайдбар» и выезжающей корзине на странице — merfy:cart:open, иначе переход на /cart; ответ — { drawer } | — |
 | `cart.checkout` | cart | перейти в оформление заказа: номер корзины и копия строк для оформления, переход на /checkout | — |
+| `checkout.set` | checkout | записать поле покупателя; аргументы { field, value }, field — email, phone, country, firstName, lastName, city, address, postalCode; город и адрес дают подсказки в $hints; ответ — CheckoutForm | только из script.ts |
+| `checkout.leave` | checkout | покупатель ушёл с поля — в $form.errors появляется ошибка этого поля; аргументы { field }, ответ — CheckoutForm | только из script.ts |
+| `checkout.pickHint` | checkout | выбрать подсказку адреса из $hints: город или адрес с домом и индексом; аргументы { id }, ответ — CheckoutForm | `data-hint-id` |
+| `checkout.selectDelivery` | checkout | выбрать способ доставки из $delivery.options; аргументы { id }, ответ — CheckoutDelivery | `data-option-id` |
+| `checkout.selectPoint` | checkout | выбрать пункт выдачи перевозчика из $delivery.points; аргументы { code }, ответ — CheckoutDelivery | `data-point-code` |
+| `checkout.selectPayment` | checkout | выбрать способ оплаты: bank_card, sbp, sberbank, tinkoff_bank — из $payment.methods; аргументы { method }, ответ — CheckoutPayment | `data-method` |
+| `checkout.applyPromo` | checkout | применить промокод к корзине; аргументы { code }, ответ — CheckoutPromo; отказ магазина — в $promo.error | только из script.ts |
+| `checkout.removePromo` | checkout | убрать промокод; ответ — CheckoutPromo | — |
+| `checkout.submit` | checkout | «Оплатить»: проверка полей, заказ и переход на страницу платёжки выбранным способом, потом merfy:checkout:order; ошибки полей — в $form.errors, остальное — в $status.error; повтор не создаёт второй заказ | — |
 | `favorites.toggle` | favorites | отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added } | `data-product-id` |
 | `auth.requestCode` | auth | отправить письмо с кодом и ссылкой для входа; аргументы { email }, ответ — {} | только из script.ts |
 | `auth.verify` | auth | войти по коду { email, code } или ссылке { token }; ответ — { customer }, потом merfy:auth:signin; на «Входе» — переход по ?redirect или в кабинет | только из script.ts |

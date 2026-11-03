@@ -45,6 +45,12 @@ export const PlaceSkeletonInputSchema = z.object({
   tenantId: z.string().trim().min(1),
   siteId: z.string().trim().min(1),
   actorUserId: z.string().trim().min(1).optional(),
+  /**
+   * Только эти списки раскладки и только те, которых в ревизии ещё нет (ключа нет; пустой список — мерчант убрал
+   * секции сам, его не трогаем); без «О нас». Так существующие магазины получают новые секции заготовки
+   * (оформление заказа, 03.11 — `checkout-set.job.ts`). Нет поля — вся заготовка, как раньше.
+   */
+  lists: z.array(z.string().trim().min(1)).min(1).optional(),
 });
 export type PlaceSkeletonInput = z.infer<typeof PlaceSkeletonInputSchema>;
 
@@ -143,7 +149,10 @@ export class PlaceSkeletonCommand {
     site: SiteRow,
     input: PlaceSkeletonInput,
   ): Promise<CommandResult<PlaceSkeletonEffect>> {
-    const names = skeletonSectionNames(this.layout);
+    const layout = onlyLists(this.layout, input.lists);
+    const names = input.lists
+      ? [...new Set(Object.values(layout.lists).flat())]
+      : skeletonSectionNames(layout);
     const copied = await this.copyMissing(site.id, names);
 
     const loaded = await this.content.load(site.id, {
@@ -152,9 +161,10 @@ export class PlaceSkeletonCommand {
     });
     const plan = planSkeleton({
       document: loaded.document,
-      layout: this.layout,
+      layout,
       library: this.library,
       present: copied.present,
+      ...(input.lists ? { only: "absent" as const } : {}),
     });
 
     let revisionId = loaded.version;
@@ -268,6 +278,20 @@ export class PlaceSkeletonCommand {
     skipped.sort((a, b) => order(a.name) - order(b.name));
     return { present, added, kept, skipped };
   }
+}
+
+/** Раскладка только с этими списками; нет списков — вся раскладка. Чужой ключ (не из раскладки) — пропускается. */
+function onlyLists(
+  layout: SkeletonLayout,
+  lists: readonly string[] | undefined,
+): SkeletonLayout {
+  if (!lists) return layout;
+  return {
+    ...layout,
+    lists: Object.fromEntries(
+      Object.entries(layout.lists).filter(([key]) => lists.includes(key)),
+    ),
+  };
 }
 
 /** `work` по списку, не больше `size` разом. */

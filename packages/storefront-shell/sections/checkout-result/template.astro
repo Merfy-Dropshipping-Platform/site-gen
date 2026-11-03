@@ -1,0 +1,113 @@
+---
+const { settings, shop } = Astro.props;
+---
+<!-- Значки — Lucide (check, image), лицензия ISC, lucide.dev/license. -->
+<!-- «Спасибо за заказ» — страница /checkout-result пяти старых тем (OrderConfirmation), вид по умолчанию flux: слева
+     номер заказа, приветствие, подтверждение, детали (контакты, способ доставки, адрес), помощь с кнопкой возврата и
+     юридическая строка; справа — «Ваш заказ»: строки и итоги. Картинка — во всю ширину, у оформления или у сводки.
+     Заказ — из ?orderId= адреса; пока оплата идёт, модуль перечитывает его сам. В превью — пример заказа. -->
+<div
+  class="mx-auto flex max-w-page flex-col gap-10 px-4 font-body text-foreground"
+  data-image-position={settings['image-position']}
+  data-align={settings.align}
+>
+  {settings.image && settings['image-position'] === 'full' && (
+    <div class="w-full in-data-[align=center]:mx-auto in-data-[align=right]:ml-auto" style={`max-width:${settings['image-width']}px`}>
+      <img src={settings.image} alt="" loading="lazy" class="block h-auto w-full rounded-media object-cover" />
+    </div>
+  )}
+  <div data-ref="missing" class="flex flex-col items-start gap-4" hidden>
+    <p data-ref="missing-title" class="m-0 font-heading weight-heading text-xl text-heading">Заказ не найден</p>
+    <p data-ref="missing-text" class="m-0 text-base text-muted-foreground">Проверьте ссылку или вернитесь в магазин.</p>
+    <a href={settings['button-link'] || '/'} class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground">{settings['button-label'] || 'Вернуться к магазину'}</a>
+  </div>
+  <div data-ref="content" class="grid gap-10 md:grid-cols-2 md:gap-16 lg:gap-20">
+    <div class="flex min-w-0 flex-col gap-8">
+      <div class="flex items-center gap-4">
+        <span class="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-hidden="true">
+          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+        </span>
+        <div class="flex min-w-0 flex-col gap-1">
+          <p data-ref="number" class="m-0 text-sm uppercase text-muted-foreground">Заказ #—</p>
+          <h1 data-ref="greeting" class="m-0 font-heading weight-heading tracking-heading text-2xl text-heading">{settings.heading.replace(/[\s,]*\{name\}/, '')}</h1>
+        </div>
+      </div>
+      {settings.image && settings['image-position'] === 'order' && (
+        <div class="w-full in-data-[align=center]:mx-auto in-data-[align=right]:ml-auto" style={`max-width:${settings['image-width']}px`}>
+          <img src={settings.image} alt="" loading="lazy" class="block h-auto w-full rounded-media object-cover" />
+        </div>
+      )}
+      <div class="flex flex-col gap-2 rounded-card border-width-input border-input p-5">
+        <p data-ref="confirmed-title" class="m-0 text-lg text-heading">{settings.subheading}</p>
+        <p data-ref="confirmed-text" class="m-0 text-sm text-muted-foreground">{settings.text}</p>
+      </div>
+      <div class="flex flex-col gap-4 rounded-card border-width-input border-input p-5">
+        <p class="m-0 text-lg text-heading">{settings['details-heading']}</p>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-muted-foreground">Контактная информация</span>
+            <span data-ref="contacts" class="whitespace-pre-line text-base">—</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-muted-foreground">Способ доставки</span>
+            <span data-ref="delivery" class="text-base">—</span>
+          </div>
+          <div class="flex flex-col gap-1 md:col-span-2">
+            <span class="text-sm text-muted-foreground">Адрес</span>
+            <span data-ref="address" class="text-base">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        {settings['help-text'] && <span class="text-sm text-muted-foreground">{settings['help-text']}</span>}
+        <a href={settings['button-link'] || '/'} class="inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground">{settings['button-label'] || 'Вернуться к магазину'}</a>
+      </div>
+      <!-- Юридическая строка: названия документов — ссылками на заполненные политики магазина (адреса — data-*), как у
+           пяти тем; разбивает текст script.ts. -->
+      {settings['legal-text'] && (
+        <p
+          data-ref="legal"
+          data-tos={shop.policies.find((policy) => policy.type === 'tos')?.url}
+          data-privacy={shop.policies.find((policy) => policy.type === 'privacy')?.url}
+          class="m-0 text-xs text-muted-foreground"
+        >
+          <span data-ref="legal-static">{settings['legal-text']}</span>
+          <template><span><a data-ref="legal-link" class="text-muted-foreground underline underline-offset-4 hover:text-foreground"></a><span data-ref="legal-part"></span></span></template>
+        </p>
+      )}
+    </div>
+    <aside
+      aria-label="Ваш заказ"
+      class:list={['flex min-w-0 flex-col gap-6 rounded-card p-6', settings['color-scheme'] ? `color-${settings['color-scheme']} bg-background` : 'bg-muted']}
+    >
+      {settings.image && settings['image-position'] === 'summary' && (
+        <div class="w-full in-data-[align=center]:mx-auto in-data-[align=right]:ml-auto" style={`max-width:${settings['image-width']}px`}>
+          <img src={settings.image} alt="" loading="lazy" class="block h-auto w-full rounded-media object-cover" />
+        </div>
+      )}
+      <p class="m-0 font-heading weight-heading text-lg text-heading">Ваш заказ</p>
+      <div data-ref="lines" class="flex flex-col gap-4">
+        <template>
+          <div class="flex items-start gap-4">
+            <span class="relative flex size-16 shrink-0 items-center justify-center rounded-media bg-background text-muted-foreground">
+              <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+              <img data-ref="image" alt="" class="absolute inset-0 size-full rounded-media object-cover" />
+              <span data-ref="quantity" class="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-foreground text-xs text-background tabular-nums"></span>
+            </span>
+            <span class="flex min-w-0 flex-1 flex-col gap-1">
+              <span data-ref="title" class="text-sm text-heading"></span>
+              <span data-ref="options" class="text-xs text-muted-foreground"></span>
+            </span>
+            <span data-ref="price" class="shrink-0 text-sm text-heading"></span>
+          </div>
+        </template>
+      </div>
+      <div class="flex flex-col gap-3 text-base">
+        <p class="m-0 flex justify-between gap-4"><span>Товары</span><span data-ref="subtotal">—</span></p>
+        <p data-ref="discount-row" class="m-0 flex justify-between gap-4 text-sale" hidden><span>Скидка</span><span data-ref="discount"></span></p>
+        <p class="m-0 flex justify-between gap-4"><span>Доставка</span><span data-ref="shipping">—</span></p>
+        <p class="m-0 flex items-baseline justify-between gap-4 font-heading text-2xl text-heading"><span>Итого</span><span data-ref="total" class="tabular-nums">—</span></p>
+      </div>
+    </aside>
+  </div>
+</div>

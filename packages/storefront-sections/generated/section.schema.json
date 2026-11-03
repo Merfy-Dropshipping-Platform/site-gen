@@ -16020,7 +16020,8 @@
               "orders",
               "files",
               "share",
-              "page"
+              "page",
+              "checkout"
             ]
           },
           {
@@ -16199,7 +16200,9 @@
         "login",
         "search",
         "notices",
-        "cookie-banner"
+        "cookie-banner",
+        "checkout",
+        "checkout-result"
       ]
     },
     "autoPlace": {

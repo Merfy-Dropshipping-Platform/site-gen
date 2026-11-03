@@ -20,7 +20,8 @@ describe('buildStorefront с кодом секций', () => {
     const { manifest, files } = await buildStorefront(codeInputs(), REFERENCES, theme, ASSETS, renderSection);
     const paths = files.map((file) => file.path);
     const bundles = paths.filter((path) => path.startsWith('_merfy/'));
-    // Блок 10: свои бандлы у главной (секции), у /checkout (часть checkout) и у /checkout-result (только ядро).
+    // Блок 10: свои бандлы у главной (секции), у /checkout (часть checkoutLegacy) и у /checkout-result (только ядро) —
+    // у темы без "checkout": "sections" оформление прежнее.
     expect(bundles).toHaveLength(3);
     expect(bundles.every((path) => /^_merfy\/b\/[0-9a-f]{64}\.js$/.test(path))).toBe(true);
     expect(paths).toEqual(

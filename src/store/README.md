@@ -26,6 +26,7 @@
 | `skeleton/skeleton-layout.ts` | раскладка заготовки (перенесена из merfy-mcp `knowledge/starter/layout.json`) | `PlaceSkeleton` |
 | `skeleton/skeleton-library.ts` | наша библиотека секций с диска: `packages/storefront-sections/fixtures/shop`, `packages/storefront-shell/sections` | `PlaceSkeleton` |
 | `skeleton/skeleton-sections.ts` | порты: свои секции магазина (реестр `storefront_section`, сохранение через сборщик витрин) и блокировка магазина | `PlaceSkeleton` |
+| `skeleton/checkout-set.job.ts` | набор оформления заказа у существующих магазинов новой темы: после старта `PlaceSkeleton` с `lists` оформления для магазинов, у ревизии которых этих списков ещё нет (03.11; выключатель `STORE_CHECKOUT_SET_ENABLED=false`) | `AppModule` |
 | `shared/*` | фоновая работа, текст ошибки, разбор ошибок zod | команды, доводчик |
 | `store.providers.ts` | список провайдеров и контроллеров для `AppModule` | `AppModule`, `store-module-wiring.spec.ts` |
 
@@ -45,8 +46,10 @@
 ## Заготовка магазина новой темы: `PlaceSkeleton`
 
 Решение 7 спеки MCP «Секции и SDK» (`merfy-mcp/docs/plans/mcp-sections/2026-10-26-mcp-sections-design.md`): заготовку
-нового магазина ставит платформа одной командой. RPC `sites.cmd.place_skeleton { tenantId, siteId, actorUserId? }`,
-шлюз — `POST /api/sites/:id/commands/skeleton`.
+нового магазина ставит платформа одной командой. RPC `sites.cmd.place_skeleton { tenantId, siteId, actorUserId?, lists? }`,
+шлюз — `POST /api/sites/:id/commands/skeleton`. `lists` (03.11) — только эти списки раскладки и только те, которых в
+ревизии ещё нет (пустой список мерчанта не трогается), без «О нас»: так существующие магазины получают новые секции
+заготовки (`checkout-set.job.ts`).
 
 1. Только магазин новой темы (`not_new_theme`) с ревизией (`no_revision`); под блокировкой магазина
    (`skeleton_in_progress`, если заготовка уже идёт).

@@ -97,8 +97,9 @@ describe('тема nova: вид «Чистый»', () => {
     expect(redundant.map(placeName)).toEqual([]);
   });
 
-  it('тема не прячет полей панели: в theme.json только имя, версия и токены', () => {
-    expect(Object.keys(themeJson)).toEqual(['name', 'version', 'tokens']);
+  // С 0.7.8 (03.11) — ещё признак "checkout": "sections": оформление заказа из секций; панель он не трогает.
+  it('тема не прячет полей панели: в theme.json только имя, версия, признак оформления и токены', () => {
+    expect(Object.keys(themeJson)).toEqual(['name', 'version', 'checkout', 'tokens']);
   });
 
   it('шрифт темы — из библиотеки платформы (блок 12): в theme.json — формат панели, в CSS — стек реестра', () => {

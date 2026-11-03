@@ -4,7 +4,7 @@ import { ACTIONS, ACTION_EVENTS, MODULE_NAMES, MODULE_NAMES_COMPLETE, OVERLAY_PA
 // Модули SDK и события data-action для проверки при сохранении (блок 5 «Секций и SDK», часть 5в): проверка в
 // storefront-sections сверяет "uses" section.json и data-action по этим спискам ядра.
 describe('MODULE_NAMES и ACTION_EVENTS', () => {
-  it('модули SDK — тринадцать, у каждого действия SDK модуль из списка или часть окон overlay', () => {
+  it('модули SDK — четырнадцать, у каждого действия SDK модуль из списка или часть окон overlay', () => {
     expect(MODULE_NAMES).toEqual([
       'cart',
       'favorites',
@@ -19,6 +19,7 @@ describe('MODULE_NAMES и ACTION_EVENTS', () => {
       'files',
       'share',
       'page',
+      'checkout',
     ]);
     expect(MODULE_NAMES_COMPLETE).toBe(true);
     // overlay.close (01.11) — действие окна поверх страницы: ctx.overlay не модуль по uses.

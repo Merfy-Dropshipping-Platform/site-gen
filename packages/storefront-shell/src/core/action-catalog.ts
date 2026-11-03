@@ -48,6 +48,57 @@ export const ACTIONS = {
     about: 'перейти в оформление заказа: номер корзины и копия строк для оформления, переход на /checkout',
     markup: {},
   },
+  // Базовые секции, 03.11: оформление заказа. Поля и промокод — из скрипта секции (значение поля), выборы — и разметкой.
+  'checkout.set': {
+    module: 'checkout',
+    about:
+      'записать поле покупателя; аргументы { field, value }, field — email, phone, country, firstName, lastName, city, address, postalCode; город и адрес дают подсказки в $hints; ответ — CheckoutForm',
+    markup: null,
+  },
+  'checkout.leave': {
+    module: 'checkout',
+    about:
+      'покупатель ушёл с поля — в $form.errors появляется ошибка этого поля; аргументы { field }, ответ — CheckoutForm',
+    markup: null,
+  },
+  'checkout.pickHint': {
+    module: 'checkout',
+    about:
+      'выбрать подсказку адреса из $hints: город или адрес с домом и индексом; аргументы { id }, ответ — CheckoutForm',
+    markup: { 'hint-id': 'text' },
+  },
+  'checkout.selectDelivery': {
+    module: 'checkout',
+    about: 'выбрать способ доставки из $delivery.options; аргументы { id }, ответ — CheckoutDelivery',
+    markup: { 'option-id': 'text' },
+  },
+  'checkout.selectPoint': {
+    module: 'checkout',
+    about: 'выбрать пункт выдачи перевозчика из $delivery.points; аргументы { code }, ответ — CheckoutDelivery',
+    markup: { 'point-code': 'text' },
+  },
+  'checkout.selectPayment': {
+    module: 'checkout',
+    about:
+      'выбрать способ оплаты: bank_card, sbp, sberbank, tinkoff_bank — из $payment.methods; аргументы { method }, ответ — CheckoutPayment',
+    markup: { method: 'text' },
+  },
+  'checkout.applyPromo': {
+    module: 'checkout',
+    about: 'применить промокод к корзине; аргументы { code }, ответ — CheckoutPromo; отказ магазина — в $promo.error',
+    markup: null,
+  },
+  'checkout.removePromo': {
+    module: 'checkout',
+    about: 'убрать промокод; ответ — CheckoutPromo',
+    markup: {},
+  },
+  'checkout.submit': {
+    module: 'checkout',
+    about:
+      '«Оплатить»: проверка полей, заказ и переход на страницу платёжки выбранным способом, потом merfy:checkout:order; ошибки полей — в $form.errors, остальное — в $status.error; повтор не создаёт второй заказ',
+    markup: {},
+  },
   'favorites.toggle': {
     module: 'favorites',
     about: 'отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added }',
@@ -170,6 +221,7 @@ export const MODULE_NAMES = [
   'files',
   'share',
   'page',
+  'checkout',
 ] as const satisfies readonly ModuleName[];
 type MissingModule = Exclude<ModuleName, (typeof MODULE_NAMES)[number]>;
 export const MODULE_NAMES_COMPLETE: [MissingModule] extends [never] ? true : never = true;

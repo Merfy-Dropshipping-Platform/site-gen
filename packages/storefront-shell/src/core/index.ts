@@ -46,8 +46,29 @@ export type {
 } from './types';
 // Часть 5б: аналитика магазина — часть SDK без API для секций (src/core/analytics/).
 export { analytics } from './analytics/part';
-// Блок 10, часть 10а: window.cartStore для нынешнего оформления — только в бандле страницы /checkout.
+// Базовые секции, 03.11: оформление заказа — ctx.checkout; в бандле страниц, где секция объявила "checkout" в uses.
 export { checkout } from './parts/checkout';
+// Прежнее оформление (window.cartStore) — в бандле /checkout магазинов на версиях темы до оформления из секций.
+export { checkoutLegacy } from './parts/checkout-legacy';
+export type {
+  CheckoutDelivery,
+  CheckoutDeliveryOption,
+  CheckoutErrorKey,
+  CheckoutField,
+  CheckoutForm,
+  CheckoutHint,
+  CheckoutHints,
+  CheckoutLines,
+  CheckoutModule,
+  CheckoutOrder,
+  CheckoutPayment,
+  CheckoutPoint,
+  CheckoutPromo,
+  CheckoutSettings,
+  CheckoutStatus,
+  CheckoutTotals,
+  PaymentMethod,
+} from './types';
 // Блок 10, часть 10в: заказы покупательницы — ctx.orders; в бандле страниц, где секция объявила "orders" в uses.
 export { orders } from './parts/orders';
 export type { NoData, Order, OrderLine, OrderSummary, OrdersModule, VerifyArgs } from './types';

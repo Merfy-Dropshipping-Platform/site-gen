@@ -90,6 +90,9 @@ export const SKELETON_LAYOUT: SkeletonLayout = {
     policy: ["page"],
     "not-found": ["error-404"],
     "page-cart": ["cart", "cart-summary"],
+    // Оформление заказа и «Спасибо за заказ» (03.11) — секции оформления; отступы 32/64 — их умолчания (wrapperSpec).
+    "page-checkout": ["checkout"],
+    "page-checkout-result": ["checkout-result"],
     "page-login": ["login"],
     "page-orders": ["orders"],
     "page-profile": ["account"],

@@ -11,6 +11,8 @@ import { fakeRender, novaTokens } from './support-theme';
 // страницы есть видимый экземпляр; копия адреса — тот же HTML; в превью страница есть всегда.
 const REFERENCES = { platformCommit: '0123456789abcdef0123456789abcdef01234567' };
 const THEME: ThemeBuild = { tokens: novaTokens, render: fakeRender, clientFiles: [] };
+// Тема с оформлением из секций (03.11, "checkout": "sections" в theme.json).
+const SECTIONS_THEME: ThemeBuild = { ...THEME, checkout: 'sections' };
 type Instance = CodeInput['pages'][string][number];
 const instance = (id: string, hidden = false): Instance => ({
   id,
@@ -47,10 +49,12 @@ describe('страницы блока 10 в сборке', () => {
     expect(routeOf('/verify', inputs).id).toBe('page-login');
   });
 
-  it('превью: все страницы из секций, без оформления; по id — и без секций', () => {
+  it('превью: все страницы из секций, и оформление (03.11); по id — и без секций', () => {
     const inputs = withLists({});
     expect(specialRoutes(inputs, 'preview').map((route) => route.id)).toEqual([
       'page-cart',
+      'page-checkout',
+      'page-checkout-result',
       'page-profile',
       'page-wishlist',
       'page-orders',
@@ -67,25 +71,52 @@ describe('страницы блока 10 в сборке', () => {
     expect(text(files, 'account/index.html')).toBe(text(files, 'account/profile/index.html'));
     expect(text(files, 'account/profile/index.html')).toContain('data-path="/account/profile"');
     expect(manifest.pages.map((page) => page.path)).toEqual(['/', '/account/profile']);
-    expect(Object.keys(manifest.files)).toEqual(expect.arrayContaining(['account/index.html', 'account/profile/index.html']));
+    expect(Object.keys(manifest.files)).toEqual(
+      expect.arrayContaining(['account/index.html', 'account/profile/index.html']),
+    );
   });
 
   // 02.11.2026: служебные страницы (special-pages.json, index: false) — не для поиска.
   it('корзина, кабинет и оформление — с noindex; главная — без', async () => {
-    const inputs = withLists({ 'page-cart': [instance('c-1')], 'page-profile': [instance('p-1')] });
+    const inputs = withLists({
+      'page-cart': [instance('c-1')],
+      'page-profile': [instance('p-1')],
+      'page-checkout': [instance('ch-1')],
+    });
     const renderSection = (): Promise<string> => Promise.resolve('<p>секция</p>');
-    const { files } = await buildStorefront(inputs, REFERENCES, THEME, ASSETS, renderSection);
+    const { files } = await buildStorefront(inputs, REFERENCES, SECTIONS_THEME, ASSETS, renderSection);
     const noindex = '<meta name="robots" content="noindex">';
     for (const file of ['cart/index.html', 'account/profile/index.html', 'account/index.html', 'checkout/index.html'])
       expect(text(files, file), file).toContain(noindex);
     expect(text(files, 'index.html')).not.toContain('name="robots"');
   });
 
+  // Оформление из секций (03.11): /checkout — только с видимым экземпляром; ключ DaData — в конфиге только его страницы,
+  // адрес подсказок — в connect-src; без ключа — ни того, ни другого.
+  it('оформление из секций: файл по экземпляру, ключ DaData — в конфиге /checkout и в политике', async () => {
+    const lists = { 'page-checkout': [instance('ch-1')], 'page-cart': [instance('c-1')] };
+    const renderSection = (): Promise<string> => Promise.resolve('<p>секция</p>');
+    const keyed = codeInputs((inputs) => {
+      inputs.code = { ...CODE, pages: { ...CODE.pages, ...lists } };
+      inputs.env = { ...inputs.env, dadataToken: 'pub-dadata' };
+    });
+    const { manifest, files } = await buildStorefront(keyed, REFERENCES, SECTIONS_THEME, ASSETS, renderSection);
+    expect(manifest.pages.map((page) => page.path)).toEqual(['/', '/cart', '/checkout']);
+    expect(text(files, 'checkout/index.html')).toContain('"dadata":{"token":"pub-dadata"}');
+    expect(text(files, 'cart/index.html')).not.toContain('dadata');
+    expect(manifest.csp).toContain('https://suggestions.dadata.ru');
+    const plain = await buildStorefront(withLists(lists), REFERENCES, SECTIONS_THEME, ASSETS, renderSection);
+    expect(text(plain.files, 'checkout/index.html')).not.toContain('dadata');
+    expect(plain.manifest.csp).not.toContain('dadata');
+  });
+
   it('вход revision.checkout: четыре типа блоков; другой тип — inputs-invalid', () => {
     const header = { type: 'CheckoutHeader', props: { colorScheme: 'scheme-1', padding: { top: 32, bottom: 16 } } };
     const ok = rawInputs((json) => Object.assign(json.revision, { checkout: { blocks: [header] } }));
     expect(parseBuildInputs(ok).revision.checkout?.blocks).toEqual([header]);
-    const bad = rawInputs((json) => Object.assign(json.revision, { checkout: { blocks: [{ type: 'Footer', props: {} }] } }));
+    const bad = rawInputs((json) =>
+      Object.assign(json.revision, { checkout: { blocks: [{ type: 'Footer', props: {} }] } }),
+    );
     expect(errorOf(() => parseBuildInputs(bad)).code).toBe('inputs-invalid');
   });
 });

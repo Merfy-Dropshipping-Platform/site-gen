@@ -4,18 +4,23 @@ import { buildStorefront, type ThemeBuild } from '../src/build';
 import { CHECKOUT_COLOR_VARS, checkoutVarsCss } from '../src/checkout-css';
 import { checkoutFiles, CHECKOUT_PAGES } from '../src/checkout-pages';
 import { LIVE_PAGE, NO_SECTIONS, type PageRender } from '../src/sections-render';
+import { StorefrontBuildError } from '../src/errors';
+import { parseBuildInputs } from '../src/inputs';
+import { renderShopPage } from '../src/page';
 import { changedInputs } from './support';
 import type { BuildFile } from '../src/client-files';
 import { routeOf } from '../src/routes';
 import type { CheckoutBlock } from '../src/inputs';
 import { standInputs } from './support';
-import { ASSETS, codeInputs } from './support-code';
+import { ASSETS, CODE, REVIEWS, codeInputs } from './support-code';
 import { fakeRender, novaTokens } from './support-theme';
 
-// /checkout и /checkout-result новой темы (блок 10 «Секций и SDK», часть 10а, Р10а-17, Р10а-18): в каждой сборке, без
-// строк манифеста; бандл оформления — с частью checkout; переменные пяти тем — из схем магазина.
+// /checkout и /checkout-result новой темы (блок 10 «Секций и SDK», часть 10а, Р10а-17, Р10а-18): у прежних версий темы —
+// в каждой сборке, без строк манифеста, бандл с частью checkoutLegacy; переменные пяти тем — из схем магазина. С 03.11
+// тема с "checkout": "sections" рисует их из секций.
 const REFERENCES = { platformCommit: '0123456789abcdef0123456789abcdef01234567' };
 const THEME: ThemeBuild = { tokens: novaTokens, render: fakeRender, clientFiles: [] };
+const SECTIONS_THEME: ThemeBuild = { ...THEME, checkout: 'sections' };
 const text = (files: readonly BuildFile[], path: string): string =>
   Buffer.from(files.find((file) => file.path === path)?.content ?? new Uint8Array()).toString('utf8');
 
@@ -28,27 +33,67 @@ describe('страницы оформления', () => {
     expect(routeOf('/checkout', standInputs, 'preview').id).toBe('page-checkout');
   });
 
-  it('в каждой сборке; в страницах манифеста их нет; конфиг страницы — id оформления', async () => {
-    const { manifest, files } = await buildStorefront(standInputsJson, REFERENCES, THEME);
-    expect(files.map((file) => file.path)).toEqual(expect.arrayContaining(['checkout/index.html', 'checkout-result/index.html']));
+  const renderSection = (): Promise<string> => Promise.resolve('<p class="flex">секция</p>');
+  // Секция оформления на модуле checkout и её экземпляр в списке page-checkout.
+  const form = { ...REVIEWS, name: 'shop:checkout', meta: { uses: ['checkout'], parts: ['checkout'], classes: [] } };
+  const withCheckoutList = (): unknown =>
+    codeInputs((copy) => {
+      copy.code = {
+        ...CODE,
+        sections: [...CODE.sections, form],
+        pages: { ...CODE.pages, 'page-checkout': [{ id: 'ch-1', section: 'shop:checkout', settings: {} }] },
+      };
+    });
+  const bundleOf = (files: readonly BuildFile[], page: string): string => {
+    const src = /src="\/(_merfy\/b\/[0-9a-f]{64}\.js)"/.exec(text(files, page))?.[1];
+    if (src === undefined) throw new Error(`у ${page} нет бандла`);
+    return text(files, src);
+  };
+  // Подставное ядро support-code экспортирует checkout и checkoutLegacy: в бандл попадает только импортированное.
+  const CHECKOUT_PART = /name:\s*["']checkout["']/;
+  const LEGACY_PART = /name:\s*["']checkoutLegacy["']/;
+
+  // Версии темы без "checkout": "sections" (до nova 0.7.8): прежние файлы оформления в каждой сборке, без строк
+  // манифеста; список page-checkout их не меняет — секции там не рисуются (Astro-страница ждёт locals.checkout).
+  it('прежняя тема: файлы в каждой сборке, строк манифеста нет, бандл /checkout — с checkoutLegacy', async () => {
+    const plain = await buildStorefront(standInputsJson, REFERENCES, THEME);
+    expect(plain.files.map((file) => file.path)).toEqual(
+      expect.arrayContaining(['checkout/index.html', 'checkout-result/index.html']),
+    );
+    expect(plain.manifest.pages.map((page) => page.path)).toEqual(['/']);
+    expect(text(plain.files, 'checkout/index.html')).toContain('"id":"page-checkout"');
+    const { manifest, files } = await buildStorefront(withCheckoutList(), REFERENCES, THEME, ASSETS, renderSection);
     expect(manifest.pages.map((page) => page.path)).toEqual(['/']);
+    expect(bundleOf(files, 'checkout/index.html')).toMatch(LEGACY_PART);
+    expect(bundleOf(files, 'checkout/index.html')).not.toMatch(CHECKOUT_PART);
+    expect(bundleOf(files, 'checkout-result/index.html')).not.toMatch(LEGACY_PART);
+    expect(bundleOf(files, 'index.html')).not.toMatch(LEGACY_PART);
+  });
+
+  it('прежняя тема: страницу оформления из секций не рисует и по запросу — page-unknown', async () => {
+    const inputs = parseBuildInputs(withCheckoutList());
+    const error = await renderShopPage(inputs, '/checkout', THEME, LIVE_PAGE).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(StorefrontBuildError);
+    expect(error instanceof StorefrontBuildError ? error.code : '').toBe('page-unknown');
+  });
+
+  // С 03.11 (тема с "checkout": "sections") оформление — страницы из секций (базовые секции checkout и checkout-result),
+  // как корзина: файла нет, пока в списке нет видимого экземпляра; есть — строка манифеста и конфиг с id оформления.
+  it('из секций: без экземпляра — файла нет; с экземпляром — страница манифеста и конфиг id оформления', async () => {
+    const empty = await buildStorefront(standInputsJson, REFERENCES, SECTIONS_THEME);
+    expect(empty.files.map((file) => file.path)).not.toContain('checkout/index.html');
+    expect(empty.files.map((file) => file.path)).not.toContain('checkout-result/index.html');
+    const { manifest, files } = await buildStorefront(withCheckoutList(), REFERENCES, SECTIONS_THEME, ASSETS, renderSection);
+    expect(manifest.pages.map((page) => page.path)).toEqual(['/', '/checkout']);
     expect(text(files, 'checkout/index.html')).toContain('data-path="/checkout"');
     expect(text(files, 'checkout/index.html')).toContain('"id":"page-checkout"');
   });
 
-  it('бандл /checkout — с частью checkout, у /checkout-result и главной — без неё', async () => {
-    // Подставное ядро support-code экспортирует checkout = { name: 'checkout' }: в бандл попадает только импортированное.
-    const renderSection = (): Promise<string> => Promise.resolve('<p class="flex">секция</p>');
-    const { files } = await buildStorefront(codeInputs(), REFERENCES, THEME, ASSETS, renderSection);
-    const bundleOf = (page: string): string => {
-      const src = /src="\/(_merfy\/b\/[0-9a-f]{64}\.js)"/.exec(text(files, page))?.[1];
-      if (src === undefined) throw new Error(`у ${page} нет бандла`);
-      return text(files, src);
-    };
-    const CHECKOUT_PART = /name:\s*["']checkout["']/;
-    expect(bundleOf('checkout/index.html')).toMatch(CHECKOUT_PART);
-    expect(bundleOf('checkout-result/index.html')).not.toMatch(CHECKOUT_PART);
-    expect(bundleOf('index.html')).not.toMatch(CHECKOUT_PART);
+  it('из секций: бандл /checkout — с модулем checkout, когда его объявила секция; у главной — без него', async () => {
+    const { files } = await buildStorefront(withCheckoutList(), REFERENCES, SECTIONS_THEME, ASSETS, renderSection);
+    expect(bundleOf(files, 'checkout/index.html')).toMatch(CHECKOUT_PART);
+    expect(bundleOf(files, 'checkout/index.html')).not.toMatch(LEGACY_PART);
+    expect(bundleOf(files, 'index.html')).not.toMatch(CHECKOUT_PART);
   });
 });
 

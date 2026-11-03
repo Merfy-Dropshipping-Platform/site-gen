@@ -35,14 +35,14 @@ const problemLike = (code: string, fragment: string): unknown =>
   expect.objectContaining({ code, file: 'section.json', message: textLike(fragment) });
 
 describe('таблица ролей', () => {
-  it('семь ролей — тот же список, что у ядра; пять новых кодов проверки', () => {
+  it('девять ролей — тот же список, что у ядра; пять новых кодов проверки', () => {
     expect(SECTION_ROLES).toBe(SHELL_ROLES);
     expect(Object.keys(ROLE_PLACES)).toEqual([...SECTION_ROLES]);
     for (const code of ['role-unknown', 'role-place', 'role-not-allowed', 'role-taken', 'ext-foreign'])
       expect(PROBLEM_CODES).toContain(code);
   });
 
-  it('место: корзина и вход — свои особые страницы, остальные — overlay; запасной путь описан у каждой', () => {
+  it('место: корзина, вход и оформление (03.11) — свои особые страницы, остальные — overlay; запасной путь у каждой', () => {
     expect(Object.entries(ROLE_PLACES).map(([role, place]) => [role, place.group, place.list])).toEqual([
       ['cart', 'page', 'page-cart'],
       ['cart-drawer', 'overlay', 'overlay'],
@@ -51,6 +51,8 @@ describe('таблица ролей', () => {
       ['search', 'overlay', 'overlay'],
       ['notices', 'overlay', 'overlay'],
       ['cookie-banner', 'overlay', 'overlay'],
+      ['checkout', 'page', 'page-checkout'],
+      ['checkout-result', 'page', 'page-checkout-result'],
     ]);
     expect(OVERLAY_LIST).toBe(BUILD_OVERLAY_LIST);
     for (const place of Object.values(ROLE_PLACES)) {

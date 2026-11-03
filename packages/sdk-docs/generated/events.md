@@ -1,6 +1,6 @@
 # События
 
-> SDK 1 · документация 1.31.0 · 2026-11-03
+> SDK 1 · документация 1.32.0 · 2026-11-03
 
 События витрины отправляет ядро SDK; секция слушает их через `ctx.listen`, свой код мерчанта — на `document`.
 
@@ -17,6 +17,7 @@
 | `merfy:cart:remove` | строка убрана из корзины | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0 |
 | `merfy:cart:change` | покупатель поменял количество в корзине | lineId — строка; productId — строка; variantId — строка или null; quantity — целое от 0; previousQuantity — целое от 0 |
 | `merfy:cart:open` | покупатель открыл выезжающую корзину (cart.open при «Сайдбар») | — |
+| `merfy:checkout:order` | заказ оформлен, покупатель уходит на страницу платёжки; total — к оплате с доставкой, method — выбранный способ оплаты | orderId — строка; total — { amount, currency }; method — одно из: bank_card, sbp, sberbank, tinkoff_bank |
 | `merfy:variant:change` | выбран вариант товара | productId — строка; variantId — строка |
 | `merfy:favorites:add` | товар отмечен в избранном | productId — строка |
 | `merfy:favorites:remove` | отметка избранного снята | productId — строка |

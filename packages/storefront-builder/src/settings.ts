@@ -54,6 +54,9 @@ const envSchema = z.object({
   STOREFRONT_CONTOUR: z.enum(['dev', 'prod']).default('dev'),
   RELEASE_PAUSE_MS: z.coerce.number().int().nonnegative().default(0),
   RELEASE_TEST_SHOP: z.string().min(1).optional(),
+  // Публичный ключ подсказок адреса DaData (оформление заказа, 03.11) — та же переменная, что у sites: ключ видит браузер,
+  // как у пяти тем. Нет — у оформления подсказок адреса нет.
+  DADATA_API_KEY: z.string().min(1).max(100).optional(),
 });
 
 // Паузы перед повторами упавшей сборки: три запуска — первый и два повтора (раздел 4, В6-4).
@@ -84,6 +87,7 @@ export interface Settings {
   contour: 'dev' | 'prod';
   releasePauseMs: number;
   releaseTestShop: string | null;
+  dadataToken: string | null;
 }
 
 // K больше «мест − 1» — волна выпуска займёт все места, и публикация будет ждать её целиком.
@@ -143,5 +147,6 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
     contour: value.STOREFRONT_CONTOUR,
     releasePauseMs: value.RELEASE_PAUSE_MS,
     releaseTestShop: value.RELEASE_TEST_SHOP ?? null,
+    dadataToken: value.DADATA_API_KEY ?? null,
   };
 }

@@ -124,6 +124,12 @@ export interface EventMap {
     readonly previousQuantity: number;
   };
   'merfy:cart:open': NoDetail; // блок 10: cart.open при «Сайдбар» и выезжающей корзине на странице
+  // Базовые секции, 03.11: заказ оформлен, покупатель уходит на страницу платёжки выбранным способом.
+  'merfy:checkout:order': {
+    readonly orderId: string;
+    readonly total: Money;
+    readonly method: PaymentMethod;
+  };
   'merfy:variant:change': { readonly productId: string; readonly variantId: string };
   'merfy:favorites:add': { readonly productId: string };
   'merfy:favorites:remove': { readonly productId: string };
@@ -428,8 +434,138 @@ export interface PageModule extends PageInfo {
   readonly $now: ReadableStore<number | null>;
 }
 
+// Оформление заказа (базовые секции, 03.11): ctx.checkout — поля покупателя, настройки формы магазина, доставка, оплата,
+// промокод, итоги, ошибки по полям, отправка и «Спасибо за заказ». Все запросы оформления — в модуле: секции рисуют
+// сторы и зовут действия. Корзина — ctx.cart; по ссылке оплаты предложения расширения (/checkout?offer=<токен>) строки
+// и итоги — предложения, только для чтения, корзина не трогается.
+export type CheckoutField =
+  | 'email'
+  | 'phone'
+  | 'country'
+  | 'firstName'
+  | 'lastName'
+  | 'city'
+  | 'address'
+  | 'postalCode';
+// Ошибка показывается по полю или по выбору: способ доставки, пункт выдачи, способ оплаты.
+export type CheckoutErrorKey = CheckoutField | 'delivery' | 'point' | 'payment';
+export interface CheckoutForm {
+  readonly values: Readonly<Record<CheckoutField, string>>;
+  // Только у полей, которые покупатель уже покинул, и у всех после нажатия «Оплатить».
+  readonly errors: Readonly<Partial<Record<CheckoutErrorKey, string>>>;
+}
+// Настройки формы магазина (кабинет → «Оформление заказа»): ready — прочитаны; до ответа и при сбое — полная форма.
+export interface CheckoutSettings {
+  readonly ready: boolean;
+  readonly phone: boolean; // поле телефона есть и обязательно
+  readonly name: 'name' | 'surname' | 'name-surname'; // какие поля имени есть
+  readonly address: boolean; // физическая доставка: адрес и способ доставки
+  readonly signIn: boolean; // магазин требует вход покупателя
+  readonly offer: boolean; // оплата предложения расширения по ссылке: строки только для чтения, промокода нет
+}
+// Подсказки адреса (DaData) для поля «Город» или «Адрес»; field null — подсказок нет.
+export interface CheckoutHint {
+  readonly id: string;
+  readonly text: string;
+}
+export interface CheckoutHints {
+  readonly field: 'city' | 'address' | null;
+  readonly items: readonly CheckoutHint[];
+}
+export interface CheckoutDeliveryOption {
+  readonly id: string;
+  readonly kind: 'pickup' | 'own' | 'carrier'; // самовывоз магазина, свой тариф, перевозчик
+  readonly title: string;
+  readonly about: string; // адрес самовывоза или описание и срок
+  readonly price: Money;
+  readonly cheapest: boolean; // единственный самый дешёвый платный
+  readonly needsPoint: boolean; // перевозчику нужен пункт выдачи
+}
+export interface CheckoutPoint {
+  readonly code: string;
+  readonly name: string;
+  readonly address: string;
+  readonly hours: string;
+}
+export interface CheckoutDelivery {
+  // none — физической доставки нет (цифровые товары); idle — ждём корзину; error — message
+  readonly status: 'idle' | 'loading' | 'ready' | 'error' | 'none';
+  readonly options: readonly CheckoutDeliveryOption[];
+  readonly selected: string | null;
+  readonly message: string | null;
+  readonly points: {
+    readonly status: 'idle' | 'loading' | 'ready' | 'error';
+    readonly items: readonly CheckoutPoint[];
+    readonly selected: string | null;
+  };
+}
+export type PaymentMethod = 'bank_card' | 'sbp' | 'sberbank' | 'tinkoff_bank';
+// Способы оплаты — по включённым у магазина (платёжка решает): данные карты вводятся только на странице платёжки.
+export interface CheckoutPayment {
+  readonly ready: boolean;
+  readonly methods: readonly { readonly key: PaymentMethod; readonly title: string }[];
+  readonly selected: PaymentMethod | null;
+  readonly unavailable: boolean; // ни одного способа — «Оплата сейчас недоступна»
+}
+export interface CheckoutPromo {
+  readonly code: string | null; // применённый промокод
+  readonly busy: boolean;
+  readonly error: string | null;
+}
+export interface CheckoutLines {
+  readonly ready: boolean;
+  readonly lines: readonly CartLine[];
+}
+export interface CheckoutTotals extends CartTotals {
+  readonly delivery: Money | null; // null — способ доставки не выбран
+}
+export interface CheckoutStatus {
+  readonly complete: boolean; // всё обязательное на месте — «Оплатить» уйдёт на оплату
+  readonly submitting: boolean;
+  readonly error: string | null; // почему не ушло на оплату — текст покупателю
+  readonly signIn: boolean; // гость магазина с обязательным входом
+}
+// Заказ на «Спасибо за заказ»: ?orderId= адреса или последний оформленный в этом браузере.
+export interface CheckoutOrder {
+  readonly status: 'loading' | 'ready' | 'missing' | 'error';
+  readonly number: string;
+  readonly name: string; // имя покупателя, первое слово
+  readonly contacts: readonly string[]; // телефон и e-mail
+  readonly delivery: string; // способ доставки
+  readonly address: string;
+  readonly payment: 'paid' | 'pending' | 'failed';
+  readonly lines: readonly OrderLine[];
+  readonly subtotal: Money;
+  readonly discount: Money;
+  readonly shipping: Money; // 0 — «Бесплатно»
+  readonly total: Money;
+}
+export interface CheckoutModule {
+  readonly $form: ReadableStore<CheckoutForm>;
+  readonly $settings: ReadableStore<CheckoutSettings>;
+  readonly $hints: ReadableStore<CheckoutHints>;
+  readonly $lines: ReadableStore<CheckoutLines>;
+  readonly $delivery: ReadableStore<CheckoutDelivery>;
+  readonly $payment: ReadableStore<CheckoutPayment>;
+  readonly $promo: ReadableStore<CheckoutPromo>;
+  readonly $totals: ReadableStore<CheckoutTotals>;
+  readonly $status: ReadableStore<CheckoutStatus>;
+  readonly $order: ReadableStore<CheckoutOrder>; // читается, когда стор впервые читает секция
+  set(args: { readonly field: CheckoutField; readonly value: string }): Result<CheckoutForm>;
+  leave(args: { readonly field: CheckoutField }): Result<CheckoutForm>; // покупатель ушёл с поля — показать его ошибку
+  pickHint(args: { readonly id: string }): Promise<Result<CheckoutForm>>;
+  selectDelivery(args: { readonly id: string }): Result<CheckoutDelivery>;
+  selectPoint(args: { readonly code: string }): Result<CheckoutDelivery>;
+  selectPayment(args: { readonly method: PaymentMethod }): Result<CheckoutPayment>;
+  applyPromo(args: { readonly code: string }, options?: ActionOptions): Promise<Result<CheckoutPromo>>;
+  removePromo(options?: ActionOptions): Promise<Result<CheckoutPromo>>;
+  submit(options?: ActionOptions): Promise<Result<{ readonly orderId: string }>>; // успех — переход на платёжку
+}
+
 export interface Modules {
   readonly cart: CartModule;
+  // Базовые секции, 03.11: оформление заказа и «Спасибо за заказ».
+  readonly checkout: CheckoutModule;
   readonly consent: ConsentModule;
   readonly favorites: FavoritesModule;
   readonly customer: CustomerModule;

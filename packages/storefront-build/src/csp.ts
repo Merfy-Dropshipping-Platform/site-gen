@@ -71,7 +71,11 @@ export interface CspSource {
   inline: readonly string[];
   // Хранилище файлов покупательницы (часть 15е, Р15е-5): STOREFRONT_UPLOAD_URL сборщика; нет — в connect-src его нет.
   uploadUrl?: string;
+  // Подсказки адреса DaData в оформлении заказа (03.11): ключ задан сборщику — их адрес в connect-src; нет — его нет.
+  dadata?: boolean;
 }
+
+export const DADATA_ORIGIN = 'https://suggestions.dadata.ru';
 
 const quoted = (base64: string): string => `'sha256-${base64}'`;
 export const textHash = (text: string): string => quoted(createHash('sha256').update(text, 'utf8').digest('base64'));
@@ -86,12 +90,16 @@ const unique = (values: readonly string[]): string[] => [...new Set(values)];
 // Хеши встроенных скриптов страниц оформления (часть 15е, Р15е-4).
 const pageHashes = (source: CspSource): string[] => source.inline.map(textHash);
 
-// Свои источники запросов: шлюз, сборщик аналитики и хранилище файлов покупательницы, если оно есть (часть 15е).
+// Свои источники запросов: шлюз, сборщик аналитики, хранилище файлов покупательницы, если оно есть (часть 15е), и
+// подсказки адреса DaData, если ключ задан (03.11).
 const ownOrigins = (source: CspSource): string[] =>
   unique(
-    [new URL(source.apiUrl).origin, new URL(source.analyticsUrl).origin, source.uploadUrl].flatMap((origin) =>
-      origin === undefined ? [] : [new URL(origin).origin],
-    ),
+    [
+      new URL(source.apiUrl).origin,
+      new URL(source.analyticsUrl).origin,
+      source.uploadUrl,
+      source.dadata === true ? DADATA_ORIGIN : undefined,
+    ].flatMap((origin) => (origin === undefined ? [] : [new URL(origin).origin])),
   );
 
 interface CounterParts {

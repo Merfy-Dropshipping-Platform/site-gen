@@ -67,6 +67,10 @@ export function parseSpecialPages(value: unknown): SpecialPage[] {
 
 export const SPECIAL_PAGES: readonly SpecialPage[] = parseSpecialPages(specialPagesJson);
 export const NOT_FOUND_PAGE_ID = 'not-found';
+// Оформление заказа (базовые секции, 03.11): страница из секций роли checkout; ей — ключ подсказок адреса DaData.
+export const CHECKOUT_PAGE_ID = 'page-checkout';
+// Обе страницы оформления: у версий темы без "checkout": "sections" из секций не рисуются (page.ts, build.ts).
+export const CHECKOUT_PAGE_IDS: ReadonlySet<string> = new Set([CHECKOUT_PAGE_ID, 'page-checkout-result']);
 export const SPECIAL_PAGE_IDS: ReadonlySet<string> = new Set(SPECIAL_PAGES.map((page) => page.id));
 // Особые страницы блока 10 (часть 10а, Р10а-14): id с префиксом page- — id пяти тем, по порядку списка. Из секций —
 // строки сборки (Б10а-8), sections: false — страницы сборки (Б10а-9); каталог блока 11 сюда не входит.
@@ -75,9 +79,7 @@ export const STATIC_SPECIAL_PAGES: readonly SpecialPage[] = SPECIAL_PAGES.filter
 // (/product/:slug → /product, /account/profile → /account).
 const addressesOf = (page: SpecialPage): readonly string[] => [page.slug, ...(page.aliases ?? [])];
 const firstSegment = (address: string): string => `/${address.slice(1).split('/')[0]}`;
-export const SPECIAL_PAGE_SLUGS: ReadonlySet<string> = new Set(
-  SPECIAL_PAGES.flatMap(addressesOf).map(firstSegment),
-);
+export const SPECIAL_PAGE_SLUGS: ReadonlySet<string> = new Set(SPECIAL_PAGES.flatMap(addressesOf).map(firstSegment));
 // Служебные страницы (index: false): id — для <meta name="robots" content="noindex"> (page.ts, checkout-pages.ts),
 // адреса и копии — чтобы карта сайта их не брала (storefront-storage, sitemap.ts).
 const NOINDEX_PAGES: readonly SpecialPage[] = SPECIAL_PAGES.filter((page) => page.index === false);

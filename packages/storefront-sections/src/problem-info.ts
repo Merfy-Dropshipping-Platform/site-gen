@@ -21,7 +21,10 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   'manifest-invalid': {
     when: '`section.json` — не JSON, в нём лишний или пропущенный ключ, не тот вид значения или ключ старого формата.',
     fix: 'Исправь ключ из ответа; у типа блока нужны title, limit (число) и settings: "fact": { "title": "Факт", "limit": 6, "settings": [] }; остальные ключи — на странице section-json.md.',
-    example: { before: '"fact": { "title": "Факт" }', after: '"fact": { "title": "Факт", "limit": 6, "settings": [] }' },
+    example: {
+      before: '"fact": { "title": "Факт" }',
+      after: '"fact": { "title": "Факт", "limit": 6, "settings": [] }',
+    },
   },
   'sdk-unsupported': {
     when: 'В section.json версия SDK, которой проверка не знает.',
@@ -97,7 +100,10 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   'token-invalid': {
     when: 'Токен секции в ключе tokens записан неверно: имя без метки custom, чужой вид, больше предела.',
     fix: 'Исправь токен из ответа: имя с custom- (custom-plate, text-custom-display), вид из девяти (color, weight, text, tracking, radius, border-width, spacing, width, shadow), значение — в default, у тени — alias; примеры — quick.md.',
-    example: { before: '"plate": { "kind": "color", "default": "#f1ece4" }', after: '"custom-plate": { "kind": "color", "about": "Подложка", "default": "#f1ece4" }' },
+    example: {
+      before: '"plate": { "kind": "color", "default": "#f1ece4" }',
+      after: '"custom-plate": { "kind": "color", "about": "Подложка", "default": "#f1ece4" }',
+    },
   },
   'render-failed': {
     when: 'Шаблон упал при пробном рендере со значениями полей по умолчанию.',
@@ -117,6 +123,15 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   'sdk-only': {
     when: 'В скрипте имя вне списка SDK, this, class, delete, import() или код вне defineSection.',
     fix: 'Весь код секции — внутри defineSection; имена и вызовы — только из SDK.',
+  },
+  'attr-forbidden': {
+    when: '`attr` или `cssVar` в скрипте пишет то, что витрина откажет: `fill`, `style`, `class`, `id`, `on…`, служебный `data-*`, адрес `javascript:`, имя переменной с `--`.',
+    fix: 'Цвет и размер из данных — `cssVar` и `var(--имя)` в шаблоне, видимость — `show()`/`hide()`, класс — `toggleClass`; список разрешённых атрибутов — в script.md.',
+    example: {
+      before: "ctx.ref('bg')?.attr('fill', color)",
+      after: "ctx.ref('bg')?.cssVar('pick-bg', color) — и fill=\"var(--pick-bg)\" у rect в template.astro",
+    },
+    doc: 'script.md#цвет-и-размер-из-данных',
   },
   'event-unknown': {
     when: '`ctx.listen` подписан на событие, которого нет в каталоге событий.',
@@ -219,7 +234,10 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   'taste-dead-setting': {
     when: 'Поле объявлено в section.json (у секции или блока), а шаблон ни разу не читает settings.<его id>; секция сохраняется.',
     fix: 'Выведи поле в шаблоне {settings.<имя>} или убери его из section.json: иначе мерчант крутит настройку, а вид не меняется.',
-    example: { before: 'поле "subheading" в section.json, а в шаблоне его нет', after: '<p>{settings.subheading}</p> в шаблоне' },
+    example: {
+      before: 'поле "subheading" в section.json, а в шаблоне его нет',
+      after: '<p>{settings.subheading}</p> в шаблоне',
+    },
   },
   'taste-library-copy': {
     when: 'Файлы секции совпадают с секцией нашей библиотеки (кроме name и title): копия без изменений под другим именем; секция сохраняется.',

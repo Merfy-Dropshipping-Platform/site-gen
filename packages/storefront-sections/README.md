@@ -143,6 +143,10 @@
   `@babel/parser`, области видимости — `@babel/traverse`. Свободное имя вне списка, `this`, `super`, `class`, `delete`,
   `import()`, служебные поля JS (`constructor`, `__proto__` …), исполняемый код вне `defineSection` — `sdk-only` с
   местом и подсказкой. Из `@merfy/shell` — только `defineSection` и типы.
+- **Запись атрибутов** (`src/script-attrs.ts`): `El.attr(имя, значение)` и `El.cssVar(имя, значение)` с именем и
+  значением, написанными в коде (литерал, const, склейка, условие), — `attr-forbidden` с названием атрибута и тем,
+  чем заменить. Правила не копия: `attributeRefusal` и `cssVarRefusal` из `@merfy/shell/attributes` — тот же список, что
+  отказывает в браузере. Формы вызова: `.attr`, `?.attr`, `['attr']`, `call`, `apply`, псевдоним, деструктуризация.
 - **Модуль без импортов** (`src/script-rewrite.ts`): esbuild склеивает свои файлы, `import` из `@merfy/shell` и
   `defineSection(…)` снимаются, `a[k]` — через помощник (только собственные поля; запись служебного поля — исключение),
   потом сжатие.

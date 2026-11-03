@@ -3,6 +3,7 @@ import { cartIdNow, cityOf, loadPoints, recalculate, resolveCity, scheduleHints 
 import { isCheckoutField, phoneText } from '../checkout-form';
 import { OFFER_TOKEN, loadOffer, loadOrder, loadPayment, loadSettings } from '../checkout-load';
 import { isPaymentMethod } from '../checkout-payment';
+import { pageStorage } from '../storage';
 import {
   createAtoms,
   formStore,
@@ -87,7 +88,7 @@ function runtimeOf(core: CoreHandle): CheckoutRuntime {
     api: apiOf(core),
     cart,
     cartRt,
-    page: cartRt?.page ?? window.localStorage,
+    page: cartRt?.page ?? pageStorage(window, core.mode),
     offerToken: offerTokenOf(core),
     cards: new Map(),
     suggestions: [],

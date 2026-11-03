@@ -32,6 +32,8 @@ export const PROBLEM_CODES = [
   // Проверка скрипта при сохранении (блок 5 «Секций и SDK», часть 5в; design.md 3.9): имя вне списка разрешённого,
   // ctx.listen с событием не из каталога, data-action не из actions секции и не из действий SDK.
   'sdk-only',
+  // El.attr и El.cssVar с атрибутом, адресом или переменной, которые ядро витрины откажет в браузере (script-attrs.ts).
+  'attr-forbidden',
   'event-unknown',
   'action-unknown',
   // ctx.theme['<имя>'] не из сквозных настроек темы (блок 9 «Секций и SDK», часть 9б).

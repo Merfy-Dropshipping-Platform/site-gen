@@ -28,11 +28,13 @@ export interface BehaviorsManifest {
 
 // 03.11, команды поведений из скрипта секции (ctx.behavior): part — выбор поведения секции и проверка аргументов
 // (2816 → 3840), dialog — место окна поверх экрана, переходы, одно модальное окно и команды (6656 → 8448).
+// 04.11, слайдер следит за слайдами в вёрстке и принимает align (+175 Б); accordion делит с ним три общих куска и
+// вырос до 5634 Б — предел 5632 → 5760.
 export const BEHAVIOR_BUDGETS: Readonly<Record<BundleName | 'total', number>> = {
   part: 3840,
   animate: 4864,
   reveal: 6912,
-  accordion: 5632,
+  accordion: 5760,
   dialog: 8448,
   carousel: 15360,
   tabs: 2048,

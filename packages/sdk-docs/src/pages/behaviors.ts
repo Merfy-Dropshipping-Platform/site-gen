@@ -87,6 +87,23 @@ const commandsOf = (behavior: string, commands: Readonly<Record<string, string>>
 
 // Дополнение к поведению, которого нет в каталоге: как ведёт себя на телефоне и мышью.
 const BEHAVIOR_NOTES: Readonly<Record<string, string>> = {
+  carousel:
+    'Слайдов в окне может быть несколько: ширину слайду задаёт его класс (`basis-1/4` и подобные). `data-align` — ' +
+    'какой край окна занимает текущий слайд: `start` (умолчание) — левый, `center` — середина. Если все слайды ' +
+    'помещаются в окно, листать нечего: стрелки отключены, и `data-loop` этого не меняет. ' +
+    'Слайды-заготовки и корень можно держать скрытыми (`hidden`) и показать позже, когда секция загрузила данные: ' +
+    'в листании участвуют только слайды, которые стоят в вёрстке, а лента пересчитывается, когда их набор меняется. ' +
+    'Скрытый слайд в листание не входит.\n\n' +
+    '```html\n' +
+    '<div data-behavior="carousel" data-align="start" data-loop="false" hidden>\n' +
+    '  <div data-part="viewport" class="overflow-hidden">\n' +
+    '    <div data-part="container" class="flex">\n' +
+    '      <div data-part="slide" class="shrink-0 grow-0 basis-1/2 pr-3 lg:basis-1/4" hidden>…</div>\n' +
+    '    </div>\n' +
+    '  </div>\n' +
+    '  <button type="button" data-part="prev">Назад</button><button type="button" data-part="next">Вперёд</button>\n' +
+    '</div>\n' +
+    '```',
   dialog:
     'Окно поверх экрана в секции любого блока. `data-position` — `center`, `sheet` или `corner`: ядро ставит окно ' +
     '(`<dialog data-part="content">`), задаёт переход и модальность — `center` и `sheet` модальные (затемнение, фокус ' +

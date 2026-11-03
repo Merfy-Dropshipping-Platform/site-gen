@@ -93,6 +93,9 @@ export const BEHAVIORS: Readonly<Record<BehaviorName, BehaviorSpec>> = {
       autoplay: { kind: 'int', min: 0, max: 60, default: 0 },
       loop: { kind: 'bool', default: true },
       drag: { kind: 'bool', default: true },
+      // Какой край окна занимает текущий слайд: у карточек, которых в окне несколько, — start, у слайдов во всю ширину
+      // разницы нет, center ставит текущий слайд посередине.
+      align: { kind: 'enum', values: ['start', 'center'], default: 'start' },
     },
     onSection: false,
     commands: { next: 'none', prev: 'none', goTo: 'index', play: 'none', pause: 'none' },

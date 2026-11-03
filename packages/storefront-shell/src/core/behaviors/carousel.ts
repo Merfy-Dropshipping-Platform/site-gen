@@ -185,6 +185,37 @@ function fadeStepsByTime(api: EmblaCarouselType): void {
   };
 }
 
+// Слайд с display:none (hidden у слайда или у любого предка) Embla меряет нулевым прямоугольником в углу страницы, и
+// отступы между слайдами у него выходят отрицательными: ширина ленты схлопывается, листать некуда (04.11, секция
+// расширения с заготовками слайдов). Embla отдаём только слайды в вёрстке; пока их нет вовсе (корень скрыт) — все.
+const renderedOf = (slides: readonly HTMLElement[]): readonly HTMLElement[] =>
+  slides.filter((slide) => slide.getClientRects().length > 0);
+
+const forEmbla = (slides: readonly HTMLElement[]): HTMLElement[] => {
+  const rendered = renderedOf(slides);
+  return [...(rendered.length > 0 ? rendered : slides)];
+};
+
+const sameList = (a: readonly HTMLElement[], b: readonly HTMLElement[]): boolean =>
+  a.length === b.length && a.every((slide, i) => slide === b[i]);
+
+// Набор слайдов в вёрстке меняется без участия Embla: секция показывает корень и заготовки после загрузки данных.
+// Размер слайда при этом меняется с 0, так что ResizeObserver по корню, окну и слайдам ловит любой такой случай.
+function followRendered(host: BehaviorHost, embla: EmblaCarouselType, slides: readonly HTMLElement[]): void {
+  if (typeof ResizeObserver === 'undefined') return;
+  let current = renderedOf(slides);
+  const observer = new ResizeObserver(() => {
+    const next = renderedOf(slides);
+    if (next.length === 0 || sameList(next, current)) return;
+    current = next;
+    embla.reInit({ slides: [...next] });
+  });
+  [host.root, partOf(host, 'viewport'), ...slides].forEach((node) => {
+    if (node !== null) observer.observe(node);
+  });
+  host.signal.addEventListener('abort', () => observer.disconnect(), { once: true });
+}
+
 function createEmbla(host: BehaviorHost, slides: readonly HTMLElement[]): Started {
   const autoplay = autoplayOf(host);
   const plugins = [...(autoplay === null ? [] : [autoplay]), ...(host.params.effect === 'fade' ? [Fade()] : [])];
@@ -192,7 +223,8 @@ function createEmbla(host: BehaviorHost, slides: readonly HTMLElement[]): Starte
     partOf(host, 'viewport') ?? host.root,
     {
       container: partOf(host, 'container') ?? undefined,
-      slides: [...slides],
+      slides: forEmbla(slides),
+      align: host.params.align === 'center' ? 'center' : 'start',
       loop: host.params.loop === true,
       watchDrag: host.params.drag !== false,
       duration: host.motion.reduced ? 0 : (DURATION_OF_CHANGE[String(host.params.change)] ?? 25),
@@ -200,6 +232,7 @@ function createEmbla(host: BehaviorHost, slides: readonly HTMLElement[]): Starte
     plugins,
   );
   host.signal.addEventListener('abort', () => embla.destroy(), { once: true });
+  followRendered(host, embla, slides);
   return { embla, autoplay };
 }
 

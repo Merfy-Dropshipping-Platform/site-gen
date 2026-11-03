@@ -1,4 +1,5 @@
-import type { AcceptResult, Door, SectionFiles, SectionRow } from '@merfy/storefront-sections';
+import { prepareSection } from '@merfy/storefront-sections';
+import type { AcceptResult, Door, PrepareResult, SectionFiles, SectionRow } from '@merfy/storefront-sections';
 import { describe, expect, it, vi } from 'vitest';
 import type { DrawAnswer } from '../src/draw';
 import { EXTENSION_SECTION_ROUTE, extensionSection } from '../src/extension-section';
@@ -160,6 +161,87 @@ describe('POST /sections/extension', () => {
     expect(json(answer)).toMatchObject({ error: { code: 'uploads-closed' } });
     expect(body).not.toHaveBeenCalled();
     expect(accept).not.toHaveBeenCalled();
+  });
+
+  describe('dryRun=1: та же проверка, без записи', () => {
+    const DRY = { ...QUERY, dryRun: '1' };
+    // Настоящий итог проверки секции test-ext:reviews (prepareSection), а не подделка его формы.
+    const checked = (): Promise<PrepareResult> =>
+      prepareSection({
+        prefix: 'test-ext',
+        files: { 'section.json': SECTION_JSON, 'template.astro': '<div class="m-0"></div>' },
+      });
+    const withCheck = (result: PrepareResult | Error) => {
+      const made = probe();
+      const check = vi.fn(() => (result instanceof Error ? Promise.reject(result) : Promise.resolve(result)));
+      return { ...made, check, deps: { ...made.deps, check } };
+    };
+
+    it('годные файлы — 200 checked с полным именем, приём не зовётся, запись не делается', async () => {
+      const { deps, accept, check, log } = withCheck(await checked());
+      const answer = await send(deps, { files: FILES }, urlOf(DRY));
+      expect(answer.status).toBe(200);
+      expect(json(answer)).toEqual({ ok: true, status: 'checked', name: 'test-ext:reviews' });
+      expect(check).toHaveBeenCalledWith({ author: 'extension', extension: 'test-ext', release: '0.1.0' }, FILES);
+      expect(accept).not.toHaveBeenCalled();
+      expect(log).toHaveBeenCalledWith('extension-section-checked', {
+        extension: 'test-ext',
+        release: '0.1.0',
+        name: 'reviews',
+      });
+    });
+
+    it('отказ проверки — 422 с теми же проблемами, что у приёма (код, файл, строка)', async () => {
+      const problems = [
+        {
+          code: 'list-template-missing' as const,
+          file: 'script.ts',
+          line: 98,
+          column: 24,
+          message: 'list на ref «lines»',
+        },
+      ];
+      const { deps, accept } = withCheck({ ok: false, problems });
+      const answer = await send(deps, { files: FILES }, urlOf(DRY));
+      expect(answer.status).toBe(422);
+      expect(json(answer)).toMatchObject({
+        ok: false,
+        problems: [{ code: 'list-template-missing', file: 'script.ts', line: 98, column: 24 }],
+      });
+      expect(accept).not.toHaveBeenCalled();
+    });
+
+    it('name в section.json не тот — тот же 422 manifest-invalid, проверка не зовётся', async () => {
+      const { deps, check } = withCheck(await checked());
+      const answer = await send(deps, { files: FILES }, urlOf({ ...DRY, name: 'top-10' }));
+      expect(answer.status).toBe(422);
+      expect(json(answer)).toMatchObject({ problems: [{ code: 'manifest-invalid' }] });
+      expect(check).not.toHaveBeenCalled();
+    });
+
+    it('песочница не закрыта — 503 uploads-closed, как у приёма', async () => {
+      const { deps, check } = withCheck(await checked());
+      const closed = { ...deps, open: () => false };
+      const answer = await send(closed, { files: FILES }, urlOf(DRY));
+      expect(answer.status).toBe(503);
+      expect(json(answer)).toMatchObject({ error: { code: 'uploads-closed' } });
+      expect(check).not.toHaveBeenCalled();
+    });
+
+    it('проверка упала — 500 tool-failed', async () => {
+      const { deps } = withCheck(new Error('процесс проверки упал'));
+      const answer = await send(deps, { files: FILES }, urlOf(DRY));
+      expect(answer.status).toBe(500);
+      expect(json(answer)).toMatchObject({ error: { code: 'tool-failed' } });
+    });
+
+    it.each(['0', 'yes', ''])('dryRun=%j — 400 name-invalid', async (value) => {
+      const { deps, check, accept } = withCheck(await checked());
+      const answer = await send(deps, { files: FILES }, urlOf({ ...QUERY, dryRun: value }));
+      expect(answer.status).toBe(400);
+      expect(check).not.toHaveBeenCalled();
+      expect(accept).not.toHaveBeenCalled();
+    });
   });
 
   it('GET — 405', async () => {

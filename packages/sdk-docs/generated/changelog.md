@@ -1,6 +1,15 @@
 # Что нового
 
-> SDK 1 · документация 1.34.0 · 2026-11-03
+> SDK 1 · документация 1.35.0 · 2026-11-03
+
+## 1.35.0 — 2026-11-03
+
+- Проверка при сохранении ловит `list` на элементе без дочернего `<template>`: код `list-template-missing`
+  ([errors.md](errors.md#list-template-missing)). Раньше `ctx.ref('lines')?.list(…)` проходил `merfy_sections check` и
+  `merfy_extension_dev check`, а на витрине падал `у <div> нет дочернего <template>` и список оставался пустым. Теперь
+  отказ — с файлом и строкой в `script.ts`, именем `data-ref` и местом элемента в `template.astro`.
+- `merfy_extension_dev check` прогоняет секции расширения тем же приёмом, что и `deploy` (без записи): отказы секций
+  (`attr-forbidden`, `list-template-missing` и остальные) видны уже на `check`, а не только как `register-failed` при выкладке.
 
 ## 1.34.0 — 2026-11-03
 

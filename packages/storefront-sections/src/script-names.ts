@@ -160,6 +160,22 @@ const storeUnknown: NameRule = ({ manifest, facts }) =>
     return [problem('store-unknown', item.file, text, item)];
   });
 
+// El.list на ref без дочернего <template> (storefront-shell, core/el.ts): ядро копирует содержимое <template> на каждую
+// строку, без него — сбой «у <div> нет дочернего <template>» в браузере (picks 0.2.3, 03.11). Судим, только когда
+// элементы с таким data-ref в шаблоне есть строкой и ни у одного нет <template>: имя из выражения и ref, которого в
+// шаблоне нет, не сверяются.
+const listTemplateMissing: NameRule = ({ markup, facts }) =>
+  (facts?.lists ?? []).flatMap((item) => {
+    const marks = (markup.refs ?? []).filter((mark) => mark.name === item.name);
+    const first = marks[0];
+    if (first === undefined || marks.some((mark) => mark.template)) return [];
+    const text =
+      `list на ref «${item.name}»: у элемента data-ref="${item.name}" (${TEMPLATE_FILE}:${first.line}) нет дочернего <template> — ` +
+      `на витрине сбой «у <div> нет дочернего <template>», список пуст; первый ребёнок образцом не служит. ` +
+      `Строку списка положи в <template> внутри этого элемента: <div data-ref="${item.name}"><template><p>…</p></template></div>`;
+    return [problem('list-template-missing', item.file, text, item)];
+  });
+
 export const NAME_RULES: readonly NameRule[] = [
   eventUnknown,
   actionUnknown,
@@ -168,6 +184,7 @@ export const NAME_RULES: readonly NameRule[] = [
   scriptClasses,
   dataUnknown,
   storeUnknown,
+  listTemplateMissing,
 ];
 
 export const nameProblems = (input: NameInput): SectionProblem[] => NAME_RULES.flatMap((rule) => rule(input));

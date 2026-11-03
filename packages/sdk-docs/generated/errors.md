@@ -1,6 +1,6 @@
 # Коды ошибок
 
-> SDK 1 · документация 1.34.0 · 2026-11-03
+> SDK 1 · документация 1.35.0 · 2026-11-03
 
 Справка по кодам проверки секции: когда бывает код и как исправить.
 
@@ -170,6 +170,16 @@
 Пример: было `ctx.ref('bg')?.attr('fill', color)` → стало `ctx.ref('bg')?.cssVar('pick-bg', color) — и fill="var(--pick-bg)" у rect в template.astro`.
 
 Правило с примерами: [script.md#цвет-и-размер-из-данных](script.md#цвет-и-размер-из-данных).
+
+
+## list-template-missing
+
+Когда: `list` в скрипте вызван на элементе, у которого в `template.astro` нет дочернего `<template>`: на витрине сбой «у <div> нет дочернего <template>», список пуст.
+
+Как исправить: Положи образец строки в `<template>` внутри этого элемента; первый ребёнок образцом не служит. Строки вставятся после `<template>`..
+Пример: было `<div data-ref="lines"><p data-ref="line"></p></div>` → стало `<div data-ref="lines"><template><p data-ref="line"></p></template></div>`.
+
+Правило с примерами: [script.md#el](script.md#el).
 
 
 ## event-unknown

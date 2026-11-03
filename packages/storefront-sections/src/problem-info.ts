@@ -133,6 +133,15 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     },
     doc: 'script.md#цвет-и-размер-из-данных',
   },
+  'list-template-missing': {
+    when: '`list` в скрипте вызван на элементе, у которого в `template.astro` нет дочернего `<template>`: на витрине сбой «у <div> нет дочернего <template>», список пуст.',
+    fix: 'Положи образец строки в `<template>` внутри этого элемента; первый ребёнок образцом не служит. Строки вставятся после `<template>`.',
+    example: {
+      before: '<div data-ref="lines"><p data-ref="line"></p></div>',
+      after: '<div data-ref="lines"><template><p data-ref="line"></p></template></div>',
+    },
+    doc: 'script.md#el',
+  },
   'event-unknown': {
     when: '`ctx.listen` подписан на событие, которого нет в каталоге событий.',
     fix: 'Возьми имя события из каталога: events.md.',

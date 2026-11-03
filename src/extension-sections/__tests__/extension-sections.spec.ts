@@ -82,6 +82,17 @@ describe("договор: набор примеров", () => {
 });
 
 describe("ответ сборщика → ответ RPC", () => {
+  it("200 checked (dryRun) — success с полным именем, id нет", () => {
+    expect(
+      replyOf(
+        json(200, { ok: true, status: "checked", name: "test-ext:reviews" }),
+      ),
+    ).toEqual({
+      success: true,
+      data: { status: "checked", name: "test-ext:reviews" },
+    });
+  });
+
   const cases: [string, BuilderAnswer, unknown][] = [
     [
       "200 — success с полным именем и id строки",
@@ -219,6 +230,87 @@ describe("sites.extension.section.accept", () => {
       JSON.stringify({ files: (REQUEST as { files: unknown }).files }),
       BUILDER_TIMEOUT_MS,
     );
+  });
+
+  it("dryRun — сборщику тот же адрес с dryRun=1, ответ checked без id", async () => {
+    const { controller, call } = controllerWith(
+      json(200, { ok: true, status: "checked", name: "test-ext:reviews" }),
+    );
+    const request = { ...(REQUEST as object), dryRun: true };
+    const reply = await controller.accept(request);
+    expect(reply).toEqual({
+      success: true,
+      data: { status: "checked", name: "test-ext:reviews" },
+    });
+    expect(call).toHaveBeenCalledWith(
+      "/sections/extension",
+      {
+        extension: "test-ext",
+        release: "0.1.0",
+        kind: "section",
+        name: "reviews",
+        dryRun: "1",
+      },
+      JSON.stringify({ files: (REQUEST as { files: unknown }).files }),
+      BUILDER_TIMEOUT_MS,
+    );
+  });
+
+  it("dryRun: false — обычный приём, без dryRun в адресе", async () => {
+    const { controller, call } = controllerWith(
+      json(200, {
+        ok: true,
+        status: "accepted",
+        name: "test-ext:reviews",
+        id: "row-1",
+      }),
+    );
+    await controller.accept({ ...(REQUEST as object), dryRun: false });
+    expect(call.mock.calls[0]?.[1]).toEqual({
+      extension: "test-ext",
+      release: "0.1.0",
+      kind: "section",
+      name: "reviews",
+    });
+  });
+
+  it("dryRun: отказ проверки приходит как refused с кодом, файлом и строкой", async () => {
+    const { controller } = controllerWith(
+      json(422, {
+        ok: false,
+        name: "test-ext:reviews",
+        problems: [
+          {
+            code: "list-template-missing",
+            file: "script.ts",
+            line: 98,
+            column: 24,
+            message: "list на ref «lines»",
+          },
+        ],
+        warnings: [],
+      }),
+    );
+    const reply = await controller.accept({
+      ...(REQUEST as object),
+      dryRun: true,
+    });
+    expect(reply).toEqual({
+      success: false,
+      error: {
+        code: "refused",
+        message: "секция не прошла проверку",
+        problems: [
+          {
+            code: "list-template-missing",
+            file: "script.ts",
+            line: 98,
+            column: 24,
+            message: "list на ref «lines»",
+          },
+        ],
+      },
+    });
   });
 
   it.each(examples.accept.invalid)(

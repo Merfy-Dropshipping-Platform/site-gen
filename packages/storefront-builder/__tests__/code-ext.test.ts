@@ -1,7 +1,14 @@
 import { sha256 } from '@merfy/storefront-build';
 import type { SectionRow } from '@merfy/storefront-sections';
 import { describe, expect, it } from 'vitest';
-import { codeOf, enabledForShop, extensionStorefrontOf, storefrontsOf, type CodeContext } from '../src/code';
+import {
+  PREVIEW_SECTION_ID,
+  codeOf,
+  enabledForShop,
+  extensionStorefrontOf,
+  storefrontsOf,
+  type CodeContext,
+} from '../src/code';
 import type { LogFields } from '../src/log';
 
 // Сторы и методы расширений в коде магазина (блок 9 «Секций и SDK», часть 9в): описания — из extensions.enabledForShop,
@@ -97,6 +104,43 @@ describe('codeOf: описания расширений', () => {
     expect(logged).toEqual([
       ['section-extension-missing', { shopId: SHOP, section: 'shop:reviews', extension: 'loyalty' }],
     ]);
+  });
+});
+
+describe('codeOf: секция превью кабинета (previewSection)', () => {
+  it('секция не стоит в магазине, а previewSection её называет — в коде страницы её код и описание расширения', () => {
+    const { context } = contextOf(new Map([['test-ext', TEST_EXT]]));
+    const shop = codeOf([shopRow('shop:reviews', ['ext:test-ext'])], { home: [] }, {
+      ...context,
+      previewSection: 'shop:reviews',
+    });
+    expect(shop.code.pages.home).toEqual([{ id: PREVIEW_SECTION_ID, section: 'shop:reviews', settings: {} }]);
+    expect(shop.code.extensions).toEqual({ 'test-ext': TEST_EXT });
+    expect(shop.code.sections.map((section) => section.name)).toEqual(['shop:reviews']);
+  });
+
+  it('без previewSection входы прежние: секция вне страниц кода не получает', () => {
+    const { context } = contextOf(new Map([['test-ext', TEST_EXT]]));
+    const shop = codeOf([shopRow('shop:reviews', ['ext:test-ext'])], { home: [] }, context);
+    expect(shop.code.pages.home).toEqual([]);
+    expect('extensions' in shop.code).toBe(false);
+  });
+
+  it('секции нет среди видимых — места как есть, строки журнала нет', () => {
+    const { context, logged } = contextOf(new Map([['test-ext', TEST_EXT]]));
+    const shop = codeOf([shopRow('shop:hero')], { home: [] }, { ...context, previewSection: 'shop:reviews' });
+    expect(shop.code.pages.home).toEqual([]);
+    expect(logged).toEqual([]);
+  });
+
+  it('уже стоящие в магазине секции остаются, превью встаёт последней', () => {
+    const { context } = contextOf(new Map([['test-ext', TEST_EXT]]));
+    const shop = codeOf(
+      [shopRow('shop:hero'), shopRow('shop:reviews', ['ext:test-ext'])],
+      { home: [placed('hero-1', 'shop:hero')] },
+      { ...context, previewSection: 'shop:reviews' },
+    );
+    expect(shop.code.pages.home.map((instance) => instance.id)).toEqual(['hero-1', PREVIEW_SECTION_ID]);
   });
 });
 

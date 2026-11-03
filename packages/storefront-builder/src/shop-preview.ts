@@ -78,7 +78,8 @@ export interface PreviewShop {
 export interface ShopPreviewDeps {
   shop: (rawShop: string | null) => Promise<PreviewShop | DrawAnswer>;
   stand: (rawShop: string | null) => Promise<DrawAnswer>;
-  inputs: (shopId: string) => Promise<PreviewInputs>;
+  // previewSection — секция в коде страницы превью, как будто стоит в магазине (превью секции расширения в кабинете).
+  inputs: (shopId: string, previewSection?: string) => Promise<PreviewInputs>;
   theme: (id: string, version: string) => Promise<ShopTheme>;
   // Видимые секции; у секций включённых расширений — их id и название (блок 12, часть 12б).
   sections: (shopId: string) => Promise<ReadonlyMap<string, VisibleSection> | null>;
@@ -125,8 +126,8 @@ export const shopPreviewDeps = (preview: PreviewDeps): ShopPreviewDeps => ({
     };
   },
   stand: (rawShop) => standPreview(preview, rawShop),
-  inputs: async (shopId) => {
-    const snapshot = await readSnapshot(preview.snapshot, shopId);
+  inputs: async (shopId, previewSection) => {
+    const snapshot = await readSnapshot(preview.snapshot, shopId, previewSection);
     return { inputs: parseBuildInputs(snapshot.inputs), renders: snapshot.assets.renders, assets: snapshot.assets };
   },
   theme: async (id, version) => (await preview.catalog.themeAt(id, version)).build,
@@ -198,13 +199,21 @@ function recordOf(url: URL): string | null {
   return record === '' ? null : record;
 }
 
+// Секция в коде страницы превью (`?with=<имя секции>`): полное имя «<расширение>:<секция>» или имя секции магазина;
+// другая строка — как будто параметра нет.
+const WITH_SECTION = /^[a-z][a-z0-9-]{0,39}(?::[a-z0-9-]{1,40})?$/;
+export function withSectionOf(url: URL): string | undefined {
+  const name = url.searchParams.get('with') ?? '';
+  return WITH_SECTION.test(name) ? name : undefined;
+}
+
 export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<DrawAnswer> {
   const rawShop = url.searchParams.get('shop');
   const page = url.searchParams.get('page') ?? '';
   if (page === 'stand') return deps.stand(rawShop);
   const found = await deps.shop(rawShop);
   if (isPreviewAnswer(found)) return found;
-  const { inputs, renders, assets } = await deps.inputs(found.shopId);
+  const { inputs, renders, assets } = await deps.inputs(found.shopId, withSectionOf(url));
   // Главная, своя страница по id (часть 4, Р1-4-9) или шаблон записи (часть 8б-2); другой страницы в превью нет.
   const path = previewPathOf(inputs, page, recordOf(url));
   if (path === undefined) return answer(404, TEXT.page);

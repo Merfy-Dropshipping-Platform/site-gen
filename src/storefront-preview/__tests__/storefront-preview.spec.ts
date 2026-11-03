@@ -199,6 +199,19 @@ describe("превью новой темы — от сборщика, нынеш
     ]);
   });
 
+  it("превью секции расширения — with уходит к сборщику; пустой with — без ключа", async () => {
+    await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/preview?page=home&with=test-ext%3Apromo-banner`,
+    );
+    await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/preview?page=home&with=`,
+    );
+    expect(seen.map((call) => call.url)).toEqual([
+      `/preview?shop=${NEW_SITE}&page=home&with=test-ext%3Apromo-banner`,
+      `/preview?shop=${NEW_SITE}&page=home`,
+    ]);
+  });
+
   it("один блок превью новой темы — POST к сборщику с телом; нынешний магазин — старый блок", async () => {
     const block = {
       instance: {

@@ -122,6 +122,21 @@ describe('превью главной', () => {
     expect(rendered.map(([shopId]) => shopId)).toEqual([SHOP]);
   });
 
+  it('with=<секция> — имя уходит в снимок кода страницы; строка не по форме — как будто параметра нет', async () => {
+    const { deps } = depsOf();
+    const asked: (string | undefined)[] = [];
+    const inputs = deps.inputs;
+    deps.inputs = (shopId, previewSection) => {
+      asked.push(previewSection);
+      return inputs(shopId, previewSection);
+    };
+    await shopPreview(deps, url(`shop=${SHOP}&with=test-ext%3Apromo-banner`));
+    await shopPreview(deps, url(`shop=${SHOP}&with=shop%3Ahero`));
+    await shopPreview(deps, url(`shop=${SHOP}&with=%3Cscript%3E`));
+    await shopPreview(deps, url(`shop=${SHOP}`));
+    expect(asked).toEqual(['test-ext:promo-banner', 'shop:hero', undefined, undefined]);
+  });
+
   it('главная: политика превью form-action none — первой в <head>, одна (блок 2, часть 2б)', async () => {
     const answer = await shopPreview(depsOf().deps, url(`shop=${SHOP}`));
     expect(answer.body).toContain(`<head>${PREVIEW_POLICY_META}`);

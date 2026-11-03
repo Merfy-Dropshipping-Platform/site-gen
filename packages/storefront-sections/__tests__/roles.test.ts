@@ -12,7 +12,7 @@ import {
 } from '../src/format';
 import { prepareSection } from '../src/prepare';
 import { PROBLEM_CODES } from '../src/problems';
-import { OVERLAY_LIST, ROLE_PLACES, SECTION_ROLES, roleKeysOf } from '../src/roles';
+import { EXCLUSIVE_PAGES, OVERLAY_LIST, ROLE_PLACES, SECTION_ROLES, roleKeysOf } from '../src/roles';
 
 // Роли секций (блок 12 «Секций и SDK», 12.1, «Решил сам» пп. 1, 3–7; часть 12а) и правила секции расширения (12.8, пп.
 // 30, 31): поле role в section.json, место по роли, отказы role-unknown, role-place, role-not-allowed, ext-foreign.
@@ -64,6 +64,35 @@ describe('таблица ролей', () => {
   it('поля для /sections: роль, список ревизии, группа и один экземпляр', () => {
     expect(roleKeysOf('cart-drawer')).toEqual({ role: 'cart-drawer', place: 'overlay', groups: ['overlay'], limit: 1 });
     expect(roleKeysOf('login')).toEqual({ role: 'login', place: 'page-login', groups: ['page'], limit: 1 });
+  });
+
+  // 03.11: оформление и «Спасибо за заказ» принадлежат своим секциям целиком; корзина и вход — нет.
+  it('страница целиком принадлежит роли: только checkout и checkout-result; /sections отдаёт exclusive', () => {
+    expect(EXCLUSIVE_PAGES).toEqual({ 'page-checkout': 'checkout', 'page-checkout-result': 'checkout-result' });
+    expect(roleKeysOf('checkout')).toEqual({
+      role: 'checkout',
+      place: 'page-checkout',
+      groups: ['page'],
+      limit: 1,
+      exclusive: true,
+    });
+    expect(roleKeysOf('checkout-result')).toMatchObject({ place: 'page-checkout-result', exclusive: true });
+    for (const role of SECTION_ROLES.filter((candidate) => !candidate.startsWith('checkout')))
+      expect(roleKeysOf(role)).not.toHaveProperty('exclusive');
+  });
+
+  it('секция без роли не встаёт на страницы оформления; на корзину, главную, шапку и подвал — как раньше', () => {
+    const plain = manifestOf({ groups: ['page'] });
+    expect([
+      sectionListAllowed(plain, 'page-checkout'),
+      sectionListAllowed(plain, 'page-checkout-result'),
+      sectionListAllowed(plain, 'page-cart'),
+      sectionListAllowed(plain, 'home'),
+    ]).toEqual([false, false, true, true]);
+    const header = manifestOf({ groups: ['header', 'footer'] });
+    expect([sectionListAllowed(header, 'header'), sectionListAllowed(header, 'page-checkout')]).toEqual([true, false]);
+    expect(sectionListAllowed(manifestOf({ role: 'checkout' }), 'page-checkout')).toBe(true);
+    expect(sectionListAllowed(manifestOf({ role: 'checkout' }), 'page-checkout-result')).toBe(false);
   });
 });
 

@@ -98,6 +98,7 @@ export { SECTION_ID, SECTION_USES, SOURCE_LIMITS, sectionManifestSchema } from '
 export { AUTO_PLACES, autoPlacePart, type AutoPlace } from './format';
 // Роли секций (блок 12 «Секций и SDK», часть 12а): таблица ролей и место секции с учётом роли.
 export {
+  EXCLUSIVE_PAGES,
   OVERLAY_LIST,
   ROLE_LIMIT,
   ROLE_PLACES,

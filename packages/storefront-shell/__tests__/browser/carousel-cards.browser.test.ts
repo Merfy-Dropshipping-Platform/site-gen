@@ -128,7 +128,10 @@ describe('carousel: карточки появляются после запус�
     offsets.push(await firstSlideX(page));
     await page.click('#prev');
     offsets.push(await firstSlideX(page));
-    expect(offsets).toEqual([-SLIDE, -2 * SLIDE, -SLIDE]);
+    // Embla ставит ленту с долями пикселя: допуск в 2 px, а не равенство.
+    [-SLIDE, -2 * SLIDE, -SLIDE].forEach((expected, i) =>
+      expect(Math.abs((offsets[i] ?? 0) - expected)).toBeLessThanOrEqual(2),
+    );
     await page.close();
   });
 

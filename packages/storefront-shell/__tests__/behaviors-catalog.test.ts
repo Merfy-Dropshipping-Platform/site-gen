@@ -120,14 +120,22 @@ describe('readParams', () => {
       autoplay: 0,
       loop: true,
       drag: true,
+      align: 'start',
     });
   });
 
   it('значения из data-*: перечисление, целое, да и нет', () => {
     const root = element(
-      '<div data-behavior="carousel" data-effect="fade" data-change="500" data-autoplay="5" data-loop="false" data-drag=""></div>',
+      '<div data-behavior="carousel" data-effect="fade" data-change="500" data-autoplay="5" data-loop="false" data-drag="" data-align="center"></div>',
     );
-    expect(readParams(root, carousel)).toEqual({ effect: 'fade', change: '500', autoplay: 5, loop: false, drag: true });
+    expect(readParams(root, carousel)).toEqual({
+      effect: 'fade',
+      change: '500',
+      autoplay: 5,
+      loop: false,
+      drag: true,
+      align: 'center',
+    });
   });
 
   it('неверное значение — умолчание; целое вне границ — ближайшая граница', () => {
@@ -153,7 +161,7 @@ describe('readParams', () => {
   it('результат заморожен, лишних ключей нет; delay пресета', () => {
     const params = readParams(element('<div data-autoplay="3" data-extra="1"></div>'), carousel);
     expect(Object.isFrozen(params)).toBe(true);
-    expect(Object.keys(params).sort()).toEqual(['autoplay', 'change', 'drag', 'effect', 'loop']);
+    expect(Object.keys(params).sort()).toEqual(['align', 'autoplay', 'change', 'drag', 'effect', 'loop']);
     expect(readParams(element('<p data-animate="appear" data-delay="300"></p>'), PRESET_PARAMS)).toEqual({
       delay: 300,
     });

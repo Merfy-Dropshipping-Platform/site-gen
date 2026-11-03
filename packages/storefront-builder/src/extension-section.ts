@@ -18,6 +18,8 @@ const querySchema = z.strictObject({
   release: z.string(),
   kind: z.enum(['section', 'global', 'store']),
   name: z.string().regex(SECTION_ID),
+  // dryRun=1 — проверить как при приёме, ничего не записывая (check расширения в extensions).
+  dryRun: z.literal('1').optional(),
 });
 type SectionQuery = z.infer<typeof querySchema>;
 
@@ -26,6 +28,13 @@ export interface ExtensionSectionAnswer {
   status: 'accepted' | 'unchanged';
   name: string;
   id: string;
+}
+
+// Ответ dryRun: секция прошла проверку, строки в реестре нет.
+export interface ExtensionSectionChecked {
+  ok: true;
+  status: 'checked';
+  name: string;
 }
 
 const TEXT = {
@@ -76,9 +85,32 @@ function filesOf(text: string): SectionFiles | null {
 const refusedAnswer = (query: SectionQuery, files: SectionFiles, problems: SectionProblem[]): DrawAnswer =>
   jsonAnswer(422, sectionAnswer(query.extension, files, { ok: false, problems }));
 
+// dryRun: те же проверки, что у приёма (checkSection — тот же prepareSection и те же отказы по реестру), записи нет.
+async function dryRun(
+  deps: SectionToolsDeps,
+  door: Door,
+  query: SectionQuery,
+  files: SectionFiles,
+): Promise<DrawAnswer> {
+  const result = await deps.check(door, files);
+  const fields = { extension: query.extension, release: query.release, name: query.name };
+  if (!result.ok) {
+    deps.log('extension-section-refused', {
+      ...fields,
+      codes: result.problems.map((item) => item.code).join(','),
+      dryRun: true,
+    });
+    return refusedAnswer(query, files, result.problems);
+  }
+  deps.log('extension-section-checked', fields);
+  const answer: ExtensionSectionChecked = { ok: true, status: 'checked', name: result.section.name };
+  return jsonAnswer(200, answer);
+}
+
 async function save(deps: SectionToolsDeps, door: Door, query: SectionQuery, files: SectionFiles): Promise<DrawAnswer> {
   const mismatch = manifestMismatch(files, query);
   if (mismatch.length > 0) return refusedAnswer(query, files, mismatch);
+  if (query.dryRun !== undefined) return dryRun(deps, door, query, files);
   const result = await deps.accept(door, files);
   const fields = { extension: query.extension, release: query.release, name: query.name };
   if (result.status === 'refused') {
@@ -90,8 +122,9 @@ async function save(deps: SectionToolsDeps, door: Door, query: SectionQuery, fil
   return jsonAnswer(200, answer);
 }
 
-// POST /sections/extension?extension=&release=&kind=&name= с телом { files }. Ответы: 200 ExtensionSectionAnswer;
-// 422 SectionAnswer (отказ проверки или name/kind не те); 400, 405, 503, 500 — ToolError (section-tools.ts).
+// POST /sections/extension?extension=&release=&kind=&name=[&dryRun=1] с телом { files }. Ответы: 200 ExtensionSectionAnswer
+// (с dryRun=1 — ExtensionSectionChecked, запись не делается); 422 SectionAnswer (отказ проверки или name/kind не те);
+// 400, 405, 503, 500 — ToolError (section-tools.ts).
 export async function extensionSection(
   deps: SectionToolsDeps,
   method: string,

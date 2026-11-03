@@ -5,7 +5,8 @@
  *
  * - sites.extension.section.accept — сохранить секцию способом extension:
  *   файлы уходят сборщику витрин (POST /sections/extension), его ответ —
- *   в ответ RPC.
+ *   в ответ RPC. С dryRun: true — та же проверка без записи (dryRun=1 в адресе
+ *   сборщика), успех — status "checked".
  * - sites.extension.toggled — расширение включили или выключили: событие
  *   extension-toggle сборщику; StorefrontHandoff шлёт его только магазину
  *   новой темы, пять тем не пересобираются.
@@ -51,6 +52,12 @@ const savedSchema = z.object({
   name: z.string().min(1),
   id: z.string().min(1),
 });
+// Ответ сборщика на dryRun=1: проверено, записи нет.
+const checkedSchema = z.object({
+  ok: z.literal(true),
+  status: z.literal("checked"),
+  name: z.string().min(1),
+});
 const refusedSchema = z.object({
   ok: z.literal(false),
   problems: z.array(problemSchema).min(1),
@@ -86,6 +93,11 @@ export function replyOf(answer: BuilderAnswer): SectionAcceptReply {
   if (answer.status === 200 && saved.success) {
     const { status, name, id } = saved.data;
     return { success: true, data: { status, name, id } };
+  }
+  const checked = checkedSchema.safeParse(body);
+  if (answer.status === 200 && checked.success) {
+    const { status, name } = checked.data;
+    return { success: true, data: { status, name } };
   }
   const refused = refusedSchema.safeParse(body);
   if (answer.status === 422 && refused.success) {
@@ -140,8 +152,14 @@ export class ExtensionSectionsController {
     const request = SectionAcceptRequestSchema.safeParse(data);
     if (!request.success)
       return failure("body-invalid", z.prettifyError(request.error));
-    const { extensionId, release, kind, name, files } = request.data;
-    const query = { extension: extensionId, release, kind, name };
+    const { extensionId, release, kind, name, files, dryRun } = request.data;
+    const query = {
+      extension: extensionId,
+      release,
+      kind,
+      name,
+      ...(dryRun === true ? { dryRun: "1" } : {}),
+    };
     const answer = await this.builder.call(
       EXTENSION_SECTION_PATH,
       query,
@@ -151,7 +169,7 @@ export class ExtensionSectionsController {
     const reply = replyOf(answer);
     const outcome = reply.success ? reply.data.status : reply.error.code;
     this.logger.log(
-      `секция ${extensionId}:${name}@${release} (${kind}): ${outcome}`,
+      `секция ${extensionId}:${name}@${release} (${kind}${dryRun === true ? ", dryRun" : ""}): ${outcome}`,
     );
     return reply;
   }

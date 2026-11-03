@@ -32,18 +32,18 @@ export interface AttrFinding {
   readonly message: string;
 }
 
-function child(path: NodePath, key: string): NodePath | null {
+export function child(path: NodePath, key: string): NodePath | null {
   const found = path.get(key);
   return Array.isArray(found) ? null : found;
 }
 
-function children(path: NodePath, key: string): readonly NodePath[] {
+export function children(path: NodePath, key: string): readonly NodePath[] {
   const found = path.get(key);
   return Array.isArray(found) ? found : [];
 }
 
-const isMember = (path: NodePath): boolean => path.isMemberExpression() || path.isOptionalMemberExpression();
-const isCall = (path: NodePath): boolean => path.isCallExpression() || path.isOptionalCallExpression();
+export const isMember = (path: NodePath): boolean => path.isMemberExpression() || path.isOptionalMemberExpression();
+export const isCall = (path: NodePath): boolean => path.isCallExpression() || path.isOptionalCallExpression();
 const isWrapper = (path: NodePath): boolean =>
   path.isTSNonNullExpression() ||
   path.isTSAsExpression() ||
@@ -52,7 +52,7 @@ const isWrapper = (path: NodePath): boolean =>
   path.isParenthesizedExpression();
 
 // x!, x as T, (x), (0, x) — значение то же.
-function unwrap(path: NodePath): NodePath {
+export function unwrap(path: NodePath): NodePath {
   if (isWrapper(path)) {
     const inner = child(path, 'expression');
     return inner === null ? path : unwrap(inner);
@@ -109,7 +109,7 @@ function valuesOf(path: NodePath, depth = 0): readonly Known[] | null {
 }
 
 // Имя члена: x.attr, x?.attr, x['attr'], x[NAME] с const-строкой.
-function memberKey(path: NodePath): string | null {
+export function memberKey(path: NodePath): string | null {
   const node = path.node;
   if (node.type !== 'MemberExpression' && node.type !== 'OptionalMemberExpression') return null;
   const direct = staticKey(node.property, node.computed);
@@ -120,7 +120,7 @@ function memberKey(path: NodePath): string | null {
   return values?.length === 1 && typeof only === 'string' ? only : null;
 }
 
-const argsOf = (call: NodePath): readonly NodePath[] => children(call, 'arguments');
+export const argsOf = (call: NodePath): readonly NodePath[] => children(call, 'arguments');
 
 // Имя, которое деструктуризация вводит: { attr }, { attr: put }, { attr = f }.
 function boundName(value: Node): string | null {

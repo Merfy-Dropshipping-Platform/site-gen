@@ -59,7 +59,7 @@ export default defineSection<State>({
 | `value()` / `checked()` / `form()` | поля формы |
 | `cssVar(name, value)` | переменная CSS элемента: `cssVar('pick-bg', '#c9a227')` пишет `--pick-bg`; `null` — убрать; работает и у SVG-элемента (`rect`, `svg`). Цвет и размер из данных — [через неё](#цвет-и-размер-из-данных) |
 | `ref(name)` / `refs(name)` / `closest(name)` | элементы `data-ref` внутри и снаружи |
-| `list(items, fill)` | список строк на элемент массива. У элемента должен быть дочерний `<template>`: его содержимое копируется на каждую строку и вставляется после него, `fill(row, item, index)` заполняет копию. Нет `<template>` — сбой `у <div> нет дочернего <template>`; первый ребёнок образцом не служит |
+| `list(items, fill)` | список строк на элемент массива. У элемента должен быть дочерний `<template>`: его содержимое копируется на каждую строку и вставляется после него, `fill(row, item, index)` заполняет копию. Нет `<template>` — сбой `у <div> нет дочернего <template>`; первый ребёнок образцом не служит. Проверка при сохранении ловит это заранее: `list` на `ctx.ref('lines')`, у элемента `data-ref="lines"` которого нет `<template>`, — отказ `list-template-missing`. Пример: `<div data-ref="lines"><template><p data-ref="line"></p></template></div>` |
 | `focus()` | фокус |
 
 ## Цвет и размер из данных

@@ -30,6 +30,17 @@
           "section.json": "{\"sdk\":1,\"name\":\"seen\",\"kind\":\"store\",\"title\":\"Уже видели\"}",
           "script.ts": "export default { value: false };"
         }
+      },
+      {
+        "extensionId": "test-ext",
+        "release": "0.1.0",
+        "kind": "section",
+        "name": "reviews",
+        "dryRun": true,
+        "files": {
+          "section.json": "{\"sdk\":1,\"name\":\"reviews\",\"kind\":\"section\",\"title\":\"Отзывы\"}",
+          "template.astro": "<div></div>"
+        }
       }
     ],
     "invalid": [
@@ -39,13 +50,15 @@
       { "why": "вид не section, не global и не store", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "page", "name": "reviews", "files": {} } },
       { "why": "имя вместе с id расширения", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "test-ext:reviews", "files": {} } },
       { "why": "лишний ключ shopId", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "files": {}, "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b" } },
-      { "why": "файл не текст", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "files": { "section.json": 1 } } }
+      { "why": "файл не текст", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "files": { "section.json": 1 } } },
+      { "why": "dryRun не boolean", "request": { "extensionId": "test-ext", "release": "0.1.0", "kind": "section", "name": "reviews", "dryRun": "1", "files": {} } }
     ]
   },
   "replies": {
     "valid": [
       { "success": true, "data": { "status": "accepted", "name": "test-ext:reviews", "id": "0b5d7f0e-4c1a-4f7e-9a51-6d2a8e3c9b10" } },
       { "success": true, "data": { "status": "unchanged", "name": "test-ext:mark", "id": "7e9c2b14-0d3f-4a8e-b6c1-5f2e9a7d4c03" } },
+      { "success": true, "data": { "status": "checked", "name": "test-ext:reviews" } },
       {
         "success": false,
         "error": {
@@ -66,7 +79,8 @@
       { "why": "refused без problems", "reply": { "success": false, "error": { "code": "refused", "message": "секция не прошла проверку", "problems": [] } } },
       { "why": "незнакомый код", "reply": { "success": false, "error": { "code": "oops", "message": "?" } } },
       { "why": "сохранено без id", "reply": { "success": true, "data": { "status": "accepted", "name": "test-ext:reviews" } } },
-      { "why": "статус не из двух", "reply": { "success": true, "data": { "status": "saved", "name": "test-ext:reviews", "id": "1" } } }
+      { "why": "статус не из трёх", "reply": { "success": true, "data": { "status": "saved", "name": "test-ext:reviews", "id": "1" } } },
+      { "why": "проверено без имени", "reply": { "success": true, "data": { "status": "checked" } } }
     ]
   },
   "toggled": {

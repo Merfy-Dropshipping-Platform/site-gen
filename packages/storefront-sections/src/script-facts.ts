@@ -8,6 +8,7 @@ import type {
   ObjectExpression,
   Program,
 } from '@babel/types';
+import { listCallOf } from './script-lists';
 import { isShellImport, placeOf, staticKey, traverse } from './script-tree';
 
 // Факты скрипта секции (часть 5в блока 5): события ctx.listen, чтения ctx.<имя>[.<поле>], ключи actions и классы
@@ -29,14 +30,16 @@ export interface CtxRead {
 }
 // actions — ключи actions определения; null — ключи не известны (actions не объект, spread, ключ из выражения) или
 // определения нет.
+// lists — вызовы El.list: name — ref (data-ref), на котором список строится; место — слово list (script-lists.ts).
 export interface ScriptFacts {
   actions: readonly string[] | null;
   listens: readonly NameAt[];
   reads: readonly CtxRead[];
   classes: readonly string[];
+  lists: readonly NameAt[];
 }
 export type FileFacts = ScriptFacts;
-export const NO_FACTS: ScriptFacts = { actions: null, listens: [], reads: [], classes: [] };
+export const NO_FACTS: ScriptFacts = { actions: null, listens: [], reads: [], classes: [], lists: [] };
 
 const CTX_TYPE_NAMES = new Set(['Ctx', 'BaseCtx', 'StoreCtx']);
 const LISTEN = 'listen';
@@ -221,10 +224,19 @@ interface CollectState {
   listens: NameAt[];
   reads: CtxRead[];
   classes: Set<string>;
+  lists: NameAt[];
+}
+
+function recordList(call: NodePath, state: CollectState): void {
+  const found = listCallOf(call);
+  const place = found === null ? undefined : placeOf(found.at);
+  if (found !== null && place !== undefined) state.lists.push({ name: found.ref, file: state.file, ...place });
 }
 
 const collectVisitor = (state: CollectState): Visitor => ({
+  OptionalCallExpression: (call) => recordList(call, state),
   CallExpression: (call) => {
+    recordList(call, state);
     const [first] = call.node.arguments;
     const callee = call.node.callee;
     const method = callee.type === 'MemberExpression' && !callee.computed ? callee.property : null;
@@ -278,6 +290,7 @@ export function fileFacts(file: string, ast: File, definition: NodePath<ObjectEx
     listens: [],
     reads: [],
     classes: new Set(),
+    lists: [],
   };
   traverse(ast, {
     Program: (program) => {
@@ -290,6 +303,7 @@ export function fileFacts(file: string, ast: File, definition: NodePath<ObjectEx
     listens: state.listens,
     reads: state.reads,
     classes: [...state.classes].sort(),
+    lists: state.lists,
   };
 }
 
@@ -300,5 +314,6 @@ export function mergeFacts(entry: FileFacts | null, all: readonly FileFacts[]): 
     listens: all.flatMap((item) => item.listens),
     reads: all.flatMap((item) => item.reads),
     classes: [...new Set(all.flatMap((item) => [...item.classes]))].sort(),
+    lists: all.flatMap((item) => item.lists),
   };
 }

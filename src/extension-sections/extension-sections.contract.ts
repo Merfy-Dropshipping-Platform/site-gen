@@ -7,7 +7,8 @@
  *    глобальный скрипт и каждый свой стор манифеста (kind: section, global,
  *    store); sites сохраняет его способом extension
  *    (release — версия расширения) и отвечает итогом. Хоть один не сохранён —
- *    версия не регистрируется.
+ *    версия не регистрируется. С dryRun: true — та же проверка без записи
+ *    (check расширения в extensions); успех — status "checked" без id.
  * 2. Событие sites.extension.toggled (sites_queue, без ответа): после enable и
  *    disable установки — sites ставит пересборку магазина (extension-toggle).
  * 3. Ответ контейнера на GET <адрес>/sections/<имя>: { files: { путь: текст } }.
@@ -40,6 +41,8 @@ export const SectionAcceptRequestSchema = z.strictObject({
   kind: z.enum(["section", "global", "store"]),
   name: z.string().max(40).regex(SECTION_NAME_RE),
   files: SectionFilesSchema,
+  /** true — проверить как при приёме (тот же prepareSection и те же отказы), ничего не записывая. */
+  dryRun: z.boolean().optional(),
 });
 export type SectionAcceptRequest = z.infer<typeof SectionAcceptRequestSchema>;
 
@@ -72,6 +75,15 @@ const SavedReplySchema = z.object({
   }),
 });
 
+/** Ответ на dryRun: секция прошла проверку, в реестр ничего не записано — id строки нет. */
+const CheckedReplySchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    status: z.literal("checked"),
+    name: z.string().min(1),
+  }),
+});
+
 const RefusedReplySchema = z.object({
   success: z.literal(false),
   error: z.object({
@@ -88,6 +100,7 @@ const FailedReplySchema = z.object({
 
 export const SectionAcceptReplySchema = z.union([
   SavedReplySchema,
+  CheckedReplySchema,
   RefusedReplySchema,
   FailedReplySchema,
 ]);

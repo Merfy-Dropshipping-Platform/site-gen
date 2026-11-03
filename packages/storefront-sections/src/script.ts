@@ -8,7 +8,7 @@ import type { SectionFiles } from './format';
 import { isWarning, problem, when, type Checked, type SectionProblem } from './problems';
 import { DEFINE_STORE, checkScriptSource } from './script-check';
 import type { ScriptFacts } from './script-facts';
-import { rewriteModule } from './script-rewrite';
+import { rewriteChecked, type Leftover } from './script-rewrite';
 import { SHELL_MODULE } from './script-tree';
 
 // Скрипт секции (design.md блока 7, С7-11 А, п. 12, 18, 20; блок 5 «Секций и SDK», раздел 3.9) — одна сборка для всех
@@ -119,7 +119,48 @@ async function bundle(files: SectionFiles, entry: string): Promise<Checked<Bundl
   }
 }
 
-async function finish(code: string): Promise<string> {
+// esbuild подписывает куски склейки «// merfy-section:<файл>»: по ним место переписанного текста возвращается в файл автора.
+const FILE_MARK = `// ${NAMESPACE}:`;
+
+function fileAt(text: string, offset: number, entry: string): string {
+  const at = text.lastIndexOf(FILE_MARK, offset);
+  if (at < 0) return entry;
+  const end = text.indexOf('\n', at);
+  return text.slice(at + FILE_MARK.length, end < 0 ? undefined : end).trim();
+}
+
+// Строка и колонка первого упоминания в исходнике автора: переписанный текст строк автора не хранит.
+function mentionIn(
+  source: string | undefined,
+  needles: readonly string[],
+): { line: number; column: number } | undefined {
+  const lines = (source ?? '').split('\n');
+  for (const needle of needles) {
+    const index = lines.findIndex((line) => line.includes(needle));
+    const line = lines[index];
+    if (line !== undefined) return { line: index + 1, column: line.indexOf(needle) + 1 };
+  }
+  return undefined;
+}
+
+const LEFTOVER_TEXT: Readonly<Record<Leftover['kind'], (name: string) => string>> = {
+  import: (name) =>
+    `после переписывания в скрипте остался import «${name}» — на витрине он уронил бы все скрипты страницы; секция берёт из ${SHELL_MODULE} только defineSection и типы`,
+  name: (name) =>
+    `после переписывания в скрипте остался вызов или значение «${name}» из ${SHELL_MODULE} — на витрине это ReferenceError на всю страницу; defineSection бывает только в export default defineSection({ … })`,
+  syntax: (name) => `после переписывания скрипт не разбирается: ${name}`,
+};
+
+// Остаток переписывания → отказ при приёме: файл автора и место, а не ошибка в консоли витрины.
+function leftoverProblem(files: SectionFiles, text: string, entry: string, item: Leftover): SectionProblem {
+  const file = fileAt(text, item.offset, entry);
+  const needles =
+    item.kind === 'import' ? [item.name] : [item.name, item.name.replace(/\d+$/, ''), 'defineSection', 'defineStore'];
+  const at = item.kind === 'syntax' ? undefined : mentionIn(files[file], needles);
+  return problem('script-invalid', file, LEFTOVER_TEXT[item.kind](item.name), at);
+}
+
+async function finish(files: SectionFiles, entry: string, code: string): Promise<Checked<string>> {
   const options = {
     loader: 'js',
     format: 'esm',
@@ -128,7 +169,10 @@ async function finish(code: string): Promise<string> {
     legalComments: 'none',
     logLevel: 'silent',
   } as const;
-  return (await (await esbuildOf()).transform(rewriteModule(code), options)).code;
+  const { text, leftovers } = rewriteChecked(code);
+  if (leftovers.length > 0)
+    return { ok: false, problems: leftovers.map((item) => leftoverProblem(files, text, entry, item)) };
+  return { ok: true, value: (await (await esbuildOf()).transform(text, options)).code };
 }
 
 function weightProblems(
@@ -166,7 +210,9 @@ export async function buildScript(
   const bundled = await bundle(files, entry);
   const early = [...source.problems, ...(bundled.ok ? [] : bundled.problems)];
   if (!bundled.ok || early.length > 0) return { ok: false, problems: early };
-  const code = await finish(bundled.value.code);
+  const finished = await finish(files, entry, bundled.value.code);
+  if (!finished.ok) return finished;
+  const code = finished.value;
   const brotliBytes = brotliCompressSync(code).length;
   const problems = weightProblems(entry, bundled.value.exports, brotliBytes, define);
   if (problems.some((item) => !isWarning(item))) return { ok: false, problems };

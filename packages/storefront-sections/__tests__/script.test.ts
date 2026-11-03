@@ -111,6 +111,78 @@ describe('сборка скрипта секции', () => {
     expect(result.ok ? [] : result.problems.map((item) => item.code)).toEqual(['script-invalid']);
   });
 
+  // 03.11, расширение picks: два файла, в одном — разбор HTML в строки, в другом — секция; сокращения { kind },
+  // const { view, interval } = ctx.state, { collectionId, count }. Скрипт уходил на витрину с голым defineSection(…).
+  const PICKS = {
+    'script.ts': [
+      "import { defineSection } from '@merfy/shell';",
+      "import { richLines } from './rich.ts';",
+      'type Card = { view?: string; interval?: number; description?: string };',
+      'export default defineSection({',
+      '  mount(_el, ctx) {',
+      '    ctx.every(1000, () => {',
+      '      const { view, interval } = ctx.state;',
+      "      if (view !== 'carousel' || interval <= 0) return;",
+      '      ctx.state.elapsed += 1;',
+      '    });',
+      '    ctx.watch(ctx.ext.picks.$pickCard(ctx.settings.pick), (value) => void apply(ctx, value as Card));',
+      '  },',
+      '});',
+      'async function apply(ctx: any, card: Card): Promise<void> {',
+      "  const collectionId = card.description ?? '';",
+      '  const count = card.interval ?? 4;',
+      '  const result = await ctx.ext.picks.pickProducts({ collectionId, count }, { quiet: true });',
+      '  ctx.ref(`x`)?.list(richLines(result.data), (row: any, line: any) => row.text(line.kind));',
+      '}',
+    ].join('\n'),
+    'rich.ts': [
+      "const ENTITIES: Record<string, string> = { '&amp;': '&' };",
+      'export type Line = { kind: string; mark: string; runs: string[] };',
+      'export function richLines(source: string): Line[] {',
+      '  const lines: Line[] = [];',
+      "  const kind = 'p';",
+      "  const mark = '';",
+      '  lines.push({ kind, mark, runs: [] });',
+      '  return lines.concat(source.split(" ").map((m) => ({ kind: ENTITIES[m] ?? m, mark, runs: [] })));',
+      '}',
+    ].join('\n'),
+  };
+
+  it.each([
+    ['два файла, сокращения свойств', PICKS],
+    [
+      'вход в .js и псевдоним defineSection',
+      {
+        'script.js': [
+          "import { defineSection as section } from '@merfy/shell';",
+          "import { pair } from './lib/pair.js';",
+          'export default section({ mount(_el, ctx) { const { a, b } = pair(1, 2); ctx.state[a] = { a, b }; } });',
+        ].join('\n'),
+        'lib/pair.js': 'export function pair(a, b) {\n  return { a, b };\n}',
+      },
+    ],
+    [
+      'тип из @merfy/shell во втором файле',
+      {
+        'script.ts': [
+          "import { defineSection } from '@merfy/shell';",
+          "import { tag } from './tag.ts';",
+          "export default defineSection({ mount(_el, ctx) { const kind = 'p'; ctx.state.row = { kind, tag: tag(kind) }; } });",
+        ].join('\n'),
+        'tag.ts':
+          "import type { Ctx } from '@merfy/shell';\nexport const tag = (kind: string, _ctx?: Ctx) => ({ kind });",
+      },
+    ],
+  ])('%s: в собранном скрипте нет import и defineSection', async (_name, files) => {
+    const entry = 'script.ts' in files ? 'script.ts' : 'script.js';
+    const result = await buildScript(files, entry);
+    expect(result.ok ? [] : result.problems).toEqual([]);
+    const code = result.ok ? result.value.code : '';
+    expect(code).not.toMatch(/\bimport\b|defineSection|@merfy\/shell/);
+    const definition: unknown = (await moduleOf(code)).default;
+    expect(typeof recordOf(definition).mount).toBe('function');
+  });
+
   it('больше 10 КБ brotli — предупреждение, больше 50 КБ — отказ', async () => {
     const heavy = await buildScript(
       { 'script.ts': `${HEAD}export default defineSection({ mount() {} });\nexport const data = '${noise(600)}';` },

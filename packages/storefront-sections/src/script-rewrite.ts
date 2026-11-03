@@ -1,7 +1,7 @@
 import { parse } from '@babel/parser';
 import type { CallExpression, MemberExpression, Node, OptionalMemberExpression, Statement } from '@babel/types';
 import { FORBIDDEN_FIELDS } from './script-sdk';
-import { SHELL_MODULE } from './script-tree';
+import { SHELL_MODULE, traverse } from './script-tree';
 
 // Переписывание модуля секции при сохранении (design.md блока 5, раздел 3.9, «После проверки», пп. 1–2) — по тексту,
 // который собрал esbuild (один файл, без типов, без сжатия). import из @merfy/shell и вызов defineSection(…) снимаются:
@@ -76,13 +76,19 @@ function writeEdits(code: string, assignment: Node, target: Member): Edit[] {
 const isNode = (value: unknown): value is Node =>
   typeof value === 'object' && value !== null && typeof Reflect.get(value, 'type') === 'string';
 
-// Узлы дерева: все поля, в том числе массивы; обход стеком — глубина не ограничена.
+// Узлы дерева: все поля, в том числе массивы; обход стеком — глубина не ограничена. Пустые значения (undefined, null) в
+// полях бывают: у свойства-сокращения { kind } значение — клон идентификатора с range: undefined, — и обход идёт дальше,
+// а не кончается на них (03.11: из-за этого оставался голый defineSection(…) и страница падала целиком).
 function nodesOf(root: Node): Node[] {
   const found: Node[] = [];
+  const seen = new Set<Node>();
   const stack: unknown[] = [root];
-  for (let value = stack.pop(); value !== undefined; value = stack.pop()) {
+  while (stack.length > 0) {
+    const value = stack.pop();
     if (Array.isArray(value)) stack.push(...value.map((item: unknown) => item));
-    else if (isNode(value)) {
+    else if (isNode(value) && !seen.has(value)) {
+      // Один узел, достижимый двумя путями, правится один раз: две одинаковые вставки сломали бы текст.
+      seen.add(value);
       found.push(value);
       stack.push(...Object.entries(value).flatMap(([key, child]: [string, unknown]) => (key === 'loc' ? [] : [child])));
     }
@@ -113,14 +119,21 @@ const isShellCall =
   (node: Node): node is CallExpression =>
     node.type === 'CallExpression' && node.callee.type === 'Identifier' && locals.has(node.callee.name);
 
-// import из @merfy/shell — убрать; defineSection(x) — (x).
-function shellEdits(body: readonly Statement[], nodes: readonly Node[]): Edit[] {
-  const imports = body.filter((item) => item.type === 'ImportDeclaration' && item.source.value === SHELL_MODULE);
-  const locals = new Set(
-    imports.flatMap((item) =>
+const shellImports = (body: readonly Statement[]): Statement[] =>
+  body.filter((item) => item.type === 'ImportDeclaration' && item.source.value === SHELL_MODULE);
+
+// Локальные имена всего, что модуль берёт из @merfy/shell: defineSection, его псевдонимы, defineStore.
+function shellLocals(body: readonly Statement[]): Set<string> {
+  return new Set(
+    shellImports(body).flatMap((item) =>
       item.type === 'ImportDeclaration' ? item.specifiers.map((spec) => spec.local.name) : [],
     ),
   );
+}
+
+// import из @merfy/shell — убрать; defineSection(x) — (x).
+function shellEdits(body: readonly Statement[], nodes: readonly Node[], locals: ReadonlySet<string>): Edit[] {
+  const imports = shellImports(body);
   const calls = nodes.filter(isShellCall(locals)).flatMap((call) => {
     const [first] = call.arguments;
     if (first === undefined) return [];
@@ -140,11 +153,61 @@ function applyEdits(text: string, edits: readonly Edit[]): string {
   return out + text.slice(at);
 }
 
-// Модуль секции после esbuild → модуль без импортов, с помощником ключей, если он нужен.
-export function rewriteModule(code: string): string {
+// Что осталось от @merfy/shell или не разобралось в переписанном модуле: на витрине это ReferenceError на всю страницу.
+// offset — место в переписанном тексте; name — источник import/реэкспорта, имя из @merfy/shell или текст ошибки разбора.
+export interface Leftover {
+  kind: 'import' | 'name' | 'syntax';
+  name: string;
+  offset: number;
+}
+
+const fromModule = (node: Node): string | null => {
+  const withSource =
+    node.type === 'ImportDeclaration' || node.type === 'ExportAllDeclaration' || node.type === 'ExportNamedDeclaration';
+  return withSource && node.source != null ? node.source.value : null;
+};
+
+// Переписанный модуль не должен ничего брать снаружи: ни import и реэкспорта, ни свободного имени из @merfy/shell
+// (locals — имена, которые модуль брал оттуда до переписывания). Переменная с таким же именем внутри функции — своя.
+export function leftoversOf(text: string, locals: ReadonlySet<string>): Leftover[] {
+  let ast: ReturnType<typeof parse>;
+  try {
+    ast = parse(text, { sourceType: 'module', attachComment: false });
+  } catch (error) {
+    const pos: unknown = error instanceof SyntaxError ? Reflect.get(error, 'pos') : undefined;
+    const message = error instanceof Error ? error.message : String(error);
+    return [{ kind: 'syntax', name: message, offset: typeof pos === 'number' ? pos : 0 }];
+  }
+  const imports = nodesOf(ast.program).flatMap((node): Leftover[] => {
+    const source = fromModule(node);
+    return source === null ? [] : [{ kind: 'import', name: source, offset: startOf(node) }];
+  });
+  const names: Leftover[] = [];
+  traverse(ast, {
+    Identifier: (path) => {
+      const { name } = path.node;
+      if (locals.has(name) && path.isReferencedIdentifier() && !path.scope.hasBinding(name))
+        names.push({ kind: 'name', name, offset: startOf(path.node) });
+    },
+  });
+  return [...imports, ...names].sort((left, right) => left.offset - right.offset);
+}
+
+export interface Rewritten {
+  text: string;
+  leftovers: Leftover[];
+}
+
+// Модуль секции после esbuild → модуль без импортов, с помощником ключей, если он нужен; плюс то, что от @merfy/shell
+// в нём всё же осталось (script.ts превращает это в отказ при check, а не в падение страницы на витрине).
+export function rewriteChecked(code: string): Rewritten {
   const ast = parse(code, { sourceType: 'module', attachComment: false });
   const nodes = nodesOf(ast.program);
+  const locals = shellLocals(ast.program.body);
   const keys = keyEdits(code, nodes);
-  const text = applyEdits(code, [...shellEdits(ast.program.body, nodes), ...keys]);
-  return keys.length === 0 ? text : `${KEY_HELPERS}\n${text}`;
+  const rewritten = applyEdits(code, [...shellEdits(ast.program.body, nodes, locals), ...keys]);
+  const text = keys.length === 0 ? rewritten : `${KEY_HELPERS}\n${rewritten}`;
+  return { text, leftovers: leftoversOf(text, locals) };
 }
+
+export const rewriteModule = (code: string): string => rewriteChecked(code).text;

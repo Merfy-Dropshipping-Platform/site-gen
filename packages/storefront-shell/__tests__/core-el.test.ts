@@ -164,6 +164,19 @@ describe('обёртка элемента', () => {
     expect(nodeIn(root, 'bar')?.style.getPropertyValue('--progress')).toBe('');
   });
 
+  it('cssVar пишет и в SVG-элемент: ref на rect с fill="var(--имя)" (picks 0.2.3: на SVG молча не писал)', () => {
+    const { root, scope } = sectionWith(
+      '<svg data-ref="art"><rect data-ref="bg" width="10" height="10" fill="var(--pick-bg)"></rect></svg>',
+    );
+    scope.ref('bg')?.cssVar('pick-bg', '#c9a227');
+    const rect = root.querySelector('rect');
+    expect(rect?.style.getPropertyValue('--pick-bg')).toBe('#c9a227');
+    scope.ref('art')?.cssVar('pick-bg', 7);
+    expect(root.querySelector('svg')?.style.getPropertyValue('--pick-bg')).toBe('7');
+    scope.ref('bg')?.cssVar('pick-bg', null);
+    expect(rect?.style.getPropertyValue('--pick-bg')).toBe('');
+  });
+
   it('поля формы: value, checked, form() по name — флажок boolean, радио — значение выбранного', () => {
     const { scope } = sectionWith(`<form data-ref="form">
       <input data-ref="email" name="email" value="a@b.ru">

@@ -65,7 +65,7 @@ function attrOf(node: Element, state: ScopeState) {
 
 const cssVarOf = (node: Element, state: ScopeState): El['cssVar'] => {
   const apply = (property: string, value: string | number | null): void => {
-    if (!(node instanceof HTMLElement)) return;
+    if (!(node instanceof HTMLElement || node instanceof SVGElement)) return; // у SVG-элемента style тот же: fill="var(--имя)"
     if (value === null) node.style.removeProperty(property);
     else node.style.setProperty(property, String(value));
   };

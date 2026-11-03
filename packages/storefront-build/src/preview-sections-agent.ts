@@ -457,43 +457,19 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       })
     )
       .then(function (fresh) {
-        // С подставленными значениями сторов (ext-store-values) прежняя секция убирается заранее, а новая встаёт на
-        // следующем такте: ядро успевает снять подписки прежней, и новая заново читает стор по записи — иначе
-        // подписка остаётся с прежним значением и секция показывает старое. Без подмен порядок прежний.
-        var stale =
-          Object.keys(storeValues).length === 0
-            ? []
-            : fresh
-                .filter(function (item) {
-                  return item.node;
-                })
-                .map(function (item) {
-                  return byId(item.id);
-                })
-                .filter(function (node) {
-                  return node;
-                });
-        stale.forEach(function (node) {
-          node.parentNode.removeChild(node);
+        var nodes = {};
+        fresh.forEach(function (item) {
+          if (item.node) nodes[item.id] = item.node;
         });
-        return new Promise(function (resolve) {
-          if (stale.length === 0) resolve();
-          else setTimeout(resolve, 0);
-        }).then(function () {
-          var nodes = {};
-          fresh.forEach(function (item) {
-            if (item.node) nodes[item.id] = item.node;
-          });
-          placeAll(blocks, nodes, container);
-          // Вставленные узлы — скрипту превью с codeOnly: true: HTML уже новый, ядро запускает код секции (часть 5г).
-          fresh.forEach(function (item) {
-            if (item.node && item.node.isConnected) handOver(item.node, item.html, item.script, true);
-          });
-          showOverlay();
-          place();
-          showBlock();
-          post({ type: 'reconcile-ack', version: data.version, ok: true, applied: changed.length });
+        placeAll(blocks, nodes, container);
+        // Вставленные узлы — скрипту превью с codeOnly: true: HTML уже новый, ядро запускает код секции (часть 5г).
+        fresh.forEach(function (item) {
+          if (item.node && item.node.isConnected) handOver(item.node, item.html, item.script, true);
         });
+        showOverlay();
+        place();
+        showBlock();
+        post({ type: 'reconcile-ack', version: data.version, ok: true, applied: changed.length });
       })
       .catch(function (error) {
         var missing = changed.map(function (block) {

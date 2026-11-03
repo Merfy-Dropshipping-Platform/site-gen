@@ -28,7 +28,12 @@ import { themePanels } from './theme-panels';
 export const THEME_VERSIONS_FILE = 'packages/storefront-build/theme-versions.json';
 export const rendererDir = (root: string, themeId: string): string => join(root, 'themes', themeId, 'dist-renderer');
 
-const themeFileSchema = z.object({ tokens: z.unknown(), panel: z.unknown().optional() });
+// "checkout": "sections" (03.11) — оформление заказа из секций; нет признака — прежние страницы оформления сборки.
+const themeFileSchema = z.object({
+  tokens: z.unknown(),
+  panel: z.unknown().optional(),
+  checkout: z.literal('sections').optional(),
+});
 // Схема панели «Настроек темы» платформы (блок 8); тема скрывает ненужные поля в theme.json → panel.
 export const PANEL_FILE = 'packages/theme-contract/panel/theme-panel.json';
 
@@ -79,7 +84,8 @@ export async function loadThemeFrom(root: string, files: RendererFiles, state: T
   const stand = options.standPage ? { stand: { tokens, panel, renderStand: renderer.renderStand } } : {};
   // Обе панели — и у сборки (часть 4 блока 1 и часть 3в блока 3 «Секций и SDK»): правки настроек темы для секций с
   // "uses": ["theme"] читаются по panel, значения считаются по полной platformPanel.
-  const build = { tokens, render: renderer.render, clientFiles, migrations, panel, platformPanel, ...stand };
+  const checkout = themeJson.checkout === undefined ? {} : { checkout: themeJson.checkout };
+  const build = { tokens, render: renderer.render, clientFiles, migrations, panel, platformPanel, ...checkout, ...stand };
   const theme: LoadedTheme = { ...state, build };
   const preview: PreviewTheme = {
     version: state.version,

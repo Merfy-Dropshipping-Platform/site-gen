@@ -939,6 +939,7 @@ describe('превью особых страниц блока 10', () => {
     expect(rendered.map(([, request]) => request.page)).toEqual([{ id: 'page-cart', path: '/cart' }]);
   });
 
+  // Версия темы без "checkout": "sections" — прежние страницы оформления со своими локалами блоков.
   it('page=page-checkout — locals блоков оформления (в превью — все); page=page-checkout-result — результат', async () => {
     const checkout = await shopPreview(specialDeps().deps, url(`shop=${SHOP}&page=page-checkout`));
     expect(checkout.status).toBe(200);
@@ -948,6 +949,22 @@ describe('превью особых страниц блока 10', () => {
     const result = await shopPreview(specialDeps().deps, url(`shop=${SHOP}&page=page-checkout-result`));
     expect(result.status).toBe(200);
     expect(result.body).toContain('"result":true');
+  });
+
+  // С 03.11 (тема с "checkout": "sections") оформление — страницы из секций: в превью рисуются как корзина, блоков пяти
+  // тем (locals.checkout) нет.
+  it('тема с оформлением из секций: page-checkout и page-checkout-result — без локалов блоков', async () => {
+    for (const [id, path] of [
+      ['page-checkout', '/checkout'],
+      ['page-checkout-result', '/checkout-result'],
+    ]) {
+      const { deps } = specialDeps();
+      deps.theme = () => Promise.resolve({ ...CHECKOUT_THEME, checkout: 'sections' as const });
+      const answer = await shopPreview(deps, url(`shop=${SHOP}&page=${id}`));
+      expect(answer.status, id).toBe(200);
+      expect(answer.body, id).toContain(`<link rel="canonical" href="https://nova-stand.example${path}">`);
+      expect(answer.body, id).toContain('<merfy-checkout>null</merfy-checkout>');
+    }
   });
 
   it('другой id — по-прежнему 404 с подсказкой об особых страницах', async () => {

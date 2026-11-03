@@ -27,7 +27,12 @@ export interface StorefrontConfigInput {
   extensions?: StorefrontExtensions;
   // Места блоков расширений для частей бандла страницы (блок 15, часть 15д); нет или пусто — поля нет.
   extPoints?: StorefrontExtPoints;
+  // Публичный ключ подсказок адреса DaData (базовые секции, 03.11) — только у страниц оформления; нет или пусто — поля нет.
+  dadataToken?: string;
 }
+
+const dadataOf = (token: string | undefined): Pick<StorefrontConfig, 'dadata'> =>
+  token === undefined || token === '' ? {} : { dadata: { token } };
 
 // Пустые описания в конфиг не идут: у страницы без ctx.ext конфиг прежний.
 const extensionsOf = (extensions: StorefrontExtensions | undefined): Pick<StorefrontConfig, 'extensions'> =>
@@ -71,5 +76,6 @@ export function buildStorefrontConfig(input: StorefrontConfigInput): StorefrontC
     analytics: analyticsOf(input.analytics),
     ...extensionsOf(input.extensions),
     ...extPointsField(input.extPoints),
+    ...dadataOf(input.dadataToken),
   });
 }

@@ -2,6 +2,7 @@ import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
 import type { CodeNoticed } from './bundle';
 import { NO_ASSETS, checkCodeAssets, type CodeAssets } from './code';
+import { checkoutFiles } from './checkout-pages';
 import { countersOf } from './counters';
 import { storefrontCsp } from './csp';
 import { inlineScripts } from './inline-scripts';
@@ -12,9 +13,9 @@ import { shopFonts } from './head';
 import { buildKey, dataKey } from './key';
 import { MANIFEST_VERSION, checkManifest, type StorefrontManifest } from './manifest';
 import { renderShopPage, type RenderedPage, type ShopTheme } from './page';
-import { checkoutFiles } from './checkout-pages';
 import { specialFiles, type SpecialFiles } from './platform-pages';
-import { routeCopies, shopRoutes, specialRoutes } from './routes';
+import { routeCopies, shopRoutes, specialRoutes, type ShopRoute } from './routes';
+import { CHECKOUT_PAGE_IDS } from './special-pages';
 import { NO_SECTIONS, type PageRender, type RenderSection, type SectionFailed } from './sections-render';
 import { renderStandPage, type StandBuild } from './stand';
 
@@ -86,12 +87,21 @@ const bundleFiles = (pages: readonly RenderedPage[]): BuildFile[] => [
   ).values(),
 ];
 
+// Оформление заказа из секций (03.11) — только у версий темы с "checkout": "sections" в theme.json. У прежних версий
+// страницы из секций оформления не рисуются (их Astro-страница ждёт locals.checkout), оформление — файлы сборки
+// checkout-pages.ts, как до 03.11.
+const routesFor = (inputs: BuildInputs, theme: ThemeBuild): readonly ShopRoute[] =>
+  theme.checkout === 'sections'
+    ? shopRoutes(inputs)
+    : shopRoutes(inputs).filter((route) => !CHECKOUT_PAGE_IDS.has(route.id));
+
 // Страницы магазина (часть 8б): все маршруты сборки, по PAGE_CONCURRENCY за раз.
 const shopPagesOf = (inputs: BuildInputs, theme: ThemeBuild, page: PageRender): Promise<readonly RenderedPage[]> =>
-  inBatches(shopRoutes(inputs), PAGE_CONCURRENCY, (route) => renderShopPage(inputs, route.path, theme, page));
+  inBatches(routesFor(inputs, theme), PAGE_CONCURRENCY, (route) => renderShopPage(inputs, route.path, theme, page));
 
-// Все файлы сборки: код темы, бандлы, страницы и их копии, страницы 404/502 и оформления (блок 10, часть 10а) —
-// по порядку путей.
+const NO_CHECKOUT_FILES: SpecialFiles = { files: [], rendered: [] };
+
+// Все файлы сборки: код темы, бандлы, страницы и их копии, страницы 404/502 и прежнего оформления — по порядку путей.
 const allFilesOf = (
   inputs: BuildInputs,
   theme: ThemeBuild,
@@ -141,22 +151,26 @@ export async function buildStorefront(
   const shopPages = await shopPagesOf(inputs, theme, page);
   const standPages = theme.stand === undefined ? [] : [await renderStandPage(inputs, theme.stand)];
   const pages = [...shopPages, ...standPages];
-  // Страницы 404 и 502 (блок 7, часть 7а) и оформление заказа (блок 10, часть 10а): файлы есть в сборке, строк
-  // страниц в манифесте нет.
+  // Страницы 404 и 502 (блок 7, часть 7а) и прежнее оформление (блок 10, часть 10а) — у версий темы без оформления из
+  // секций: файлы есть в сборке, строк страниц в манифесте нет.
   const special = await specialFiles(inputs, theme, page);
-  const checkout = await checkoutFiles(inputs, theme, page);
+  const checkout = theme.checkout === 'sections' ? NO_CHECKOUT_FILES : await checkoutFiles(inputs, theme, page);
   const files = allFilesOf(inputs, theme, pages, shopPages, special, checkout);
   // Файлы шрифтов (блок 12) — только в манифесте: байты уже в хранилище по отпечатку, их не льём.
   const fontFiles = shopFonts(inputs, theme.tokens, theme.migrations).files.map(
     (file) => [file.path, file.hash] as const,
   );
-  // Встроенный код страниц оформления (блок 15, часть 15е, Р15е-4) — хешами в политику CSP.
+  // Встроенный код страниц прежнего оформления (блок 15, часть 15е, Р15е-4) — хешами в политику CSP.
   const manifest = manifestOf(inputs, references, files, fontFiles, pages, checkoutScripts(checkout));
   return { manifest, files };
 }
 
+// Тексты встроенных скриптов страниц прежнего оформления (часть 15е): блоки theme-base и конфиг nova.
+const checkoutScripts = (checkout: SpecialFiles): string[] =>
+  checkout.files.flatMap((file) => inlineScripts(Buffer.from(file.content).toString('utf8')));
+
 // Политика CSP магазина (блок 13 «Секций и SDK», часть 13б): по файлам сборки, адресам и аналитике; длиннее предела —
-// null, поля в манифесте нет.
+// null, поля в манифесте нет. Встроенные скрипты — только у страниц прежнего оформления (часть 15е).
 const cspOf = (
   inputs: BuildInputs,
   files: Readonly<Record<string, string>>,
@@ -170,11 +184,8 @@ const cspOf = (
     counters: countersOf(inputs.data.entities),
     custom: customCodesOf(inputs.data.entities),
     inline,
+    dadata: inputs.env.dadataToken !== undefined,
   });
-
-// Тексты встроенных скриптов страниц оформления (часть 15е): блоки theme-base и конфиг nova.
-const checkoutScripts = (checkout: SpecialFiles): string[] =>
-  checkout.files.flatMap((file) => inlineScripts(Buffer.from(file.content).toString('utf8')));
 
 // Манифест сборки: ключи, версии, сущности и файлы — по списку файлов сборки и шрифтов.
 function manifestOf(

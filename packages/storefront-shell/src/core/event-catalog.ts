@@ -71,6 +71,11 @@ export const EVENT_CATALOG = {
     fields: { ...LINE, previousQuantity: 'count' },
   },
   'merfy:cart:open': { about: 'покупатель открыл выезжающую корзину (cart.open при «Сайдбар»)', fields: {} },
+  'merfy:checkout:order': {
+    about:
+      'заказ оформлен, покупатель уходит на страницу платёжки; total — к оплате с доставкой, method — выбранный способ оплаты',
+    fields: { orderId: 'text', total: 'money', method: { oneOf: ['bank_card', 'sbp', 'sberbank', 'tinkoff_bank'] } },
+  },
   'merfy:variant:change': { about: 'выбран вариант товара', fields: { productId: 'text', variantId: 'text' } },
   'merfy:favorites:add': { about: 'товар отмечен в избранном', fields: { productId: 'text' } },
   'merfy:favorites:remove': { about: 'отметка избранного снята', fields: { productId: 'text' } },

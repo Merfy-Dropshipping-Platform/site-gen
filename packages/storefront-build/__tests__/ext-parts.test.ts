@@ -23,6 +23,7 @@ const CORE = [
   "export const favorites = { name: 'favorites' };",
   "export const analytics = { name: 'analytics' };",
   "export const checkout = { name: 'checkout' };",
+  "export const checkoutLegacy = { name: 'checkoutLegacy' };",
   "export const purchase = { name: 'purchase' };",
 ].join('\n');
 const SHELL_BUILD = { version: '0.1.0', hash: sha256(CORE), parts: ['auth', 'cart', 'favorites'], code: CORE };

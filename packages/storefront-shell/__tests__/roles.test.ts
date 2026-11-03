@@ -8,8 +8,18 @@ afterEach(() => {
 });
 
 describe('роли в ядре', () => {
-  it('семь ролей платформы; чужое значение — не роль', () => {
-    expect(SECTION_ROLES).toEqual(['cart', 'cart-drawer', 'cart-added', 'login', 'search', 'notices', 'cookie-banner']);
+  it('девять ролей платформы (оформление и «Спасибо» — 03.11); чужое значение — не роль', () => {
+    expect(SECTION_ROLES).toEqual([
+      'cart',
+      'cart-drawer',
+      'cart-added',
+      'login',
+      'search',
+      'notices',
+      'cookie-banner',
+      'checkout',
+      'checkout-result',
+    ]);
     expect([isSectionRole('cart-drawer'), isSectionRole('minicart'), isSectionRole(1)]).toEqual([true, false, false]);
     expect(ROLE_ATTRIBUTE).toBe('data-role');
   });

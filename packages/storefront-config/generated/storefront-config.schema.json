@@ -554,6 +554,20 @@
         },
         "additionalProperties": false
       }
+    },
+    "dadata": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "token"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [

@@ -132,3 +132,11 @@ describe('buildStorefrontConfig: страница записи (блок 8 «С�
     expect(buildStorefrontConfig(standInput).page).not.toHaveProperty('record');
   });
 });
+
+describe('buildStorefrontConfig: ключ подсказок DaData (оформление заказа, 03.11)', () => {
+  it('ключ есть — dadata.token; нет или пустой — поля нет', () => {
+    expect(buildStorefrontConfig({ ...standInput, dadataToken: 'pub-token' }).dadata).toEqual({ token: 'pub-token' });
+    expect(buildStorefrontConfig({ ...standInput, dadataToken: '' })).not.toHaveProperty('dadata');
+    expect(buildStorefrontConfig(standInput)).not.toHaveProperty('dadata');
+  });
+});

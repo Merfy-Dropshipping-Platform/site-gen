@@ -9,6 +9,9 @@ export const SECTION_ROLES = [
   'search',
   'notices',
   'cookie-banner',
+  // Базовые секции, 03.11: оформление заказа и «Спасибо за заказ» — страницы /checkout и /checkout-result.
+  'checkout',
+  'checkout-result',
 ] as const;
 export type SectionRole = (typeof SECTION_ROLES)[number];
 export const ROLE_ATTRIBUTE = 'data-role';

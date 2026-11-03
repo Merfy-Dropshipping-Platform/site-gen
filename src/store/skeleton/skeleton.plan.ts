@@ -73,6 +73,11 @@ export interface PlanInput {
   present: ReadonlySet<string>;
   /** Случайная часть id; тесты подставляют свою. */
   random?: () => string;
+  /**
+   * `absent` — досев существующего магазина (03.11): списки — только те, которых в ревизии ещё нет (пустой список —
+   * мерчант убрал секции сам, не трогаем), «О нас» не создаётся. Нет — заготовка нового магазина: пустые списки и «О нас».
+   */
+  only?: "absent";
 }
 
 const isRecord = (value: unknown): value is Doc =>
@@ -203,7 +208,10 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
       placement.absent.push(key);
       continue;
     }
-    if (listLength(sections, key) > 0) {
+    if (
+      listLength(sections, key) > 0 ||
+      (input.only === "absent" && key in sections)
+    ) {
       placement.kept.push({ key, label });
       continue;
     }
@@ -222,6 +230,9 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
     placement.filled.push({ key, label, sections: names.length });
     changed = true;
   }
+
+  if (input.only === "absent")
+    return finish(doc, doc, sections, changed, placement);
 
   const about = layout.about;
   const aboutSection = available(about.section);
@@ -283,6 +294,17 @@ export function planSkeleton(input: PlanInput): SkeletonPlan {
     changed = true;
   }
 
+  return finish(doc, next, sections, changed, placement);
+}
+
+/** Ничего не поменялось — тот же документ; иначе — списки и следующий lockVersion. */
+function finish(
+  doc: Doc,
+  next: Doc,
+  sections: Record<string, unknown>,
+  changed: boolean,
+  placement: SkeletonPlacement,
+): SkeletonPlan {
   if (!changed) return { document: doc, changed, placement };
   const lockVersion = typeof doc.lockVersion === "number" ? doc.lockVersion : 1;
   return {

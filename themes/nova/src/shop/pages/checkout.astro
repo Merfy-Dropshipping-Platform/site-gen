@@ -1,6 +1,11 @@
 ---
-// Оформление заказа (блок 10 «Секций и SDK», часть 10а, Р10а-17): та же страница, что в сборке, — CheckoutPage.
-import CheckoutPage from "../CheckoutPage.astro";
+// Оформление заказа (базовые секции, 03.11): страница из секций роли checkout, как корзина, — тот же ShopPage, что у
+// [...slug]. Адрес страницы считает сборщик — канонический адрес в head; другой адрес — 404.
+import ShopPage from "../ShopPage.astro";
+
+const page = Astro.locals.merfy;
+if (page === undefined) throw new Error("Страницу магазина рендерит только сборщик: нет Astro.locals.merfy");
+if (new URL(page.head.canonical).pathname !== "/checkout") return new Response(null, { status: 404 });
 ---
 
-<CheckoutPage />
+<ShopPage />

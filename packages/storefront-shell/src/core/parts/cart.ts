@@ -57,6 +57,10 @@ export interface CartRuntime {
   readQueued: boolean; // чтение по подписке или событию страницы стоит в очереди и ещё не началось
 }
 
+// Состояние модуля корзины для оформления заказа (parts/checkout.ts): номер корзины, её хранилище и перечитывание после
+// промокода — те же, что у корзины; в превью номер живёт в памяти страницы корзины.
+export const cartRuntimeOf = (module: CartModule): CartRuntime | undefined => RUNTIMES.get(module);
+
 const isText = (value: unknown): boolean => typeof value === 'string' && value !== '';
 const isQuantity = (v: unknown): boolean => typeof v === 'number' && Number.isInteger(v) && v >= 1;
 // Проверка аргументов cart.add — таблицей, по порядку (п. 3).

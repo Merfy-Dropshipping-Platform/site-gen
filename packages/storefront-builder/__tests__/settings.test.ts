@@ -45,6 +45,7 @@ describe('настройки', () => {
       contour: 'dev',
       releasePauseMs: 0,
       releaseTestShop: null,
+      dadataToken: null,
     });
     expect(RETRY_DELAYS_MS).toEqual([5000, 30_000]);
   });

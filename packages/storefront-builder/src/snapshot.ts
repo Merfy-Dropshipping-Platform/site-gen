@@ -326,6 +326,8 @@ export interface Platform {
   uploadUrl?: string;
   // Магазины для поиска (STOREFRONT_INDEXABLE): во входах — ради ключа, robots.txt и карту кладёт выкладка.
   indexable?: boolean;
+  // Публичный ключ подсказок адреса DaData (DADATA_API_KEY, оформление заказа 03.11). Нет — во входах нет.
+  dadataToken?: string;
 }
 
 export interface InputsParts {
@@ -431,6 +433,7 @@ export const buildInputsOf = (parts: InputsParts) => ({
     analyticsUrl: parts.platform.analyticsUrl,
     ...(parts.platform.uploadUrl === undefined ? {} : { uploadUrl: parts.platform.uploadUrl }),
     ...(parts.platform.indexable === undefined ? {} : { indexable: parts.platform.indexable }),
+    ...(parts.platform.dadataToken === undefined ? {} : { dadataToken: parts.platform.dadataToken }),
   },
   year: parts.year,
   data: { status: parts.received ? 'received' : 'failed', entities: parts.entities },

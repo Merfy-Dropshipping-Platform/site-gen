@@ -209,9 +209,9 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   const path = previewPathOf(inputs, page, recordOf(url));
   if (path === undefined) return answer(404, TEXT.page);
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
-  // Оформление и «Спасибо за заказ» (часть 10а, Р10а-17) — страницы сборки, не из секций: свои локалы блоков
-  // (в превью — все четыре, Р10а-19); renderShopPage их не собирает.
-  const checkout = CHECKOUT_PAGES.find((candidate) => candidate.id === page);
+  // Оформление и «Спасибо за заказ»: у версий темы с "checkout": "sections" (03.11) — страницы из секций, как корзина;
+  // у прежних — страницы сборки (часть 10а, Р10а-17) со своими локалами блоков (в превью — все четыре, Р10а-19).
+  const checkout = theme.checkout === 'sections' ? undefined : CHECKOUT_PAGES.find((candidate) => candidate.id === page);
   const rendered = await (async (): Promise<{ file: { content: Uint8Array } }> => {
     if (checkout === undefined) return renderShopPage(inputs, path, theme, previewPage(deps, found.shopId, renders));
     const files = (await checkoutFiles(inputs, theme, previewPage(deps, found.shopId, renders))).files;

@@ -17,8 +17,10 @@ const CORE = [
   "export const cart = { name: 'cart' };",
   "export const favorites = { name: 'favorites' };",
   "export const analytics = { name: 'analytics' };",
-  // Блок 10, часть 10а: часть checkout (window.cartStore) — экспорт ядра, но не часть core.json; бандл /checkout.
+  // Оформление (03.11): модуль checkout — у секций оформления; прежняя часть checkoutLegacy (window.cartStore) — у
+  // прежнего /checkout версий темы без "checkout": "sections". Обе — экспорты ядра, не части core.json.
   "export const checkout = { name: 'checkout' };",
+  "export const checkoutLegacy = { name: 'checkoutLegacy' };",
 ].join('\n');
 
 export const SHELL_BUILD: ShellBuild = {

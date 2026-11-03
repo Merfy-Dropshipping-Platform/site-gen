@@ -17,16 +17,23 @@ const manifestOf = (name: string): Record<string, any> =>
 const ROLE_PAGES: Record<string, string> = {
   cart: "page-cart",
   login: "page-login",
+  checkout: "page-checkout",
+  "checkout-result": "page-checkout-result",
 };
 // Список общих настроек секции: нет ключа wrapper — «Цветовая схема» и «Отступы» (DEFAULT_WRAPPER_IDS).
 const wrapperIdsOf = (name: string): string[] =>
   manifestOf(name).wrapper ?? ["scheme", "padding"];
 
 describe("библиотека заготовки", () => {
-  it("36 секций из fixtures/shop и storefront-shell/sections (с 29.10 — «Коллекция товаров», «Подписка на рассылку», «Контактная форма», «Промо-баннер», «Основной текст», «Изображение с текстом», «Мультиколонны», «Мультиряды», «Галерея», «Видео», «Публикации», «Список коллекций»; «Вопросы с плавным раскрытием» склеены с «Сворачиваемым разделом»); в раскладке 22 — без «Значка корзины», «Слайд-шоу», «Подписки на рассылку» и «Контактной формы», все есть в библиотеке", () => {
-    expect(library.size).toBe(36);
-    expect(skeletonSectionNames()).toHaveLength(22);
-    for (const name of ["cart-badge", "slideshow", "newsletter", "contact-form"]) {
+  it("36 секций из fixtures/shop и storefront-shell/sections (с 29.10 — «Коллекция товаров», «Подписка на рассылку», «Контактная форма», «Промо-баннер», «Основной текст», «Изображение с текстом», «Мультиколонны», «Мультиряды», «Галерея», «Видео», «Публикации», «Список коллекций»; «Вопросы с плавным раскрытием» склеены с «Сворачиваемым разделом»; с 03.11 — «Оформление заказа» и «Спасибо за заказ»); в раскладке 24 — без «Значка корзины», «Слайд-шоу», «Подписки на рассылку» и «Контактной формы», все есть в библиотеке", () => {
+    expect(library.size).toBe(38);
+    expect(skeletonSectionNames()).toHaveLength(24);
+    for (const name of [
+      "cart-badge",
+      "slideshow",
+      "newsletter",
+      "contact-form",
+    ]) {
       expect(skeletonSectionNames()).not.toContain(name);
       expect(library.has(name)).toBe(true);
     }
@@ -64,7 +71,7 @@ describe("библиотека заготовки", () => {
 });
 
 describe("раскладка заготовки", () => {
-  it("ключи — общие списки и особые страницы из секций (оформление заказа — не из секций)", () => {
+  it("ключи — общие списки и особые страницы из секций (оформление заказа — из секций с 03.11)", () => {
     const pages = new Set(
       SPECIAL_PAGES.filter((page) => page.sections !== false).map((p) => p.id),
     );

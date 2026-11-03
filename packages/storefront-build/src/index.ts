@@ -79,7 +79,8 @@ export {
   type PageInfo,
   type SpecialPage,
 } from './special-pages';
-// Страницы оформления (блок 10 «Секций и SDK», часть 10а, Р10а-17): файлы сборки и превью конструктора.
+// Прежние страницы оформления (блок 10 «Секций и SDK», часть 10а, Р10а-17) — у версий темы без оформления из секций:
+// файлы сборки и превью конструктора.
 export { CHECKOUT_PAGES, checkoutFiles } from './checkout-pages';
 export { REBUILD_EVENT_INPUTS } from './event-inputs';
 // Записи магазина (блок 8 «Секций и SDK», часть 8а)

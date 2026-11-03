@@ -1,0 +1,24 @@
+{
+  "sdk": 1,
+  "name": "checkout",
+  "kind": "section",
+  "title": "Оформление заказа",
+  "role": "checkout",
+  "groups": ["page"],
+  "limit": 1,
+  "uses": ["checkout", "customer", "shop"],
+  "wrapper": ["scheme", "padding"],
+  "wrapperSpec": {
+    "padding": { "default": { "top": 32, "bottom": 64 } }
+  },
+  "settings": [
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "color-scheme",
+      "label": "Цветовая схема",
+      "section": "Сводка заказа",
+      "setting": { "kind": "color-scheme", "default": "" }
+    }
+  ]
+}

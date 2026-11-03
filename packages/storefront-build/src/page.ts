@@ -35,7 +35,8 @@ import {
 import { checkSeo } from './seo';
 import { policyTextHtml } from './policy-text';
 import { shopPropsOf } from './shop-props';
-import { HOME_PAGE, NOINDEX_META, NOINDEX_PAGE_IDS, NOT_FOUND_PAGE_ID } from './special-pages';
+import { CHECKOUT_PAGE_IDS, HOME_PAGE, NOINDEX_META, NOINDEX_PAGE_IDS, NOT_FOUND_PAGE_ID } from './special-pages';
+import { StorefrontBuildError } from './errors';
 
 // Одна страница магазина (design.md блока 4, Св-1 В): рендерится по запросу без полной сборки и отдаётся строкой в
 // формате манифеста и файлом. Полная сборка рендерит каждую страницу так же, поэтому строки совпадают. Шапка, свой
@@ -56,6 +57,10 @@ export interface ShopTheme {
   // Полная панель платформы со словарём этой темы, скрытые темой поля на месте (часть 3в блока 3, design.md блока 3,
   // 3.7): по ней считаются значения настроек. Нет — значения по panel.
   platformPanel?: PanelSchema;
+  // Оформление заказа этой версии темы (theme.json → "checkout", 03.11): 'sections' — страницы /checkout и
+  // /checkout-result из секций, как корзина; нет — прежние страницы сборки (checkout-pages.ts) с частью checkoutLegacy.
+  // Магазины закреплены за версией темы: их прежние версии оформляют заказ по-старому, пока выпуск темы не переведёт.
+  checkout?: 'sections';
 }
 
 export interface RenderedPage {
@@ -329,6 +334,10 @@ export async function renderShopPage(
   // Превью конструктора (часть 8б-2) — маршруты превью: страницы всех шаблонов и примеры; сборка — только записи с
   // показанным шаблоном.
   const route = routeOf(path, inputs, page.mode);
+  // Прежняя версия темы (без "checkout": "sections") оформление из секций не рисует: её Astro-страница ждёт
+  // locals.checkout, файлы оформления пишет checkout-pages.ts — и дорисовка по запросу их не перепишет.
+  if (CHECKOUT_PAGE_IDS.has(route.id) && theme.checkout !== 'sections')
+    throw new StorefrontBuildError('page-unknown', 'оформление этой версии темы — не из секций', { path });
   // Скрытые экземпляры убираются здесь, до рендера (п. 22): разметка, CSS секций и скрипты бандла — по видимым.
   const shown = withoutHidden(inputs);
   const lists = pageListsOf(route.id).map((list) => placedSections(shown, list));

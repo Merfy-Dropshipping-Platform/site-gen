@@ -22,7 +22,7 @@ import type { ShopPageHead, ShopPageLocals, ShopPreconnect, ShopSocial } from '.
 import type { RecordEntry, RecordType } from './records';
 import { CATALOG_PAGE_ID, type ShopRoute } from './routes';
 import { EMPTY_PAGE_CONTENT, type PageContent, type PageMode } from './sections-render';
-import { NOT_FOUND_PAGE_ID, NOT_FOUND_TEXT, platformPageTitle } from './special-pages';
+import { CHECKOUT_PAGE_ID, NOT_FOUND_PAGE_ID, NOT_FOUND_TEXT, platformPageTitle } from './special-pages';
 import { productStructuredData } from './structured-data';
 
 // Данные страницы для рисовальщика (design.md блока 4, В4-4 Б и SEO). Всё индексируемое — язык, заголовок, описание,
@@ -238,6 +238,16 @@ function structuredDataOf(route: ShopRoute, canonical: string): { structuredData
   return data === '' ? {} : { structuredData: data };
 }
 
+// Ключ подсказок адреса DaData (оформление заказа, 03.11): страница оформления на витрине и ключ задан сборщику.
+const dadataOf = (
+  inputs: BuildInputs,
+  route: ShopRoute,
+  mode: PageMode,
+): Pick<StorefrontConfigInput, 'dadataToken'> => {
+  const token = inputs.env.dadataToken;
+  return route.id === CHECKOUT_PAGE_ID && mode === 'live' && token !== undefined ? { dadataToken: token } : {};
+};
+
 // Конфиг витрины страницы (блок 3).
 const pageConfigOf = (inputs: BuildInputs, route: ShopRoute, content: PageContent, name: string) =>
   buildStorefrontConfig({
@@ -250,6 +260,8 @@ const pageConfigOf = (inputs: BuildInputs, route: ShopRoute, content: PageConten
     extensions: pageExtensions(inputs, route.id),
     // Места блоков расширений для частей бандла страницы (блок 15, часть 15д, Р15д-1).
     extPoints: pageExtPoints(inputs, route.id),
+    // Ключ подсказок адреса (оформление заказа, 03.11) — только у страницы оформления и только на витрине.
+    ...dadataOf(inputs, route, content.mode),
   });
 
 // <head> страницы: язык, SEO, канонический адрес, иконка и ранние соединения, конфиг, стили, код секций, теги

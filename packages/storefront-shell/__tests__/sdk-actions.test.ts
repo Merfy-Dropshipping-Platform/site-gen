@@ -4,6 +4,7 @@ import { defineSection } from '../src/core/define';
 import { NOTICE_TEXT } from '../src/core/failures';
 import { auth } from '../src/core/parts/auth';
 import { cart } from '../src/core/parts/cart';
+import { checkout } from '../src/core/parts/checkout';
 import { consent } from '../src/core/parts/consent';
 import { favorites } from '../src/core/parts/favorites';
 import { newsletter } from '../src/core/parts/newsletter';
@@ -13,7 +14,7 @@ import { search } from '../src/core/parts/search';
 import { share } from '../src/core/parts/share';
 import { variants } from '../src/core/parts/variants';
 import { start, type StartedCore } from '../src/core/start';
-import type { Ctx, SdkPart } from '../src/core/types';
+import type { CoreHandle, Ctx, ModuleName, Modules, SdkPart } from '../src/core/types';
 import { configTag, entry, placeSection, watchFailures } from './core-support';
 import { API_URL, SHOP_ID, fakeCore, fakeGateway } from './sdk-support';
 
@@ -21,6 +22,7 @@ import { API_URL, SHOP_ID, fakeCore, fakeGateway } from './sdk-support';
 const PARTS: readonly SdkPart<string, unknown>[] = [
   auth,
   cart,
+  checkout,
   consent,
   favorites,
   newsletter,
@@ -31,6 +33,20 @@ const PARTS: readonly SdkPart<string, unknown>[] = [
   variants,
 ];
 let core: StartedCore | undefined;
+
+// Оформление (03.11) читает корзину через core.part('cart') — у ядра теста она есть.
+function withCart(): CoreHandle {
+  const base = fakeCore().core;
+  const parts: Partial<Modules> = { cart: cart.create(base) };
+  return {
+    ...base,
+    part: <N extends ModuleName>(name: N): Modules[N] => {
+      const found = parts[name];
+      if (found === undefined) throw new Error(`части ${name} в тесте нет`);
+      return found;
+    },
+  };
+}
 
 afterEach(() => {
   core?.stop();
@@ -53,6 +69,15 @@ describe('таблица действий', () => {
       'cart.checkout',
       'cart.open',
       'cart.remove',
+      'checkout.applyPromo',
+      'checkout.leave',
+      'checkout.pickHint',
+      'checkout.removePromo',
+      'checkout.selectDelivery',
+      'checkout.selectPayment',
+      'checkout.selectPoint',
+      'checkout.set',
+      'checkout.submit',
       'consent.accept',
       'consent.decline',
       'favorites.toggle',
@@ -75,7 +100,7 @@ describe('таблица действий', () => {
     const missing = ACTION_NAMES.filter((name) => {
       const [module, method] = name.split('.');
       const part = PARTS.find((candidate) => candidate.name === module);
-      const api: unknown = part?.create(fakeCore().core);
+      const api: unknown = part?.create(withCart());
       return typeof api !== 'object' || api === null || typeof Reflect.get(api, method ?? '') !== 'function';
     });
     expect(missing).toEqual([]);

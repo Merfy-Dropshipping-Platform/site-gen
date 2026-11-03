@@ -20,7 +20,7 @@ const THEME: ThemeBuild = { tokens: novaTokens, render: fakeRender, clientFiles:
 const CORE = [
   `export const start = (options) => { globalThis.merfyStarted = [options, '${'x'.repeat(5000)}']; };`,
   'export const defineSection = (definition) => definition;',
-  ...['auth', 'cart', 'favorites', 'analytics', 'checkout', 'points', 'records', 'purchase'].map(
+  ...['auth', 'cart', 'favorites', 'analytics', 'checkout', 'checkoutLegacy', 'points', 'records', 'purchase'].map(
     (name) => `export const ${name} = { name: '${name}' };`,
   ),
 ].join('\n');

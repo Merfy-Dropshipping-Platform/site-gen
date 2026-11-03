@@ -237,3 +237,51 @@ describe("planSkeleton: магазин, где уже что-то есть", () 
     expect((plan.document as Doc).sections["page-wishlist"]).toBeUndefined();
   });
 });
+
+describe("planSkeleton: досев существующего магазина (only: absent, 03.11)", () => {
+  const checkoutOnly = {
+    ...SKELETON_LAYOUT,
+    lists: {
+      "page-checkout": SKELETON_LAYOUT.lists["page-checkout"],
+      "page-checkout-result": SKELETON_LAYOUT.lists["page-checkout-result"],
+    },
+  };
+
+  it("списка ещё нет — секции встают; пустой список (мерчант убрал сам) не трогается; «О нас» не создаётся", () => {
+    const shop = newThemeStarterRevision() as Doc;
+    shop.sections = { home: [], "page-checkout-result": [] };
+    const plan = planSkeleton({
+      document: shop,
+      layout: checkoutOnly,
+      library,
+      present: everything,
+      only: "absent",
+    });
+    const doc = plan.document as Doc;
+    expect(plan.changed).toBe(true);
+    expect(doc.sections["page-checkout"].map((i: Doc) => i.section)).toEqual([
+      "shop:checkout",
+    ]);
+    expect(doc.sections["page-checkout-result"]).toEqual([]);
+    expect(doc.sections.home).toEqual([]);
+    expect(plan.placement.kept.map((list) => list.key)).toEqual([
+      "page-checkout-result",
+    ]);
+    expect(plan.placement.about).toBe("kept");
+    expect(doc.pages).toEqual(shop.pages);
+  });
+
+  it("оба списка уже есть — ничего не меняется", () => {
+    const shop = newThemeStarterRevision() as Doc;
+    shop.sections = { "page-checkout": [], "page-checkout-result": [] };
+    const plan = planSkeleton({
+      document: shop,
+      layout: checkoutOnly,
+      library,
+      present: everything,
+      only: "absent",
+    });
+    expect(plan.changed).toBe(false);
+    expect(plan.document).toBe(shop);
+  });
+});

@@ -33,6 +33,8 @@ describe('темы новой архитектуры', () => {
     expect(nova?.contentHash).toBe(state.contentHash);
     expect(nova?.build.clientFiles.length).toBeGreaterThan(0);
     expect(typeof nova?.build.render).toBe('function');
+    // С 0.7.8 (03.11) nova рисует оформление из секций: "checkout": "sections" в theme.json доходит до сборки.
+    expect(nova?.build.checkout).toBe('sections');
     await loaded.close();
   });
 

@@ -41,6 +41,17 @@ export const ROLE_PLACES: Readonly<Record<SectionRole, RolePlace>> = {
     list: OVERLAY_LIST,
     fallback: 'ответа о согласии нет — работает только обезличенный счёт',
   },
+  checkout: {
+    group: 'page',
+    list: 'page-checkout',
+    fallback:
+      'секции нет — /checkout отвечает 404, «Оформить заказ» корзины ведёт туда; скрипт упал — форма не отправляется',
+  },
+  'checkout-result': {
+    group: 'page',
+    list: 'page-checkout-result',
+    fallback: 'секции нет — после оплаты /checkout-result отвечает 404; скрипт упал — заказ не показывается',
+  },
 };
 
 // Место секции с ролью в ответе /sections (договор с конструктором, план 12г): роль, список ревизии, группа и один

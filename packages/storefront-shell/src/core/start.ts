@@ -126,20 +126,9 @@ function createCoreParts(config: StorefrontConfig | null, mode: Mode, bus: Event
   return { core, started, apiOf };
 }
 
-const MODULE_NAMES: readonly string[] = [
-  'cart',
-  'favorites',
-  'customer',
-  'auth',
-  'newsletter',
-  'variants',
-  'search',
-  'catalog',
-  'orders',
-  'files',
-  'share',
-  'page',
-];
+// Одной строкой — короче в ядре (бюджет 16384 Б brotli, 03.11): список тот же, что MODULE_NAMES в action-catalog.ts.
+const MODULE_NAMES: readonly string[] =
+  'cart favorites customer auth newsletter variants search catalog orders files share page checkout consent'.split(' ');
 
 // Модуль расширения по uses: ["ext:<id>"] (блок 9, часть 9в) — у части ext на странице, по id из конфига. Нет части или
 // id нет в конфиге страницы — ShellError part-unknown, как у незнакомой части.
@@ -151,7 +140,7 @@ function extPartApi(parts: CoreParts, id: string): unknown {
 }
 
 // Согласие (блок 13 «Секций и SDK») — тоже модуль ctx секций.
-const isModuleName = (name: string): name is ModuleName => MODULE_NAMES.includes(name) || name === 'consent';
+const isModuleName = (name: string): name is ModuleName => MODULE_NAMES.includes(name);
 
 function runtimeOf(win: Window, mode: Mode, bus: EventBus, page: KeyValue, parts: CoreParts): InstanceRuntime {
   const attachAll = (host: InstanceHost): void => {

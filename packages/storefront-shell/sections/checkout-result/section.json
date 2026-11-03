@@ -1,0 +1,110 @@
+{
+  "sdk": 1,
+  "name": "checkout-result",
+  "kind": "section",
+  "title": "Спасибо за заказ",
+  "role": "checkout-result",
+  "groups": ["page"],
+  "limit": 1,
+  "uses": ["checkout", "shop"],
+  "wrapper": ["scheme", "padding"],
+  "wrapperSpec": {
+    "padding": { "default": { "top": 32, "bottom": 64 } }
+  },
+  "names": {
+    "details-heading": {
+      "kinds": ["string"],
+      "label": "Заголовок деталей",
+      "about": "Заголовок блока с контактами, способом доставки и адресом заказа на странице «Спасибо за заказ»",
+      "asks": ["детали заказа", "заголовок деталей"]
+    },
+    "help-text": {
+      "kinds": ["string"],
+      "label": "Текст помощи",
+      "about": "Строка рядом с кнопкой возврата: куда обратиться покупателю с вопросом о заказе",
+      "asks": ["помощь", "нужна помощь", "обратитесь к нам"]
+    },
+    "legal-text": {
+      "kinds": ["text"],
+      "label": "Юридический текст",
+      "about": "Строка о согласии с условиями под деталями заказа; названия документов становятся ссылками на заполненные политики магазина",
+      "asks": ["юридический текст", "условия", "соглашение", "политика"]
+    },
+    "image-width": {
+      "kinds": ["range"],
+      "label": "Ширина",
+      "about": "Ширина картинки на странице «Спасибо за заказ», в пикселях",
+      "asks": ["ширина картинки", "размер баннера"]
+    }
+  },
+  "settings": [
+    {
+      "id": "heading",
+      "label": "Приветствие ({name} — имя)",
+      "setting": { "kind": "string", "default": "Спасибо за заказ, {name}!", "ai": "title" }
+    },
+    {
+      "id": "subheading",
+      "label": "Заголовок подтверждения",
+      "setting": { "kind": "string", "default": "Ваш заказ подтверждён" }
+    },
+    {
+      "id": "text",
+      "label": "Примечание",
+      "setting": {
+        "kind": "text",
+        "default": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
+        "ai": "description"
+      }
+    },
+    { "id": "details-heading", "label": "Заголовок деталей", "setting": { "kind": "string", "default": "Детали заказа" } },
+    { "id": "help-text", "label": "Текст помощи", "setting": { "kind": "string", "default": "Нужна помощь? Обратитесь к нам" } },
+    { "id": "button-label", "label": "Текст кнопки", "setting": { "kind": "string", "default": "Вернуться к магазину" } },
+    { "id": "button-link", "label": "Ссылка кнопки", "setting": { "kind": "url", "default": "/" } },
+    {
+      "id": "legal-text",
+      "label": "Юридический текст",
+      "setting": {
+        "kind": "text",
+        "default": "Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie."
+      }
+    },
+    {
+      "id": "image",
+      "label": "Изображение",
+      "section": "Изображение",
+      "setting": { "kind": "image", "default": "", "maxBytes": 31457280 }
+    },
+    {
+      "id": "image-position",
+      "label": "Положение",
+      "setting": {
+        "kind": "radio",
+        "default": "order",
+        "options": [
+          { "value": "full", "label": "Во всю ширину" },
+          { "value": "order", "label": "Оформление заказа" },
+          { "value": "summary", "label": "Сводка заказа" }
+        ]
+      }
+    },
+    {
+      "id": "align",
+      "label": "Позиция",
+      "setting": { "kind": "alignment", "default": "center" }
+    },
+    {
+      "id": "image-width",
+      "label": "Ширина",
+      "setting": { "kind": "range", "default": 580, "min": 200, "max": 1280, "step": 10 }
+    },
+    { "wrapper": "scheme" },
+    { "wrapper": "padding" },
+    {
+      "id": "color-scheme",
+      "label": "Цветовая схема",
+      "section": "Сводка заказа",
+      "setting": { "kind": "color-scheme", "default": "" }
+    }
+  ]
+}

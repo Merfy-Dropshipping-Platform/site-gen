@@ -16,8 +16,9 @@ import {
 // Все они служебные (02.11.2026): index: false — noindex и нет в карте сайта.
 const BLOCK10_PAGES = [
   { id: 'page-cart', name: 'Корзина', slug: '/cart', index: false },
-  { id: 'page-checkout', name: 'Оформление заказа', slug: '/checkout', sections: false, index: false },
-  { id: 'page-checkout-result', name: 'Спасибо за заказ', slug: '/checkout-result', sections: false, index: false },
+  // Оформление и «Спасибо» — из секций с 03.11 (базовые секции), как корзина.
+  { id: 'page-checkout', name: 'Оформление заказа', slug: '/checkout', index: false },
+  { id: 'page-checkout-result', name: 'Спасибо за заказ', slug: '/checkout-result', index: false },
   { id: 'page-profile', name: 'Профиль', slug: '/account/profile', aliases: ['/account'], index: false },
   { id: 'page-wishlist', name: 'Избранное', slug: '/wishlist', index: false },
   { id: 'page-orders', name: 'Заказы', slug: '/account/orders', index: false },

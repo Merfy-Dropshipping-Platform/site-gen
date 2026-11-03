@@ -1,6 +1,6 @@
 # script.ts
 
-> SDK 1 · документация 1.32.0 · 2026-11-03
+> SDK 1 · документация 1.33.0 · 2026-11-03
 
 `script.ts` — поведение секции в браузере. Нужен, только если на странице что-то меняется после загрузки: выбор,
 фильтр, счётчик. Открыть, переключить, прокрутить — готовые [поведения](behaviors.md) без скрипта.
@@ -57,14 +57,58 @@ export default defineSection<State>({
 | Член | Что делает |
 |---|---|
 | `text()` / `text(value)` | текст элемента |
-| `attr(name)` / `attr(name, value)` | атрибут; `null` — убрать |
+| `attr(name)` / `attr(name, value)` | атрибут; `null` — убрать. Читать можно любой, писать — только из [списка ниже](#цвет-и-размер-из-данных) |
 | `hasClass(name)` / `toggleClass(name, on)` | класс словаря |
 | `show()` / `hide()` / `toggle(on)` / `visible()` | показать и скрыть — атрибут `hidden`. Элемент, скрытый при загрузке (сообщение «Спасибо», ошибка), — с атрибутом `hidden`, не классом `hidden`: класс `show()` не снимает |
 | `value()` / `checked()` / `form()` | поля формы |
-| `cssVar(name, value)` | переменная CSS элемента |
+| `cssVar(name, value)` | переменная CSS элемента: `cssVar('pick-bg', '#c9a227')` пишет `--pick-bg`; `null` — убрать. Цвет и размер из данных — [через неё](#цвет-и-размер-из-данных) |
 | `ref(name)` / `refs(name)` / `closest(name)` | элементы `data-ref` внутри и снаружи |
 | `list(items, fill)` | список по шаблону первого ребёнка |
 | `focus()` | фокус |
+
+## Цвет и размер из данных
+
+Скрипт не пишет `style`, `class`, `id`, `fill`, `stroke`, `width`, `height` и другие атрибуты вида. `attr` пишет только:
+
+- `aria-*` и свои `data-*` (кроме служебных `data-action`, `data-ref`, `data-behavior`, `data-animate`, `data-section`,
+  `data-section-id` и `data-merfy-*` — их ставит шаблон);
+- `hidden`, `disabled`, `title`, `alt`, `open`, `tabindex`, `role`, `placeholder`, `min`, `max`, `step`;
+- `href` — адрес от корня сайта (`/…`), `#якорь`, `https:`, `mailto:`, `tel:`;
+- `src` у `img` и `source` — адрес от корня сайта или `https:`.
+
+Всё остальное — отказ `attr-forbidden`. Проверка при сохранении (`merfy_sections check`, `merfy_extension_dev check`)
+находит его в `script.ts`, если имя и значение написаны в коде (`'fill'`, константа, склейка, условие), с файлом, строкой
+и названием атрибута: `attr('fill'): этот атрибут код секции не пишет`. Все формы вызова: `x.attr(…)`, `x?.attr(…)`,
+`x['attr']('fill', …)`, `x.attr.call(…)`, псевдоним `const put = x.attr` и деструктуризация `const { attr } = x`. Имя, собранное
+во время работы (`attr(name, …)` с `name` из данных), при сохранении не видно: его откажет витрина — `ShellError` в
+консоли. Пишите имя литералом.
+
+**Цвет, размер и положение, которые приходят из данных** (цвет фона из поля кабинета, ширина полосы в процентах), —
+переменная CSS. Скрипт кладёт значение в `--имя` элемента через `cssVar`, шаблон читает его через `var(--имя)`. Классы
+Tailwind со своим цветом (`bg-[var(--pick-bg)]`, `bg-(--pick-bg)`) запрещены (`class-arbitrary`), поэтому цвет рисует
+SVG-слой: `fill="var(--имя)"` — обычный атрибут шаблона, он принимается.
+
+```astro
+<section class="relative isolate overflow-hidden" data-ref="bg">
+  <svg class="absolute inset-0 -z-10 size-full" aria-hidden="true">
+    <rect width="100%" height="100%" fill="var(--pick-bg)" />
+  </svg>
+  <h2 class="m-0 text-heading">{settings.heading}</h2>
+</section>
+```
+
+```ts
+mount(el, ctx) {
+  // pick.bgColor — цвет из поля кабинета: "#c9a227"
+  ctx.watch(ctx.ext.picks.$pick(ctx.settings.pick), (pick) => ctx.ref('bg')?.cssVar('pick-bg', pick?.bgColor ?? null));
+}
+```
+
+Значение — цвет (`#c9a227`, `rgb(…)`), число или длина. `url(…)`, кавычки и «\» в значении отказывает и проверка, и
+витрина, а имя переменной пишется без `--`: латиница в нижнем регистре, цифры и дефис. Пока переменная не задана,
+`var(--pick-bg)` пуст и слой не рисуется: сделайте так, чтобы секция без цвета выглядела цельно. Если цвет известен
+серверу, проще положить его в шаблон прямо: `fill={settings.pick.bgColor}` — [образцы цвета](data.md#образцы-цвета-на-карточке).
+Видимость — `show()`, `hide()`, `toggle(on)`, а не `style`.
 
 Модули SDK по `uses` — корзина, избранное, кто вошёл (`customer`), вход и кабинет (`auth`) — [modules.md](modules.md).
 

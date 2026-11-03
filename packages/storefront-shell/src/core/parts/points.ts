@@ -128,7 +128,7 @@ function attachCart(
 // Функция расширения — POST /store/extensions/<id>/fn/<имя> с токеном покупательницы; нет токена или имени — null.
 async function callFn(api: ShopApi, id: string, name: string | undefined, body: Values): Promise<Values | null> {
   if (name === undefined || name === '') return null;
-  const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+  const token = pageStorage(window, 'live').getItem(CUSTOMER_TOKEN_KEY);
   if (token === null || token === '') return null;
   const tail = `${encodeURIComponent(id)}/fn/${encodeURIComponent(name)}`;
   const url = `${api.url}/store/extensions/${tail}?store_id=${encodeURIComponent(api.storeId)}`;
@@ -233,7 +233,7 @@ function appendForm(
 
 // Кабинет (В12-2 А): поля, копирование, список и форма расширения — как renderAccountEntry theme-base.
 function attachAccount(api: ShopApi, place: HTMLElement, id: string, spec: AccountSpec): void {
-  if (localStorage.getItem(CUSTOMER_TOKEN_KEY) === null) return;
+  if (pageStorage(window, 'live').getItem(CUSTOMER_TOKEN_KEY) === null) return;
   const block = blockOf(id, 'flex flex-col gap-4 border border-border rounded-card bg-background p-5');
   if (spec.title !== undefined) {
     const heading = document.createElement('h2');

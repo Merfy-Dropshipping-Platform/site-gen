@@ -3,6 +3,7 @@ import type { Binding, NodePath, Visitor } from '@babel/traverse';
 import type { File, Identifier, Node, ObjectExpression, Statement } from '@babel/types';
 import type { SectionFiles } from './format';
 import { problem, type SectionProblem } from './problems';
+import { attrFindingOf } from './script-attrs';
 import { fileFacts, mergeFacts, type FileFacts, type ScriptFacts } from './script-facts';
 import {
   CALL_GLOBALS,
@@ -58,7 +59,7 @@ interface FileState {
   definition: NodePath<ObjectExpression> | null;
 }
 
-type Code = 'sdk-only' | 'script-invalid' | 'kind-mismatch';
+type Code = 'sdk-only' | 'script-invalid' | 'kind-mismatch' | 'attr-forbidden';
 
 function report(state: FileState, node: Node, message: string, code: Code = 'sdk-only'): void {
   state.problems.push(problem(code, state.file, message, placeOf(node)));
@@ -218,6 +219,12 @@ function checkNew(path: NodePath, state: FileState): void {
   if (!free && !intl) report(state, node, SDK_TEXT.newCall);
 }
 
+// El.attr и El.cssVar с именем или значением, которое ядро витрины откажет (script-attrs.ts).
+function checkAttrCall(path: NodePath, state: FileState): void {
+  const found = attrFindingOf(path);
+  if (found !== null) report(state, found.node, found.message, 'attr-forbidden');
+}
+
 const reportAll =
   (state: FileState, text: string) =>
   (path: NodePath): void =>
@@ -228,6 +235,7 @@ const visitorOf = (state: FileState): Visitor => ({
   'MemberExpression|OptionalMemberExpression': (path) => checkMember(path, state),
   'ObjectProperty|ObjectMethod': (path) => checkKey(path, state),
   NewExpression: (path) => checkNew(path, state),
+  'CallExpression|OptionalCallExpression': (path) => checkAttrCall(path, state),
   Import: (path) => report(state, path.parent, SDK_TEXT.dynamicImport),
   ImportExpression: reportAll(state, SDK_TEXT.dynamicImport),
   ThisExpression: reportAll(state, SDK_TEXT.this),

@@ -9,7 +9,7 @@ import { ownNameShape } from './names';
 import { problem, when, type Checked, type SectionProblem } from './problems';
 import { RECORD_SETTING_KINDS, sectionDataShape } from './record-fields';
 import { settingsTexts } from './settings';
-import { OVERLAY_LIST, ROLE_LIMIT, ROLE_PLACES, SECTION_ROLES, isSectionRole } from './roles';
+import { EXCLUSIVE_PAGES, OVERLAY_LIST, ROLE_LIMIT, ROLE_PLACES, SECTION_ROLES, isSectionRole } from './roles';
 import { WRAPPER_IDS, wrapperProblems, wrapperSpecShape } from './wrapper';
 
 // Формат секции SDK 1 (блок 1 «Секций и SDK»; design.md блока 7, п. 20) — один у всех авторов (С7-11 А): папка с
@@ -435,10 +435,11 @@ export const listGroupOf = (list: string): SectionGroup =>
   list === 'header' || list === 'footer' || list === OVERLAY_LIST ? list : 'page';
 
 // Может ли экземпляр секции стоять в этом списке: с ролью — только в списке роли (особая страница или overlay), без
-// роли — по группам секции.
+// роли — по группам секции, но не на страницу, целиком принадлежащую роли (03.11: оформление и «Спасибо за заказ»,
+// `exclusive` в таблице ролей) — там стоит только секция этой роли.
 export const sectionListAllowed = (manifest: SectionManifest, list: string): boolean =>
   manifest.role === undefined
-    ? sectionGroupsOf(manifest).includes(listGroupOf(list))
+    ? sectionGroupsOf(manifest).includes(listGroupOf(list)) && EXCLUSIVE_PAGES[list] === undefined
     : ROLE_PLACES[manifest.role].list === list;
 
 const PLACE_KEYS = [

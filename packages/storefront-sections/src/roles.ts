@@ -15,6 +15,10 @@ export interface RolePlace {
   // Список ревизии, где стоит экземпляр: особая страница (id из special-pages.json) или overlay.
   readonly list: string;
   readonly fallback: string;
+  // Страница целиком принадлежит роли (03.11, оформление и «Спасибо за заказ»): на неё ставят только секцию этой роли.
+  // Шапка и подвал общие для всех страниц, поэтому на такой странице мерчант и агент их не правят; других секций,
+  // кроме секции роли, на неё не добавляют. Страница корзины и входа не такая: рядом с их секцией можно ставить свои.
+  readonly exclusive?: true;
 }
 
 export const ROLE_PLACES: Readonly<Record<SectionRole, RolePlace>> = {
@@ -46,13 +50,21 @@ export const ROLE_PLACES: Readonly<Record<SectionRole, RolePlace>> = {
     list: 'page-checkout',
     fallback:
       'секции нет — /checkout отвечает 404, «Оформить заказ» корзины ведёт туда; скрипт упал — форма не отправляется',
+    exclusive: true,
   },
   'checkout-result': {
     group: 'page',
     list: 'page-checkout-result',
     fallback: 'секции нет — после оплаты /checkout-result отвечает 404; скрипт упал — заказ не показывается',
+    exclusive: true,
   },
 };
+
+// Списки ревизии, целиком принадлежащие роли: «список → роль». По ним sectionListAllowed (format.ts) не пускает на такую
+// страницу секции без роли: сборка отбрасывает их (section-group-invalid), /sections отдаёт `exclusive` (roleKeysOf).
+export const EXCLUSIVE_PAGES: Readonly<Record<string, SectionRole>> = Object.fromEntries(
+  SECTION_ROLES.flatMap((role): [string, SectionRole][] => (ROLE_PLACES[role].exclusive ? [[ROLE_PLACES[role].list, role]] : [])),
+);
 
 // Место секции с ролью в ответе /sections (договор с конструктором, план 12г): роль, список ревизии, группа и один
 // экземпляр.
@@ -61,6 +73,9 @@ export interface RoleKeys {
   readonly place: string;
   readonly groups: readonly RolePlace['group'][];
   readonly limit: number;
+  // Только у роли, чья страница целиком её (`exclusive` в таблице): конструктор и MCP не ставят на эту страницу других
+  // секций. Ключа нет — на страницу можно ставить и свои секции.
+  readonly exclusive?: true;
 }
 
 export const roleKeysOf = (role: SectionRole): RoleKeys => ({
@@ -68,4 +83,5 @@ export const roleKeysOf = (role: SectionRole): RoleKeys => ({
   place: ROLE_PLACES[role].list,
   groups: [ROLE_PLACES[role].group],
   limit: ROLE_LIMIT,
+  ...(ROLE_PLACES[role].exclusive ? { exclusive: true as const } : {}),
 });

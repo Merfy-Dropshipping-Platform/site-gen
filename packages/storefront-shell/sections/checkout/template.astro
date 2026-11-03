@@ -10,9 +10,9 @@ const { settings, shop } = Astro.props;
 <div class="mx-auto grid max-w-page gap-12 px-4 font-body text-foreground md:grid-cols-2 md:gap-16 lg:gap-20">
   <form data-ref="form" data-action="submit:pay" novalidate class="flex min-w-0 flex-col gap-10 md:ml-auto md:w-full md:max-w-100">
     <section class="flex flex-col gap-4" aria-labelledby="checkout-contacts">
-      <div class="flex items-baseline justify-between gap-4">
-        <h2 id="checkout-contacts" class="m-0 font-heading weight-heading tracking-heading text-lg text-heading">Контакты</h2>
-        <a data-ref="sign-in" href="/login?redirect=%2Fcheckout" class="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">Войти в аккаунт</a>
+      <div class="flex items-center justify-between gap-4">
+        <h2 id="checkout-contacts" class="m-0 font-heading weight-heading tracking-heading text-xl text-heading">Контакты</h2>
+        <a data-ref="sign-in" href="/login?redirect=%2Fcheckout" class="inline-flex min-h-11 items-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">Войти в аккаунт</a>
       </div>
       <div class="flex flex-col gap-1.5">
         <label class="text-sm text-muted-foreground" for="checkout-email">E-mail</label>
@@ -27,7 +27,7 @@ const { settings, shop } = Astro.props;
     </section>
 
     <section class="flex flex-col gap-4" aria-labelledby="checkout-delivery">
-      <h2 id="checkout-delivery" class="m-0 font-heading weight-heading tracking-heading text-lg text-heading">Доставка</h2>
+      <h2 id="checkout-delivery" class="m-0 font-heading weight-heading tracking-heading text-xl text-heading">Доставка</h2>
       <div data-ref="country" class="flex flex-col gap-1.5">
         <label class="text-sm text-muted-foreground" for="checkout-country">Страна/Регион</label>
         <select id="checkout-country" data-ref="field-country" name="country" autocomplete="country-name" data-action="field" class="h-12 w-full cursor-pointer rounded-input border-width-input border-input bg-background px-4 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
@@ -82,7 +82,7 @@ const { settings, shop } = Astro.props;
     </section>
 
     <section data-ref="delivery" class="flex flex-col gap-4" aria-labelledby="checkout-methods">
-      <h2 id="checkout-methods" class="m-0 font-heading weight-heading tracking-heading text-lg text-heading">Способ доставки</h2>
+      <h2 id="checkout-methods" class="m-0 font-heading weight-heading tracking-heading text-xl text-heading">Способ доставки</h2>
       <p data-ref="delivery-status" class="m-0 text-sm text-muted-foreground">Считаем варианты доставки…</p>
       <div data-ref="delivery-options" role="radiogroup" aria-label="Способ доставки" class="flex flex-col gap-3" hidden>
         <template>
@@ -117,7 +117,7 @@ const { settings, shop } = Astro.props;
 
     <section class="flex flex-col gap-4" aria-labelledby="checkout-payment">
       <div class="flex flex-col gap-1">
-        <h2 id="checkout-payment" class="m-0 font-heading weight-heading tracking-heading text-lg text-heading">Платёжная система</h2>
+        <h2 id="checkout-payment" class="m-0 font-heading weight-heading tracking-heading text-xl text-heading">Платёжная система</h2>
         <p class="m-0 text-sm text-muted-foreground">Все транзакции безопасны и зашифрованы. Карту вы введёте на странице оплаты</p>
       </div>
       <div data-ref="payment-methods" role="radiogroup" aria-label="Способ оплаты" class="flex flex-col gap-1">

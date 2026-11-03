@@ -27,6 +27,10 @@ import type {
 
 export const EXT_PRODUCT_BATCH = 100;
 const PRODUCT_ID_MAX = 100;
+// Стор на запись расширения (by: record): тот же порядок, что у стора на товар, но вход функции — { recordIds }, а id —
+// значение параметра секции вида ext-record: буквы (любого алфавита), цифры, «-» и «_», до 200 знаков (как extRecordText
+// в storefront-sections). Пусто (null или "") — запись не выбрана: стор с null, запроса нет.
+const RECORD_ID = /^[\p{L}\p{N}_-]{1,200}$/u;
 
 type Extensions = NonNullable<StorefrontConfig['extensions']>;
 type ExtensionEntry = Extensions[string];
@@ -50,6 +54,7 @@ interface ProductStore {
   readonly facades: Map<string, ReadableStore<ExtValue>>;
   readonly queue: Flight;
   readonly pending: Set<string>;
+  empty: ReadableStore<ExtValue> | null; // только у by: record: стор «запись не выбрана»
   scheduled: boolean;
   mounted: number;
   stopListeners: (() => void) | null;
@@ -173,7 +178,7 @@ async function readProducts(state: ExtensionState, store: ProductStore, ids: rea
     const chunk = ids.slice(at, at + EXT_PRODUCT_BATCH);
     const reply = await requestJson(
       fnUrl(state.config, state.id, store.spec.fn),
-      fnRequest(state, { productIds: [...chunk] }),
+      fnRequest(state, store.spec.by === 'record' ? { recordIds: [...chunk] } : { productIds: [...chunk] }),
     );
     if (!okReply(reply)) continue;
     const data = dataOf(reply);
@@ -226,6 +231,7 @@ function productStoreOf(spec: StoreSpec): ProductStore {
     facades: new Map(),
     queue: readingQueue(),
     pending: new Set(),
+    empty: null,
     scheduled: false,
     mounted: 0,
     stopListeners: null,
@@ -249,14 +255,31 @@ function productWatchOf(state: ExtensionState, store: ProductStore, productId: s
   };
 }
 
-// Фасад товара: один на id, заморожен и зарегистрирован — ctx.watch его принимает (Р9в-10).
+// Стор «запись не выбрана»: один на стор, всегда null, без запросов; ctx.watch его принимает.
+function emptyFacadeOf(store: ProductStore): ReadableStore<ExtValue> {
+  if (store.empty !== null) return store.empty;
+  const one = atom<ExtValue>(null);
+  const facade: ReadableStore<ExtValue> = Object.freeze({ get: (): ExtValue => null });
+  registerFacade(facade, one);
+  store.empty = facade;
+  return facade;
+}
+
+// Фасад товара (или записи расширения): один на id, заморожен и зарегистрирован — ctx.watch его принимает (Р9в-10).
 function productFacadeOf(
   state: ExtensionState,
   name: string,
   store: ProductStore,
-  productId: string,
+  productId: string | null,
 ): ReadableStore<ExtValue> {
-  if (typeof productId !== 'string' || productId === '' || productId.length > PRODUCT_ID_MAX)
+  if (store.spec.by === 'record') {
+    if (productId === null || productId === '') return emptyFacadeOf(store);
+    if (typeof productId !== 'string' || !RECORD_ID.test(productId))
+      throw new ShellError(
+        'sdk-call-invalid',
+        `ctx.ext.${state.id}.$${name}: id записи — строка из букв, цифр, «-» и «_» до 200 знаков или пусто`,
+      );
+  } else if (typeof productId !== 'string' || productId === '' || productId.length > PRODUCT_ID_MAX)
     throw new ShellError(
       'sdk-call-invalid',
       `ctx.ext.${state.id}.$${name}: id товара — непустая строка до ${PRODUCT_ID_MAX} знаков`,
@@ -290,14 +313,14 @@ function plainFacadeOf(state: ExtensionState, name: string, store: PlainStore): 
 // Стор на товар: сама функция — не стор (get — null, ctx.watch её не примет), фасады — у товаров.
 function productFacade(state: ExtensionState, name: string, store: ProductStore): ExtStore {
   const facade: ExtStore = Object.assign(
-    (productId: string): ReadableStore<ExtValue> => productFacadeOf(state, name, store, productId),
+    (productId: string | null): ReadableStore<ExtValue> => productFacadeOf(state, name, store, productId),
     { get: (): ExtValue => null },
   );
   return Object.freeze(facade);
 }
 
 function storeFacadeOf(state: ExtensionState, name: string, spec: StoreSpec): ExtStore {
-  if (spec.by === 'product') {
+  if (spec.by === 'product' || spec.by === 'record') {
     const store = state.product.get(name) ?? productStoreOf(spec);
     state.product.set(name, store);
     return productFacade(state, name, store);

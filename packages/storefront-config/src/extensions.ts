@@ -21,11 +21,13 @@ export const extIdSchema = z
 export const extUseSchema = z.templateLiteral([EXT_USE_PREFIX, extIdSchema]);
 export type ExtUse = z.infer<typeof extUseSchema>;
 
-// Стор: функция расширения; by: product — стор на товар; customer — только вошедшему покупателю; refreshOn — события
-// витрины, после которых стор читается заново.
+// Стор: функция расширения; by: product — стор на товар; by: record — стор на запись расширения (record — вид записи
+// из records манифеста, id берёт секция из своего параметра ext-record); customer — только вошедшему покупателю;
+// refreshOn — события витрины, после которых стор читается заново.
 const storeSchema = z.strictObject({
   fn: z.string().regex(FUNCTION_NAME),
-  by: z.literal('product').optional(),
+  by: z.enum(['product', 'record']).optional(),
+  record: z.string().regex(EXT_MEMBER).optional(),
   customer: z.literal(true).optional(),
   refreshOn: z.array(z.string().regex(STOREFRONT_EVENT)).max(LIMITS.refreshOn).optional(),
 });

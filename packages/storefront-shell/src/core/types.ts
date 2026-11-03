@@ -451,13 +451,14 @@ export type ModuleName = keyof Modules;
 
 // Модули расширений (блок 9, часть 9в; 12в А, «Решил сам» п. 17): секция с uses: ["ext:<id>"] получает ctx.ext.<id>.
 // Имя со $ — стор: значение — ответ функции расширения или null (до ответа, у гостя при customer: true, пока чтение не
-// удалось); тот же стор, вызванный с id товара, — стор этого товара (у стора by: "product"). Имя без $ — метод: аргументы
+// удалось); тот же стор, вызванный с id товара, — стор этого товара (у стора by: "product"), с id записи расширения —
+// стор этой записи (by: "record"; null или "" — запись не выбрана, стор с null). Имя без $ — метод: аргументы
 // — объект JSON, ответ — Result, как у действий SDK. Что объявлено, решает манифест расширения (storefront.stores,
 // storefront.methods); у стора и у метода разные шаблоны имени — TypeScript различает их без сужения типов.
 type CharsOf<S extends string> = S extends `${infer Head}${infer Rest}` ? Head | CharsOf<Rest> : never;
 type LowerLetter = CharsOf<'abcdefghijklmnopqrstuvwxyz'>;
 export type ExtValue = Json;
-export type ExtStore = ReadableStore<ExtValue> & ((productId: string) => ReadableStore<ExtValue>);
+export type ExtStore = ReadableStore<ExtValue> & ((entityId: string | null) => ReadableStore<ExtValue>);
 export type ExtMethod = (input?: { readonly [key: string]: Json }, options?: ActionOptions) => Promise<Result<Json>>;
 export interface ExtModule {
   readonly [store: `$${string}`]: ExtStore;

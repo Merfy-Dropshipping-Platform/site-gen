@@ -371,8 +371,8 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     example: { before: '"name": "my-cart-drawer"', after: '"name": "cart-drawer"' },
   },
   'ext-foreign': {
-    when: 'Секция расширения подключает в uses чужое расширение.',
-    fix: 'Оставь в uses только "ext:<id своего расширения>".',
+    when: 'Секция расширения подключает в uses чужое расширение или выбирает параметром ext-record записи чужого расширения.',
+    fix: 'Оставь в uses только "ext:<id своего расширения>", а у параметра ext-record поставь ext своего расширения.',
     example: { before: '"uses": ["ext:foreign"]', after: '"uses": ["ext:own"]' },
   },
   'store-foreign': {

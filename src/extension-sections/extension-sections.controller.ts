@@ -15,6 +15,7 @@ import { EventPattern, MessagePattern, Payload } from "@nestjs/microservices";
 import { z } from "zod";
 import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
 import { ExtensionPlaces } from "./extension-places";
+import { ExtensionPlacements } from "./extension-placements";
 import {
   StorefrontBuilderClient,
   type BuilderAnswer,
@@ -22,9 +23,12 @@ import {
 import {
   EXTENSION_TOGGLED_PATTERN,
   ExtensionToggledSchema,
+  PLACEMENTS_PATTERN,
+  PlacementsRequestSchema,
   SECTION_ACCEPT_PATTERN,
   SectionAcceptRequestSchema,
   type FailureCode,
+  type PlacementsReply,
   type SectionAcceptReply,
 } from "./extension-sections.contract";
 
@@ -116,7 +120,20 @@ export class ExtensionSectionsController {
     private readonly builder: StorefrontBuilderClient,
     private readonly handoff: StorefrontHandoff,
     private readonly places: ExtensionPlaces,
+    private readonly placements: ExtensionPlacements,
   ) {}
+
+  @MessagePattern(PLACEMENTS_PATTERN)
+  async placementsOf(@Payload() data: unknown): Promise<PlacementsReply> {
+    const request = PlacementsRequestSchema.safeParse(data);
+    if (!request.success)
+      return {
+        success: false,
+        code: "unavailable",
+        message: z.prettifyError(request.error),
+      };
+    return this.placements.list(request.data);
+  }
 
   @MessagePattern(SECTION_ACCEPT_PATTERN)
   async accept(@Payload() data: unknown): Promise<SectionAcceptReply> {

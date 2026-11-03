@@ -269,7 +269,14 @@
                 },
                 "by": {
                   "type": "string",
-                  "const": "product"
+                  "enum": [
+                    "product",
+                    "record"
+                  ]
+                },
+                "record": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]{0,31}$"
                 },
                 "customer": {
                   "type": "boolean",

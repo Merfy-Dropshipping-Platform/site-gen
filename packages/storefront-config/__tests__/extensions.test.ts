@@ -51,6 +51,20 @@ describe('extensions в конфиге страницы', () => {
     expect(storefrontExtensionsSchema.safeParse(extensions).success).toBe(false);
   });
 
+  it('стор на запись: by record и record (вид записи) идут в конфиг как есть', () => {
+    const withRecord = { ...TEST_EXT, stores: { card: { fn: 'itemCard', by: 'record' as const, record: 'item' } } };
+    expect(buildStorefrontConfig(input({ 'test-ext': withRecord })).extensions).toEqual({ 'test-ext': withRecord });
+  });
+
+  it.each<[string, unknown]>([
+    ['by не из списка', { fn: 'itemCard', by: 'order' }],
+    ['record не из букв и цифр', { fn: 'itemCard', by: 'record', record: 'my-item' }],
+    ['лишний ключ рядом с record', { fn: 'itemCard', by: 'record', record: 'item', limit: 5 }],
+  ])('стор на запись: %s — ошибка схемы', (_title, store) => {
+    const extensions = { 'test-ext': { ...TEST_EXT, stores: { card: store } } };
+    expect(storefrontExtensionsSchema.safeParse(extensions).success).toBe(false);
+  });
+
   it('сторов больше 20 — ошибка', () => {
     const stores = Object.fromEntries(
       Array.from({ length: 21 }, (_, index) => [`store${index}`, { fn: 'shopSummary' }]),

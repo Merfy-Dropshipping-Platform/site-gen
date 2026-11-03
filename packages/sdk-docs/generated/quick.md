@@ -1,6 +1,6 @@
 # Шпаргалка: секция с нуля
 
-> SDK 1 · документация 1.30.0 · 2026-11-03
+> SDK 1 · документация 1.31.0 · 2026-11-03
 
 Шпаргалка: как написать секцию с нуля и не открывать остальные файлы. Подробности — по ссылкам внизу; каждый абзац ниже
 сверен с проверкой при сохранении.
@@ -47,8 +47,8 @@ const { settings, blocks } = Astro.props;
 `taste-literal-image`). Поле, которого шаблон не читает, — `taste-dead-setting`: после переделки убери лишние.
 
 - Виды поля: `string`, `text`, `richtext`, `url`, `image`, `image-pair`, `video`, `select`, `radio`, `toggle`, `range`,
-  `alignment`, `color-scheme`, `padding`, `menu`, `product`, `collection`, `blog`, `policy`, `hint`. Обязательные ключи:
-  `default` у всех, кроме `product`/`collection`/`blog`/`policy`/`hint`; `maxBytes` у `image`, `image-pair`, `video`;
+  `alignment`, `color-scheme`, `padding`, `menu`, `product`, `collection`, `blog`, `policy`, `hint`, `ext-record`. Обязательные ключи:
+  `default` у всех, кроме `product`/`collection`/`blog`/`policy`/`hint`/`ext-record`; `ext` и `record` у `ext-record`; `maxBytes` у `image`, `image-pair`, `video`;
   `options` у `select`/`radio`; `labels` `{ "on", "off" }` у `toggle`; `min`, `max`, `step` у `range`
   ([section-json.md](section-json.md)).
 - `settings` — ссылка `{ "wrapper": "padding" }` ставит общие «Отступы» и «Цветовую схему» (по умолчанию они уже есть).

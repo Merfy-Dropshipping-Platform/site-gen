@@ -16,6 +16,7 @@ import {
   replyOf,
 } from "../extension-sections.controller";
 import type { ExtensionPlaces } from "../extension-places";
+import type { ExtensionPlacements } from "../extension-placements";
 
 // Договор extensions ↔ sites (блок 12 «Секций и SDK», часть 12б): тот же набор
 // примеров проходит копия договора в extensions (src/sites/).
@@ -48,6 +49,7 @@ function controllerWith(answer: BuilderAnswer) {
     { call } as unknown as StorefrontBuilderClient,
     { notify, isNewTheme } as unknown as StorefrontHandoff,
     { place: jest.fn() } as unknown as ExtensionPlaces,
+    { list: jest.fn() } as unknown as ExtensionPlacements,
   );
   return { controller, call, notify };
 }

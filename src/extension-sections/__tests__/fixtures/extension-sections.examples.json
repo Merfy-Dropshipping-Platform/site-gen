@@ -87,5 +87,56 @@
       { "why": "файл не текст", "body": { "files": { "section.json": 1 } } },
       { "why": "лишний ключ", "body": { "files": {}, "version": "0.1.0" } }
     ]
+  },
+  "placements": {
+    "requests": {
+      "valid": [
+        { "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b", "extensionId": "test-ext" },
+        { "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b", "extensionId": "test-ext", "section": "gallery" }
+      ],
+      "invalid": [
+        { "why": "магазин не uuid", "request": { "shopId": "shop-1", "extensionId": "test-ext" } },
+        { "why": "id расширения с заглавной", "request": { "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b", "extensionId": "Test-ext" } },
+        { "why": "имя секции вместе с id расширения", "request": { "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b", "extensionId": "test-ext", "section": "test-ext:gallery" } },
+        { "why": "лишний ключ tenantId", "request": { "shopId": "3a9626f7-390d-4a66-bca5-a3b806ca6c1b", "extensionId": "test-ext", "tenantId": "t-1" } }
+      ]
+    },
+    "replies": {
+      "valid": [
+        { "success": true, "data": { "revision": null, "items": [] } },
+        {
+          "success": true,
+          "data": {
+            "revision": { "id": "rev-1", "createdAt": "2026-11-03T10:00:00.000Z" },
+            "items": [
+              {
+                "id": "gallery-1a2b3c4d",
+                "section": "gallery",
+                "list": "page",
+                "page": { "id": "home", "name": null },
+                "hidden": false,
+                "settings": { "item": "rec-1", "title": "Подборка" }
+              },
+              {
+                "id": "gallery-5e6f7a8b",
+                "section": "gallery",
+                "list": "footer",
+                "page": null,
+                "hidden": true,
+                "settings": {}
+              }
+            ]
+          }
+        },
+        { "success": false, "code": "not_found", "message": "site not found" }
+      ],
+      "invalid": [
+        { "why": "нет revision", "reply": { "success": true, "data": { "items": [] } } },
+        { "why": "список не page/header/footer/overlay", "reply": { "success": true, "data": { "revision": null, "items": [{ "id": "g-1", "section": "gallery", "list": "popup", "page": null, "hidden": false, "settings": {} }] } } },
+        { "why": "страница без id", "reply": { "success": true, "data": { "revision": null, "items": [{ "id": "g-1", "section": "gallery", "list": "page", "page": { "name": "Главная" }, "hidden": false, "settings": {} }] } } },
+        { "why": "лишнее поле экземпляра", "reply": { "success": true, "data": { "revision": null, "items": [{ "id": "g-1", "section": "gallery", "list": "header", "page": null, "hidden": false, "settings": {}, "blocks": [] }] } } },
+        { "why": "код ошибки неизвестный", "reply": { "success": false, "code": "boom", "message": "x" } }
+      ]
+    }
   }
 }

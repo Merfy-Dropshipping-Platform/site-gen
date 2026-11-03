@@ -5,6 +5,7 @@ import {
   OVERLAY_HIDE_EVENT,
   OVERLAY_SHOW_EVENT,
   PREVIEW_LIST_EVENT,
+  PREVIEW_STORES_EVENT,
   PREVIEW_UPDATE_EVENT,
   PREVIEW_UPDATED_EVENT,
   SECTION_ERROR_EVENT,
@@ -33,6 +34,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   // Часть 5г: имена событий — из протокола превью @merfy/shell/preview.
   var UPDATE_EVENT = ${JSON.stringify(PREVIEW_UPDATE_EVENT)};
   var UPDATED_EVENT = ${JSON.stringify(PREVIEW_UPDATED_EVENT)};
+  var STORES_EVENT = ${JSON.stringify(PREVIEW_STORES_EVENT)};
   var ERROR_EVENT = ${JSON.stringify(SECTION_ERROR_EVENT)};
   var MESSAGE_MAX = ${MESSAGE_MAX_LENGTH};
   // Часть 6в: события выбора блока для кода секции — тоже из протокола превью.
@@ -71,6 +73,8 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       if (!spec || spec.by !== 'record' || typeof item.recordId !== 'string' || item.recordId === '') return;
       storeValues[item.extension + '/' + spec.fn + '/' + item.recordId] = item.value;
     });
+    // Подставленное сменилось: ядро перечитывает сторы, на которые подписаны секции, и они получают новые значения.
+    document.dispatchEvent(new CustomEvent(STORES_EVENT));
   }
   function jsonReply(data) {
     return new Response(JSON.stringify({ success: true, data: data }), {

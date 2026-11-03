@@ -9,6 +9,7 @@ import { Pool } from 'pg';
 import { raiseAlert } from './alert';
 import { enabledExtensions } from './code';
 import { createConductor } from './release/conductor';
+import { consumeExtensionVersions } from './release/extension-version';
 import { startPlatformRelease } from './release/platform';
 import { listenReleases } from './release/listen';
 import { checkShopPages } from './release/page-check';
@@ -191,6 +192,9 @@ await startPlatformRelease(platformRelease, { commit: settings.commit, renderHas
 // Ведущий просыпается от NOTIFY storefront_release; при старте сверяет выпуски — перезапуск посреди выпуска (блок 10).
 const stopListening = await listenReleases(db, () => void conductor.advance(), log);
 await conductor.resume();
+// Новая версия расширения от сервиса extensions — выпуск расширения без команды (блок 10, П10-5 А). После resume:
+// выпуск, заведённый потребителем, будит ведущего NOTIFY уже подписанного listenReleases.
+await consumeExtensionVersions({ broker, db, contour: settings.contour, log });
 // Превью — версией закрепления магазина; схема панели — по темам образа (блок 10, задача 4).
 const previewOf = (themeId: string, version: string) => catalog.previewAt(themeId, version);
 const fonts = storeFontBytes(store);

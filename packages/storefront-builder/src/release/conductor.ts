@@ -302,14 +302,17 @@ async function finishWave(step: Step, release: ReleaseRow): Promise<void> {
   await moveToWave(step, release, next);
 }
 
-// Выпуск, ждавший другого (queued), встаёт, когда на контуре нет активного. Чужой (П10-7 А) не трогаем.
+// Выпуск, ждавший другого (queued), встаёт, когда на контуре нет активного. Чужой (П10-7 А) не трогаем. Магазины
+// платформы и секции записаны при заводе — они сразу testing; у расширения их собирает planning (planExtension): в
+// testing без магазинов он закончился бы пустым.
 async function startQueued(step: Step): Promise<void> {
   const { db, contour } = step.deps;
   if ((await activeReleases(db, contour)).length > 0) return;
   const [queued] = await queuedReleases(db, contour);
   if (queued === undefined || isForeign(step.deps, queued)) return;
-  if (await setRelease(db, queued.id, ['queued'], { status: 'testing' }))
-    await advanceRelease(step, { ...queued, status: 'testing' });
+  const status = queued.kind === 'extension' ? 'planning' : 'testing';
+  if (await setRelease(db, queued.id, ['queued'], { status }))
+    await advanceRelease(step, { ...queued, status });
 }
 
 async function advanceAll(step: Step): Promise<void> {

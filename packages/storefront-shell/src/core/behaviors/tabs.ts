@@ -1,4 +1,5 @@
-import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
+import { done, refuse } from './command';
+import type { Behavior, BehaviorCommand, BehaviorHost, BehaviorInstance } from './types';
 
 // Вкладки (design.md блока 6, раздел 6): свой код по шаблону W3C APG Tabs — автоматическая активация, стрелки
 // по кругу, Home и End; пара триггер-панель — общий data-value.
@@ -102,6 +103,17 @@ function listenPair(host: BehaviorHost, keyboard: Keyboard, pair: Pair, onOpen: 
   );
 }
 
+// Команда для скрипта секции (ctx.behavior("tabs").select, 03.11): вкладка по data-value, как нажатие на неё.
+const selectCommand =
+  (pairs: readonly Pair[], keyboard: Keyboard, onOpen: (pair: Pair) => void): BehaviorCommand =>
+  (value) => {
+    const pair = pairs.find((item) => item.value === value);
+    if (pair === undefined) return refuse(`ctx.behavior("tabs").select: нет вкладки ${JSON.stringify(value)}`);
+    keyboard.open(pair);
+    onOpen(pair);
+    return done();
+  };
+
 export const tabs: Behavior<'tabs'> = {
   name: 'tabs',
   attach(host: BehaviorHost): BehaviorInstance {
@@ -118,6 +130,7 @@ export const tabs: Behavior<'tabs'> = {
     };
     pairs.forEach((pair) => listenPair(host, keyboard, pair, onOpen));
     return {
+      commands: { select: selectCommand(pairs, keyboard, onOpen) },
       save: () => ({ value: current.pair?.value ?? null }),
       restore: (state) => {
         if (typeof state !== 'object' || state === null || !('value' in state)) return;

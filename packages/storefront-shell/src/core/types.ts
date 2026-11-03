@@ -471,10 +471,45 @@ export type StoreUse = `store:${string}`;
 // страницы, те же, что у шаблона в Astro.props.theme. Только чтение; нет значения — undefined.
 export type ThemeSettings = NonNullable<StorefrontConfig['theme']['settings']>;
 
-// Окно поверх страницы — ctx.overlay (01.11): секция без роли в группе overlay открывается окном. Поведение окна — у ядра
-// (parts/overlay.ts): center и sheet — модальные (role="dialog", aria-modal, фокус внутри, Esc, запрет прокрутки), таких
-// открыто не больше одного; corner — немодальное, одно, может стоять рядом с модальным; на телефоне corner — шторкой снизу.
-export type OverlayPosition = 'center' | 'corner' | 'sheet';
+// Поведения из скрипта секции — ctx.behavior (03.11): скрипт командует готовым поведением своей разметки (data-behavior) —
+// тем, что у поведения есть как действие. Команды и их аргументы — commands в каталоге поведений (behaviors/catalog.ts);
+// ответ — Result, как у действий SDK: refused — сейчас нельзя (нет такого пункта, модальное окно уже открыто), invalid —
+// ошибка вызова, строка в консоли.
+export type DialogPosition = 'center' | 'corner' | 'sheet';
+export interface DialogOpenOptions {
+  readonly position?: DialogPosition; // место на этот раз; без него — data-position окна, а без него — по классам окна
+  readonly side?: 'left' | 'right'; // угол у corner и сторона у панели drawer
+  readonly backdrop?: boolean; // затемнение страницы у center и sheet, по умолчанию true; у corner его нет
+}
+export interface BehaviorHandles {
+  readonly dialog: {
+    open(options?: DialogOpenOptions): Result<NoData>; // уже открыто — ok
+    close(): Result<NoData>; // уже закрыто — ok
+    toggle(): Result<NoData>;
+  };
+  readonly accordion: {
+    open(item: number | string): Result<NoData>; // номер с 0 или id элемента <details>
+    close(item: number | string): Result<NoData>;
+    toggle(item: number | string): Result<NoData>;
+  };
+  readonly carousel: {
+    next(): Result<NoData>;
+    prev(): Result<NoData>;
+    goTo(index: number): Result<NoData>; // номер слайда с 0
+    play(): Result<NoData>;
+    pause(): Result<NoData>;
+  };
+  readonly tabs: { select(value: string): Result<NoData> }; // data-value вкладки
+  readonly video: { play(): Result<NoData>; pause(): Result<NoData> };
+}
+export type BehaviorHandleName = keyof BehaviorHandles;
+
+// Окно поверх страницы — ctx.overlay (01.11, УСТАРЕЛО с 03.11): в конструкторе только три блока — шапка, тема и подвал,
+// новая секция группу overlay не объявляет. Окно из секции любого блока — поведение dialog: ctx.behavior('dialog').open().
+// ctx.overlay работает у секций, принятых с группой overlay раньше. Поведение окна — у ядра (parts/overlay.ts): center и
+// sheet — модальные (role="dialog", aria-modal, фокус внутри, Esc, запрет прокрутки), таких открыто не больше одного;
+// corner — немодальное, одно, может стоять рядом с модальным; на телефоне corner — шторкой снизу.
+export type OverlayPosition = DialogPosition;
 export interface OverlayOptions {
   readonly position?: OverlayPosition; // по умолчанию 'center'
   readonly side?: 'left' | 'right'; // угол у corner, по умолчанию 'right'
@@ -542,7 +577,12 @@ export interface BaseCtx<State extends object> {
   readonly ext: Readonly<Record<string, ExtModule>>;
   // Блок 9, часть 9б: сквозные настройки темы страницы — ctx.theme['cart-type']; читать в момент действия.
   readonly theme: Readonly<ThemeSettings>;
-  // 01.11: окно секции поверх страницы (группа overlay без роли); у остальных секций и глобальных скриптов — null.
+  // 03.11: команды готового поведения своей разметки; el — любой элемент внутри нужного поведения, без него поведение в
+  // секции должно быть одно. Нет такого data-behavior в разметке секции — ошибка кода (sdk-call-invalid).
+  behavior<N extends BehaviorHandleName>(name: N, el?: El): BehaviorHandles[N];
+  // 01.11, УСТАРЕЛО с 03.11 (окно секции поверх страницы, группа overlay без роли): у секций, принятых с этой группой
+  // раньше, работает как работало; у остальных секций и глобальных скриптов — null. Новое окно — ctx.behavior('dialog').
+  /** @deprecated окно секции любого блока — ctx.behavior('dialog').open(); ctx.overlay остался для секций, принятых с группой overlay раньше */
   readonly overlay: OverlayWindow | null;
   // Свои сторы из uses: ["store:<префикс>:<имя>"] — ctx.stores['<префикс>:<имя>'], только чтение; без таких uses — {}.
   readonly stores: Readonly<Record<string, ReadableStore<Json>>>;

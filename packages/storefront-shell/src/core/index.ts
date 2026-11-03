@@ -16,6 +16,8 @@ export { favorites } from './parts/favorites';
 export { consent } from './parts/consent';
 // Блок 6: типы ctx.animate. Поведения и анимации — @merfy/shell/behaviors.
 export type { AnimateOptions, Animation, Bezier, EasingName, KeyframeValue, Keyframes } from './types';
+// 03.11: типы ctx.behavior — команды готовых поведений из скрипта секции.
+export type { BehaviorHandleName, BehaviorHandles, DialogOpenOptions, DialogPosition } from './types';
 // Блок 9: подписка на рассылку, типы событий и денег. Каталоги событий и действий — @merfy/shell/events и
 // @merfy/shell/actions.
 export { newsletter } from './parts/newsletter';

@@ -1,6 +1,15 @@
 import { messageOf } from '../../report';
-import type { CoreHandle, InstanceHost, Json } from '../types';
-import { BEHAVIORS, type BehaviorSpec } from './catalog';
+import type {
+  BehaviorHandleName,
+  BehaviorHandles,
+  CoreHandle,
+  InstanceHost,
+  Json,
+  NoData,
+  Result,
+} from '../types';
+import { BEHAVIORS, type BehaviorSpec, type CommandArg } from './catalog';
+import { invalid, refuse } from './command';
 import { MOTION_FLAG } from './motion-css';
 import { motionPrefs } from './prefs';
 import { readParams } from './params';
@@ -11,14 +20,17 @@ import type {
   BehaviorsApi,
   BehaviorsOptions,
   BehaviorsPart,
+  ControlProvider,
   MotionPrefs,
 } from './types';
 
 // Часть behaviors (design.md блока 6, раздел 2): подключение готовых поведений и появлений к экземплярам секций.
 // Экземпляры — таблица по id секции для save и restore превью; имена, о которых уже писали в консоль, — по одному разу.
+// С 03.11 та же таблица отдаёт скрипту секции команды поведений его разметки (ctx.behavior, control ниже).
 
 interface AttachedBehavior {
   readonly name: string;
+  readonly root: HTMLElement; // элемент с data-behavior
   readonly instance: BehaviorInstance;
 }
 
@@ -45,7 +57,7 @@ const isSavedList = (value: unknown): value is readonly SavedItem[] =>
   Array.isArray(value) && value.every((item) => isSavedItem(item));
 
 // Свои элементы: сам элемент, если подходит селектору, и потомки своей секции (вложенные секции — не наши).
-function ownElements(host: InstanceHost, selector: string): readonly HTMLElement[] {
+function ownElements(host: Pick<InstanceHost, 'element'>, selector: string): readonly HTMLElement[] {
   const inside = (element: Element): boolean => element.closest('merfy-section') === host.element;
   const descendants = [...host.element.querySelectorAll<HTMLElement>(selector)].filter(inside);
   const self = host.element.matches(selector) ? [host.element] : [];
@@ -94,7 +106,7 @@ function tryAttach(
     ...(state.core === null ? {} : { core: state.core }),
   };
   try {
-    attachToRow(state, host, { name, instance: behavior.attach(behaviorHost) });
+    attachToRow(state, host, { name, root, instance: behavior.attach(behaviorHost) });
   } catch (error) {
     console.error(`Поведение ${name} в секции ${host.name}#${host.id}: ${messageOf(error)}`);
   }
@@ -166,6 +178,84 @@ function restoreOf(state: PageState, sectionId: string, saved: Json): void {
   });
 }
 
+// Команды скрипта секции (ctx.behavior, 03.11): поведения своей разметки, только своей секции — таблица rows и ownElements
+// не знают чужих. Аргумент проверяется здесь по каталогу, само поведение получает уже годное значение.
+const isRecord = (value: unknown): boolean => typeof value === 'object' && value !== null && !Array.isArray(value);
+const isIndex = (value: unknown): boolean => typeof value === 'number' && Number.isInteger(value) && value >= 0;
+const isText = (value: unknown): boolean => typeof value === 'string' && value !== '';
+
+const ARG_CHECKS: Readonly<Record<CommandArg, { ok: (arg: unknown) => boolean; need: string }>> = {
+  none: { ok: () => true, need: '' },
+  item: { ok: (arg) => isIndex(arg) || isText(arg), need: 'нужен номер пункта с 0 или его id' },
+  index: { ok: isIndex, need: 'нужен номер с 0' },
+  value: { ok: isText, need: 'нужна непустая строка' },
+  options: { ok: (arg) => arg === undefined || isRecord(arg), need: 'нужен объект параметров или ничего' },
+};
+
+function runCommand(
+  attached: AttachedBehavior,
+  signal: AbortSignal,
+  command: string,
+  kind: CommandArg,
+  arg: unknown,
+): Result<NoData> {
+  const label = `ctx.behavior("${attached.name}").${command}`;
+  if (signal.aborted) return refuse(`${label}: секция уже снята со страницы`);
+  const check = ARG_CHECKS[kind];
+  if (!check.ok(arg)) return invalid(`${label}: ${check.need}`);
+  const run = attached.instance.commands?.[command];
+  if (run === undefined) return refuse(`${label}: в разметке поведения нет частей для этой команды`);
+  return run(arg);
+}
+
+const COMMAND_NAMES = Object.entries(BEHAVIORS)
+  .filter(([, spec]) => spec.commands !== undefined)
+  .map(([name]) => name)
+  .join(', ');
+
+// Какое из поведений секции имеется в виду: within — узел внутри поведения (самое вложенное из подходящих); без него
+// поведение должно быть одно. Нет такого — Error с текстом для автора: его ловит предохранитель секции.
+function pickAttached(
+  state: PageState,
+  section: Pick<InstanceHost, 'element' | 'id' | 'signal'>,
+  name: string,
+  within: Element | null | undefined,
+): AttachedBehavior {
+  const label = `ctx.behavior("${name}")`;
+  if (section.signal.aborted) throw new Error(`${label}: секция уже снята со страницы`);
+  if (within === null) throw new Error(`${label}: элемент не из этой секции`);
+  const row = state.rows.get(section.id);
+  const own = row !== undefined && row.element === section.element ? row.attached.filter((a) => a.name === name) : [];
+  const found = within === undefined ? own : own.filter((a) => a.root.contains(within));
+  const last = found.at(-1);
+  if (last !== undefined && (within !== undefined || found.length === 1)) return last;
+  if (last !== undefined) throw new Error(`${label}: в секции несколько таких поведений — укажите элемент внутри нужного`);
+  if (own.length > 0) throw new Error(`${label}: элемент не внутри поведения ${name}`);
+  if (ownElements(section, `[data-behavior="${name}"]`).length === 0)
+    throw new Error(`${label}: в разметке секции нет data-behavior="${name}"`);
+  throw new Error(`${label}: кода поведения нет на странице — пересоберите страницу`);
+}
+
+// Форма команд — по каталогу: проверяется только то, что это объект (как part() ядра).
+function isHandleOf<N extends BehaviorHandleName>(value: unknown): value is BehaviorHandles[N] {
+  return typeof value === 'object' && value !== null;
+}
+
+const controlOf =
+  (state: PageState): ControlProvider =>
+  (section, name, within) => {
+    const commands = SPEC_BY_NAME.get(name)?.commands;
+    if (commands === undefined) throw new Error(`ctx.behavior("${name}"): команды есть у ${COMMAND_NAMES}`);
+    const attached = pickAttached(state, section, name, within);
+    const entries = Object.entries(commands).map(
+      ([command, kind]) =>
+        [command, (arg?: unknown): Result<NoData> => runCommand(attached, section.signal, command, kind, arg)] as const,
+    );
+    const handle = Object.freeze(Object.fromEntries(entries));
+    if (!isHandleOf<typeof name>(handle)) throw new Error(`ctx.behavior("${name}"): команд нет`);
+    return handle;
+  };
+
 const createOf = (options: BehaviorsOptions, state: PageState, core: CoreHandle): BehaviorsApi => {
   state.core = core;
   document.addEventListener('merfy:page:ready', () => document.documentElement.removeAttribute(MOTION_FLAG), {
@@ -173,6 +263,7 @@ const createOf = (options: BehaviorsOptions, state: PageState, core: CoreHandle)
   });
   return Object.freeze({
     animate: options.animate ?? null,
+    control: controlOf(state),
     save: (sectionId: string): Json | null => saveOf(state, sectionId),
     restore: (sectionId: string, saved: Json): void => restoreOf(state, sectionId, saved),
   });

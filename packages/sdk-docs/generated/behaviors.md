@@ -1,6 +1,6 @@
 # Поведения и анимации
 
-> SDK 1 · документация 1.29.0 · 2026-11-01
+> SDK 1 · документация 1.30.0 · 2026-11-03
 
 Готовое поведение вешается на элемент атрибутом `data-behavior="<имя>"` — без скрипта. Части поведения отмечаются `data-part`, параметры — своими `data-…` на том же элементе.
 
@@ -9,21 +9,53 @@
 Части: `data-part="content"`.
 
 Параметры: —.
+
+Команды для скрипта секции ([script.md](script.md#поведения-из-скрипта-секции)):
+
+- `ctx.behavior('accordion').open(номер с 0 или id)` — раскрыть пункт; у пунктов с общим `name` соседние сворачиваются
+- `ctx.behavior('accordion').close(номер с 0 или id)` — свернуть пункт
+- `ctx.behavior('accordion').toggle(номер с 0 или id)` — раскрыть свёрнутый пункт и свернуть раскрытый
 ## dialog
 
 Части: `data-part="open"`, `data-part="content"`, `data-part="close"`.
 
-Параметры: `data-transition` — одно из: fade, drawer, drawer-back, drop; по умолчанию `fade`; `data-side` — одно из: right, left; по умолчанию `right`; `data-modal` — да или нет; по умолчанию `true`; `data-lock-scroll` — да или нет; по умолчанию `true`; `data-open-on` — одно из: none, cart-open, cart-add, search-open; по умолчанию `none`; `data-anchor` — одно из: section, header, cart; по умолчанию `section`.
+Параметры: `data-transition` — одно из: fade, drawer, drawer-back, drop; по умолчанию `fade`; `data-side` — одно из: right, left; по умолчанию `right`; `data-modal` — да или нет; по умолчанию `true`; `data-lock-scroll` — да или нет; по умолчанию `true`; `data-open-on` — одно из: none, cart-open, cart-add, search-open; по умолчанию `none`; `data-anchor` — одно из: section, header, cart; по умолчанию `section`; `data-position` — одно из: none, center, corner, sheet; по умолчанию `none`; `data-backdrop` — да или нет; по умолчанию `true`.
+
+Окно поверх экрана в секции любого блока. `data-position` — `center`, `sheet` или `corner`: ядро ставит окно (`<dialog data-part="content">`), задаёт переход и модальность — `center` и `sheet` модальные (затемнение, фокус внутри окна, Esc, запрет прокрутки, на странице одно такое окно), `corner` — немодальное в углу, на телефоне шторкой снизу. С `data-position` параметры `data-transition`, `data-modal` и `data-anchor` не читаются; `data-backdrop="false"` убирает затемнение под модальным окном. Без `data-position` место окна задают его классы. Умолчания места лежат в слое `base`: классы окна главнее.
+
+```html
+<div data-behavior="dialog" data-position="corner" data-side="left">
+  <dialog data-part="content" class="w-full max-w-sm"><button data-part="close">Закрыть</button></dialog>
+</div>
+```
+
+Команды для скрипта секции ([script.md](script.md#поведения-из-скрипта-секции)):
+
+- `ctx.behavior('dialog').open(параметры или ничего)` — открыть окно; `{ position, side, backdrop }` меняет место на этот раз
+- `ctx.behavior('dialog').close()` — закрыть окно
+- `ctx.behavior('dialog').toggle()` — открыть закрытое окно и закрыть открытое
 ## carousel
 
 Части: `data-part="viewport"`, `data-part="container"`, `data-part="slide"`, `data-part="prev"`, `data-part="next"`, `data-part="dot"`, `data-part="thumb"`, `data-part="counter"`, `data-part="copy"`, `data-part="play"`.
 
 Параметры: `data-effect` — одно из: slide, fade; по умолчанию `slide`; `data-change` — одно из: 500, 700; по умолчанию `700`; `data-autoplay` — целое от 0 до 60; по умолчанию `0`; `data-loop` — да или нет; по умолчанию `true`; `data-drag` — да или нет; по умолчанию `true`.
+
+Команды для скрипта секции ([script.md](script.md#поведения-из-скрипта-секции)):
+
+- `ctx.behavior('carousel').next()` — следующий слайд
+- `ctx.behavior('carousel').prev()` — предыдущий слайд
+- `ctx.behavior('carousel').goTo(номер с 0)` — слайд по номеру, с 0
+- `ctx.behavior('carousel').play()` — продолжить автопрокрутку (нужен `data-autoplay` больше 0)
+- `ctx.behavior('carousel').pause()` — остановить автопрокрутку
 ## tabs
 
 Части: `data-part="list"`, `data-part="trigger"`, `data-part="content"`.
 
 Параметры: `data-value` — строка; `data-orientation` — одно из: horizontal, vertical; по умолчанию `horizontal`.
+
+Команды для скрипта секции ([script.md](script.md#поведения-из-скрипта-секции)):
+
+- `ctx.behavior('tabs').select(строка)` — открыть вкладку с этим `data-value`
 ## nav-menu
 
 Части: `data-part="list"`, `data-part="item"`, `data-part="trigger"`, `data-part="content"`, `data-part="link"`.
@@ -51,6 +83,11 @@
 Части: `data-part="video"`, `data-part="play"`.
 
 Параметры: —.
+
+Команды для скрипта секции ([script.md](script.md#поведения-из-скрипта-секции)):
+
+- `ctx.behavior('video').play()` — запустить воспроизведение; браузер без нажатия посетителя может отказать
+- `ctx.behavior('video').pause()` — поставить на паузу
 ## catalog
 
 Части: `data-part="list"`, `data-part="next"`, `data-part="prev"`, `data-part="pages"`, `data-part="count"`, `data-part="filters"`, `data-part="empty"`, `data-part="status"`.

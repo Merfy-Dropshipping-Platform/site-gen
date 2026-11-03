@@ -49,8 +49,56 @@ const paramsOf = (params: Readonly<Record<string, unknown>>): string => {
   return entries.length === 0 ? '—' : entries.join('; ');
 };
 
+// Команды поведений для скрипта секции (ctx.behavior, 03.11): что делает команда. Список команд и вид аргумента — в
+// каталоге (commands), текст — здесь: в бандл страницы он не идёт.
+const COMMAND_TEXT: Readonly<Record<string, string>> = {
+  'accordion.open': 'раскрыть пункт; у пунктов с общим `name` соседние сворачиваются',
+  'accordion.close': 'свернуть пункт',
+  'accordion.toggle': 'раскрыть свёрнутый пункт и свернуть раскрытый',
+  'carousel.next': 'следующий слайд',
+  'carousel.prev': 'предыдущий слайд',
+  'carousel.goTo': 'слайд по номеру, с 0',
+  'carousel.play': 'продолжить автопрокрутку (нужен `data-autoplay` больше 0)',
+  'carousel.pause': 'остановить автопрокрутку',
+  'tabs.select': 'открыть вкладку с этим `data-value`',
+  'video.play': 'запустить воспроизведение; браузер без нажатия посетителя может отказать',
+  'video.pause': 'поставить на паузу',
+  'dialog.open': 'открыть окно; `{ position, side, backdrop }` меняет место на этот раз',
+  'dialog.close': 'закрыть окно',
+  'dialog.toggle': 'открыть закрытое окно и закрыть открытое',
+};
+
+const ARG_TEXT: Readonly<Record<string, string>> = {
+  none: '',
+  item: '(номер с 0 или id)',
+  index: '(номер с 0)',
+  value: '(строка)',
+  options: '(параметры или ничего)',
+};
+
+const commandsOf = (behavior: string, commands: Readonly<Record<string, string>> | undefined): string => {
+  if (commands === undefined) return '';
+  const lines = Object.entries(commands).map(
+    ([command, arg]) =>
+      `- \`ctx.behavior('${behavior}').${command}${ARG_TEXT[arg] === '' ? '()' : ARG_TEXT[arg] ?? ''}\` — ${COMMAND_TEXT[`${behavior}.${command}`] ?? ''}`,
+  );
+  return `\n\nКоманды для скрипта секции ([script.md](script.md#поведения-из-скрипта-секции)):\n\n${lines.join('\n')}`;
+};
+
 // Дополнение к поведению, которого нет в каталоге: как ведёт себя на телефоне и мышью.
 const BEHAVIOR_NOTES: Readonly<Record<string, string>> = {
+  dialog:
+    'Окно поверх экрана в секции любого блока. `data-position` — `center`, `sheet` или `corner`: ядро ставит окно ' +
+    '(`<dialog data-part="content">`), задаёт переход и модальность — `center` и `sheet` модальные (затемнение, фокус ' +
+    'внутри окна, Esc, запрет прокрутки, на странице одно такое окно), `corner` — немодальное в углу, на телефоне ' +
+    'шторкой снизу. С `data-position` параметры `data-transition`, `data-modal` и `data-anchor` не читаются; ' +
+    '`data-backdrop="false"` убирает затемнение под модальным окном. Без `data-position` место окна задают его классы. ' +
+    'Умолчания места лежат в слое `base`: классы окна главнее.\n\n' +
+    '```html\n' +
+    '<div data-behavior="dialog" data-position="corner" data-side="left">\n' +
+    '  <dialog data-part="content" class="w-full max-w-sm"><button data-part="close">Закрыть</button></dialog>\n' +
+    '</div>\n' +
+    '```',
   'card-photos':
     'Свайп по фото (палец или мышь с зажатием) от 30 px по горизонтали листает фото: влево — следующее, вправо — ' +
     'предыдущее; горизонтальный сдвиг должен быть в 1,5 раза больше вертикального, с последнего фото на первое ' +
@@ -92,7 +140,7 @@ export function behaviorsPage(): string {
   const behaviors = Object.entries(BEHAVIORS).map(([name, spec]) => {
     const parts = spec.parts.length === 0 ? '—' : spec.parts.map((part) => `\`data-part="${part}"\``).join(', ');
     const note = BEHAVIOR_NOTES[name] === undefined ? '' : `\n\n${BEHAVIOR_NOTES[name]}`;
-    return `## ${name}\n\nЧасти: ${parts}.\n\nПараметры: ${paramsOf(spec.params)}.${note}`;
+    return `## ${name}\n\nЧасти: ${parts}.\n\nПараметры: ${paramsOf(spec.params)}.${note}${commandsOf(name, spec.commands)}`;
   });
   const presetNames = Object.keys(PRESETS)
     .map((name) => `\`${name}\``)

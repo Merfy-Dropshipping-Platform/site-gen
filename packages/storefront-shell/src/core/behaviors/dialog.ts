@@ -1,7 +1,8 @@
 import { lockScroll as lockPageScroll, unlockScroll as unlockPageScroll } from '../scroll-lock';
-import type { Animation, EasingName, Keyframes } from '../types';
+import type { Animation, EasingName, Keyframes, NoData, Result } from '../types';
+import { done, invalid, refuse } from './command';
 import { animateNode } from './motion';
-import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
+import type { Behavior, BehaviorCommand, BehaviorHost, BehaviorInstance } from './types';
 
 // Окно и выезжающая панель (design.md блока 6, раздел 5; факты 10, 12; дополнения блока 7, п. 15): <dialog> и
 // showModal/show — браузер, переходы и запрет прокрутки — поведение. Немодальные окна секции — по одному; открытие
@@ -70,7 +71,24 @@ const TRANSITIONS: Readonly<Record<string, (side: string) => TransitionSpec>> = 
     backdropOpenEasing: 'material',
     backdropCloseEasing: 'material',
   }),
+  // Переходы окна с data-position (03.11): появление 200 мс, уход 150 мс; кадры — прозрачность и сдвиг от места окна.
+  pop: () => positioned('scale(0.96)'),
+  lift: () => positioned('translateY(16px)'),
+  rise: () => positioned('translateY(100%)'),
 };
+
+function positioned(from: string): TransitionSpec {
+  return {
+    open: { opacity: [0, 1], transform: [from, 'none'] },
+    close: { opacity: [1, 0], transform: ['none', from] },
+    openMs: 200,
+    closeMs: 150,
+    openEasing: 'ease-out',
+    closeEasing: 'ease-out',
+    backdropOpenEasing: 'ease-out',
+    backdropCloseEasing: 'ease-out',
+  };
+}
 
 const transitionOf = (name: string, side: string): TransitionSpec => (TRANSITIONS[name] ?? TRANSITIONS.drawer)(side);
 
@@ -85,20 +103,123 @@ const CART_ICON = '[data-action="cart.open"]';
 const CART_GAP = 12; // между низом значка корзины и верхом окна, px
 const CART_MIN_SIDE = 16; // наименьший отступ окна под значком от правого края экрана, px
 
+// Место окна поверх экрана (03.11): data-position на окне или аргумент команды open. null — как раньше: вид задают
+// transition, modal, anchor и классы окна. center и sheet — модальные, corner — немодальное в углу.
+type Position = 'center' | 'corner' | 'sheet';
+const POSITIONS: readonly Position[] = ['center', 'corner', 'sheet'];
+const POSITION_TRANSITION: Readonly<Record<Position, string>> = { center: 'pop', corner: 'lift', sheet: 'rise' };
+
+interface Layout {
+  readonly position: Position | null;
+  readonly side: string;
+  readonly backdrop: boolean;
+}
+
+// spec, modal, locksScroll и position меняет applyLayout перед каждым открытием: параметры в разметке — основа (base),
+// команда open может изменить место на один раз.
 interface Box {
   readonly host: BehaviorHost;
   readonly dialog: HTMLDialogElement;
   readonly opens: readonly HTMLElement[];
-  readonly spec: TransitionSpec;
-  readonly modal: boolean;
-  readonly locksScroll: boolean;
   readonly anchor: Anchor;
+  readonly base: Layout;
+  spec: TransitionSpec;
+  modal: boolean;
+  locksScroll: boolean;
+  position: Position | null;
   state: BoxState;
   runs: Animation[];
   afterEscape: boolean;
 }
 
 const isInstant = (host: BehaviorHost): boolean => host.motion.reduced;
+
+const positionOf = (value: unknown): Position | null => POSITIONS.find((position) => position === value) ?? null;
+
+// Основа места — параметры окна в разметке.
+const baseLayoutOf = (host: BehaviorHost): Layout => ({
+  position: positionOf(host.params.position),
+  side: String(host.params.side),
+  backdrop: host.params.backdrop === true,
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+// Основа плюс аргумент команды open; неверное значение — текст для автора.
+function layoutWith(base: Layout, options: unknown): Layout | string {
+  if (options === undefined) return base;
+  if (!isRecord(options)) return 'параметры — объект { position, side, backdrop }';
+  const { position, side, backdrop } = options;
+  if (position !== undefined && positionOf(position) === null)
+    return `position — center, corner или sheet, а не ${JSON.stringify(position)}`;
+  if (side !== undefined && side !== 'left' && side !== 'right') return 'side — left или right';
+  if (backdrop !== undefined && typeof backdrop !== 'boolean') return 'backdrop — true или false';
+  const next = positionOf(position) ?? base.position;
+  if (backdrop === true && next === 'corner') return 'у окна в углу (corner) затемнения нет';
+  return { position: next, side: typeof side === 'string' ? side : base.side, backdrop: backdrop ?? base.backdrop };
+}
+
+// Модальность, переход и запрет прокрутки — от места окна; без места — от параметров, как до 03.11.
+function applyLayout(box: Box, layout: Layout): void {
+  const { params } = box.host;
+  const { position } = layout;
+  box.position = position;
+  box.modal = position === null ? params.modal === true : position !== 'corner';
+  box.locksScroll = params['lock-scroll'] === true && (position === null || box.modal);
+  const transition = position === null ? String(params.transition) : POSITION_TRANSITION[position];
+  box.spec = transitionOf(transition, layout.side);
+  const { dialog } = box;
+  if (position === null) {
+    ['data-merfy-position', 'data-merfy-side', 'data-merfy-dim'].forEach((name) => dialog.removeAttribute(name));
+    return;
+  }
+  ensureStyle(dialog.ownerDocument);
+  dialog.setAttribute('data-merfy-position', position);
+  dialog.setAttribute('data-merfy-side', layout.side);
+  dialog.toggleAttribute('data-merfy-dim', box.modal && layout.backdrop);
+}
+
+// Умолчания места окна — в @layer base: классы окна (слой utilities) главнее. Окно в углу — на телефоне шторкой снизу.
+// Один раз на документ; без окон с data-position в страницу ничего не попадает.
+const STYLE_ID = 'merfy-dialog-position';
+const PHONE = '@media (max-width:47.99rem)';
+const POSITION_CSS = `@layer base{dialog[data-merfy-position]{position:fixed;box-sizing:border-box;border:0;padding:0;color:inherit;background:transparent;overflow:auto}\
+dialog[data-merfy-position]::backdrop{background:transparent}\
+dialog[data-merfy-dim]::backdrop{background:rgb(0 0 0 / 0.5)}\
+dialog[data-merfy-position="center"]{inset:0;margin:auto;max-width:calc(100vw - 2rem);max-height:calc(100dvh - 2rem)}\
+dialog[data-merfy-position="sheet"]{inset:auto 0 0 0;margin:0;width:100%;max-width:none;max-height:100dvh}\
+dialog[data-merfy-position="corner"]{inset:auto 1rem 1rem auto;margin:0;max-width:calc(100vw - 2rem)}\
+dialog[data-merfy-position="corner"][data-merfy-side="left"]{inset:auto auto 1rem 1rem}\
+${PHONE}{dialog[data-merfy-position="corner"]{inset:auto 0 0 0;width:100%;max-width:none}}}`;
+
+function ensureStyle(doc: Document): void {
+  if (doc.getElementById(STYLE_ID) !== null) return;
+  const style = doc.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = POSITION_CSS;
+  doc.head.append(style);
+}
+
+// Модальное окно на странице одно (03.11): занято другим открытым — команда open отказывает, остальные открытия ждут.
+const MODALS = new WeakMap<Document, { holder: Box | null }>();
+
+function modalSlot(box: Box): { holder: Box | null } {
+  const doc = box.dialog.ownerDocument;
+  const found = MODALS.get(doc) ?? { holder: null };
+  MODALS.set(doc, found);
+  return found;
+}
+
+const modalTakenBy = (box: Box): Box | null => {
+  const holder = modalSlot(box).holder;
+  return holder !== null && holder !== box && holder.state !== 'closed' ? holder : null;
+};
+
+function releaseModal(box: Box): void {
+  const slot = modalSlot(box);
+  if (slot.holder === box) slot.holder = null;
+}
 
 function panelAnimation(box: Box, closing: boolean): Animation {
   const spec = box.spec;
@@ -190,6 +311,7 @@ function placeUnderCart(box: Box): boolean {
 // Немодальное окно — под низом своей секции, под шапкой страницы или под значком корзины (data-anchor); пересчёт на
 // resize.
 function placeNonModal(box: Box): void {
+  if (box.position !== null) return; // место окна с data-position задаёт CSS ядра
   box.dialog.style.position = 'fixed';
   if (box.anchor === 'cart' && placeUnderCart(box)) return;
   const edge =
@@ -201,8 +323,12 @@ function announceOpen(box: Box): void {
   box.host.root.dispatchEvent(new Event(CLOSE_OTHERS_EVENT, { bubbles: true }));
 }
 
-function doOpen(box: Box): void {
+// Открытие с местом: параметры разметки (base) или место из команды. false — модальное окно на странице уже открыто.
+function doOpen(box: Box, layout: Layout = box.base): boolean {
   stopRuns(box);
+  applyLayout(box, layout);
+  if (box.modal && modalTakenBy(box) !== null) return false;
+  if (box.modal) modalSlot(box).holder = box;
   if (box.locksScroll) lockScroll();
   setExpanded(box, true);
   if (box.modal) {
@@ -217,7 +343,7 @@ function doOpen(box: Box): void {
   announceOpen(box);
   if (isInstant(box.host)) {
     box.state = 'open';
-    return;
+    return true;
   }
   const panel = panelAnimation(box, false);
   const backdrop = backdropAnimation(box, false);
@@ -226,11 +352,13 @@ function doOpen(box: Box): void {
   void panel.finished.then(() => {
     if (box.state === 'opening') box.state = 'open';
   });
+  return true;
 }
 
 function doCloseNow(box: Box): void {
   stopRuns(box);
   box.dialog.close();
+  releaseModal(box);
   if (box.locksScroll) unlockScroll();
   setExpanded(box, false);
   const focusOpen = box.afterEscape;
@@ -350,11 +478,11 @@ function listenSectionEvents(box: Box): void {
     },
     { signal },
   );
-  if (box.modal) return;
+  // Модальность меняет место окна (03.11) — слушатель стоит у каждого окна, решает он на ходу.
   window.addEventListener(
     'resize',
     () => {
-      if (box.state !== 'closed') placeNonModal(box);
+      if (!box.modal && box.state !== 'closed') placeNonModal(box);
     },
     { signal },
   );
@@ -396,6 +524,7 @@ function releaseOnDetach(box: Box): void {
       if (box.state === 'closed') return;
       box.state = 'closed';
       stopRuns(box);
+      releaseModal(box);
       if (box.locksScroll) unlockScroll();
     },
     { once: true },
@@ -404,30 +533,62 @@ function releaseOnDetach(box: Box): void {
 
 const anchorOf = (value: unknown): Anchor => (value === 'header' || value === 'cart' ? value : 'section');
 
+// Команды для скрипта секции (ctx.behavior("dialog"), 03.11). open с местом не из разметки — на один раз: кнопки и
+// события открывают окно по параметрам разметки. Модальное окно на странице одно — открытое другое даёт refused.
+function openCommand(box: Box, options: unknown): Result<NoData> {
+  const layout = layoutWith(box.base, options);
+  if (typeof layout === 'string') return invalid(`ctx.behavior("dialog").open: ${layout}`);
+  if (box.state === 'open' || box.state === 'opening') return done();
+  if (box.state === 'closing') doCloseNow(box);
+  if (doOpen(box, layout)) return done();
+  const holder = modalTakenBy(box)?.host.section.getAttribute('data-section') ?? '';
+  return refuse(`открыто модальное окно секции ${holder}: на странице оно одно, закройте его`);
+}
+
+function closeCommand(box: Box): Result<NoData> {
+  doCloseAnimated(box);
+  return done();
+}
+
+const commandsOf = (box: Box): Readonly<Record<string, BehaviorCommand>> => ({
+  open: (options) => openCommand(box, options),
+  close: () => closeCommand(box),
+  toggle: () => (box.state === 'closed' ? openCommand(box, undefined) : closeCommand(box)),
+});
+
+function baseBoxOf(host: BehaviorHost, dialogElement: HTMLDialogElement): Box {
+  const base = baseLayoutOf(host);
+  const box: Box = {
+    host,
+    dialog: dialogElement,
+    opens: [...host.root.querySelectorAll<HTMLElement>('[data-part="open"]')],
+    anchor: anchorOf(host.params.anchor),
+    base,
+    spec: transitionOf(String(host.params.transition), base.side),
+    modal: host.params.modal === true,
+    locksScroll: host.params['lock-scroll'] === true,
+    position: null,
+    state: 'closed',
+    runs: [],
+    afterEscape: false,
+  };
+  applyLayout(box, base);
+  return box;
+}
+
 export const dialog: Behavior<'dialog'> = {
   name: 'dialog',
   attach(host: BehaviorHost): BehaviorInstance {
     const dialogElement = host.root.querySelector<HTMLDialogElement>('[data-part="content"]');
-    const opens = [...host.root.querySelectorAll<HTMLElement>('[data-part="open"]')];
     if (dialogElement === null) return {};
-    const box: Box = {
-      host,
-      dialog: dialogElement,
-      opens,
-      spec: transitionOf(String(host.params.transition), String(host.params.side)),
-      modal: host.params.modal === true,
-      locksScroll: host.params['lock-scroll'] === true,
-      anchor: anchorOf(host.params.anchor),
-      state: 'closed',
-      runs: [],
-      afterEscape: false,
-    };
+    const box = baseBoxOf(host, dialogElement);
     setExpanded(box, false);
     listenOpenButtons(box);
     listenOpenEvent(box);
     listenClosers(box);
     releaseOnDetach(box);
     return {
+      commands: commandsOf(box),
       save: () => ({ open: box.state !== 'closed' }),
       restore: (state) => {
         if (typeof state !== 'object' || state === null || !('open' in state) || state.open !== true) return;

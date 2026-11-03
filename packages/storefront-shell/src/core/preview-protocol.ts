@@ -9,6 +9,10 @@ export const PREVIEW_UPDATE_EVENT = 'merfy:preview:update';
 export const PREVIEW_REPLACE_EVENT = 'merfy:preview:replace';
 // Скрипт превью → странице, на document: замена закончилась, detail — SectionUpdated.
 export const PREVIEW_UPDATED_EVENT = 'merfy:preview:updated';
+// Скрипт секций превью → странице, на document, без detail: значения сторов расширений, которые рамка подставляет вместо
+// ответов сервера (сообщение ext-store-values от кабинета), сменились. Часть ext в превью перечитывает сторы, на которые
+// кто-то подписан, — как по refreshOn манифеста: секция, живая или только что заменённая, получает новое значение.
+export const PREVIEW_STORES_EVENT = 'merfy:preview:stores';
 // Скрипт превью → конструктору (postMessage): итог замены — { type, id, outcome, message }.
 export const SECTION_UPDATED_MESSAGE = 'section-updated';
 // Ядро → странице, на document: сбой экземпляра (design.md 3.7); скрипт секций превью (план 2) ставит секции красную

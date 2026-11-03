@@ -1,3 +1,4 @@
+import { PREVIEW_STORES_EVENT } from '@merfy/shell/preview';
 import { chromium, type Browser, type Frame, type Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PREVIEW_AGENT } from '../../src/preview-agent';
@@ -93,6 +94,17 @@ const ask = (url: string, ids: string[]) =>
 const settle = () => page.waitForTimeout(100);
 
 describe('значения сторов расширений в превью', () => {
+  it('каждое сообщение со значениями — событие merfy:preview:stores на странице: ядро перечитывает сторы', async () => {
+    await frame().evaluate((name) => {
+      Reflect.set(window, 'storeEvents', 0);
+      document.addEventListener(name, () => Reflect.set(window, 'storeEvents', Number(Reflect.get(window, 'storeEvents')) + 1));
+    }, PREVIEW_STORES_EVENT);
+    await values([{ extension: 'test-ext', store: 'card', recordId: 'r-1', value: { title: 'Раз' } }]);
+    await values([]);
+    await settle();
+    expect(await frame().evaluate(() => Number(Reflect.get(window, 'storeEvents')))).toBe(2);
+  });
+
   it('значений нет — запрос идёт на сервер как есть', async () => {
     seen.length = 0;
     const answer = await ask(STORE_URL, ['r-1']);

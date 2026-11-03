@@ -4,6 +4,7 @@ import { messageOf } from '../../report';
 import { tokenOf } from '../customer-token';
 import { EXT_PART_NAME, registerExtModules } from '../ext-registry';
 import { failureOf, failed, reasonOf, reportFailure, type Reply } from '../failures';
+import { PREVIEW_STORES_EVENT } from '../preview-protocol';
 import { requestJson, type JsonRequest } from '../requests';
 import { pageStorage, type KeyValue } from '../storage';
 import { atom, batch, onMount, registerFacade, type Atom } from '../stores';
@@ -16,6 +17,7 @@ import type {
   ExtValue,
   Json,
   MarkupAction,
+  Mode,
   ReadableStore,
   Result,
   SdkPart,
@@ -149,10 +151,12 @@ function writeAll(entries: readonly (readonly [Atom<ExtValue>, ExtValue])[]): vo
   }
 }
 
-// События перечитывания стора (Р9в-12): refreshOn из манифеста и, у customer-стора, вход и выход покупателя.
-function refreshEvents(spec: StoreSpec): readonly string[] {
+// События перечитывания стора (Р9в-12): refreshOn из манифеста и, у customer-стора, вход и выход покупателя. В превью
+// ещё PREVIEW_STORES_EVENT: рамка сменила значения, которые подставляет вместо ответов сервера.
+function refreshEvents(spec: StoreSpec, mode: Mode): readonly string[] {
   const events = [...(spec.refreshOn ?? [])];
   if (spec.customer === true) events.push('merfy:auth:signin', 'merfy:auth:signout');
+  if (mode === 'preview') events.push(PREVIEW_STORES_EVENT);
   return events;
 }
 
@@ -217,7 +221,7 @@ function plainStoreOf(state: ExtensionState, name: string, spec: StoreSpec): Pla
   const store: PlainStore = { spec, atom: atom<ExtValue>(null), queue: readingQueue() };
   onMount(store.atom, () => {
     store.queue.enqueue(() => readPlain(state, name, store));
-    return listenRefresh(refreshEvents(spec), () => {
+    return listenRefresh(refreshEvents(spec, state.core.mode), () => {
       if (listenersOf(store.atom) > 0) store.queue.enqueue(() => readPlain(state, name, store));
     });
   });
@@ -243,7 +247,7 @@ function productWatchOf(state: ExtensionState, store: ProductStore, productId: s
   store.pending.add(productId);
   store.mounted += 1;
   if (store.stopListeners === null)
-    store.stopListeners = listenRefresh(refreshEvents(store.spec), () => rereadProducts(state, store));
+    store.stopListeners = listenRefresh(refreshEvents(store.spec, state.core.mode), () => rereadProducts(state, store));
   scheduleFlush(state, store);
   return (): void => {
     store.pending.delete(productId);

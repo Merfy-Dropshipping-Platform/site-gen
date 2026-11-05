@@ -1,6 +1,6 @@
 import { MOTION_CSS, MOTION_HEAD_SCRIPT } from '@merfy/shell/behaviors/motion-css';
 import { EXT_POINTS, EXT_POINT_PARTS, type ExtPointPart } from '@merfy/shell/ext-points';
-import { OVERLAY_PART } from '@merfy/shell/roles';
+import { MARKS_HTML, MARKS_PART, OVERLAY_PART } from '@merfy/shell/roles';
 import {
   EXT_USE_PREFIX,
   type ExtensionPoints,
@@ -294,9 +294,7 @@ export async function pageBundle(
   );
   const modules = new Map(scripts.map(({ hash }): [string, string] => [hexOf(hash), moduleText(hash, assets.modules)]));
   const kit = kitOf(built.kit, content, [...modules.values()]);
-  // Части мест расширений (части 15г, 15д, Р15д-2, Р15д-3): не из meta.parts секций напрямую, а по pageExtPointParts —
-  // только включённые у магазина; вместе с частями самой страницы, дубль pageParts убирает сам.
-  const parts = [...pageExtPointParts(inputs, pageId), ...overlayPartsOf(code), ...additionalParts];
+  const parts = pageOwnParts(inputs, pageId, code, content, additionalParts);
   const source = { core, parts: pageParts(shell.parts, withoutExtPointParts(code), parts), sections, modules };
   const bundle = await bundlePage(kit === undefined ? source : { ...source, kit });
   bundle.notices.forEach((notice) => page.notice?.(pageId, notice));
@@ -310,8 +308,29 @@ type PageHtml = Pick<PageContent, 'header' | 'sections' | 'footer' | 'overlay'>;
 const NO_HTML: PageHtml = { sections: [] };
 const MOTION_HEAD = `<script>${MOTION_HEAD_SCRIPT}</script><style id="merfy-motion">${MOTION_CSS}</style>`;
 
+const htmlOf = (content: PageHtml): string[] => [
+  ...(content.header ?? []),
+  ...content.sections,
+  ...(content.footer ?? []),
+  ...(content.overlay ?? []),
+];
+
+// Часть меток без скрипта секции (06.11): по HTML страницы, а не по script_meta — у секций, сохранённых раньше, и у
+// секций без скрипта её там нет. Её нет в core.json: бюджет ядра 16 КБ — без неё.
+export const marksPartsOf = (content: PageHtml): string[] =>
+  htmlOf(content).some((html) => MARKS_HTML.test(html)) ? [MARKS_PART] : [];
+
+// Части мест расширений (части 15г, 15д, Р15д-2, Р15д-3): не из meta.parts секций напрямую, а по pageExtPointParts —
+// только включённые у магазина; вместе с частями самой страницы, дубль pageParts убирает сам.
+const pageOwnParts = (
+  inputs: BuildInputs,
+  pageId: string,
+  code: readonly CodeSection[],
+  content: PageHtml,
+  additional: readonly string[],
+): string[] => [...pageExtPointParts(inputs, pageId), ...overlayPartsOf(code), ...marksPartsOf(content), ...additional];
+
 function kitOf(kit: ShellKit | undefined, content: PageHtml, scripts: readonly string[]): BundleKit | undefined {
   if (kit === undefined) return undefined;
-  const html = [...(content.header ?? []), ...content.sections, ...(content.footer ?? []), ...(content.overlay ?? [])];
-  return { files: kit.files, plan: kitPlanOf(kit.behaviors, html, scripts) };
+  return { files: kit.files, plan: kitPlanOf(kit.behaviors, htmlOf(content), scripts) };
 }

@@ -169,5 +169,8 @@
   merfy-section {
     display: block;
   }
+  [data-action*="favorites.toggle"][aria-pressed="true"] svg {
+    fill: currentColor;
+  }
 }
 

@@ -10,8 +10,10 @@ export const LAYER_ORDER = '@layer theme, base, components, utilities;';
 
 const TAILWIND_DIR = dirname(createRequire(import.meta.url).resolve('tailwindcss/package.json'));
 const TAILWIND_PREFIX = 'tailwindcss/';
-// Блочная обёртка секции — в слое base (блок 4 «Секций и SDK», Р4-13): классы обёртки её перекрывают.
-const SECTION_BLOCK = '@layer base { merfy-section { display: block; } }';
+// Блочная обёртка секции — в слое base (блок 4 «Секций и SDK», Р4-13): классы обёртки её перекрывают. Там же — вид
+// отмеченного сердечка по умолчанию (06.11): aria-pressed ведёт ядро, своё оформление секции перекрывает это правило.
+const SECTION_BLOCK =
+  '@layer base { merfy-section { display: block; } [data-action*="favorites.toggle"][aria-pressed="true"] svg { fill: currentColor; } }';
 
 function loadStylesheet(id: string, base: string) {
   const file = id.startsWith(TAILWIND_PREFIX)

@@ -86,6 +86,8 @@ export { page } from './parts/page';
 export type { PageModule } from './types';
 // 01.11: окно секции поверх страницы — ctx.overlay; часть overlay — в бандле страниц, где стоит такая секция.
 export { overlay } from './parts/overlay';
+// 06.11: метки без скрипта секции — отметка сердечка, счётчики, ссылка профиля; в бандле страниц, где такие метки есть.
+export { marks } from './parts/marks';
 export type { OverlayCloseReason, OverlayOptions, OverlayPosition, OverlayWindow } from './types';
 export type { ConsentAnswer, ConsentModule, ConsentState, Money, NewsletterModule, NoticeLevel } from './types';
 export {

@@ -25,6 +25,10 @@ export const OVERLAY_ATTRIBUTE = 'data-overlay';
 // в бандл страницы не идёт.
 export const OVERLAY_PART = 'overlay';
 
+// Часть меток без скрипта секции (06.11, parts/marks.ts): сборка кладёт её в бандл страницы, где в HTML есть такая метка.
+export const MARKS_PART = 'marks';
+export const MARKS_HTML = /favorites\.toggle|data-ref="(?:favorites-count|cart-count|profile)"/;
+
 // Экземпляр секции с этой ролью на странице; нет — null. Экземпляр на роль один (role-duplicate), берётся первый.
 export const roleSection = (root: ParentNode, role: SectionRole): HTMLElement | null =>
   root.querySelector<HTMLElement>(`merfy-section[${ROLE_ATTRIBUTE}="${role}"]`);

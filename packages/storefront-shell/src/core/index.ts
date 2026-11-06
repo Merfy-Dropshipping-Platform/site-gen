@@ -88,6 +88,8 @@ export type { PageModule } from './types';
 export { overlay } from './parts/overlay';
 // 06.11: метки без скрипта секции — отметка сердечка, счётчики, ссылка профиля; в бандле страниц, где такие метки есть.
 export { marks } from './parts/marks';
+// 06.11: переход по ссылке ждёт добавления в корзину; в бандле каждой страницы магазина.
+export { linkHold } from './parts/link-hold';
 export type { OverlayCloseReason, OverlayOptions, OverlayPosition, OverlayWindow } from './types';
 export type { ConsentAnswer, ConsentModule, ConsentState, Money, NewsletterModule, NoticeLevel } from './types';
 export {

@@ -20,12 +20,13 @@ function headersOf(request: JsonRequest): Record<string, string> | null {
   return Object.keys(headers).length === 0 ? null : headers;
 }
 
-// Тело запроса и заголовки: body — JSON; заголовков нет — их нет и в запросе.
+// Тело запроса и заголовки: body — JSON; заголовков нет — их нет и в запросе. Запрос с телом доходит и после ухода со
+// страницы (keepalive): кнопку «Назад» часть linkHold не задержит.
 function initOf(request: JsonRequest, signal: AbortSignal): RequestInit {
   const headers = headersOf(request);
   const base: RequestInit =
     headers === null ? { method: request.method, signal } : { method: request.method, signal, headers };
-  return request.body === undefined ? base : { ...base, body: JSON.stringify(request.body) };
+  return request.body === undefined ? base : { ...base, body: JSON.stringify(request.body), keepalive: true };
 }
 
 // Тело ответа: текст — JSON; не JSON (SyntaxError) — null.

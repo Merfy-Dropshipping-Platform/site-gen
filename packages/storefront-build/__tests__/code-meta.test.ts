@@ -64,8 +64,8 @@ describe('части бандла страницы', () => {
       GEO,
     ];
     expect(pageParts(['cart'], sections)).toEqual(['cart', 'auth', 'favorites', 'newsletter', ...LIVE_PARTS]);
-    expect(pageParts(['auth', 'cart', 'favorites'], [GEO])).toEqual(['auth', 'cart', 'favorites', 'analytics']);
-    expect(pageParts([], [{ ...GEO, meta: { uses: [], parts: ['analytics'], classes: [] } }])).toEqual(['analytics']);
+    expect(pageParts(['auth', 'cart', 'favorites'], [GEO])).toEqual(['auth', 'cart', 'favorites', ...LIVE_PARTS]);
+    expect(pageParts([], [{ ...GEO, meta: { uses: [], parts: ['analytics'], classes: [] } }])).toEqual(LIVE_PARTS);
   });
 
   it('uses секции в бандле — из её meta; секция без meta — все части ядра', async () => {

@@ -87,7 +87,7 @@ function constantValues(path: NodePath, depth: number): readonly Known[] | null 
 }
 
 // Все значения, которые может принять выражение, если они видны в коде; иначе null (значение известно только при выполнении).
-function valuesOf(path: NodePath, depth = 0): readonly Known[] | null {
+export function valuesOf(path: NodePath, depth = 0): readonly Known[] | null {
   if (depth > MAX_DEPTH) return null;
   const node = unwrap(path);
   if (node.isStringLiteral() || node.isNumericLiteral()) return [node.node.value];

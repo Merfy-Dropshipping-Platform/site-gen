@@ -136,9 +136,13 @@ describe.skipIf(!hasChromium)('метки витрины · настоящий C
     expect(statusOf(link, 'cart.open')).toBe('ok');
   });
 
-  it('упавшая секция — красная, ссылка профиля — на вход или в кабинет', async () => {
-    const failed = await marksOf(page('<div data-section-id="s1" data-merfy-state="failed"></div>'));
+  it('упавшая секция — красная с причиной из журнала ядра, ссылка профиля — на вход или в кабинет', async () => {
+    const log = `<script>console.error('Сбой секции shop:hero#s1 (mount): ключ «firstAt» хранилища — kebab-case')</script>`;
+    const failed = await marksOf(page(`<div data-section-id="s1" data-merfy-state="failed"></div>${log}`));
     expect(statusOf(failed, 'section')).toBe('broken');
+    expect(failed[0]?.text).toBe('скрипт секции упал: ключ «firstAt» хранилища — kebab-case');
+    const silent = await marksOf(page('<div data-section-id="s1" data-merfy-state="failed"></div>'));
+    expect(silent[0]?.text).toBe('скрипт секции упал: её функции не работают');
     const profile = await marksOf(page('<a data-ref="profile" href="/login">Профиль</a>'));
     expect(statusOf(profile, 'profile')).toBe('ok');
     const wrong = await marksOf(page('<a data-ref="profile" href="#">Профиль</a>'));

@@ -5,6 +5,7 @@ import type { SectionFiles } from './format';
 import { problem, type SectionProblem } from './problems';
 import { attrFindingOf } from './script-attrs';
 import { fileFacts, mergeFacts, type FileFacts, type ScriptFacts } from './script-facts';
+import { storageFindingOf } from './script-storage';
 import {
   CALL_GLOBALS,
   FORBIDDEN_FIELDS,
@@ -59,7 +60,7 @@ interface FileState {
   definition: NodePath<ObjectExpression> | null;
 }
 
-type Code = 'sdk-only' | 'script-invalid' | 'kind-mismatch' | 'attr-forbidden';
+type Code = 'sdk-only' | 'script-invalid' | 'kind-mismatch' | 'attr-forbidden' | 'storage-key-invalid';
 
 function report(state: FileState, node: Node, message: string, code: Code = 'sdk-only'): void {
   state.problems.push(problem(code, state.file, message, placeOf(node)));
@@ -223,6 +224,8 @@ function checkNew(path: NodePath, state: FileState): void {
 function checkAttrCall(path: NodePath, state: FileState): void {
   const found = attrFindingOf(path);
   if (found !== null) report(state, found.node, found.message, 'attr-forbidden');
+  const key = storageFindingOf(path);
+  if (key !== null) report(state, key.node, key.message, 'storage-key-invalid');
 }
 
 const reportAll =

@@ -422,6 +422,6 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
     shootClip: (finding, quality) => shootClip(page, viewport, finding, quality),
     locateSection: (section) => locateSection(page, viewport, section),
     shootSection: (place, section, quality) => shootSection(page, place, section, quality),
-    marks: (limitMs, section) => checkMarks(page, writes, limitMs, section),
+    marks: (limitMs, section) => checkMarks(page, writes, limitMs, section, collector.errors),
   };
 }

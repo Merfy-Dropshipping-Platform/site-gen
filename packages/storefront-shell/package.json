@@ -17,6 +17,7 @@
     "./counters": "./src/core/analytics/counters.ts",
     "./roles": "./src/core/roles.ts",
     "./attributes": "./src/core/attributes.ts",
+    "./storage-key": "./src/core/storage-key.ts",
     "./ext-points": "./src/core/ext-points.ts",
     "./core-parts.json": "./core-parts.json"
   },

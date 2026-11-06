@@ -12,6 +12,7 @@ import {
   LookError,
   type LookDevice,
   type LookFinding,
+  type LookMark,
   type PageFacts,
   type PageRenderer,
   type PageSession,
@@ -41,6 +42,12 @@ const MAX_CONSOLE_LENGTH = 500;
 export const SECTION_DETECTOR_TIMEOUT_MS = 3_000;
 // До срока задания детектор секции оставляет не меньше этого: ответ шлюз должен успеть принять.
 const DETECTOR_DEADLINE_MARGIN_MS = 1_500;
+// Предел проверки меток: в снимке секции — как у детектора, в снимке страницы меток больше. Не успела — ответ без неё:
+// молчание проверки не красное.
+export const SECTION_MARKS_TIMEOUT_MS = 3_000;
+export const PAGE_MARKS_TIMEOUT_MS = 8_000;
+// Сверх предела — на метку, начатую в последний момент; дальше проверка считается зависшей.
+export const MARKS_OVERRUN_MS = 2_000;
 
 const DEVICE_SETS: Record<'mobile' | 'desktop' | 'both', LookDevice[]> = {
   mobile: ['mobile'],
@@ -111,6 +118,8 @@ export interface LookSnapshot {
   layout: { ok: true } | { ok: false; reason: string };
   // Сначала находки детектора, потом проверок вёрстки (телефон первым).
   findings: LookFinding[];
+  // Проверка меток витрины кликами (`look-marks.ts`): отказ самой проверки — причина, а не поломка магазина.
+  marks: { ok: true; results: LookMark[] } | { ok: false; reason: string };
 }
 
 export type LookReply =
@@ -214,6 +223,24 @@ async function detectOn(
   }
 }
 
+// Метки на каждом устройстве по очереди, последними: клики меняют страницу. Срок снимка вышел — отвечает отрисовщик.
+async function marksOn(sessions: PageSession[], limitMs: number, section?: string): Promise<LookSnapshot['marks']> {
+  if (limitMs <= 0) return { ok: false, reason: 'не успел: срок снимка почти вышел' };
+  try {
+    const results: LookMark[] = [];
+    for (const session of sessions) {
+      const found = await within(session.marks(limitMs, section), limitMs + MARKS_OVERRUN_MS);
+      results.push(...found.map((mark) => ({ ...mark, device: session.device })));
+    }
+    return { ok: true, results };
+  } catch (error) {
+    if (error instanceof LookError) throw error;
+    const reason =
+      error instanceof DetectorLate ? `не успел за ${secondsText(limitMs)} с` : firstLine(errorText(error));
+    return { ok: false, reason };
+  }
+}
+
 const tidyFacts = (facts: PageFacts): PageFacts => ({
   ...facts,
   consoleErrors: facts.consoleErrors.slice(0, MAX_CONSOLE_ERRORS).map((text) => text.slice(0, MAX_CONSOLE_LENGTH)),
@@ -263,6 +290,7 @@ async function pageSnapshot(
   const devices = sessions.map((session, index) =>
     deviceShots(session, shots[index] ?? { device: session.device, total: 1, shots: [] }),
   );
+  const marks = await marksOn(sessions, PAGE_MARKS_TIMEOUT_MS);
   return {
     v: 1,
     siteId: job.siteId,
@@ -274,6 +302,7 @@ async function pageSnapshot(
     detector,
     layout: checks.status,
     findings: [...findings, ...checks.findings],
+    marks,
   };
 }
 
@@ -306,6 +335,9 @@ async function sectionSnapshot(
   const { shots } = await shootSections(sessions, places, section, BUDGET_BYTES - checks.clipBytes);
   const { detector, findings } = await detectInSection(sessions, places, section, job.deadline - now());
   const devices = sessions.map((session, index) => sectionShots(session, places[index] ?? null, shots[index] ?? null));
+  const seen = sessions.filter((_, index) => places[index] != null);
+  const room = job.deadline - now() - DETECTOR_DEADLINE_MARGIN_MS - MARKS_OVERRUN_MS;
+  const marks = await marksOn(seen, Math.min(SECTION_MARKS_TIMEOUT_MS, room), section);
   return {
     v: 1,
     siteId: job.siteId,
@@ -317,6 +349,7 @@ async function sectionSnapshot(
     detector,
     layout: checks.status,
     findings: [...findings, ...checks.findings],
+    marks,
   };
 }
 

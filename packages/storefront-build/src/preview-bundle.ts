@@ -1,5 +1,6 @@
 import { escapeScriptJson } from '@merfy/storefront-config';
 import { PREVIEW_BUNDLE_TAG_ID } from '@merfy/shell/preview';
+import { MARKS_PART } from '@merfy/shell/roles';
 import { bundleScript, type BundleSection, type CodeNotice } from './bundle';
 import { sha256 } from './canonical';
 import { LIVE_PARTS, overlayPartsOf, pageParts, type CodeAssets } from './code';
@@ -50,8 +51,9 @@ function previewModules(
 
 // Части бандла превью — как у страницы, но без частей без API для секций (LIVE_PARTS): превью ничего не отправляет.
 // Окна поверх страницы (01.11) — если такая секция есть в коде магазина: её ставят на страницу без перезагрузки превью.
+// Метки (06.11) — всегда: бандл превью один на все страницы, а по нему снимок черновика проверяет сердечко и счётчики.
 function previewParts(core: readonly string[], sections: readonly CodeSection[]): string[] {
-  return pageParts(core, sections, overlayPartsOf(sections)).filter((part) => !LIVE.has(part));
+  return pageParts(core, sections, [...overlayPartsOf(sections), MARKS_PART]).filter((part) => !LIVE.has(part));
 }
 
 // Теги кода превью: JSON-тег со строкой бандла, за ним — скрипт превью текстом.

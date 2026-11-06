@@ -55,7 +55,7 @@ const HERO: CurrentSection = {
   renderHash: RENDER_HASH,
 };
 const PREVIEW_JS = 'globalThis.previewScript = "preview-script";';
-const CORE = ['start', 'auth', 'cart', 'favorites', 'watchPreviewReplace']
+const CORE = ['start', 'auth', 'cart', 'favorites', 'marks', 'watchPreviewReplace']
   .map((name) => `export const ${name} = () => '${name}';`)
   .join('\n');
 const SHELL_NO_PREVIEW: ShellBuild = {

@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { afterAll, describe, expect, it } from 'vitest';
 import { ChromiumRenderer } from '../src/look/look-browser';
+import { itemReply } from '../src/look/look-marks';
 import type { MarkResult } from '../src/look/look-types';
 
 const hasChromium = existsSync(chromium.executablePath());
@@ -38,6 +39,15 @@ const SECTION = `<div data-section-id="s1">
   <button data-action="cart.add" data-product-id="p1">В корзину</button>
   <button data-action="favorites.toggle" data-product-id="p1" aria-pressed="false">♥</button>
 </div><span data-ref="cart-count">0</span>`;
+
+describe('подмена записи в корзину', () => {
+  it('количество растёт с каждым добавлением: повтор проверки двигает счётчик, как настоящая корзина', () => {
+    const quantityOf = (reply: unknown): unknown => Reflect.get(Object(Reflect.get(Object(reply), 'item')), 'quantity');
+    expect(quantityOf(itemReply({ product_id: 'p1' }, 1))).toBe(1);
+    expect(quantityOf(itemReply({ product_id: 'p1' }, 2))).toBe(2);
+    expect(quantityOf(itemReply({ product_id: 'p1', quantity: 3 }, 2))).toBe(6);
+  });
+});
 
 describe.skipIf(!hasChromium)('метки витрины · настоящий Chromium', () => {
   const renderer = new ChromiumRenderer();

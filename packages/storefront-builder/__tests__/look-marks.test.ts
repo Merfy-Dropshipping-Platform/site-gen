@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { afterAll, describe, expect, it } from 'vitest';
 import { ChromiumRenderer } from '../src/look/look-browser';
-import { itemReply } from '../src/look/look-marks';
+import { cartReply, itemReply } from '../src/look/look-marks';
 import type { MarkResult } from '../src/look/look-types';
 
 const hasChromium = existsSync(chromium.executablePath());
@@ -47,6 +47,13 @@ describe('подмена записи в корзину', () => {
     expect(quantityOf(itemReply({ product_id: 'p1' }, 2))).toBe(2);
     expect(quantityOf(itemReply({ product_id: 'p1', quantity: 3 }, 2))).toBe(6);
   });
+
+  it('чтение созданной корзины: строка с числом добавлений, до добавления — пусто', () => {
+    const items = (writes: string[]): unknown => Reflect.get(Object(cartReply(writes)), 'items');
+    expect(items(['POST /api/store/carts'])).toEqual([]);
+    const added = ['POST /api/store/carts', 'POST /api/store/carts/c/items', 'POST /api/store/carts/c/items'];
+    expect(items(added)).toEqual([expect.objectContaining({ id: 'look-line', quantity: 2 })]);
+  });
 });
 
 describe.skipIf(!hasChromium)('метки витрины · настоящий Chromium', () => {
@@ -82,6 +89,25 @@ describe.skipIf(!hasChromium)('метки витрины · настоящий C
 
   it('метки нет — проверки нет', async () => {
     expect(await marksOf(page('<p>Просто текст</p>'))).toEqual([]);
+  });
+
+  it('ядро перечитывает корзину после добавления: ответ подмены, а не 404 шлюза', async () => {
+    const reread = `<script>
+      document.addEventListener('click', async (event) => {
+        const node = event.target.closest('[data-action="cart.add"]');
+        if (!node) return;
+        const base = 'https://gateway.merfy.ru/api/store/carts';
+        const created = await (await fetch(base, { method: 'POST', body: '{}' })).json();
+        const id = created.cart.id;
+        await fetch(base + '/' + id + '/items', { method: 'POST', body: JSON.stringify({ product_id: 'p1' }) });
+        const read = await fetch(base + '/' + id);
+        const count = read.ok ? (await read.json()).items[0].quantity : 0;
+        document.querySelector('[data-ref="cart-count"]').textContent = String(count);
+      });
+    </script>`;
+    const button = '<button data-action="cart.add" data-product-id="p1">+</button>';
+    const results = await marksOf(page(`${button}<span data-ref="cart-count">0</span>`, reread));
+    expect(statusOf(results, 'cart.add')).toBe('ok');
   });
 
   it('метка скрыта или без товара — не поломка', async () => {

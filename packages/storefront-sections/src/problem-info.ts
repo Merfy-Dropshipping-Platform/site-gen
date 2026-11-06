@@ -135,7 +135,7 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
   },
   'storage-key-invalid': {
     when: 'Ключ `ctx.storage` не в kebab-case: на витрине такой вызов роняет секцию у покупателя.',
-    fix: 'Ключ — строчные латинские буквы, цифры и дефис',
+    fix: 'Ключ — строчные латинские буквы, цифры и дефис.',
     example: { before: "ctx.storage.get('firstAt')", after: "ctx.storage.get('first-at')" },
   },
   'list-template-missing': {

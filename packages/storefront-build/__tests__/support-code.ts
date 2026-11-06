@@ -18,6 +18,7 @@ const CORE = [
   "export const favorites = { name: 'favorites' };",
   "export const analytics = { name: 'analytics' };",
   "export const linkHold = { name: 'linkHold' };",
+  "export const marks = { name: 'marks' };",
   // Оформление (03.11): модуль checkout — у секций оформления; прежняя часть checkoutLegacy (window.cartStore) — у
   // прежнего /checkout версий темы без "checkout": "sections". Обе — экспорты ядра, не части core.json.
   "export const checkout = { name: 'checkout' };",

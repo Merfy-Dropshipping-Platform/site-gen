@@ -12,6 +12,7 @@ import type { BrowserContext, Page, Route } from 'playwright';
 import { z } from 'zod';
 import { isAllowedRequest } from './look-guard';
 import { layoutSource, parseLayout } from './look-layout';
+import { answerCartWrite, checkMarks } from './look-marks';
 import { SAMPLE_CART_ID, SAMPLE_CART_PARAM, cartBodyOf, parseSample, type LookCartLine } from './look-sample';
 import {
   VIEWPORTS,
@@ -99,6 +100,7 @@ function entryRoute(
   entry: string,
   html: string,
   cart: readonly LookCartLine[] | null,
+  writes: string[],
 ): (route: Route) => Promise<void> {
   return async (route) => {
     const url = route.request().url();
@@ -107,6 +109,7 @@ function entryRoute(
       return;
     }
     if (cart !== null && (await answerCart(route, cart))) return;
+    if (await answerCartWrite(route, writes)) return;
     if (!isAllowedRequest(url)) {
       await route.abort('blockedbyclient');
       return;
@@ -383,6 +386,14 @@ async function shootClip(page: Page, viewport: Viewport, finding: LayoutFinding,
   }
 }
 
+async function settlePage(page: Page, entry: string): Promise<void> {
+  await page.goto(entry, { waitUntil: 'load' });
+  await waitForQuiet(page);
+  await scrollThrough(page);
+  await waitForQuiet(page);
+  await page.evaluate(() => document.fonts.ready);
+}
+
 // Открывает страницу под нужный экран и возвращает её готовой к снимкам. Контекст закрывает вызывающий.
 export async function openPage(context: BrowserContext, device: LookDevice, html: string): Promise<PageSession> {
   const viewport = VIEWPORTS[device];
@@ -390,15 +401,11 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
   // Корзина снимка: номер в адресе, как у превью конструктора, а строки подставляет `answerCart`.
   const cart = parseSample(html)?.cart?.lines ?? null;
   const entry = cart === null ? base : `${base}?${SAMPLE_CART_PARAM}=${SAMPLE_CART_ID}`;
-  await context.route('**/*', entryRoute(entry, html, cart));
+  const writes: string[] = [];
+  await context.route('**/*', entryRoute(entry, html, cart, writes));
   const page = await context.newPage();
   const collector = collect(page);
-
-  await page.goto(entry, { waitUntil: 'load' });
-  await waitForQuiet(page);
-  await scrollThrough(page);
-  await waitForQuiet(page);
-  await page.evaluate(() => document.fonts.ready);
+  await settlePage(page, entry);
   const facts = await measure(page, collector);
 
   return {
@@ -415,5 +422,6 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
     shootClip: (finding, quality) => shootClip(page, viewport, finding, quality),
     locateSection: (section) => locateSection(page, viewport, section),
     shootSection: (place, section, quality) => shootSection(page, place, section, quality),
+    marks: (limitMs, section) => checkMarks(page, writes, limitMs, section),
   };
 }

@@ -1,30 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { sha256 } from '../src/canonical';
-import { marksPartsOf, pageBundle, type CodeAssets } from '../src/code';
-import type { BuildInputs } from '../src/inputs';
+import { marksPartsOf, pageBundle } from '../src/code';
 import { NO_SECTIONS, type PageRender } from '../src/sections-render';
-import { ASSETS, RENDERS, SHELL_BUILD, codeInputs } from './support-code';
+import { ASSETS, RENDERS, codeInputs } from './support-code';
 
 // Часть меток без скрипта секции в бандле (06.11): по HTML страницы — секция, сохранённая раньше, и секция без скрипта
 // тоже её получают; в core.json её нет — бюджет ядра без неё.
-const CORE = `${SHELL_BUILD.code}\nexport const marks = { name: 'marks' };`;
-const SHELL = { ...SHELL_BUILD, hash: sha256(CORE), code: CORE };
-const MARKS_ASSETS: CodeAssets = { ...ASSETS, shell: SHELL };
 const HEART = '<button data-action="favorites.toggle" data-product-id="p1"></button>';
-
-const inputsOf = (): BuildInputs =>
-  codeInputs((inputs) => {
-    if (inputs.shell !== null) inputs.shell.hash = SHELL.hash;
-  });
 
 const livePage = (): PageRender => ({
   sections: { ...NO_SECTIONS, modules: RENDERS },
   mode: 'live',
-  code: MARKS_ASSETS,
+  code: ASSETS,
 });
 
 async function bundleText(sections: string[]): Promise<string> {
-  const bundle = await pageBundle(inputsOf(), 'home', livePage(), { sections });
+  const bundle = await pageBundle(codeInputs(), 'home', livePage(), { sections });
   return new TextDecoder().decode(bundle?.file?.content);
 }
 

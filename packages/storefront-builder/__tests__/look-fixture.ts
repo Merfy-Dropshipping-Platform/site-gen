@@ -5,6 +5,7 @@ import {
   type DetectorFinding,
   type LayoutFinding,
   type LookDevice,
+  type MarkResult,
   type PageFacts,
   type PageRenderer,
   type PageSession,
@@ -33,6 +34,9 @@ export interface FakeSessionOptions {
   // Снимок секции: где она на этом устройстве (`null` — не видно; не задано — стоит в начале страницы) и вес её картинки
   // функцией от качества.
   section?: { place?: SectionPlace | null; bytes?: number | ((quality: number) => number) };
+  // Что вернёт проверка меток; `marksHang` — она не отвечает.
+  marks?: MarkResult[];
+  marksHang?: boolean;
 }
 
 export interface ShootCall {
@@ -101,6 +105,10 @@ export function fakeSession(
       sectionCalls.shot.push({ device, section, quality });
       const bytes = options.section?.bytes ?? 700;
       return Promise.resolve(new Uint8Array(typeof bytes === 'function' ? bytes(quality) : bytes).fill(9));
+    },
+    marks() {
+      if (options.marksHang) return new Promise<MarkResult[]>(() => undefined);
+      return Promise.resolve(options.marks ?? []);
     },
   };
 }

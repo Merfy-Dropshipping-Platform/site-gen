@@ -84,6 +84,24 @@ export interface LookFinding {
   image: string | null;
 }
 
+// Проверка метки витрины (`look-marks.ts`): `broken` — метка стоит, а ядро не сделало своё дело; `hidden` — проверить
+// нечем: на этом экране метки не видно, у магазина нет товара или кнопка выключена. Это не поломка.
+export type MarkStatus = 'ok' | 'broken' | 'hidden';
+
+export interface MarkResult {
+  // Метка: действие `cart.add`, ссылка `profile`, `section` — скрипт секции упал.
+  mark: string;
+  // id экземпляра секции, где стоит метка; null — вне секции.
+  section: string | null;
+  status: MarkStatus;
+  text: string;
+}
+
+// Метка в ответе снимка: на каком устройстве проверена.
+export interface LookMark extends MarkResult {
+  device: LookDevice;
+}
+
 // Где на странице стоит секция (28.10, снимок одной секции). `x`, `y` — левый верх в пикселях страницы, `height` уже
 // не больше `SECTION_MAX_HEIGHT` (`look-section.ts`), `fullHeight` — настоящая высота. `pinned`: секция прибита к
 // экрану (липкая шапка, баннер cookie, плавающая кнопка) — координаты тогда от экрана, и снимается она без прокрутки.
@@ -111,6 +129,9 @@ export interface PageSession {
   locateSection(section: string): Promise<SectionPlace | null>;
   // JPEG секции: страница прокручивается к её верху, прибитые к экрану чужие элементы на время снимка скрыты.
   shootSection(place: SectionPlace, section: string, quality: number): Promise<Uint8Array>;
+  // Проверка меток витрины кликами (`look-marks.ts`). Меняет страницу, поэтому идёт последней. За `limitMs` новые метки
+  // не начинаются, что успела — отдаёт. С `section` — метки этой секции, без него — всей страницы.
+  marks(limitMs: number, section?: string): Promise<MarkResult[]>;
 }
 
 export interface RenderedPage {

@@ -5,8 +5,10 @@ import type { Broker, Delivery } from '../src/broker';
 import {
   LOOKS_QUEUE,
   LOOK_PATTERN,
+  MARKS_OVERRUN_MS,
   MIN_BUDGET_MS,
   SECTION_DETECTOR_TIMEOUT_MS,
+  SECTION_MARKS_TIMEOUT_MS,
   nestReply,
   previewUrl,
   runLookJob,
@@ -473,6 +475,38 @@ describe('снимок черновика · детектор в снимке с
 
     expect(fake.sectionCalls.detect).toEqual([{ device: 'mobile', section: undefined }]);
     expect(snapshot.findings.map((finding) => finding.code)).toEqual(['gradient-text']);
+  });
+});
+
+describe('снимок черновика · проверка меток', () => {
+  const broken = { mark: 'cart.add', section: 'hero-1', status: 'broken' as const, text: 'кнопка не положила товар' };
+
+  it('снимок страницы: метки каждого устройства с его именем', async () => {
+    const { deps } = setup({ mobile: { marks: [broken] }, desktop: { marks: [] } });
+    expect(snapshotOf(await runLookJob(deps, job())).marks).toEqual({
+      ok: true,
+      results: [{ ...broken, device: 'mobile' }],
+    });
+  });
+
+  it('снимок секции: только устройства, где секцию видно', async () => {
+    const { deps } = setup({ mobile: { marks: [broken] }, desktop: { section: { place: null }, marks: [broken] } });
+    const { marks } = snapshotOf(await runLookJob(deps, job({ section: 'hero-1' })));
+    expect(marks).toEqual({ ok: true, results: [{ ...broken, device: 'mobile' }] });
+  });
+
+  it('проверка зависла — снимок приходит, причина вместо красного', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { deps } = setup({ mobile: { marksHang: true } });
+      const running = runLookJob(deps, job({ devices: 'mobile', section: 'hero-1' }));
+      await vi.advanceTimersByTimeAsync(SECTION_MARKS_TIMEOUT_MS + MARKS_OVERRUN_MS);
+      const snapshot = snapshotOf(await running);
+      expect(snapshot.marks).toEqual({ ok: false, reason: 'не успел за 3 с' });
+      expect(snapshot.devices[0]?.images).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

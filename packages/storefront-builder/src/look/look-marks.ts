@@ -30,7 +30,7 @@ const ItemBody = z.object({
 
 // Количество растёт с каждым добавлением, как у настоящей корзины: иначе повторное нажатие не двигает счётчик и проверка
 // даёт ложный красный (`added` — сколько раз уже добавляли, с этим разом).
-export function itemReply(body: unknown, added: number): unknown {
+export function itemReply(body: unknown, added: number): { item: Record<string, unknown> } {
   const parsed = ItemBody.safeParse(body);
   const quantity = (parsed.data?.quantity ?? 1) * added;
   const item = {
@@ -59,24 +59,35 @@ const replyOf = (method: string, path: string, body: unknown, writes: string[]):
   return { status: 200, body: {} };
 };
 
-// Запись в корзину снимка: ответ здесь, в `writes` — что ядро отправило. Чтение идёт своим путём (`look-page.ts`).
+// Корзина, созданная подменой, для чтения: ядро перечитывает её после добавления. На шлюзе такой нет: его 404 ядро приняло
+// бы за «корзину удалили» и сбросило счётчик, а проверка — за поломку магазина.
+export function cartReply(writes: readonly string[]): unknown {
+  const added = writes.filter(isItemWrite).length;
+  return { cart: { id: SAMPLE_CART_ID }, items: added === 0 ? [] : [itemReply({}, added).item] };
+}
+
+const answerJson = (route: Route, status: number, body: unknown): Promise<void> =>
+  route.fulfill({ status, headers: WRITE_CORS, contentType: 'application/json', body: JSON.stringify(body) });
+
+// Корзина снимка: запись и чтение созданной здесь корзины — ответ тут, в `writes` — что ядро отправило. Корзину образца
+// читает `look-page.ts`: она идёт раньше и отвечает на всех страницах корзины.
 export async function answerCartWrite(route: Route, writes: string[]): Promise<boolean> {
   const request = route.request();
   const path = new URL(request.url()).pathname;
   const method = request.method();
-  if (method === 'GET' || !CART_WRITE_PATH.test(path)) return false;
+  if (method === 'GET') {
+    if (writes.length === 0 || !path.endsWith(`/store/carts/${SAMPLE_CART_ID}`)) return false;
+    await answerJson(route, 200, cartReply(writes));
+    return true;
+  }
+  if (!CART_WRITE_PATH.test(path)) return false;
   if (method === 'OPTIONS') {
     await route.fulfill({ status: 204, headers: WRITE_CORS });
     return true;
   }
   writes.push(`${method} ${path}`);
   const reply = replyOf(method, path, request.postDataJSON(), writes);
-  await route.fulfill({
-    status: reply.status,
-    headers: WRITE_CORS,
-    contentType: 'application/json',
-    body: JSON.stringify(reply.body),
-  });
+  await answerJson(route, reply.status, reply.body);
   return true;
 }
 

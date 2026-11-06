@@ -20,9 +20,18 @@ const THEME: ThemeBuild = { tokens: novaTokens, render: fakeRender, clientFiles:
 const CORE = [
   `export const start = (options) => { globalThis.merfyStarted = [options, '${'x'.repeat(5000)}']; };`,
   'export const defineSection = (definition) => definition;',
-  ...['auth', 'cart', 'favorites', 'analytics', 'checkout', 'checkoutLegacy', 'points', 'records', 'purchase'].map(
-    (name) => `export const ${name} = { name: '${name}' };`,
-  ),
+  ...[
+    'auth',
+    'cart',
+    'favorites',
+    'analytics',
+    'linkHold',
+    'checkout',
+    'checkoutLegacy',
+    'points',
+    'records',
+    'purchase',
+  ].map((name) => `export const ${name} = { name: '${name}' };`),
 ].join('\n');
 const SHELL_BUILD = { version: '0.1.0', hash: sha256(CORE), parts: ['auth', 'cart', 'favorites'], code: CORE };
 const ASSETS: CodeAssets = { shell: SHELL_BUILD, modules: MODULES, renders: RENDERS };

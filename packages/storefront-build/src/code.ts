@@ -25,8 +25,8 @@ import type { ShellBuild, ShellKit } from './shell';
 // глобальные скрипты. Превью (часть 5г), стенд и рендер без кода — без бандла.
 const HASH_PREFIX = 'sha256:';
 // Части без API для секций — в бандле каждой страницы опубликованного сайта (раздел 3.13): аналитика, как трекер в
-// HTML каждой страницы на проде.
-export const LIVE_PARTS: readonly string[] = ['analytics'];
+// HTML каждой страницы на проде, и часть linkHold: переход по ссылке ждёт добавления в корзину.
+export const LIVE_PARTS: readonly string[] = ['analytics', 'linkHold'];
 
 // id расширений из "ext:<id>" в meta.uses секции (блок 9 «Секций и SDK», часть 9в; Р9в-20): script_meta строки реестра.
 const extIdsOf = (section: CodeSection): string[] =>

@@ -22,6 +22,7 @@ const CORE = [
   "export const cart = { name: 'cart' };",
   "export const favorites = { name: 'favorites' };",
   "export const analytics = { name: 'analytics' };",
+  "export const linkHold = { name: 'linkHold' };",
   "export const checkout = { name: 'checkout' };",
   "export const checkoutLegacy = { name: 'checkoutLegacy' };",
   "export const purchase = { name: 'purchase' };",

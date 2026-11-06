@@ -8,9 +8,9 @@ import type { MarkResult, MarkStatus } from './look-types';
 // ядро сделало своё дело; метки нет — нечего проверять. Запись в корзину подменяется здесь: магазин, заказы и шлюз
 // остаются как были, ответ не зависит от сети, поэтому красный — это поломка секции, а не сбой окружения.
 
-// Ядро отвечает за миллисекунды: шлюз подменён, сети в проверке нет.
+// Ядро отвечает за миллисекунды: шлюз подменён, сети в проверке нет. Запас — на занятый отрисовщик: страниц разом две.
 export const CLICK_MS = 500;
-export const EFFECT_MS = 800;
+export const EFFECT_MS = 1_000;
 const POLL_MS = 40;
 const MAX_MODALS = 3;
 const CHOSEN = 'data-merfy-look-mark';
@@ -28,9 +28,11 @@ const ItemBody = z.object({
   variant_id: z.string().optional(),
 });
 
-function itemReply(body: unknown): unknown {
+// Количество растёт с каждым добавлением, как у настоящей корзины: иначе повторное нажатие не двигает счётчик и проверка
+// даёт ложный красный (`added` — сколько раз уже добавляли, с этим разом).
+export function itemReply(body: unknown, added: number): unknown {
   const parsed = ItemBody.safeParse(body);
-  const quantity = parsed.data?.quantity ?? 1;
+  const quantity = (parsed.data?.quantity ?? 1) * added;
   const item = {
     id: 'look-line',
     orderId: SAMPLE_CART_ID,
@@ -47,8 +49,12 @@ function itemReply(body: unknown): unknown {
   return { item };
 }
 
-const replyOf = (method: string, path: string, body: unknown): { status: number; body: unknown } => {
-  if (method === 'POST' && path.includes('/items')) return { status: 201, body: itemReply(body) };
+const isItemWrite = (write: string): boolean => write.startsWith('POST') && write.includes('/items');
+
+const replyOf = (method: string, path: string, body: unknown, writes: string[]): { status: number; body: unknown } => {
+  if (method === 'POST' && path.includes('/items')) {
+    return { status: 201, body: itemReply(body, writes.filter(isItemWrite).length) };
+  }
   if (method === 'POST') return { status: 201, body: { cart: { id: SAMPLE_CART_ID } } };
   return { status: 200, body: {} };
 };
@@ -64,7 +70,7 @@ export async function answerCartWrite(route: Route, writes: string[]): Promise<b
     return true;
   }
   writes.push(`${method} ${path}`);
-  const reply = replyOf(method, path, request.postDataJSON());
+  const reply = replyOf(method, path, request.postDataJSON(), writes);
   await route.fulfill({
     status: reply.status,
     headers: WRITE_CORS,

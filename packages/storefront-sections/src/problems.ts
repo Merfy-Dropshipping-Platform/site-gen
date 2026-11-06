@@ -34,6 +34,8 @@ export const PROBLEM_CODES = [
   'sdk-only',
   // El.attr и El.cssVar с атрибутом, адресом или переменной, которые ядро витрины откажет в браузере (script-attrs.ts).
   'attr-forbidden',
+  // Ключ ctx.storage, который ядро витрины откажет в браузере и уронит секцию (script-storage.ts).
+  'storage-key-invalid',
   // El.list на ref, у элемента которого в шаблоне нет дочернего <template> (script-lists.ts, script-names.ts).
   'list-template-missing',
   'event-unknown',

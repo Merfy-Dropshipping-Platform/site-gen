@@ -13,6 +13,8 @@ export const CLICK_MS = 500;
 export const EFFECT_MS = 1_000;
 const POLL_MS = 40;
 const MAX_MODALS = 3;
+const FAILURE_LOG = 'Сбой секции ';
+const MAX_CAUSE = 200;
 const CHOSEN = 'data-merfy-look-mark';
 
 const CART_WRITE_PATH = /\/store\/carts(?:\/[^/]+\/items(?:\/[^/]+)?)?\/?$/;
@@ -298,13 +300,22 @@ async function checkOne(run: MarkRun, raw: RawMark, test: (env: MarkEnv) => Prom
   return resultOf(raw, await confirmed(run, { page: run.page, writes: run.writes, element }, test));
 }
 
+// Причина из журнала ядра: «Сбой секции <имя>#<id> (<стадия>): <текст>» (`instance.ts`). Агенту нужна она, а не факт падения.
+function failureText(name: string, errors: readonly string[]): string {
+  const line = errors.find((text) => text.startsWith(FAILURE_LOG) && text.includes(name));
+  const at = line?.indexOf('): ') ?? -1;
+  const cause = line === undefined || at === -1 ? 'её функции не работают' : line.slice(at + 3, at + 3 + MAX_CAUSE);
+  return `скрипт секции упал: ${cause}`;
+}
+
 // Проверяет метки по порядку каталога за `limitMs`; ошибка одной метки — отказ всей проверки, а не красная метка: что-то
-// пошло не так у самой проверки, а не у магазина.
+// пошло не так у самой проверки, а не у магазина. `errors` — консоль страницы, из неё причина падения секции.
 export async function checkMarks(
   page: Page,
   writes: string[],
   limitMs: number,
   section?: string,
+  errors: readonly string[] = [],
 ): Promise<MarkResult[]> {
   const run: MarkRun = { page, writes, deadline: Date.now() + limitMs };
   const names = TESTS.map(([name]) => name);
@@ -314,7 +325,7 @@ export async function checkMarks(
     mark: 'section',
     section: name,
     status: 'broken',
-    text: 'скрипт секции упал: её функции не работают',
+    text: failureText(name, errors),
   }));
   for (const [name, test] of TESTS) {
     const raw = found.marks.find((mark) => mark.mark === name);

@@ -133,6 +133,11 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     },
     doc: 'script.md#цвет-и-размер-из-данных',
   },
+  'storage-key-invalid': {
+    when: 'Ключ `ctx.storage` не в kebab-case: на витрине такой вызов роняет секцию у покупателя.',
+    fix: 'Ключ — строчные латинские буквы, цифры и дефис.',
+    example: { before: "ctx.storage.get('firstAt')", after: "ctx.storage.get('first-at')" },
+  },
   'list-template-missing': {
     when: '`list` в скрипте вызван на элементе, у которого в `template.astro` нет дочернего `<template>`: на витрине сбой «у <div> нет дочернего <template>», список пуст.',
     fix: 'Положи образец строки в `<template>` внутри этого элемента; первый ребёнок образцом не служит. Строки вставятся после `<template>`.',

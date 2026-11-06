@@ -1,5 +1,5 @@
-import { ShellError } from '../errors';
 import { deepFreeze } from './freeze';
+import { checkKey } from './storage-key';
 import type { Json, Mode, SectionStorage } from './types';
 
 // Хранилище секции в браузере покупательницы (design.md блока 5, раздел 3.2): ключ merfy:s:<имя секции>:<ключ>, на
@@ -42,13 +42,6 @@ export function pageStorage(win: Pick<Window, 'localStorage'>, mode: Mode): KeyV
     return memoryStorage();
   }
 }
-
-const KEY_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-const checkKey = (key: string): string => {
-  if (!KEY_CASE.test(key)) throw new ShellError('sdk-call-invalid', `ключ «${key}» хранилища — kebab-case`);
-  return key;
-};
 
 const fullKeyOf = (section: string, key: string): string => `${STORAGE_PREFIX}${section}:${key}`;
 

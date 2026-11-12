@@ -70,6 +70,12 @@ export const PAGES: readonly PageSpec[] = [
     section: 'Справочник',
   },
   {
+    file: 'motion.md',
+    title: 'Анимации',
+    about: 'пресеты data-animate, ctx.animate: свойства, кривые, правила, рецепты; когда появления не играют',
+    section: 'Справочник',
+  },
+  {
     file: 'theme-settings.md',
     title: 'Настройки темы',
     about: 'сквозные настройки и как их читать',

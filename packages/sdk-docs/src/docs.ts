@@ -7,6 +7,7 @@ import { errorsPage } from './pages/errors';
 import { eventsPage } from './pages/events';
 import { limitsPage } from './pages/limits';
 import { modulesPage } from './pages/modules';
+import { motionData } from './pages/motion';
 import { sectionJsonPage } from './pages/section-json';
 import { themeSettingsPage } from './pages/theme-settings';
 import type { DocsSources } from './sources';
@@ -53,6 +54,8 @@ const forbiddenTagsText = (): string => [...FORBIDDEN_TAGS].map((tag) => `\`<${t
 function replacementOf(sources: DocsSources, kind: string, name: string): string {
   if (kind === 'example') return exampleBlock(sources, name);
   if (kind === 'data' && name === 'forbidden-tags') return forbiddenTagsText();
+  const motion = kind === 'data' ? motionData(name) : undefined;
+  if (motion !== undefined) return motion;
   throw new Error(`неизвестная метка ${kind}: ${name}`);
 }
 
@@ -92,6 +95,7 @@ function bodyOf(sources: DocsSources, page: PageSpec, date: string): string {
     'start.md': applyMarks(sources, sources.guide.start ?? ''),
     'template.md': applyMarks(sources, sources.guide.template ?? ''),
     'code.md': applyMarks(sources, sources.guide.code ?? ''),
+    'motion.md': applyMarks(sources, sources.guide.motion ?? ''),
     'styles.md': stylesBody,
     'names.md': namesBody(sources.names),
   };

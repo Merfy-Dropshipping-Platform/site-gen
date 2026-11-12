@@ -13,6 +13,8 @@ import { z } from 'zod';
 import { isAllowedRequest } from './look-guard';
 import { layoutSource, parseLayout } from './look-layout';
 import { answerCartWrite, checkMarks } from './look-marks';
+import { CONFIG_SCRIPT, motionHtmlOf } from './look-motion';
+import { motionRunner } from './look-motion-page';
 import { SAMPLE_CART_ID, SAMPLE_CART_PARAM, cartBodyOf, parseSample, type LookCartLine } from './look-sample';
 import {
   VIEWPORTS,
@@ -32,7 +34,6 @@ const SCROLL_PAUSE_MS = 80;
 const MAX_SCROLL_STEPS = 40;
 const SHOT_SETTLE_MS = 150;
 
-const CONFIG_SCRIPT = /<script[^>]*\bid="merfy-config"[^>]*>([\s\S]*?)<\/script>/;
 const ShopConfig = z.object({ shop: z.object({ url: z.url() }) });
 
 function parseConfig(raw: string): unknown {
@@ -96,16 +97,36 @@ async function answerCart(route: Route, lines: readonly LookCartLine[]): Promise
   return true;
 }
 
+// Страница кадров раскадровки (`look-motion.ts`): тот же адрес с параметром и свой HTML — в режиме витрины.
+const MOTION_PARAM = 'merfy-look=motion';
+// Ядро витрины шлёт сюда сбои секций (`error-log.ts`) — только в режиме витрины, поэтому на странице кадров глушим:
+// снимок не должен писать в журнал сбоев магазина.
+const SECTION_ERRORS_PATH = /\/storefront\/section-errors\/?$/;
+
+interface MotionEntry {
+  url: string;
+  html: string;
+}
+
 function entryRoute(
   entry: string,
   html: string,
   cart: readonly LookCartLine[] | null,
   writes: string[],
+  motion: MotionEntry | null,
 ): (route: Route) => Promise<void> {
   return async (route) => {
     const url = route.request().url();
     if (url === entry) {
       await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html });
+      return;
+    }
+    if (motion !== null && url === motion.url) {
+      await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: motion.html });
+      return;
+    }
+    if (SECTION_ERRORS_PATH.test(new URL(url).pathname)) {
+      await route.fulfill({ status: 204, headers: CORS_HEADERS });
       return;
     }
     if (cart !== null && (await answerCart(route, cart))) return;
@@ -394,6 +415,13 @@ async function settlePage(page: Page, entry: string): Promise<void> {
   await page.evaluate(() => document.fonts.ready);
 }
 
+// Страница кадров: HTML режима витрины (или причина, почему его нет) и маршрут, по которому его отдаёт контекст.
+function motionSetup(html: string, entry: string) {
+  const motionHtml = motionHtmlOf(html);
+  const url = `${entry}${entry.includes('?') ? '&' : '?'}${MOTION_PARAM}`;
+  return { html: motionHtml, entry: url, route: motionHtml.ok ? { url, html: motionHtml.html } : null };
+}
+
 // Открывает страницу под нужный экран и возвращает её готовой к снимкам. Контекст закрывает вызывающий.
 export async function openPage(context: BrowserContext, device: LookDevice, html: string): Promise<PageSession> {
   const viewport = VIEWPORTS[device];
@@ -402,7 +430,8 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
   const cart = parseSample(html)?.cart?.lines ?? null;
   const entry = cart === null ? base : `${base}?${SAMPLE_CART_PARAM}=${SAMPLE_CART_ID}`;
   const writes: string[] = [];
-  await context.route('**/*', entryRoute(entry, html, cart, writes));
+  const motion = motionSetup(html, entry);
+  await context.route('**/*', entryRoute(entry, html, cart, writes, motion.route));
   const page = await context.newPage();
   const collector = collect(page);
   await settlePage(page, entry);
@@ -423,5 +452,6 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
     locateSection: (section) => locateSection(page, viewport, section),
     shootSection: (place, section, quality) => shootSection(page, place, section, quality),
     marks: (limitMs, section) => checkMarks(page, writes, limitMs, section, collector.errors),
+    motion: motionRunner({ context, viewport, html: motion.html, entry: motion.entry, settle: settlePage }),
   };
 }

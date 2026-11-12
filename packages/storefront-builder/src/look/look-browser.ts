@@ -7,6 +7,7 @@
 // меньше, если задание долго шло до процесса): по его концу контексты закрываются, операция над страницей отвечает
 // понятным отказом.
 import type { Browser, BrowserContext } from 'playwright';
+import { MOTION_EXTRA_MS } from './look-motion';
 import { openPage } from './look-page';
 import {
   LookError,
@@ -148,7 +149,10 @@ export class ChromiumRenderer implements PageRenderer {
 
   async open(input: RenderInput): Promise<RenderedPage> {
     await this.slots.acquire();
-    const job = new RenderJob(this.slots, Math.min(this.timeoutMs, input.timeoutMs ?? this.timeoutMs));
+    // Раскадровка грузит страницу второй раз и снимает до 12 кадров: сроку отрисовщика прибавляется `MOTION_EXTRA_MS`,
+    // но срок задания (`input.timeoutMs`) он не превышает.
+    const own = this.timeoutMs + (input.motion === true ? MOTION_EXTRA_MS : 0);
+    const job = new RenderJob(this.slots, Math.min(own, input.timeoutMs ?? own));
     try {
       const browser = await job.guard(() => this.start());
       const sessions = await Promise.all(
@@ -184,6 +188,7 @@ export class ChromiumRenderer implements PageRenderer {
       locateSection: (section) => job.guard(() => session.locateSection(section)),
       shootSection: (place, section, quality) => job.guard(() => session.shootSection(place, section, quality)),
       marks: (limitMs, section) => job.guard(() => session.marks(limitMs, section)),
+      motion: (options) => job.guard(() => session.motion(options)),
     };
   }
 }

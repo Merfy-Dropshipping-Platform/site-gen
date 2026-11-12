@@ -3,8 +3,9 @@ import type { Broker } from '../broker';
 import { errorText } from '../errors';
 import type { Log } from '../log';
 import { MAX_CONCURRENT_RENDERS } from './look-browser';
-import { BUDGET_BYTES, fitShots, type DeviceShots } from './look-fit';
+import { BUDGET_BYTES, base64Size, fitShots, type DeviceShots } from './look-fit';
 import { runLayoutChecks } from './look-layout';
+import { MOTION_RESERVE_BYTES, captureMotion, motionBudget, motionDevice, type LookMotion } from './look-motion';
 import { LOOK_PATTERN, LOOKS_QUEUE } from './look-queue';
 import { parseSample, type LookSample } from './look-sample';
 import { cutOf, locateSection, shootSections, type SectionCut } from './look-section';
@@ -73,6 +74,8 @@ const lookJobSchema = z.strictObject({
   record: z.string().min(1).max(200).optional(),
   // Вырезки мест находок вёрстки: нет ключа или true — как раньше, false — только экраны, находки текстом.
   clips: z.boolean().optional(),
+  // Раскадровка анимаций (`look-motion.ts`, 12.11): кадры секций страницы и список анимаций. В снимке секции не действует.
+  motion: z.boolean().optional(),
   // Время (мс с 1970), после которого вызывающий ответа уже не ждёт.
   deadline: z.int().positive(),
 });
@@ -120,6 +123,8 @@ export interface LookSnapshot {
   findings: LookFinding[];
   // Проверка меток витрины кликами (`look-marks.ts`): отказ самой проверки — причина, а не поломка магазина.
   marks: { ok: true; results: LookMark[] } | { ok: false; reason: string };
+  // Раскадровка (`look-motion.ts`): есть только если просили (`motion` задания) и снимок страницы, а не секции.
+  motion?: LookMotion;
 }
 
 export type LookReply =
@@ -283,13 +288,16 @@ async function pageSnapshot(
   job: LookJob,
   sample: LookSample | null,
 ): Promise<LookSnapshot> {
-  // Вырезки мест идут в тот же предел веса, что и экраны: сначала они, экранам остаётся остальное.
+  // Вырезки мест идут в тот же предел веса, что и экраны: сначала они, экранам остаётся остальное. Просили кадры
+  // анимаций — им оставлен запас, иначе `full` отдал бы весь предел экранам.
   const checks = await runLayoutChecks(sessions, undefined, job.clips !== false);
-  const shots = await fitShots(sessions, job.full, BUDGET_BYTES - checks.clipBytes);
+  const reserve = job.motion === true ? MOTION_RESERVE_BYTES : 0;
+  const shots = await fitShots(sessions, job.full, BUDGET_BYTES - checks.clipBytes - reserve);
   const { detector, findings } = await detectOn(first);
   const devices = sessions.map((session, index) =>
     deviceShots(session, shots[index] ?? { device: session.device, total: 1, shots: [] }),
   );
+  const motion = job.motion === true ? await motionOn(sessions, job, checks.clipBytes, shots) : undefined;
   const marks = await marksOn(sessions, PAGE_MARKS_TIMEOUT_MS);
   return {
     v: 1,
@@ -303,7 +311,26 @@ async function pageSnapshot(
     layout: checks.status,
     findings: [...findings, ...checks.findings],
     marks,
+    ...(motion === undefined ? {} : { motion }),
   };
+}
+
+// Раскадровка на одном устройстве (компьютер, а если просили только телефон — телефон): вес кадров — остаток предела
+// ответа после экранов и вырезок.
+async function motionOn(
+  sessions: PageSession[],
+  job: LookJob,
+  clipBytes: number,
+  shots: DeviceShots[],
+): Promise<LookMotion> {
+  const device = motionDevice(job.devices);
+  const session = sessions.find((entry) => entry.device === device) ?? sessions[0];
+  if (session === undefined) return { ok: false, reason: 'нет экрана для кадров' };
+  const screens = shots.reduce(
+    (sum, entry) => sum + entry.shots.reduce((inner, shot) => inner + base64Size(shot.length), 0),
+    0,
+  );
+  return captureMotion(session, motionBudget(clipBytes + screens));
 }
 
 // Детектор в снимке секции (после снимков и проверок): тот же, что у страницы, на первом устройстве, где секцию видно, —
@@ -375,7 +402,12 @@ async function render(deps: LookDeps, job: LookJob, html: string): Promise<LookR
   const timeoutMs = job.deadline - deps.now();
   let rendered: RenderedPage;
   try {
-    rendered = await deps.renderer.open({ html, devices: DEVICE_SETS[job.devices], timeoutMs });
+    rendered = await deps.renderer.open({
+      html,
+      devices: DEVICE_SETS[job.devices],
+      timeoutMs,
+      ...(job.motion === true && job.section === undefined ? { motion: true } : {}),
+    });
   } catch (error) {
     return renderFailure(error);
   }
@@ -413,7 +445,10 @@ function logOutcome(deps: LookDeps, body: unknown, reply: LookReply, startedAt: 
   }
   const { findings, layout } = reply.snapshot;
   const clips = findings.flatMap((finding) => (finding.image === null ? [] : [finding.image]));
-  const images = [...reply.snapshot.devices.flatMap((device) => device.images), ...clips];
+  const motion = reply.snapshot.motion?.ok
+    ? reply.snapshot.motion.sections.flatMap((entry) => entry.frames.map((frame) => frame.image))
+    : [];
+  const images = [...reply.snapshot.devices.flatMap((device) => device.images), ...clips, ...motion];
   const kb = Math.round(images.reduce((sum, image) => sum + image.length, 0) / 1024);
   const devices = reply.snapshot.devices.map((device) => device.device).join(',');
   const checks = findings.filter((finding) => finding.source === 'layout').length;

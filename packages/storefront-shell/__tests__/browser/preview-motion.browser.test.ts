@@ -48,13 +48,14 @@ const opacity = (page: Page, selector: string): Promise<string> =>
   page.$eval(selector, (el) => getComputedStyle(el).opacity);
 
 // Замена секции hero, как её отправляет скрипт превью: тот же код (hash A) или новый (hash B, код из load).
-const replaceHero = (page: Page, text: string, hash: string): Promise<string> =>
+const replaceHero = (page: Page, text: string, hash: string, revision?: string): Promise<string> =>
   page.evaluate(
-    ([name, html, scriptHash]) =>
+    ([name, html, scriptHash, codeRevision]) =>
       new Promise<string>((resolve) => {
         const detail = {
           html,
           script: { hash: scriptHash, uses: [] },
+          ...(codeRevision === undefined ? {} : { revision: codeRevision }),
           codeOnly: false,
           load: () =>
             Promise.resolve({
@@ -67,7 +68,7 @@ const replaceHero = (page: Page, text: string, hash: string): Promise<string> =>
         const event = new CustomEvent(name, { bubbles: true, cancelable: true, detail });
         if (document.querySelector('[data-section-id="hero"]')?.dispatchEvent(event) !== false) resolve('not-handled');
       }),
-    [PREVIEW_REPLACE_EVENT, markup(text), hash] as const,
+    [PREVIEW_REPLACE_EVENT, markup(text), hash, revision] as const,
   );
 
 const replay = (page: Page, sectionId: string | null): Promise<void> =>
@@ -107,6 +108,19 @@ describe('превью: когда анимации играют', () => {
     expect(await replaceHero(page, 'Шарфы', HASH_B)).toBe('fresh');
     expect(await running(page, BOX)).toBe(true);
     expect((await animations(page, OTHER))[0]?.first).toEqual(before);
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('правка шаблона (тот же скрипт, другая ревизия кода) — играет; правка текста с той же ревизией — нет', async () => {
+    const { page, errors } = await open();
+    expect(await replaceHero(page, 'Текст', HASH_A, 'r1')).toBe('fresh'); // первая ревизия только запоминается
+    expect(await running(page, BOX)).toBe(false);
+    expect(await replaceHero(page, 'Текст два', HASH_A, 'r1')).toBe('fresh');
+    expect(await running(page, BOX)).toBe(false);
+    expect(await replaceHero(page, 'Текст два, шаблон другой', HASH_A, 'r2')).toBe('fresh');
+    expect(await running(page, BOX)).toBe(true);
+    await page.waitForFunction((selector) => (document.querySelector(selector)?.getAnimations().length ?? 0) > 0, HEAD);
     expect(errors).toEqual([]);
     await page.close();
   });

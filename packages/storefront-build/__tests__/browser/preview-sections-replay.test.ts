@@ -13,6 +13,7 @@ declare global {
     send: (message: unknown) => void;
     replays: string[];
     connected: string[];
+    revisions: string[];
   }
 }
 
@@ -23,7 +24,10 @@ const sectionHtml = (id: string, text = id): string =>
 // Ядра в рамке нет: вместо него <merfy-section> пишет в журнал, была ли метка при подключении, а документ — события replay.
 const FRAME_HTML =
   `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0"><main>${sectionHtml('hero-1')}${sectionHtml('hero-2')}</main>` +
-  `<script>window.replays = []; window.connected = [];
+  `<script>window.replays = []; window.connected = []; window.revisions = [];
+  document.addEventListener('merfy:preview:update', function (event) {
+    window.revisions.push(event.target.getAttribute('data-section-id') + ':' + event.detail.revision);
+  });
   customElements.define('merfy-section', class extends HTMLElement {
     connectedCallback() { window.connected.push(this.getAttribute('data-section-id') + ':' + this.hasAttribute(${JSON.stringify(PREVIEW_STILL_ATTRIBUTE)})); }
   });
@@ -58,7 +62,11 @@ beforeAll(async () => {
   await page.route(`${FRAME}/block`, (route) => {
     const body = requestSchema.parse(JSON.parse(route.request().postData() ?? '{}'));
     const html = sectionHtml(body.instance.id, 'Новый текст');
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ html, css: '', script: null }) });
+    const revision = `rev-${body.instance.id}`;
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ html, css: '', script: null, revision }),
+    });
   });
   await page.goto(`${ORIGIN}/parent`);
   await page.waitForFunction(() => window.received.length > 0);
@@ -92,6 +100,8 @@ describe('replay и метка запуска без анимаций', () => {
     const connected = await inFrame(() => window.connected);
     expect(connected).toContain('hero-1:true');
     expect(connected).not.toContain('hero-2:true');
+    // Ревизия кода из ответа блока доходит до скрипта превью вместе с правкой.
+    expect(await inFrame(() => window.revisions)).toEqual(expect.arrayContaining(['hero-1:rev-hero-1']));
     expect(await inFrame(() => document.querySelectorAll('[data-merfy-still]').length)).toBe(0);
   });
 });

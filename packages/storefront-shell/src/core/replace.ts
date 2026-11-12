@@ -50,6 +50,7 @@ function isReplaceDetail(value: unknown): value is PreviewReplaceDetail {
     isRecord(value) &&
     typeof value.html === 'string' &&
     typeof value.codeOnly === 'boolean' &&
+    (value.revision === undefined || typeof value.revision === 'string') &&
     typeof value.load === 'function' &&
     typeof value.reply === 'function' &&
     (value.script === null || isCodeRef(value.script))
@@ -105,6 +106,16 @@ interface Source {
 const sources = new WeakMap<HTMLElement, Source>();
 
 const sourceOf = (node: Element): Source => ({ outer: node.outerHTML, inner: node.innerHTML });
+
+// Ревизия кода секции по id, как её отдавал сервер в последний раз: узел при reconcile новый, поэтому ключ — не узел.
+// Живёт столько же, сколько запуск ядра: ключ — его список экземпляров.
+const revisions = new WeakMap<ReplaceDeps['instances'], Map<string, string>>();
+
+function revisionsOf(deps: ReplaceDeps): Map<string, string> {
+  const found = revisions.get(deps.instances) ?? new Map<string, string>();
+  revisions.set(deps.instances, found);
+  return found;
+}
 
 type CodeStep = 'same' | 'changed' | 'stopped';
 
@@ -190,7 +201,13 @@ async function replaceSection(deps: ReplaceDeps, element: HTMLElement, detail: P
   if (step === 'stopped') return;
   const previous = sources.get(element);
   sources.set(element, sourceOf(fresh));
-  if (step === 'same' && detail.codeOnly) {
+  // Ревизия кода секции целиком (шаблон, section.json, скрипт): последняя известная для этого id и новая. Первый ответ
+  // для id (страница пришла с сервера, ревизии не знаем) смены не показывает — только запоминается.
+  const revision = detail.revision;
+  const known = revisionsOf(deps).get(id);
+  const revisionChanged = revision !== undefined && known !== undefined && known !== revision;
+  if (revision !== undefined) revisionsOf(deps).set(id, revision);
+  if (step === 'same' && detail.codeOnly && !revisionChanged) {
     detail.reply('kept-state', '');
     return;
   }
@@ -198,12 +215,13 @@ async function replaceSection(deps: ReplaceDeps, element: HTMLElement, detail: P
     detail.reply('failed', REPLACE_TEXT.gone);
     return;
   }
-  // Правка настроек или текста отличается от правки кода по hash скрипта: он у запущенного экземпляра (script) и в ответе.
-  // Строка списка (step) для этого не годится: код, что загрузила соседняя секция, уже в списке, а этот экземпляр ещё
-  // работает на прежнем. Код сменился — экземпляр играет анимации как при первом запуске; нет — встаёт сразу в
-  // последнем кадре, а если ещё и разметка та же — остаётся как есть (так превью не обрывает анимации первого запуска,
-  // когда конструктор после загрузки перезапрашивает блоки, а ответ совпал с тем, что уже на странице).
-  const codeChanged = (deps.instances.get(element)?.script ?? '') !== (detail.script?.hash ?? '');
+  // Правка настроек или текста отличается от правки кода по hash скрипта (он у запущенного экземпляра и в ответе) и по
+  // ревизии кода целиком: она ловит правку одного шаблона, у секции без скрипта тоже. Строка списка (step) для этого не
+  // годится: код, что загрузила соседняя секция, уже в списке, а этот экземпляр ещё работает на прежнем. Код сменился —
+  // экземпляр играет анимации как при первом запуске; нет — встаёт сразу в последнем кадре, а если ещё и разметка та же —
+  // остаётся как есть (так превью не обрывает анимации первого запуска, когда конструктор после загрузки перезапрашивает
+  // блоки, а ответ совпал с тем, что уже на странице).
+  const codeChanged = revisionChanged || (deps.instances.get(element)?.script ?? '') !== (detail.script?.hash ?? '');
   if (!codeChanged && previous?.inner === fresh.innerHTML) {
     detail.reply('kept-state', '');
     return;

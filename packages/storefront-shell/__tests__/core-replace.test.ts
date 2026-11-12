@@ -77,6 +77,7 @@ interface ReplaceArgs {
   readonly html: string;
   readonly script: PreviewReplaceDetail['script'];
   readonly codeOnly?: boolean;
+  readonly revision?: string;
   readonly load?: () => Promise<unknown>;
 }
 
@@ -87,6 +88,7 @@ function replace(target: Element, args: ReplaceArgs): Promise<Reply | 'not-handl
       html: args.html,
       script: args.script,
       codeOnly: args.codeOnly ?? false,
+      ...(args.revision === undefined ? {} : { revision: args.revision }),
       load: args.load ?? (() => Promise.reject(new Error('код не загружали'))),
       reply: (outcome, message) => resolve({ outcome, message }),
     };
@@ -475,6 +477,35 @@ describe('замена в превью: запуск без анимаций и 
     log.length = 0;
     await replace(sectionOf('scarf-2'), { html: sectionHtml('scarf-2', 'Подберите шарф'), ...v2 });
     expect(log).toEqual(['v2 mount still=false']);
+  });
+
+  it('ревизия кода сменилась при том же hash скрипта (правка шаблона): mount без метки; та же ревизия — с меткой', async () => {
+    const log: string[] = [];
+    open(log);
+    const send = (title: string, revision: string) =>
+      replace(sectionOf('scarf-1'), { html: sectionHtml('scarf-1', title), revision, ...same });
+    await send('Один', 'r1'); // первая ревизия id только запоминается: это правка текста
+    await send('Два', 'r1');
+    await send('Два, шаблон другой', 'r2');
+    await tick();
+    expect(log).toEqual([
+      'v1 mount still=false',
+      'v1 mount still=true',
+      'v1 mount still=true',
+      'v1 mount still=false',
+    ]);
+  });
+
+  it('reconcile (codeOnly): новая ревизия при том же hash — перезапуск с анимациями, та же — kept-state', async () => {
+    const log: string[] = [];
+    open(log);
+    const send = (title: string, revision: string) =>
+      replace(sectionOf('scarf-1'), { html: sectionHtml('scarf-1', title), revision, codeOnly: true, ...same });
+    expect(await send('Один', 'r1')).toEqual({ outcome: 'kept-state', message: '' });
+    expect(await send('Два', 'r1')).toEqual({ outcome: 'kept-state', message: '' });
+    expect(log).toEqual(['v1 mount still=false']);
+    expect(await send('Три', 'r2')).toEqual({ outcome: 'fresh', message: '' });
+    expect(log).toEqual(['v1 mount still=false', 'v1 mount still=false']);
   });
 
   it('разметка и код те же: экземпляр не перезапускается, ответ kept-state', async () => {

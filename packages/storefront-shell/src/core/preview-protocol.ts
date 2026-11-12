@@ -70,6 +70,9 @@ export interface PreviewUpdateDetail {
   readonly html: string; // <merfy-section> экземпляра с тегом входных данных — из ответа /preview/section
   readonly script: PreviewScript | null; // null — у секции нет кода
   readonly codeOnly: boolean; // true — секция только что вставлена из этого HTML: перезапуск, только если сменился код
+  // Ревизия кода секции целиком — шаблон, section.json и скрипт (ответ /preview/section, revision); настройки в неё не
+  // входят. Нет — сервер её не отдал (старый ответ): тогда код отличает только hash скрипта.
+  readonly revision?: string;
 }
 
 export interface PreviewCodeRef {
@@ -81,6 +84,7 @@ export interface PreviewReplaceDetail {
   readonly html: string;
   readonly script: PreviewCodeRef | null; // без текста кода: код загружает load()
   readonly codeOnly: boolean;
+  readonly revision?: string; // как в PreviewUpdateDetail
   readonly load: () => Promise<unknown>; // загрузить код секции; отдаёт export default модуля
   readonly reply: (outcome: ReplaceOutcome, message: string) => void; // ядро отвечает один раз
 }

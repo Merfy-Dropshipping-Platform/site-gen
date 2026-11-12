@@ -335,9 +335,12 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   }
   // Правка секции — скрипту превью (часть 5г): событие на узле секции. Отменил — HTML меняет он, ядро сохраняет
   // состояние экземпляра; не отменил или script нет в ответе (сборщик до 5г) — HTML меняет этот скрипт.
-  function handOver(node, html, script, codeOnly) {
+  // revision — ревизия кода секции целиком (шаблон, section.json, скрипт) из ответа блока: по ней ядро отличает правку
+  // кода от правки настроек и текста; старый ответ её не отдаёт.
+  function handOver(node, html, script, codeOnly, revision) {
     if (script === undefined) return false;
     var detail = { html: html, script: script, codeOnly: codeOnly };
+    if (typeof revision === 'string') detail.revision = revision;
     return !node.dispatchEvent(new CustomEvent(UPDATE_EVENT, { bubbles: true, cancelable: true, detail: detail }));
   }
   // Тело запроса блока: экземпляр; меню ревизии и правки настроек темы (часть 4) — если конструктор их прислал.
@@ -390,7 +393,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         // Часть 6: пока курсор в редактируемом элементе секции, ответ ждёт (holdWhileEditing).
         if (holdWhileEditing(instance.id, answer)) return;
         setCss(instance.id, answer.css);
-        if (handOver(old, answer.html, answer.script, false)) return;
+        if (handOver(old, answer.html, answer.script, false, answer.revision)) return;
         old.parentNode.replaceChild(fresh, old);
         if (instance.id === selected) showOverlay();
         place();
@@ -462,7 +465,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
           if (tickets[block.id] !== ticket) return { id: block.id, node: null };
           hashes[block.id] = block.propsHash;
           setCss(block.id, answer.css);
-          return { id: block.id, node: nodeOf(answer.html), html: answer.html, script: answer.script };
+          return { id: block.id, node: nodeOf(answer.html), html: answer.html, script: answer.script, revision: answer.revision };
         });
       })
     )
@@ -478,7 +481,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         placeAll(blocks, nodes, container);
         // Вставленные узлы — скрипту превью с codeOnly: true: HTML уже новый, ядро запускает код секции (часть 5г).
         fresh.forEach(function (item) {
-          if (item.node && item.node.isConnected) handOver(item.node, item.html, item.script, true);
+          if (item.node && item.node.isConnected) handOver(item.node, item.html, item.script, true, item.revision);
         });
         // Секции ядро уже запустило при вставке (mount выполнен), метка запуска без анимаций больше не нужна.
         fresh.forEach(function (item) {
@@ -578,7 +581,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       var fresh = old ? nodeOf(answer.html) : null;
       if (!old || !fresh) return;
       setCss(id, answer.css);
-      if (handOver(old, answer.html, answer.script, false)) return;
+      if (handOver(old, answer.html, answer.script, false, answer.revision)) return;
       old.parentNode.replaceChild(fresh, old);
       place();
       showBlock();

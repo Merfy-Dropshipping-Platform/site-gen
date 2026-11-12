@@ -1,3 +1,13 @@
+## 1.38.0 — 2026-11-12
+
+- [«Анимации»](motion.md): у `ctx.animate` новые свойства `clipPath`, `filter` (blur, brightness, contrast, saturate,
+  grayscale, opacity), `strokeDashoffset`, `strokeDasharray`, `letterSpacing`, `borderRadius`, `backgroundPosition`;
+  пружина `easing: { spring: { bounce, duration } }`; список элементов со `stagger`; повтор `repeat` и `repeatType`.
+- Новое: `ctx.split(el, 'chars' | 'words' | 'lines')` — текст на куски для анимации; `ctx.on(…, 'pointermove')` —
+  положение курсора относительно секции и любого её элемента, не чаще раза в кадр.
+- Новые пресеты `data-animate`: `words`, `lines`, `mask-up`, `blur-in`, `draw`; кривая `'expo.out'`. Рецепты: магнитная
+  кнопка, наклон за курсором, маска, пружина, бесконечное покачивание, заголовок по словам.
+
 ## 1.37.0 — 2026-11-12
 
 - Новая страница [«Анимации»](motion.md): таблица пресетов `data-animate` (что движется, откуда, длительность, кривая,

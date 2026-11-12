@@ -1,4 +1,5 @@
-import { BEHAVIORS, PRESETS, PRESET_PARAMS } from '@merfy/shell/behaviors/catalog';
+import { BEHAVIORS } from '@merfy/shell/behaviors/catalog';
+import { PRESETS, PRESET_PARAMS } from '@merfy/shell/behaviors/presets';
 
 // behaviors.md (блок 14): поведения data-behavior и пресеты data-animate из каталога SDK.
 interface ParamSpec {

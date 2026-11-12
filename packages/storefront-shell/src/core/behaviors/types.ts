@@ -4,13 +4,17 @@ import type {
   BehaviorHandleName,
   BehaviorHandles,
   CoreHandle,
+  El,
   Json,
   Keyframes,
   Mode,
   NoData,
+  PointerPoint,
   Result,
   SdkPart,
+  SplitBy,
 } from '../types';
+import type { ElScope } from '../el';
 import type { BehaviorName } from './catalog';
 import type { Params } from './params';
 
@@ -61,19 +65,42 @@ export interface Reveal {
   attach(host: RevealHost): void;
 }
 
-// Провайдер ctx.animate: узел и кадры уже проверены ядром (ElScope.nodeOf, checkKeyframes); signal и mode — экземпляра.
+// Провайдер ctx.animate: узлы уже проверены ядром (ElScope.nodeOf — все из своей секции), кадры проверяет провайдер
+// (checkKeyframes, 12.11 — ради веса ядра); signal и mode — экземпляра.
 export type AnimateProvider = (
-  node: Element,
+  nodes: readonly Element[],
   keyframes: Keyframes,
   options: AnimateOptions | undefined,
   signal: AbortSignal,
   mode: Mode,
 ) => Animation;
 
+// Провайдер ctx.split (12.11): узел проверен ядром; chars и words — сразу, lines — после загрузки шрифтов.
+export type SplitProvider = (
+  node: Element,
+  by: SplitBy,
+  signal: AbortSignal,
+) => readonly HTMLElement[] | Promise<readonly HTMLElement[]>;
+
+// Провайдер ctx.on(…, 'pointermove') (12.11): слушает target, не чаще раза в кадр зовёт deliver с последним событием и
+// положением курсора; возвращает отписку. Ядро делает из события SectionEvent и зовёт код секции под предохранителем.
+export interface PointerExtra {
+  readonly pointer: PointerPoint;
+  at(el: El): PointerPoint | null;
+}
+export type PointerProvider = (
+  target: EventTarget,
+  scope: ElScope,
+  deliver: (event: Event, extra: PointerExtra) => void,
+  signal: AbortSignal,
+) => () => void;
+
 export interface BehaviorsOptions {
   readonly list: readonly Behavior[];
   readonly reveal?: Reveal;
   readonly animate?: AnimateProvider;
+  readonly split?: SplitProvider;
+  readonly pointer?: PointerProvider;
 }
 
 // Поведения секции для ctx.behavior: section — экземпляр (узел, id, сигнал), within — узел этой секции, внутри которого
@@ -88,6 +115,8 @@ export type ControlProvider = <N extends BehaviorHandleName>(
 
 export interface BehaviorsApi {
   readonly animate: AnimateProvider | null; // null — скрипт секции, который вызывает ctx.animate, сборка не учла
+  readonly split: SplitProvider | null; // null — то же для ctx.split
+  readonly pointer: PointerProvider | null; // null — то же для ctx.on(…, 'pointermove')
   readonly control: ControlProvider; // ctx.behavior скрипта секции
   save(sectionId: string): Json | null; // превью (часть 5б): состояние поведений экземпляра перед заменой
   restore(sectionId: string, state: Json): void; // превью: после запуска нового экземпляра с тем же id

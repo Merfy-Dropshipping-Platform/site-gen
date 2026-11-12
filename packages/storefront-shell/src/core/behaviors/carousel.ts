@@ -2,7 +2,7 @@ import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';
 import Autoplay, { type AutoplayType } from 'embla-carousel-autoplay';
 import Fade from 'embla-carousel-fade';
 import { done, refuse } from './command';
-import { animateNode } from './motion';
+import { animateNode } from './animate-node';
 import type { NoData, Result } from '../types';
 import type { Behavior, BehaviorCommand, BehaviorHost, BehaviorInstance } from './types';
 

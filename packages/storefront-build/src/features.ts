@@ -5,7 +5,9 @@ import type { KitPlan } from './bundle';
 // на сохранении это отказ (storefront-sections), на странице часть behaviors пишет «такого нет в каталоге SDK».
 const BEHAVIOR_ATTRIBUTE = /\bdata-behavior\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>=`]+))/g;
 const ANIMATE_ATTRIBUTE = /\bdata-animate\b/;
-const ANIMATE_CALL = /\banimate\b/;
+// ctx.animate, ctx.split и ctx.on(…, 'pointermove') (12.11) — провайдеры одного файла animate.js; split ловим только как
+// ctx.split, голое слово встречается у строк (text.split(',')).
+const ANIMATE_CALL = /\banimate\b|\bctx\s*\.\s*split\b|\bpointermove\b/;
 
 const namesIn = (text: string): string[] =>
   [...text.matchAll(BEHAVIOR_ATTRIBUTE)].map((match) => match[1] ?? match[2] ?? match[3] ?? '');

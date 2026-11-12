@@ -297,6 +297,8 @@ const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: Sectio
   mode: runtime.mode,
   input,
   animate: animateOfPart(runtime),
+  split: behaviorsOf(runtime)?.split ?? null,
+  pointer: behaviorsOf(runtime)?.pointer ?? null,
   behavior: behaviorOfPart(runtime, state),
   overlay: overlayOfPart(runtime, state),
   state: state.initial,

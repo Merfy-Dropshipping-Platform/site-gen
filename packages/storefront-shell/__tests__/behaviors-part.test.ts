@@ -245,6 +245,8 @@ describe('API части', () => {
       watch: () => () => undefined,
     };
     expect(behaviors({ list: [] }).create(core).animate).toBeNull();
+    expect(behaviors({ list: [] }).create(core).split).toBeNull();
+    expect(behaviors({ list: [] }).create(core).pointer).toBeNull();
   });
 });
 

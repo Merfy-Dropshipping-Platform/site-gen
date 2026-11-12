@@ -30,10 +30,15 @@ export interface BehaviorsManifest {
 // (2816 → 3840), dialog — место окна поверх экрана, переходы, одно модальное окно и команды (6656 → 8448).
 // 04.11, слайдер следит за слайдами в вёрстке и принимает align (+175 Б); accordion делит с ним три общих куска и
 // вырос до 5634 Б — предел 5632 → 5760.
+// 12.11, этап 2 спеки анимаций (reports/animations/spec.md; решение основного треда Р6-12): animate 4864 → 6144 (замер
+// 6084 Б: свойства и фильтр, пружина, список и stagger, повтор, ctx.split, pointermove), reveal 6912 → 7640 (замер был
+// 6399, стал 7127: +728 Б — слова, строки, маска, размытие, прорисовка), общий предел 36864 → 38939 (замер был 34714,
+// стал 36789: +2075 Б). Остальные файлы не выросли: данные пресетов вынесены в presets.ts, проверка кадров и пружина —
+// в animate.js, ядро осталось в своих 16 КБ.
 export const BEHAVIOR_BUDGETS: Readonly<Record<BundleName | 'total', number>> = {
   part: 3840,
-  animate: 4864,
-  reveal: 6912,
+  animate: 6144,
+  reveal: 7640,
   accordion: 5760,
   dialog: 8448,
   carousel: 15360,
@@ -51,7 +56,7 @@ export const BEHAVIOR_BUDGETS: Readonly<Record<BundleName | 'total', number>> = 
   // Таймер до даты и стираемый слой: без библиотек, как остальные малые поведения; общий предел прежний.
   countdown: 2048,
   scratch: 2048,
-  total: 36864,
+  total: 38939,
 };
 
 const BUNDLE_NAMES: readonly BundleName[] = [

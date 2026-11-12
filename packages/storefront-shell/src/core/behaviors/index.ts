@@ -2,7 +2,8 @@
 // подключает часть behaviors с поведениями, которые есть в HTML страницы; превью — со всеми. Задачи Б6а-3…Б6а-8
 // дописывают сюда свои поведения.
 export { behaviors } from './part';
-export { BEHAVIORS, EASINGS, PRESETS, PRESET_PARAMS } from './catalog';
+export { BEHAVIORS, EASINGS } from './catalog';
+export { PRESETS, PRESET_PARAMS } from './presets';
 export { MOTION_CSS, MOTION_FLAG, MOTION_HEAD_SCRIPT } from './motion-css';
 export type {
   BehaviorName,
@@ -26,9 +27,11 @@ export type {
   ControlProvider,
   MotionPrefs,
   Reveal,
+  PointerProvider,
   RevealHost,
+  SplitProvider,
 } from './types';
-export { animate } from './motion';
+export { animate, pointer, split } from './motion';
 export { accordion } from './accordion';
 export { dialog } from './dialog';
 export { carousel } from './carousel';

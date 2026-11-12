@@ -17,7 +17,10 @@ export const KIT_FILES: ReadonlyMap<string, string> = new Map([
   ],
   ['nav-menu.js', 'export const navMenu = { name: "nav-menu", marker: "kit-nav-menu" };'],
   ['reveal.js', 'export const reveal = { marker: "kit-reveal" };'],
-  ['animate.js', 'export const animate = () => "kit-animate";'],
+  [
+    'animate.js',
+    'export const animate = () => "kit-animate"; export const split = () => "kit-split"; export const pointer = () => "kit-pointer";',
+  ],
   ['chunk-AAA111.js', 'export const shared = "kit-chunk";'],
 ]);
 

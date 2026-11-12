@@ -1,6 +1,6 @@
 import { done, refuse } from './command';
 import type { Behavior, BehaviorCommand, BehaviorHost, BehaviorInstance } from './types';
-import { animateNode } from './motion';
+import { animateNode } from './animate-node';
 
 // Аккордеон (design.md блока 6, раздел 4; факт 10 — satin «Вопросы»): <details> и <summary> — браузер, поведение
 // добавляет плавное раскрытие. Общий name у соседних пунктов — открыт один; пока идёт анимация, нажатия ничего не делают.

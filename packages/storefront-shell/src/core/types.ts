@@ -31,13 +31,30 @@ export interface PageInfo {
 }
 
 // События страницы целиком, которые слушает ctx.on (раздел 3.2).
-export type PageDomEvent = 'keydown' | 'keyup' | 'scroll' | 'resize' | 'pointerdown';
+export type PageDomEvent = 'keydown' | 'keyup' | 'scroll' | 'resize' | 'pointerdown' | 'pointermove';
 
 export interface SectionEvent {
   readonly type: string;
   readonly key: string | null; // у клавиатурных событий
   inside(el: El): boolean; // событие пришло изнутри el
   preventDefault(): void;
+}
+
+// Курсор относительно прямоугольника: x и y — px от левого верхнего угла (за пределами прямоугольника — отрицательные
+// или больше размера), px и py — доли ширины и высоты (0…1 внутри; у прямоугольника без размера — 0).
+export interface PointerPoint {
+  readonly x: number;
+  readonly y: number;
+  readonly px: number;
+  readonly py: number;
+}
+
+// 12.11, ctx.on('window' | 'document', 'pointermove', fn): не чаще раза в кадр, с последним положением курсора.
+// pointer — относительно секции, at(el) — относительно любого элемента секции (null — элемент не из этой секции).
+// «Уменьшить движение» событие не отключает: автор решает сам.
+export interface PointerSectionEvent extends SectionEvent {
+  readonly pointer: PointerPoint;
+  at(el: El): PointerPoint | null;
 }
 
 // Обёртка элемента своей секции (раздел 3.3): методы отдают строки, числа, булевы значения и другие обёртки.
@@ -673,15 +690,27 @@ export type EasingName =
   | 'power2.in'
   | 'power3.in'
   | 'power2.inOut'
-  | 'back.out';
+  | 'back.out'
+  | 'expo.out';
 export type Bezier = readonly [number, number, number, number];
+// Пружина вместо кривой: bounce — упругость 0…0.95 (0 — без отскока, по умолчанию 0.25), duration — мс (по умолчанию
+// duration анимации или 600).
+export interface SpringEasing {
+  readonly spring: { readonly bounce?: number; readonly duration?: number };
+}
 export type KeyframeValue = string | number;
 export type Keyframes = Readonly<Record<string, KeyframeValue | readonly KeyframeValue[]>>;
 export interface AnimateOptions {
   readonly duration?: number; // мс, по умолчанию 300
   readonly delay?: number; // мс, по умолчанию 0
-  readonly easing?: EasingName | Bezier; // по умолчанию 'ease-out'
+  readonly easing?: EasingName | Bezier | SpringEasing; // по умолчанию 'ease-out'
+  readonly stagger?: number; // мс между элементами списка: i-й стартует на i × stagger позже; по умолчанию 0
+  // Повтор: сколько раз проиграть ещё (число или Infinity; по умолчанию 0) и как — loop с начала или reverse туда-обратно.
+  // finished при Infinity не выполняется, пока анимацию не остановят. «Уменьшить движение» и превью — без повтора.
+  readonly repeat?: number;
+  readonly repeatType?: 'loop' | 'reverse';
 }
+export type SplitBy = 'chars' | 'words' | 'lines';
 export interface Animation {
   readonly finished: Promise<void>; // закончилась или остановлена
   stop(): void;
@@ -701,6 +730,7 @@ export interface BaseCtx<State extends object> {
   readonly storage: SectionStorage;
   ref(name: string): El | null;
   refs(name: string): readonly El[];
+  on(target: 'window' | 'document', type: 'pointermove', fn: (event: PointerSectionEvent) => void): Stop;
   on(target: 'window' | 'document', type: PageDomEvent, fn: (event: SectionEvent) => void): Stop;
   every(ms: number, fn: () => void | Promise<void>): Stop; // меньше 100 мс — 100
   after(ms: number, fn: () => void | Promise<void>): Stop;
@@ -709,7 +739,12 @@ export interface BaseCtx<State extends object> {
   emit(name: string, detail?: Json): void; // уходит как '<имя секции>:<name>'
   log(...values: unknown[]): void; // превью — в консоль браузера с именем и id; витрина — ничего
   // Блок 6: элемент только своей секции; превью и «уменьшить движение» — сразу последний кадр; снятие — остановка.
-  animate(el: El, keyframes: Keyframes, options?: AnimateOptions): Animation;
+  // 12.11: список элементов — одним вызовом, options.stagger сдвигает старт каждого следующего.
+  animate(el: El | readonly El[], keyframes: Keyframes, options?: AnimateOptions): Animation;
+  // 12.11: текст элемента → куски своей секции (текст уходит в aria-label, куски — aria-hidden). Строки считаются по
+  // раскладке после загрузки шрифтов, поэтому для 'lines' ответ — Promise (mount может быть async).
+  split(el: El, by: 'chars' | 'words'): readonly El[];
+  split(el: El, by: 'lines'): Promise<readonly El[]>;
   // Блок 9, часть 9в: модули расширений из uses: ["ext:<id>"]; без таких uses — пустой объект.
   readonly ext: Readonly<Record<string, ExtModule>>;
   // Блок 9, часть 9б: сквозные настройки темы страницы — ctx.theme['cart-type']; читать в момент действия.

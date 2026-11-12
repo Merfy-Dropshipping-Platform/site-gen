@@ -2430,7 +2430,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 ## Пресеты data-animate
 
-Пресет указывается в `data-animate="<имя>"`: `appear`, `appear-group`, `appear-side`, `fade-up`, `slide-down`, `load-1`, `load-2`, `load-3`, `letters`.
+Пресет указывается в `data-animate="<имя>"`: `appear`, `appear-group`, `appear-side`, `fade-up`, `slide-down`, `load-1`, `load-2`, `load-3`, `letters`, `words`, `lines`, `mask-up`, `blur-in`, `draw`.
 
 Параметры пресета: `data-delay` — целое от 0 до 5000; по умолчанию `0`.
 

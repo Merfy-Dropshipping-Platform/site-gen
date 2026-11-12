@@ -69,13 +69,14 @@ function open(kind: Kind, mode: Mode = 'preview'): void {
   });
 }
 
-// Замена секции, как её отправляет скрипт превью: тот же HTML, тот же код.
+// Замена секции, как её отправляет скрипт превью: тот же код, правка настроек — другой текст в разметке (если разметка не
+// изменилась, ядро экземпляр не перезапускает).
 function replace(): Promise<string> {
   const target = document.querySelector(`merfy-section[data-section-id="${ID}"]`);
   if (target === null) throw new Error('нет секции');
   return new Promise((resolve) => {
     const detail: PreviewReplaceDetail = {
-      html: HTML,
+      html: HTML.replace('</p>', '</p><!-- правка -->'),
       script: { hash: hash('a'), uses: ['ext:test-ext'] },
       codeOnly: false,
       load: () => Promise.reject(new Error('код не загружали')),

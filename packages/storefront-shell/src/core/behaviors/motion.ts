@@ -7,8 +7,8 @@ import type { AnimateProvider, PointerProvider, SplitProvider } from './types';
 
 // Провайдеры ctx.animate, ctx.split и ctx.on(…, 'pointermove') (design.md блока 6, раздел 10): SDK импортирует Motion,
 // код секции — нет. Анимация узла — animate-node.ts; здесь то, что нужно только скрипту секции: проверка кадров
-// (checkKeyframes), пружина, список элементов, повтор, куски текста и курсор. Превью и «уменьшить движение» — сразу
-// последний кадр (повтора нет); курсор приходит как обычно.
+// (checkKeyframes), пружина, список элементов, повтор, куски текста и курсор. «Уменьшить движение» и запуск секции в
+// превью после правки настроек или текста (prefs.ts) — сразу последний кадр (повтора нет); курсор приходит как обычно.
 
 // Пружина — затухающие колебания единичной ступени за время 1: 1 − e^(−st)(cos ωt + (s/ω) sin ωt), s = 8 (к концу
 // отклонение меньше 0,3 %), затухание ζ = 1 − bounce (bounce от 0 до 0.95; ζ не больше 0,999). Motion превращает такую
@@ -50,8 +50,8 @@ function optionsOf(options: AnimateOptions | undefined, index: number): NodeAnim
 // Провайдер ctx.animate. Список — одна анимация на всех: finished — когда закончили все, stop останавливает все.
 export const animate: AnimateProvider = (nodes, keyframes, options, signal, mode) => {
   checkKeyframes(keyframes);
-  const prefs = motionPrefs(window, mode);
-  const run = { instant: prefs.reduced || prefs.preview, signal };
+  const prefs = motionPrefs(window, mode, nodes[0]?.closest('merfy-section'));
+  const run = { instant: prefs.reduced || prefs.still, signal };
   const runs = nodes.map((node, index) => animateNode(node, keyframes, optionsOf(options, index), run));
   return {
     finished: Promise.all(runs.map((item) => item.finished)).then(() => undefined),

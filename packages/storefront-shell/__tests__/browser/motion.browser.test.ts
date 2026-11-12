@@ -67,15 +67,20 @@ describe('ctx.animate', () => {
     await plain.page.close();
   });
 
-  it.each([
-    ['превью конструктора', { mode: 'preview' as const }],
-    ['«уменьшить движение»', { reducedMotion: true }],
-  ])('%s — сразу последний кадр, finished выполнено', async (_name, extra) => {
-    const { page, errors } = await openPage(browser, options(RISE, extra));
+  it('«уменьшить движение» — сразу последний кадр, finished выполнено', async () => {
+    const { page, errors } = await openPage(browser, options(RISE, { reducedMotion: true }));
     await page.waitForFunction(() => window.__finished === true, undefined, {
       timeout: 200,
     });
     expect(await page.$eval('[data-ref="box"]', (el) => getComputedStyle(el).opacity)).toBe('1');
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('превью конструктора: первый запуск секции играет анимацию, как на витрине', async () => {
+    const { page, errors } = await openPage(browser, options(RISE, { mode: 'preview' }));
+    const [box] = await animations(page, '[data-ref="box"]');
+    expect(box).toMatchObject({ count: 2, duration: 600, delay: 50, running: true });
     expect(errors).toEqual([]);
     await page.close();
   });
@@ -217,10 +222,7 @@ describe('ctx.animate: новые свойства, пружина, список
     await page.close();
   });
 
-  it.each([
-    ['превью конструктора', { mode: 'preview' as const }],
-    ['«уменьшить движение»', { reducedMotion: true }],
-  ])('%s — без повтора: сразу последний кадр, finished выполнено', async (_name, extra) => {
+  it.each([['«уменьшить движение»', { reducedMotion: true }]])('%s — без повтора: сразу последний кадр, finished выполнено', async (_name, extra) => {
     const code = `export default { mount(el, ctx) {
       ctx.animate(el.refs('item'), { opacity: [0.5, 1] }, { duration: 400, repeat: Infinity, stagger: 500, easing: { spring: { bounce: 0.3 } } })
         .finished.then(() => { window.__finished = true; });

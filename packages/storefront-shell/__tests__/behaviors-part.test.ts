@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { BehaviorName } from '../src/core/behaviors/catalog';
 import { MOTION_FLAG } from '../src/core/behaviors/motion-css';
 import { behaviors } from '../src/core/behaviors/part';
+import { motionPrefs } from '../src/core/behaviors/prefs';
+import { PREVIEW_STILL_ATTRIBUTE } from '../src/core/preview-protocol';
 import type {
   AnimateProvider,
   Behavior,
@@ -74,7 +76,7 @@ describe('часть behaviors', () => {
     expect(host?.root).toBe(section.firstElementChild);
     expect(host?.section).toBe(section);
     expect(host?.params).toMatchObject({ autoplay: 3, effect: 'slide' });
-    expect(host?.motion).toEqual({ reduced: false, preview: false });
+    expect(host?.motion).toEqual({ reduced: false, preview: false, still: false });
     expect(host?.signal.aborted).toBe(false);
   });
 
@@ -222,6 +224,15 @@ describe('API части', () => {
     expect(restored).toEqual([{ slide: 2 }]);
   });
 
+  it('still: метка запуска без анимаций (PREVIEW_STILL_ATTRIBUTE) читается только в превью', () => {
+    const section = document.createElement('merfy-section');
+    expect(motionPrefs(window, 'preview', section).still).toBe(false);
+    section.setAttribute(PREVIEW_STILL_ATTRIBUTE, '');
+    expect(motionPrefs(window, 'preview', section).still).toBe(true);
+    expect(motionPrefs(window, 'preview').still).toBe(false);
+    expect(motionPrefs(window, 'live', section).still).toBe(false);
+  });
+
   it('превью и «уменьшить движение» — в настройках движения; animate — провайдер из опций или null', () => {
     document.head.innerHTML = configTag('preview');
     Object.defineProperty(window, 'matchMedia', {
@@ -233,7 +244,7 @@ describe('API части', () => {
     const { part, box } = withApi({ list: [quantity.behavior], animate: provider });
     placeSection('shop:a', 'a', '<div data-behavior="quantity"></div>');
     started = start({ parts: [part], sections: [] });
-    expect(quantity.hosts[0]?.motion).toEqual({ reduced: true, preview: true });
+    expect(quantity.hosts[0]?.motion).toEqual({ reduced: true, preview: true, still: false });
     expect(box.api?.animate).toBe(provider);
     const core: CoreHandle = {
       config: null,

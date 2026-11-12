@@ -6,6 +6,8 @@ import {
   BLOCK_DESELECT_EVENT,
   BLOCK_SELECT_EVENT,
   PREVIEW_REPLACE_EVENT,
+  PREVIEW_REPLAY_EVENT,
+  PREVIEW_STILL_ATTRIBUTE,
   REPLACE_TEXT,
   SCRIPT_HASH,
   type PreviewCodeRef,
@@ -93,6 +95,17 @@ function freshOf(doc: Document, html: string, id: string): Element | null {
   return fresh.getAttribute('data-section-id') === id ? fresh : null;
 }
 
+// Чистый HTML секции — каким он пришёл с сервера, до работы SDK и кода секции. С него «Проиграть анимации» запускает
+// экземпляр заново; inner сравнивает ответ с тем, что уже на странице.
+interface Source {
+  readonly outer: string;
+  readonly inner: string;
+}
+
+const sources = new WeakMap<HTMLElement, Source>();
+
+const sourceOf = (node: Element): Source => ({ outer: node.outerHTML, inner: node.innerHTML });
+
 type CodeStep = 'same' | 'changed' | 'stopped';
 
 // Код секции по строке списка бандла: null — строку убрать; тот же hash — uses из ответа; другой — load() и новая
@@ -175,6 +188,8 @@ async function replaceSection(deps: ReplaceDeps, element: HTMLElement, detail: P
   const name = fresh.getAttribute('data-section') ?? '';
   const step = await codeStep(deps, name, detail);
   if (step === 'stopped') return;
+  const previous = sources.get(element);
+  sources.set(element, sourceOf(fresh));
   if (step === 'same' && detail.codeOnly) {
     detail.reply('kept-state', '');
     return;
@@ -183,7 +198,17 @@ async function replaceSection(deps: ReplaceDeps, element: HTMLElement, detail: P
     detail.reply('failed', REPLACE_TEXT.gone);
     return;
   }
-  const reply = await restart(deps, element, fresh, name);
+  // Правка настроек или текста отличается от правки кода по hash скрипта: он у запущенного экземпляра (script) и в ответе.
+  // Строка списка (step) для этого не годится: код, что загрузила соседняя секция, уже в списке, а этот экземпляр ещё
+  // работает на прежнем. Код сменился — экземпляр играет анимации как при первом запуске; нет — встаёт сразу в
+  // последнем кадре, а если ещё и разметка та же — остаётся как есть (так превью не обрывает анимации первого запуска,
+  // когда конструктор после загрузки перезапрашивает блоки, а ответ совпал с тем, что уже на странице).
+  const codeChanged = (deps.instances.get(element)?.script ?? '') !== (detail.script?.hash ?? '');
+  if (!codeChanged && previous?.inner === fresh.innerHTML) {
+    detail.reply('kept-state', '');
+    return;
+  }
+  const reply = await restart(deps, element, fresh, name, !codeChanged);
   detail.reply(reply.outcome, reply.message);
 }
 
@@ -238,13 +263,21 @@ function attempt(
   fresh: Element,
   saved: Saved | null,
   kept: Kept | null,
+  still: boolean,
 ): Promise<string | null> {
   deps.instances.get(element)?.teardown();
   deps.instances.delete(element);
   swap(element, fresh);
   const entry = deps.byName.get(element.getAttribute('data-section') ?? '') ?? null;
   if (entry === null && !hasMarkup(element)) return Promise.resolve(null);
+  // Запуск без анимаций — пока экземпляр не закончил mount (prefs.ts); swap уже снял метку прежнего запуска.
+  if (still) element.setAttribute(PREVIEW_STILL_ATTRIBUTE, '');
   const instance = startInstance(deps.runtime, element, entry, saved ?? undefined);
+  if (still) {
+    void instance.settled.then(() => {
+      if (deps.instances.get(element) === instance) element.removeAttribute(PREVIEW_STILL_ATTRIBUTE);
+    });
+  }
   deps.instances.set(element, instance);
   if (kept !== null) restoreKept(kept);
   deps.runtime.bus.deliver(instance.owner, 'merfy:page:ready', {});
@@ -253,12 +286,18 @@ function attempt(
 }
 
 // Вторая попытка — без ctx.state и без состояния поведений: чистый запуск.
-async function restart(deps: ReplaceDeps, element: HTMLElement, fresh: Element, name: string): Promise<Reply> {
+async function restart(
+  deps: ReplaceDeps,
+  element: HTMLElement,
+  fresh: Element,
+  name: string,
+  still: boolean,
+): Promise<Reply> {
   const saved = deps.byName.has(name) ? copyState(deps.instances.get(element)?.currentState()) : null;
-  const first = await attempt(deps, element, fresh, saved, keptOf(deps, element));
+  const first = await attempt(deps, element, fresh, saved, keptOf(deps, element), still);
   if (first === null) return { outcome: saved === null ? 'fresh' : 'kept-state', message: '' };
   if (saved === null || !element.isConnected) return { outcome: 'failed', message: first };
-  const second = await attempt(deps, element, fresh, null, null);
+  const second = await attempt(deps, element, fresh, null, null, still);
   return second === null ? { outcome: 'fresh', message: '' } : { outcome: 'failed', message: second };
 }
 
@@ -266,7 +305,12 @@ async function restart(deps: ReplaceDeps, element: HTMLElement, fresh: Element, 
 // data-section-id (sectionIdOf), detail — isReplaceDetail; иначе событие не отменяется и скрипт превью ставит HTML сам.
 // Иначе preventDefault и replaceSection; исключение внутри — reply('failed', messageOf(ошибки)): очередь не встаёт.
 export function watchPreviewReplace(deps: ReplaceDeps): void {
+  // Секции, что уже на странице: ядро зовёт эту функцию до их запуска, их HTML ещё чистый.
+  deps.runtime.win.document.querySelectorAll(SECTION_TAG).forEach((node) => {
+    if (node instanceof HTMLElement) sources.set(node, sourceOf(node));
+  });
   watchBlockSelection(deps);
+  watchReplay(deps);
   const listener = (event: Event): void => {
     const target = event.target;
     const detail: unknown = event instanceof CustomEvent ? event.detail : null;
@@ -278,6 +322,36 @@ export function watchPreviewReplace(deps: ReplaceDeps): void {
     });
   };
   deps.runtime.win.document.addEventListener(PREVIEW_REPLACE_EVENT, listener, { signal: deps.signal });
+}
+
+// «Проиграть анимации» (PREVIEW_REPLAY_EVENT): секции из события — одна, если событие на <merfy-section>, иначе все секции
+// страницы — запускаются заново с чистого HTML, без состояния и с анимациями. Одна за другой, в порядке страницы: от него
+// зависят появления (чётность секций у appear-side). Секция без чистого HTML (скрипт превью её не отдавал) пропускается.
+async function replay(deps: ReplaceDeps, nodes: readonly HTMLElement[]): Promise<void> {
+  for (const element of nodes) {
+    const source = sources.get(element);
+    const id = element.getAttribute('data-section-id') ?? '';
+    if (source === undefined || !element.isConnected) continue;
+    const fresh = freshOf(deps.runtime.win.document, source.outer, id);
+    if (fresh === null) continue;
+    const error = await attempt(deps, element, fresh, null, null, false);
+    if (error !== null) console.error(`Проиграть анимации, секция #${id}: ${error}`);
+  }
+}
+
+function watchReplay(deps: ReplaceDeps): void {
+  const document = deps.runtime.win.document;
+  const listener = (event: Event): void => {
+    const target = event.target;
+    const nodes =
+      target instanceof HTMLElement && sectionIdOf(target) !== null
+        ? [target]
+        : [...document.querySelectorAll(SECTION_TAG)].filter((node) => node instanceof HTMLElement);
+    void replay(deps, nodes).catch((error: unknown) => {
+      console.error(`Проиграть анимации: ${messageOf(error)}`);
+    });
+  };
+  document.addEventListener(PREVIEW_REPLAY_EVENT, listener, { signal: deps.signal });
 }
 
 // События превью «выбран блок» и «выбор снят» (блок 6, часть 6в; В6-1 А): скрипт секций превью шлёт их на узле блока

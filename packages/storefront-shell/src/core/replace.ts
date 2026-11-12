@@ -189,6 +189,15 @@ function swap(element: HTMLElement, fresh: Element): void {
 const hasMarkup = (element: HTMLElement): boolean =>
   element.matches(SDK_MARKUP_SELECTOR) || element.querySelector(SDK_MARKUP_SELECTOR) !== null;
 
+// Ревизия кода секции целиком (шаблон, section.json, скрипт): сменилась ли она с прошлого ответа для этого id. Первый
+// ответ для id (страница пришла с сервера, ревизии не знаем) смены не показывает — ревизия только запоминается.
+function revisionStep(deps: ReplaceDeps, id: string, revision: string | undefined): boolean {
+  if (revision === undefined) return false;
+  const known = revisionsOf(deps).get(id);
+  revisionsOf(deps).set(id, revision);
+  return known !== undefined && known !== revision;
+}
+
 async function replaceSection(deps: ReplaceDeps, element: HTMLElement, detail: PreviewReplaceDetail): Promise<void> {
   const id = element.getAttribute('data-section-id') ?? '';
   const fresh = freshOf(deps.runtime.win.document, detail.html, id);
@@ -201,12 +210,7 @@ async function replaceSection(deps: ReplaceDeps, element: HTMLElement, detail: P
   if (step === 'stopped') return;
   const previous = sources.get(element);
   sources.set(element, sourceOf(fresh));
-  // Ревизия кода секции целиком (шаблон, section.json, скрипт): последняя известная для этого id и новая. Первый ответ
-  // для id (страница пришла с сервера, ревизии не знаем) смены не показывает — только запоминается.
-  const revision = detail.revision;
-  const known = revisionsOf(deps).get(id);
-  const revisionChanged = revision !== undefined && known !== undefined && known !== revision;
-  if (revision !== undefined) revisionsOf(deps).set(id, revision);
+  const revisionChanged = revisionStep(deps, id, detail.revision);
   if (step === 'same' && detail.codeOnly && !revisionChanged) {
     detail.reply('kept-state', '');
     return;

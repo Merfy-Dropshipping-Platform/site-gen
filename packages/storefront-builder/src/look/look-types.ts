@@ -110,6 +110,41 @@ export interface SectionPlace extends Clip {
   pinned: boolean;
 }
 
+// Анимации страницы одной строкой (`look-motion.ts`): секция, пресет `data-animate` (нет — анимацию ставит скрипт секции),
+// длительность, задержка первого элемента и разброс задержек (stagger), сколько элементов, бесконечная ли.
+export interface MotionAnimation {
+  section: string | null;
+  // Имя секции (`data-section`), чтобы по списку было понятно, что за секция.
+  type: string | null;
+  preset: string | null;
+  durationMs: number;
+  delayMs: number;
+  spanMs: number;
+  elements: number;
+  loop: boolean;
+}
+
+// Кадры одной секции: JPEG по времени 0 / 200 / 400 / 800 мс (`MOTION_FRAME_TIMES`).
+export interface MotionSectionShots {
+  section: string;
+  type: string | null;
+  frames: Uint8Array[];
+}
+
+// Раскадровка страницы на одном устройстве. `ok: false` — кадры не получились по понятной причине (страница кабинета,
+// нет конфига): снимок страницы от этого не страдает.
+export type MotionCapture =
+  | {
+      ok: true;
+      // У магазина появления выключены (`data-motion-reveal` не `on`), на снимке включены.
+      revealForced: boolean;
+      animations: MotionAnimation[];
+      shots: MotionSectionShots[];
+      // Секций с анимациями больше, чем снято кадров.
+      skipped: number;
+    }
+  | { ok: false; reason: string };
+
 // Одна страница в браузере на одном размере экрана. Живёт до `RenderedPage.close()`.
 export interface PageSession {
   device: LookDevice;
@@ -132,6 +167,9 @@ export interface PageSession {
   // Проверка меток витрины кликами (`look-marks.ts`). Меняет страницу, поэтому идёт последней. За `limitMs` новые метки
   // не начинаются, что успела — отдаёт. С `section` — метки этой секции, без него — всей страницы.
   marks(limitMs: number, section?: string): Promise<MarkResult[]>;
+  // Раскадровка анимаций (`look-motion.ts`): эта же страница открывается второй раз в режиме витрины, чтобы анимации
+  // играли, а не стояли на последнем кадре. Кадры не больше чем у `sections` секций, JPEG с качеством `quality`.
+  motion(options: { sections: number; quality: number }): Promise<MotionCapture>;
 }
 
 export interface RenderedPage {
@@ -146,6 +184,8 @@ export interface RenderInput {
   devices: LookDevice[];
   // Срок на эту отрисовку, мс: не больше срока отрисовщика; меньше — когда задание долго шло до процесса.
   timeoutMs?: number;
+  // Просили раскадровку: к сроку отрисовщика прибавляется время на вторую загрузку страницы и кадры.
+  motion?: boolean;
 }
 
 export interface PageRenderer {

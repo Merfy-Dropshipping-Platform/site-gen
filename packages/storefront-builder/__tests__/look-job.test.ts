@@ -704,6 +704,126 @@ describe('снимок черновика · запись шаблона и вы
   });
 });
 
+describe('снимок черновика · раскадровка анимаций (motion)', () => {
+  const frameImages = (snapshot: ReturnType<typeof snapshotOf>) =>
+    snapshot.motion?.ok ? snapshot.motion.sections.flatMap((entry) => entry.frames.map((frame) => frame.image)) : [];
+
+  it('без motion поля в снимке нет, второй страницы не открывают', async () => {
+    const { deps, fake } = setup();
+    const snapshot = snapshotOf(await runLookJob(deps, job()));
+    expect(snapshot.motion).toBeUndefined();
+    expect(fake.motionCalls).toEqual([]);
+    expect(fake.opened[0]?.motion).toBeUndefined();
+  });
+
+  it('motion: кадры 0/200/400/800 мс по секциям, на компьютере; список анимаций и признак «появления включены принудительно»', async () => {
+    const { deps, fake } = setup({ desktop: { motion: { revealForced: true } } });
+    const snapshot = snapshotOf(await runLookJob(deps, job({ motion: true })));
+
+    expect(fake.opened[0]?.motion).toBe(true);
+    expect(fake.motionCalls.map((call) => [call.device, call.sections])).toEqual([['desktop', 3]]);
+    expect(snapshot.motion).toMatchObject({ ok: true, device: 'desktop', revealForced: true, skipped: 0 });
+    if (!snapshot.motion?.ok) throw new Error('ждали кадры');
+    expect(snapshot.motion.sections.map((entry) => [entry.section, entry.frames.map((frame) => frame.at)])).toEqual([
+      ['hero-1', [0, 200, 400, 800]],
+      ['gallery-2', [0, 200, 400, 800]],
+    ]);
+    expect(snapshot.motion.animations).toEqual([
+      {
+        section: 'hero-1',
+        type: 'hero',
+        preset: 'fade-up',
+        durationMs: 600,
+        delayMs: 0,
+        spanMs: 0,
+        elements: 1,
+        loop: false,
+      },
+    ]);
+    // Кадры — картинки base64, не пустые и разные.
+    const images = frameImages(snapshot);
+    expect(images).toHaveLength(8);
+    expect(new Set(images).size).toBe(8);
+  });
+
+  it('device: mobile — кадры на телефоне', async () => {
+    const { deps, fake } = setup();
+    await runLookJob(deps, job({ motion: true, devices: 'mobile' }));
+    expect(fake.motionCalls.map((call) => call.device)).toEqual(['mobile']);
+  });
+
+  it('экранам оставлен запас: full не отдаёт кадрам нулевой вес, весь ответ — в пределе 1,5 МБ', async () => {
+    const { deps } = setup({
+      mobile: { pageHeight: 844 * 12, shotBytes: 400_000 },
+      desktop: { pageHeight: 900 * 12, shotBytes: 400_000, motion: { frameBytes: 30_000 } },
+    });
+    const snapshot = snapshotOf(await runLookJob(deps, job({ motion: true, full: true })));
+    const weight = (images: string[]) => images.reduce((sum, image) => sum + image.length, 0);
+    const screens = weight(snapshot.devices.flatMap((entry) => entry.images));
+    const frames = weight(frameImages(snapshot));
+    expect(frames).toBeGreaterThan(0);
+    expect(screens + frames).toBeLessThanOrEqual(1_500_000);
+  });
+
+  it('кадры тяжелее остатка: последние секции убираются, skipped растёт', async () => {
+    // 3 секции × 4 кадра × 80 КБ = 960 КБ base64 ≈ 1,28 МБ > 700 КБ; влезает одна секция (4 × 107 КБ = 427 КБ).
+    const { deps } = setup({
+      desktop: { motion: { sections: ['a-1', 'b-2', 'c-3'], frameBytes: 80_000 } },
+    });
+    const snapshot = snapshotOf(await runLookJob(deps, job({ motion: true })));
+    if (!snapshot.motion?.ok) throw new Error('ждали кадры');
+    expect(snapshot.motion.sections.map((entry) => entry.section)).toEqual(['a-1']);
+    expect(snapshot.motion.skipped).toBe(2);
+  });
+
+  it('одна секция не влезла — переснимается на худшем качестве', async () => {
+    const { deps, fake } = setup({
+      desktop: { motion: { sections: ['a-1'], frameBytes: (quality) => (quality > 40 ? 150_000 : 30_000) } },
+    });
+    const snapshot = snapshotOf(await runLookJob(deps, job({ motion: true })));
+    expect(fake.motionCalls.map((call) => [call.sections, call.quality])).toEqual([
+      [3, 55],
+      [1, 35],
+    ]);
+    if (!snapshot.motion?.ok) throw new Error('ждали кадры');
+    expect(snapshot.motion.sections).toHaveLength(1);
+  });
+
+  it('кадры не получились (кабинет, нет конфига) — причина в ответе, остальной снимок цел', async () => {
+    const { deps } = setup({ desktop: { motion: { refusal: 'страница кабинета' } } });
+    const snapshot = snapshotOf(await runLookJob(deps, job({ motion: true })));
+    expect(snapshot.motion).toEqual({ ok: false, reason: 'страница кабинета' });
+    expect(snapshot.devices).toHaveLength(2);
+    expect(snapshot.layout).toEqual({ ok: true });
+  });
+
+  it('сбой раскадровки не роняет снимок, срок отрисовки — роняет', async () => {
+    const failing = setup({ desktop: { motion: { error: new Error('Target closed\nстек') } } });
+    expect(snapshotOf(await runLookJob(failing.deps, job({ motion: true }))).motion).toEqual({
+      ok: false,
+      reason: 'Target closed',
+    });
+    const late = setup({
+      desktop: { motion: { error: new LookError('timeout', 'Не успел отрисовать страницу за 45 с') } },
+    });
+    expect(errorOf(await runLookJob(late.deps, job({ motion: true })))?.code).toBe('timeout');
+  });
+
+  it('снимок секции раскадровку не делает', async () => {
+    const { deps, fake } = setup();
+    const snapshot = snapshotOf(await runLookJob(deps, job({ motion: true, section: 'hero-1' })));
+    expect(snapshot.motion).toBeUndefined();
+    expect(fake.motionCalls).toEqual([]);
+    expect(fake.opened[0]?.motion).toBeUndefined();
+  });
+
+  it('motion не булево — invalid', async () => {
+    const { deps, fetch } = setup();
+    expect(errorOf(await runLookJob(deps, job({ motion: 'yes' })))?.code).toBe('invalid');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
 describe('настройки проверяющего процесса', () => {
   it('SITES_SERVICE_URL необязателен: нет — снимки выключены', () => {
     expect(readCheckerSettings({ RABBITMQ_URL: 'amqp://x' }).sitesUrl).toBeNull();

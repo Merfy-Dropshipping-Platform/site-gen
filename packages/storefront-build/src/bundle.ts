@@ -117,8 +117,10 @@ function kitEntry(kit: KitPlan): { imports: string; part: string } | null {
     options.push('reveal: kitReveal');
   }
   if (kit.animate) {
-    lines.push(`import { animate as kitAnimate } from ${kitSpecifier('animate.js')};`);
-    options.push('animate: kitAnimate');
+    lines.push(
+      `import { animate as kitAnimate, split as kitSplit, pointer as kitPointer } from ${kitSpecifier('animate.js')};`,
+    );
+    options.push('animate: kitAnimate', 'split: kitSplit', 'pointer: kitPointer');
   }
   return { imports: `${lines.join('\n')}\n`, part: `kitBehaviors({ ${options.join(', ')} })` };
 }

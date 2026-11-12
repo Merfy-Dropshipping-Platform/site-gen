@@ -51,7 +51,7 @@ describe('строка входа с поведениями', () => {
 
   it('только провайдер animate; пустой набор и отсутствие набора — строка как в 5б', () => {
     expect(bundleEntry([], [], plan({ animate: true }))).toContain(
-      'start({ parts: [kitBehaviors({ list: [], animate: kitAnimate })], sections: [] });',
+      'start({ parts: [kitBehaviors({ list: [], animate: kitAnimate, split: kitSplit, pointer: kitPointer })], sections: [] });',
     );
     expect(bundleEntry(['auth'], [], NONE)).toBe(bundleEntry(['auth'], []));
   });

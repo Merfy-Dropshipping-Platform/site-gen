@@ -78,9 +78,12 @@ describe('поведения в шаблоне', () => {
     expect(await summary('<h2 data-animate="zoom-in"></h2>')).toEqual([
       [
         'animate-preset-unknown',
-        'пресета zoom-in нет в каталоге SDK; есть: appear, appear-group, appear-side, fade-up, slide-down, load-1, load-2, load-3, letters',
+        'пресета zoom-in нет в каталоге SDK; есть: appear, appear-group, appear-side, fade-up, slide-down, load-1, load-2, load-3, letters, words, lines, mask-up, blur-in, draw',
       ],
     ]);
+    // пресеты 12.11 проходят проверку, как и старые; data-delay у них тот же
+    for (const name of ['words', 'lines', 'mask-up', 'blur-in', 'draw'])
+      expect(await summary(`<h2 data-animate="${name}" data-delay="300"></h2>`), name).toEqual([]);
     expect(await summary('<h2 data-animate="appear" data-delay="9000"></h2>')).toEqual([
       ['behavior-param-invalid', 'data-delay="9000": нужно целое число от 0 до 5000'],
     ]);

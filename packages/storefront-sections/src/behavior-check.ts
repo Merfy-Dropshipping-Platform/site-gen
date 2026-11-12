@@ -1,4 +1,5 @@
-import { BEHAVIORS, PRESETS, type BehaviorSpec, type ParamSpec } from '@merfy/shell/behaviors/catalog';
+import { BEHAVIORS, type BehaviorSpec, type ParamSpec } from '@merfy/shell/behaviors/catalog';
+import { PRESETS } from '@merfy/shell/behaviors/presets';
 import { fieldOf, isNode, type AstNode } from './ast';
 import { TEMPLATE_FILE } from './format';
 import { positionAt } from './position';

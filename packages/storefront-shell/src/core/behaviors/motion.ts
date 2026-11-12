@@ -1,81 +1,102 @@
-import { animate as animateMini } from 'motion/mini';
-import type { AnimateOptions, Animation, Bezier, EasingName, Keyframes, KeyframeValue } from '../types';
-import { EASINGS } from './catalog';
+import { checkKeyframes } from '../keyframes';
+import type { AnimateOptions, PointerPoint } from '../types';
+import { animateNode, type NodeAnimateOptions } from './animate-node';
 import { motionPrefs } from './prefs';
-import type { AnimateProvider } from './types';
+import { splitChars, splitLines, splitWords } from './split';
+import type { AnimateProvider, PointerProvider, SplitProvider } from './types';
 
-// ctx.animate и анимации поведений поверх motion/mini (design.md блока 6, раздел 10): SDK импортирует Motion, код секции
-// — нет. Длительность и задержка на входе — миллисекунды, Motion считает секунды; кривая — по имени из каталога или
-// массивом Безье; превью и «уменьшить движение» — сразу последний кадр; снятие секции останавливает анимацию.
+// Провайдеры ctx.animate, ctx.split и ctx.on(…, 'pointermove') (design.md блока 6, раздел 10): SDK импортирует Motion,
+// код секции — нет. Анимация узла — animate-node.ts; здесь то, что нужно только скрипту секции: проверка кадров
+// (checkKeyframes), пружина, список элементов, повтор, куски текста и курсор. Превью и «уменьшить движение» — сразу
+// последний кадр (повтора нет); курсор приходит как обычно.
 
-export interface NodeAnimateOptions extends AnimateOptions {
-  readonly pseudoElement?: '::backdrop';
-}
+// Пружина — затухающие колебания единичной ступени за время 1: 1 − e^(−st)(cos ωt + (s/ω) sin ωt), s = 8 (к концу
+// отклонение меньше 0,3 %), затухание ζ = 1 − bounce (bounce от 0 до 0.95; ζ не больше 0,999). Motion превращает такую
+// функцию в CSS linear(); в конце — ровно 1.
+const DECAY = 8;
+export const springOf =
+  (bounce: number) =>
+  (progress: number): number => {
+    const zeta = Math.min(0.999, 1 - bounce);
+    const frequency = (DECAY / zeta) * Math.sqrt(1 - zeta * zeta);
+    const phase = frequency * progress;
+    return progress >= 1
+      ? 1
+      : 1 - Math.exp(-DECAY * progress) * (Math.cos(phase) + (DECAY / frequency) * Math.sin(phase));
+  };
 
-export interface AnimateRun {
-  readonly instant: boolean;
-  readonly signal: AbortSignal;
-}
+// Число из кода секции: не число и отрицательное (NaN тоже) — умолчание.
+const num = (value: unknown, fallback: number): number => (typeof value === 'number' && value >= 0 ? value : fallback);
 
-type MiniKeyframes = Parameters<typeof animateMini>[1];
-// pseudoElement Motion читает из общих параметров (animate-elements: valueOptions), в типе mini-ветки его нет.
-type MiniOptions = NonNullable<Parameters<typeof animateMini>[2]> & { readonly pseudoElement?: string };
-
-const DEFAULT_DURATION_MS = 300;
-const DEFAULT_DELAY_MS = 0;
-const DEFAULT_EASING: EasingName = 'ease-out';
-
-const stopped = (): Animation => ({ finished: Promise.resolve(), stop: () => undefined });
-
-const easingOf = (easing: EasingName | Bezier): Bezier => (typeof easing === 'string' ? EASINGS[easing] : easing);
-
-// Кадры — копия с новыми массивами: Motion меняет переданные массивы на месте.
-function framesOf(keyframes: Keyframes): MiniKeyframes {
-  const copy: Record<string, KeyframeValue | KeyframeValue[]> = {};
-  for (const [name, value] of Object.entries(keyframes)) {
-    copy[name] = typeof value === 'object' ? [...value] : value;
-  }
-  return copy;
-}
-
-function optionsOf(options: NodeAnimateOptions | undefined, run: AnimateRun): MiniOptions {
-  const duration = run.instant ? 0 : (options?.duration ?? DEFAULT_DURATION_MS);
-  const delay = run.instant ? 0 : (options?.delay ?? DEFAULT_DELAY_MS);
+// Параметры одного элемента списка: stagger сдвигает старт на index × stagger, пружина становится функцией кривой
+// (bounce не больше 0.95, по умолчанию 0.25; duration — мс, по умолчанию duration анимации или 600).
+function optionsOf(options: AnimateOptions | undefined, index: number): NodeAnimateOptions {
+  const easing = options?.easing;
+  const common = {
+    delay: num(options?.delay, 0) + index * num(options?.stagger, 0),
+    repeat: num(options?.repeat, 0),
+    repeatType: options?.repeatType,
+  };
+  if (typeof easing !== 'object' || !('spring' in easing))
+    return { ...common, duration: num(options?.duration, 300), easing };
+  const { bounce, duration } = easing.spring;
   return {
-    duration: duration / 1000,
-    delay: delay / 1000,
-    ease: easingOf(options?.easing ?? DEFAULT_EASING),
-    pseudoElement: options?.pseudoElement,
+    ...common,
+    duration: num(duration, num(options?.duration, 600)),
+    easing: springOf(Math.min(num(bounce, 0.25), 0.95)),
   };
 }
 
-export function animateNode(
-  node: Element,
-  keyframes: Keyframes,
-  options: NodeAnimateOptions | undefined,
-  run: AnimateRun,
-): Animation {
-  if (run.signal.aborted) return stopped();
-  const controls = animateMini(node, framesOf(keyframes), optionsOf(options, run));
-  // finished выполняется и по концу, и по stop(): Motion при отмене своего обещания не даёт.
-  let settle: () => void = () => undefined;
-  const finished = new Promise<void>((resolve) => {
-    settle = resolve;
-  });
-  controls.finished.then(
-    () => settle(),
-    () => settle(),
-  );
-  const stop = (): void => {
-    controls.stop();
-    settle();
-  };
-  run.signal.addEventListener('abort', stop, { once: true });
-  return { finished, stop };
-}
-
-// Провайдер ctx.animate: превью и «уменьшить движение» — сразу последний кадр.
-export const animate: AnimateProvider = (node, keyframes, options, signal, mode) => {
+// Провайдер ctx.animate. Список — одна анимация на всех: finished — когда закончили все, stop останавливает все.
+export const animate: AnimateProvider = (nodes, keyframes, options, signal, mode) => {
+  checkKeyframes(keyframes);
   const prefs = motionPrefs(window, mode);
-  return animateNode(node, keyframes, options, { instant: prefs.reduced || prefs.preview, signal });
+  const run = { instant: prefs.reduced || prefs.preview, signal };
+  const runs = nodes.map((node, index) => animateNode(node, keyframes, optionsOf(options, index), run));
+  return {
+    finished: Promise.all(runs.map((item) => item.finished)).then(() => undefined),
+    stop: () => runs.forEach((item) => item.stop()),
+  };
+};
+
+// Провайдер ctx.on(…, 'pointermove'): не чаще раза в кадр, берётся последнее событие; координаты курсора читаются в
+// момент кадра — относительно секции и (at) любого её элемента.
+export const pointer: PointerProvider = (target, scope, deliver, signal) => {
+  let last: MouseEvent | null = null;
+  const pointOf = (event: MouseEvent, box: Element): PointerPoint => {
+    const rect = box.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    return { x, y, px: rect.width > 0 ? x / rect.width : 0, py: rect.height > 0 ? y / rect.height : 0 };
+  };
+  const frame = (): void => {
+    const event = last;
+    last = null;
+    if (event === null || signal.aborted) return;
+    deliver(event, {
+      pointer: pointOf(event, scope.root),
+      at: (el) => {
+        const node = scope.nodeOf(el);
+        return node === null ? null : pointOf(event, node);
+      },
+    });
+  };
+  // Событие без координат (не мышь, не касание) пропускаем; кадр уже запрошен, пока last не пуст.
+  const listener = (event: Event): void => {
+    if (!(event instanceof MouseEvent)) return;
+    if (last === null) requestAnimationFrame(frame);
+    last = event;
+  };
+  target.addEventListener('pointermove', listener, { signal });
+  return () => target.removeEventListener('pointermove', listener);
+};
+
+// Провайдер ctx.split: chars и words — сразу, lines — после загрузки шрифтов (Promise).
+export const split: SplitProvider = (node, by, signal) => {
+  if (node instanceof HTMLElement) {
+    if (by === 'chars') return splitChars(node);
+    if (by === 'words') return splitWords(node, false);
+    if (by === 'lines') return splitLines(node, false, signal);
+  }
+  throw new Error('ctx.split: элемент HTML и chars, words или lines');
 };

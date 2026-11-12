@@ -6,6 +6,7 @@ import type { El } from './types';
 // методы отдают строки, числа, булевы значения и другие обёртки. После снятия экземпляра (signal.aborted) запись
 // ничего не делает и не бросает, чтение — пустое.
 export interface ElScope {
+  readonly root: HTMLElement; // корень секции
   wrap(node: Element): El; // одна обёртка на узел в пределах области
   nodeOf(el: El): Element | null; // узел обёртки этой области — только для ядра; обёртка другой области — null
   ref(name: string): El | null; // первый [data-ref="name"] внутри корня
@@ -283,6 +284,7 @@ export function createElScope(root: HTMLElement, signal: AbortSignal): ElScope {
   }
 
   return {
+    root,
     wrap,
     nodeOf: (el: El): Element | null => nodes.get(el) ?? null,
     ref: refOf(root, state),

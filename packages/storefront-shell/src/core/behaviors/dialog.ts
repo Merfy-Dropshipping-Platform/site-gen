@@ -1,7 +1,7 @@
 import { lockScroll as lockPageScroll, unlockScroll as unlockPageScroll } from '../scroll-lock';
 import type { Animation, EasingName, Keyframes, NoData, Result } from '../types';
 import { done, invalid, refuse } from './command';
-import { animateNode } from './motion';
+import { animateNode } from './animate-node';
 import type { Behavior, BehaviorCommand, BehaviorHost, BehaviorInstance } from './types';
 
 // Окно и выезжающая панель (design.md блока 6, раздел 5; факты 10, 12; дополнения блока 7, п. 15): <dialog> и

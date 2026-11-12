@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BEHAVIORS, EASINGS, PRESETS, PRESET_PARAMS, type Library } from '../src/core/behaviors/catalog';
+import { BEHAVIORS, EASINGS, type Library } from '../src/core/behaviors/catalog';
+import { PRESETS, PRESET_PARAMS } from '../src/core/behaviors/presets';
 import { readParams } from '../src/core/behaviors/params';
 
 // Каталог поведений и пресетов (design.md блока 6, разделы 1, 3–9) и чтение параметров с корня поведения. Каталог —

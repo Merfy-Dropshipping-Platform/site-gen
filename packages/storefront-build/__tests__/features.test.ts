@@ -30,6 +30,12 @@ describe('набор поведений страницы', () => {
     expect(kitPlanOf(KNOWN, ['<p>animate</p>'], []).animate).toBe(false);
   });
 
+  it('ctx.split в скрипте — тот же провайдер; text.split(",") строки — нет', () => {
+    expect(kitPlanOf(KNOWN, [], ['mount(el, ctx) { ctx.split(el.ref("h"), "words"); }']).animate).toBe(true);
+    expect(kitPlanOf(KNOWN, [], ['const parts = text.split(","); const split = 1;']).animate).toBe(false);
+    expect(kitPlanOf(KNOWN, [], ['ctx.on("document", "pointermove", () => {});']).animate).toBe(true);
+  });
+
   it('ничего нет — пустой набор', () => {
     expect(kitPlanOf(KNOWN, ['<p>текст</p>'], [])).toEqual({ behaviors: [], reveal: false, animate: false });
   });

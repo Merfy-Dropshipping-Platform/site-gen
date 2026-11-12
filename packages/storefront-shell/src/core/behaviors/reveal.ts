@@ -1,12 +1,16 @@
 import { inView } from 'motion';
-import { PRESETS, PRESET_PARAMS, type PresetSpec } from './catalog';
-import { animateNode } from './motion';
+import type { PresetSpec } from './catalog';
+import { PRESETS, PRESET_PARAMS } from './presets';
+import type { Keyframes } from '../types';
+import { animateNode } from './animate-node';
 import { readParams } from './params';
+import { splitChars, splitLines, splitWords } from './split';
 import type { Reveal, RevealHost } from './types';
 
 // Появления data-animate (design.md блока 6, раздел 9): пресеты пяти тем «один в один», пачки одного кадра, буквы,
-// чётность секций у appear-side. Скрытое начальное состояние ставит SDK инлайном; выключатели — выбор словаря
-// «Появление секций», «уменьшить движение» и превью конструктора.
+// слова и строки (12.11), маска, размытие и прорисовка линий, чётность секций у appear-side. Скрытое начальное
+// состояние ставит SDK инлайном; выключатели — выбор словаря «Появление секций», «уменьшить движение» и превью
+// конструктора.
 
 // Отступ наблюдателя у Motion — шаблонный тип из 1–4 значений «число px/%»; строку пресета проверяем предикатом.
 type MarginPart = `${number}px` | `${number}%`;
@@ -22,43 +26,39 @@ const REVEAL_ATTRIBUTE = 'data-motion-reveal';
 const SPEC_BY_NAME: ReadonlyMap<string, PresetSpec> = new Map(Object.entries(PRESETS));
 const reported = new Set<string>();
 
+// Двигаемый узел: HTML-элемент или линия SVG — у обоих есть style.
+type Mover = Element & ElementCSSInlineStyle;
+
 interface Pending {
   readonly element: HTMLElement;
   readonly name: string;
   readonly spec: PresetSpec;
   readonly dataDelay: number;
-  readonly movers: readonly HTMLElement[];
+  readonly movers: readonly Mover[];
   readonly x: number;
 }
 
 const isHTMLElement = (node: Element): node is HTMLElement => node instanceof HTMLElement;
+const isMover = (node: Element): node is Mover => 'style' in node;
 
-// Буквы: текст — в aria-label элемента, внутри — по span на букву, пробелы — простым текстом.
-function lettersOf(element: HTMLElement): readonly HTMLElement[] {
-  const text = element.textContent ?? '';
-  element.setAttribute('aria-label', text);
-  element.replaceChildren();
-  const spans: HTMLElement[] = [];
-  for (const char of text) {
-    if (char === ' ') {
-      element.append(' ');
-      continue;
-    }
-    const span = document.createElement('span');
-    span.setAttribute('aria-hidden', 'true');
-    span.style.display = 'inline-block';
-    span.textContent = char;
-    element.append(span);
-    spans.push(span);
-  }
-  return spans;
+const SHAPES = 'path,line,polyline,polygon,circle,ellipse,rect';
+
+// Линии SVG: сам элемент или все линии внутри. pathLength="1" ставит SDK: штрих 1 и сдвиг 1 → 0 дают прорисовку любой
+// длины.
+function shapesOf(element: Element): readonly Mover[] {
+  const shapes = (element.matches(SHAPES) ? [element] : [...element.querySelectorAll(SHAPES)]).filter(isMover);
+  shapes.forEach((shape) => shape.setAttribute('pathLength', '1'));
+  return shapes;
 }
 
-// Что движется (target пресета): self — сам элемент, children — его дети, section — ближайшая merfy-section.
-function moversOf(element: HTMLElement, spec: PresetSpec): readonly HTMLElement[] {
+// Что движется (target пресета): self — сам элемент, children — его дети, section — ближайшая merfy-section, остальное —
+// куски текста и линии SVG. Строки (lines) ждут шрифты и приходят позже — attachElement.
+function moversOf(element: HTMLElement, spec: PresetSpec): readonly Mover[] {
   if (spec.target === 'self') return [element];
   if (spec.target === 'children') return [...element.children].filter(isHTMLElement);
-  if (spec.target === 'letters') return lettersOf(element);
+  if (spec.target === 'letters') return splitChars(element);
+  if (spec.target === 'words') return splitWords(element, true);
+  if (spec.target === 'shapes') return shapesOf(element);
   const section = element.closest<HTMLElement>('merfy-section');
   return section === null ? [element] : [section];
 }
@@ -71,36 +71,50 @@ function xOf(element: HTMLElement, spec: PresetSpec): number {
   return index % 2 === 0 ? -spec.x : spec.x;
 }
 
-function pendingOf(name: string, spec: PresetSpec, element: HTMLElement): Pending {
+function pendingOf(name: string, spec: PresetSpec, element: HTMLElement, movers: readonly Mover[]): Pending {
   return {
     element,
     name,
     spec,
     dataDelay: Number(readParams(element, PRESET_PARAMS).delay),
-    movers: moversOf(element, spec),
+    movers,
     x: xOf(element, spec),
   };
 }
 
-// Номер в пачке: у self и section — элемента в пачке, у children и letters — ребёнка и буквы одного элемента.
+// Номер в пачке: у self и section — элемента в пачке, у остальных — куска или ребёнка одного элемента.
 const indexOfMover = (pending: Pending, mover: number, batchIndex: number): number =>
-  pending.spec.target === 'children' || pending.spec.target === 'letters' ? mover : batchIndex;
+  pending.spec.target === 'self' || pending.spec.target === 'section' ? batchIndex : mover;
+
+// Кадры пресета: прозрачность и сдвиг, если они есть, и extra (маска, размытие, штрих).
+function framesOf(pending: Pending): Keyframes {
+  const { spec, x } = pending;
+  return {
+    ...(spec.opacity === 1 ? {} : { opacity: [spec.opacity, 1] }),
+    ...(x === 0 && spec.y === 0 ? {} : { transform: [`translate(${x}${spec.unit}, ${spec.y}${spec.unit})`, 'none'] }),
+    ...Object.fromEntries(Object.entries(spec.extra ?? {}).map(([name, range]) => [name, [...range]])),
+  };
+}
+
+// Инлайн, который ставит пресет: прозрачность и начало extra. После появления он снимается.
+const inlineOf = (spec: PresetSpec): readonly (readonly [string, string | number])[] => [
+  ...(spec.opacity === 1 ? [] : [['opacity', spec.opacity] as const]),
+  ...Object.entries(spec.extra ?? {}).map(([name, range]) => [name, range[0]] as const),
+];
 
 function play(pending: Pending, batchIndex: number, signal: AbortSignal): void {
   const { spec } = pending;
+  const frames = framesOf(pending);
   pending.movers.forEach((mover, moverIndex) => {
     const delay = spec.delay + pending.dataDelay + indexOfMover(pending, moverIndex, batchIndex) * spec.stagger;
     const run = animateNode(
       mover,
-      {
-        opacity: [spec.opacity, 1],
-        transform: [`translate(${pending.x}${spec.unit}, ${spec.y}${spec.unit})`, 'none'],
-      },
+      frames,
       { duration: spec.duration, easing: spec.easing, delay },
       { instant: false, signal },
     );
     void run.finished.then(() => {
-      mover.style.opacity = '';
+      inlineOf(spec).forEach(([name]) => Reflect.set(mover.style, name, ''));
       run.stop();
     });
   });
@@ -108,7 +122,7 @@ function play(pending: Pending, batchIndex: number, signal: AbortSignal): void {
 
 const hideMovers = (pending: Pending): void => {
   pending.movers.forEach((mover) => {
-    mover.style.opacity = String(pending.spec.opacity);
+    inlineOf(pending.spec).forEach(([name, value]) => Reflect.set(mover.style, name, String(value)));
   });
 };
 
@@ -169,14 +183,8 @@ function watchInView(
   signal.addEventListener('abort', () => stop?.(), { once: true });
 }
 
-function attachElement(element: HTMLElement, batch: (pending: Pending) => void, signal: AbortSignal): void {
-  const name = element.getAttribute('data-animate') ?? '';
-  const spec = SPEC_BY_NAME.get(name);
-  if (spec === undefined) {
-    reportUnknown(name);
-    return;
-  }
-  const pending = pendingOf(name, spec, element);
+function start(pending: Pending, element: HTMLElement, batch: (pending: Pending) => void, signal: AbortSignal): void {
+  const { spec } = pending;
   if (spec.trigger === 'load') {
     hideMovers(pending);
     batch(pending);
@@ -189,6 +197,38 @@ function attachElement(element: HTMLElement, batch: (pending: Pending) => void, 
     return;
   }
   watchInView(pending, element, batch, signal);
+}
+
+// Строки известны только после загрузки шрифтов: до этого весь текст скрыт, потом скрыты строки, а элемент показан.
+function attachLines(
+  element: HTMLElement,
+  name: string,
+  spec: PresetSpec,
+  batch: (pending: Pending) => void,
+  signal: AbortSignal,
+): void {
+  element.style.opacity = '0';
+  splitLines(element, true, signal).then(
+    (lines) => {
+      if (!signal.aborted) start(pendingOf(name, spec, element, lines), element, batch, signal);
+      element.style.opacity = '';
+    },
+    (error: unknown) => {
+      element.style.opacity = '';
+      console.error(`Появление ${name}: ${String(error)}`);
+    },
+  );
+}
+
+function attachElement(element: HTMLElement, batch: (pending: Pending) => void, signal: AbortSignal): void {
+  const name = element.getAttribute('data-animate') ?? '';
+  const spec = SPEC_BY_NAME.get(name);
+  if (spec === undefined) {
+    reportUnknown(name);
+    return;
+  }
+  if (spec.target === 'lines') attachLines(element, name, spec, batch, signal);
+  else start(pendingOf(name, spec, element, moversOf(element, spec)), element, batch, signal);
 }
 
 export const reveal: Reveal = {

@@ -78,6 +78,10 @@ declare global {
   interface Window {
     __ready?: boolean;
     __finished?: boolean;
+    __words?: number;
+    __chars?: number;
+    __lines?: number;
+    __moves?: { x: number; py: number; inside: boolean; magnetPx: number | null }[];
     __counts?: { input: number; change: number };
     __behaviorsApi?: {
       save(sectionId: string): unknown;
@@ -102,7 +106,10 @@ const sectionsPlugin = (sections: readonly SectionModule[]): Plugin => ({
 export async function pageBundle(options: PageOptions): Promise<string> {
   const list = options.behaviors ?? [];
   const sections = options.sections ?? [];
-  const extra = [...(options.reveal ? ['reveal'] : []), ...(options.animate ? ['animate'] : [])];
+  const extra = [
+    ...(options.reveal ? ['reveal'] : []),
+    ...(options.animate ? ['animate', 'split', 'pointer'] : []), // animate.js отдаёт три провайдера: ctx.animate, ctx.split, pointermove
+  ];
   const rows = sections.map(
     (section, index) =>
       `{ name: ${JSON.stringify(section.name)}, kind: 'section', script: '${'a'.repeat(64)}', uses: ${JSON.stringify(section.uses ?? [])}, definition: s${index} }`,

@@ -18,6 +18,13 @@ const BODY = `<main>
   </merfy-section>
   <merfy-section data-section="shop:c" data-section-id="c" id="side2" data-animate="appear-side" style="display:block;height:300px">2</merfy-section>
   <merfy-section data-section="shop:d" data-section-id="d" id="side3" data-animate="appear-side" style="display:block;height:300px">3</merfy-section>
+  <merfy-section data-section="shop:e" data-section-id="e" id="e" style="display:block;height:700px;width:320px">
+    <h2 data-animate="words" id="words" style="font:24px/30px sans-serif;margin:0">Три слова</h2>
+    <h2 data-animate="lines" id="lines" style="font:24px/30px sans-serif;margin:0">Раз два три четыре пять шесть семь восемь девять десять одиннадцать двенадцать</h2>
+    <div data-animate="mask-up" id="mask" style="height:50px">Маска</div>
+    <div data-animate="blur-in" id="blur" style="height:50px">Размытие</div>
+    <svg data-animate="draw" id="draw" viewBox="0 0 10 10" width="100"><path d="M0 0L10 10" stroke="black"/><path d="M0 10L10 0" stroke="black"/></svg>
+  </merfy-section>
   <div style="height:1500px"></div>
 </main>`;
 
@@ -106,6 +113,101 @@ describe('появления', () => {
     expect(odd?.first.transform).toBe('translate(32px, 24px)');
     expect(even?.duration).toBe(700);
     expect(even?.easing).toEqual(curve('power3.out'));
+    await page.close();
+  });
+
+  it('words: слова в масках с overflow: hidden, aria-label; поднимаются на 105 % через 60 мс, 900 мс expo.out', async () => {
+    const { page, errors } = await open();
+    expect(await page.$eval('#words', (el) => el.getAttribute('aria-label'))).toBe('Три слова');
+    expect(await page.$$eval('#words > span', (nodes) => nodes.map((n) => getComputedStyle(n).overflow))).toEqual([
+      'hidden',
+      'hidden',
+    ]);
+    expect(await opacity(page, '#words > span > span')).toBe('0');
+    await scrollTo(page, 'e', '#words > span > span');
+    const words = await animations(page, '#words > span > span');
+    expect(words.map((info) => info?.delay)).toEqual([0, 60]);
+    expect(words[0]).toMatchObject({ duration: 900, first: { opacity: '0', transform: 'translate(0%, 105%)' } });
+    expect(words[0]?.easing).toEqual(curve('expo.out'));
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('lines: строки после загрузки шрифтов, каждая в маске; элемент не остаётся скрытым; 110 мс между строками', async () => {
+    const { page, errors } = await open();
+    await page.waitForFunction(() => document.querySelectorAll('#lines > span').length > 1);
+    expect(await page.$eval('#lines', (el) => (el instanceof HTMLElement ? el.style.opacity : null))).toBe('');
+    const count = await page.$$eval('#lines > span', (nodes) => nodes.length);
+    expect(await opacity(page, '#lines > span > span')).toBe('0');
+    await scrollTo(page, 'e', '#lines > span > span');
+    const lines = await animations(page, '#lines > span > span');
+    expect(lines.map((info) => info?.delay)).toEqual(Array.from({ length: count }, (_item, index) => index * 110));
+    expect(lines[0]).toMatchObject({ duration: 1100, first: { transform: 'translate(0%, 110%)' } });
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('mask-up: clip-path снизу вверх и подъём на 40 px, без прозрачности; инлайн снимается после появления', async () => {
+    const { page, errors } = await open();
+    expect(await page.$eval('#mask', (el) => (el instanceof HTMLElement ? el.style.clipPath : null))).toContain(
+      'inset(100%',
+    );
+    await scrollTo(page, 'e', '#mask');
+    const [mask] = await animations(page, '#mask');
+    expect(mask).toMatchObject({ duration: 1200, first: { transform: 'translate(0px, 40px)' } });
+    expect(mask?.first.clipPath).toContain('inset(100%');
+    expect(mask?.first.opacity).toBeUndefined();
+    expect(mask?.easing).toEqual(curve('expo.out'));
+    await page.waitForFunction(() => document.getElementById('mask')?.style.clipPath === '', undefined, {
+      timeout: 5000,
+    });
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('blur-in: размытие 16 px → 0, прозрачность 0 → 1, подъём 12 px; filter снимается после появления', async () => {
+    const { page, errors } = await open();
+    expect(await opacity(page, '#blur')).toBe('0');
+    await scrollTo(page, 'e', '#blur');
+    const [blur] = await animations(page, '#blur');
+    expect(blur).toMatchObject({
+      duration: 1100,
+      first: { opacity: '0', filter: 'blur(16px)', transform: 'translate(0px, 12px)' },
+      last: { opacity: '1', filter: 'blur(0px)' },
+    });
+    await page.waitForFunction(() => document.getElementById('blur')?.style.filter === '', undefined, {
+      timeout: 5000,
+    });
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('draw: у линий SVG pathLength="1", штрих 1, сдвиг 1 → 0, линии по очереди через 160 мс', async () => {
+    const { page, errors } = await open();
+    expect(await page.$$eval('#draw path', (nodes) => nodes.map((n) => n.getAttribute('pathLength')))).toEqual(['1', '1']);
+    await scrollTo(page, 'e', '#draw path');
+    const paths = await animations(page, '#draw path');
+    expect(paths.map((info) => info?.delay)).toEqual([0, 160]);
+    expect(paths[0]).toMatchObject({ duration: 1600, first: { strokeDashoffset: '1' }, last: { strokeDashoffset: '0' } });
+    await page.waitForFunction(
+      () => Array.from(document.querySelectorAll<SVGElement>('#draw path')).every((n) => n.style.strokeDashoffset === ''),
+      undefined,
+      { timeout: 6000 },
+    );
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it.each([
+    ['«уменьшить движение»', { reducedMotion: true }],
+    ['превью конструктора', { mode: 'preview' as const }],
+  ])('%s — новые пресеты ничего не режут и не прячут', async (_name, extra) => {
+    const { page, errors } = await open(extra);
+    expect(await page.$$eval('#words, #lines', (nodes) => nodes.map((n) => n.children.length))).toEqual([0, 0]);
+    expect(await page.$eval('#mask', (el) => (el instanceof HTMLElement ? el.style.clipPath : null))).toBe('');
+    expect(await page.$eval('#draw path', (el) => el.hasAttribute('pathLength'))).toBe(false);
+    expect(await opacity(page, '#blur')).toBe('1');
+    expect(errors).toEqual([]);
     await page.close();
   });
 

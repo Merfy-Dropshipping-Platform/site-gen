@@ -1,9 +1,8 @@
 import { ShellError } from '../errors';
-import type { AnimateProvider } from './behaviors/types';
+import type { AnimateProvider, PointerProvider, SplitProvider } from './behaviors/types';
 import type { ElScope } from './el';
 import type { EventBus } from './events';
 import type { Guard } from './guard';
-import { checkKeyframes } from './keyframes';
 import type { SectionInput } from './input';
 import { sectionLog } from './log';
 import { pageInfoOf } from './page-info';
@@ -18,8 +17,11 @@ import type {
   Json,
   Mode,
   OverlayWindow,
+  PageDomEvent,
+  PointerSectionEvent,
   ReadableStore,
   SectionEvent,
+  SplitBy,
   Stop,
   StoreCtx,
   ThemeSettings,
@@ -42,6 +44,8 @@ export interface CtxDeps {
   readonly theme: Readonly<ThemeSettings>; // сквозные настройки темы страницы (блок 9, часть 9б)
   readonly input: SectionInput;
   readonly animate: AnimateProvider | null; // провайдер части behaviors (блок 6); нет — ctx.animate бросает part-unknown
+  readonly split?: SplitProvider | null; // 12.11: то же для ctx.split
+  readonly pointer?: PointerProvider | null; // 12.11: то же для ctx.on(…, 'pointermove')
   // 03.11: ctx.behavior — команды поведений этой секции, их выбирает часть behaviors (instance.ts привязывает её к
   // экземпляру); нельзя — Error с текстом для автора.
   readonly behavior: BaseCtx<Record<string, unknown>>['behavior'];
@@ -49,7 +53,7 @@ export interface CtxDeps {
   readonly state?: Readonly<Record<string, unknown>>; // начальный ctx.state — копия при замене в превью (часть 5г)
 }
 
-const DOM_EVENTS: ReadonlySet<string> = new Set(['keydown', 'keyup', 'scroll', 'resize', 'pointerdown']);
+const DOM_EVENTS: ReadonlySet<string> = new Set(['keydown', 'keyup', 'scroll', 'resize', 'pointerdown', 'pointermove']);
 // ctx.ext без модулей расширений (блок 9, часть 9в): модули по uses ставит instance.ts поверх.
 const NO_EXT: Readonly<Record<string, ExtModule>> = Object.freeze({});
 // ctx.stores без своих сторов: сторы по uses ["store:…"] ставят поверх instance.ts и own-stores.ts.
@@ -72,9 +76,18 @@ const sectionEventOf = (event: Event, scope: ElScope): SectionEvent => {
   });
 };
 
-const onOf =
-  (win: Window, scope: ElScope, run: Guard, signal: AbortSignal): BaseCtx<Record<string, unknown>>['on'] =>
-  (target, type, fn) => {
+// Обработчик ctx.on: SectionEvent или (у pointermove) PointerSectionEvent.
+type Listener = (event: PointerSectionEvent) => void;
+
+// pointermove (12.11) ведёт провайдер части behaviors: раз в кадр и с координатами курсора.
+function onOf(
+  win: Window,
+  scope: ElScope,
+  run: Guard,
+  signal: AbortSignal,
+  pointer: PointerProvider | null | undefined,
+): BaseCtx<Record<string, unknown>>['on'] {
+  return (target: 'window' | 'document', type: PageDomEvent, fn: Listener): Stop => {
     const known = DOM_EVENTS.has(type) && (target === 'window' || target === 'document');
     if (!known) {
       throw new ShellError(
@@ -83,10 +96,18 @@ const onOf =
       );
     }
     const node: EventTarget = target === 'window' ? win : win.document;
-    const listener = (event: Event): void => void run('runtime', () => fn(sectionEventOf(event, scope)));
+    // У pointermove к SectionEvent добавлены pointer и at — их даёт провайдер (extra). Reflect.apply: типы fn у разных
+    // событий разные, а приведения типов в пакете запрещены.
+    const call = (event: Event, extra?: object): void =>
+      void run('runtime', () => Reflect.apply(fn, undefined, [{ ...sectionEventOf(event, scope), ...extra }]));
+    if (type === 'pointermove') {
+      return need(pointer, 'on')(node, scope, call, signal);
+    }
+    const listener = (event: Event): void => call(event);
     node.addEventListener(type, listener, { signal });
     return () => node.removeEventListener(type, listener);
   };
+}
 
 const stopWithSignal = (stop: Stop, signal: AbortSignal): Stop => {
   if (signal.aborted) {
@@ -140,7 +161,7 @@ const listenOf =
 const methodsOf = (deps: CtxDeps, signal: AbortSignal) => ({
   ref: (refName: string) => deps.scope.ref(refName),
   refs: (refName: string) => deps.scope.refs(refName),
-  on: onOf(deps.win, deps.scope, deps.run, signal),
+  on: onOf(deps.win, deps.scope, deps.run, signal, deps.pointer),
   every: everyOf(deps.win, deps.run, signal),
   after: afterOf(deps.win, deps.run, signal),
   watch: watchOf(deps.run, signal),
@@ -148,19 +169,42 @@ const methodsOf = (deps: CtxDeps, signal: AbortSignal) => ({
   emit: (emitName: string, detail?: Json): void => deps.bus.emit(`${deps.name}:${emitName}`, detail ?? null),
   log: (...values: unknown[]) => sectionLog(deps.mode, deps.name, deps.id, values),
   animate: animateOf(deps),
+  split: splitOf(deps),
   behavior: deps.behavior,
 });
 
-// ctx.animate (блок 6, design.md раздел 10): узел — только своей секции, кадры — из списка, провайдер — часть behaviors.
+// ctx.animate и ctx.split (блок 6, design.md раздел 10): узлы — только своей секции, кадры проверяет и Motion подаёт часть
+// behaviors (12.11: проверка кадров переехала туда — ядро стоит в бюджете веса). Свой узел или сбой sdk-call-invalid.
+function ownNode(deps: CtxDeps, call: string, el: El): Element {
+  const node = deps.scope.nodeOf(el);
+  if (node === null) throw new ShellError('sdk-call-invalid', `ctx.${call}: элемент не из этой секции`);
+  return node;
+}
+
+// Провайдер части behaviors: нет — сбой part-unknown с текстом для автора секции.
+function need<T>(provider: T | null | undefined, call: string): T {
+  if (!provider)
+    throw new ShellError('part-unknown', `ctx.${call}: на странице нет кода анимаций — пересоберите страницу`);
+  return provider;
+}
+
 function animateOf(deps: CtxDeps): BaseCtx<Record<string, unknown>>['animate'] {
   return (el, keyframes, options) => {
-    const node = deps.scope.nodeOf(el);
-    if (node === null) throw new ShellError('sdk-call-invalid', 'ctx.animate: элемент не из этой секции');
-    checkKeyframes(keyframes);
-    if (deps.animate === null)
-      throw new ShellError('part-unknown', 'ctx.animate: на странице нет кода анимаций — пересоберите страницу');
-    return deps.animate(node, keyframes, options, deps.signal, deps.mode);
+    const nodes = [el].flat().map((item) => ownNode(deps, 'animate', item));
+    return need(deps.animate, 'animate')(nodes, keyframes, options, deps.signal, deps.mode);
   };
+}
+
+function splitOf(deps: CtxDeps): BaseCtx<Record<string, unknown>>['split'] {
+  function split(el: El, by: 'chars' | 'words'): readonly El[];
+  function split(el: El, by: 'lines'): Promise<readonly El[]>;
+  function split(el: El, by: SplitBy): readonly El[] | Promise<readonly El[]> {
+    const node = ownNode(deps, 'split', el);
+    const wrap = (nodes: readonly HTMLElement[]): readonly El[] => nodes.map((item) => deps.scope.wrap(item));
+    const pieces = need(deps.split, 'split')(node, by, deps.signal);
+    return pieces instanceof Promise ? pieces.then(wrap) : wrap(pieces);
+  }
+  return split;
 }
 
 export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknown>>): BaseCtx<Record<string, unknown>> {

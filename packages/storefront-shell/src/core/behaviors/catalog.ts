@@ -190,6 +190,8 @@ export const EASINGS: Readonly<Record<EasingName, Bezier>> = {
   'power3.in': [0.5, 0, 0.75, 0],
   'power2.inOut': [0.65, 0, 0.35, 1],
   'back.out': [0.33, 1.36, 0.66, 1],
+  // 12.11: долгое торможение, как у сайтов с Awwwards (easeOutExpo) — для масок, строк и размытия.
+  'expo.out': [0.16, 1, 0.3, 1],
 };
 
 export type PresetName =
@@ -201,96 +203,32 @@ export type PresetName =
   | 'load-1'
   | 'load-2'
   | 'load-3'
-  | 'letters';
+  | 'letters'
+  | 'words'
+  | 'lines'
+  | 'mask-up'
+  | 'blur-in'
+  | 'draw';
 
 export interface PresetSpec {
-  readonly target: 'self' | 'children' | 'letters' | 'section'; // что движется; section — ближайшая <merfy-section>
+  // что движется; section — ближайшая <merfy-section>; words и lines — слова и строки текста (каждая в обёртке-маске),
+  // shapes — линии SVG (path, line, polyline, polygon, circle, ellipse, rect) с pathLength="1"
+  readonly target: 'self' | 'children' | 'letters' | 'words' | 'lines' | 'shapes' | 'section';
   readonly trigger: 'view' | 'load'; // при попадании в экран или при загрузке страницы
   readonly margin: string; // отступ области наблюдения, как rootMargin
   readonly amount: number; // доля элемента в области наблюдения
   readonly opacity: number; // начальная прозрачность, конечная — 1
   readonly x: number; // начальный сдвиг по горизонтали; у appear-side знак — по чётности секции
   readonly y: number; // начальный сдвиг по вертикали
-  readonly unit: 'px' | 'em';
+  readonly unit: 'px' | 'em' | '%';
   readonly duration: number; // мс
   readonly easing: EasingName;
   readonly stagger: number; // мс между элементами одной пачки (дети, буквы, элементы одного кадра)
   readonly delay: number; // мс; data-delay на элементе прибавляется
   readonly visibleAtStart: 'animate' | 'show'; // видимые при старте: анимировать сразу или показать без анимации
+  // 12.11: кадры сверх прозрачности и сдвига — свойство → [начало, конец]. Начало ставится инлайном до появления, после
+  // него инлайн снимается. Свойства — из списка ctx.animate (keyframes.ts).
+  readonly extra?: Readonly<Record<string, readonly [string | number, string | number]>>;
 }
 
-const SCROLL = { trigger: 'view', margin: '0px 0px -15% 0px', amount: 0, opacity: 0, unit: 'px', delay: 0 } as const;
-const RISE = { trigger: 'view', margin: '0px 0px -36px 0px', amount: 0.08, opacity: 0, x: 0, unit: 'px' } as const;
-const LOAD = { target: 'self', trigger: 'load', margin: '0px', amount: 0, opacity: 0, x: 0, unit: 'px' } as const;
-
-export const PRESETS: Readonly<Record<PresetName, PresetSpec>> = {
-  appear: {
-    ...SCROLL,
-    target: 'self',
-    x: 0,
-    y: 24,
-    duration: 600,
-    easing: 'power2.out',
-    stagger: 80,
-    visibleAtStart: 'animate',
-  },
-  'appear-group': {
-    ...SCROLL,
-    target: 'children',
-    x: 0,
-    y: 24,
-    duration: 500,
-    easing: 'power2.out',
-    stagger: 70,
-    visibleAtStart: 'animate',
-  },
-  'appear-side': {
-    ...SCROLL,
-    target: 'section',
-    x: 32,
-    y: 24,
-    duration: 700,
-    easing: 'power3.out',
-    stagger: 0,
-    visibleAtStart: 'show',
-  },
-  'fade-up': {
-    ...RISE,
-    target: 'self',
-    y: 20,
-    duration: 650,
-    easing: 'material',
-    stagger: 0,
-    delay: 0,
-    visibleAtStart: 'animate',
-  },
-  'slide-down': {
-    ...RISE,
-    target: 'self',
-    y: -16,
-    duration: 550,
-    easing: 'material',
-    stagger: 0,
-    delay: 0,
-    visibleAtStart: 'animate',
-  },
-  'load-1': { ...LOAD, y: -16, duration: 700, easing: 'material', stagger: 0, delay: 50, visibleAtStart: 'animate' },
-  'load-2': { ...LOAD, y: 20, duration: 700, easing: 'material', stagger: 0, delay: 150, visibleAtStart: 'animate' },
-  'load-3': { ...LOAD, y: 20, duration: 700, easing: 'material', stagger: 0, delay: 280, visibleAtStart: 'animate' },
-  letters: {
-    ...SCROLL,
-    target: 'letters',
-    x: 0,
-    y: 0.4,
-    unit: 'em',
-    duration: 500,
-    easing: 'power2.out',
-    stagger: 30,
-    visibleAtStart: 'animate',
-  },
-};
-
-// Параметры пресета на элементе с data-animate.
-export const PRESET_PARAMS: Readonly<Record<string, ParamSpec>> = {
-  delay: { kind: 'int', min: 0, max: 5000, default: 0 },
-};
+// Данные пресетов (PRESETS, PRESET_PARAMS) — в presets.ts (12.11): в общий кусок всех поведений они не попадают.

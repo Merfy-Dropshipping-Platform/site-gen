@@ -263,6 +263,8 @@ const createOf = (options: BehaviorsOptions, state: PageState, core: CoreHandle)
   });
   return Object.freeze({
     animate: options.animate ?? null,
+    split: options.split ?? null,
+    pointer: options.pointer ?? null,
     control: controlOf(state),
     save: (sectionId: string): Json | null => saveOf(state, sectionId),
     restore: (sectionId: string, saved: Json): void => restoreOf(state, sectionId, saved),

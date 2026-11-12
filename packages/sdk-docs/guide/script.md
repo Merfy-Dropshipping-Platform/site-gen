@@ -40,7 +40,7 @@ export default defineSection<State>({
 | `ctx.listen(name, fn)` | событие витрины `merfy:…` ([events.md](events.md)) |
 | `ctx.emit(name, detail)` | своё событие секции, уходит как `<имя секции>:<name>` |
 | `ctx.log(...values)` | в превью — в консоль с именем секции; на витрине — ничего |
-| `ctx.animate(el, keyframes, options)` | анимация элемента |
+| `ctx.animate(el, keyframes, options)` | анимация элемента: свойства, миллисекунды, кривые, `finished` и `stop`, рецепты — [motion.md](motion.md#ctxanimate) |
 | `ctx.page` | адрес страницы: `path` и `query`; с `"uses": ["page"]` — ещё сторы `$scroll`, `$leaving`, `$now` — [страница целиком](#страница-целиком) |
 | `ctx.storage` | хранилище секции в браузере: `get`, `set` (до 4 КБ), `remove` |
 | `ctx.ext.<id>` | расширение из `uses: ["ext:<id>"]`: сторы `$имя` и методы `имя(input)` — [вызов функции расширения](#вызов-функции-расширения) |

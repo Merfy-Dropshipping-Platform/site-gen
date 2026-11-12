@@ -20,13 +20,15 @@
 
 ## Плакат, слои, движение
 
+Пресеты `data-animate`, `ctx.animate` и рецепты движения целиком — [motion.md](motion.md).
+
 - **Шкала текста** — до `text-9xl`: `text-6xl`…`text-9xl` резиновые (растут с шириной экрана), межстрочный — плотный.
   Крупнее или своей кривой — `text-[clamp(5rem,22vw,20rem)]`.
 - **Слои**: `relative isolate` на секции, слои — `absolute inset-0`, порядок — `-z-10`, `z-10`, `z-[3]`; смешение —
   `mix-blend-multiply`, `mix-blend-screen`, `mix-blend-difference`; размытая подложка — `backdrop-blur-md bg-background/60`.
   Тень поднятой плашки — `shadow-raised`.
 - **Появление при прокрутке** — `data-animate="appear"` ([behaviors.md](behaviors.md)); играет, когда в «Настройках темы»
-  включено «Появление секций» (`choice-motion-reveal: on`).
+  включено «Появление секций» (`choice-motion-reveal: on`, по умолчанию `off`). Пресеты и их время — [motion.md](motion.md#пресеты-data-animate).
 - **Бегущая строка** — `animate-marquee` (`-slow`, `-fast`, `-reverse`) на ряду из двух одинаковых половин: ряд едет на
   половину своей ширины. Пауза под курсором — `hover:animate-paused`.
 - **Параллакс** — `parallax` или `parallax-strong` на фоне внутри `overflow-hidden`: фон смещается при прокрутке; браузер

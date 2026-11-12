@@ -1,4 +1,5 @@
-import { EASINGS, PRESETS } from '@merfy/shell/behaviors/catalog';
+import { EASINGS } from '@merfy/shell/behaviors/catalog';
+import { PRESETS } from '@merfy/shell/behaviors/presets';
 import { ANIMATABLE } from '@merfy/shell/keyframes';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { docsFiles, type DocsFiles } from '../src/docs';

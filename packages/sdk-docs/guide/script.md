@@ -33,14 +33,15 @@ export default defineSection<State>({
 | `ctx.state` | состояние экземпляра секции; переживает замену секции в превью |
 | `ctx.ref(name)` | элемент `data-ref="<name>"` внутри секции или `null` |
 | `ctx.refs(name)` | все элементы `data-ref="<name>"` |
-| `ctx.on(target, type, fn)` | событие `window` или `document` (прокрутка, клавиши); снимается само |
+| `ctx.on(target, type, fn)` | событие `window` или `document` (прокрутка, клавиши, нажатие; положение курсора — `pointermove`, [motion.md](motion.md#курсор)); снимается само |
 | `ctx.every(ms, fn)` | повтор раз в `ms` (не чаще 100 мс); снимается сам |
 | `ctx.after(ms, fn)` | один раз через `ms` |
 | `ctx.watch(store, fn)` | подписка на стор модуля SDK: сразу текущее значение, потом каждое новое |
 | `ctx.listen(name, fn)` | событие витрины `merfy:…` ([events.md](events.md)) |
 | `ctx.emit(name, detail)` | своё событие секции, уходит как `<имя секции>:<name>` |
 | `ctx.log(...values)` | в превью — в консоль с именем секции; на витрине — ничего |
-| `ctx.animate(el, keyframes, options)` | анимация элемента: свойства, миллисекунды, кривые, `finished` и `stop`, рецепты — [motion.md](motion.md#ctxanimate) |
+| `ctx.animate(el, keyframes, options)` | анимация элемента или списка: свойства, миллисекунды, кривые и пружина, `stagger`, повтор, `finished` и `stop`, рецепты — [motion.md](motion.md#ctxanimate) |
+| `ctx.split(el, by)` | текст элемента на буквы, слова или строки для `ctx.animate` — [motion.md](motion.md#ctxsplit) |
 | `ctx.page` | адрес страницы: `path` и `query`; с `"uses": ["page"]` — ещё сторы `$scroll`, `$leaving`, `$now` — [страница целиком](#страница-целиком) |
 | `ctx.storage` | хранилище секции в браузере: `get`, `set` (до 4 КБ), `remove` |
 | `ctx.ext.<id>` | расширение из `uses: ["ext:<id>"]`: сторы `$имя` и методы `имя(input)` — [вызов функции расширения](#вызов-функции-расширения) |

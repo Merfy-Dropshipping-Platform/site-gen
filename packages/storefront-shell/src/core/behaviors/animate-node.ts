@@ -18,6 +18,11 @@ export interface AnimateRun {
   readonly signal: AbortSignal;
 }
 
+// 13.11: управление Motion — для ctx.scroll (scrub.ts); у снятой до старта анимации его нет.
+export interface NodeAnimation extends Animation {
+  readonly controls?: ReturnType<typeof animateMini>;
+}
+
 type MiniKeyframes = Parameters<typeof animateMini>[1];
 // pseudoElement Motion читает из общих параметров (animate-elements: valueOptions), в типе mini-ветки его нет. repeat и
 // repeatType mini передаёт в WAAPI как iterations (repeat + 1) и direction ('reverse' → alternate).
@@ -60,7 +65,7 @@ export function animateNode(
   keyframes: Keyframes,
   options: NodeAnimateOptions | undefined,
   run: AnimateRun,
-): Animation {
+): NodeAnimation {
   if (run.signal.aborted) return stopped();
   const controls = animateMini(node, framesOf(keyframes), optionsOf(options, run));
   // finished выполняется и по концу, и по stop(): Motion при отмене своего обещания не даёт.
@@ -77,5 +82,5 @@ export function animateNode(
     settle();
   };
   run.signal.addEventListener('abort', stop, { once: true });
-  return { finished, stop };
+  return { finished, stop, controls };
 }

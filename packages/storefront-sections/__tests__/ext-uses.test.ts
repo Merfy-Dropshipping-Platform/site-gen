@@ -51,8 +51,8 @@ describe('uses: текст отказа', () => {
     expect(USES_TEXT.replace(/^нужно /, '').split(/, | или /)).toContain(use);
   });
 
-  it('виды ext:<id> и store:<префикс>:<имя> — в конце текста', () => {
-    expect(USES_TEXT).toMatch(/, ext:<id расширения> или store:<префикс>:<имя стора>$/);
+  it('виды ext:<id>, store:<префикс>:<имя> и lib:<имя> — в конце текста', () => {
+    expect(USES_TEXT).toMatch(/, ext:<id расширения>, store:<префикс>:<имя стора> или lib:<библиотека SDK>$/);
   });
 });
 

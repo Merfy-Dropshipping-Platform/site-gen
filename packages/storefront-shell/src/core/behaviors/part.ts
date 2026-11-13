@@ -3,10 +3,13 @@ import type {
   BehaviorHandleName,
   BehaviorHandles,
   CoreHandle,
+  El,
   InstanceHost,
   Json,
+  LibModules,
   NoData,
   Result,
+  SplitBy,
 } from '../types';
 import { BEHAVIORS, type BehaviorSpec, type CommandArg } from './catalog';
 import { invalid, refuse } from './command';
@@ -21,8 +24,12 @@ import type {
   BehaviorsOptions,
   BehaviorsPart,
   ControlProvider,
+  CtxMore,
+  MotionHost,
   MotionPrefs,
+  SectionHost,
 } from './types';
+import type { LibraryName } from './libraries';
 
 // Часть behaviors (design.md блока 6, раздел 2): подключение готовых поведений и появлений к экземплярам секций.
 // Экземпляры — таблица по id секции для save и restore превью; имена, о которых уже писали в консоль, — по одному разу.
@@ -256,6 +263,91 @@ const controlOf =
     return handle;
   };
 
+// ctx.animate, ctx.split, ctx.scroll, ctx.inView и ctx.lib экземпляра (блок 6, design.md раздел 10; с 13.11 — здесь, а не
+// в ядре: ядро стоит в бюджете веса). Провайдеры — из файлов animate.js, scroll.js и lib-<имя>.js, их кладёт сборка по
+// скрипту и uses секций. Узлы ctx.animate и ctx.split — только своей секции, иначе sdk-call-invalid; провайдера нет —
+// part-unknown с текстом для автора. Ошибки — обычный Error с полем code (ловит предохранитель секции).
+const coded = (text: string, code: string): Error => Object.assign(new Error(text), { code });
+const missing = (call: string): Error =>
+  coded(`ctx.${call}: на странице нет кода анимаций — пересоберите страницу`, 'part-unknown');
+
+function ownNode(host: SectionHost, call: string, el: El): Element {
+  const node = host.scope.nodeOf(el);
+  if (node === null) throw coded(`ctx.${call}: элемент не из этой секции`, 'sdk-call-invalid');
+  return node;
+}
+
+function splitOf(options: BehaviorsOptions, host: SectionHost): CtxMore['split'] {
+  function split(el: El, by: 'chars' | 'words'): readonly El[];
+  function split(el: El, by: 'lines'): Promise<readonly El[]>;
+  function split(el: El, by: SplitBy): readonly El[] | Promise<readonly El[]> {
+    const node = ownNode(host, 'split', el);
+    if (options.split === undefined) throw missing('split');
+    const wrap = (nodes: readonly HTMLElement[]): readonly El[] => nodes.map((item) => host.scope.wrap(item));
+    const pieces = options.split(node, by, host.signal);
+    return pieces instanceof Promise ? pieces.then(wrap) : wrap(pieces);
+  }
+  return split;
+}
+
+// Библиотеки секции по её uses. Адаптера нет — чтение ctx.lib.<имя> бросает (ctx создаётся вне предохранителя, а
+// чтение — в коде секции).
+function libOf(options: BehaviorsOptions, host: MotionHost): LibModules {
+  const lib: Partial<Record<LibraryName, unknown>> = {};
+  for (const name of options.libUses?.[host.name] ?? []) {
+    const adapter = options.libs?.[name];
+    if (adapter === undefined) {
+      Object.defineProperty(lib, name, {
+        enumerable: true,
+        get: () => {
+          throw missing(`lib.${name}`);
+        },
+      });
+    } else lib[name] = adapter(host);
+  }
+  return libsOf(lib);
+}
+
+// still() — на момент вызова: метку запуска в превью узел секции несёт только до конца mount.
+function motionHostOf(host: SectionHost): MotionHost {
+  return {
+    ...host,
+    still: () => {
+      const prefs = motionPrefs(window, host.mode, host.scope.root.closest('merfy-section'));
+      return prefs.reduced || prefs.still;
+    },
+  };
+}
+
+function moreOf(options: BehaviorsOptions, sectionHost: SectionHost): CtxMore {
+  const host = motionHostOf(sectionHost);
+  return {
+    animate: (el, keyframes, animateOptions) => {
+      const nodes = [el].flat().map((item) => ownNode(host, 'animate', item));
+      if (options.animate === undefined) throw missing('animate');
+      return options.animate(nodes, keyframes, animateOptions, host.signal, host.mode);
+    },
+    split: splitOf(options, host),
+    scroll: (target, run, scrollOptions) => {
+      if (options.scroll === undefined) throw missing('scroll');
+      return options.scroll(host, target, run, scrollOptions);
+    },
+    inView: (el, fn, viewOptions) => {
+      if (options.inView === undefined) throw missing('inView');
+      return options.inView(host, el, fn, viewOptions);
+    },
+    lib: libOf(options, host),
+  };
+}
+
+// ctx.lib — замороженный объект адаптеров. Тип LibModules полный: имени без "lib:<имя>" в uses приём секции не пропустит.
+function libsOf(lib: Partial<Record<LibraryName, unknown>>): LibModules {
+  const frozen = Object.freeze(lib);
+  if (!isLibModules(frozen)) throw missing('lib');
+  return frozen;
+}
+const isLibModules = (value: object): value is LibModules => typeof value === 'object';
+
 const createOf = (options: BehaviorsOptions, state: PageState, core: CoreHandle): BehaviorsApi => {
   state.core = core;
   document.addEventListener('merfy:page:ready', () => document.documentElement.removeAttribute(MOTION_FLAG), {
@@ -266,6 +358,7 @@ const createOf = (options: BehaviorsOptions, state: PageState, core: CoreHandle)
     split: options.split ?? null,
     pointer: options.pointer ?? null,
     control: controlOf(state),
+    more: (host: SectionHost): CtxMore => moreOf(options, host),
     save: (sectionId: string): Json | null => saveOf(state, sectionId),
     restore: (sectionId: string, saved: Json): void => restoreOf(state, sectionId, saved),
   });

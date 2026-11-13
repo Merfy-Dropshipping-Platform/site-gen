@@ -52,10 +52,10 @@ describe('расчёт образца', () => {
     expect(resolved.schemes['scheme-2']['primary-hover']).toBe('#e0e0e0');
   });
 
-  it('все 32 цвета в каждой схеме и 48 значений в корне: три схемы деталей не заданы', () => {
+  it('все 32 цвета в каждой схеме и 49 значений в корне: три схемы деталей не заданы', () => {
     expect(Object.keys(resolved.schemes['scheme-1'])).toHaveLength(32);
     expect(Object.keys(resolved.schemes['scheme-2'])).toHaveLength(32);
-    expect(Object.keys(resolved.root)).toHaveLength(48);
+    expect(Object.keys(resolved.root)).toHaveLength(49);
     expect('scheme-card' in resolved.root).toBe(false);
   });
 
@@ -87,12 +87,13 @@ describe('правки одного места и атрибуты выборо�
     expect(editsAt({}, 'root')).toEqual({});
   });
 
-  it('четыре выбора словаря — атрибуты data- на <html>', () => {
+  it('пять выборов словаря — атрибуты data- на <html>', () => {
     expect(choiceAttributes(sample.dictionary, resolveTokens(sample.dictionary, sample.tokens, {}))).toEqual({
       'data-card-style': 'standard',
       'data-card-align': 'left',
       'data-motion-reveal': 'off',
       'data-motion-hover': 'none',
+      'data-page-transition': 'none',
     });
   });
 

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { MOTION_HEAD_SCRIPT } from '@merfy/shell/behaviors/motion-css';
+import { PAGE_TRANSITION_SCRIPT } from '@merfy/shell/behaviors/page-transition';
 import { counterScripts } from '@merfy/shell/counters';
 import type { Counter } from '@merfy/storefront-config';
 import { describe, expect, it } from 'vitest';
@@ -8,6 +9,8 @@ import { CSP_MAX_LENGTH, storefrontCsp, textHash, type CspSource } from '../src/
 const base64 = (text: string): string => createHash('sha256').update(text, 'utf8').digest('base64');
 const hexBase64 = (hex: string): string => Buffer.from(hex, 'hex').toString('base64');
 const MOTION = `'sha256-${base64(MOTION_HEAD_SCRIPT)}'`;
+// 13.11: скрипт имён переходов между страницами (head.ts) — тоже по хешу, у каждой политики.
+const TRANSITION = `'sha256-${base64(PAGE_TRANSITION_SCRIPT)}'`;
 const BUNDLE_HEX = 'ab'.repeat(32);
 const CSS_HEX = '2'.repeat(64);
 const SOURCE: CspSource = {
@@ -59,7 +62,7 @@ describe('storefrontCsp: встроенный код оформления и х�
 describe('storefrontCsp (блок 13 «Секций и SDK», часть 13б)', () => {
   it('обычная политика: флаг движения по хешу, файлы — свои, запросы — шлюз и сборщик аналитики, отчёты — /csp', () => {
     expect(storefrontCsp(SOURCE)).toBe(
-      `default-src 'self'; script-src 'self' ${MOTION}; ` +
+      `default-src 'self'; script-src 'self' ${MOTION} ${TRANSITION}; ` +
         "connect-src 'self' https://gateway.dev.merfy.ru https://analytics.dev.merfy.ru; " +
         "img-src 'self' data: https:; media-src 'self' https:; style-src 'self' 'unsafe-inline'; font-src 'self'; " +
         "frame-src 'self'; object-src 'none'; base-uri 'none'; report-uri https://analytics.dev.merfy.ru/csp",
@@ -94,6 +97,7 @@ describe('storefrontCsp (блок 13 «Секций и SDK», часть 13б)',
     expect(directive(policy, 'script-src')).toEqual([
       "'strict-dynamic'",
       MOTION,
+      TRANSITION,
       `'sha256-${hexBase64(BUNDLE_HEX)}'`,
       ...inlineHashes(METRIKA),
       "'unsafe-inline'",

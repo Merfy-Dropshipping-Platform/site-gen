@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { behaviors } from '../src/core/behaviors/part';
 import { pointer, split, springOf } from '../src/core/behaviors/motion';
 import { PRESETS } from '../src/core/behaviors/presets';
-import { ANIMATABLE } from '../src/core/keyframes';
+import { checkKeyframes } from '../src/core/keyframes';
 import { start, type StartedCore } from '../src/core/start';
 import type { El, PointerSectionEvent } from '../src/core/types';
 import { configTag, entry, placeSection, tick, watchFailures } from './core-support';
@@ -249,10 +249,10 @@ describe('ctx.on pointermove', () => {
 });
 
 describe('пресеты 12.11', () => {
-  it('words, lines, mask-up, blur-in, draw есть в каталоге; extra — только свойства ctx.animate', () => {
+  it('words, lines, mask-up, blur-in, draw есть в каталоге; extra проходит проверку кадров ctx.animate', () => {
     for (const name of ['words', 'lines', 'mask-up', 'blur-in', 'draw'] as const) {
       expect(PRESETS[name], name).toBeDefined();
-      for (const property of Object.keys(PRESETS[name].extra ?? {})) expect(ANIMATABLE.has(property), property).toBe(true);
+      expect(() => checkKeyframes(PRESETS[name].extra ?? {}), name).not.toThrow();
     }
   });
 

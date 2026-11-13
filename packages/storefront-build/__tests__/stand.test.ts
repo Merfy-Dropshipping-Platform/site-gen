@@ -27,6 +27,7 @@ describe('standLocals', () => {
       'data-card-align': 'left',
       'data-motion-reveal': 'off',
       'data-motion-hover': 'none',
+      'data-page-transition': 'none',
     });
     expect(locals.settings).toMatchObject({ 'cart-type': 'drawer', 'cookie-banner-enabled': true, 'wishlist-enabled': true, 'logo-image': '' });
     expect(Object.keys(locals.settings)).toHaveLength(10);

@@ -427,4 +427,10 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     fix: 'Добавь "store:<префикс>:<имя>" в uses section.json.',
     example: { before: '"uses": ["cart"]', after: '"uses": ["cart", "store:shop:exit-offer"]' },
   },
+  'lib-unknown': {
+    when: 'В uses стоит "lib:<имя>", которого нет в каталоге библиотек SDK, или скрипт читает ctx.lib.<имя>, а в uses нет "lib:<имя>".',
+    fix: 'Возьми библиотеку из каталога (сейчас — "lib:motion") и добавь её в uses section.json; код библиотеки не импортируй.',
+    example: { before: '"uses": ["lib:gsap"]', after: '"uses": ["lib:motion"]' },
+    doc: 'motion.md#полный-motion-libmotion',
+  },
 };

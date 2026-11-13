@@ -1,21 +1,28 @@
 import type {
   AnimateOptions,
   Animation,
+  BaseCtx,
   BehaviorHandleName,
   BehaviorHandles,
   CoreHandle,
   El,
+  InViewOptions,
   Json,
   Keyframes,
+  LibModules,
   Mode,
   NoData,
   PointerPoint,
   Result,
+  ScrollOptions,
   SdkPart,
   SplitBy,
+  Stop,
 } from '../types';
 import type { ElScope } from '../el';
+import type { Guard } from '../guard';
 import type { BehaviorName } from './catalog';
+import type { LibraryName } from './libraries';
 import type { Params } from './params';
 
 // Договор части behaviors (design.md блока 6, раздел 2): готовые поведения подключаются к экземпляру секции до mount
@@ -96,12 +103,50 @@ export type PointerProvider = (
   signal: AbortSignal,
 ) => () => void;
 
+// Экземпляр секции для ctx.animate, ctx.split, ctx.scroll, ctx.inView и ctx.lib (13.11): область элементов,
+// предохранитель для кода секции, сигнал снятия и режим. Эти члены ctx ставит часть behaviors (BehaviorsApi.more), а не
+// ядро: ядро — в бюджете веса.
+export interface SectionHost {
+  readonly name: string;
+  readonly scope: ElScope;
+  readonly run: Guard;
+  readonly signal: AbortSignal;
+  readonly mode: Mode;
+}
+export type CtxMore = Pick<BaseCtx<object>, 'animate' | 'split' | 'scroll' | 'inView' | 'lib'>;
+// Экземпляр для ctx.scroll и ctx.lib: still() — «уменьшить движение» или запуск в превью после правки настроек или
+// текста (prefs.ts) на момент вызова; считает часть behaviors, чтобы prefs.ts не ложился в scroll.js (бюджет 4096 Б).
+export interface MotionHost extends SectionHost {
+  still(): boolean;
+}
+
+// Провайдеры ctx.scroll и ctx.inView (файл scroll.js): узлы проверяют сами — по host.scope.
+export type ScrollProvider = (
+  host: MotionHost,
+  target: El,
+  run: Animation | ((progress: number) => void),
+  options: ScrollOptions | undefined,
+) => Stop;
+export type InViewProvider = (
+  host: SectionHost,
+  el: El | readonly El[],
+  fn: (el: El) => void | (() => void),
+  options: InViewOptions | undefined,
+) => Stop;
+// Адаптер библиотеки каталога (libraries.ts): ctx.lib.<имя> одного экземпляра.
+export type LibAdapter<N extends LibraryName = LibraryName> = (host: MotionHost) => LibModules[N];
+
 export interface BehaviorsOptions {
   readonly list: readonly Behavior[];
   readonly reveal?: Reveal;
   readonly animate?: AnimateProvider;
   readonly split?: SplitProvider;
   readonly pointer?: PointerProvider;
+  readonly scroll?: ScrollProvider;
+  readonly inView?: InViewProvider;
+  readonly libs?: { readonly motion?: LibAdapter<'motion'> };
+  // Библиотеки секций страницы: имя секции → имена из её uses "lib:<имя>" (сборка, bundle.ts).
+  readonly libUses?: Readonly<Record<string, readonly LibraryName[]>>;
 }
 
 // Поведения секции для ctx.behavior: section — экземпляр (узел, id, сигнал), within — узел этой секции, внутри которого
@@ -119,6 +164,7 @@ export interface BehaviorsApi {
   readonly split: SplitProvider | null; // null — то же для ctx.split
   readonly pointer: PointerProvider | null; // null — то же для ctx.on(…, 'pointermove')
   readonly control: ControlProvider; // ctx.behavior скрипта секции
+  more(host: SectionHost): CtxMore; // 13.11: ctx.animate, ctx.split, ctx.scroll, ctx.inView и ctx.lib экземпляра
   save(sectionId: string): Json | null; // превью (часть 5б): состояние поведений экземпляра перед заменой
   restore(sectionId: string, state: Json): void; // превью: после запуска нового экземпляра с тем же id
 }

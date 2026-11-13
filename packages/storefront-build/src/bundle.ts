@@ -3,6 +3,7 @@ import { build, type BuildFailure, type Message, type OnResolveResult, type Plug
 import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
 import { StorefrontBuildError } from './errors';
+import { LIB_USE_PREFIX } from './features';
 
 // Бандл страницы (design.md блока 5, раздел 3.10; 13г Д): ядро секций @merfy/shell/core и модули секций страницы —
 // один ES-модуль, его собирает esbuild при сборке магазина. Код секций здесь не выполняется: esbuild только читает
@@ -84,10 +85,15 @@ export interface PageBundle {
 // экспортов ядра, они идут в код как есть; остальное — через JSON.stringify.
 // Что из SDK поведений нужно странице (блок 6, часть 6б): имена поведений каталога, появления data-animate и провайдер
 // для ctx.animate. Все три пусты — часть behaviors в бандл не идёт.
+// 13.11 (части 2б и 2в спеки анимаций): scroll — ctx.scroll (scroll.js), inView — ctx.inView (in-view.js), libs —
+// библиотеки каталога из uses секций (lib-<имя>.js). Нет поля — не нужно: у страниц без них бандл прежний.
 export interface KitPlan {
   behaviors: readonly string[];
   reveal: boolean;
   animate: boolean;
+  scroll?: boolean;
+  inView?: boolean;
+  libs?: readonly string[];
 }
 
 // Файлы dist/behaviors (имя файла → текст) и что из них нужно; собирает их тот же esbuild, что и бандл страницы.
@@ -101,9 +107,11 @@ const kitSpecifier = (file: string): string => JSON.stringify(`${KIT_IMPORT}${fi
 
 // Импорты поведений и выражение части behaviors для parts. Имя поведения идёт в код идентификатором, поэтому не kebab-case
 // — bundle-failed до esbuild.
-function kitEntry(kit: KitPlan): { imports: string; part: string } | null {
-  if (kit.behaviors.length === 0 && !kit.reveal && !kit.animate) return null;
-  const bad = kit.behaviors.find((name) => !KIT_NAME.test(name));
+function kitEntry(kit: KitPlan, libUses: string): { imports: string; part: string } | null {
+  const libs = kit.libs ?? [];
+  const none = kit.behaviors.length === 0 && !kit.reveal && !kit.animate;
+  if (none && kit.scroll !== true && kit.inView !== true && libs.length === 0) return null;
+  const bad = [...kit.behaviors, ...libs].find((name) => !KIT_NAME.test(name));
   if (bad !== undefined)
     throw new StorefrontBuildError('bundle-failed', `имя поведения ${JSON.stringify(bad)}: нужен kebab-case`);
   const lines = [`import { behaviors as kitBehaviors } from ${kitSpecifier('part.js')};`];
@@ -122,7 +130,40 @@ function kitEntry(kit: KitPlan): { imports: string; part: string } | null {
     );
     options.push('animate: kitAnimate', 'split: kitSplit', 'pointer: kitPointer');
   }
+  options.push(...extraKit(kit, libs, libUses, lines));
   return { imports: `${lines.join('\n')}\n`, part: `kitBehaviors({ ${options.join(', ')} })` };
+}
+
+// 13.11: scroll.js, in-view.js и адаптеры библиотек lib-<имя>.js (экспорт — имя библиотеки) с libUses секций страницы.
+function extraKit(kit: KitPlan, libs: readonly string[], libUses: string, lines: string[]): string[] {
+  const options: string[] = [];
+  if (kit.scroll === true) {
+    lines.push(`import { scroll as kitScroll } from ${kitSpecifier('scroll.js')};`);
+    options.push('scroll: kitScroll');
+  }
+  if (kit.inView === true) {
+    lines.push(`import { inView as kitInView } from ${kitSpecifier('in-view.js')};`);
+    options.push('inView: kitInView');
+  }
+  if (libs.length === 0) return options;
+  const entries = libs.map((name, index) => {
+    lines.push(`import { ${exportOf(name)} as kitLib${index} } from ${kitSpecifier(`lib-${name}.js`)};`);
+    return `${JSON.stringify(name)}: kitLib${index}`;
+  });
+  options.push(`libs: { ${entries.join(', ')} }`, `libUses: ${libUses}`);
+  return options;
+}
+
+// "lib:<имя>" в uses секции (13.11): в строку секции для ядра не идёт — ядро таких частей не знает; имена библиотек
+// секций, которые есть в плане, — в libUses части behaviors (ctx.lib секции собирает она).
+const isLibUse = (use: string): boolean => use.startsWith(LIB_USE_PREFIX);
+function libUsesOf(sections: readonly BundleSection[], libs: readonly string[]): string {
+  const pairs = sections.flatMap((section) => {
+    const names = section.uses.filter(isLibUse).map((use) => use.slice(LIB_USE_PREFIX.length));
+    const known = names.filter((name) => libs.includes(name));
+    return known.length === 0 ? [] : [[section.name, known] as const];
+  });
+  return JSON.stringify(Object.fromEntries(pairs));
 }
 
 const LOAD_SECTION =
@@ -148,14 +189,15 @@ export function bundleEntry(
   // Строка секции — как до своих сторов (те же байты бандла у магазинов без них); у стора поля kind нет.
   const entryOf = (section: BundleSection, index: number): string => {
     const kind = section.kind === 'store' ? '' : `kind: ${JSON.stringify(section.kind)}, `;
-    return `{ name: ${JSON.stringify(section.name)}, ${kind}script: ${JSON.stringify(section.script)}, uses: ${JSON.stringify(section.uses)}, definition: s${index} }`;
+    const uses = section.uses.filter((use) => !isLibUse(use));
+    return `{ name: ${JSON.stringify(section.name)}, ${kind}script: ${JSON.stringify(section.script)}, uses: ${JSON.stringify(uses)}, definition: s${index} }`;
   };
   const entries = sections.flatMap((section, index) => (section.kind === 'store' ? [] : [entryOf(section, index)]));
   const stores = sections.flatMap((section, index) => (section.kind === 'store' ? [entryOf(section, index)] : []));
   const extra = [...(preview ? ['watchPreviewReplace'] : []), ...(stores.length > 0 ? ['pageStores'] : [])];
   const names = ['start', ...parts, ...extra].join(', ');
   const tail = `${preview ? ', preview: watchPreviewReplace' : ''}${stores.length > 0 ? `, stores: pageStores([${stores.join(', ')}])` : ''}`;
-  const kitCode = kit === undefined ? null : kitEntry(kit);
+  const kitCode = kit === undefined ? null : kitEntry(kit, libUsesOf(sections, kit.libs ?? []));
   const partList = [...parts, ...(kitCode === null ? [] : [kitCode.part])].join(', ');
   return `import { ${names} } from ${CORE_SPECIFIER};\n${kitCode?.imports ?? ''}${loader}${imports.join('')}start({ parts: [${partList}], sections: [${entries.join(', ')}]${tail} });\n`;
 }

@@ -18,7 +18,7 @@ const { dictionary, tokens } = sample;
 const GREEN = { schemes: { 'scheme-1': { primary: '#16a34a' }, 'scheme-2': { primary: '#22c55e' } } };
 
 describe('groupsOf', () => {
-  it('12 разделов платформы, в сумме 83 токена и 20 обязательных', () => {
+  it('12 разделов платформы, в сумме 84 токена и 20 обязательных', () => {
     const groups = groupsOf(platformDictionary);
     expect(groups.map((group) => [group.id, group.names.length, group.required.length])).toEqual([
       ['colors-base', 14, 2],
@@ -31,10 +31,10 @@ describe('groupsOf', () => {
       ['media', 3, 0],
       ['popover', 5, 0],
       ['page', 7, 2],
-      ['motion', 2, 0],
+      ['motion', 3, 0],
       ['slots', 2, 0],
     ]);
-    expect(groups.flatMap((group) => group.names)).toHaveLength(83);
+    expect(groups.flatMap((group) => group.names)).toHaveLength(84);
     expect(groups.flatMap((group) => group.required)).toHaveLength(20);
   });
 
@@ -49,7 +49,7 @@ describe('groupsOf', () => {
 describe('searchCatalog', () => {
   it('запись на токен: имя через «_», вид словами в описании', () => {
     const catalog = searchCatalog(platformDictionary);
-    expect(catalog).toHaveLength(83);
+    expect(catalog).toHaveLength(84);
     expect(catalog[0]).toEqual({
       name: 'background',
       token: 'background',

@@ -2,84 +2,75 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { behaviors } from '../src/core/behaviors/part';
 import { animate as animateProvider } from '../src/core/behaviors/motion';
 import type { AnimateProvider, SplitProvider } from '../src/core/behaviors/types';
-import { checkKeyframes } from '../src/core/keyframes';
+import { checkKeyframes, FORBIDDEN_IN_VALUE } from '../src/core/keyframes';
 import { start, type StartedCore } from '../src/core/start';
 import type { El } from '../src/core/types';
 import { configTag, entry, errorOf, placeSection, tick, watchFailures } from './core-support';
 
-// Граница ctx.animate (design.md блока 6, раздел 10): только свойства из списка, значения без url(), кавычек и «\»,
-// только элементы своей секции; Motion подаёт часть behaviors, без неё — сбой секции с понятным текстом.
+// Граница анимаций кода секции (design.md блока 6, раздел 10; 13.11 — любое свойство): имя — camelCase или --переменная,
+// значение без url(, image-set(, cross-fade(, element(, src(, кавычек, «\», «;», «{», «}», «@»; элементы — только своей
+// секции; Motion подаёт часть behaviors, без неё — сбой секции с понятным текстом.
 const done: AnimateProvider = () => ({ finished: Promise.resolve(), stop: () => undefined });
 
 describe('checkKeyframes', () => {
-  it('свойства из списка: числа, строки, массивы кадров', () => {
+  it('любое свойство в camelCase и --переменная с безопасным значением — можно', () => {
     expect(() =>
       checkKeyframes({
         opacity: [0, 1],
         transform: ['translateY(24px)', 'none'],
-        backgroundColor: '#f2e8dc',
-        maxHeight: '0px',
+        boxShadow: ['0 0 0 #0000', '0 20px 40px rgb(0 0 0 / 0.2)'],
+        left: ['0px', '10px'],
+        WebkitMaskPosition: '0% 0%',
+        backdropFilter: ['blur(0px)', 'blur(12px)'],
+        filter: 'drop-shadow(0 0 4px red) hue-rotate(90deg)',
+        '--glow': [0, 1],
+        clipPath: 'circle(40% at 50% 50%)',
+        backgroundImage: 'linear-gradient(90deg, red, blue)',
       }),
     ).not.toThrow();
   });
 
-  it('с 12.11 в списке ещё clipPath, filter, strokeDashoffset, strokeDasharray, letterSpacing, borderRadius, backgroundPosition', () => {
-    expect(() =>
-      checkKeyframes({
-        clipPath: ['inset(100% 0% 0% 0%)', 'inset(0% 0% 0% 0%)'],
-        filter: ['blur(12px)', 'blur(0px)'],
-        strokeDashoffset: [1, 0],
-        strokeDasharray: 1,
-        letterSpacing: '0.2em',
-        borderRadius: ['0px', '50%'],
-        backgroundPosition: '100% 0%',
-      }),
-    ).not.toThrow();
+  it.each(['background-color', 'font size', '1x', '-webkit-mask', '--', ''])('имя %s — sdk-call-invalid', (name) => {
+    expect(errorOf(() => checkKeyframes({ [name]: '1' }))).toMatchObject({ code: 'sdk-call-invalid' });
+  });
+
+  it('список запрещённого в FORBIDDEN_IN_VALUE совпадает с проверкой', () => {
+    for (const [part] of FORBIDDEN_IN_VALUE)
+      expect(
+        errorOf(() => checkKeyframes({ color: `a${part}b` })),
+        part,
+      ).toMatchObject({ code: 'sdk-call-invalid' });
   });
 
   it.each([
-    'none',
-    'blur(4px)',
-    'blur(4px) brightness(1.2) contrast(90%) saturate(2) grayscale(0.5) opacity(0.3)',
-    ' BLUR( 2px ) ',
-  ])('filter %s — можно', (value) => {
-    expect(() => checkKeyframes({ filter: value })).not.toThrow();
-    expect(() => checkKeyframes({ filter: ['none', value] })).not.toThrow();
+    'url(https://evil.example/x.png)',
+    'URL(/x)',
+    'image-set(x 1x)',
+    '-webkit-image-set(x 1x)',
+    'cross-fade(a, b)',
+    'element(#id)',
+    'src(x)',
+    '"a"',
+    "'a'",
+    '\\75 rl(x)',
+    'red; background: blue',
+    'red {',
+    '}',
+    '@import x',
+  ])('значение %s — sdk-call-invalid', (value) => {
+    for (const name of ['color', 'filter', 'backdropFilter', 'maskImage', '--x'])
+      expect(
+        errorOf(() => checkKeyframes({ [name]: ['#000', value] })),
+        name,
+      ).toMatchObject({
+        code: 'sdk-call-invalid',
+      });
   });
 
-  it.each([
-    'drop-shadow(0 0 4px red)',
-    'hue-rotate(90deg)',
-    'blur(4px) drop-shadow(1px 1px 1px #000)',
-    'blur(var(--x))',
-    'blur(1px); color: red',
-    'blur(',
-    '',
-  ])('filter %s — sdk-call-invalid', (value) => {
-    expect(errorOf(() => checkKeyframes({ filter: value }))).toMatchObject({ code: 'sdk-call-invalid' });
-    expect(errorOf(() => checkKeyframes({ filter: ['none', value] }))).toMatchObject({ code: 'sdk-call-invalid' });
-  });
-
-  it('filter числом — sdk-call-invalid; url() в clipPath и кавычки в filter — тоже', () => {
-    expect(errorOf(() => checkKeyframes({ filter: 4 }))).toMatchObject({ code: 'sdk-call-invalid' });
+  it('url(#…) в filter и clipPath — тоже отказ', () => {
+    expect(errorOf(() => checkKeyframes({ filter: 'url(#f)' }))).toMatchObject({ code: 'sdk-call-invalid' });
     expect(errorOf(() => checkKeyframes({ clipPath: 'url(#mask)' }))).toMatchObject({ code: 'sdk-call-invalid' });
-    expect(errorOf(() => checkKeyframes({ filter: 'blur(1px)"' }))).toMatchObject({ code: 'sdk-call-invalid' });
   });
-
-  it.each(['backgroundImage', 'boxShadow', 'left', 'content'])('свойство %s — sdk-call-invalid', (name) => {
-    expect(errorOf(() => checkKeyframes({ [name]: '1' }))).toMatchObject({
-      code: 'sdk-call-invalid',
-      message: `ctx.animate: свойство ${name} анимировать нельзя`,
-    });
-  });
-
-  it.each(['url(https://evil.example/x.png)', 'URL(/x)', '"a"', "'a'", '\\75 rl(x)'])(
-    'значение %s — sdk-call-invalid',
-    (value) => {
-      expect(errorOf(() => checkKeyframes({ color: value }))).toMatchObject({ code: 'sdk-call-invalid' });
-      expect(errorOf(() => checkKeyframes({ color: ['#000', value] }))).toMatchObject({ code: 'sdk-call-invalid' });
-    },
-  );
 });
 
 describe('ctx.animate', () => {
@@ -248,15 +239,17 @@ describe('ctx.animate', () => {
     expect(failures.details[0]?.message).toContain('ctx.split: элемент не из этой секции');
   });
 
-  it('свойство вне списка — сбой sdk-call-invalid (проверку делает провайдер animate.js)', async () => {
+  it('url( в значении — сбой sdk-call-invalid (проверку делает провайдер animate.js)', async () => {
     placeSection('shop:a', 'a');
     started = start({
       parts: [behaviors({ list: [], animate: animateProvider })],
-      sections: [entry('shop:a', { mount: (el, ctx) => void ctx.animate(el, { left: ['0px', '10px'] }) })],
+      sections: [
+        entry('shop:a', { mount: (el, ctx) => void ctx.animate(el, { maskImage: 'url(https://x.example/m.svg)' }) }),
+      ],
     });
     await tick();
     expect(failures.details).toMatchObject([{ section: 'shop:a' }]);
-    expect(failures.details[0]?.message).toContain('свойство left');
+    expect(failures.details[0]?.message).toContain('в значении maskImage нельзя url(');
   });
 
   it.each([

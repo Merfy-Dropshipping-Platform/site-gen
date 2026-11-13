@@ -46,7 +46,7 @@ describe('что внутри', () => {
 
   it('TOKENS.md: строка на токен, правило словами, умолчание значением', () => {
     const markdown = tokensMarkdown(platformDictionary);
-    expect(markdown.split('\n').filter((line) => line.startsWith('| `'))).toHaveLength(83);
+    expect(markdown.split('\n').filter((line) => line.startsWith('| `'))).toHaveLength(84);
     expect(markdown).toContain(
       '| `primary-hover` | цвет | Главная кнопка под курсором | наведение от `primary` | ' +
         '`bg-primary-hover` `text-primary-hover` `border-primary-hover` | — |',

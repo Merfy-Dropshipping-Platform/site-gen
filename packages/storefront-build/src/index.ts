@@ -6,6 +6,7 @@ export {
   ENTITY_TYPES,
   STORE_USE_PREFIX,
   checkoutBlockSchema,
+  libUseSchema,
   parseBuildInputs,
   storeUseSchema,
   type BuildInputs,

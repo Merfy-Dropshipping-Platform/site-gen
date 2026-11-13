@@ -17,6 +17,8 @@ const MISSING_TEXT = 'нет сборки ядра: pnpm --filter @merfy/shell b
 export interface ShellKit {
   files: ReadonlyMap<string, string>;
   behaviors: readonly string[];
+  // 13.11: библиотеки каталога SDK, у которых есть адаптер lib-<имя>.js в сборке ядра; нет поля — библиотек нет.
+  libs?: readonly string[];
 }
 
 export interface ShellBuild {
@@ -89,9 +91,19 @@ async function readKit(dist: string): Promise<ShellKit> {
     });
   const names = [...new Set(Object.values(manifest.entries).flatMap((item) => [item.file, ...item.chunks]))].sort();
   const texts = await Promise.all(names.map((name) => readDist(dist, `${KIT_DIR}/${name}`)));
-  const behaviors = Object.keys(manifest.entries).filter((name) => !KIT_SERVICE.some((own) => own === name));
-  return { files: new Map(names.map((name, index): [string, string] => [name, texts[index] ?? ''])), behaviors };
+  const entries = Object.keys(manifest.entries);
+  const behaviors = entries.filter((name) => !isServiceEntry(name));
+  const libs = entries.filter((name) => name.startsWith(LIB_ENTRY)).map((name) => name.slice(LIB_ENTRY.length));
+  const files = new Map(names.map((name, index): [string, string] => [name, texts[index] ?? '']));
+  return { files, behaviors, ...(libs.length > 0 ? { libs } : {}) };
 }
+
+// 13.11: scroll и in-view — провайдеры ctx.scroll и ctx.inView, lib-<имя> — адаптеры библиотек; это не поведения
+// каталога (data-behavior). Их может не быть у сборки ядра до 13.11.
+const KIT_EXTRA = ['scroll', 'in-view'] as const;
+const LIB_ENTRY = 'lib-';
+const isServiceEntry = (name: string): boolean =>
+  KIT_SERVICE.some((own) => own === name) || KIT_EXTRA.some((own) => own === name) || name.startsWith(LIB_ENTRY);
 
 // Хеш сборки — по ядру и по каждому файлу поведений: другой код поведений — другой ключ сборки магазина (Р6б-4).
 const buildHash = (code: string, kit: ShellKit): string =>

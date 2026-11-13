@@ -59,6 +59,10 @@ const sectionNameSchema = z.string().regex(SECTION_NAME, { error: 'нужно п
 // приём секции (@merfy/storefront-sections, format.ts).
 export const STORE_USE_PREFIX = 'store:';
 export const storeUseSchema = z.templateLiteral([STORE_USE_PREFIX, sectionNameSchema]);
+// Библиотека каталога SDK в uses и script_meta (13.11, часть 2в спеки анимаций): "lib:<имя>" — lib:motion. Имя из каталога
+// проверяет приём секции (lib-unknown); сборка кладёт адаптер, только если он есть в сборке ядра.
+export const LIB_USE_PATTERN = /^[a-z][a-z0-9-]{1,31}$/;
+export const libUseSchema = z.templateLiteral(['lib:', z.string().regex(LIB_USE_PATTERN)]);
 export const partNameSchema = z.string().regex(PART_NAME, { error: 'нужно имя части ядра: cart' });
 // Класс, который ставит скрипт секции (часть 5в блока 5): имя утилиты без скобок, кавычек и пробелов — то же правило,
 // что SCRIPT_CLASS пакета секций.
@@ -107,7 +111,7 @@ const codeSectionSchema = z.strictObject({
   meta: z
     .strictObject({
       // "ext:<id>" (блок 9 «Секций и SDK», часть 9в; Р9в-20) — модуль расширения ctx.ext.<id>; его часть — ext в parts.
-      uses: z.array(z.union([partNameSchema, extUseSchema, storeUseSchema])),
+      uses: z.array(z.union([partNameSchema, extUseSchema, storeUseSchema, libUseSchema])),
       parts: z.array(partNameSchema),
       classes: z.array(z.string().regex(SCRIPT_CLASS, { error: 'нужно имя класса утилиты: opacity-40' })),
     })

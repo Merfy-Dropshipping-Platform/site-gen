@@ -1,9 +1,11 @@
 import { EASINGS, type PresetSpec } from '@merfy/shell/behaviors/catalog';
 import { PRESETS } from '@merfy/shell/behaviors/presets';
-import { ANIMATABLE } from '@merfy/shell/keyframes';
+import { FORBIDDEN_IN_VALUE } from '@merfy/shell/keyframes';
+import { LIBRARIES, LIB_USE_PREFIX, LIBRARY_NAMES } from '@merfy/shell/libraries';
 
-// motion.md (этап 1 спеки «Анимации»): таблицы страницы «Анимации» из кода SDK — пресеты data-animate (PRESETS),
-// свойства ctx.animate (ANIMATABLE) и кривые (EASINGS). Проза и рецепты — в guide/motion.md, метки data: вставляют сюда.
+// motion.md (спека «Анимации»): таблицы страницы «Анимации» из кода SDK — пресеты data-animate (PRESETS), что нельзя в
+// значении ctx.animate (FORBIDDEN_IN_VALUE; с 13.11 свойство любое), кривые (EASINGS) и библиотеки SDK (LIBRARIES).
+// Проза и рецепты — в guide/motion.md, метки data: вставляют сюда.
 const TARGET_TEXT: Readonly<Record<PresetSpec['target'], string>> = {
   self: 'сам элемент',
   children: 'каждый прямой потомок элемента',
@@ -12,29 +14,6 @@ const TARGET_TEXT: Readonly<Record<PresetSpec['target'], string>> = {
   lines: 'каждая строка текста элемента, из-под маски',
   shapes: 'каждая линия SVG внутри элемента (`path`, `line`, `polyline`, `polygon`, `circle`, `ellipse`, `rect`)',
   section: 'вся секция (ближайшая `merfy-section`)',
-};
-
-const ANIMATABLE_TEXT: Readonly<Record<string, string>> = {
-  opacity: 'прозрачность, число от 0 до 1',
-  transform:
-    'вся трансформация строкой: `translateY(24px) scale(0.9)`; для одного вида движения лучше отдельные свойства ниже',
-  translate: 'сдвиг: `0 24px` (по x и по y); отдельно от `scale` и `rotate`, их можно анимировать одновременно',
-  scale: 'масштаб: число `0.9` или `1.1 1.1`',
-  rotate: 'поворот: `15deg`',
-  color: 'цвет текста: `#c9a227`, `rgb(…)`',
-  backgroundColor: 'цвет фона',
-  borderColor: 'цвет рамки',
-  width: 'ширина: число (px) или строка с единицей `50%`',
-  height: 'высота',
-  maxHeight: 'предельная высота; так раскрывают блок: `[0, 240]`',
-  clipPath:
-    'маска: `inset(100% 0% 0% 0%)` → `inset(0% 0% 0% 0%)` раскрывает элемент снизу вверх; `circle(0% at 50% 50%)`',
-  filter: 'только `blur`, `brightness`, `contrast`, `saturate`, `grayscale`, `opacity`: `blur(16px)` → `blur(0px)`',
-  strokeDashoffset: 'сдвиг штриха линии SVG; с `pathLength="1"` у линии `[1, 0]` прорисовывает её',
-  strokeDasharray: 'штрих линии SVG; для прорисовки — `1`',
-  letterSpacing: 'межбуквенный интервал: `0.3em` → `0em`',
-  borderRadius: 'скругление: `999px` → `16px`',
-  backgroundPosition: 'положение фона: `50% 0%` → `50% 100%`',
 };
 
 const EASING_TEXT: Readonly<Record<string, string>> = {
@@ -98,9 +77,25 @@ function presetsTable(): string {
   ].join('\n');
 }
 
-function animatableTable(): string {
-  const rows = [...ANIMATABLE].map((name) => `| \`${name}\` | ${ANIMATABLE_TEXT[name] ?? '—'} |`);
-  return ['| Свойство | Значение |', '|---|---|', ...rows].join('\n');
+// Часть значения в ячейке кода; «|» разорвал бы строку таблицы markdown, поэтому экранируется.
+const codeCell = (part: string): string => `\`${part.replaceAll('|', '\\|')}\``;
+
+function forbiddenTable(): string {
+  const rows = FORBIDDEN_IN_VALUE.map(([part, why]) => `| ${codeCell(part)} | ${why} |`);
+  return ['| Нельзя в значении | Почему |', '|---|---|', ...rows].join('\n');
+}
+
+function librariesTable(): string {
+  const rows = LIBRARY_NAMES.map((name) => {
+    const spec = LIBRARIES[name];
+    const api = spec.api.map((method) => `\`ctx.lib.${name}.${method}\``).join(', ');
+    return `| \`"${LIB_USE_PREFIX}${name}"\` | ${spec.title} | ${api} | \`${spec.package}\` ${spec.version}, ${spec.license} | ${spec.budget} |`;
+  });
+  return [
+    '| В `uses` | Что даёт | Методы | Пакет, лицензия | Вес на странице, до Б (brotli) |',
+    '|---|---|---|---|---|',
+    ...rows,
+  ].join('\n');
 }
 
 function easingsTable(): string {
@@ -112,8 +107,9 @@ function easingsTable(): string {
 
 const MOTION_DATA: Readonly<Record<string, () => string>> = {
   'motion-presets': presetsTable,
-  'motion-animatable': animatableTable,
+  'motion-forbidden': forbiddenTable,
   'motion-easings': easingsTable,
+  'motion-libraries': librariesTable,
 };
 
 // Метка `<!-- data: motion-presets -->` в guide/motion.md.

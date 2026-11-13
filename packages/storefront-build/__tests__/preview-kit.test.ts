@@ -34,6 +34,21 @@ describe('поведения в бандле превью', () => {
     expect(previewKit(PREVIEW_SHELL)).toEqual({});
   });
 
+  it('13.11: scroll.js и in-view.js — если они есть в сборке ядра; библиотеки — по uses секций кода магазина', () => {
+    const files = new Map([...KIT_FILES, ['scroll.js', ''], ['in-view.js', ''], ['lib-motion.js', '']]);
+    const kit = { files, behaviors: ['accordion'], libs: ['motion'] };
+    const counter = { name: 'shop:counter', kind: 'section' as const, script: 'a'.repeat(64), uses: ['lib:motion'] };
+    expect(previewKit({ ...PREVIEW_SHELL, kit }, [counter]).kit?.plan).toEqual({
+      behaviors: ['accordion'],
+      reveal: true,
+      animate: true,
+      scroll: true,
+      inView: true,
+      libs: ['motion'],
+    });
+    expect(previewKit({ ...PREVIEW_SHELL, kit }, []).kit?.plan).not.toHaveProperty('libs');
+  });
+
   it('бандл превью — со всеми файлами kit, общий кусок один раз; флага data-merfy-motion нет', async () => {
     const { tags, notices } = await previewCode(codeInputs(), KIT_ASSETS);
     const bundle = bundleOf(tags);

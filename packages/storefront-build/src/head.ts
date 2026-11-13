@@ -1,3 +1,9 @@
+import {
+  PAGE_TRANSITION_ATTRIBUTE,
+  PAGE_TRANSITION_SCRIPT,
+  isPageTransition,
+  pageTransitionCss,
+} from '@merfy/shell/behaviors/page-transition';
 import { buildStorefrontConfig, configTag, type StorefrontConfigInput } from '@merfy/storefront-config';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -264,6 +270,15 @@ const pageConfigOf = (inputs: BuildInputs, route: ShopRoute, content: PageConten
     ...dadataOf(inputs, route, content.mode),
   });
 
+// Переход между страницами (13.11, часть 2д спеки анимаций): выбор словаря choice-page-transition — атрибут
+// data-page-transition у <html>. fade и slide — CSS @view-transition и скрипт имён data-vt (CSP — по хешу, csp.ts);
+// none и превью конструктора — ничего: в превью страница одна.
+export function transitionHead(attributes: Readonly<Record<string, string>>, mode: PageMode): string {
+  const kind = attributes[PAGE_TRANSITION_ATTRIBUTE];
+  if (mode !== 'live' || !isPageTransition(kind) || kind === 'none') return '';
+  return `<style id="merfy-page-transition">${pageTransitionCss(kind)}</style><script>${PAGE_TRANSITION_SCRIPT}</script>`;
+}
+
 // <head> страницы: язык, SEO, канонический адрес, иконка и ранние соединения, конфиг, стили, код секций, теги
 // соцсетей и разметка для поиска.
 function headOf(
@@ -276,15 +291,17 @@ function headOf(
 ): ShopPageHead {
   const config = pageConfigOf(inputs, route, content, name);
   const canonical = new URL(route.path, inputs.site.publicUrl).href;
+  const styles = pageStyles(inputs, theme, migrations);
   return {
     lang: config.locale,
     ...seoOf(inputs, route, name),
     canonical,
     ...linksOf(inputs, content),
     configHtml: configTag(config),
-    ...pageStyles(inputs, theme, migrations),
-    // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены: стили секций и тег бандла (часть 5б).
-    codeHtml: codeHead(inputs, route.id, content.sectionsCss, content.bundleTag),
+    ...styles,
+    // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены: стили секций и тег бандла (часть 5б). Перед
+    // ним — переход между страницами (13.11), если он выбран.
+    codeHtml: `${transitionHead(styles.attributes, content.mode)}${codeHead(inputs, route.id, content.sectionsCss, content.bundleTag)}`,
     social: socialOf(name, config.locale, inputs.site.logoUrl, route.record),
     ...structuredDataOf(route, canonical),
   };

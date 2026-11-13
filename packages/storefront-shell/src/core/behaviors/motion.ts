@@ -2,6 +2,7 @@ import { checkKeyframes } from '../keyframes';
 import type { AnimateOptions, PointerPoint } from '../types';
 import { animateNode, type NodeAnimateOptions } from './animate-node';
 import { motionPrefs } from './prefs';
+import { scrubs } from './scrub';
 import { splitChars, splitLines, splitWords } from './split';
 import type { AnimateProvider, PointerProvider, SplitProvider } from './types';
 
@@ -53,10 +54,16 @@ export const animate: AnimateProvider = (nodes, keyframes, options, signal, mode
   const prefs = motionPrefs(window, mode, nodes[0]?.closest('merfy-section'));
   const run = { instant: prefs.reduced || prefs.still, signal };
   const runs = nodes.map((node, index) => animateNode(node, keyframes, optionsOf(options, index), run));
-  return {
+  const result = {
     finished: Promise.all(runs.map((item) => item.finished)).then(() => undefined),
     stop: () => runs.forEach((item) => item.stop()),
   };
+  // 13.11: ctx.scroll крутит эту анимацию прокруткой (scrub.ts).
+  scrubs().set(
+    result,
+    runs.flatMap((item) => (item.controls ? [item.controls] : [])),
+  );
+  return result;
 };
 
 // Провайдер ctx.on(…, 'pointermove'): не чаще раза в кадр, берётся последнее событие; координаты курсора читаются в

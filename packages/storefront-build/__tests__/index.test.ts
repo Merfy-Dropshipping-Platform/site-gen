@@ -139,6 +139,8 @@ const API = [
   // Свои сторы (01.11): uses "store:<префикс>:<имя>" во входах сборки.
   'STORE_USE_PREFIX',
   'storeUseSchema',
+  // 13.11: uses "lib:<имя>" — библиотеки каталога SDK.
+  'libUseSchema',
   'searchFlaggedBetween',
   'sectionCss',
   'seoProblems',

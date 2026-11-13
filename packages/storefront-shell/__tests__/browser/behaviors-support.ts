@@ -40,6 +40,9 @@ export interface PageOptions {
   readonly core?: readonly string[]; // части ядра рядом с behaviors: 'page', 'share' — экспорты src/core/index.ts
   readonly reveal?: boolean;
   readonly animate?: boolean;
+  readonly scroll?: boolean; // 13.11: провайдер ctx.scroll (scroll.js)
+  readonly inView?: boolean; // 13.11: провайдер ctx.inView (in-view.js)
+  readonly libMotion?: boolean; // 13.11: адаптер ctx.lib.motion; секции получают его по uses "lib:motion"
   readonly sections?: readonly SectionModule[];
   readonly mode?: Mode;
   readonly reducedMotion?: boolean;
@@ -109,18 +112,28 @@ export async function pageBundle(options: PageOptions): Promise<string> {
   const extra = [
     ...(options.reveal ? ['reveal'] : []),
     ...(options.animate ? ['animate', 'split', 'pointer'] : []), // animate.js отдаёт три провайдера: ctx.animate, ctx.split, pointermove
+    ...(options.scroll ? ['scroll'] : []),
+    ...(options.inView ? ['inView'] : []),
   ];
+  // "lib:<имя>" в uses — как у сборки (bundle.ts): в строку секции не идёт, имена — в libUses части behaviors.
+  const libUses = Object.fromEntries(
+    sections.map((section) => [
+      section.name,
+      (section.uses ?? []).filter((use) => use.startsWith('lib:')).map((use) => use.slice(4)),
+    ]),
+  );
+  const libs = options.libMotion ? `, libs: { motion: libMotion }, libUses: ${JSON.stringify(libUses)}` : '';
   const rows = sections.map(
     (section, index) =>
-      `{ name: ${JSON.stringify(section.name)}, kind: 'section', script: '${'a'.repeat(64)}', uses: ${JSON.stringify(section.uses ?? [])}, definition: s${index} }`,
+      `{ name: ${JSON.stringify(section.name)}, kind: 'section', script: '${'a'.repeat(64)}', uses: ${JSON.stringify((section.uses ?? []).filter((use) => !use.startsWith('lib:')))}, definition: s${index} }`,
   );
   const preview = options.preview === true;
   const core = options.core ?? [];
   const entry = [
     `import { start${preview ? ', watchPreviewReplace' : ''}${core.map((name) => `, ${name}`).join('')} } from ${JSON.stringify(CORE)};`,
-    `import { ${['behaviors', ...list, ...extra].join(', ')} } from ${JSON.stringify(BEHAVIORS)};`,
+    `import { ${['behaviors', ...list, ...extra, ...(options.libMotion ? ['libMotion'] : [])].join(', ')} } from ${JSON.stringify(BEHAVIORS)};`,
     ...sections.map((_section, index) => `import s${index} from 'section:${index}';`),
-    `const base = behaviors({ list: [${list.join(', ')}]${extra.map((name) => `, ${name}`).join('')} });`,
+    `const base = behaviors({ list: [${list.join(', ')}]${extra.map((name) => `, ${name}`).join('')}${libs} });`,
     'const part = { ...base, create: (core) => (window.__behaviorsApi = base.create(core)) };',
     `start({ parts: [${['part', ...core].join(', ')}], sections: [${rows.join(', ')}]${preview ? ', preview: watchPreviewReplace' : ''} });`,
     'window.__ready = true;',

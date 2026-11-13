@@ -1,6 +1,6 @@
 import { messageOf } from '../report';
 import { listenActions } from './actions';
-import type { AnimateProvider, BehaviorsApi } from './behaviors/types';
+import type { BehaviorsApi } from './behaviors/types';
 import { createElScope, type ElScope } from './el';
 import { SECTION_FAILURE_EVENT, type EventBus } from './events';
 import { createGuard, type Guard } from './guard';
@@ -242,16 +242,10 @@ function listenActionsOf(runtime: InstanceRuntime, state: InstanceState, ctx: Ba
   });
 }
 
-// API части behaviors (блок 6): провайдер ctx.animate и команды ctx.behavior (03.11); части нет — null.
+// API части behaviors (блок 6): члены ctx про движение (more, 13.11) и команды ctx.behavior (03.11); части нет — null.
 const behaviorsOf = (runtime: InstanceRuntime): Partial<BehaviorsApi> | null => {
   const api = runtime.apiOfPart('behaviors');
   return typeof api === 'object' && api !== null ? api : null;
-};
-
-// Провайдер ctx.animate — поле animate; нет части или поля — null.
-const animateOfPart = (runtime: InstanceRuntime): AnimateProvider | null => {
-  const api = behaviorsOf(runtime);
-  return api?.animate ?? null;
 };
 
 // ctx.behavior — поле control, привязанное к экземпляру: команды поведений его разметки, поведение — только этой секции.
@@ -296,9 +290,14 @@ const ctxDepsOf = (runtime: InstanceRuntime, state: InstanceState, input: Sectio
   id: state.id,
   mode: runtime.mode,
   input,
-  animate: animateOfPart(runtime),
-  split: behaviorsOf(runtime)?.split ?? null,
   pointer: behaviorsOf(runtime)?.pointer ?? null,
+  more: behaviorsOf(runtime)?.more?.({
+    name: state.name,
+    scope: state.scope,
+    run: state.run,
+    signal: state.controller.signal,
+    mode: runtime.mode,
+  }),
   behavior: behaviorOfPart(runtime, state),
   overlay: overlayOfPart(runtime, state),
   state: state.initial,

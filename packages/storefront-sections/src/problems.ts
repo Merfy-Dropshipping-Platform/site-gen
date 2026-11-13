@@ -91,6 +91,8 @@ export const PROBLEM_CODES = [
   'store-foreign',
   'store-cycle',
   'store-unknown',
+  // Библиотеки SDK (13.11, часть 2в спеки анимаций): "lib:<имя>" в uses не из каталога или ctx.lib.<имя> без него.
+  'lib-unknown',
   // Проверки вкуса (кнопки от 44 px, прокрутка вбок, «уменьшить движение») — только предупреждения.
   'taste-button-height',
   'taste-overflow',

@@ -78,7 +78,7 @@ export async function previewCode(inputs: BuildInputs, assets: CodeAssets): Prom
     sections,
     modules,
     preview: true,
-    ...previewKit(assets.shell),
+    ...previewKit(assets.shell, sections),
   });
   return { tags: previewTagsOf(text, assets.shell.preview), notices };
 }

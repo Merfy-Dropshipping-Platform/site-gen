@@ -1611,6 +1611,15 @@
           ],
           "description": "Отклик карточки товара на курсор: нет или подъём"
         },
+        "choice-page-transition": {
+          "type": "string",
+          "enum": [
+            "none",
+            "fade",
+            "slide"
+          ],
+          "description": "Переход между страницами: нет, затухание или сдвиг"
+        },
         "scheme-card": {
           "type": "string",
           "pattern": "^scheme-[1-9][0-9]*$",

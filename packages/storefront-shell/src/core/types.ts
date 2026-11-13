@@ -716,6 +716,54 @@ export interface Animation {
   stop(): void;
 }
 
+// 13.11, часть 2б спеки анимаций: ctx.scroll и ctx.inView. offset — как у scroll из Motion: пары «край цели край экрана»
+// ('start end' — верх цели у низа экрана; края — start, center, end, число 0…1, px, %, vh, vw); по умолчанию
+// ['start end', 'end start'] — от входа цели снизу до ухода вверх.
+export interface ScrollOptions {
+  readonly offset?: readonly string[];
+}
+export interface InViewOptions {
+  readonly amount?: 'some' | 'all' | number; // какая доля элемента в экране считается входом; по умолчанию 'some'
+  readonly margin?: string; // отступ области экрана, 1–4 значения px или %: '0px 0px -20% 0px'
+  readonly once?: boolean; // только первый вход; по умолчанию false
+}
+
+// Полный Motion по uses: ["lib:motion"] (часть 2в): анимация, которую можно поставить на паузу и крутить. time — мс.
+export interface Playback extends Animation {
+  play(): void;
+  pause(): void;
+  time: number;
+}
+// Начало сегмента таймлайна: число — мс от начала, '<' — вместе с прошлым сегментом, '+200' и '-200' — через или за
+// столько мс от конца прошлого. Без at — сразу после прошлого.
+export type TimelineAt = number | '<' | `+${number}` | `-${number}`;
+export interface TimelineSegmentOptions extends AnimateOptions {
+  readonly at?: TimelineAt;
+}
+export type TimelineSegment = readonly [El | readonly El[], Keyframes, TimelineSegmentOptions?];
+export interface TimelineOptions {
+  readonly delay?: number; // мс
+  readonly repeat?: number;
+  readonly repeatType?: 'loop' | 'reverse';
+}
+export interface TweenOptions {
+  readonly duration?: number; // мс, по умолчанию 300
+  readonly delay?: number;
+  readonly easing?: EasingName | Bezier | SpringEasing;
+}
+export interface MotionLib {
+  // Несколько элементов по одному сценарию; ctx.scroll(target, timeline) крутит его прокруткой.
+  timeline(segments: readonly TimelineSegment[], options?: TimelineOptions): Playback;
+  // Число от from до to: onUpdate получает каждое промежуточное значение (счётчик «0 → 12 000»).
+  tween(from: number, to: number, options: TweenOptions | undefined, onUpdate: (value: number) => void): Playback;
+  // Как ctx.animate, плюс отдельные части transform: x, y, z, rotateX, rotateY, rotateZ, scaleX, scaleY, skewX, skewY.
+  animate(el: El | readonly El[], keyframes: Keyframes, options?: AnimateOptions): Playback;
+}
+// Библиотеки каталога SDK (behaviors/libraries.ts) — ctx.lib.<имя>; есть, только если в uses есть "lib:<имя>".
+export interface LibModules {
+  readonly motion: MotionLib;
+}
+
 // ctx экземпляра (раздел 3.2). animate — блок 6 (типы выше); theme и ext — блок 9.
 export interface BaseCtx<State extends object> {
   readonly name: string; // имя с префиксом автора: 'shop:…'
@@ -745,6 +793,15 @@ export interface BaseCtx<State extends object> {
   // раскладке после загрузки шрифтов, поэтому для 'lines' ответ — Promise (mount может быть async).
   split(el: El, by: 'chars' | 'words'): readonly El[];
   split(el: El, by: 'lines'): Promise<readonly El[]>;
+  // 13.11: проход элемента своей секции через экран крутит анимацию (ctx.animate, ctx.lib.motion) или зовёт fn с
+  // прогрессом 0…1. «Уменьшить движение» и запуск в превью после правки настроек или текста — не следит: анимация на
+  // последнем кадре, fn получает 1.
+  scroll(target: El, run: Animation | ((progress: number) => void), options?: ScrollOptions): Stop;
+  // 13.11: элемент своей секции вошёл в экран — fn; что fn вернёт функцией, вызывается при выходе. Снятие — отписка.
+  inView(el: El | readonly El[], fn: (el: El) => void | (() => void), options?: InViewOptions): Stop;
+  // 13.11: библиотеки каталога SDK по uses: ["lib:<имя>"] — ctx.lib.motion; без "lib:<имя>" в uses её нет (приём секции
+  // отказывает lib-unknown).
+  readonly lib: Readonly<LibModules>;
   // Блок 9, часть 9в: модули расширений из uses: ["ext:<id>"]; без таких uses — пустой объект.
   readonly ext: Readonly<Record<string, ExtModule>>;
   // Блок 9, часть 9б: сквозные настройки темы страницы — ctx.theme['cart-type']; читать в момент действия.

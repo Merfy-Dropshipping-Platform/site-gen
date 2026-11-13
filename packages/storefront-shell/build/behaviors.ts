@@ -4,11 +4,13 @@ import { brotliCompressSync } from 'node:zlib';
 import { build, type Metafile } from 'esbuild';
 import { ShellError } from '../src/errors';
 import type { BehaviorName } from '../src/core/behaviors/catalog';
+import { LIBRARIES } from '../src/core/behaviors/libraries';
 
 // Сборка dist/behaviors (design.md блока 6, раздел 12): файл на поведение, появления, провайдер ctx.animate и
 // часть; общий код — в кусках. Бюджеты brotli — договор (Р6-12): поднимать — только решением основного треда.
 
-export type BundleName = BehaviorName | 'part' | 'reveal' | 'animate';
+// 13.11: scroll — ctx.scroll и ctx.inView; lib-<имя> — адаптер библиотеки каталога (libraries.ts), бюджет — из каталога.
+export type BundleName = BehaviorName | 'part' | 'reveal' | 'animate' | 'scroll' | 'in-view' | 'lib-motion';
 export interface BehaviorsBuildOptions {
   readonly packageDir: string;
   readonly outDir: string;
@@ -56,7 +58,16 @@ export const BEHAVIOR_BUDGETS: Readonly<Record<BundleName | 'total', number>> = 
   // Таймер до даты и стираемый слой: без библиотек, как остальные малые поведения; общий предел прежний.
   countdown: 2048,
   scratch: 2048,
-  total: 38939,
+  // 13.11, части 2б–2в спеки анимаций (Motion 14.0 → 14.8): scroll — ctx.scroll (решение основного треда Р6-12, 4096),
+  // in-view — ctx.inView отдельным малым файлом (вместе с scroll не влезал в 4096), lib-motion — из каталога библиотек
+  // (libraries.ts: в 14.8 полный animate 23,2 КБ вместо 18,2 КБ в 14.0, поэтому 25 600 вместо 19 456 спеки). Файлы
+  // меряются в UTF-8, как в бандле страницы. ctx.animate и ctx.split переехали из ядра в part (ядро 16 378 → 16 307 Б;
+  // после превью с анимациями, PR #467, — 16 314). Общий предел — на столько, на сколько выросли файлы: замер был
+  // 36 789 (Motion 14.0), стал 66 453: +29 664 Б (после #467 — 66 419).
+  scroll: 4096,
+  'in-view': 1024,
+  'lib-motion': LIBRARIES.motion.budget,
+  total: 68603,
 };
 
 const BUNDLE_NAMES: readonly BundleName[] = [
@@ -77,6 +88,9 @@ const BUNDLE_NAMES: readonly BundleName[] = [
   'part',
   'reveal',
   'animate',
+  'scroll',
+  'in-view',
+  'lib-motion',
 ];
 
 const ENTRY_OF: Readonly<Record<BundleName, string>> = {
@@ -97,6 +111,9 @@ const ENTRY_OF: Readonly<Record<BundleName, string>> = {
   part: 'part.ts',
   reveal: 'reveal.ts',
   animate: 'motion.ts',
+  scroll: 'scroll.ts',
+  'in-view': 'in-view.ts',
+  'lib-motion': 'lib-motion.ts',
 };
 
 // Ключ входа в metafile: вывод, чей entryPoint — файл этого входа.
@@ -128,10 +145,20 @@ interface Built {
   readonly files: readonly { readonly path: string; readonly contents: Uint8Array }[];
 }
 
-// Сборка esbuild: 12 входов, общие куски, metafile для замыкания кусков входа.
-async function runEsbuild(options: BehaviorsBuildOptions) {
+// 13.11: scroll.js, in-view.js и lib-motion.js собираются каждый отдельно, без общих кусков с остальными. esbuild делит
+// код по файлам модулей: файл Motion, который нужен и motion/mini, и полному Motion, попадает в общий кусок вместе со
+// всем, что из него достижимо, — аккордеон и слайдер получали +18 КБ полного Motion, с одним scroll — по +1,2 КБ, с
+// in-view — по +150 Б. Цена — копия части кода motion-dom на странице, где есть и ctx.animate, и ctx.scroll.
+const SOLO: readonly BundleName[] = ['scroll', 'in-view', 'lib-motion'];
+const GROUPS: readonly (readonly BundleName[])[] = [
+  BUNDLE_NAMES.filter((name) => !SOLO.includes(name)),
+  ...SOLO.map((name) => [name]),
+];
+
+// Сборка esbuild одной группы входов: общие куски внутри группы, metafile для замыкания кусков входа.
+async function runEsbuild(options: BehaviorsBuildOptions, names: readonly BundleName[]) {
   return build({
-    entryPoints: BUNDLE_NAMES.map((name) => ({
+    entryPoints: names.map((name) => ({
       in: join(options.packageDir, 'src/core/behaviors', ENTRY_OF[name]),
       out: name,
     })),
@@ -147,6 +174,9 @@ async function runEsbuild(options: BehaviorsBuildOptions) {
     write: false,
     metafile: true,
     logLevel: 'silent',
+    // 13.11: тексты — UTF-8, как у бандла страницы, который склеивает эти файлы (storefront-build/src/bundle.ts; блок 15,
+    // часть 15ж, Р15ж-8): буква — 2 байта вместо шести знаков \uXXXX, и бюджет меряет то, что придёт в браузер.
+    charset: 'utf8',
   });
 }
 
@@ -200,16 +230,27 @@ function entriesOf(metafile: Metafile, sizes: Sizes): Record<BundleName, BundleI
     part: of('part'),
     reveal: of('reveal'),
     animate: of('animate'),
+    scroll: of('scroll'),
+    'in-view': of('in-view'),
+    'lib-motion': of('lib-motion'),
   };
 }
 
+// Группы собираются по очереди; выводы и metafile — вместе (имена кусков — хеш содержимого, совпадают только у копий).
 async function buildBundles(options: BehaviorsBuildOptions): Promise<Built> {
-  const result = await runEsbuild(options);
-  const sizes = sizesOf(result.outputFiles);
-  const entries = entriesOf(result.metafile, sizes);
-  const total = result.outputFiles.reduce((sum, file) => sum + sizes.brotliOf(file.path), 0);
+  const results = [];
+  for (const names of GROUPS) results.push(await runEsbuild(options, names));
+  const byPath = new Map(results.flatMap((result) => result.outputFiles.map((file) => [file.path, file] as const)));
+  const outputFiles = [...byPath.values()];
+  const metafile: Metafile = {
+    inputs: Object.fromEntries(results.flatMap((result) => Object.entries(result.metafile.inputs))),
+    outputs: Object.fromEntries(results.flatMap((result) => Object.entries(result.metafile.outputs))),
+  };
+  const sizes = sizesOf(outputFiles);
+  const entries = entriesOf(metafile, sizes);
+  const total = outputFiles.reduce((sum, file) => sum + sizes.brotliOf(file.path), 0);
   const manifest: BehaviorsManifest = { version: options.version, entries, total };
-  const files = result.outputFiles.map((file) => ({ path: sizes.base(file.path), contents: file.contents }));
+  const files = outputFiles.map((file) => ({ path: sizes.base(file.path), contents: file.contents }));
   return { manifest, files };
 }
 

@@ -127,8 +127,8 @@ const EXTENSION_OWN = [
 describe('Tailwind по словарю платформы', () => {
   const css = tailwindCss(platformDictionary);
 
-  it('файл — 153 строки', () => {
-    expect(css.trimEnd().split('\n')).toHaveLength(153);
+  it('файл — 168 строк', () => {
+    expect(css.trimEnd().split('\n')).toHaveLength(168);
   });
 
   it.each(OWN)('класс словаря собирается: %s', async (cls) => {
@@ -165,6 +165,28 @@ describe('движение: бегущая строка и параллакс (�
     const output = await buildClasses(css, ['parallax']);
     expect(output).toContain('@supports (animation-timeline: view())');
     expect(output).toContain('animation-timeline: view()');
+  });
+
+  it.each([
+    ['animate-float', 'merfy-float'],
+    ['animate-shimmer', 'merfy-shimmer'],
+    ['animate-spin-slow', 'merfy-spin'],
+    ['scroll-reveal', 'merfy-reveal'],
+    ['scroll-reveal-up', 'merfy-reveal-up'],
+    ['scroll-reveal-fade', 'merfy-reveal-fade'],
+  ])('13.11: %s — только без «уменьшить движение», кадры %s в выводе', async (cls, frames) => {
+    const output = await buildClasses(css, [cls]);
+    expect(output).toContain('prefers-reduced-motion: no-preference');
+    expect(output).toContain(`@keyframes ${frames} `);
+  });
+
+  it('13.11: scroll-reveal — по прокрутке за @supports (без поддержки элемент виден); блик — слой ::after', async () => {
+    const reveal = await buildClasses(css, ['scroll-reveal']);
+    expect(reveal).toContain('@supports (animation-timeline: view())');
+    expect(reveal).toContain('animation-range: entry 0% cover 30%');
+    const shimmer = await buildClasses(css, ['animate-shimmer']);
+    expect(shimmer).toContain('&::after');
+    expect(shimmer).toContain('pointer-events: none');
   });
 
   it('без класса движения кадров в CSS нет', async () => {

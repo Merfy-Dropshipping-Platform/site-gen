@@ -1,6 +1,6 @@
 # Классы и токены
 
-> SDK 1 · документация 1.38.0 · 2026-11-12
+> SDK 1 · документация 1.39.0 · 2026-11-13
 
 Своего CSS у секции нет. Только классы Tailwind из словаря магазина — так секция выглядит в цветах и шрифтах любой
 темы и меняется вместе с «Настройками темы».
@@ -37,7 +37,17 @@
   половину своей ширины. Пауза под курсором — `hover:animate-paused`.
 - **Параллакс** — `parallax` или `parallax-strong` на фоне внутри `overflow-hidden`: фон смещается при прокрутке; браузер
   без анимаций по прокрутке оставляет его на месте.
-- **«Уменьшить движение»**: бегущая строка и параллакс сами стоят, появления не играют. Своё `animate-*` и `transition-*`
+- **Покачивание** — `animate-float`: элемент плавно поднимается на 0,5rem и опускается, 6 с на круг. Для плашек
+  «новинка», значков, декоративных фигур.
+- **Блик** — `animate-shimmer`: светлая полоса раз в 2,5 с пробегает поверх элемента. Ставьте вместе с `relative
+  overflow-hidden`; фон элемента не меняется, блик — отдельный слой поверх.
+- **Медленное вращение** — `animate-spin-slow`: оборот за 8 с, для круглых бейджей с текстом по кругу и декора.
+- **Появление от прокрутки классом** — `scroll-reveal` (снизу на 1,5rem с проявлением), `scroll-reveal-up` (снизу на
+  3rem), `scroll-reveal-fade` (только проявление). Движение идёт вместе с прокруткой, пока блок входит в экран
+  (`animation-timeline: view()`), без скрипта и без настройки «Появление секций». Браузер без анимаций по прокрутке
+  показывает блок сразу. Свою анимацию при входе в экран делают `ctx.inView` ([motion.md](motion.md#ctxinview)).
+- **«Уменьшить движение»**: бегущая строка, параллакс, `animate-float`, `animate-shimmer`, `animate-spin-slow` и
+  `scroll-reveal` сами стоят, появления не играют. Своё `animate-*` и `transition-*`
   — с `motion-safe:` или `motion-reduce:animate-none` (иначе `taste-motion`).
 - **Видео фоном** — поле `video`, `<video autoplay muted loop playsinline aria-hidden="true">` слоем `absolute inset-0
   -z-10 size-full object-cover`; без звука и элементов управления, текст поверх — на подложке.
@@ -249,6 +259,7 @@
 | `choice-card-align` | выбор | Выравнивание в карточке товара | `left` | `card-align-left:` `card-align-center:` `card-align-right:` | — |
 | `choice-motion-reveal` | выбор | Появление секций при прокрутке | `off` | `motion-reveal-off:` `motion-reveal-on:` | — |
 | `choice-motion-hover` | выбор | Отклик карточки товара на курсор: нет или подъём | `none` | `motion-hover-none:` `motion-hover-lift:` | — |
+| `choice-page-transition` | выбор | Переход между страницами: нет, затухание или сдвиг | `none` | `page-transition-none:` `page-transition-fade:` `page-transition-slide:` | — |
 | `scheme-card` | схема детали | Цветовая схема карточки товара | не задана — как у родителя | `scheme-card` | — |
 | `scheme-cart-drawer` | схема детали | Цветовая схема шторки корзины | не задана — как у родителя | `scheme-cart-drawer` | — |
 | `scheme-cookie-banner` | схема детали | Цветовая схема баннера cookie | не задана — как у родителя | `scheme-cookie-banner` | — |

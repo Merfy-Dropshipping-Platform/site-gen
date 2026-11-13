@@ -51,6 +51,7 @@ import type { DrawAnswer } from './draw';
 import { LIST_ARGS_MAX, listRequestOf } from './list-rpc';
 import { inlineAssets } from './inline-assets';
 import {
+  codeRevisionOf,
   previewScriptOf,
   previewTags,
   scriptHashOf,
@@ -278,7 +279,12 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   });
   // Код секции (блок 5, часть 5г): скрипт секций превью передаёт его скрипту превью; нет кода — null.
   const script = previewScriptOf(current, deps.shell ?? null);
-  return jsonAnswer(200, { html: content.sections[0] ?? '', css: content.sectionsCss, script });
+  return jsonAnswer(200, {
+    html: content.sections[0] ?? '',
+    css: content.sectionsCss,
+    script,
+    revision: codeRevisionOf(current),
+  });
 }
 
 // Экземпляр превью: блоки, деревья меню и uses — только те ключи, что у секции есть.

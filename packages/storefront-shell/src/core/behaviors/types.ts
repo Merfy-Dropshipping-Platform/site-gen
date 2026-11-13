@@ -25,7 +25,8 @@ import type { Params } from './params';
 
 export interface MotionPrefs {
   readonly reduced: boolean; // prefers-reduced-motion: reduce — переходы поведений сразу, появлений и автопрокрутки нет
-  readonly preview: boolean; // превью конструктора — появлений нет; переходы поведений и автопрокрутка работают
+  readonly preview: boolean; // превью конструктора: переходы поведений и автопрокрутка работают, список каталога — из превью
+  readonly still: boolean; // экземпляр в превью запущен после правки настроек или текста: ctx.animate сразу в последнем кадре, появлений нет
 }
 
 export interface BehaviorHost {

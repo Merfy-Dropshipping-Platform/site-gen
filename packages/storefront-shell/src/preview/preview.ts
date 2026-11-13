@@ -63,6 +63,7 @@ function isUpdateDetail(value: unknown): value is PreviewUpdateDetail {
     isRecord(value) &&
     typeof value.html === 'string' &&
     typeof value.codeOnly === 'boolean' &&
+    (value.revision === undefined || typeof value.revision === 'string') &&
     (value.script === null || isScript(value.script))
   );
 }
@@ -118,6 +119,7 @@ function askCore(env: PreviewEnv, state: TurnState, node: HTMLElement, edit: Edi
     const detail: PreviewReplaceDetail = {
       html: edit.detail.html,
       codeOnly: edit.detail.codeOnly,
+      ...(edit.detail.revision === undefined ? {} : { revision: edit.detail.revision }),
       script: script === null ? null : { hash: script.hash, uses: script.uses },
       load: script === null ? () => Promise.resolve(undefined) : loadOf(env, state, script),
       reply: (outcome, message) => resolve({ outcome, message }),

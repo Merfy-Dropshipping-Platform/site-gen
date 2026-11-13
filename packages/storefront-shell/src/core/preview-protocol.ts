@@ -18,6 +18,14 @@ export const SECTION_UPDATED_MESSAGE = 'section-updated';
 // Ядро → странице, на document: сбой экземпляра (design.md 3.7); скрипт секций превью (план 2) ставит секции красную
 // рамку и подпись. То же имя, что SECTION_FAILURE_EVENT в core/events.ts.
 export const SECTION_ERROR_EVENT = 'merfy:section:error';
+// Конструктор → скрипт секций превью (postMessage replay) → ядру: проиграть анимации заново (кнопка «Проиграть анимации»).
+// Событие на <merfy-section> — перезапускается только эта секция, на document — все секции страницы; detail нет. Ядро
+// запускает экземпляр с чистого HTML, как при первом запуске: появления прячутся и играют, ctx.animate играет.
+export const PREVIEW_REPLAY_EVENT = 'merfy:preview:replay';
+// Запуск секции без анимаций (правка настроек или текста): атрибут на <merfy-section>, пока экземпляр не закончил mount.
+// Скрипт секций превью ставит его свежему узлу, который встал на место прежнего; ядро — при замене экземпляра с тем же
+// кодом. Читает его только часть behaviors (prefs.ts): ctx.animate и появления data-animate.
+export const PREVIEW_STILL_ATTRIBUTE = 'data-merfy-still';
 // Скрипт секций превью → ядру (блок 6, часть 6в; В6-1 А): мерчант выбрал блок секции в панели слева или снял выбор.
 // Событие на первом узле блока (data-merfy-block) внутри <merfy-section>, всплывает, detail — { blockId }. Имена — из
 // каталога событий: ядро отдаёт событие только экземпляру этой секции, секция слушает его через ctx.listen.
@@ -62,6 +70,9 @@ export interface PreviewUpdateDetail {
   readonly html: string; // <merfy-section> экземпляра с тегом входных данных — из ответа /preview/section
   readonly script: PreviewScript | null; // null — у секции нет кода
   readonly codeOnly: boolean; // true — секция только что вставлена из этого HTML: перезапуск, только если сменился код
+  // Ревизия кода секции целиком — шаблон, section.json и скрипт (ответ /preview/section, revision); настройки в неё не
+  // входят. Нет — сервер её не отдал (старый ответ): тогда код отличает только hash скрипта.
+  readonly revision?: string;
 }
 
 export interface PreviewCodeRef {
@@ -73,6 +84,7 @@ export interface PreviewReplaceDetail {
   readonly html: string;
   readonly script: PreviewCodeRef | null; // без текста кода: код загружает load()
   readonly codeOnly: boolean;
+  readonly revision?: string; // как в PreviewUpdateDetail
   readonly load: () => Promise<unknown>; // загрузить код секции; отдаёт export default модуля
   readonly reply: (outcome: ReplaceOutcome, message: string) => void; // ядро отвечает один раз
 }

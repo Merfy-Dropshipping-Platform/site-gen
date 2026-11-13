@@ -198,10 +198,7 @@ describe('появления', () => {
     await page.close();
   });
 
-  it.each([
-    ['«уменьшить движение»', { reducedMotion: true }],
-    ['превью конструктора', { mode: 'preview' as const }],
-  ])('%s — новые пресеты ничего не режут и не прячут', async (_name, extra) => {
+  it.each([['«уменьшить движение»', { reducedMotion: true }]])('%s — новые пресеты ничего не режут и не прячут', async (_name, extra) => {
     const { page, errors } = await open(extra);
     expect(await page.$$eval('#words, #lines', (nodes) => nodes.map((n) => n.children.length))).toEqual([0, 0]);
     expect(await page.$eval('#mask', (el) => (el instanceof HTMLElement ? el.style.clipPath : null))).toBe('');
@@ -214,7 +211,6 @@ describe('появления', () => {
   it.each([
     ['выбор «Появление секций» выключен', { motionReveal: false }],
     ['«уменьшить движение»', { reducedMotion: true }],
-    ['превью конструктора', { mode: 'preview' as const }],
   ])('%s — появлений нет, всё видно', async (_name, extra) => {
     const { page, errors } = await open(extra);
     expect(await animations(page, '#top, #l1, #below1, #side2')).toEqual([null, null, null, null]);
@@ -225,6 +221,19 @@ describe('появления', () => {
     ]);
     expect(errors).toEqual([]);
     await page.close();
+  });
+
+  it('превью конструктора: появления играют при входе в экран, как на витрине; «Появление секций» выключено — нет', async () => {
+    const { page, errors } = await open({ mode: 'preview' });
+    await page.waitForFunction(() => (document.getElementById('top')?.getAnimations().length ?? 0) > 0);
+    expect(await opacity(page, '#below1')).toBe('0');
+    await scrollTo(page, 'b', '#below1');
+    expect(errors).toEqual([]);
+    await page.close();
+    const off = await open({ mode: 'preview', motionReveal: false });
+    expect(await animations(off.page, '#top, #below1')).toEqual([null, null]);
+    expect(await opacity(off.page, '#below1')).toBe('1');
+    await off.page.close();
   });
 
   it('ядро не запустилось — запасной CSS показывает всё через 3 с', async () => {

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { previewCode, type BuildInputs, type CodeAssets, type ShellBuild } from '@merfy/storefront-build';
 import type { CurrentSection } from '@merfy/storefront-sections';
 
@@ -36,6 +37,14 @@ export function previewScriptOf(current: CurrentSection, shell: PreviewShell | n
   const hex = scriptHex(current);
   if (hex === null || current.script === undefined) return null;
   return { hash: hex, code: current.script.code, uses: current.scriptMeta?.uses ?? shell?.parts ?? [] };
+}
+
+// Ревизия кода секции целиком (sha256, 64 знака hex): шаблон (хеш модуля рендера), section.json (манифест) и скрипт. Её
+// ответ превью отдаёт рядом с script: превью сравнивает ревизии и по ним отличает правку кода (в том числе одного
+// шаблона у секции без скрипта) от правки настроек и текста — те ревизию не меняют: настройки экземпляра в неё не входят.
+export function codeRevisionOf(current: CurrentSection): string {
+  const parts = [current.renderHash, current.manifest, current.script?.hash ?? null];
+  return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 }
 
 // scriptHash строки списка секций — только у секции с кодом.

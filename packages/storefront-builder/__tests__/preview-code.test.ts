@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 import standInputsJson from '../../storefront-build/fixtures/stand-inputs.json';
 import novaThemeJson from '../../theme-nova/theme.json';
-import { previewScriptOf, previewTags, scriptHashOf, scriptPlacedOf } from '../src/preview-code';
+import { codeRevisionOf, previewScriptOf, previewTags, scriptHashOf, scriptPlacedOf } from '../src/preview-code';
 import { sectionPreview, shopPreview, shopSections, type ShopPreviewDeps } from '../src/shop-preview';
 
 // Код секций в ответах превью (блок 5 «Секций и SDK», часть 5г, Р5г-12, Р5г-13): бандл и скрипт превью в HTML главной,
@@ -140,6 +140,17 @@ describe('код секции для превью', () => {
     expect(scriptPlacedOf(HERO)).toEqual({});
   });
 
+  it('codeRevisionOf: 64 hex; меняется от шаблона, section.json и скрипта (у секции без скрипта — тоже), от настроек — нет', () => {
+    const revision = codeRevisionOf(HERO);
+    expect(revision).toMatch(/^[0-9a-f]{64}$/);
+    expect(codeRevisionOf({ ...HERO })).toBe(revision);
+    expect(codeRevisionOf({ ...HERO, renderHash: sha256('другой шаблон') })).not.toBe(revision);
+    expect(codeRevisionOf({ ...HERO, manifest: { ...HERO.manifest, title: 'Другой' } })).not.toBe(revision);
+    expect(codeRevisionOf({ ...SCARF, script: { hash: sha256('другой код'), code: 'x' } })).not.toBe(
+      codeRevisionOf(SCARF),
+    );
+  });
+
   it('previewTags: нет снимка кода или у сборки ядра нет preview.js — пусто', async () => {
     expect(await previewTags(INPUTS, undefined)).toBe('');
     expect(await previewTags(INPUTS, { ...ASSETS, shell: SHELL_NO_PREVIEW })).toBe('');
@@ -167,6 +178,16 @@ describe('ответы превью с кодом секций', () => {
     expect(parsed.css).toContain('.opacity-40');
     const plain = await sectionPreview(depsOf(true), SHOP, block('hero-1', HERO.name));
     expect(z.object({ script: z.null() }).parse(JSON.parse(plain.body)).script).toBeNull();
+  });
+
+  it('/preview/section: revision — ревизия кода; правка настроек экземпляра её не меняет', async () => {
+    const answerOf = async (settings: Record<string, unknown>) => {
+      const body = JSON.stringify({ instance: { id: 'hero-1', section: HERO.name, settings } });
+      const answer = await sectionPreview(depsOf(true), SHOP, body);
+      return z.object({ revision: z.string() }).parse(JSON.parse(answer.body)).revision;
+    };
+    expect(await answerOf({})).toBe(codeRevisionOf(HERO));
+    expect(await answerOf({ title: 'Другой текст' })).toBe(codeRevisionOf(HERO));
   });
 
   it('/sections: scriptHash — только у секции с кодом', async () => {

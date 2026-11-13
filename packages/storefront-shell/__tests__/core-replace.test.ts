@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineSection } from '../src/core/define';
 import {
   PREVIEW_REPLACE_EVENT,
+  PREVIEW_REPLAY_EVENT,
+  PREVIEW_STILL_ATTRIBUTE,
   REPLACE_TEXT,
   type PreviewReplaceDetail,
   type ReplaceOutcome,
@@ -75,6 +77,7 @@ interface ReplaceArgs {
   readonly html: string;
   readonly script: PreviewReplaceDetail['script'];
   readonly codeOnly?: boolean;
+  readonly revision?: string;
   readonly load?: () => Promise<unknown>;
 }
 
@@ -85,6 +88,7 @@ function replace(target: Element, args: ReplaceArgs): Promise<Reply | 'not-handl
       html: args.html,
       script: args.script,
       codeOnly: args.codeOnly ?? false,
+      ...(args.revision === undefined ? {} : { revision: args.revision }),
       load: args.load ?? (() => Promise.reject(new Error('код не загружали'))),
       reply: (outcome, message) => resolve({ outcome, message }),
     };
@@ -398,7 +402,7 @@ describe('замена в превью: повтор, сбой, отказ', () 
       },
     });
     core = start({ parts: [], sections: [entry('shop:loop', looped)], preview: watchPreviewReplace });
-    const html = `<merfy-section data-section="shop:loop" data-section-id="loop-1">${body}</merfy-section>`;
+    const html = `<merfy-section data-section="shop:loop" data-section-id="loop-1">${body}<!-- правка --></merfy-section>`;
     expect(await replace(sectionOf('loop-1'), { html, script: { hash: V1, uses: [] } })).toEqual({
       outcome: 'fresh',
       message: '',
@@ -420,5 +424,110 @@ describe('замена в превью: повтор, сбой, отказ', () 
     element.remove();
     finish(scarf('v2', log));
     expect(await pending).toEqual({ outcome: 'failed', message: REPLACE_TEXT.gone });
+  });
+});
+
+// Анимации в превью (этап 3 спеки анимаций): правка настроек или текста — запуск без анимаций (метка на узле, пока идёт
+// mount), новый код и «Проиграть анимации» — с анимациями; ответ, не менявший ни кода, ни разметки, экземпляр не трогает.
+describe('замена в превью: запуск без анимаций и повтор', () => {
+  // «Подбор шарфа», который записывает в журнал, была ли на узле метка в момент mount.
+  function watched(version: string, log: string[]): SectionDef {
+    return defineSection({
+      mount(_el, ctx) {
+        log.push(`${version} mount still=${sectionOf(ctx.id).hasAttribute(PREVIEW_STILL_ATTRIBUTE)}`);
+      },
+    });
+  }
+
+  const same = { script: { hash: V1, uses: [] } };
+
+  function open(log: string[], ids: readonly string[] = ['scarf-1']): void {
+    document.head.innerHTML = configTag('preview');
+    ids.forEach((id) => placeSection('shop:scarf', id, bodyOf('Подберите шарф')));
+    core = start({ parts: [], sections: [entry('shop:scarf', watched('v1', log))], preview: watchPreviewReplace });
+  }
+
+  it('правка текста, тот же код: mount с меткой, после запуска метки нет', async () => {
+    const log: string[] = [];
+    open(log);
+    await replace(sectionOf('scarf-1'), { html: sectionHtml('scarf-1', 'Новый'), ...same });
+    await tick();
+    expect(log).toEqual(['v1 mount still=false', 'v1 mount still=true']);
+    expect(sectionOf('scarf-1').hasAttribute(PREVIEW_STILL_ATTRIBUTE)).toBe(false);
+  });
+
+  it('новый код: mount без метки, то есть с анимациями', async () => {
+    const log: string[] = [];
+    open(log);
+    const load = (): Promise<unknown> => Promise.resolve(watched('v2', log));
+    await replace(sectionOf('scarf-1'), {
+      html: sectionHtml('scarf-1', 'Новый'),
+      script: { hash: V2, uses: [] },
+      load,
+    });
+    expect(log).toEqual(['v1 mount still=false', 'v2 mount still=false']);
+  });
+
+  it('второй экземпляр того же типа получает новый код — тоже с анимациями', async () => {
+    const log: string[] = [];
+    open(log, ['scarf-1', 'scarf-2']);
+    const load = (): Promise<unknown> => Promise.resolve(watched('v2', log));
+    const v2 = { script: { hash: V2, uses: [] }, load };
+    await replace(sectionOf('scarf-1'), { html: sectionHtml('scarf-1', 'Подберите шарф'), ...v2 });
+    log.length = 0;
+    await replace(sectionOf('scarf-2'), { html: sectionHtml('scarf-2', 'Подберите шарф'), ...v2 });
+    expect(log).toEqual(['v2 mount still=false']);
+  });
+
+  it('ревизия кода сменилась при том же hash скрипта (правка шаблона): mount без метки; та же ревизия — с меткой', async () => {
+    const log: string[] = [];
+    open(log);
+    const send = (title: string, revision: string) =>
+      replace(sectionOf('scarf-1'), { html: sectionHtml('scarf-1', title), revision, ...same });
+    await send('Один', 'r1'); // первая ревизия id только запоминается: это правка текста
+    await send('Два', 'r1');
+    await send('Два, шаблон другой', 'r2');
+    await tick();
+    expect(log).toEqual([
+      'v1 mount still=false',
+      'v1 mount still=true',
+      'v1 mount still=true',
+      'v1 mount still=false',
+    ]);
+  });
+
+  it('reconcile (codeOnly): новая ревизия при том же hash — перезапуск с анимациями, та же — kept-state', async () => {
+    const log: string[] = [];
+    open(log);
+    const send = (title: string, revision: string) =>
+      replace(sectionOf('scarf-1'), { html: sectionHtml('scarf-1', title), revision, codeOnly: true, ...same });
+    expect(await send('Один', 'r1')).toEqual({ outcome: 'kept-state', message: '' });
+    expect(await send('Два', 'r1')).toEqual({ outcome: 'kept-state', message: '' });
+    expect(log).toEqual(['v1 mount still=false']);
+    expect(await send('Три', 'r2')).toEqual({ outcome: 'fresh', message: '' });
+    expect(log).toEqual(['v1 mount still=false', 'v1 mount still=false']);
+  });
+
+  it('разметка и код те же: экземпляр не перезапускается, ответ kept-state', async () => {
+    const log: string[] = [];
+    open(log);
+    const reply = await replace(sectionOf('scarf-1'), { html: sectionHtml('scarf-1', 'Подберите шарф'), ...same });
+    expect(reply).toEqual({ outcome: 'kept-state', message: '' });
+    expect(log).toEqual(['v1 mount still=false']);
+  });
+
+  it('PREVIEW_REPLAY_EVENT на секции — только она, с чистого HTML и без метки; на document — все', async () => {
+    const log: string[] = [];
+    open(log, ['scarf-1', 'scarf-2']);
+    sectionOf('scarf-1').querySelector('h2')?.remove(); // работа SDK и кода секции меняет разметку: повтор её вернёт
+    log.length = 0;
+    sectionOf('scarf-1').dispatchEvent(new Event(PREVIEW_REPLAY_EVENT, { bubbles: true }));
+    await tick();
+    expect(log).toEqual(['v1 mount still=false']);
+    expect(titleOf('scarf-1')).toBe('Подберите шарф');
+    log.length = 0;
+    document.dispatchEvent(new Event(PREVIEW_REPLAY_EVENT));
+    await tick();
+    expect(log).toEqual(['v1 mount still=false', 'v1 mount still=false']);
   });
 });

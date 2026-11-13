@@ -9,8 +9,8 @@ import type { Reveal, RevealHost } from './types';
 
 // Появления data-animate (design.md блока 6, раздел 9): пресеты пяти тем «один в один», пачки одного кадра, буквы,
 // слова и строки (12.11), маска, размытие и прорисовка линий, чётность секций у appear-side. Скрытое начальное
-// состояние ставит SDK инлайном; выключатели — выбор словаря «Появление секций», «уменьшить движение» и превью
-// конструктора.
+// состояние ставит SDK инлайном; выключатели — выбор словаря «Появление секций» (в превью он тоже действует), «уменьшить движение» и запуск секции в
+// превью после правки настроек или текста (prefs.ts).
 
 // Отступ наблюдателя у Motion — шаблонный тип из 1–4 значений «число px/%»; строку пресета проверяем предикатом.
 type MarginPart = `${number}px` | `${number}%`;
@@ -234,7 +234,7 @@ function attachElement(element: HTMLElement, batch: (pending: Pending) => void, 
 export const reveal: Reveal = {
   attach(host: RevealHost): void {
     if (document.documentElement.getAttribute(REVEAL_ATTRIBUTE) !== 'on') return;
-    if (host.motion.reduced || host.motion.preview) return;
+    if (host.motion.reduced || host.motion.still) return;
     const batch = makeBatcher(host.signal);
     host.elements.forEach((element) => attachElement(element, batch, host.signal));
   },

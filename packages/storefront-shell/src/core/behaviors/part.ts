@@ -273,7 +273,7 @@ const createOf = (options: BehaviorsOptions, state: PageState, core: CoreHandle)
 
 const attachOf = (options: BehaviorsOptions, state: PageState, api: BehaviorsApi, host: InstanceHost): void => {
   void api;
-  const motion = motionPrefs(window, host.mode);
+  const motion = motionPrefs(window, host.mode, host.element);
   ownElements(host, '[data-behavior]').forEach((root) => attachBehavior(state, options, host, root, motion));
   attachReveal(state, options, host, ownElements(host, '[data-animate]'), motion);
 };

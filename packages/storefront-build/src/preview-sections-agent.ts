@@ -5,6 +5,8 @@ import {
   OVERLAY_HIDE_EVENT,
   OVERLAY_SHOW_EVENT,
   PREVIEW_LIST_EVENT,
+  PREVIEW_REPLAY_EVENT,
+  PREVIEW_STILL_ATTRIBUTE,
   PREVIEW_STORES_EVENT,
   PREVIEW_UPDATE_EVENT,
   PREVIEW_UPDATED_EVENT,
@@ -46,6 +48,10 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var OVERLAY_SHOW_EVENT = ${JSON.stringify(OVERLAY_SHOW_EVENT)};
   var OVERLAY_HIDE_EVENT = ${JSON.stringify(OVERLAY_HIDE_EVENT)};
   var OVERLAY_ATTRIBUTE = ${JSON.stringify(OVERLAY_ATTRIBUTE)};
+  // Кнопка «Проиграть анимации» (replay из конструктора): ядру — запустить секцию или все секции заново с анимациями.
+  var REPLAY_EVENT = ${JSON.stringify(PREVIEW_REPLAY_EVENT)};
+  // Свежий узел на месте прежнего (правка настроек или текста) запускается без анимаций: метка читается ядром при вставке.
+  var STILL_ATTRIBUTE = ${JSON.stringify(PREVIEW_STILL_ATTRIBUTE)};
   // Кнопки и поля секции — как в превью пяти тем (src/services/preview.service.ts): нажатие — коду секции, выбора нет.
   var CONTROLS = 'button, input, select, textarea, label[for], [data-action]';
   // Значения сторов расширений вместо ответов сервера (ext-store-values; превью секции в кабинете расширения). Кабинет
@@ -329,9 +335,12 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   }
   // Правка секции — скрипту превью (часть 5г): событие на узле секции. Отменил — HTML меняет он, ядро сохраняет
   // состояние экземпляра; не отменил или script нет в ответе (сборщик до 5г) — HTML меняет этот скрипт.
-  function handOver(node, html, script, codeOnly) {
+  // revision — ревизия кода секции целиком (шаблон, section.json, скрипт) из ответа блока: по ней ядро отличает правку
+  // кода от правки настроек и текста; старый ответ её не отдаёт.
+  function handOver(node, html, script, codeOnly, revision) {
     if (script === undefined) return false;
     var detail = { html: html, script: script, codeOnly: codeOnly };
+    if (typeof revision === 'string') detail.revision = revision;
     return !node.dispatchEvent(new CustomEvent(UPDATE_EVENT, { bubbles: true, cancelable: true, detail: detail }));
   }
   // Тело запроса блока: экземпляр; меню ревизии и правки настроек темы (часть 4) — если конструктор их прислал.
@@ -384,7 +393,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         // Часть 6: пока курсор в редактируемом элементе секции, ответ ждёт (holdWhileEditing).
         if (holdWhileEditing(instance.id, answer)) return;
         setCss(instance.id, answer.css);
-        if (handOver(old, answer.html, answer.script, false)) return;
+        if (handOver(old, answer.html, answer.script, false, answer.revision)) return;
         old.parentNode.replaceChild(fresh, old);
         if (instance.id === selected) showOverlay();
         place();
@@ -456,19 +465,27 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
           if (tickets[block.id] !== ticket) return { id: block.id, node: null };
           hashes[block.id] = block.propsHash;
           setCss(block.id, answer.css);
-          return { id: block.id, node: nodeOf(answer.html), html: answer.html, script: answer.script };
+          return { id: block.id, node: nodeOf(answer.html), html: answer.html, script: answer.script, revision: answer.revision };
         });
       })
     )
       .then(function (fresh) {
         var nodes = {};
         fresh.forEach(function (item) {
-          if (item.node) nodes[item.id] = item.node;
+          if (!item.node) return;
+          nodes[item.id] = item.node;
+          // Узел встаёт на место прежнего — правка настроек или текста: ядро запускает его без анимаций. Новая секция
+          // (прежнего узла нет) играет. Сменится код — замена экземпляра скриптом превью перезапустит его с анимациями.
+          if (byId(item.id)) item.node.setAttribute(STILL_ATTRIBUTE, '');
         });
         placeAll(blocks, nodes, container);
         // Вставленные узлы — скрипту превью с codeOnly: true: HTML уже новый, ядро запускает код секции (часть 5г).
         fresh.forEach(function (item) {
-          if (item.node && item.node.isConnected) handOver(item.node, item.html, item.script, true);
+          if (item.node && item.node.isConnected) handOver(item.node, item.html, item.script, true, item.revision);
+        });
+        // Секции ядро уже запустило при вставке (mount выполнен), метка запуска без анимаций больше не нужна.
+        fresh.forEach(function (item) {
+          if (item.node) item.node.removeAttribute(STILL_ATTRIBUTE);
         });
         showOverlay();
         place();
@@ -564,7 +581,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       var fresh = old ? nodeOf(answer.html) : null;
       if (!old || !fresh) return;
       setCss(id, answer.css);
-      if (handOver(old, answer.html, answer.script, false)) return;
+      if (handOver(old, answer.html, answer.script, false, answer.revision)) return;
       old.parentNode.replaceChild(fresh, old);
       place();
       showBlock();
@@ -672,6 +689,18 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       })
       .catch(failed);
   });
+  // replay: sectionId — строка: проиграть только эту секцию (за краем окна — сначала показать, иначе появления ждут входа
+  // в экран и ничего не видно); нет — страницу целиком. Событие на секции или на document — ядро решает по цели.
+  function replay(data) {
+    var single = typeof data.sectionId === 'string' && data.sectionId !== '';
+    var node = single ? byId(data.sectionId) : null;
+    if (single && !node) return;
+    if (node) {
+      var rect = node.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > window.innerHeight) node.scrollIntoView({ block: 'start' });
+    }
+    (node || document).dispatchEvent(new Event(REPLAY_EVENT, { bubbles: true }));
+  }
   window.addEventListener('message', function (event) {
     var data = event.data;
     if (event.source !== window.parent || !data || typeof data.type !== 'string') return;
@@ -690,5 +719,6 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     else if (data.type === 'ext-store-values') setStoreValues(data.values);
     else if (data.type === 'update-block') updateBlock(data);
     else if (data.type === 'reconcile') reconcile(data);
+    else if (data.type === 'replay') replay(data);
   });
 })();`;

@@ -56,11 +56,11 @@ describe('стенд темы nova', () => {
     expect(onest).toEqual(['Onest 100 900 normal']);
   });
 
-  it('каждый из 83 токенов словаря — класс хотя бы одного образца', () => {
+  it('каждый из 84 токенов словаря — класс хотя бы одного образца', () => {
     const classes = pageClasses(standHtml);
     const tokens = Object.entries(platformDictionary.tokens);
     const missing = tokens.filter(([name, def]) => !classesOf(name, def).some((own) => shown(classes, own)));
-    expect(tokens).toHaveLength(83);
+    expect(tokens).toHaveLength(84);
     expect(missing.map(([name]) => name)).toEqual([]);
   });
 

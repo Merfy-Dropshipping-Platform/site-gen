@@ -7,9 +7,14 @@ import { PREVIEW_SECTIONS_AGENT } from '../../src/preview-sections-agent';
 
 // «Проиграть анимации» и запуск без анимаций в превью (этап 3 спеки анимаций): сообщение replay от конструктора —
 // событие ядру на секции или на document; свежий узел на месте прежнего несёт метку, пока ядро его запускает.
+interface Message {
+  type: string;
+  [key: string]: unknown;
+}
+
 declare global {
   interface Window {
-    received: unknown[];
+    received: Message[];
     send: (message: unknown) => void;
     replays: string[];
     connected: string[];

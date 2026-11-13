@@ -56,6 +56,23 @@ describe('строка входа с поведениями', () => {
     expect(bundleEntry(['auth'], [], NONE)).toBe(bundleEntry(['auth'], []));
   });
 
+  it('13.11: scroll, in-view и библиотеки; "lib:…" из строки секции уходит в libUses части behaviors', () => {
+    const counter: BundleSection = { ...section('shop:counter', MODULES.quiet), uses: ['cart', 'lib:motion'] };
+    const plainSection = section('shop:plain', MODULES.quiet);
+    const entry = bundleEntry([], [counter, plainSection], plan({ scroll: true, inView: true, libs: ['motion'] }));
+    expect(entry).toContain('import { scroll as kitScroll } from "merfy-kit:scroll.js";');
+    expect(entry).toContain('import { inView as kitInView } from "merfy-kit:in-view.js";');
+    expect(entry).toContain('import { motion as kitLib0 } from "merfy-kit:lib-motion.js";');
+    expect(entry).toContain(
+      'kitBehaviors({ list: [], scroll: kitScroll, inView: kitInView, libs: { "motion": kitLib0 }, libUses: {"shop:counter":["motion"]} })',
+    );
+    expect(entry).toContain('{ name: "shop:counter", kind: "section", script: ');
+    expect(entry).toContain('uses: ["cart"], definition: s0 }');
+    expect(entry).not.toContain('"lib:motion"');
+    // Без kit "lib:…" тоже не доходит до ядра: незнакомая часть уронила бы секцию.
+    expect(bundleEntry([], [counter])).not.toContain('lib:motion');
+  });
+
   it('имя поведения не kebab-case — bundle-failed до esbuild', () => {
     expect(() => bundleEntry([], [], plan({ behaviors: ['x; alert(1)'] }))).toThrowError(/kebab-case/);
   });

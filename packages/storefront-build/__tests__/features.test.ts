@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kitPlanOf } from '../src/features';
+import { kitPlanOf, libsOf } from '../src/features';
 
 // Что странице нужно из поведений и анимаций SDK (блок 6, часть 6б, Р6б-2): по HTML секций и текстам их скриптов.
 const KNOWN = ['accordion', 'dialog', 'carousel', 'tabs', 'nav-menu'];
@@ -34,6 +34,24 @@ describe('набор поведений страницы', () => {
     expect(kitPlanOf(KNOWN, [], ['mount(el, ctx) { ctx.split(el.ref("h"), "words"); }']).animate).toBe(true);
     expect(kitPlanOf(KNOWN, [], ['const parts = text.split(","); const split = 1;']).animate).toBe(false);
     expect(kitPlanOf(KNOWN, [], ['ctx.on("document", "pointermove", () => {});']).animate).toBe(true);
+  });
+
+  it('13.11: scroll в скрипте — scroll.js, inView — in-view.js; без них полей нет (план прежний)', () => {
+    const script = 'mount(el, ctx) { ctx.scroll(el, (p) => p); ctx.inView(el, () => {}); }';
+    expect(kitPlanOf(KNOWN, [], [script])).toMatchObject({ scroll: true, inView: true });
+    expect(kitPlanOf(KNOWN, [], ['const scrolled = 1; const inViewport = 2;'])).toEqual({
+      behaviors: [],
+      reveal: false,
+      animate: false,
+    });
+    expect(kitPlanOf(KNOWN, ['<p>scroll inView</p>'], [])).not.toHaveProperty('scroll');
+  });
+
+  it('13.11: библиотеки — по "lib:<имя>" в uses секций, только известные сборке ядра', () => {
+    expect(libsOf(['motion'], ['cart', 'lib:motion', 'lib:gsap'])).toEqual(['motion']);
+    expect(libsOf(['motion'], ['cart'])).toEqual([]);
+    expect(kitPlanOf(KNOWN, [], [], ['motion'])).toMatchObject({ libs: ['motion'] });
+    expect(kitPlanOf(KNOWN, [], [], [])).not.toHaveProperty('libs');
   });
 
   it('ничего нет — пустой набор', () => {

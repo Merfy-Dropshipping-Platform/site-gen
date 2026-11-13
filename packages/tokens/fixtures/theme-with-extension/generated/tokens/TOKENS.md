@@ -84,6 +84,7 @@
 | `choice-card-align` | выбор | Выравнивание в карточке товара | `left` | `card-align-left:` `card-align-center:` `card-align-right:` | — |
 | `choice-motion-reveal` | выбор | Появление секций при прокрутке | `off` | `motion-reveal-off:` `motion-reveal-on:` | — |
 | `choice-motion-hover` | выбор | Отклик карточки товара на курсор: нет или подъём | `none` | `motion-hover-none:` `motion-hover-lift:` | — |
+| `choice-page-transition` | выбор | Переход между страницами: нет, затухание или сдвиг | `none` | `page-transition-none:` `page-transition-fade:` `page-transition-slide:` | — |
 | `scheme-card` | схема детали | Цветовая схема карточки товара | не задана — как у родителя | `scheme-card` | — |
 | `scheme-cart-drawer` | схема детали | Цветовая схема шторки корзины | не задана — как у родителя | `scheme-cart-drawer` | — |
 | `scheme-cookie-banner` | схема детали | Цветовая схема баннера cookie | не задана — как у родителя | `scheme-cookie-banner` | — |

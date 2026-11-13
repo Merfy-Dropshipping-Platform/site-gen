@@ -8,8 +8,8 @@ import {
   type StorefrontExtensions,
 } from '@merfy/storefront-config';
 import { EVERY_PAGE_EXT_POINT_PARTS } from './ext-points';
-import { bundlePage, type BundleKit, type BundleSection, type PageBundle } from './bundle';
-import { kitPlanOf } from './features';
+import { bundlePage, type BundleKit, type BundleSection, type KitPlan, type PageBundle } from './bundle';
+import { kitPlanOf, libsOf } from './features';
 import { sha256 } from './canonical';
 import { StorefrontBuildError } from './errors';
 import { STORE_USE_PREFIX, type BuildInputs, type CodeSection, type ShellInput } from './inputs';
@@ -293,7 +293,7 @@ export async function pageBundle(
     }),
   );
   const modules = new Map(scripts.map(({ hash }): [string, string] => [hexOf(hash), moduleText(hash, assets.modules)]));
-  const kit = kitOf(built.kit, content, [...modules.values()]);
+  const kit = kitOf(built.kit, content, [...modules.values()], sections);
   const parts = pageOwnParts(inputs, pageId, code, content, additionalParts);
   const source = { core, parts: pageParts(shell.parts, withoutExtPointParts(code), parts), sections, modules };
   const bundle = await bundlePage(kit === undefined ? source : { ...source, kit });
@@ -330,7 +330,26 @@ const pageOwnParts = (
   additional: readonly string[],
 ): string[] => [...pageExtPointParts(inputs, pageId), ...overlayPartsOf(code), ...marksPartsOf(content), ...additional];
 
-function kitOf(kit: ShellKit | undefined, content: PageHtml, scripts: readonly string[]): BundleKit | undefined {
+// 13.11: библиотеки — по uses секций страницы (libsOf); scroll.js и in-view.js — только если они есть в сборке ядра.
+function kitOf(
+  kit: ShellKit | undefined,
+  content: PageHtml,
+  scripts: readonly string[],
+  sections: readonly BundleSection[],
+): BundleKit | undefined {
   if (kit === undefined) return undefined;
-  return { files: kit.files, plan: kitPlanOf(kit.behaviors, htmlOf(content), scripts) };
+  const libs = libsOf(
+    kit.libs ?? [],
+    sections.flatMap((section) => section.uses),
+  );
+  return { files: kit.files, plan: withKitFiles(kitPlanOf(kit.behaviors, htmlOf(content), scripts, libs), kit) };
+}
+
+export function withKitFiles(plan: KitPlan, kit: ShellKit): KitPlan {
+  const { scroll, inView, ...rest } = plan;
+  return {
+    ...rest,
+    ...(scroll === true && kit.files.has('scroll.js') ? { scroll } : {}),
+    ...(inView === true && kit.files.has('in-view.js') ? { inView } : {}),
+  };
 }

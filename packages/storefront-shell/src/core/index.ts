@@ -24,6 +24,17 @@ export type {
   Keyframes,
   SplitBy,
   SpringEasing,
+  // 13.11: ctx.scroll, ctx.inView, ctx.lib.motion.
+  InViewOptions,
+  LibModules,
+  MotionLib,
+  Playback,
+  ScrollOptions,
+  TimelineAt,
+  TimelineOptions,
+  TimelineSegment,
+  TimelineSegmentOptions,
+  TweenOptions,
 } from './types';
 // 03.11: типы ctx.behavior — команды готовых поведений из скрипта секции.
 export type { BehaviorHandleName, BehaviorHandles, DialogOpenOptions, DialogPosition } from './types';

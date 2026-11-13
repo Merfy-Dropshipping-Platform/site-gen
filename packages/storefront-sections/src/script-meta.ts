@@ -1,7 +1,16 @@
 import { ACTIONS, MODULE_NAMES, isActionName } from '@merfy/shell/actions';
 import { z } from 'zod';
 import { EXT_POINTS, EXT_POINT_CLASSES, EXT_POINT_PARTS, isExtPoint, type ExtPointPart } from '@merfy/shell/ext-points';
-import { EXT_PART, extUseSchema, isExtUse, isStoreUse, storeUseSchema, type SectionManifest } from './format';
+import {
+  EXT_PART,
+  extUseSchema,
+  isExtUse,
+  isLibUse,
+  isStoreUse,
+  libUseSchema,
+  storeUseSchema,
+  type SectionManifest,
+} from './format';
 import type { ScriptFacts } from './script-facts';
 import { SCRIPT_CLASS } from './script-names';
 import type { TemplateMarkup } from './template-markup';
@@ -14,8 +23,9 @@ import type { TemplateMarkup } from './template-markup';
 // "ext:<id>" (блок 9 «Секций и SDK», часть 9в; Р9в-20) — модуль расширения в uses, часть ext — в parts.
 // "store:<префикс>:<имя>" (свои сторы) — свой стор в uses; части бандла он не добавляет: код сторов страницы бандл
 // подключает по самим сторам (storefront-build, code.ts).
+// "lib:<имя>" (13.11) — библиотека каталога SDK в uses; части бандла не добавляет: адаптер кладёт сборка по uses.
 export const scriptMetaSchema = z.strictObject({
-  uses: z.array(z.union([z.enum(MODULE_NAMES), extUseSchema, storeUseSchema])),
+  uses: z.array(z.union([z.enum(MODULE_NAMES), extUseSchema, storeUseSchema, libUseSchema])),
   // Части блоков расширений (блок 12 «Секций и SDK», В12-2 А) — по местам data-ext-point в шаблоне.
   parts: z.array(z.union([z.enum(MODULE_NAMES), z.literal(EXT_PART), z.enum(EXT_POINT_PARTS)])),
   classes: z.array(z.string().regex(SCRIPT_CLASS)),
@@ -50,11 +60,12 @@ export function scriptMetaOf(manifest: SectionManifest, markup: TemplateMarkup, 
   const modules = declared.filter(isSdkModule);
   const ext = declared.filter(isExtUse);
   const stores = declared.filter(isStoreUse);
+  const libs = declared.filter(isLibUse);
   const extPart = ext.length === 0 ? [] : [EXT_PART];
   const pointParts = markupPointParts(markup);
   const pointClasses = pointParts.flatMap((part) => EXT_POINT_CLASSES[part]);
   return {
-    uses: sorted([...modules, ...ext, ...stores]),
+    uses: sorted([...modules, ...ext, ...stores, ...libs]),
     parts: sorted([...modules, ...markupModules(markup), ...extPart, ...pointParts]),
     classes: [...new Set([...(facts?.classes ?? []), ...pointClasses])],
   };

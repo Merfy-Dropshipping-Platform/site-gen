@@ -133,6 +133,12 @@
   @keyframes merfy-marquee { to { translate: -50% 0; } }
   @keyframes merfy-parallax { from { translate: 0 -8%; } to { translate: 0 8%; } }
   @keyframes merfy-parallax-strong { from { translate: 0 -16%; } to { translate: 0 16%; } }
+  @keyframes merfy-float { 50% { translate: 0 -0.5rem; } }
+  @keyframes merfy-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+  @keyframes merfy-spin { to { rotate: 360deg; } }
+  @keyframes merfy-reveal { from { opacity: 0; translate: 0 1.5rem; } }
+  @keyframes merfy-reveal-up { from { opacity: 0; translate: 0 3rem; } }
+  @keyframes merfy-reveal-fade { from { opacity: 0; } }
 }
 @utility animate-marquee { @media (prefers-reduced-motion: no-preference) { animation: merfy-marquee 40s linear infinite; } }
 @utility animate-marquee-slow { @media (prefers-reduced-motion: no-preference) { animation: merfy-marquee 80s linear infinite; } }
@@ -141,6 +147,12 @@
 @utility parallax { @media (prefers-reduced-motion: no-preference) { @supports (animation-timeline: view()) { animation: merfy-parallax linear both; animation-timeline: view(); } } }
 @utility parallax-strong { @media (prefers-reduced-motion: no-preference) { @supports (animation-timeline: view()) { animation: merfy-parallax-strong linear both; animation-timeline: view(); } } }
 @utility animate-paused { animation-play-state: paused; }
+@utility animate-float { @media (prefers-reduced-motion: no-preference) { animation: merfy-float 6s ease-in-out infinite; } }
+@utility animate-shimmer { @media (prefers-reduced-motion: no-preference) { &::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.45) 50%, transparent 65%); background-size: 250% 100%; animation: merfy-shimmer 2.5s linear infinite; } } }
+@utility animate-spin-slow { @media (prefers-reduced-motion: no-preference) { animation: merfy-spin 8s linear infinite; } }
+@utility scroll-reveal { @media (prefers-reduced-motion: no-preference) { @supports (animation-timeline: view()) { animation: merfy-reveal linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; } } }
+@utility scroll-reveal-up { @media (prefers-reduced-motion: no-preference) { @supports (animation-timeline: view()) { animation: merfy-reveal-up linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; } } }
+@utility scroll-reveal-fade { @media (prefers-reduced-motion: no-preference) { @supports (animation-timeline: view()) { animation: merfy-reveal-fade linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; } } }
 @custom-variant card-style-standard (&:where([data-card-style="standard"], [data-card-style="standard"] *));
 @custom-variant card-style-card (&:where([data-card-style="card"], [data-card-style="card"] *));
 @custom-variant card-align-left (&:where([data-card-align="left"], [data-card-align="left"] *));
@@ -150,6 +162,9 @@
 @custom-variant motion-reveal-on (&:where([data-motion-reveal="on"], [data-motion-reveal="on"] *));
 @custom-variant motion-hover-none (&:where([data-motion-hover="none"], [data-motion-hover="none"] *));
 @custom-variant motion-hover-lift (&:where([data-motion-hover="lift"], [data-motion-hover="lift"] *));
+@custom-variant page-transition-none (&:where([data-page-transition="none"], [data-page-transition="none"] *));
+@custom-variant page-transition-fade (&:where([data-page-transition="fade"], [data-page-transition="fade"] *));
+@custom-variant page-transition-slide (&:where([data-page-transition="slide"], [data-page-transition="slide"] *));
 @custom-variant theme-ribbon-off (&:where([data-theme-ribbon="off"], [data-theme-ribbon="off"] *));
 @custom-variant theme-ribbon-on (&:where([data-theme-ribbon="on"], [data-theme-ribbon="on"] *));
 @layer base {

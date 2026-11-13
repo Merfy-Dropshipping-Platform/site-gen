@@ -42,6 +42,9 @@ export default defineSection<State>({
 | `ctx.log(...values)` | в превью — в консоль с именем секции; на витрине — ничего |
 | `ctx.animate(el, keyframes, options)` | анимация элемента или списка: свойства, миллисекунды, кривые и пружина, `stagger`, повтор, `finished` и `stop`, рецепты — [motion.md](motion.md#ctxanimate) |
 | `ctx.split(el, by)` | текст элемента на буквы, слова или строки для `ctx.animate` — [motion.md](motion.md#ctxsplit) |
+| `ctx.scroll(target, анимация \| fn, options)` | анимация или прогресс 0…1 от прокрутки, закреплённые секции — [motion.md](motion.md#ctxscroll) |
+| `ctx.inView(el, fn, options)` | своя анимация при входе элемента в экран — [motion.md](motion.md#ctxinview) |
+| `ctx.lib.motion` | полный Motion из `uses: ["lib:motion"]`: `timeline`, `tween`, `animate` — [motion.md](motion.md#полный-motion-libmotion) |
 | `ctx.page` | адрес страницы: `path` и `query`; с `"uses": ["page"]` — ещё сторы `$scroll`, `$leaving`, `$now` — [страница целиком](#страница-целиком) |
 | `ctx.storage` | хранилище секции в браузере: `get`, `set` (до 4 КБ), `remove` |
 | `ctx.ext.<id>` | расширение из `uses: ["ext:<id>"]`: сторы `$имя` и методы `имя(input)` — [вызов функции расширения](#вызов-функции-расширения) |

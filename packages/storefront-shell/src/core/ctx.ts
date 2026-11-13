@@ -1,5 +1,5 @@
 import { ShellError } from '../errors';
-import type { AnimateProvider, PointerProvider, SplitProvider } from './behaviors/types';
+import type { CtxMore, PointerProvider } from './behaviors/types';
 import type { ElScope } from './el';
 import type { EventBus } from './events';
 import type { Guard } from './guard';
@@ -21,7 +21,6 @@ import type {
   PointerSectionEvent,
   ReadableStore,
   SectionEvent,
-  SplitBy,
   Stop,
   StoreCtx,
   ThemeSettings,
@@ -43,9 +42,9 @@ export interface CtxDeps {
   readonly mode: Mode;
   readonly theme: Readonly<ThemeSettings>; // сквозные настройки темы страницы (блок 9, часть 9б)
   readonly input: SectionInput;
-  readonly animate: AnimateProvider | null; // провайдер части behaviors (блок 6); нет — ctx.animate бросает part-unknown
-  readonly split?: SplitProvider | null; // 12.11: то же для ctx.split
-  readonly pointer?: PointerProvider | null; // 12.11: то же для ctx.on(…, 'pointermove')
+  readonly pointer?: PointerProvider | null; // 12.11: провайдер ctx.on(…, 'pointermove'); нет — бросает part-unknown
+  // 13.11: ctx.animate, ctx.split, ctx.scroll, ctx.inView и ctx.lib от части behaviors; нет — бросают part-unknown
+  readonly more?: CtxMore | null;
   // 03.11: ctx.behavior — команды поведений этой секции, их выбирает часть behaviors (instance.ts привязывает её к
   // экземпляру); нельзя — Error с текстом для автора.
   readonly behavior: BaseCtx<Record<string, unknown>>['behavior'];
@@ -168,18 +167,8 @@ const methodsOf = (deps: CtxDeps, signal: AbortSignal) => ({
   listen: listenOf(deps.bus, deps.owner, deps.run, signal),
   emit: (emitName: string, detail?: Json): void => deps.bus.emit(`${deps.name}:${emitName}`, detail ?? null),
   log: (...values: unknown[]) => sectionLog(deps.mode, deps.name, deps.id, values),
-  animate: animateOf(deps),
-  split: splitOf(deps),
   behavior: deps.behavior,
 });
-
-// ctx.animate и ctx.split (блок 6, design.md раздел 10): узлы — только своей секции, кадры проверяет и Motion подаёт часть
-// behaviors (12.11: проверка кадров переехала туда — ядро стоит в бюджете веса). Свой узел или сбой sdk-call-invalid.
-function ownNode(deps: CtxDeps, call: string, el: El): Element {
-  const node = deps.scope.nodeOf(el);
-  if (node === null) throw new ShellError('sdk-call-invalid', `ctx.${call}: элемент не из этой секции`);
-  return node;
-}
 
 // Провайдер части behaviors: нет — сбой part-unknown с текстом для автора секции.
 function need<T>(provider: T | null | undefined, call: string): T {
@@ -188,24 +177,20 @@ function need<T>(provider: T | null | undefined, call: string): T {
   return provider;
 }
 
-function animateOf(deps: CtxDeps): BaseCtx<Record<string, unknown>>['animate'] {
-  return (el, keyframes, options) => {
-    const nodes = [el].flat().map((item) => ownNode(deps, 'animate', item));
-    return need(deps.animate, 'animate')(nodes, keyframes, options, deps.signal, deps.mode);
-  };
-}
-
-function splitOf(deps: CtxDeps): BaseCtx<Record<string, unknown>>['split'] {
-  function split(el: El, by: 'chars' | 'words'): readonly El[];
-  function split(el: El, by: 'lines'): Promise<readonly El[]>;
-  function split(el: El, by: SplitBy): readonly El[] | Promise<readonly El[]> {
-    const node = ownNode(deps, 'split', el);
-    const wrap = (nodes: readonly HTMLElement[]): readonly El[] => nodes.map((item) => deps.scope.wrap(item));
-    const pieces = need(deps.split, 'split')(node, by, deps.signal);
-    return pieces instanceof Promise ? pieces.then(wrap) : wrap(pieces);
-  }
-  return split;
-}
+// ctx.animate, ctx.split, ctx.scroll, ctx.inView и ctx.lib (блок 6, design.md раздел 10; 13.11) ставит часть behaviors
+// (behaviors/part.ts, more): свои узлы, провайдеры Motion, правила. В ядре — только они же без части: бросают part-unknown.
+// Так ядро осталось в бюджете веса, когда членов стало пять.
+const NO_MORE: CtxMore = {
+  animate: () => need<never>(null, 'animate'),
+  split: () => need<never>(null, 'split'),
+  scroll: () => need<never>(null, 'scroll'),
+  inView: () => need<never>(null, 'inView'),
+  lib: {
+    get motion() {
+      return need<never>(null, 'lib');
+    },
+  },
+};
 
 export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknown>>): BaseCtx<Record<string, unknown>> {
   let state: Partial<Record<string, unknown>> = { ...deps.state }; // свой объект экземпляра, начало — копия при замене
@@ -223,6 +208,7 @@ export function createCtx(deps: CtxDeps, modules: Readonly<Record<string, unknow
     stores: NO_STORES,
     theme: deps.theme,
     overlay: deps.overlay ?? null,
+    ...(deps.more ?? NO_MORE),
     ...methodsOf(deps, deps.signal),
     get state(): Partial<Record<string, unknown>> {
       return state; // свой объект экземпляра; ctx заморожен, а аксессор — работает

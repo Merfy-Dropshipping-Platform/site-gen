@@ -33,8 +33,8 @@ function problemsOf(raw: unknown): readonly string[] {
 }
 
 describe('словарь платформы', () => {
-  it('разбирается: 83 токена, из них 20 базовых, 13 разделов', () => {
-    expect(dictionaryNames(platformDictionary)).toHaveLength(83);
+  it('разбирается: 84 токена, из них 20 базовых, 13 разделов', () => {
+    expect(dictionaryNames(platformDictionary)).toHaveLength(84);
     const base = dictionaryNames(platformDictionary).filter((name) => isBaseToken(platformDictionary.tokens[name]));
     expect(base).toHaveLength(20);
     expect(platformDictionary.groups).toHaveLength(13);
@@ -55,21 +55,21 @@ describe('словарь платформы', () => {
       shadow: 7,
       spacing: 5,
       width: 2,
-      choice: 4,
+      choice: 5,
       scheme: 3,
     });
   });
 
-  it('33 достраиваются правилом, 27 берут умолчание, 3 схемы деталей наследуют родителя', () => {
+  it('33 достраиваются правилом, 28 берут умолчание, 3 схемы деталей наследуют родителя', () => {
     const defs = Object.values(platformDictionary.tokens);
     expect(defs.filter((def) => def.derive !== undefined)).toHaveLength(33);
-    expect(defs.filter((def) => def.default !== undefined)).toHaveLength(27);
+    expect(defs.filter((def) => def.default !== undefined)).toHaveLength(28);
     expect(defs.filter((def) => def.kind === 'scheme')).toHaveLength(3);
   });
 
-  it('в схеме 32 цвета, в корне 51 токен; порядок расчёта ставит источник раньше токена', () => {
+  it('в схеме 32 цвета, в корне 52 токена; порядок расчёта ставит источник раньше токена', () => {
     expect(namesIn(platformDictionary, 'scheme')).toHaveLength(32);
-    expect(namesIn(platformDictionary, 'root')).toHaveLength(51);
+    expect(namesIn(platformDictionary, 'root')).toHaveLength(52);
     const order = platformDictionary.order;
     expect(order.indexOf('primary-hover-foreground')).toBeLessThan(order.indexOf('primary-hover'));
     expect(order.indexOf('muted-foreground')).toBeLessThan(order.indexOf('price-old'));

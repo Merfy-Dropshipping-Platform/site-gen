@@ -1,5 +1,5 @@
 import { MODULE_NAMES } from '@merfy/shell/actions';
-import { BLOCK_RECORD_KINDS, STORE_USE_PREFIX, storeUseSchema } from '@merfy/storefront-build';
+import { BLOCK_RECORD_KINDS, STORE_USE_PREFIX, libUseSchema, storeUseSchema } from '@merfy/storefront-build';
 import { EXT_POINTS } from '@merfy/shell/ext-points';
 import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
@@ -84,10 +84,17 @@ export const isExtUse = (value: string): value is ExtUse => extUseSchema.safePar
 export { STORE_USE_PREFIX, storeUseSchema };
 export type StoreUse = z.infer<typeof storeUseSchema>;
 export const isStoreUse = (value: string): value is StoreUse => storeUseSchema.safeParse(value).success;
+// "lib:<имя>" (13.11, часть 2в спеки анимаций): библиотека каталога SDK — ctx.lib.<имя>. Схема — по виду строки, имя из
+// каталога (@merfy/shell/libraries) сверяет правило lib-unknown (script-names.ts): так отказ называет библиотеки
+// каталога, а не общую ошибку схемы. В шаблон не идёт, в script_meta — в uses; код адаптера кладёт сборка.
+export const LIB_USE_PREFIX = 'lib:';
+export { libUseSchema };
+export type LibUse = z.infer<typeof libUseSchema>;
+export const isLibUse = (value: string): value is LibUse => libUseSchema.safeParse(value).success;
 const USES_LIMIT = 12;
 // Текст подсказки собирается из MANIFEST_USES и видов ext:/store: — новый модуль SDK попадает в него сам (тест
 // ext-uses.test.ts сверяет каждое имя).
-export const USES_TEXT = `нужно ${MANIFEST_USES.join(', ')}, ${EXT_USE_PREFIX}<id расширения> или ${STORE_USE_PREFIX}<префикс>:<имя стора>`;
+export const USES_TEXT = `нужно ${MANIFEST_USES.join(', ')}, ${EXT_USE_PREFIX}<id расширения>, ${STORE_USE_PREFIX}<префикс>:<имя стора> или lib:<библиотека SDK>`;
 const isSectionUse = (value: string): value is SectionUse => SECTION_USES.some((use) => use === value);
 export const propsUsesOf = (manifest: Pick<SectionManifest, 'uses'>): SectionUse[] =>
   (manifest.uses ?? []).filter(isSectionUse);
@@ -116,7 +123,7 @@ export const sectionManifestSchema = z.strictObject({
   limit: z.int().min(1).max(50).optional(),
   removable: z.literal(false).optional(),
   uses: z
-    .array(z.union([z.enum(MANIFEST_USES), extUseSchema, storeUseSchema], { error: USES_TEXT }))
+    .array(z.union([z.enum(MANIFEST_USES), extUseSchema, storeUseSchema, libUseSchema], { error: USES_TEXT }))
     .max(USES_LIMIT)
     .refine(unique, { error: 'значение дважды' })
     .optional(),

@@ -1,6 +1,7 @@
 import { ACTIONS, ACTION_EVENTS, ACTION_NAMES, isActionName } from '@merfy/shell/actions';
 import { EVENT_NAMES } from '@merfy/shell/events';
-import { EXT_USE_PREFIX, STORE_USE_PREFIX, TEMPLATE_FILE, type SectionManifest } from './format';
+import { LIBRARY_NAMES, isLibraryName } from '@merfy/shell/libraries';
+import { EXT_USE_PREFIX, LIB_USE_PREFIX, STORE_USE_PREFIX, TEMPLATE_FILE, type SectionManifest } from './format';
 import { levenshteinOf } from './name-check';
 import { NAMES } from './names';
 import { problem, type SectionProblem } from './problems';
@@ -160,6 +161,36 @@ const storeUnknown: NameRule = ({ manifest, facts }) =>
     return [problem('store-unknown', item.file, text, item)];
   });
 
+// Библиотеки SDK (13.11, часть 2в спеки анимаций): "lib:<имя>" в uses — только из каталога (@merfy/shell/libraries);
+// ctx.lib.<имя> — только с "lib:<имя>" в uses: ядро даёт в ctx.lib только библиотеки из uses. ctx.lib целиком и имя из
+// выражения не сверяются.
+const LIB_LIST = LIBRARY_NAMES.map((name) => `${LIB_USE_PREFIX}${name}`).join(', ');
+const libUnknown: NameRule = ({ manifest, facts }) => {
+  const uses = manifest.uses ?? [];
+  const catalog = uses
+    .filter((use) => use.startsWith(LIB_USE_PREFIX) && !isLibraryName(use.slice(LIB_USE_PREFIX.length)))
+    .map((use) =>
+      problem(
+        'lib-unknown',
+        'section.json',
+        `uses: библиотеки «${use.slice(LIB_USE_PREFIX.length)}» нет в каталоге SDK. Есть: ${LIB_LIST}`,
+      ),
+    );
+  // Одно имя — один отказ: ctx.lib.motion.tween даёт чтения и ctx.lib.motion, и ctx.lib.motion.tween.
+  const seen = new Set<string>();
+  const reads = (facts?.reads ?? []).flatMap((item) => {
+    const name = item.path[0] === 'lib' ? item.path[1] : undefined;
+    if (name === undefined || uses.includes(`${LIB_USE_PREFIX}${name}`) || seen.has(name)) return [];
+    seen.add(name);
+    const known = isLibraryName(name);
+    const text = known
+      ? `ctx.lib.${name} без "${LIB_USE_PREFIX}${name}" в uses section.json — библиотеки на странице не будет`
+      : `библиотеки «${name}» нет в каталоге SDK. Есть: ${LIB_LIST}`;
+    return [problem('lib-unknown', item.file, text, item)];
+  });
+  return [...catalog, ...reads];
+};
+
 // El.list на ref без дочернего <template> (storefront-shell, core/el.ts): ядро копирует содержимое <template> на каждую
 // строку, без него — сбой «у <div> нет дочернего <template>» в браузере (picks 0.2.3, 03.11). Судим, только когда
 // элементы с таким data-ref в шаблоне есть строкой и ни у одного нет <template>: имя из выражения и ref, которого в
@@ -184,6 +215,7 @@ export const NAME_RULES: readonly NameRule[] = [
   scriptClasses,
   dataUnknown,
   storeUnknown,
+  libUnknown,
   listTemplateMissing,
 ];
 

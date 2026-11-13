@@ -173,11 +173,18 @@ describe('ctx.animate: новые свойства, пружина, список
     await page.close();
   });
 
-  it('filter с drop-shadow — сбой секции с текстом для автора', async () => {
-    const code = `export default { mount(el, ctx) { ctx.animate(el.ref('title'), { filter: ['none', 'drop-shadow(0 0 4px red)'] }); } };`;
+  // 13.11: список функций filter снят (владелец: любое свойство); запрет держит проверка значения — url( в filter.
+  it('filter с drop-shadow — играет; filter с url( — сбой секции с текстом для автора', async () => {
+    const shadow = `export default { mount(el, ctx) { ctx.animate(el.ref('title'), { filter: ['none', 'drop-shadow(0 0 4px red)'] }, { duration: 5000 }); } };`;
+    const ok = await openPage(browser, listOptions(shadow));
+    const [title] = await animations(ok.page, '[data-ref="title"]');
+    expect(title?.last.filter).toContain('drop-shadow');
+    expect(ok.errors).toEqual([]);
+    await ok.page.close();
+    const code = `export default { mount(el, ctx) { ctx.animate(el.ref('title'), { filter: ['none', 'url(https://evil.example/f.svg#x)'] }); } };`;
     const { page, errors } = await openPage(browser, listOptions(code));
     await failed(page);
-    expect(errors.some((text) => text.includes('ctx.animate: filter'))).toBe(true);
+    expect(errors.some((text) => text.includes('ctx.animate: в значении filter'))).toBe(true);
     await page.close();
   });
 

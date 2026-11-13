@@ -139,9 +139,9 @@ describe('значения темы', () => {
 });
 
 describe('тема с расширением', () => {
-  it('словарь темы — 88 токенов, свой цвет задан в каждой схеме', () => {
+  it('словарь темы — 89 токенов, свой цвет задан в каждой схеме', () => {
     const theme = parseTheme(themeWithExtension.tokens);
-    expect(dictionaryNames(theme.dictionary)).toHaveLength(88);
+    expect(dictionaryNames(theme.dictionary)).toHaveLength(89);
     expect(theme.tokens.schemes['scheme-2']['theme-gold']).toBe('#e0b93a');
   });
 

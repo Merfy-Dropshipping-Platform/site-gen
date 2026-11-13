@@ -16031,6 +16031,10 @@
           {
             "type": "string",
             "pattern": "^store:[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          {
+            "type": "string",
+            "pattern": "^lib:[a-z][a-z0-9-]{1,31}$"
           }
         ]
       }

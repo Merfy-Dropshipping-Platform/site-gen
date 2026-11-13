@@ -29,6 +29,9 @@ const NAMES: readonly BundleName[] = [
   'animate',
   'part',
   'reveal',
+  'scroll',
+  'in-view',
+  'lib-motion',
 ];
 const dirs: string[] = [];
 
@@ -42,7 +45,9 @@ afterEach(async () => {
   await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
-describe('buildBehaviors', () => {
+// 13.11: сборка — четыре прогона esbuild (общий и scroll, in-view, lib-motion отдельно); в общем прогоне тестов под
+// нагрузкой машины она дольше 5 с умолчания vitest, одна — около 1,5 с.
+describe('buildBehaviors', { timeout: 30_000 }, () => {
   it('файл на каждое поведение, появления, провайдер и часть; манифест рядом; ESM с одним экспортом', async () => {
     const dir = await outDir();
     const manifest = await buildBehaviors({ packageDir: PACKAGE_DIR, outDir: dir, version: '0.1.0' });
@@ -74,6 +79,23 @@ describe('buildBehaviors', () => {
     );
     expect(shared.length).toBeGreaterThan(0);
     expect(manifest.entries.quantity.chunks.filter((chunk) => shared.includes(chunk))).toEqual([]);
+  });
+
+  it('13.11: полный Motion (класс Timeline) — только в lib-motion; scroll, in-view и lib-motion без общих кусков', async () => {
+    const dir = await outDir();
+    const manifest = await buildBehaviors({ packageDir: PACKAGE_DIR, outDir: dir, version: '0.1.0' });
+    const withTimeline: string[] = [];
+    for (const name of NAMES) {
+      const info = manifest.entries[name];
+      const texts = await Promise.all([info.file, ...info.chunks].map((file) => readFile(join(dir, file), 'utf8')));
+      // Метка полного Motion — поле isRebuilding класса Timeline: имена полей минификация не трогает.
+      if (texts.some((text) => text.includes('isRebuilding'))) withTimeline.push(name);
+    }
+    expect(withTimeline).toEqual(['lib-motion']);
+    for (const name of ['scroll', 'in-view', 'lib-motion'] as const)
+      expect(manifest.entries[name].chunks, name).toEqual([]);
+    const lib = await readFile(join(dir, manifest.entries['lib-motion'].file), 'utf8');
+    expect(lib).toMatch(/export\s*\{[^}]*\bmotion\b[^}]*\}/);
   });
 
   it('бюджеты brotli: каждый файл с его кусками и все файлы вместе', async () => {

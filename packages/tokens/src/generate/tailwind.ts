@@ -72,11 +72,26 @@ export const RICH_TEXT_UTILITY = `@utility rich-text {\n${RICH_TEXT_RULES.map((r
 // прокрутке (animation-timeline: view()); браузер без неё оставляет элемент на месте. Кадры лежат в @theme: Tailwind
 // печатает их, только когда класс есть в разметке. Паузу даёт animate-paused с вариантом: hover:animate-paused.
 const NO_PREFERENCE = '@media (prefers-reduced-motion: no-preference)';
+// 13.11: покачивание, блик, медленное вращение и появление от прокрутки классом (scroll-reveal на animation-timeline:
+// view(); браузер без неё — элемент просто виден). Блик — слой ::after поверх элемента: ставить вместе с relative и
+// overflow-hidden, свой фон элемента не трогается.
 const MOTION_KEYFRAMES = [
   '@keyframes merfy-marquee { to { translate: -50% 0; } }',
   '@keyframes merfy-parallax { from { translate: 0 -8%; } to { translate: 0 8%; } }',
   '@keyframes merfy-parallax-strong { from { translate: 0 -16%; } to { translate: 0 16%; } }',
+  '@keyframes merfy-float { 50% { translate: 0 -0.5rem; } }',
+  '@keyframes merfy-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }',
+  '@keyframes merfy-spin { to { rotate: 360deg; } }',
+  '@keyframes merfy-reveal { from { opacity: 0; translate: 0 1.5rem; } }',
+  '@keyframes merfy-reveal-up { from { opacity: 0; translate: 0 3rem; } }',
+  '@keyframes merfy-reveal-fade { from { opacity: 0; } }',
 ];
+const SHIMMER_LAYER =
+  "&::after { content: ''; position: absolute; inset: 0; pointer-events: none; " +
+  'background-image: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.45) 50%, transparent 65%); ' +
+  'background-size: 250% 100%; animation: merfy-shimmer 2.5s linear infinite; }';
+const scrollReveal = (frames: string): string =>
+  `${NO_PREFERENCE} { @supports (animation-timeline: view()) { animation: ${frames} linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; } }`;
 const MOTION_RULES: Readonly<Record<string, string>> = {
   'animate-marquee': `${NO_PREFERENCE} { animation: merfy-marquee 40s linear infinite; }`,
   'animate-marquee-slow': `${NO_PREFERENCE} { animation: merfy-marquee 80s linear infinite; }`,
@@ -85,6 +100,12 @@ const MOTION_RULES: Readonly<Record<string, string>> = {
   parallax: `${NO_PREFERENCE} { @supports (animation-timeline: view()) { animation: merfy-parallax linear both; animation-timeline: view(); } }`,
   'parallax-strong': `${NO_PREFERENCE} { @supports (animation-timeline: view()) { animation: merfy-parallax-strong linear both; animation-timeline: view(); } }`,
   'animate-paused': 'animation-play-state: paused;',
+  'animate-float': `${NO_PREFERENCE} { animation: merfy-float 6s ease-in-out infinite; }`,
+  'animate-shimmer': `${NO_PREFERENCE} { ${SHIMMER_LAYER} }`,
+  'animate-spin-slow': `${NO_PREFERENCE} { animation: merfy-spin 8s linear infinite; }`,
+  'scroll-reveal': scrollReveal('merfy-reveal'),
+  'scroll-reveal-up': scrollReveal('merfy-reveal-up'),
+  'scroll-reveal-fade': scrollReveal('merfy-reveal-fade'),
 };
 // Классы движения, которые сами учитывают «уменьшить движение» (проверка вкуса секций их не отмечает).
 export const MOTION_UTILITIES: readonly string[] = Object.keys(MOTION_RULES);

@@ -12,6 +12,8 @@
     "./behaviors/catalog": "./src/core/behaviors/catalog.ts",
     "./behaviors/presets": "./src/core/behaviors/presets.ts",
     "./behaviors/motion-css": "./src/core/behaviors/motion-css.ts",
+    "./behaviors/page-transition": "./src/core/behaviors/page-transition.ts",
+    "./libraries": "./src/core/behaviors/libraries.ts",
     "./keyframes": "./src/core/keyframes.ts",
     "./preview": "./src/core/preview-protocol.ts",
     "./events": "./src/core/event-catalog.ts",
@@ -38,7 +40,7 @@
     "embla-carousel": "8.6.0",
     "embla-carousel-autoplay": "8.6.0",
     "embla-carousel-fade": "8.6.0",
-    "motion": "14.0.0",
+    "motion": "14.8.0",
     "nanostores": "1.5.4"
   },
   "devDependencies": {

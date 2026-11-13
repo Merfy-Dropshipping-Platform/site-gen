@@ -1,32 +1,29 @@
 import type { KeyframeValue, Keyframes } from './types';
 
-// Граница ctx.animate (design.md блока 6, раздел 10; 15 Г — запросы только к шлюзу). Код секции анимирует только
-// свойства из списка; значение — число или строка без url(), кавычек и «\», как у cssVar в attributes.ts: url() дал бы
-// запрос к чужому адресу, кавычки — адрес в image-set("…"), «\» — url через экранирование. Имена — как у Motion: camelCase.
-export const ANIMATABLE: ReadonlySet<string> = new Set([
-  'opacity',
-  'transform',
-  'translate',
-  'scale',
-  'rotate',
-  'color',
-  'backgroundColor',
-  'borderColor',
-  'width',
-  'height',
-  'maxHeight',
-  // 12.11: маски, размытие, прорисовка линий SVG (pathLength="1"), межбуквенный интервал, скругление, фон.
-  'clipPath',
-  'filter',
-  'strokeDashoffset',
-  'strokeDasharray',
-  'letterSpacing',
-  'borderRadius',
-  'backgroundPosition',
-]);
-const UNSAFE_VALUE = /url\(|["'\\]/i;
-// filter — только эти функции с числом и единицей внутри: drop-shadow() и url() тянут чужие цвета и адреса.
-const FILTER_VALUE = /^\s*(?:none|(?:(?:blur|brightness|contrast|saturate|grayscale|opacity)\([-\d.a-z%\s]*\)\s*)+)$/i;
+// Граница анимаций кода секции (design.md блока 6, раздел 10; 15 Г — запросы только к шлюзу). С 13.11 (владелец: «я хочу
+// чтобы он анимировал все что хотел и как хотел») имя свойства — любое CSS-свойство в camelCase, как у Motion, или
+// CSS-переменная --*; защиту держит проверка значения. Правило одно для ctx.animate, extra пресетов и ctx.lib.motion.
+// Значение — число или строка без частей ниже: каждая дала бы запрос к чужому адресу или выход из значения.
+export const FORBIDDEN_IN_VALUE: readonly (readonly [string, string])[] = [
+  ['url(', 'картинка, маска или фильтр SVG с чужого адреса'],
+  ['image-set(', 'набор картинок с адресами'],
+  ['-webkit-image-set(', 'то же с префиксом'],
+  ['cross-fade(', 'смесь картинок с адресами'],
+  ['element(', 'снимок чужого элемента страницы'],
+  ['src(', 'адрес, как url('],
+  ['"', 'строка в кавычках — адрес в image-set("…")'],
+  ["'", 'то же в одинарных кавычках'],
+  ['\\', 'экранирование: \\75 rl( — это url('],
+  [';', 'конец значения и начало чужого свойства'],
+  ['{', 'блок правил CSS'],
+  ['}', 'конец блока правил'],
+  ['@', 'правило @import и подобные'],
+];
+
+// camelCase без дефисов (backgroundColor, WebkitMaskPosition) или переменная --имя.
+const PROPERTY_NAME = /^(?:[a-zA-Z][a-zA-Z0-9]*|--[a-zA-Z0-9_-]+)$/;
+// Те же части одной проверкой (image-set( покрывает и -webkit-image-set(); тест сверяет её со списком выше.
+const UNSAFE_VALUE = /url\(|image-set\(|cross-fade\(|element\(|src\(|["'\\;{}@]/i;
 
 const valuesOf = (value: KeyframeValue | readonly KeyframeValue[]): readonly KeyframeValue[] =>
   typeof value === 'object' ? value : [value];
@@ -39,9 +36,11 @@ const invalid = (text: string): Error => Object.assign(new Error(text), { code: 
 
 export function checkKeyframes(keyframes: Keyframes): void {
   for (const [name, value] of Object.entries(keyframes)) {
-    if (!ANIMATABLE.has(name)) throw invalid(`ctx.animate: свойство ${name} анимировать нельзя`);
-    if (valuesOf(value).some(unsafe)) throw invalid(`ctx.animate: в значении ${name} нельзя url(…), кавычки и «\\»`);
-    if (name === 'filter' && !valuesOf(value).every((item) => typeof item === 'string' && FILTER_VALUE.test(item)))
-      throw invalid('ctx.animate: filter — blur, brightness, contrast, saturate, grayscale, opacity');
+    if (!PROPERTY_NAME.test(name))
+      throw invalid(`ctx.animate: ${name} — не свойство CSS в camelCase и не --переменная`);
+    if (valuesOf(value).some(unsafe))
+      throw invalid(
+        `ctx.animate: в значении ${name} нельзя url(, image-set(, cross-fade(, element(, src(, кавычки, \\ ; { } @`,
+      );
   }
 }

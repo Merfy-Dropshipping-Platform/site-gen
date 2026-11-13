@@ -97,6 +97,7 @@
     "choice-card-align": { "kind": "choice", "about": "Выравнивание в карточке товара", "group": "cards", "values": ["left", "center", "right"], "default": "left" },
     "choice-motion-reveal": { "kind": "choice", "about": "Появление секций при прокрутке", "group": "motion", "values": ["off", "on"], "default": "off" },
     "choice-motion-hover": { "kind": "choice", "about": "Отклик карточки товара на курсор: нет или подъём", "group": "motion", "values": ["none", "lift"], "default": "none" },
+    "choice-page-transition": { "kind": "choice", "about": "Переход между страницами: нет, затухание или сдвиг", "group": "motion", "values": ["none", "fade", "slide"], "default": "none" },
     "scheme-card": { "kind": "scheme", "about": "Цветовая схема карточки товара", "group": "cards" },
     "scheme-cart-drawer": { "kind": "scheme", "about": "Цветовая схема шторки корзины", "group": "slots" },
     "scheme-cookie-banner": { "kind": "scheme", "about": "Цветовая схема баннера cookie", "group": "slots" }

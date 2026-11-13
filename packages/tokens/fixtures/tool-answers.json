@@ -11,7 +11,7 @@
   "find-link-color": "Слова «ссылок» в словаре токенов нет — такое не настроить. Разделы — groups.",
   "check-grid": "Не годится:\nroot.choice-card-style: нужно standard или card",
   "set-grid": "Не записано:\nroot.choice-card-style: нужно standard или card",
-  "groups": "Разделы (83 токенов):\ncolors-base — Цвета: основа · 14\ncolors-buttons — Цвета: кнопки · 10\ncolors-shop — Цвета: цена, скидка, бейдж, ошибка · 8\ntype — Типографика · 19\nbuttons — Кнопки · 3\ninputs — Поля ввода · 3\ncards — Карточка товара · 7\nmedia — Медиа · 3\npopover — Всплывающее, шторка, бейдж · 5\npage — Страница и сетка · 7\nmotion — Движение · 2\nslots — Схемы шторки и баннера · 2",
+  "groups": "Разделы (84 токенов):\ncolors-base — Цвета: основа · 14\ncolors-buttons — Цвета: кнопки · 10\ncolors-shop — Цвета: цена, скидка, бейдж, ошибка · 8\ntype — Типографика · 19\nbuttons — Кнопки · 3\ninputs — Поля ввода · 3\ncards — Карточка товара · 7\nmedia — Медиа · 3\npopover — Всплывающее, шторка, бейдж · 5\npage — Страница и сетка · 7\nmotion — Движение · 3\nslots — Схемы шторки и баннера · 2",
   "list-cards": "Карточка товара:\nradius-card — Скругление карточек · 12 px\nborder-width-card — Толщина обводки карточки товара · 0 px\nshadow-card — Тень карточки товара · без тени\nspacing-card — Внутренний отступ карточки товара · 0 px\nchoice-card-style — Вид карточки товара: стандарт или карточка · standard\nchoice-card-align — Выравнивание в карточке товара · left\nscheme-card — Цветовая схема карточки товара · не задано",
   "list-nope": "Раздела nope нет. Разделы — groups.",
   "describe-nope": "Токена nope нет. Найти — find.",

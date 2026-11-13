@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { MOTION_HEAD_SCRIPT } from '@merfy/shell/behaviors/motion-css';
+import { PAGE_TRANSITION_SCRIPT } from '@merfy/shell/behaviors/page-transition';
 import { counterScripts } from '@merfy/shell/counters';
 import type { Counter, CounterKind, CustomCode } from '@merfy/storefront-config';
 
@@ -122,8 +123,11 @@ function counterParts(counters: readonly Counter[]): CounterParts {
 
 const directives = (rows: readonly (readonly string[])[]): string => rows.map((row) => row.join(' ')).join('; ');
 
+// Встроенные скрипты SDK в <head>: флаг появлений (блок 6) и имена переходов между страницами (13.11, head.ts).
+const SDK_HASHES = (): string[] => [textHash(MOTION_HEAD_SCRIPT), textHash(PAGE_TRANSITION_SCRIPT)];
+
 function normalPolicy(source: CspSource, counters: CounterParts): string {
-  const hashes = unique([textHash(MOTION_HEAD_SCRIPT), ...counters.hashes, ...pageHashes(source)]);
+  const hashes = unique([...SDK_HASHES(), ...counters.hashes, ...pageHashes(source)]);
   return directives([
     ['default-src', "'self'"],
     ['script-src', "'self'", ...hashes, ...counters.script],
@@ -148,7 +152,7 @@ function strictPolicy(source: CspSource, counters: CounterParts): string {
   ).sort();
   const script = [
     "'strict-dynamic'",
-    ...unique([textHash(MOTION_HEAD_SCRIPT), ...bundles, ...counters.hashes, ...pageHashes(source)]),
+    ...unique([...SDK_HASHES(), ...bundles, ...counters.hashes, ...pageHashes(source)]),
   ];
   return directives([
     ['script-src', ...script, "'unsafe-inline'", 'https:'],

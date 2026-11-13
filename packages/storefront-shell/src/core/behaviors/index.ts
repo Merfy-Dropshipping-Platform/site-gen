@@ -32,6 +32,14 @@ export type {
   SplitProvider,
 } from './types';
 export { animate, pointer, split } from './motion';
+// 13.11: ctx.scroll, ctx.inView, каталог библиотек и ctx.lib.motion, переходы между страницами.
+export { scroll } from './scroll';
+export { inView } from './in-view';
+export { motion as libMotion } from './lib-motion';
+export { LIBRARIES, LIBRARY_LICENSES, LIBRARY_NAMES, LIB_USE_PREFIX, isLibraryName } from './libraries';
+export type { LibraryName, LibrarySpec } from './libraries';
+export { PAGE_TRANSITIONS, PAGE_TRANSITION_SCRIPT, pageTransitionCss } from './page-transition';
+export type { CtxMore, InViewProvider, LibAdapter, ScrollProvider, SectionHost } from './types';
 export { accordion } from './accordion';
 export { dialog } from './dialog';
 export { carousel } from './carousel';

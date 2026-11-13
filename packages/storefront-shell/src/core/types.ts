@@ -759,9 +759,39 @@ export interface MotionLib {
   // Как ctx.animate, плюс отдельные части transform: x, y, z, rotateX, rotateY, rotateZ, scaleX, scaleY, skewX, skewY.
   animate(el: El | readonly El[], keyframes: Keyframes, options?: AnimateOptions): Playback;
 }
+// Плавная прокрутка Lenis по uses: ["lib:lenis"] (13.11, пункт 7 спеки анимаций): один экземпляр на страницу — его
+// включает первая секция с "lib:lenis", живёт, пока на странице есть хоть одна такая. «Уменьшить движение» и запуск в
+// превью после правки настроек или текста — прокрутка нативная, API тот же: подписка срабатывает, scrollTo — сразу.
+export interface LenisSettings {
+  readonly lerp?: number; // доля оставшегося пути за кадр, 0.01…1; по умолчанию 0.1
+  readonly duration?: number; // мс прокрутки колесом вместо lerp, 100…5000
+}
+export interface LenisState {
+  readonly scroll: number; // px от верха страницы
+  readonly limit: number; // px: самая нижняя прокрутка
+  readonly progress: number; // scroll / limit, 0…1
+  readonly velocity: number; // px за кадр, со знаком
+  readonly direction: -1 | 0 | 1; // 1 — вниз, -1 — вверх
+}
+export interface LenisScrollToOptions {
+  readonly offset?: number; // px к цели: -80 — остановиться на 80 px выше
+  readonly duration?: number; // мс; без него — lerp экземпляра
+  readonly immediate?: boolean; // сразу, без прокрутки
+}
+export interface LenisLib {
+  // Каждый кадр прокрутки — fn с состоянием; снятие секции — отписка.
+  onScroll(fn: (state: LenisState) => void): Stop;
+  // К числу px от верха страницы или к элементу своей секции.
+  scrollTo(target: number | El, options?: LenisScrollToOptions): void;
+  stop(): void; // запрет прокрутки (прелоадер, своё окно); снятие секции — снимает и её запрет
+  start(): void;
+  // Настройки экземпляра: применяет первая вызвавшая секция, у остальных — false.
+  configure(settings: LenisSettings): boolean;
+}
 // Библиотеки каталога SDK (behaviors/libraries.ts) — ctx.lib.<имя>; есть, только если в uses есть "lib:<имя>".
 export interface LibModules {
   readonly motion: MotionLib;
+  readonly lenis: LenisLib;
 }
 
 // ctx экземпляра (раздел 3.2). animate — блок 6 (типы выше); theme и ext — блок 9.

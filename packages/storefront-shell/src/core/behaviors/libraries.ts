@@ -36,9 +36,21 @@ export const LIBRARIES: Readonly<Record<LibraryName, LibrarySpec>> = {
     title: 'Полный Motion: таймлайн по сценарию, анимация чисел, отдельные x и y',
     api: ['timeline', 'tween', 'animate'],
   },
+  // 13.11, пункт 7: плавная прокрутка — библиотекой, а не настройкой темы (решение владельца: анимации свободные, автор
+  // секции сам включает прокрутку и вешает на неё свои анимации). Экземпляр один на страницу (lib-lenis.ts).
+  lenis: {
+    package: 'lenis',
+    version: '1.3.27',
+    license: 'MIT',
+    // Lenis 1.3.27 с адаптером и общим счётчиком запрета прокрутки — 5964 Б brotli (замер 13.11).
+    budget: 6144,
+    adapter: 'lib-lenis',
+    title: 'Плавная прокрутка страницы Lenis: подписка на прокрутку, прокрутка к месту, остановка',
+    api: ['onScroll', 'scrollTo', 'stop', 'start', 'configure'],
+  },
 };
 
 export const LIB_USE_PREFIX = 'lib:';
-export const LIBRARY_NAMES: readonly LibraryName[] = ['motion'];
+export const LIBRARY_NAMES: readonly LibraryName[] = ['motion', 'lenis'];
 
 export const isLibraryName = (name: string): name is LibraryName => LIBRARY_NAMES.some((item) => item === name);

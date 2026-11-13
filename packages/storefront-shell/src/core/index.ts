@@ -26,6 +26,10 @@ export type {
   SpringEasing,
   // 13.11: ctx.scroll, ctx.inView, ctx.lib.motion.
   InViewOptions,
+  LenisLib,
+  LenisScrollToOptions,
+  LenisSettings,
+  LenisState,
   LibModules,
   MotionLib,
   Playback,

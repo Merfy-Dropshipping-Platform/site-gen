@@ -43,6 +43,16 @@ describe('motion.md', () => {
     for (const closed of ['таймлайн', 'счётчик', 'View Transitions']) expect(missing, closed).not.toContain(closed);
   });
 
+  it('13.11, пункт 7: плавная прокрутка lib:lenis — раздел с рецептом, строка в script.md и anatomy', () => {
+    const text = files['motion.md'] ?? '';
+    expect(text).toMatch(/^## Плавная прокрутка \(lib:lenis\)$/m);
+    expect(text).toContain('#плавная-прокрутка-liblenis');
+    expect(text).toContain('"uses": ["lib:lenis", "lib:motion"]');
+    expect(text).toContain('ctx.lib.lenis.onScroll');
+    expect(files['script.md']).toContain('`ctx.lib.lenis`');
+    expect(files['anatomy.md']).toContain('"lib:lenis"');
+  });
+
   it('ссылка кода lib-unknown ведёт на заголовок страницы; uses "lib:…" описан в section.json и anatomy', () => {
     expect(files['motion.md']).toMatch(/^## Полный Motion \(lib:motion\)$/m);
     expect(files['section-json.md']).toContain('lib:');

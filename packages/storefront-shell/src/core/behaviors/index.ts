@@ -36,6 +36,7 @@ export { animate, pointer, split } from './motion';
 export { scroll } from './scroll';
 export { inView } from './in-view';
 export { motion as libMotion } from './lib-motion';
+export { lenis as libLenis } from './lib-lenis';
 export { LIBRARIES, LIBRARY_LICENSES, LIBRARY_NAMES, LIB_USE_PREFIX, isLibraryName } from './libraries';
 export type { LibraryName, LibrarySpec } from './libraries';
 export { PAGE_TRANSITIONS, PAGE_TRANSITION_SCRIPT, pageTransitionCss } from './page-transition';

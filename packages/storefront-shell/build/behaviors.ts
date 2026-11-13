@@ -10,7 +10,15 @@ import { LIBRARIES } from '../src/core/behaviors/libraries';
 // часть; общий код — в кусках. Бюджеты brotli — договор (Р6-12): поднимать — только решением основного треда.
 
 // 13.11: scroll — ctx.scroll и ctx.inView; lib-<имя> — адаптер библиотеки каталога (libraries.ts), бюджет — из каталога.
-export type BundleName = BehaviorName | 'part' | 'reveal' | 'animate' | 'scroll' | 'in-view' | 'lib-motion';
+export type BundleName =
+  | BehaviorName
+  | 'part'
+  | 'reveal'
+  | 'animate'
+  | 'scroll'
+  | 'in-view'
+  | 'lib-motion'
+  | 'lib-lenis';
 export interface BehaviorsBuildOptions {
   readonly packageDir: string;
   readonly outDir: string;
@@ -67,7 +75,10 @@ export const BEHAVIOR_BUDGETS: Readonly<Record<BundleName | 'total', number>> = 
   scroll: 4096,
   'in-view': 1024,
   'lib-motion': LIBRARIES.motion.budget,
-  total: 68603,
+  // 13.11, пункт 7 спеки: lib-lenis — плавная прокрутка Lenis (замер 5964 Б, предел из каталога 6144). Общий предел
+  // поднят ровно на предел lib-lenis: 68 603 → 74 747; остальные файлы не выросли.
+  'lib-lenis': LIBRARIES.lenis.budget,
+  total: 68603 + LIBRARIES.lenis.budget,
 };
 
 const BUNDLE_NAMES: readonly BundleName[] = [
@@ -91,6 +102,7 @@ const BUNDLE_NAMES: readonly BundleName[] = [
   'scroll',
   'in-view',
   'lib-motion',
+  'lib-lenis',
 ];
 
 const ENTRY_OF: Readonly<Record<BundleName, string>> = {
@@ -114,6 +126,7 @@ const ENTRY_OF: Readonly<Record<BundleName, string>> = {
   scroll: 'scroll.ts',
   'in-view': 'in-view.ts',
   'lib-motion': 'lib-motion.ts',
+  'lib-lenis': 'lib-lenis.ts',
 };
 
 // Ключ входа в metafile: вывод, чей entryPoint — файл этого входа.
@@ -149,7 +162,7 @@ interface Built {
 // код по файлам модулей: файл Motion, который нужен и motion/mini, и полному Motion, попадает в общий кусок вместе со
 // всем, что из него достижимо, — аккордеон и слайдер получали +18 КБ полного Motion, с одним scroll — по +1,2 КБ, с
 // in-view — по +150 Б. Цена — копия части кода motion-dom на странице, где есть и ctx.animate, и ctx.scroll.
-const SOLO: readonly BundleName[] = ['scroll', 'in-view', 'lib-motion'];
+const SOLO: readonly BundleName[] = ['scroll', 'in-view', 'lib-motion', 'lib-lenis'];
 const GROUPS: readonly (readonly BundleName[])[] = [
   BUNDLE_NAMES.filter((name) => !SOLO.includes(name)),
   ...SOLO.map((name) => [name]),
@@ -233,6 +246,7 @@ function entriesOf(metafile: Metafile, sizes: Sizes): Record<BundleName, BundleI
     scroll: of('scroll'),
     'in-view': of('in-view'),
     'lib-motion': of('lib-motion'),
+    'lib-lenis': of('lib-lenis'),
   };
 }
 

@@ -144,7 +144,7 @@ export interface BehaviorsOptions {
   readonly pointer?: PointerProvider;
   readonly scroll?: ScrollProvider;
   readonly inView?: InViewProvider;
-  readonly libs?: { readonly motion?: LibAdapter<'motion'> };
+  readonly libs?: { readonly motion?: LibAdapter<'motion'>; readonly lenis?: LibAdapter<'lenis'> };
   // Библиотеки секций страницы: имя секции → имена из её uses "lib:<имя>" (сборка, bundle.ts).
   readonly libUses?: Readonly<Record<string, readonly LibraryName[]>>;
 }

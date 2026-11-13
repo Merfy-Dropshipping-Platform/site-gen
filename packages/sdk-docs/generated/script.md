@@ -1,6 +1,6 @@
 # script.ts
 
-> SDK 1 · документация 1.39.0 · 2026-11-13
+> SDK 1 · документация 1.40.0 · 2026-11-13
 
 `script.ts` — поведение секции в браузере. Нужен, только если на странице что-то меняется после загрузки: выбор,
 фильтр, счётчик. Открыть, переключить, прокрутить — готовые [поведения](behaviors.md) без скрипта.
@@ -49,6 +49,7 @@ export default defineSection<State>({
 | `ctx.scroll(target, анимация \| fn, options)` | анимация или прогресс 0…1 от прокрутки, закреплённые секции — [motion.md](motion.md#ctxscroll) |
 | `ctx.inView(el, fn, options)` | своя анимация при входе элемента в экран — [motion.md](motion.md#ctxinview) |
 | `ctx.lib.motion` | полный Motion из `uses: ["lib:motion"]`: `timeline`, `tween`, `animate` — [motion.md](motion.md#полный-motion-libmotion) |
+| `ctx.lib.lenis` | плавная прокрутка страницы из `uses: ["lib:lenis"]`: `onScroll`, `scrollTo`, `stop`, `start`, `configure` — [motion.md](motion.md#плавная-прокрутка-liblenis) |
 | `ctx.page` | адрес страницы: `path` и `query`; с `"uses": ["page"]` — ещё сторы `$scroll`, `$leaving`, `$now` — [страница целиком](#страница-целиком) |
 | `ctx.storage` | хранилище секции в браузере: `get`, `set` (до 4 КБ), `remove` |
 | `ctx.ext.<id>` | расширение из `uses: ["ext:<id>"]`: сторы `$имя` и методы `имя(input)` — [вызов функции расширения](#вызов-функции-расширения) |

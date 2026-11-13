@@ -18,13 +18,21 @@ const ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
 const TEMPLATES: Record<string, string> = {
   'shop:counter': '<span data-ref="count" id="count">0</span>',
   'shop:glow': '<div data-ref="box" id="box" style="height:40px">свечение</div>',
+  'shop:smooth': '<div data-ref="spot" id="spot" style="height:3000px">длинная</div>',
 };
+// 13.11, пункт 7: плавная прокрутка Lenis по "lib:lenis" — код Lenis только в бандле такой страницы.
+const SMOOTH =
+  'export default {mount(e,c){globalThis.smoothTo=()=>c.lib.lenis.scrollTo(500,{immediate:true});globalThis.smoothReady=true}};';
 const COUNTER =
   'export default {mount(e,c){const n=e.ref("count");c.lib.motion.tween(0,12000,{duration:200},v=>n.text(String(Math.round(v)))).finished.then(()=>{globalThis.counted=true})}};';
 const GLOW =
   'export default {mount(e,c){const a=c.animate(e.ref("box"),{opacity:[0,1]},{duration:1000});c.scroll(e,a);globalThis.glowDone=true}};';
-const SCRIPTS: Record<string, string> = { 'shop:counter': COUNTER, 'shop:glow': GLOW };
-const USES: Record<string, string[]> = { 'shop:counter': ['lib:motion'], 'shop:glow': [] };
+const SCRIPTS: Record<string, string> = { 'shop:counter': COUNTER, 'shop:glow': GLOW, 'shop:smooth': SMOOTH };
+const USES: Record<string, string[]> = {
+  'shop:counter': ['lib:motion'],
+  'shop:glow': [],
+  'shop:smooth': ['lib:lenis'],
+};
 
 const renderModule = (name: string): string => `export default ${JSON.stringify(name)};`;
 const RENDERS = new Map(
@@ -65,6 +73,7 @@ async function renderHome(core: ShellBuild, origin: string, names: string[]): Pr
 let browser: Browser;
 let withLib: RenderedPage;
 let withoutLib: RenderedPage;
+let withLenis: RenderedPage;
 const files = new Map<string, Uint8Array>();
 let origin = '';
 let closeServer: () => Promise<void> = () => Promise.resolve();
@@ -87,9 +96,11 @@ beforeAll(async () => {
   const core = await readShellBuild(ROOT);
   withLib = await renderHome(core, origin, ['shop:counter', 'shop:glow']);
   withoutLib = await renderHome(core, origin, ['shop:glow']);
+  withLenis = await renderHome(core, origin, ['shop:smooth']);
   files.set('/', withLib.file.content);
   files.set('/plain', withoutLib.file.content);
-  for (const page of [withLib, withoutLib])
+  files.set('/smooth', withLenis.file.content);
+  for (const page of [withLib, withoutLib, withLenis])
     if (page.bundle !== undefined) files.set(`/${page.bundle.path}`, page.bundle.content);
   browser = await chromium.launch();
 });
@@ -124,6 +135,30 @@ describe('lib:motion и ctx.scroll в бандле страницы', () => {
     await page.waitForFunction(() => Reflect.get(window, 'counted') === true);
     expect(await page.textContent('#count')).toBe('12000');
     expect(await page.evaluate(() => Reflect.get(window, 'glowDone') === true)).toBe(true);
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+});
+
+describe('lib:lenis в бандле страницы', () => {
+  it('код Lenis — только в бандле страницы с "lib:lenis"', () => {
+    expect(text(withLenis.bundle?.content)).toContain('lenisVersion');
+    expect(text(withLib.bundle?.content)).not.toContain('lenisVersion');
+    expect(text(withoutLib.bundle?.content)).not.toContain('lenisVersion');
+  });
+
+  it('в Chromium: Lenis на <html>, ctx.lib.lenis.scrollTo прокручивает страницу', async () => {
+    const page = await browser.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    page.on('console', (message) => {
+      if (message.type() === 'error' && !message.location().url.endsWith('/favicon.ico')) errors.push(message.text());
+    });
+    await page.goto(`${origin}/smooth`);
+    await page.waitForFunction(() => Reflect.get(window, 'smoothReady') === true);
+    expect(await page.evaluate(() => document.documentElement.classList.contains('lenis'))).toBe(true);
+    await page.evaluate(() => Reflect.apply(Reflect.get(window, 'smoothTo'), window, []));
+    expect(await page.evaluate(() => window.scrollY)).toBe(500);
     expect(errors).toEqual([]);
     await page.close();
   });

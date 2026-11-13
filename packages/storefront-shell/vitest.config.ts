@@ -16,8 +16,9 @@ export default defineConfig({
         'src/core/index.ts',
         'src/core/behaviors/index.ts',
         'src/core/behaviors/{accordion,dialog,carousel,tabs,nav-menu,quantity,card-photos,sticky-header,video,reveal,motion,scratch}.ts',
-        // 13.11: ctx.scroll, ctx.inView и ctx.lib.motion — прокрутка, наблюдатель и Motion: motion-scroll.browser.test.ts.
-        'src/core/behaviors/{scroll,in-view,lib-motion}.ts',
+        // 13.11: ctx.scroll, ctx.inView и ctx.lib.motion — прокрутка, наблюдатель и Motion: motion-scroll.browser.test.ts;
+        // ctx.lib.lenis — плавная прокрутка: lenis.browser.test.ts.
+        'src/core/behaviors/{scroll,in-view,lib-motion,lib-lenis}.ts',
         // Вход скрипта превью (часть 5г): blob: и import() — тест в браузере preview-replace.browser.test.ts.
         'src/preview/entry.ts',
       ],

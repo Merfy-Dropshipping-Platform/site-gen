@@ -43,6 +43,7 @@ export interface PageOptions {
   readonly scroll?: boolean; // 13.11: провайдер ctx.scroll (scroll.js)
   readonly inView?: boolean; // 13.11: провайдер ctx.inView (in-view.js)
   readonly libMotion?: boolean; // 13.11: адаптер ctx.lib.motion; секции получают его по uses "lib:motion"
+  readonly libLenis?: boolean; // 13.11, пункт 7: адаптер ctx.lib.lenis по uses "lib:lenis"
   readonly sections?: readonly SectionModule[];
   readonly mode?: Mode;
   readonly reducedMotion?: boolean;
@@ -122,7 +123,11 @@ export async function pageBundle(options: PageOptions): Promise<string> {
       (section.uses ?? []).filter((use) => use.startsWith('lib:')).map((use) => use.slice(4)),
     ]),
   );
-  const libs = options.libMotion ? `, libs: { motion: libMotion }, libUses: ${JSON.stringify(libUses)}` : '';
+  const adapters = [
+    ...(options.libMotion ? ['motion: libMotion'] : []),
+    ...(options.libLenis ? ['lenis: libLenis'] : []),
+  ];
+  const libs = adapters.length > 0 ? `, libs: { ${adapters.join(', ')} }, libUses: ${JSON.stringify(libUses)}` : '';
   const rows = sections.map(
     (section, index) =>
       `{ name: ${JSON.stringify(section.name)}, kind: 'section', script: '${'a'.repeat(64)}', uses: ${JSON.stringify((section.uses ?? []).filter((use) => !use.startsWith('lib:')))}, definition: s${index} }`,
@@ -131,7 +136,7 @@ export async function pageBundle(options: PageOptions): Promise<string> {
   const core = options.core ?? [];
   const entry = [
     `import { start${preview ? ', watchPreviewReplace' : ''}${core.map((name) => `, ${name}`).join('')} } from ${JSON.stringify(CORE)};`,
-    `import { ${['behaviors', ...list, ...extra, ...(options.libMotion ? ['libMotion'] : [])].join(', ')} } from ${JSON.stringify(BEHAVIORS)};`,
+    `import { ${['behaviors', ...list, ...extra, ...(options.libMotion ? ['libMotion'] : []), ...(options.libLenis ? ['libLenis'] : [])].join(', ')} } from ${JSON.stringify(BEHAVIORS)};`,
     ...sections.map((_section, index) => `import s${index} from 'section:${index}';`),
     `const base = behaviors({ list: [${list.join(', ')}]${extra.map((name) => `, ${name}`).join('')}${libs} });`,
     'const part = { ...base, create: (core) => (window.__behaviorsApi = base.create(core)) };',

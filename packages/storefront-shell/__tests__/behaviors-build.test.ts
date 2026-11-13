@@ -32,6 +32,7 @@ const NAMES: readonly BundleName[] = [
   'scroll',
   'in-view',
   'lib-motion',
+  'lib-lenis',
 ];
 const dirs: string[] = [];
 
@@ -96,6 +97,22 @@ describe('buildBehaviors', { timeout: 30_000 }, () => {
       expect(manifest.entries[name].chunks, name).toEqual([]);
     const lib = await readFile(join(dir, manifest.entries['lib-motion'].file), 'utf8');
     expect(lib).toMatch(/export\s*\{[^}]*\bmotion\b[^}]*\}/);
+  });
+
+  it('13.11, пункт 7: Lenis — только в lib-lenis, без общих кусков; экспорт lenis', async () => {
+    const dir = await outDir();
+    const manifest = await buildBehaviors({ packageDir: PACKAGE_DIR, outDir: dir, version: '0.1.0' });
+    const withLenis: string[] = [];
+    for (const name of NAMES) {
+      const info = manifest.entries[name];
+      const texts = await Promise.all([info.file, ...info.chunks].map((file) => readFile(join(dir, file), 'utf8')));
+      // Метка Lenis — его строка версии в window.lenisVersion: имена полей минификация не трогает.
+      if (texts.some((text) => text.includes('lenisVersion'))) withLenis.push(name);
+    }
+    expect(withLenis).toEqual(['lib-lenis']);
+    expect(manifest.entries['lib-lenis'].chunks).toEqual([]);
+    const lib = await readFile(join(dir, manifest.entries['lib-lenis'].file), 'utf8');
+    expect(lib).toMatch(/export\s*\{[^}]*\blenis\b[^}]*\}/);
   });
 
   it('бюджеты brotli: каждый файл с его кусками и все файлы вместе', async () => {

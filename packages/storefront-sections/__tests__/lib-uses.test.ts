@@ -27,9 +27,19 @@ describe('uses: ["lib:…"]', () => {
     expect(result.section.scriptMeta).toMatchObject({ uses: ['lib:motion'], parts: [] });
   }, 30_000);
 
+  it('lib:lenis — принят, в script_meta.uses; ctx.lib.lenis без него — lib-unknown', async () => {
+    const body = 'ctx.lib.lenis.onScroll(() => undefined);';
+    const result = await prepared(files(['lib:lenis'], body));
+    expect(lines(result)).toEqual([]);
+    if (result.ok) expect(result.section.scriptMeta).toMatchObject({ uses: ['lib:lenis'], parts: [] });
+    expect(lines(await prepared(files(['lib:motion'], body)))).toEqual([
+      'lib-unknown script.ts ctx.lib.lenis без "lib:lenis" в uses section.json — библиотеки на странице не будет',
+    ]);
+  }, 30_000);
+
   it('имени нет в каталоге — отказ lib-unknown со списком каталога', async () => {
     expect(lines(await prepared(files(['lib:gsap'], 'void ctx;')))).toEqual([
-      'lib-unknown section.json uses: библиотеки «gsap» нет в каталоге SDK. Есть: lib:motion',
+      'lib-unknown section.json uses: библиотеки «gsap» нет в каталоге SDK. Есть: lib:motion, lib:lenis',
     ]);
   }, 30_000);
 

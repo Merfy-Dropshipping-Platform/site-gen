@@ -189,6 +189,9 @@ const NO_MORE: CtxMore = {
     get motion() {
       return need<never>(null, 'lib');
     },
+    get lenis() {
+      return need<never>(null, 'lib');
+    },
   },
 };
 

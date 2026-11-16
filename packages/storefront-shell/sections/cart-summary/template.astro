@@ -26,16 +26,20 @@ const { settings, blocks } = Astro.props;
             </p>
           </div>
         ) : (
+          <Fragment>
+          <p data-ref="min-order" class="m-0 text-sm leading-6 text-sale" role="status" hidden></p>
           <a
             href="/checkout"
             data-action="cart.checkout"
             data-ref="checkout"
             class:list={[
+              'aria-disabled:pointer-events-none aria-disabled:opacity-50',
               'inline-flex h-12 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
               { 'w-fit': settings['button-width'] === 'auto' },
               { 'w-full': settings['button-width'] !== 'auto' },
             ]}
           >Оформить заказ</a>
+          </Fragment>
         )}
       </div>
     ))}

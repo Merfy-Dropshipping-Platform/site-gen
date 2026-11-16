@@ -83,8 +83,9 @@ export function withLine(lines: readonly CartLine[], line: CartLine): readonly C
   return known ? lines.map((current) => (current.id === line.id ? line : current)) : [...lines, line];
 }
 
-// Итоги из GET …/carts/:id → { cart: { subtotalCents, discountCents, totalCents, promoCode, extensionDiscountCents } }
-// (блок 10, Р10а-2): суммы — целые от 0, скидки расширения нет — 0; не по форме — null, прежние итоги остаются.
+// Итоги из GET …/carts/:id → { cart: { subtotalCents, discountCents, totalCents, promoCode, extensionDiscountCents,
+// minOrderAmountCents, minOrderRemainingCents } } (блок 10, Р10а-2): суммы — целые от 0, скидки расширения и порога
+// минимальной суммы заказа нет — 0; не по форме — null, прежние итоги остаются.
 const AUTO_PREFIX = 'AUTO:';
 const discountNameOf = (promo: unknown): string | null =>
   typeof promo === 'string' && promo.startsWith(AUTO_PREFIX) && promo.length > AUTO_PREFIX.length
@@ -95,7 +96,10 @@ export function totalsOf(body: unknown, currency: string): CartTotals | null {
   if (!isRecord(body) || !isRecord(body.cart)) return null;
   const { subtotalCents, discountCents, totalCents, promoCode } = body.cart;
   const extension = body.cart.extensionDiscountCents ?? 0;
+  const minOrder = body.cart.minOrderAmountCents ?? 0;
+  const minRemaining = body.cart.minOrderRemainingCents ?? 0;
   if (!isCount(subtotalCents) || !isCount(discountCents) || !isCount(totalCents) || !isCount(extension)) return null;
+  if (!isCount(minOrder) || !isCount(minRemaining)) return null;
   const money = (amount: number): Money => ({ amount, currency });
   return {
     ready: true,
@@ -104,5 +108,7 @@ export function totalsOf(body: unknown, currency: string): CartTotals | null {
     discountName: discountNameOf(promoCode),
     extensionDiscount: money(extension),
     total: money(totalCents),
+    minOrder: money(minOrder),
+    minOrderRemaining: money(minRemaining),
   };
 }

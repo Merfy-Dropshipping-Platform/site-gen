@@ -124,7 +124,16 @@ export function dropCartId(page: KeyValue, id: string): void {
 // Итоги без корзины: нули; ready — прочитаны ли.
 export function emptyTotals(currency: string, ready: boolean): CartTotals {
   const zero: Money = { amount: 0, currency };
-  return { ready, subtotal: zero, discount: zero, discountName: null, extensionDiscount: zero, total: zero };
+  return {
+    ready,
+    subtotal: zero,
+    discount: zero,
+    discountName: null,
+    extensionDiscount: zero,
+    total: zero,
+    minOrder: zero,
+    minOrderRemaining: zero,
+  };
 }
 
 // Строки прочитаны. totals: итоги того же ответа; null — ответ без итогов, прежние остаются; нет аргумента — корзины

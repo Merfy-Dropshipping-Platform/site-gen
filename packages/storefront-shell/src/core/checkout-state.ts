@@ -178,6 +178,8 @@ const offerTotals = (offer: OfferData | null): CartTotals => ({
   discountName: null,
   extensionDiscount: money(0),
   total: money(offer?.goods ?? 0),
+  minOrder: money(0), // ссылка предложения порога не знает
+  minOrderRemaining: money(0),
 });
 
 // Итоги: суммы корзины (их считает orders) или предложения плюс выбранная доставка.

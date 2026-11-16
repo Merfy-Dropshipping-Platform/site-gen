@@ -78,8 +78,9 @@ const { settings } = Astro.props;
           <p class="m-0 text-xs text-muted-foreground">Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.</p>
         )}
         <div data-ext-point="cart"></div>
+        <p data-ref="min-order" class="m-0 text-sm leading-6 text-sale" role="status" hidden></p>
         {settings.checkout !== false && (
-          <a href="/checkout" data-action="cart.checkout" class="inline-flex h-12 w-full items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Оформить заказ</a>
+          <a href="/checkout" data-action="cart.checkout" data-ref="checkout" class="aria-disabled:pointer-events-none aria-disabled:opacity-50 inline-flex h-12 w-full items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-base text-primary-foreground no-underline shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Оформить заказ</a>
         )}
       </div>
     </div>

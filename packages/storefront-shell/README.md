@@ -174,8 +174,9 @@ codeOnly }` (скрипт секций превью → скрипт превь�
 ## Корзина блока 10 (часть 10а)
 
 - Строка `$cart` — ещё `title`, `image`, `options`, `total`, `gift` (подарок акции); итоги — `ctx.cart.$totals`
-  (`subtotal`, `discount`, `discountName`, `extensionDiscount`, `total`) и `ctx.cart.$total`: читаются, когда стор
-  впервые читает секция, после `cart.add` — только пока на них подписаны.
+  (`subtotal`, `discount`, `discountName`, `extensionDiscount`, `total`, `minOrder`, `minOrderRemaining` — минимальная
+  сумма заказа магазина и сколько до неё не хватает) и `ctx.cart.$total`: читаются, когда стор впервые читает секция,
+  после `cart.add` — только пока на них подписаны.
 - `cart.change({ lineId, quantity })`, `cart.remove({ lineId })` — `PATCH` и `DELETE`, потом `GET`; счётчик — сразу,
   строка — после ответа; разметка — `data-line-id`, `data-quantity`.
 - `cart.open()` — при «Сайдбар» (`cart-type`) и окне `data-open-on="cart-open"` на странице — `merfy:cart:open`, иначе

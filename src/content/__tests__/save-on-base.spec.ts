@@ -116,7 +116,10 @@ describe("save с базой: база совпадает с текущей (о�
       overwritten: [],
       conflicts: [],
       changes: [HERO_TEXT],
+      // Документ пяти тем: секций новой темы нет — проверять на витрине новой темы нечего.
+      checkScope: { sections: [], pages: [], theme: false },
     });
+    // checkScope — только в ответе: в meta ревизии его нет.
     expect(a.fake.storedMeta(withBase.version)).toEqual({
       title: "автосейв",
       actor: "merchant",
@@ -380,6 +383,7 @@ describe("save с базой: устаревшая база сливается (
 
     expect(fake.site.currentRevisionId).toBe(saved.version);
     expect(saved.effect?.changes).toBeNull();
+    expect(saved.effect?.checkScope).toBeNull();
     expect(fake.storedMeta(saved.version)).toMatchObject({
       base: null,
       changes: null,

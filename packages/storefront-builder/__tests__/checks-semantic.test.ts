@@ -82,6 +82,18 @@ describe('семантика по HTML (html-validate + своё правило)
     ]);
   });
 
+  it('пустой заголовок, текст которого ставит скрипт секции (data-ref), — свой совет: вывести текст в шаблоне', async () => {
+    const found = await semanticHtml(
+      page(section('hero-1', '<h1>Шарфы</h1>') + section('pick-1', '<h2 data-ref="title"></h2>')),
+    );
+    expect(byRule(found, 'empty-heading')).toMatchObject([
+      {
+        section: 'pick-1',
+        text: 'Пустой h2 в HTML — текст ставит скрипт секции · поисковик видит пустой заголовок: выведи текст в шаблоне',
+      },
+    ]);
+  });
+
   it('фото товара с пустым alt — своё правило; картинка для красоты с пустым alt и фото с alt — без находок', async () => {
     const found = await semanticHtml(
       page(

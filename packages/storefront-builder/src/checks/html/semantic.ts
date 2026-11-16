@@ -24,21 +24,33 @@ const validator = new HtmlValidate(new StaticConfigLoader({ rules: RULES }));
 
 const tagOf = (element: HtmlElement | null): string => element?.tagName ?? 'элемент';
 
-// «что не так · как починить» по сообщению правила. Уровни заголовков html-validate пишет в тексте сообщения.
+// Порядок заголовков: уровни html-validate пишет в тексте сообщения.
+function headingLevelText(message: string): string {
+  const initial = /Initial heading level must be <h(\d)> but got <h(\d)>/.exec(message);
+  if (initial) return `Первый заголовок страницы — h${initial[2]} · главный заголовок страницы делай h1`;
+  const jump = /expected <h(\d)> but got <h(\d)>/.exec(message);
+  if (jump)
+    return `Уровень заголовка скачет: ждали h${jump[1]}, стоит h${jump[2]} · уровни идут по порядку, без пропусков`;
+  if (/Multiple <h1>/.test(message)) return 'Второй h1 на странице · h1 один на страницу, остальные — h2';
+  return `Порядок заголовков: ${message}`;
+}
+
+// Пустой заголовок. `data-ref` — текст ставит скрипт секции в браузере: в HTML, который читает поисковик, он пустой.
+function emptyHeadingText(element: HtmlElement | null): string {
+  const tag = tagOf(element);
+  return element?.hasAttribute('data-ref')
+    ? `Пустой ${tag} в HTML — текст ставит скрипт секции · поисковик видит пустой заголовок: выведи текст в шаблоне`
+    : `Пустой ${tag} · заполни текст или убери заголовок`;
+}
+
+// «что не так · как починить» по сообщению правила.
 function textOf(message: Message, element: HtmlElement | null): string {
   const tag = tagOf(element);
   switch (message.ruleId) {
-    case 'heading-level': {
-      const initial = /Initial heading level must be <h(\d)> but got <h(\d)>/.exec(message.message);
-      if (initial) return `Первый заголовок страницы — h${initial[2]} · главный заголовок страницы делай h1`;
-      const jump = /expected <h(\d)> but got <h(\d)>/.exec(message.message);
-      if (jump)
-        return `Уровень заголовка скачет: ждали h${jump[1]}, стоит h${jump[2]} · уровни идут по порядку, без пропусков`;
-      if (/Multiple <h1>/.test(message.message)) return 'Второй h1 на странице · h1 один на страницу, остальные — h2';
-      return `Порядок заголовков: ${message.message}`;
-    }
+    case 'heading-level':
+      return headingLevelText(message.message);
     case 'empty-heading':
-      return `Пустой ${tag} · заполни текст или убери заголовок`;
+      return emptyHeadingText(element);
     case 'prefer-native-element': {
       const native = /native <(\w+)>/.exec(message.message)?.[1];
       return native ? `role вместо тега · используй <${native}>` : `role вместо тега · ${message.message}`;

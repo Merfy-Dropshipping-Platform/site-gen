@@ -164,6 +164,9 @@ export interface PageSession {
   locateSection(section: string): Promise<SectionPlace | null>;
   // JPEG секции: страница прокручивается к её верху, прибитые к экрану чужие элементы на время снимка скрыты.
   shootSection(place: SectionPlace, section: string, quality: number): Promise<Uint8Array>;
+  // Нарушения axe-core по правилам `AXE_RULES` (`checks/browser/semantic.ts`), как их отдала страница: разбирает
+  // `semanticBrowser`. Ничего на странице не меняет. Всегда по всему документу — секции отбирает вызывающий.
+  semantic(): Promise<unknown>;
   // Проверка меток витрины кликами (`look-marks.ts`). Меняет страницу, поэтому идёт последней. За `limitMs` новые метки
   // не начинаются, что успела — отдаёт. С `section` — метки этой секции, без него — всей страницы.
   marks(limitMs: number, section?: string): Promise<MarkResult[]>;

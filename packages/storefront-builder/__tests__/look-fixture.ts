@@ -34,6 +34,11 @@ export interface FakeSessionOptions {
   // Снимок секции: где она на этом устройстве (`null` — не видно; не задано — стоит в начале страницы) и вес её картинки
   // функцией от качества.
   section?: { place?: SectionPlace | null; bytes?: number | ((quality: number) => number) };
+  // Нарушения axe, как их отдаёт страница (`checks/browser/semantic.ts`); `semanticError` — падает, `semanticHangs` —
+  // не отвечает. Настоящий axe в Chromium проверяет `look-browser.test.ts`.
+  semantic?: unknown[];
+  semanticError?: Error;
+  semanticHangs?: boolean;
   // Что вернёт проверка меток; `marksHang` — она не отвечает.
   marks?: MarkResult[];
   marksHang?: boolean;
@@ -121,6 +126,11 @@ export function fakeSession(
       sectionCalls.shot.push({ device, section, quality });
       const bytes = options.section?.bytes ?? 700;
       return Promise.resolve(new Uint8Array(typeof bytes === 'function' ? bytes(quality) : bytes).fill(9));
+    },
+    semantic() {
+      if (options.semanticError) return Promise.reject(options.semanticError);
+      if (options.semanticHangs) return new Promise<unknown>(() => undefined);
+      return Promise.resolve(options.semantic ?? []);
     },
     marks() {
       if (options.marksHang) return new Promise<MarkResult[]>(() => undefined);

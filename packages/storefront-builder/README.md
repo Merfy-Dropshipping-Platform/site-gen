@@ -146,8 +146,9 @@
 - сообщение `{ pattern: 'storefront.look', id, data }`, свойства `replyTo` (прямой ответ `amq.rabbitmq.reply-to`),
   `correlationId`, `expiration` (мс, столько шлюз ждёт ответа — непрочитанное задание брокер потом удалит сам);
 - `data` (строго, лишние поля — отказ): `{ v: 1, siteId, page, devices: 'mobile' | 'desktop' | 'both', full: boolean,
-  section?, record?, clips?, motion?, deadline }`, `deadline` — время (мс с 1970), после которого ответа уже не ждут; `section` —
-  id экземпляра секции, см. «Снимок одной секции»; `record` — запись шаблона страницы (id, адрес или handle товара,
+  section?, sections?, record?, clips?, motion?, deadline }`, `deadline` — время (мс с 1970), после которого ответа уже не ждут; `section` —
+  id экземпляра секции, см. «Снимок одной секции»; `sections` — 1–30 id секций, чьи находки `checks` отдать (изменённые
+  правкой, `checkScope` записи в sites; нет — секция снимка, у снимка страницы — все); `record` — запись шаблона страницы (id, адрес или handle товара,
   коллекции…; 1–200 знаков), уходит в `record=` превью; `clips: false` — без вырезок мест находок вёрстки (нет ключа или
   `true` — как раньше); `motion: true` — раскадровка анимаций, см. «Раскадровка анимаций» (в снимке секции не действует);
 - ответ на `replyTo` с тем же `correlationId`: `{ err: null, isDisposed: true, id, response }`, где `response` —
@@ -162,6 +163,13 @@ name, text, device, section, clip, image }] }`. `findings` — сначала д
 не выше 480 px), `image` — вырезка этого места JPEG base64 (у находок вёрстки, не у всех: см. «Проверки вёрстки»); у
 детектора `section`, `clip` и `image` — `null`. Детектор запускается на первом устройстве (телефон, если он есть); его
 отказ не роняет снимки, отказ проверок вёрстки — тоже (причина в `layout`).
+
+**Проверки мест `html` и `browser` (16.11).** `snapshot.checks`: `{ findings: [{ place, check, rule, level, section,
+where, text, count }], failed: [{ place, check, reason }] }` — общий вид находки всех мест (`src/checks/README.md`).
+Сейчас там семантика: по HTML превью без браузера — html-validate и своё правило «фото товара без alt» (`place: 'html'`),
+в открытой странице — axe-core (`place: 'browser'`, на первом устройстве, где видно секцию снимка; предел 2 с в снимке
+секции, 5 с в снимке страницы). Всё — `level: 'warning'`: семантика публикацию не блокирует. Одинаковые находки секции —
+одна строка с `count`. Отказ проверки не роняет снимок: причина — в `failed`, в журнале — `look-check-failed`.
 
 **Запись и корзина (30.10).** Превью кладёт в страницу JSON-тег `merfy-look-sample` (`src/preview-sample.ts`, разбор —
 `src/look/look-sample.ts`): с `record=` — `{ type, asked, found, title }` (нашлась ли запись и как называется;

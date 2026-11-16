@@ -9,6 +9,7 @@ import {
   MIN_BUDGET_MS,
   SECTION_DETECTOR_TIMEOUT_MS,
   SECTION_MARKS_TIMEOUT_MS,
+  SECTION_SEMANTIC_TIMEOUT_MS,
   nestReply,
   previewUrl,
   runLookJob,
@@ -821,6 +822,91 @@ describe('снимок черновика · раскадровка анимац
     const { deps, fetch } = setup();
     expect(errorOf(await runLookJob(deps, job({ motion: 'yes' })))?.code).toBe('invalid');
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('снимок черновика · проверки мест html и browser (семантика)', () => {
+  // Две секции с ошибками семантики: у hero первый заголовок h2, у faq пустой заголовок; товар без alt — в products.
+  const PAGE = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Магазин</title></head><body>
+    <merfy-section data-section-id="hero-1"><h2>Простые вещи</h2></merfy-section>
+    <merfy-section data-section-id="faq-1"><h2></h2></merfy-section>
+    <merfy-section data-section-id="products-1"><a href="/product/sharf"><img src="/i/sharf.jpg" alt="">Шарф</a></merfy-section>
+  </body></html>`;
+  const AXE = [
+    { rule: 'region', section: 'hero-1', tag: 'h2', role: null, text: 'Простые вещи' },
+    { rule: 'list', section: 'faq-1', tag: 'ul', role: null, text: '' },
+  ];
+  const withPage = (renderer: FakeRendererOptions = {}) => setup(renderer, () => Promise.resolve(htmlResponse(PAGE)));
+  const sectionsOf = (reply: LookReply) =>
+    snapshotOf(reply).checks.findings.map((finding) => `${finding.place}:${finding.rule}:${finding.section}`);
+
+  it('снимок секции — находки только этой секции, из обоих мест', async () => {
+    const { deps } = withPage({ mobile: { semantic: AXE }, desktop: { semantic: AXE } });
+    const reply = await runLookJob(deps, job({ section: 'hero-1' }));
+    expect(sectionsOf(reply)).toEqual(['html:heading-level:hero-1', 'browser:region:hero-1']);
+    expect(snapshotOf(reply).checks.failed).toEqual([]);
+  });
+
+  it('sections задания — находки изменённых секций, картинка — по-прежнему секции снимка', async () => {
+    const { deps, fake } = withPage({ mobile: { semantic: AXE }, desktop: { semantic: AXE } });
+    const reply = await runLookJob(deps, job({ section: 'hero-1', sections: ['faq-1', 'products-1'] }));
+    expect(sectionsOf(reply)).toEqual([
+      'html:empty-heading:faq-1',
+      'html:product-photo-alt:products-1',
+      'browser:list:faq-1',
+    ]);
+    expect(fake.sectionCalls.shot.map((call) => call.section)).toEqual(['hero-1', 'hero-1']);
+  });
+
+  it('снимок страницы — находки всех секций', async () => {
+    const { deps } = withPage({ mobile: { semantic: AXE } });
+    const reply = await runLookJob(deps, job({ devices: 'mobile' }));
+    expect(sectionsOf(reply)).toEqual([
+      'html:heading-level:hero-1',
+      'html:empty-heading:faq-1',
+      'html:product-photo-alt:products-1',
+      'browser:region:hero-1',
+      'browser:list:faq-1',
+    ]);
+  });
+
+  it('axe упал — находки по HTML в ответе, причина в failed, снимок цел', async () => {
+    const { deps } = withPage({
+      mobile: { semanticError: new Error('axe не подключился') },
+      desktop: { semanticError: new Error('axe не подключился') },
+    });
+    const reply = await runLookJob(deps, job({ section: 'faq-1' }));
+    expect(sectionsOf(reply)).toEqual(['html:empty-heading:faq-1']);
+    expect(snapshotOf(reply).checks.failed).toEqual([
+      { place: 'browser', check: 'semantic', reason: 'axe не подключился' },
+    ]);
+    expect(snapshotOf(reply).devices).toHaveLength(2);
+  });
+
+  it('axe завис — в снимке секции ждём не дольше предела', async () => {
+    const { deps } = withPage({ mobile: { semanticHangs: true }, desktop: { semanticHangs: true } });
+    const started = Date.now();
+    const reply = await runLookJob(deps, job({ section: 'faq-1' }));
+    expect(Date.now() - started).toBeLessThan(SECTION_SEMANTIC_TIMEOUT_MS + 1_000);
+    expect(snapshotOf(reply).checks.failed).toEqual([
+      { place: 'browser', check: 'semantic', reason: `не успел за ${SECTION_SEMANTIC_TIMEOUT_MS / 1000} с` },
+    ]);
+  }, 10_000);
+
+  it('секцию видно только на компьютере — axe идёт там, а не на телефоне', async () => {
+    const { deps } = withPage({
+      mobile: { section: { place: null }, semanticError: new Error('не та страница') },
+      desktop: { semantic: AXE },
+    });
+    const reply = await runLookJob(deps, job({ section: 'faq-1' }));
+    expect(sectionsOf(reply)).toEqual(['html:empty-heading:faq-1', 'browser:list:faq-1']);
+    expect(snapshotOf(reply).checks.failed).toEqual([]);
+  });
+
+  it('sections не по форме — invalid', async () => {
+    const { deps } = withPage();
+    expect(errorOf(await runLookJob(deps, job({ section: 'hero-1', sections: [] })))?.code).toBe('invalid');
+    expect(errorOf(await runLookJob(deps, job({ sections: ['hero 1'] })))?.code).toBe('invalid');
   });
 });
 

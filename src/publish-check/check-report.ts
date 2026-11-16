@@ -50,6 +50,40 @@ export interface PublishCheck {
   blocked: boolean;
 }
 
+/**
+ * Находки нескольких страниц вместе. Секция с тем же id на разных страницах — один экземпляр (шапка, подвал, оверлей
+ * лежат в общих списках): её находка — одна строка со счётчиком одной страницы, а не повтор на каждой (первая
+ * публикация на qa nova 16.11: 33 строки, из них 20 — шапка, подвал и cookie-баннер ×6). Находки без секции — про
+ * свою страницу, остаются все.
+ */
+export function acrossPages(findings: readonly CheckFinding[]): CheckFinding[] {
+  const bySection = new Map<string, CheckFinding>();
+  const result: CheckFinding[] = [];
+  for (const finding of findings) {
+    if (finding.section === null) {
+      result.push(finding);
+      continue;
+    }
+    const key = [
+      finding.place,
+      finding.check,
+      finding.rule,
+      finding.section,
+      finding.where,
+      finding.text,
+    ].join("\u0000");
+    const prev = bySection.get(key);
+    if (prev) {
+      prev.count = Math.max(prev.count, finding.count);
+      continue;
+    }
+    const first = { ...finding };
+    bySection.set(key, first);
+    result.push(first);
+  }
+  return result;
+}
+
 /** Одинаковые находки секции — одна строка со счётчиком; `where` — у первой. */
 export function grouped(findings: readonly CheckFinding[]): CheckFinding[] {
   const byKey = new Map<string, CheckFinding>();

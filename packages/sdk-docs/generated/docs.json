@@ -1,7 +1,7 @@
 {
   "sdk": 1,
-  "version": "1.40.0",
-  "date": "2026-11-13",
+  "version": "1.41.0",
+  "date": "2026-11-16",
   "api": "https://gateway.merfy.ru/api/",
   "files": [
     "actions.md",

@@ -19,6 +19,7 @@ const SUMMARY = `<div data-ref="summary" hidden>
   <p>Сумма <span data-ref="subtotal"></span></p>
   <p data-ref="discount" hidden><span data-ref="discount-name">Скидка</span> <span data-ref="discount-value"></span></p>
   <p>Итого <span data-ref="total"></span></p>
+  <p data-ref="min-order" hidden></p>
   <a href="/checkout" data-action="cart.checkout" data-ref="checkout">Оформить заказ</a>
 </div>`;
 const CART = { id: 'c-1', subtotalCents: 747000, discountCents: 74700, totalCents: 672300, promoCode: 'AUTO:Осень' };
@@ -146,6 +147,40 @@ describe('«Промежуточный итог»', () => {
     expect([money('discount-value'), money('total')]).toEqual(['−747₽', '6723₽']);
     expect(text(summary, 'discount-name')).toEqual(['Скидка «Осень»']);
     expect(summary.querySelector('[data-ref="summary"]')?.hasAttribute('hidden')).toBe(false);
+  });
+
+  it('шаблон: сообщение о минимальной сумме и неактивная кнопка', () => {
+    expect(SUMMARY_SOURCE).toContain('data-ref="min-order"');
+    expect(SUMMARY_SOURCE).toContain('aria-disabled:pointer-events-none');
+  });
+
+  it('не хватает до минимальной суммы заказа — «осталось N ₽» и кнопка неактивна', async () => {
+    const gateway = fakeGateway();
+    localStorage.setItem(CART_ID_KEY, 'c-1');
+    gateway.answer('GET /store/carts/c-1', {
+      status: 200,
+      body: {
+        cart: { ...CART, minOrderAmountCents: 500000, minOrderRemainingCents: 326700 },
+        items: [serverItem('l-1', 'p12', 3)],
+      },
+    });
+    document.head.innerHTML = configTag('live');
+    const summary = placeSection('shop:cart-summary', 'summary-1', SUMMARY);
+    core = start({ parts: [cart], sections: [entry('shop:cart-summary', summaryScript, { uses: ['cart'] })] });
+    await settle();
+    const note = summary.querySelector('[data-ref="min-order"]');
+    expect(note?.hasAttribute('hidden')).toBe(false);
+    expect(note?.textContent?.replace(/\s/g, '')).toBe('Доминимальнойсуммызаказаосталось3267₽');
+    const button = summary.querySelector('[data-ref="checkout"]');
+    expect([button?.getAttribute('aria-disabled'), button?.getAttribute('tabindex')]).toEqual(['true', '-1']);
+  });
+
+  it('порог взят или его нет — сообщения нет, кнопка активна', async () => {
+    const { summary } = openPage(serverItem('l-1', 'p12', 3));
+    await settle();
+    expect(summary.querySelector('[data-ref="min-order"]')?.hasAttribute('hidden')).toBe(true);
+    const button = summary.querySelector('[data-ref="checkout"]');
+    expect([button?.hasAttribute('aria-disabled'), button?.hasAttribute('tabindex')]).toEqual([false, false]);
   });
 
   it('пустая корзина — итога нет целиком: ни «Суммы 0 ₽», ни кнопки, ни скидки', async () => {

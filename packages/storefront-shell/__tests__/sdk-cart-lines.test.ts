@@ -96,7 +96,21 @@ describe('итоги корзины', () => {
       discountName: 'Осень',
       extensionDiscount: rub(10000),
       total: rub(448200),
+      minOrder: rub(0),
+      minOrderRemaining: rub(0),
     });
+  });
+
+  it('минимальная сумма заказа: порог и остаток из ответа; в ответе нет — нули', () => {
+    expect(
+      totalsOf({ cart: { ...CART, minOrderAmountCents: 500000, minOrderRemainingCents: 51800 }, items: [] }, 'RUB'),
+    ).toMatchObject({ minOrder: rub(500000), minOrderRemaining: rub(51800) });
+    expect(totalsOf({ cart: CART, items: [] }, 'RUB')).toMatchObject({ minOrder: rub(0), minOrderRemaining: rub(0) });
+  });
+
+  it('порог не целое от 0 — итоги не по форме, null', () => {
+    expect(totalsOf({ cart: { ...CART, minOrderAmountCents: -1 }, items: [] }, 'RUB')).toBeNull();
+    expect(totalsOf({ cart: { ...CART, minOrderRemainingCents: '100' }, items: [] }, 'RUB')).toBeNull();
   });
 
   it('промокод покупательницы и пустой промокод — имени нет; скидки расширения нет в ответе — 0', () => {

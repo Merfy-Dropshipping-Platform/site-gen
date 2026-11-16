@@ -63,6 +63,14 @@ export default defineSection({
       // У строк и у «Итого» один data-ref="total": итог — последний в порядке шаблона.
       const totalRefs = ctx.refs('total');
       totalRefs.at(-1)?.text(priceOf(totals.total));
+      // Минимальная сумма заказа магазина: не хватает — «осталось N ₽», кнопка оформления неактивна.
+      const short = totals.minOrderRemaining.amount > 0;
+      const note = ctx.ref('min-order');
+      note?.text(`До минимальной суммы заказа осталось ${priceOf(totals.minOrderRemaining)}`);
+      note?.toggle(short);
+      const checkout = ctx.ref('checkout');
+      checkout?.attr('aria-disabled', short ? 'true' : null);
+      checkout?.attr('tabindex', short ? '-1' : null);
     });
   },
 });

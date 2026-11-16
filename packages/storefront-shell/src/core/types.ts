@@ -205,6 +205,10 @@ export interface CartTotals {
   readonly discountName: string | null; // имя автоматической скидки магазина; промокод покупательницы — null
   readonly extensionDiscount: Money;
   readonly total: Money; // к оплате
+  // Минимальная сумма заказа магазина (настройка заказов): порог и сколько товаров после скидок, без доставки, не хватает
+  // до него. Порога нет или он взят — оба нули; «оформить» при minOrderRemaining > 0 сервер откажет.
+  readonly minOrder: Money;
+  readonly minOrderRemaining: Money;
 }
 export interface CartState {
   readonly ready: boolean; // false — корзину с сервера ещё не прочитали

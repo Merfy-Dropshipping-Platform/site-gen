@@ -13,7 +13,7 @@ type ModuleName = (typeof MODULE_NAMES)[number];
 
 // Новый модуль без строки здесь — ошибка типов (блок 15, часть 15ж).
 const MODULE_ABOUT: Readonly<Record<ModuleName, string>> = {
-  cart: 'Корзина: `$cart`, `$count`, `$totals`, `$total`; добавить, поменять, убрать, открыть корзину, перейти в оформление',
+  cart: 'Корзина: `$cart`, `$count`, `$totals` (суммы, скидки и `minOrder`/`minOrderRemaining` — минимальная сумма заказа магазина и сколько до неё не хватает), `$total`; добавить, поменять, убрать, открыть корзину, перейти в оформление',
   favorites: 'Избранное: `$favorites`, `$count`, `$products` — карточки отмеченных; отметить и снять отметку',
   customer:
     'Кто вошёл: `$customer` — `{ ready, customer }`, `customer` — e-mail, имя, телефон или `null`. Для шапки и ссылки «Профиль»; входа, выхода и профиля здесь нет',

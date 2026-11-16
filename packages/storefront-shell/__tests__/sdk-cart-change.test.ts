@@ -188,6 +188,8 @@ describe('$totals и $total', () => {
       discountName: null,
       extensionDiscount: rub(0),
       total: rub(0),
+      minOrder: rub(0),
+      minOrderRemaining: rub(0),
     });
     expect(gateway.calls).toEqual([]);
   });

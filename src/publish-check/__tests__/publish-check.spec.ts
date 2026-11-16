@@ -235,6 +235,64 @@ describe("проверка публикации · сервис", () => {
     ]);
   });
 
+  it("общая секция на нескольких страницах — одна строка (шапка — один экземпляр), находки страницы — у каждой", async () => {
+    const pages = ["home", "catalog", "product"].map((page) => ({
+      page,
+      whole: true,
+    }));
+    const finding = (
+      section: string | null,
+      rule: string,
+      where: string,
+      count: number,
+    ) => ({
+      place: "browser",
+      check: "semantic",
+      rule,
+      level: "warning",
+      section,
+      where,
+      text: `${rule} · почини`,
+      count,
+    });
+    const { service } = setup({
+      publishedRevisionId: null,
+      scope: async () => ({ sections: [], pages, theme: false }),
+      look: async (job) => ({
+        kind: "snapshot",
+        snapshot: {
+          marks: { ok: true, results: [] },
+          checks: {
+            findings: [
+              finding(
+                "header-1",
+                "region",
+                "a «Магазин»",
+                job.page === "home" ? 6 : 5,
+              ),
+              finding(null, "heading-level", job.page, 1),
+            ],
+            failed: [],
+          },
+        },
+      }),
+    });
+    const check = await service.check(TENANT, SITE);
+    const header = check?.findings.filter((one) => one.section === "header-1");
+    expect(header).toEqual([
+      expect.objectContaining({
+        rule: "region",
+        where: "a «Магазин»",
+        count: 6,
+      }),
+    ]);
+    expect(
+      check?.findings
+        .filter((one) => one.section === null)
+        .map((one) => one.where),
+    ).toEqual(["home", "catalog", "product"]);
+  });
+
   it("магазин нынешней темы — проверки нет (null), снимков и товаров не спрашиваем", async () => {
     const { service, looks, products } = setup({ newTheme: false });
     expect(await service.check(TENANT, SITE)).toBeNull();

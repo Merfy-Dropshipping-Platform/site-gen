@@ -23,7 +23,12 @@ import { StoreContentService } from "../content/store-content.service";
 import { toStoreContentSite } from "../content/store-content.port";
 import type { CheckScope } from "../content/check-scope";
 import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
-import type { CheckFailure, CheckFinding, PublishCheck } from "./check-report";
+import {
+  acrossPages,
+  type CheckFailure,
+  type CheckFinding,
+  type PublishCheck,
+} from "./check-report";
 import {
   findingsOf,
   lookJobOf,
@@ -110,7 +115,7 @@ export class PublishCheckService {
     ]);
     const targets = scoped.scope ? lookTargets(scoped.scope) : [];
     const looked = await this.lookAll(siteId, targets);
-    const findings = [...looked.findings, ...shop.findings];
+    const findings = [...acrossPages(looked.findings), ...shop.findings];
     return {
       since,
       revisionId,

@@ -41,7 +41,9 @@ import { makeDocumentWriteModel } from "./write-model";
 import type { WriteModel } from "./write-model";
 import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
 import type { PanelDefaultsSource } from "./panel-defaults";
-import { saveOnBase, writeLabels } from "./save-on-base";
+import { saveOnBase, scopeBetween, writeLabels } from "./save-on-base";
+import { checkScope } from "./check-scope";
+import type { CheckScope } from "./check-scope";
 import {
   assertRoleInstances,
   placedShopSections,
@@ -505,24 +507,58 @@ export class DocumentAdapter implements StoreContent {
           | undefined,
       readPointer: (siteId, tenantId) => this.readPointer(siteId, tenantId),
       commit: (write) => this.commit(write),
-      writeModel: (siteId, params, storedCurrent) =>
-        this.writeModel(siteId, params, storedCurrent),
+      writeModel: (siteId, params: SaveOnBaseParams, storedCurrent) =>
+        this.writeModel(
+          siteId,
+          params.site,
+          Boolean(params.filterSeeded),
+          storedCurrent,
+        ),
     };
+  }
+
+  /**
+   * Что проверить, если на витрину встанет `to` вместо `from` (публикация,
+   * 16.11): те же правила «не правка мерчанта», что у записи от базы
+   * (`scopeBetween`). `from` нет или такой ревизии у магазина нет (первая
+   * публикация, публикации до того, как платформа стала запоминать ревизию) —
+   * весь магазин: шапка и подвал целиком, каждая страница целиком.
+   */
+  async checkScopeBetween(
+    siteId: string,
+    from: string | null,
+    to: string,
+    opts: DiffOptions,
+  ): Promise<CheckScope> {
+    const [fromRow, toRow] = await Promise.all([
+      from === null ? undefined : this.fetchRevision(from, siteId),
+      this.fetchRevision(to, siteId),
+    ]);
+    if (!toRow) throw new RevisionNotFoundError();
+    const toData = toRow.data as Record<string, unknown>;
+    const model = await this.writeModel(siteId, opts.site, false, toData);
+    const after = await model.normalize(toData);
+    if (!fromRow) return checkScope(["sections"], after);
+    const before = await model.normalize(
+      fromRow.data as Record<string, unknown>,
+    );
+    return scopeBetween(model, before, after);
   }
 
   private async writeModel(
     siteId: string,
-    params: SaveOnBaseParams,
+    site: StoreContentSite,
+    filterSeeded: boolean,
     storedCurrent: Record<string, unknown> | undefined,
   ): Promise<WriteModel> {
-    const ctx = stepContextFor(siteId, params.site, this.logger);
-    const themeId = params.site.themeId ?? null;
+    const ctx = stepContextFor(siteId, site, this.logger);
+    const themeId = site.themeId ?? null;
     return makeDocumentWriteModel({
       load: (doc) => runLoadSteps(doc, ctx),
       storedCurrent,
       themeId,
-      publicUrl: params.site.publicUrl ?? null,
-      filterSeeded: Boolean(params.filterSeeded),
+      publicUrl: site.publicUrl ?? null,
+      filterSeeded,
       panelDefaults: themeId ? await this.panelDefaults(themeId) : {},
       warn: (message) => this.logger.warn(`site ${siteId}: ${message}`),
     });

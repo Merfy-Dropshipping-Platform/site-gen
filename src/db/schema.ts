@@ -111,6 +111,12 @@ export const site = pgTable("site", {
    */
   themeAppliedAt: timestamp("theme_applied_at"),
   currentRevisionId: text("current_revision_id"),
+  /**
+   * Ревизия, которую последний раз опубликовали через `sites.publish`
+   * (проверка публикации, 16.11): проверка смотрит только изменённое с неё.
+   * Пусто — через проверку ещё не публиковали: проверяется весь магазин.
+   */
+  publishedRevisionId: text("published_revision_id"),
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
@@ -153,9 +159,9 @@ export const site = pgTable("site", {
   }>(),
   // Настройки магазина (checkout, регистрация и т.д.)
   settings: jsonb("settings").$type<{
-    requireCustomerAuth?: boolean;                          // блок 1
-    addressRequired?: boolean;                              // блок 2: full→true, none→false
-    contactMethod?: "email-phone" | "email";               // блок 3
+    requireCustomerAuth?: boolean; // блок 1
+    addressRequired?: boolean; // блок 2: full→true, none→false
+    contactMethod?: "email-phone" | "email"; // блок 3
     customerNameMode?: "name-surname" | "surname" | "name"; // блок 4
     // Своя подпись под подвалом: мерчант правит её в карточке темы (кабинет); пусто или стандартный текст платформы —
     // подвал показывает «Разработано на Merfy» ссылкой (footer-data.ts пяти тем, shop.signature новой темы).
@@ -633,7 +639,9 @@ export const storefrontBuild = pgTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.siteId, table.build] }),
-    finishedAtIdx: index("idx_storefront_build_finished_at").on(table.finishedAt),
+    finishedAtIdx: index("idx_storefront_build_finished_at").on(
+      table.finishedAt,
+    ),
   }),
 );
 
@@ -664,9 +672,15 @@ export const storefrontRelease = pgTable(
     wave: integer("wave").default(0).notNull(),
     nextWaveAt: timestamp("next_wave_at", { withTimezone: true }),
     stopReason: text("stop_reason"),
-    report: jsonb("report").default(sql`'{}'::jsonb`).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    report: jsonb("report")
+      .default(sql`'{}'::jsonb`)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => ({
     kindCheck: check(
@@ -679,7 +693,9 @@ export const storefrontRelease = pgTable(
     ),
     activeIdx: uniqueIndex("idx_storefront_release_active")
       .on(table.contour)
-      .where(sql`${table.status} IN ('planning', 'testing', 'awaiting', 'waves')`),
+      .where(
+        sql`${table.status} IN ('planning', 'testing', 'awaiting', 'waves')`,
+      ),
     subjectIdx: index("idx_storefront_release_subject").on(
       table.kind,
       table.subject,
@@ -711,7 +727,9 @@ export const storefrontReleaseShop = pgTable(
     passportAfter: jsonb("passport_after"),
     verdict: text("verdict"),
     error: text("error"),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => ({
     pk: primaryKey({
@@ -753,13 +771,20 @@ export const storefrontSection = pgTable(
     style: text("style").notNull(),
     script: text("script"),
     scriptHash: text("script_hash"),
-    warnings: jsonb("warnings").default(sql`'[]'::jsonb`).notNull(),
+    warnings: jsonb("warnings")
+      .default(sql`'[]'::jsonb`)
+      .notNull(),
     draft: boolean("draft").default(false).notNull(),
     published: boolean("published").default(false).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => ({
-    kindCheck: check("storefront_section_kind_check", sql`${table.kind} IN ('section', 'global', 'store')`),
+    kindCheck: check(
+      "storefront_section_kind_check",
+      sql`${table.kind} IN ('section', 'global', 'store')`,
+    ),
     authorCheck: check(
       "storefront_section_author_check",
       sql`${table.author} IN ('platform', 'theme', 'shop', 'extension')`,
@@ -819,7 +844,10 @@ export const storefrontSectionError = pgTable(
       "storefront_section_error_stage_check",
       sql`${table.stage} IN ('load', 'define', 'mount', 'unmount', 'runtime', 'render', 'render-timeout', 'render-output', 'render-memory', 'render-denied')`,
     ),
-    countCheck: check("storefront_section_error_count_check", sql`${table.count} > 0`),
+    countCheck: check(
+      "storefront_section_error_count_check",
+      sql`${table.count} > 0`,
+    ),
     keyIdx: uniqueIndex("idx_storefront_section_error_key").on(
       table.siteId,
       table.section,

@@ -33,6 +33,7 @@ import type {
   StoreContent,
   StoreContentSite,
 } from "./store-content.port";
+import type { CheckScope } from "./check-scope";
 
 @Injectable()
 export class StoreContentService implements StoreContent {
@@ -124,6 +125,20 @@ export class StoreContentService implements StoreContent {
     opts: DiffOptions,
   ): Promise<DiffResult> {
     return this.resolveAdapter(opts.site).diff(siteId, from, to, opts);
+  }
+
+  async checkScopeBetween(
+    siteId: string,
+    from: string | null,
+    to: string,
+    opts: DiffOptions,
+  ): Promise<CheckScope> {
+    return this.resolveAdapter(opts.site).checkScopeBetween(
+      siteId,
+      from,
+      to,
+      opts,
+    );
   }
 
   /**

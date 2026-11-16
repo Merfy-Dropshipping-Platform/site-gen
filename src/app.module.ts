@@ -78,6 +78,8 @@ import { BlocksController } from "./controllers/blocks.controller";
 import { PagesModule } from "./pages/pages.module";
 import { DocumentAdapter } from "./content/document.adapter";
 import { StoreContentService } from "./content/store-content.service";
+import { PublishCheckService } from "./publish-check/publish-check.service";
+import { StorefrontLookClient } from "./publish-check/look.client";
 import { STORE_CONTROLLERS, STORE_PROVIDERS } from "./store/store.providers";
 
 @Module({
@@ -128,6 +130,9 @@ import { STORE_CONTROLLERS, STORE_PROVIDERS } from "./store/store.providers";
     SitesDomainService,
     DocumentAdapter,
     StoreContentService,
+    // Проверка публикации магазина новой темы (16.11): снимки через storefront-checker, товары.
+    PublishCheckService,
+    StorefrontLookClient,
     ThemesService,
     SiteGeneratorService,
     CoolifyProvider,

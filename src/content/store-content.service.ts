@@ -145,6 +145,7 @@ export class StoreContentService implements StoreContent {
       merged: saved.effect.merged,
       overwritten: saved.effect.overwritten,
       conflicts: saved.effect.conflicts,
+      checkScope: saved.effect.checkScope,
     };
   }
 

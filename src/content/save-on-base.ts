@@ -24,6 +24,8 @@ import { apply, diff, isVolatile, merge3, paths } from "./operations";
 import type { Doc, MergePolicy, Op } from "./operations";
 import { deepEqual } from "./operations/json";
 import type { WriteModel } from "./write-model";
+import { checkScope } from "./check-scope";
+import type { CheckScope } from "./check-scope";
 import { assertSectionIds } from "./section-ids";
 import {
   CLIENT_SNAPSHOT_KIND,
@@ -132,6 +134,11 @@ type ChangeReport = {
 /** Записи без базы: список изменений не считается. */
 const NO_BASE_REPORT: ChangeReport = { changes: null };
 
+/** Что проверить после записи — для ответа клиенту, в `meta` не пишется. */
+function scopeOf(report: ChangeReport, after: Doc): CheckScope | null {
+  return report.changes === null ? null : checkScope(report.changes, after);
+}
+
 function reportChanges(
   ops: readonly Op[],
   base: Doc,
@@ -216,9 +223,9 @@ class WriteOnBase {
     const stored = await this.fetchBase();
     const model = await this.store.writeModel(this.siteId, this.params, stored);
     const incoming = await this.incoming(() => model.normalize(stored));
-    const report =
+    const { report, scope } =
       this.base === null
-        ? NO_BASE_REPORT
+        ? { report: NO_BASE_REPORT, scope: null }
         : await this.changesBetween(model, stored, incoming);
     const id = randomUUID();
     const ok = await this.commit(
@@ -233,6 +240,7 @@ class WriteOnBase {
       overwritten: [],
       conflicts: [],
       changes: report.changes,
+      checkScope: scope,
     };
     return { version: id, effect };
   }
@@ -242,16 +250,17 @@ class WriteOnBase {
     model: WriteModel,
     stored: Doc | undefined,
     incoming: Doc,
-  ): Promise<ChangeReport> {
+  ): Promise<{ report: ChangeReport; scope: CheckScope | null }> {
     try {
       const before = await model.normalize(stored);
       const after = await model.normalize(incoming);
-      return reportChanges(diff(before, after), before, after, model);
+      const report = reportChanges(diff(before, after), before, after, model);
+      return { report, scope: scopeOf(report, after) };
     } catch (e) {
       this.logger.warn(
         `revision changes not computed for site ${this.siteId}: ${e instanceof Error ? e.message : e}`,
       );
-      return { changes: null };
+      return { report: { changes: null }, scope: null };
     }
   }
 
@@ -317,6 +326,7 @@ class WriteOnBase {
       overwritten: result.overwritten,
       conflicts: [],
       changes: report.changes,
+      checkScope: scopeOf(report, result.merged),
     };
     return { version: mergedId, effect };
   }

@@ -12,6 +12,7 @@
  * ДО этого порта). `provenance` зарезервирован под модель слоёв (§5) и пока
  * не заполняется ни одним адаптером.
  */
+import type { CheckScope } from "./check-scope";
 import type { ContestedValue, MergePolicy, Op } from "./operations";
 
 /**
@@ -208,6 +209,8 @@ export interface CreateRevisionResult {
   merged?: boolean;
   overwritten?: ContestedValue[];
   conflicts?: ContestedValue[];
+  /** Что проверить после правки (см. `SaveEffect.checkScope`); есть только при записи от базы. */
+  checkScope?: CheckScope | null;
 }
 
 /** Эффект записи с базой — то, что видит клиент (раздел «Контракт записи» плана этапа 2). */
@@ -225,6 +228,12 @@ export interface SaveEffect {
   conflicts: ContestedValue[];
   /** Адреса, изменённые относительно прежней текущей ревизии; `null` — не удалось посчитать. */
   changes: string[] | null;
+  /**
+   * Что проверить после правки: изменённые секции, страницы, тема
+   * (`check-scope.ts`). Считается из `changes` и документа после записи, в
+   * `meta` не пишется; `null` — когда `changes` не посчитались.
+   */
+  checkScope: CheckScope | null;
 }
 
 export interface SaveResult {

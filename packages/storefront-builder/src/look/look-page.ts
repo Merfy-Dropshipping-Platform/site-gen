@@ -10,6 +10,7 @@
 import { readFileSync } from 'node:fs';
 import type { BrowserContext, Page, Route } from 'playwright';
 import { z } from 'zod';
+import { AXE_IN_PAGE, AXE_RULES, axeScript } from '../checks/browser/semantic';
 import { isAllowedRequest } from './look-guard';
 import { layoutSource, parseLayout } from './look-layout';
 import { answerCartWrite, checkMarks } from './look-marks';
@@ -272,6 +273,21 @@ async function runDetector(page: Page, section?: string): Promise<DetectorFindin
   );
 }
 
+// Экран с номером `index`: страница прокручивается на `index` высот экрана.
+async function shootScreen(page: Page, viewport: Viewport, index: number, quality: number): Promise<Uint8Array> {
+  await page.evaluate((y) => window.scrollTo(0, y), index * viewport.height);
+  await page.waitForTimeout(SHOT_SETTLE_MS);
+  return page.screenshot({ type: 'jpeg', quality, animations: 'disabled' });
+}
+
+// Семантика axe-core (`checks/browser/semantic.ts`): скрипт подключается при первом вызове, страницу не меняет.
+async function runSemantic(page: Page): Promise<unknown> {
+  const ready: unknown = await page.evaluate(() => typeof Reflect.get(window, 'axe') === 'object');
+  if (ready !== true) await page.addScriptTag({ content: axeScript() });
+  // Строку Playwright только вычисляет, функцию из неё с аргументом не зовёт — вызов пишем сами.
+  return page.evaluate(`(${AXE_IN_PAGE})(${JSON.stringify(AXE_RULES)})`);
+}
+
 // Проверки вёрстки (`browser/layout-checks.js`) на отрисованной странице нужного устройства.
 async function runLayout(page: Page, device: LookDevice, section?: string): Promise<LayoutFinding[]> {
   // Строку Playwright только вычисляет, функцию из неё с аргументом не зовёт — вызов пишем сами.
@@ -441,13 +457,10 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
     device,
     viewport,
     facts,
-    async shoot(index, quality) {
-      await page.evaluate((y) => window.scrollTo(0, y), index * viewport.height);
-      await page.waitForTimeout(SHOT_SETTLE_MS);
-      return page.screenshot({ type: 'jpeg', quality, animations: 'disabled' });
-    },
+    shoot: (index, quality) => shootScreen(page, viewport, index, quality),
     detect: (section) => runDetector(page, section),
     layout: (section) => runLayout(page, device, section),
+    semantic: () => runSemantic(page),
     shootClip: (finding, quality) => shootClip(page, viewport, finding, quality),
     locateSection: (section) => locateSection(page, viewport, section),
     shootSection: (place, section, quality) => shootSection(page, place, section, quality),

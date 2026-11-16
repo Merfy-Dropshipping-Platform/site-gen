@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { chromium } from 'playwright';
 import { afterAll, describe, expect, it } from 'vitest';
+import { semanticBrowser } from '../src/checks/browser/semantic';
 import { ChromiumRenderer } from '../src/look/look-browser';
 import { LOOK_PATTERN, runLookJob } from '../src/look/look-job';
 
@@ -135,6 +136,30 @@ describe.skipIf(!hasChromium)('снимок черновика · настоящ
     expect(empty.findings.filter((finding) => finding.source === 'impeccable')).toEqual([]);
     // Форма находки — как у снимка страницы.
     expect(second.findings[0]).toMatchObject({ source: 'impeccable', device: 'mobile', section: null, clip: null });
+  }, 60_000);
+
+  it('семантика axe: нарушения по секциям — шапка вне <header>, в списке не <li>', async () => {
+    const page = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Магазин</title></head><body>
+      <merfy-section data-section-id="header-1"><div><a href="/">Магазин</a> <a href="/catalog">Каталог</a></div></merfy-section>
+      <main>
+        <merfy-section data-section-id="faq-1"><h1>Вопросы</h1><ul><div>Не пункт</div><li>Пункт</li></ul></merfy-section>
+        <merfy-section data-section-id="hero-1"><h2>Всё в порядке</h2><ul><li>Пункт</li></ul></merfy-section>
+      </main>
+    </body></html>`;
+    const rendered = await renderer.open({ html: page, devices: ['desktop'] });
+    try {
+      const [desktop] = rendered.sessions;
+      if (desktop === undefined) throw new Error('нет экрана');
+      const found = semanticBrowser(await desktop.semantic());
+      const pairs = found.map((finding) => `${finding.rule}:${finding.section}`);
+      expect(pairs).toContain('region:header-1');
+      expect(pairs).toContain('list:faq-1');
+      expect(found.some((finding) => finding.section === 'hero-1')).toBe(false);
+      // Второй вызов не подключает axe заново и отвечает так же.
+      expect(semanticBrowser(await desktop.semantic())).toEqual(found);
+    } finally {
+      await rendered.close();
+    }
   }, 60_000);
 
   it('страница не достаёт до внутренних адресов сервера', async () => {

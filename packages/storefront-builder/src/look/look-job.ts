@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import type { Broker } from '../broker';
+import { semanticBrowser } from '../checks/browser/semantic';
+import { inSections, type CheckReport } from '../checks/finding';
+import { semanticHtml } from '../checks/html/semantic';
 import { errorText } from '../errors';
 import type { Log } from '../log';
 import { MAX_CONCURRENT_RENDERS } from './look-browser';
@@ -47,6 +50,10 @@ const DETECTOR_DEADLINE_MARGIN_MS = 1_500;
 // молчание проверки не красное.
 export const SECTION_MARKS_TIMEOUT_MS = 3_000;
 export const PAGE_MARKS_TIMEOUT_MS = 8_000;
+// Предел axe в странице: на главной nova 0,3 с (прогон 16.11). В снимке секции — с запасом под срок шлюза, в снимке
+// страницы — свободнее. Не успел — проверки по HTML всё равно в ответе, причина — в `checks.failed`.
+export const SECTION_SEMANTIC_TIMEOUT_MS = 2_000;
+export const PAGE_SEMANTIC_TIMEOUT_MS = 5_000;
 // Сверх предела — на метку, начатую в последний момент; дальше проверка считается зависшей.
 export const MARKS_OVERRUN_MS = 2_000;
 
@@ -68,6 +75,13 @@ const lookJobSchema = z.strictObject({
   section: z
     .string()
     .regex(/^[A-Za-z0-9_.:-]{1,100}$/)
+    .optional(),
+  // Секции, чьи находки проверок (`checks`) отдать: изменённые правкой (`checkScope` записи в sites). Нет — секция
+  // снимка (`section`), а у снимка страницы — все. Снимают картинку по-прежнему только `section`.
+  sections: z
+    .array(z.string().regex(/^[A-Za-z0-9_.:-]{1,100}$/))
+    .min(1)
+    .max(30)
     .optional(),
   // Запись шаблона страницы (товар, коллекция…): id, адрес или handle — как `record=` у превью конструктора. Нет — запись
   // по умолчанию. Нашлась ли она, сказано в ответе (`record`): снимок не подменяет её молча.
@@ -121,6 +135,9 @@ export interface LookSnapshot {
   layout: { ok: true } | { ok: false; reason: string };
   // Сначала находки детектора, потом проверок вёрстки (телефон первым).
   findings: LookFinding[];
+  // Находки мест проверок (`src/checks/`) в общем виде: сейчас семантика по HTML и в странице. Только секций из
+  // `sections` задания (нет — секции снимка; снимок страницы — все). Проверка не отработала — причина в `failed`.
+  checks: CheckReport;
   // Проверка меток витрины кликами (`look-marks.ts`): отказ самой проверки — причина, а не поломка магазина.
   marks: { ok: true; results: LookMark[] } | { ok: false; reason: string };
   // Раскадровка (`look-motion.ts`): есть только если просили (`motion` задания) и снимок страницы, а не секции.
@@ -246,6 +263,49 @@ async function marksOn(sessions: PageSession[], limitMs: number, section?: strin
   }
 }
 
+// Проверки мест `html` и `browser` (`src/checks/`): HTML превью — без браузера, axe — в открытой странице, в пределе
+// `limitMs`. Отказ одной проверки не мешает другой и снимку — он идёт в `failed`.
+async function checksOn(
+  html: string,
+  session: PageSession | undefined,
+  wanted: readonly string[] | undefined,
+  limitMs: number,
+): Promise<CheckReport> {
+  const parts = [await htmlChecks(html), await browserChecks(session, limitMs)];
+  return {
+    findings: inSections(
+      parts.flatMap((part) => part.findings),
+      wanted,
+    ),
+    failed: parts.flatMap((part) => part.failed),
+  };
+}
+
+async function htmlChecks(html: string): Promise<CheckReport> {
+  try {
+    return { findings: await semanticHtml(html), failed: [] };
+  } catch (error) {
+    return { findings: [], failed: [{ place: 'html', check: 'semantic', reason: firstLine(errorText(error)) }] };
+  }
+}
+
+async function browserChecks(session: PageSession | undefined, limitMs: number): Promise<CheckReport> {
+  const refused = (reason: string): CheckReport => ({
+    findings: [],
+    failed: [{ place: 'browser', check: 'semantic', reason }],
+  });
+  if (session === undefined) return refused('секции не видно');
+  if (limitMs <= 0) return refused('не успел: срок снимка почти вышел');
+  try {
+    return { findings: semanticBrowser(await within(session.semantic(), limitMs)), failed: [] };
+  } catch (error) {
+    if (error instanceof LookError) throw error;
+    return refused(
+      error instanceof DetectorLate ? `не успел за ${secondsText(limitMs)} с` : firstLine(errorText(error)),
+    );
+  }
+}
+
 const tidyFacts = (facts: PageFacts): PageFacts => ({
   ...facts,
   consoleErrors: facts.consoleErrors.slice(0, MAX_CONSOLE_ERRORS).map((text) => text.slice(0, MAX_CONSOLE_LENGTH)),
@@ -281,11 +341,26 @@ const factsOf = (sample: LookSample | null): Pick<LookSnapshot, 'record' | 'cart
   cart: sample?.cart === undefined ? null : { lines: sample.cart.lines.length },
 });
 
+// Общее начало ответа: что за снимок и что превью сообщило о странице.
+const headOf = (
+  job: LookJob,
+  sample: LookSample | null,
+  section: string | null,
+): Pick<LookSnapshot, 'v' | 'siteId' | 'page' | 'full' | 'section' | 'record' | 'cart'> => ({
+  v: 1,
+  siteId: job.siteId,
+  page: job.page,
+  full: section === null ? job.full : false,
+  section,
+  ...factsOf(sample),
+});
+
 // Снимок страницы: экраны, детектор дизайна и проверки вёрстки.
 async function pageSnapshot(
   sessions: PageSession[],
   first: PageSession,
   job: LookJob,
+  html: string,
   sample: LookSample | null,
 ): Promise<LookSnapshot> {
   // Вырезки мест идут в тот же предел веса, что и экраны: сначала они, экранам остаётся остальное. Просили кадры
@@ -298,18 +373,15 @@ async function pageSnapshot(
     deviceShots(session, shots[index] ?? { device: session.device, total: 1, shots: [] }),
   );
   const motion = job.motion === true ? await motionOn(sessions, job, checks.clipBytes, shots) : undefined;
+  const report = await checksOn(html, first, job.sections, PAGE_SEMANTIC_TIMEOUT_MS);
   const marks = await marksOn(sessions, PAGE_MARKS_TIMEOUT_MS);
   return {
-    v: 1,
-    siteId: job.siteId,
-    page: job.page,
-    full: job.full,
-    section: null,
-    ...factsOf(sample),
+    ...headOf(job, sample, null),
     devices,
     detector,
     layout: checks.status,
     findings: [...findings, ...checks.findings],
+    checks: report,
     marks,
     ...(motion === undefined ? {} : { motion }),
   };
@@ -355,6 +427,7 @@ async function sectionSnapshot(
   job: LookJob,
   section: string,
   now: () => number,
+  html: string,
   sample: LookSample | null,
 ): Promise<LookSnapshot> {
   const places = await locateSection(sessions, section);
@@ -363,19 +436,17 @@ async function sectionSnapshot(
   const { detector, findings } = await detectInSection(sessions, places, section, job.deadline - now());
   const devices = sessions.map((session, index) => sectionShots(session, places[index] ?? null, shots[index] ?? null));
   const seen = sessions.filter((_, index) => places[index] != null);
+  const semanticLimit = Math.min(SECTION_SEMANTIC_TIMEOUT_MS, job.deadline - now() - DETECTOR_DEADLINE_MARGIN_MS);
+  const report = await checksOn(html, seen[0], job.sections ?? [section], semanticLimit);
   const room = job.deadline - now() - DETECTOR_DEADLINE_MARGIN_MS - MARKS_OVERRUN_MS;
   const marks = await marksOn(seen, Math.min(SECTION_MARKS_TIMEOUT_MS, room), section);
   return {
-    v: 1,
-    siteId: job.siteId,
-    page: job.page,
-    full: false,
-    section,
-    ...factsOf(sample),
+    ...headOf(job, sample, section),
     devices,
     detector,
     layout: checks.status,
     findings: [...findings, ...checks.findings],
+    checks: report,
     marks,
   };
 }
@@ -384,13 +455,14 @@ async function snapshotOf(
   sessions: PageSession[],
   job: LookJob,
   now: () => number,
-  sample: LookSample | null,
+  html: string,
 ): Promise<LookSnapshot> {
   const [first] = sessions;
   if (first === undefined) throw new Error('отрисовщик не открыл ни одного экрана');
+  const sample = parseSample(html);
   return job.section === undefined
-    ? pageSnapshot(sessions, first, job, sample)
-    : sectionSnapshot(sessions, job, job.section, now, sample);
+    ? pageSnapshot(sessions, first, job, html, sample)
+    : sectionSnapshot(sessions, job, job.section, now, html, sample);
 }
 
 function renderFailure(error: unknown): LookReply {
@@ -412,7 +484,7 @@ async function render(deps: LookDeps, job: LookJob, html: string): Promise<LookR
     return renderFailure(error);
   }
   try {
-    return { ok: true, snapshot: await snapshotOf(rendered.sessions, job, deps.now, parseSample(html)) };
+    return { ok: true, snapshot: await snapshotOf(rendered.sessions, job, deps.now, html) };
   } catch (error) {
     return renderFailure(error);
   } finally {
@@ -452,7 +524,11 @@ function logOutcome(deps: LookDeps, body: unknown, reply: LookReply, startedAt: 
   const kb = Math.round(images.reduce((sum, image) => sum + image.length, 0) / 1024);
   const devices = reply.snapshot.devices.map((device) => device.device).join(',');
   const checks = findings.filter((finding) => finding.source === 'layout').length;
-  deps.log('look-done', { ...fields, devices, full: reply.snapshot.full, images: images.length, kb, checks });
+  const semantic = reply.snapshot.checks.findings.length;
+  deps.log('look-done', { ...fields, devices, full: reply.snapshot.full, images: images.length, kb, checks, semantic });
+  for (const failed of reply.snapshot.checks.failed) {
+    deps.log('look-check-failed', { ...fields, place: failed.place, check: failed.check, error: failed.reason });
+  }
   if (!layout.ok) deps.log('look-layout-failed', { ...fields, error: layout.reason });
 }
 

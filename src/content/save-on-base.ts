@@ -156,6 +156,20 @@ function reportChanges(
   return { changes: pathsOf("change"), ...(hasDerived ? { derived } : {}) };
 }
 
+/**
+ * Что проверить между двумя документами магазина, уже прошедшими
+ * `model.normalize`: те же правила «не правка мерчанта», что у записи от базы.
+ * Публикация (16.11) сравнивает так опубликованную ревизию с черновиком.
+ */
+export function scopeBetween(
+  model: WriteModel,
+  before: Doc,
+  after: Doc,
+): CheckScope {
+  const report = reportChanges(diff(before, after), before, after, model);
+  return checkScope(report.changes ?? [], after);
+}
+
 /** Одна запись от базы: попытки CAS, на каждой — запись поверх текущей или слияние. */
 class WriteOnBase {
   constructor(

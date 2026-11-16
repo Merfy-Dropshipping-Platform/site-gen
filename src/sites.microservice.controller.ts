@@ -8,7 +8,7 @@
  * - sites.freeze_tenant, sites.unfreeze_tenant
  * - sites.check_availability, sites.health_check
  */
-import { Controller, Logger } from "@nestjs/common";
+import { Controller, Logger, Optional } from "@nestjs/common";
 import {
   Ctx,
   EventPattern,
@@ -17,6 +17,7 @@ import {
   RmqContext,
 } from "@nestjs/microservices";
 import { SitesDomainService } from "./sites.service";
+import { PublishCheckService } from "./publish-check/publish-check.service";
 import {
   RevisionConflictError,
   RevisionMergeConflictError,
@@ -64,7 +65,10 @@ function revisionWriteFailure(e: any) {
 @Controller()
 export class SitesMicroserviceController {
   private readonly logger = new Logger(SitesMicroserviceController.name);
-  constructor(private readonly service: SitesDomainService) {}
+  constructor(
+    private readonly service: SitesDomainService,
+    @Optional() private readonly publishCheck?: PublishCheckService,
+  ) {}
 
   @MessagePattern("sites.create_site")
   async createSite(@Payload() data: any, @Ctx() _ctx: RmqContext) {
@@ -244,16 +248,61 @@ export class SitesMicroserviceController {
     }
   }
 
+  /**
+   * Публикация. Магазин новой темы сначала проходит проверку публикации
+   * (`publish-check/`, 16.11) по изменённому с прошлой публикации: ошибка —
+   * отказ `publish_blocked` с находками (`check`), `message` — список того,
+   * что починить, словами. `skipChecks: true` — мерчант сам сказал
+   * «опубликовать как есть».
+   */
   @MessagePattern("sites.publish")
   async publish(@Payload() data: any) {
     try {
-      const { tenantId, siteId, mode } = data ?? {};
+      const { tenantId, siteId, mode, skipChecks } = data ?? {};
       if (!tenantId || !siteId)
         return { success: false, message: "tenantId and siteId required" };
+      const gate = this.publishCheck
+        ? await this.publishCheck.gate(tenantId, siteId, skipChecks === true)
+        : { blocked: false as const, check: null };
+      if (gate.blocked) {
+        return {
+          success: false,
+          error: "publish_blocked",
+          message: gate.message,
+          check: gate.check,
+        };
+      }
       const res = await this.service.publish({ tenantId, siteId, mode });
-      return { success: true, ...res };
+      await this.publishCheck?.markPublished(
+        tenantId,
+        siteId,
+        gate.check?.revisionId ?? null,
+      );
+      return {
+        success: true,
+        ...res,
+        ...(gate.check ? { check: gate.check } : {}),
+      };
     } catch (e: any) {
       this.logger.error(`publish failed: ${e?.message}`, e?.stack);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  /** Проверка перед публикацией без публикации; `check: null` — магазин нынешней темы, проверять нечего. */
+  @MessagePattern("sites.publish.check")
+  async publishCheckOnly(@Payload() data: any) {
+    try {
+      const { tenantId, siteId } = data ?? {};
+      if (!tenantId || !siteId)
+        return { success: false, message: "tenantId and siteId required" };
+      if (!this.publishCheck) return { success: true, check: null };
+      return {
+        success: true,
+        check: await this.publishCheck.check(tenantId, siteId),
+      };
+    } catch (e: any) {
+      this.logger.error(`publish check failed: ${e?.message}`, e?.stack);
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }

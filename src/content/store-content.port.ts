@@ -436,6 +436,18 @@ export interface StoreContent {
     to: string,
     opts: DiffOptions,
   ): Promise<DiffResult>;
+  /**
+   * Что проверить, если на витрину встанет `to` вместо `from` (проверка
+   * публикации, 16.11): правила «не правка мерчанта» — те же, что у записи от
+   * базы. `from` — `null` или ревизии нет: весь магазин. `to` не найдена —
+   * {@link RevisionNotFoundError}.
+   */
+  checkScopeBetween(
+    siteId: string,
+    from: string | null,
+    to: string,
+    opts: DiffOptions,
+  ): Promise<CheckScope>;
 }
 
 /** Модели контента, которые понимает `StoreContentService`. Сегодня — только 'document'. */

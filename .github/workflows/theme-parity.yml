@@ -75,8 +75,11 @@ jobs:
           "$NODE_AUTH_TOKEN"
           --location=user
 
+      # Воркспейс целиком, как в ci.yml (17.11): `nest build` собирает и пакеты воркспейса — с 28.10
+      # packages/storefront-sections/src/inline-text.ts берёт sanitize-html, а его типы — devDependency пакета.
+      # С `--ignore-workspace` (так стояло с апреля) их не было: TS7016, сборка падала, workflow красный с 03.11.
       - name: Install deps
-        run: pnpm install --frozen-lockfile --ignore-workspace
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright chromium
         run: npx playwright install chromium --with-deps

@@ -93,14 +93,16 @@ export async function answerCartWrite(route: Route, writes: string[]): Promise<b
   return true;
 }
 
+// shown: метку видно на этом экране; ready: у неё есть товар и она не выключена.
 const RawMark = z.object({
   mark: z.string(),
-  index: z.number().nullable(),
+  shown: z.boolean(),
   section: z.string().nullable(),
   ready: z.boolean(),
 });
 const RawMarks = z.object({ marks: z.array(RawMark), failed: z.array(z.string()) });
 type RawMark = z.infer<typeof RawMark>;
+type RawMarks = z.infer<typeof RawMarks>;
 
 interface MarkEnv {
   page: Page;
@@ -112,6 +114,8 @@ type Verdict = { status: MarkStatus; text: string };
 
 const OK: Verdict = { status: 'ok', text: '' };
 const broken = (text: string): Verdict => ({ status: 'broken', text });
+const hidden = (text: string): Verdict => ({ status: 'hidden', text });
+const GONE = hidden('метка пропала со страницы, нажать нечего');
 
 async function until(page: Page, done: () => Promise<boolean> | boolean): Promise<boolean> {
   const deadline = Date.now() + EFFECT_MS;
@@ -123,10 +127,21 @@ async function until(page: Page, done: () => Promise<boolean> | boolean): Promis
 }
 
 // Настоящий клик; метку закрыло окно поверх страницы — событие напрямую: проверяется связь метки с ядром, а вёрстку
-// смотрят проверки снимка.
-async function press(element: Locator): Promise<void> {
-  await element.click({ timeout: CLICK_MS }).catch(() => element.dispatchEvent('click'));
+// смотрят проверки снимка. У обоих путей предел: кнопку, которую убрала перерисовка, Playwright ждёт по умолчанию 30 с,
+// и одна пропавшая метка съедала срок всей страницы (17.11, «метки page-cart: не успел за 8 с»). false — нажать нечего.
+async function press(element: Locator): Promise<boolean> {
+  return element
+    .click({ timeout: CLICK_MS })
+    .catch(() => element.dispatchEvent('click', undefined, { timeout: CLICK_MS }))
+    .then(
+      () => true,
+      () => false,
+    );
 }
+
+// Атрибут метки с тем же пределом; метки уже нет — undefined.
+const attributeOf = (element: Locator, name: string): Promise<string | null | undefined> =>
+  element.getAttribute(name, { timeout: CLICK_MS }).catch(() => undefined);
 
 const textOf = async (page: Page, ref: string): Promise<string | null> => {
   const badge = page.locator(`[data-ref="${ref}"]`).first();
@@ -149,7 +164,7 @@ async function countMoved(page: Page, ref: string, before: string | null): Promi
 async function checkAdd({ page, writes, element }: MarkEnv): Promise<Verdict> {
   const before = await textOf(page, 'cart-count');
   const sent = writes.length;
-  await press(element);
+  if (!(await press(element))) return GONE;
   const added = await until(page, () => writes.slice(sent).some((write) => write.includes('/items')));
   if (!added) return broken('кнопка не положила товар: запроса в корзину не было');
   const moved = await countMoved(page, 'cart-count', before);
@@ -157,26 +172,35 @@ async function checkAdd({ page, writes, element }: MarkEnv): Promise<Verdict> {
 }
 
 async function checkHeart({ page, element }: MarkEnv): Promise<Verdict> {
-  const before = await element.getAttribute('aria-pressed');
+  const before = await attributeOf(element, 'aria-pressed');
+  if (before === undefined) return GONE;
   const count = await textOf(page, 'favorites-count');
-  await press(element);
-  const marked = await until(page, async () => (await element.getAttribute('aria-pressed')) !== before);
+  if (!(await press(element))) return GONE;
+  const marked = await until(page, async () => {
+    const now = await attributeOf(element, 'aria-pressed');
+    return now !== undefined && now !== before;
+  });
   if (!marked) return broken('сердечко не отмечается: aria-pressed не изменился');
   const moved = await countMoved(page, 'favorites-count', count);
   await press(element);
   return moved ? OK : broken('сердечко отмечено, а счётчик избранного не изменился');
 }
 
+// `methods` — какие записи считаются ответом ядра. cart.change — PATCH или DELETE: количество 0 по контракту ядра убирает
+// строку (`cart-change.ts`), так «−» при одной штуке и должен работать.
 const checkWrite =
-  (method: string, what: string) =>
+  (methods: readonly string[], what: string) =>
   async ({ page, writes, element }: MarkEnv): Promise<Verdict> => {
     const sent = writes.length;
-    await press(element);
-    const done = await until(page, () => writes.slice(sent).some((write) => write.startsWith(method)));
+    if (!(await press(element))) return GONE;
+    const done = await until(page, () =>
+      writes.slice(sent).some((write) => methods.some((method) => write.startsWith(`${method} `))),
+    );
     return done ? OK : broken(`${what}: запроса в корзину не было`);
   };
 
-const isLink = (element: Locator): Promise<boolean> => element.evaluate((node) => node.closest('a[href]') !== null);
+const isLink = (element: Locator): Promise<boolean> =>
+  element.evaluate((node) => node.closest('a[href]') !== null, undefined, { timeout: CLICK_MS }).catch(() => false);
 
 const modalOpen = (page: Page): Promise<boolean> =>
   page.evaluate(() => document.querySelector('dialog:modal') !== null).catch(() => false);
@@ -193,7 +217,7 @@ async function closeOverlay(page: Page): Promise<void> {
 async function checkSearch({ page, element }: MarkEnv): Promise<Verdict> {
   const panel = '[data-role="search"] input';
   const hasPanel = (await page.locator('[data-role="search"]').count()) > 0;
-  await press(element);
+  if (!(await press(element))) return GONE;
   if (!hasPanel) return (await isLink(element)) ? OK : broken('кнопка никуда не ведёт: панели поиска на странице нет');
   const opened = await until(page, () => visibleIn(page, panel));
   await closeOverlay(page);
@@ -205,14 +229,15 @@ async function checkCartOpen({ page, element }: MarkEnv): Promise<Verdict> {
   const hasDrawer = (await page.locator('[data-role="cart-drawer"]').count()) > 0;
   const link = await isLink(element);
   if (!hasDrawer) return link ? OK : broken('кнопка корзины никуда не ведёт: нужна ссылка на /cart');
-  await press(element);
+  if (!(await press(element))) return GONE;
   const opened = await until(page, () => visibleIn(page, '[data-role="cart-drawer"] *'));
   await closeOverlay(page);
   return opened || link ? OK : broken('корзина не открылась');
 }
 
 async function checkProfile({ element }: MarkEnv): Promise<Verdict> {
-  const href = await element.getAttribute('href');
+  const href = await attributeOf(element, 'href');
+  if (href === undefined) return GONE;
   return href === '/login' || href === '/account' ? OK : broken(`ссылка профиля ведёт на ${href ?? 'пустой адрес'}`);
 }
 
@@ -221,38 +246,49 @@ async function checkProfile({ element }: MarkEnv): Promise<Verdict> {
 const TESTS: ReadonlyArray<readonly [string, (env: MarkEnv) => Promise<Verdict>]> = [
   ['profile', checkProfile],
   ['favorites.toggle', checkHeart],
-  ['cart.change', checkWrite('PATCH', 'количество не меняется')],
-  ['cart.remove', checkWrite('DELETE', 'строка не удаляется')],
+  ['cart.change', checkWrite(['PATCH', 'DELETE'], 'количество не меняется')],
+  ['cart.remove', checkWrite(['DELETE'], 'строка не удаляется')],
   ['search.open', checkSearch],
   ['cart.open', checkCartOpen],
   ['cart.add', checkAdd],
 ];
 
 // Скрипт страницы: метки в секции (или на всей странице) и упавшие секции. Берётся первая видимая метка каждого имени,
-// ей ставится атрибут, по нему её находит клик. ready: у метки есть товар и она не выключена: кнопка «Нет в наличии» и
-// карточка без товара в магазине — не поломка.
-const COLLECT_SCRIPT = (names: readonly string[], chosen: string, section: string | undefined): string => `(() => {
-  const names = ${JSON.stringify(names)};
-  const id = ${JSON.stringify(section ?? null)};
-  const scope = id === null ? [document.body]
-    : [...document.querySelectorAll('[data-section-id]')].filter((node) => node.getAttribute('data-section-id') === id);
+// ей ставится атрибут с именем метки, по нему её находит клик; прошлый выбор снимается. ready: у метки есть товар и она
+// не выключена: кнопка «Нет в наличии» и карточка без товара в магазине — не поломка. cart.change — сперва кнопка, что
+// оставляет строку (data-quantity не 0, «+»): «−» при одной штуке убирает строку, и cart.remove после него нечего нажать.
+const COLLECT_HELPERS = `
   const sectionOf = (node) => node.closest('[data-section-id]')?.getAttribute('data-section-id') ?? null;
   const shown = (node) => node.checkVisibility() && node.getBoundingClientRect().width > 0;
   const needsProduct = (name) => name === 'cart.add' || name === 'favorites.toggle';
   const ready = (name, node) =>
     !node.disabled && node.getAttribute('aria-disabled') !== 'true' &&
     (!needsProduct(name) || (node.getAttribute('data-product-id') ?? '') !== '');
+  const keepsLine = (name, node) => name !== 'cart.change' || node.getAttribute('data-quantity') !== '0';
   const nodesOf = (name) => scope.flatMap((root) => [...root.querySelectorAll(
     name === 'profile' ? 'a[data-ref="profile"]' : '[data-action]',
   )]).filter((node) => name === 'profile' || (node.getAttribute('data-action') ?? '').split(/\\s+/)
     .some((part) => part.slice(part.indexOf(':') + 1) === name));
-  const marks = names.flatMap((mark, index) => {
+`;
+
+const COLLECT_SCRIPT = (names: readonly string[], chosen: string, section: string | undefined): string => `(() => {
+  const names = ${JSON.stringify(names)};
+  const id = ${JSON.stringify(section ?? null)};
+  const chosen = ${JSON.stringify(chosen)};
+  const scope = id === null ? [document.body]
+    : [...document.querySelectorAll('[data-section-id]')].filter((node) => node.getAttribute('data-section-id') === id);
+  ${COLLECT_HELPERS}
+  const marks = names.flatMap((mark) => {
     const nodes = nodesOf(mark);
     if (nodes.length === 0) return [];
-    const node = nodes.find((one) => shown(one) && ready(mark, one)) ?? nodes.find(shown);
-    if (node === undefined) return [{ mark, index: null, section: sectionOf(nodes[0]), ready: false }];
-    node.setAttribute(${JSON.stringify(chosen)}, String(index));
-    return [{ mark, index, section: sectionOf(node), ready: ready(mark, node) }];
+    const usable = (one) => shown(one) && ready(mark, one);
+    const node = nodes.find((one) => usable(one) && keepsLine(mark, one)) ?? nodes.find(usable) ?? nodes.find(shown);
+    if (node === undefined) return [{ mark, shown: false, section: sectionOf(nodes[0]), ready: false }];
+    for (const old of document.querySelectorAll('[' + chosen + ']')) {
+      if (old.getAttribute(chosen) === mark) old.removeAttribute(chosen);
+    }
+    node.setAttribute(chosen, mark);
+    return [{ mark, shown: true, section: sectionOf(node), ready: ready(mark, node) }];
   });
   const failed = scope.flatMap((root) => [root, ...root.querySelectorAll('[data-merfy-state="failed"]')])
     .filter((node) => node.getAttribute('data-merfy-state') === 'failed')
@@ -280,24 +316,45 @@ interface MarkRun {
   page: Page;
   writes: string[];
   deadline: number;
+  section: string | undefined;
 }
 
-// Красное — только повторённый провал (ложный красный хуже его отсутствия): окно, всплывшее по таймеру, закрывает
-// страницу на первом нажатии. Перед повтором окна закрываются; срок вышел — первый провал остаётся без подтверждения.
-async function confirmed(run: MarkRun, env: MarkEnv, test: (env: MarkEnv) => Promise<Verdict>): Promise<Verdict> {
-  const first = await test(env);
-  if (first.status !== 'broken') return first;
-  if (Date.now() >= run.deadline) return { status: 'hidden', text: `не успел подтвердить: ${first.text}` };
+type MarkTest = (env: MarkEnv) => Promise<Verdict>;
+
+const collect = async (page: Page, names: readonly string[], section: string | undefined): Promise<RawMarks> =>
+  RawMarks.parse(await page.evaluate(COLLECT_SCRIPT(names, CHOSEN, section)));
+
+// Одна попытка: метка ищется заново прямо перед нажатием. Проверка до неё могла перерисовать секцию — cart.change
+// перечитывает корзину, и строки рисуются новыми узлами, — тогда найденная заранее кнопка уже не на странице (17.11).
+async function attempt(run: MarkRun, first: RawMark, test: MarkTest): Promise<{ raw: RawMark; verdict: Verdict }> {
+  const raw = (await collect(run.page, [first.mark], run.section)).marks[0];
+  if (raw === undefined) return { raw: first, verdict: GONE };
+  if (!raw.shown) return { raw, verdict: hidden('на этом экране метки не видно') };
+  if (!raw.ready) return { raw, verdict: hidden('нет товара или кнопка выключена') };
+  const element = run.page.locator(`[${CHOSEN}="${raw.mark}"]`).first();
+  return { raw, verdict: await test({ page: run.page, writes: run.writes, element }) };
+}
+
+// Второй заход нужен двум исходам первого: провалу и метке, пропавшей до нажатия. Красное — только повторённый провал
+// (ложный красный хуже его отсутствия): окно, всплывшее по таймеру, закрывает страницу на первом нажатии. А метка
+// пропадает, когда её нашли до перерисовки секции: запись cart.change засчитана сразу, а ядро ещё перечитывает корзину
+// и рисует строки заново. Перед повтором окна закрываются; срок вышел или метки нет и на повторе — без подтверждения.
+const worthRetry = (verdict: Verdict): boolean => verdict.status === 'broken' || verdict === GONE;
+
+async function checkOne(run: MarkRun, found: RawMark, test: MarkTest): Promise<MarkResult> {
+  if (!found.shown) return resultOf(found, hidden('на этом экране метки не видно'));
+  if (!found.ready) return resultOf(found, hidden('нет товара или кнопка выключена'));
+  if (Date.now() >= run.deadline) return resultOf(found, hidden('не успел проверить'));
+  const first = await attempt(run, found, test);
+  if (!worthRetry(first.verdict)) return resultOf(first.raw, first.verdict);
+  const unconfirmed = (why: string): MarkResult =>
+    resultOf(first.raw, first.verdict === GONE ? GONE : hidden(`${why}: ${first.verdict.text}`));
+  if (Date.now() >= run.deadline) return unconfirmed('не успел подтвердить');
   await closeOverlay(run.page);
-  return test(env);
-}
-
-async function checkOne(run: MarkRun, raw: RawMark, test: (env: MarkEnv) => Promise<Verdict>): Promise<MarkResult> {
-  if (raw.index === null) return resultOf(raw, { status: 'hidden', text: 'на этом экране метки не видно' });
-  if (!raw.ready) return resultOf(raw, { status: 'hidden', text: 'нет товара или кнопка выключена' });
-  if (Date.now() >= run.deadline) return resultOf(raw, { status: 'hidden', text: 'не успел проверить' });
-  const element = run.page.locator(`[${CHOSEN}="${raw.index}"]`).first();
-  return resultOf(raw, await confirmed(run, { page: run.page, writes: run.writes, element }, test));
+  const again = await attempt(run, first.raw, test);
+  return again.verdict.status === 'hidden'
+    ? unconfirmed('не подтвердилось, метка пропала')
+    : resultOf(again.raw, again.verdict);
 }
 
 // Причина из журнала ядра: «Сбой секции <имя>#<id> (<стадия>): <текст>» (`instance.ts`). Агенту нужна она, а не факт падения.
@@ -317,10 +374,10 @@ export async function checkMarks(
   section?: string,
   errors: readonly string[] = [],
 ): Promise<MarkResult[]> {
-  const run: MarkRun = { page, writes, deadline: Date.now() + limitMs };
+  const run: MarkRun = { page, writes, deadline: Date.now() + limitMs, section };
   const names = TESTS.map(([name]) => name);
   await page.evaluate(STAY_ON_PAGE);
-  const found = RawMarks.parse(await page.evaluate(COLLECT_SCRIPT(names, CHOSEN, section)));
+  const found = await collect(page, names, section);
   const results: MarkResult[] = found.failed.map((name) => ({
     mark: 'section',
     section: name,

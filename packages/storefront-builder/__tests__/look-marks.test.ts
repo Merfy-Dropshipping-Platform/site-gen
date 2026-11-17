@@ -171,6 +171,53 @@ describe.skipIf(!hasChromium)('метки витрины · настоящий C
     }
   });
 
+  // Строка корзины, как её рисует ядро: после записи перечитывает корзину и рисует строку новыми узлами (пауза — это
+  // чтение), «−» при одной штуке — количество 0, то есть DELETE (`cart-change.ts`). 17.11 на странице корзины проверка жала
+  // «−», ждала PATCH, а на повторе висела на пропавшей кнопке до общего срока — терялись все метки страницы.
+  const CART_LINE = (quantity: number, buttons: 'all' | 'less'): string => `<div id="line"></div><script>
+    const base = 'https://gateway.merfy.ru/api/store/carts/c-1/items/l-1';
+    let quantity = ${quantity};
+    const button = (action, next, text) =>
+      '<button data-action="' + action + '" data-line-id="l-1" data-quantity="' + next + '">' + text + '</button>';
+    const draw = () => {
+      document.getElementById('line').innerHTML = quantity === 0 ? '' : button('cart.change', quantity - 1, '−') +
+        ${buttons === 'all' ? `button('cart.change', quantity + 1, '+') + button('cart.remove', 0, 'Удалить')` : `''`};
+    };
+    document.addEventListener('click', async (event) => {
+      const node = event.target.closest('[data-action]');
+      if (!node) return;
+      const next = Number(node.getAttribute('data-quantity'));
+      await fetch(base, { method: next === 0 ? 'DELETE' : 'PATCH', body: JSON.stringify({ quantity: next }) });
+      await new Promise((done) => setTimeout(done, 150));
+      quantity = next;
+      draw();
+    });
+    draw();
+  </script>`;
+
+  it('строка корзины перерисовывается после записи: «+» вместо «−» при одной штуке, «Удалить» ищется заново', async () => {
+    const started = Date.now();
+    const results = await marksOf(page(CART_LINE(1, 'all')));
+    expect(statusOf(results, 'cart.change')).toBe('ok');
+    expect(statusOf(results, 'cart.remove')).toBe('ok');
+    expect(Date.now() - started).toBeLessThan(4_000);
+  });
+
+  it('у строки только «−» при одной штуке: удаление строки — ответ на cart.change', async () => {
+    expect(statusOf(await marksOf(page(CART_LINE(1, 'less'))), 'cart.change')).toBe('ok');
+  });
+
+  it('метка пропала после нажатия: не проверена, а не сломана, и срок страницы не съеден', async () => {
+    const vanish = `<button data-action="favorites.toggle" data-product-id="p1" aria-pressed="false">♥</button><script>
+      document.addEventListener('click', (event) => event.target.closest('[data-action]')?.remove());
+    </script>`;
+    const started = Date.now();
+    const [heart] = await marksOf(page(vanish));
+    expect(heart?.status).toBe('hidden');
+    expect(heart?.text).toContain('метка пропала');
+    expect(Date.now() - started).toBeLessThan(4_000);
+  });
+
   it('ссылка под меткой не уводит со страницы посреди проверки', async () => {
     const html = page(`<a href="/product/1"><button data-action="favorites.toggle" data-product-id="p1">♥</button></a>
       <a data-action="cart.open" href="/cart">Корзина</a>`);

@@ -19,6 +19,33 @@ import type { CheckFailure, CheckFinding } from "./check-report";
 export const HOME_PAGE = "home";
 /** Страниц в проверке не больше: снимок страницы на двух устройствах идёт секунды, а публикацию ждут. */
 export const MAX_LOOK_PAGES = 6;
+/**
+ * Путь покупателя — первым в очередь снимков (владелец 17.11). Изменилось больше `MAX_LOOK_PAGES` страниц (первая
+ * публикация — все 14+) — снимаем первые. Публикацию закрывает сломанная метка, а метки корзины и оформления живут на
+ * своих страницах (снимок кладёт в корзину товары магазина, `look-page.ts`). Раньше очередь шла по списку изменений:
+ * на qa nova корзина и оформление были 8-й и 13-й, в снимки не попадали — сломанное оформление первую публикацию не
+ * останавливало. Блог, статья, политика дают только предупреждения семантики — им места после пути покупателя.
+ */
+export const BUYER_PATH: readonly string[] = [
+  HOME_PAGE,
+  "catalog",
+  "product",
+  "page-cart",
+  "page-checkout",
+  "collection",
+];
+
+/**
+ * Место в очереди снимков. Сначала цели, которые могут закрыть публикацию (секции и страницы целиком — в них метки),
+ * среди них путь покупателя первым; «только правила страницы» — в конце: меток там нет, только предупреждения.
+ */
+function queueRank(target: LookTarget): number {
+  const onPath = BUYER_PATH.indexOf(target.page);
+  const rank = onPath === -1 ? BUYER_PATH.length : onPath;
+  return target.take.kind === "page-rules"
+    ? BUYER_PATH.length + 1 + rank
+    : rank;
+}
 /** Секций в задании снимка не больше — предел проверяющего процесса (`look-job.ts`, поле `sections`). */
 const MAX_JOB_SECTIONS = 30;
 
@@ -68,13 +95,12 @@ class Targets {
       page,
       take,
     }));
-    return all.sort(
-      (a, b) => Number(b.page === HOME_PAGE) - Number(a.page === HOME_PAGE),
-    );
+    // Сортировка устойчивая: страницы с одним местом остаются в порядке списка изменений.
+    return all.sort((a, b) => queueRank(a) - queueRank(b));
   }
 }
 
-/** Что снимать: по странице на цель, главная первой. Тема в цели не попадает. */
+/** Что снимать: по странице на цель, в порядке очереди (`queueRank`). Тема в цели не попадает. */
 export function lookTargets(scope: CheckScope): LookTarget[] {
   const targets = new Targets();
   for (const section of scope.sections) {

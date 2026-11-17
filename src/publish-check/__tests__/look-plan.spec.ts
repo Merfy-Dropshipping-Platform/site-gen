@@ -118,6 +118,70 @@ describe("какие страницы снимать", () => {
     expect(lookJobOf(targets[0])).not.toHaveProperty("sections");
     expect(lookTargets({ sections: [], pages: [], theme: true })).toEqual([]);
   });
+
+  it("первая публикация nova — путь покупателя первым: главная, каталог, товар, корзина, оформление, коллекция", () => {
+    // Порядок списка изменений — как у первой публикации qa nova на dev 17.11: корзина 8-я, оформление 13-е.
+    const order = [
+      "home",
+      "blog",
+      "policy",
+      "article",
+      "catalog",
+      "product",
+      "not-found",
+      "page-cart",
+      "collection",
+      "page-login",
+      "page-orders",
+      "page-profile",
+      "page-checkout",
+      "page-wishlist",
+      "page-checkout-result",
+      "page-custom-c2",
+    ];
+    const targets = lookTargets({
+      sections: [{ page: "header", id: "header-1" }],
+      pages: order.map((page) => ({ page, whole: true })),
+      theme: false,
+    });
+    expect(targets.map((target) => target.page)).toEqual([
+      "home",
+      "catalog",
+      "product",
+      "page-cart",
+      "page-checkout",
+      "collection",
+      // Дальше — в порядке списка изменений.
+      "blog",
+      "policy",
+      "article",
+      "not-found",
+      "page-login",
+      "page-orders",
+      "page-profile",
+      "page-wishlist",
+      "page-checkout-result",
+      "page-custom-c2",
+    ]);
+  });
+
+  it("«только правила страницы» — в конец: меток там нет, путь покупателя и новые страницы снимаются раньше", () => {
+    const targets = lookTargets({
+      sections: [{ page: "page-faq", id: "faq-9" }],
+      pages: [
+        { page: "page-cart", whole: false },
+        { page: "page-custom-1", whole: true },
+        { page: "product", whole: true },
+      ],
+      theme: false,
+    });
+    expect(targets.map((target) => [target.page, target.take.kind])).toEqual([
+      ["product", "all"],
+      ["page-faq", "sections"],
+      ["page-custom-1", "all"],
+      ["page-cart", "page-rules"],
+    ]);
+  });
 });
 
 describe("какие находки снимка брать", () => {

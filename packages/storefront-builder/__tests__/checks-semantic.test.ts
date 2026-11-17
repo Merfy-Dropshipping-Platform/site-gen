@@ -164,6 +164,18 @@ describe('семантика по HTML (html-validate + своё правило)
   });
 });
 
+describe('другой вид страницы в hidden (18.11)', () => {
+  it('h1 скрытого вида — не второй h1; пустой заголовок в скрытом виде — по-прежнему находка', async () => {
+    const views = '<div><h1>Мои заказы</h1></div><div hidden><h1>Заказ</h1><h3>Состав</h3></div>';
+    expect(await semanticHtml(page(section('orders-1', views)))).toEqual([]);
+    const empty = await semanticHtml(page(section('orders-1', '<h1>Мои заказы</h1><div hidden><h2></h2></div>')));
+    expect(empty.map((finding) => finding.rule)).toEqual(['empty-heading']);
+    // Видимый второй h1 — находка, как раньше.
+    const visible = await semanticHtml(page(section('orders-1', '<h1>Мои заказы</h1><h1>Заказ</h1>')));
+    expect(visible.map((finding) => finding.rule)).toEqual(['heading-level']);
+  });
+});
+
 describe('withoutTemplates', () => {
   it('вырезает содержимое шаблонов, вложенных тоже; остальное как было', () => {
     expect(withoutTemplates('<p>a</p><template id="t"><b>x</b><template><i>y</i></template></template><p>b</p>')).toBe(

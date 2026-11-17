@@ -268,9 +268,19 @@ describe('«Шапка»: значки, поиск, логотип', () => {
   });
 
   it('логотип: картинка темы или название магазина ссылкой на главную', async () => {
-    expect(await html()).toMatch(/<a\b[^>]*href="\/"[^>]*>\s*<span class="truncate">Мой сайт<\/span>/);
+    const elsewhere = { id: 'page-custom-c9', path: '/elsewhere' };
+    expect(await html({ page: elsewhere })).toMatch(/<a\b[^>]*href="\/"[^>]*>\s*<span class="truncate">Мой сайт<\/span>/);
     const withImage = await html({ theme: { 'logo-image': 'https://cdn.merfy.ru/logo.webp' } });
     expect(withImage).toContain('src="https://cdn.merfy.ru/logo.webp"');
+  });
+
+  it('h1 главной — логотип шапки (семантика 18.11); на других страницах h1 у шапки нет', async () => {
+    expect(await html()).toMatch(/<a\b[^>]*href="\/"[^>]*>\s*<h1 class="m-0 flex min-w-0"><span class="truncate">Мой сайт<\/span><\/h1>/);
+    const withImage = await html({ theme: { 'logo-image': 'https://cdn.merfy.ru/logo.webp' } });
+    expect(withImage).toMatch(/<h1 class="m-0 flex min-w-0"><img alt="Мой сайт"[^>]*src="https:\/\/cdn\.merfy\.ru\/logo\.webp"/);
+    for (const page of [{ id: 'catalog', path: '/catalog' }, { id: 'not-found', path: null }]) {
+      expect(await html({ page })).not.toContain('<h1');
+    }
   });
 
   it('нет style и скриптов', async () => {

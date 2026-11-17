@@ -37,7 +37,14 @@ const { settings, blocks } = Astro.props;
   <div class="grid grid-cols-1 gap-4 in-data-[fill=true]:grid-cols-2 md:in-data-[row-cols=2]:grid-cols-2 md:in-data-[row-cols=3]:grid-cols-3 lg:gap-6 lg:in-data-[fill=true]:grid-cols-3">
     {blocks.map((block) => (
       <div class="group flex min-w-0 flex-col first:in-data-[fill=true]:col-span-2 first:lg:in-data-[fill=true]:row-span-2 first:lg:in-data-[image-position=right]:in-data-[fill=true]:col-start-2">
-        {block.settings['item-type'] === 'image' && (
+        {/* Пустая плитка (ни фото, ни подписей) — заглушка, а не ссылка: ссылка без текста не говорит, куда ведёт
+            (семантика 18.11). */}
+        {block.settings['item-type'] === 'image' && !block.settings.image && !block.settings.label && !block.settings.caption && (
+          <div class="flex flex-1 flex-col gap-3">
+            <div class="relative aspect-square w-full overflow-hidden rounded-media bg-muted in-data-[count=1]:aspect-video group-first:lg:in-data-[fill=true]:aspect-auto group-first:lg:in-data-[fill=true]:flex-1"></div>
+          </div>
+        )}
+        {block.settings['item-type'] === 'image' && (block.settings.image || block.settings.label || block.settings.caption) && (
           <a class="flex flex-1 flex-col gap-3 no-underline" href={block.settings.link}>
             <div class="relative aspect-square w-full overflow-hidden rounded-media bg-muted in-data-[count=1]:aspect-video group-first:lg:in-data-[fill=true]:aspect-auto group-first:lg:in-data-[fill=true]:flex-1">
               {block.settings.image !== '' && (
@@ -74,7 +81,7 @@ const { settings, blocks } = Astro.props;
           </a>
         )}
         {block.settings['item-type'] === 'collection' && block.settings.collection && (
-          <a class="flex flex-1 flex-col gap-3 no-underline" href={block.settings.collection.url || '/catalog'}>
+          <a aria-label={block.settings.collection.title ? undefined : 'Все товары'} class="flex flex-1 flex-col gap-3 no-underline" href={block.settings.collection.url || '/catalog'}>
             <div class="relative aspect-square w-full overflow-hidden rounded-media bg-muted in-data-[count=1]:aspect-video group-first:lg:in-data-[fill=true]:aspect-auto group-first:lg:in-data-[fill=true]:flex-1">
               {block.settings.collection.images.length > 0 && (
                 <img

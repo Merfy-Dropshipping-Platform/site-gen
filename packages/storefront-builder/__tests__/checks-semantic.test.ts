@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { semanticBrowser } from '../src/checks/browser/semantic';
 import { grouped, inSections, type CheckFinding } from '../src/checks/finding';
-import { semanticHtml } from '../src/checks/html/semantic';
+import { semanticHtml, withoutTemplates } from '../src/checks/html/semantic';
 
 const page = (body: string): string =>
   `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Магазин</title></head><body>${body}</body></html>`;
@@ -145,6 +145,31 @@ describe('семантика по HTML (html-validate + своё правило)
   it('элемент вне секций — находка без секции', async () => {
     const found = await semanticHtml(page('<h2>Заголовок вне секции</h2>'));
     expect(byRule(found, 'heading-level')).toMatchObject([{ section: null }]);
+  });
+
+  it('содержимое <template> не проверяется: заготовки строк скрипта поисковик не видит (18.11)', async () => {
+    const row = '<button type="button" role="radio"><span data-ref="title"></span></button>';
+    const found = await semanticHtml(
+      page(
+        section(
+          'checkout-1',
+          `<h1>Оформление</h1><div role="radiogroup" aria-label="Доставка"><template>${row}<template>${row}</template></template></div>`,
+        ),
+      ),
+    );
+    expect(found).toEqual([]);
+    // Та же кнопка вне шаблона — находки есть: правило работает.
+    const shown = await semanticHtml(page(section('checkout-1', `<h1>Оформление</h1>${row}`)));
+    expect(shown.map((finding) => finding.rule).sort()).toEqual(['prefer-native-element', 'text-content']);
+  });
+});
+
+describe('withoutTemplates', () => {
+  it('вырезает содержимое шаблонов, вложенных тоже; остальное как было', () => {
+    expect(withoutTemplates('<p>a</p><template id="t"><b>x</b><template><i>y</i></template></template><p>b</p>')).toBe(
+      '<p>a</p><template id="t"></template><p>b</p>',
+    );
+    expect(withoutTemplates('<p>без шаблонов</p>')).toBe('<p>без шаблонов</p>');
   });
 });
 

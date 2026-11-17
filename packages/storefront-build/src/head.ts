@@ -307,6 +307,14 @@ function headOf(
   };
 }
 
+// Ориентир страницы вокруг списка секций (семантика 18.11): шапка — в <header>, подвал — в <footer>, чтобы поисковик и
+// чтение с экрана видели, где они, при любой теме и любых секциях мерчанта. Пусто (нет секций или все упали) — без
+// обёртки.
+function landmark(tag: 'header' | 'footer', list: readonly string[] | undefined): string[] {
+  const inner = (list ?? []).join('');
+  return inner === '' ? [] : [`<${tag}>${inner}</${tag}>`];
+}
+
 // content — секции страницы, нарисованные заранее (page.ts): разметка, CSS и режим. По умолчанию секций нет.
 export function pageLocals(
   inputs: BuildInputs,
@@ -320,10 +328,10 @@ export function pageLocals(
     head: headOf(inputs, route, theme, migrations, content, name),
     shop: { name },
     year: inputs.year,
-    header: content.header ?? [],
+    header: landmark('header', content.header),
     sections: content.sections,
-    // Секции поверх страницы (блок 12, Р12а-8) — сразу после подвала: тема печатает footer после <main>.
-    // Секции поверх страницы (блок 12, Р12а-8) — сразу после подвала: тема печатает footer после <main>.
-    footer: [...(content.footer ?? []), ...(content.overlay ?? [])],
+    // Секции поверх страницы (блок 12, Р12а-8) — сразу после подвала, вне <footer>: окна — не часть подвала. Тема
+    // печатает footer после <main>.
+    footer: [...landmark('footer', content.footer), ...(content.overlay ?? [])],
   };
 }

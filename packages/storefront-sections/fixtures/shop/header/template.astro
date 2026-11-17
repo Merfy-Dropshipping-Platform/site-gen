@@ -90,7 +90,11 @@ const { settings, blocks, theme, shop, page } = Astro.props;
       class="absolute left-1/2 flex min-h-11 max-w-1/2 -translate-x-1/2 items-center font-heading weight-heading tracking-heading text-2xl text-heading no-underline in-data-[capitals=all]:uppercase in-data-[capitals=logo]:uppercase md:static md:col-start-1 md:row-start-1 md:max-w-full md:translate-x-0 md:justify-self-start md:in-data-[logo-center=true]:col-start-2 md:in-data-[logo-center=true]:justify-self-center md:in-data-[menu-type=sidebar]:absolute md:in-data-[menu-type=sidebar]:-translate-x-1/2"
       href="/"
     >
-      {theme['logo-image'] ? <img alt={shop.name} class="block h-10 w-auto max-w-logo" src={theme['logo-image']} /> : <span class="truncate">{shop.name}</span>}
+      {/* h1 главной — название магазина в шапке (семантика 18.11, как header__heading у Shopify Dawn): есть всегда,
+          какие бы секции ни стояли на главной. На других страницах h1 даёт секция страницы. */}
+      {page.id === 'home' ? (
+        <h1 class="m-0 flex min-w-0">{theme['logo-image'] ? <img alt={shop.name} class="block h-10 w-auto max-w-logo" src={theme['logo-image']} /> : <span class="truncate">{shop.name}</span>}</h1>
+      ) : theme['logo-image'] ? <img alt={shop.name} class="block h-10 w-auto max-w-logo" src={theme['logo-image']} /> : <span class="truncate">{shop.name}</span>}
     </a>
 
     <nav

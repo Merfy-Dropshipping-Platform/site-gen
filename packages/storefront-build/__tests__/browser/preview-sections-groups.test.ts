@@ -43,11 +43,18 @@ const received = (): Promise<Message[]> => page.evaluate(() => window.received);
 const ofType = async (type: string): Promise<Message[]> => (await received()).filter((message) => message.type === type);
 const send = (message: unknown): Promise<void> => page.evaluate((value) => window.send(value), message);
 const frame = () => page.frameLocator('#preview');
-// Порядок в <body>: id секций и MAIN; внутри <main> — id её секций.
+// Порядок в <body>: ориентиры с id своих секций (HEADER[…], FOOTER[…]; семантика 18.11), MAIN и секции прямо в <body>
+// (окна); внутри <main> — id её секций.
 const bodyOrder = (): Promise<string[]> =>
   frame()
-    .locator('body > merfy-section, body > main')
-    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-section-id') ?? node.tagName));
+    .locator('body > header, body > main, body > footer, body > merfy-section')
+    .evaluateAll((nodes) =>
+      nodes.map((node) => {
+        if (node.tagName === 'MERFY-SECTION' || node.tagName === 'MAIN') return node.getAttribute('data-section-id') ?? node.tagName;
+        const ids = [...node.children].map((child) => child.getAttribute('data-section-id') ?? child.tagName);
+        return `${node.tagName}[${ids.join(',')}]`;
+      }),
+    );
 const mainOrder = (): Promise<string[]> =>
   frame()
     .locator('main > merfy-section')
@@ -83,27 +90,35 @@ afterAll(async () => {
 });
 
 describe('группы в превью', () => {
-  it('reconcile: шапка — до <main>, секции страницы — в <main>, подвал — после; новая секция — на своё место', async () => {
+  // Страница кадра — разметка без ориентиров (как до 18.11): первый reconcile сам ставит <header> и <footer>.
+  it('reconcile: шапка — в <header> до <main>, секции страницы — в <main>, подвал — в <footer> после; новая секция — на своё место', async () => {
     const blocks = [block('header-1', 'header'), block('hero-1', 'page'), block('page-2', 'page'), block('footer-1', 'footer')];
     await send({ type: 'reconcile', version: 1, blocks });
     await expect.poll(async () => (await ofType('reconcile-ack')).at(-1)).toMatchObject({ version: 1, ok: true, applied: 1 });
-    expect(await bodyOrder()).toEqual(['header-1', 'MAIN', 'footer-1']);
+    expect(await bodyOrder()).toEqual(['HEADER[header-1]', 'MAIN', 'FOOTER[footer-1]']);
     expect(await mainOrder()).toEqual(['hero-1', 'page-2']);
   });
 
-  it('reconcile: новая секция подвала по порядку списка — сразу после <main>, до прежнего подвала', async () => {
+  it('reconcile: новая секция подвала по порядку списка — в тот же <footer>, до прежнего подвала', async () => {
     const blocks = [block('header-1', 'header'), block('hero-1', 'page'), block('footer-2', 'footer'), block('footer-1', 'footer')];
     await send({ type: 'reconcile', version: 2, blocks });
     await expect.poll(async () => (await ofType('reconcile-ack')).at(-1)).toMatchObject({ version: 2, ok: true });
-    expect(await bodyOrder()).toEqual(['header-1', 'MAIN', 'footer-2', 'footer-1']);
+    expect(await bodyOrder()).toEqual(['HEADER[header-1]', 'MAIN', 'FOOTER[footer-2,footer-1]']);
     expect(await mainOrder()).toEqual(['hero-1']);
   });
 
-  it('reconcile: секция группы overlay (блок 12) — после подвала, в конце <body>', async () => {
+  it('reconcile: секция группы overlay (блок 12) — после подвала, в конце <body>, вне <footer>', async () => {
     const blocks = [block('header-1', 'header'), block('hero-1', 'page'), block('footer-1', 'footer'), block('search-1', 'overlay')];
     await send({ type: 'reconcile', version: 3, blocks });
     await expect.poll(async () => (await ofType('reconcile-ack')).at(-1)).toMatchObject({ version: 3, ok: true });
-    expect(await bodyOrder()).toEqual(['header-1', 'MAIN', 'footer-1', 'search-1']);
+    expect(await bodyOrder()).toEqual(['HEADER[header-1]', 'MAIN', 'FOOTER[footer-1]', 'search-1']);
+  });
+
+  it('reconcile: подвал опустел — пустого <footer> нет', async () => {
+    const blocks = [block('header-1', 'header'), block('hero-1', 'page'), block('search-1', 'overlay')];
+    await send({ type: 'reconcile', version: 4, blocks });
+    await expect.poll(async () => (await ofType('reconcile-ack')).at(-1)).toMatchObject({ version: 4, ok: true });
+    expect(await bodyOrder()).toEqual(['HEADER[header-1]', 'MAIN', 'search-1']);
   });
 });
 
@@ -115,7 +130,7 @@ describe('переход по ссылке', () => {
       { type: 'select-block', blockId: 'header-1' },
       { type: 'navigate', path: '/o-nas' },
     ]);
-    expect(await bodyOrder()).toContain('header-1');
+    expect(await bodyOrder()).toContain('HEADER[header-1]');
   });
 
   it('ссылка подпункта — select-subsection, потом navigate', async () => {

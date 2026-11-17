@@ -45,7 +45,8 @@ permissions:
 jobs:
   theme-qa:
     name: theme-qa (${{ matrix.theme }})
-    runs-on: ubuntu-latest
+    # Образ закреплён (17.11): на ubuntu-latest = 26.04 Playwright не ставит Chromium (см. ci.yml, build-and-test).
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false

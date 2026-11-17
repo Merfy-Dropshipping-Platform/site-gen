@@ -17,7 +17,10 @@ permissions:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    # Образ закреплён (17.11): ubuntu-latest стал Ubuntu 26.04, и Playwright не ставит на него Chromium
+    # («Playwright does not support chromium on ubuntu26.04-x64») — шаг «Chromium для тестов stand-check» падал до
+    # тестов у каждого PR. Вернуть ubuntu-latest — когда Playwright пакетов поддержит 26.04.
+    runs-on: ubuntu-24.04
     # Без лимита зависший шаг доживает до общего потолка в шесть часов, и
     # гейт не даёт ни зелёного, ни красного — прод в это время выкатить нечем.
     timeout-minutes: 25
@@ -317,7 +320,7 @@ jobs:
 
   satin-structural-conformance:
     needs: satin-build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Без лимита зависший шаг доживает до общего потолка в шесть часов, и
     # гейт не даёт ни зелёного, ни красного — прод в это время выкатить
     # нечем (см. также b20-ci-speed, 470142b1).
@@ -2193,7 +2196,7 @@ jobs:
   # Результат (dist/) уходит вниз по прогону артефактом satin-dist, который
   # скачивают обе джобы ниже (needs: satin-build).
   satin-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -2319,7 +2322,7 @@ jobs:
   # уберёт шаг, изменит его текст или переставит команды местами.
   satin-dictated-conformance:
     needs: satin-build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -2405,7 +2408,7 @@ jobs:
   publish-sdk-docs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     needs: build-and-test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -2473,7 +2476,7 @@ jobs:
       - satin-build
       - satin-structural-conformance
       - satin-dictated-conformance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Deploy through the Coolify API
         # Вебхуком нельзя: при выключенном автодеплое Coolify его игнорирует, а

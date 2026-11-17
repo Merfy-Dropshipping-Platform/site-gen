@@ -97,6 +97,14 @@ function isProductPhoto(image: HtmlElement): boolean {
   return false;
 }
 
+// Внутри скрытого (`hidden` у элемента или предка): другой вид той же страницы — хаб кабинета, детали заказа. Его
+// заголовок не рисуется и в дереве доступности его нет, поэтому порядок заголовков считается без него (18.11); пустые
+// заголовки и тексты ссылок в скрытом по-прежнему находятся — вид покажут.
+function insideHidden(element: HtmlElement | null): boolean {
+  for (let at = element; at !== null; at = at.parent) if (at.hasAttribute('hidden')) return true;
+  return false;
+}
+
 // Своё правило: у фото товара alt стоит, но пустой (без alt вовсе — уже `wcag/h37`).
 function productPhotosWithoutAlt(root: HtmlElement): Omit<CheckFinding, 'count'>[] {
   return root
@@ -140,8 +148,9 @@ export async function semanticHtml(source: string): Promise<CheckFinding[]> {
   const root = new Parser(await validator.getConfigFor('page.html')).parseHtml(html);
   const fromRules = report.results
     .flatMap((result) => result.messages)
-    .map((message) => {
+    .flatMap((message) => {
       const element = message.selector ? root.querySelector(message.selector) : null;
+      if (message.ruleId === 'heading-level' && insideHidden(element)) return [];
       return {
         place: 'html' as const,
         check: 'semantic',

@@ -9,6 +9,8 @@ const { settings, shop } = Astro.props;
      пишет script.ts по сторам ctx.checkout; запросы — у модуля оформления. -->
 <div class="mx-auto grid max-w-page gap-12 px-4 font-body text-foreground md:grid-cols-2 md:gap-16 lg:gap-20">
   <form data-ref="form" data-action="submit:pay" novalidate class="flex min-w-0 flex-col gap-10 md:ml-auto md:w-full md:max-w-100">
+    <!-- h1 страницы — для поиска и чтения с экрана (семантика 18.11); на вид страница оформления заголовка не имеет. -->
+    <h1 class="sr-only">Оформление заказа</h1>
     <section class="flex flex-col gap-4" aria-labelledby="checkout-contacts">
       <div class="flex items-center justify-between gap-4">
         <h2 id="checkout-contacts" class="m-0 font-heading weight-heading tracking-heading text-xl text-heading">Контакты</h2>

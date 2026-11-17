@@ -114,8 +114,27 @@ function productPhotosWithoutAlt(root: HtmlElement): Omit<CheckFinding, 'count'>
     }));
 }
 
+// Содержимое <template> браузер не рисует, поисковик не читает: это заготовки строк, которые скрипт секции клонирует
+// (способы доставки, пункты выдачи). В проверку идёт пустой шаблон верхнего уровня; вложенные уходят вместе с ним.
+const TEMPLATE_TAG = /<(\/?)template\b[^>]*>/gi;
+
+export function withoutTemplates(html: string): string {
+  let out = '';
+  let depth = 0;
+  let last = 0;
+  for (const match of html.matchAll(TEMPLATE_TAG)) {
+    if (depth === 0) out += html.slice(last, match.index);
+    const closing = match[1] === '/';
+    if (!closing && depth++ === 0) out += match[0];
+    if (closing && depth > 0 && --depth === 0) out += match[0];
+    last = match.index + match[0].length;
+  }
+  return depth === 0 ? out + html.slice(last) : out;
+}
+
 // Находки семантики по HTML страницы целиком; какие секции показывать — решает вызывающий (`inSections`).
-export async function semanticHtml(html: string): Promise<CheckFinding[]> {
+export async function semanticHtml(source: string): Promise<CheckFinding[]> {
+  const html = withoutTemplates(source);
   const report = await validator.validateString(html, 'page.html');
   // То же дерево, что у правил: селектор сообщения находит в нём элемент, от него — обёртка секции.
   const root = new Parser(await validator.getConfigFor('page.html')).parseHtml(html);

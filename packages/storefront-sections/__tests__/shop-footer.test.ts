@@ -186,7 +186,8 @@ describe('«Подвал»: рассылка', () => {
 
   it('пустые заголовок и текст — их нет, форма есть', async () => {
     const source = await html({ settings: { heading: '', text: '' } });
-    expect(tags(source, 'h2')).toEqual([]);
+    // Заголовки колонок — тоже h2 (семантика 18.11): заголовка рассылки среди них нет.
+    expect(tags(source, 'h2').filter((tag) => tag.includes('data-heading-size'))).toEqual([]);
     expect(source).toContain('<form');
   });
 });
@@ -196,7 +197,8 @@ describe('«Подвал»: ссылки из данных магазина', ()
     const source = await html();
     expect(source).toContain('Навигация');
     for (const href of ['/catalog', '/o-nas', '/delivery', '/payment']) expect(source).toContain(`href="${href}"`);
-    expect(source).toMatch(/<h3\b[^>]*>Покупателям<\/h3>/);
+    // Колонка — h2: после h1 страницы уровень не скачет (семантика 18.11).
+    expect(source).toMatch(/<h2\b[^>]*>Покупателям<\/h2>/);
     expect(source).not.toContain('href="/buyers"');
     for (const title of ['Информация', 'Контакты']) expect(source).not.toContain(title);
   });

@@ -27,17 +27,19 @@ const section = (name: string, extra: object = {}) => ({
 });
 const instance = (id: string, name: string) => ({ id, section: name, settings: {} });
 
-function shopInputs(): BuildInputs {
+function shopInputs(withHeader = false): BuildInputs {
   return changedInputs((inputs) => {
     inputs.revision = { tokens: {}, settings: {}, pages: [PAGE] };
     inputs.code = {
       sections: [
+        ...(withHeader ? [section('shop:header')] : []),
         section('shop:footer'),
         section('shop:hero'),
         section('shop:cart-drawer', { role: 'cart-drawer' }),
         section('shop:cookie-banner', { role: 'cookie-banner' }),
       ],
       pages: {
+        ...(withHeader ? { header: [instance('header-1', 'shop:header')] } : {}),
         home: [instance('hero-1', 'shop:hero')],
         footer: [instance('footer-1', 'shop:footer')],
         overlay: [instance('drawer-1', 'shop:cart-drawer'), instance('banner-1', 'shop:cookie-banner')],
@@ -87,6 +89,21 @@ describe('группа overlay', () => {
       expect(namesOf(seen[0]?.sections ?? [])).toEqual([...own]);
       expect(namesOf(seen[0]?.footer ?? [])).toEqual(['shop:footer', 'shop:cart-drawer', 'shop:cookie-banner']);
     }
+  });
+
+  it('ориентиры (семантика 18.11): шапка — в <header>, подвал — в <footer>, окна — после него и вне ориентира', async () => {
+    const seen: ShopPageLocals[] = [];
+    await renderShopPage(shopInputs(true), '/', themeOf(seen), pageOf([]));
+    const [locals] = seen;
+    expect(locals?.header).toHaveLength(1);
+    expect(locals?.header[0]).toMatch(/^<header><merfy-section data-section="shop:header"[\s\S]*<\/merfy-section><\/header>$/);
+    expect(locals?.footer[0]).toMatch(/^<footer><merfy-section data-section="shop:footer"[\s\S]*<\/merfy-section><\/footer>$/);
+    expect(namesOf(locals?.footer.slice(1) ?? [])).toEqual(['shop:cart-drawer', 'shop:cookie-banner']);
+    expect(locals?.footer.slice(1).some((html) => html.includes('<footer'))).toBe(false);
+    // Шапки нет — пустого <header> тоже нет.
+    const without: ShopPageLocals[] = [];
+    await renderShopPage(shopInputs(), '/', themeOf(without), pageOf([]));
+    expect(without[0]?.header).toEqual([]);
   });
 
   it('обёртка секции с ролью — data-role; у секции без роли атрибута нет', async () => {

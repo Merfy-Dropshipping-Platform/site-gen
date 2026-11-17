@@ -405,8 +405,25 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     var first = all()[0];
     return (first && first.parentNode) || document.querySelector('main') || document.body;
   }
-  // Место секции по группе (часть 4, Р1-4-11): header — перед <main>, page — в <main>, footer — сразу после <main>,
-  // overlay — в конец <body>; внутри группы — порядок списка; группы нет — page. <main> нет — все в контейнер, как раньше.
+  // Ориентир шапки или подвала рядом с <main> (семантика 18.11, как pageLocals в head.ts): <header> прямо перед ним,
+  // <footer> прямо после; нет — создаётся.
+  function landmarkOf(main, tag) {
+    var near = tag === 'header' ? main.previousElementSibling : main.nextElementSibling;
+    if (near && near.tagName === tag.toUpperCase()) return near;
+    var made = document.createElement(tag);
+    main.parentNode.insertBefore(made, tag === 'header' ? main : main.nextSibling);
+    return made;
+  }
+  function fillLandmark(main, tag, list) {
+    var box = landmarkOf(main, tag);
+    list.forEach(function (node) {
+      box.appendChild(node);
+    });
+    if (!box.firstElementChild) box.parentNode.removeChild(box);
+  }
+  // Место секции по группе (часть 4, Р1-4-11): header — в <header> перед <main>, page — в <main>, footer — в <footer>
+  // сразу после <main>, overlay — в конец <body>; внутри группы — порядок списка; группы нет — page. <main> нет — все в
+  // контейнер, как раньше.
   function placeAll(blocks, nodes, container) {
     var main = document.querySelector('main');
     var groups = { header: [], page: [], footer: [], overlay: [] };
@@ -424,18 +441,11 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       });
       return;
     }
-    groups.header.forEach(function (node) {
-      main.parentNode.insertBefore(node, main);
-    });
+    fillLandmark(main, 'header', groups.header);
     groups.page.forEach(function (node) {
       main.appendChild(node);
     });
-    groups.footer
-      .slice()
-      .reverse()
-      .forEach(function (node) {
-        main.parentNode.insertBefore(node, main.nextSibling);
-      });
+    fillLandmark(main, 'footer', groups.footer);
     // Секции поверх страницы (блок 12, 12.2) — после подвала, в конец <body>.
     groups.overlay.forEach(function (node) {
       document.body.appendChild(node);

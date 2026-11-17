@@ -1,10 +1,10 @@
 ---
 // Баннер cookie (блок 13 «Секций и SDK», часть 13б): тексты, расположения и вид — как у баннера пяти тем на проде,
 // цвета и скругления — токенами темы. Ссылка на политику — только если она есть у магазина. Скрыт, пока ядро не
-// покажет его (script.ts).
+// покажет его (script.ts). Ориентир — тег <section> с подписью, а не div с role="region" (семантика 18.11).
 const { settings, shop } = Astro.props;
 ---
-<div data-ref="banner" hidden role="region" aria-label="Согласие на cookie" class:list={['scheme-cookie-banner fixed z-50 font-body', { 'inset-x-4 bottom-4 md:right-auto md:bottom-6 md:left-6 md:w-110': settings['content-position'] === 'bottom-left', 'inset-x-4 bottom-4 md:bottom-6 md:mx-auto md:w-110': settings['content-position'] === 'bottom-center', 'inset-x-4 bottom-4 md:bottom-6 md:left-auto md:right-6 md:w-110': settings['content-position'] === 'bottom-right', 'inset-x-0 bottom-0': settings['content-position'] === 'bar' }]}>
+<section data-ref="banner" hidden aria-label="Согласие на cookie" class:list={['scheme-cookie-banner fixed z-50 font-body', { 'inset-x-4 bottom-4 md:right-auto md:bottom-6 md:left-6 md:w-110': settings['content-position'] === 'bottom-left', 'inset-x-4 bottom-4 md:bottom-6 md:mx-auto md:w-110': settings['content-position'] === 'bottom-center', 'inset-x-4 bottom-4 md:bottom-6 md:left-auto md:right-6 md:w-110': settings['content-position'] === 'bottom-right', 'inset-x-0 bottom-0': settings['content-position'] === 'bar' }]}>
   <div class:list={['flex flex-col gap-4 border border-border bg-background p-5 text-foreground shadow-popover', { 'rounded-card': settings['content-position'] !== 'bar', 'md:flex-row md:items-center md:justify-between': settings['content-position'] === 'bar' }]}>
     <div class="flex flex-col gap-2">
       {settings.heading && <p class="m-0 font-heading weight-heading text-base text-heading" set:html={settings.heading} />}
@@ -22,4 +22,4 @@ const { settings, shop } = Astro.props;
       )}
     </div>
   </div>
-</div>
+</section>

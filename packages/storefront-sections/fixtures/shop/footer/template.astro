@@ -62,7 +62,7 @@ const { settings, theme, shop } = Astro.props;
       <div class="contents md:in-data-[layout=2-part]:flex md:in-data-[layout=2-part]:gap-16 md:in-data-[layout=minimal]:flex md:in-data-[layout=minimal]:flex-wrap md:in-data-[layout=minimal]:gap-x-8">
         {settings.menu.items.some((item) => item.items.length === 0) && (
           <nav aria-label="Навигация" class="flex flex-col gap-2 md:gap-4">
-            <h3 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">Навигация</h3>
+            <h2 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">Навигация</h2>
             <ul class="m-0 flex list-none flex-col p-0 md:gap-3 md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:gap-6">
               {settings.menu.items.filter((item) => item.items.length === 0).map((item) => (
                 <li><a class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={item.url}>{item.label}</a></li>
@@ -72,7 +72,7 @@ const { settings, theme, shop } = Astro.props;
         )}
         {settings.menu.items.filter((item) => item.items.length > 0).map((item) => (
           <nav aria-label={item.label} class="flex flex-col gap-2 md:gap-4">
-            <h3 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">{item.label}</h3>
+            <h2 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">{item.label}</h2>
             <ul class="m-0 flex list-none flex-col p-0 md:gap-3 md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:gap-6">
               {item.items.map((child) => (
                 <li><a class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={child.url}>{child.label}</a></li>
@@ -82,7 +82,7 @@ const { settings, theme, shop } = Astro.props;
         ))}
         {shop.policies.length > 0 && (
           <nav aria-label="Информация" class="flex flex-col gap-2 md:gap-4">
-            <h3 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">Информация</h3>
+            <h2 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">Информация</h2>
             <ul class="m-0 flex list-none flex-col p-0 md:gap-3 md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:gap-6">
               {shop.policies.map((policy) => (
                 <li><a class="flex min-h-11 items-center text-base text-muted-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={policy.url}>{policy.title}</a></li>
@@ -92,7 +92,7 @@ const { settings, theme, shop } = Astro.props;
         )}
         {(shop.contacts.phone || shop.contacts.email || shop.contacts.fields.length > 0) && (
           <div class="flex flex-col gap-2 md:gap-4">
-            <h3 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">Контакты</h3>
+            <h2 class="m-0 text-base weight-body text-heading in-data-[capitals=all]:uppercase in-data-[capitals=columns]:uppercase in-data-[layout=minimal]:hidden">Контакты</h2>
             <ul class="m-0 flex list-none flex-col p-0 text-base text-muted-foreground md:gap-3 md:in-data-[layout=minimal]:flex-row md:in-data-[layout=minimal]:gap-6">
               {shop.contacts.phone && <li><a class="flex min-h-11 items-center text-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={`tel:${shop.contacts.phone}`}>{shop.contacts.phone}</a></li>}
               {shop.contacts.email && <li><a class="flex min-h-11 items-center break-all text-foreground no-underline hover:text-heading in-data-[layout=2-part-asymmetric]:justify-center md:min-h-0 md:in-data-[layout=2-part-asymmetric]:justify-start" href={`mailto:${shop.contacts.email}`}>{shop.contacts.email}</a></li>}

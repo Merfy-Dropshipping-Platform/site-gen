@@ -13,9 +13,11 @@ const SOURCES = [
   'storefront-builder/src',
 ];
 // analytics — ещё и поле аналитики страницы (storefront-build/src/head.ts: ConfigAnalytics), не только имя секции:
-// сторож на него не смотрит.
+// сторож на него не смотрит. Полное имя секции — «префикс:имя» с одним двоеточием (SECTION_NAME во входах сборки,
+// storefront-build/src/inputs.ts); имя события ядра (merfy:section:mount, 18.11 — замер Web Vitals снимка) — не имя
+// секции, у него двоеточий два.
 const NAMES =
-  /^(?:(?:merfy|shop|platform):.+|hero|cart-badge|heading-size|button-label|button-link|faq|open-first|logo-position|menu-type|text-size|newsletter|error-404)$/;
+  /^(?:(?:merfy|shop|platform):[a-z0-9]+(?:-[a-z0-9]+)*|hero|cart-badge|heading-size|button-label|button-link|faq|open-first|logo-position|menu-type|text-size|newsletter|error-404)$/;
 // Сервис sites (часть 4): страницы магазина и меню новой темы — тоже без имён секций; тесты (*.spec.ts) — нет.
 const SITES_SOURCES = ['../src/pages'];
 const LITERAL = /'([^'\\\n]*)'|"([^"\\\n]*)"|`([^`\\]*)`/g;
@@ -39,5 +41,10 @@ describe('в коде платформы нет имён секций и их п
 
   it('сторож видит такую строку', () => {
     expect(NAMES.test('shop:hero') && NAMES.test('heading-size') && !NAMES.test('heading')).toBe(true);
+    expect(NAMES.test('platform:cart-badge') && NAMES.test('merfy:hero')).toBe(true);
+  });
+
+  it('имя события ядра — не имя секции', () => {
+    expect(NAMES.test('merfy:section:mount') || NAMES.test('merfy:cart:add')).toBe(false);
   });
 });

@@ -7,7 +7,9 @@ import {
   LOOK_PATTERN,
   MARKS_OVERRUN_MS,
   MIN_BUDGET_MS,
+  MIN_LIGHTHOUSE_MS,
   SECTION_DETECTOR_TIMEOUT_MS,
+  SECTION_LIGHTHOUSE_TIMEOUT_MS,
   SECTION_MARKS_TIMEOUT_MS,
   SECTION_SEMANTIC_TIMEOUT_MS,
   nestReply,
@@ -18,7 +20,7 @@ import {
   type LookReply,
 } from '../src/look/look-job';
 import { LookError, type LayoutFinding } from '../src/look/look-types';
-import { fakeRenderer, type FakeRendererOptions } from './look-fixture';
+import { CLEAN_VITALS, fakeRenderer, type FakeRendererOptions } from './look-fixture';
 
 const NOW = 1_800_000_000_000;
 const SITE = '3a9626f7-390d-4a66-bca5-a3b806ca6c1b';
@@ -907,6 +909,143 @@ describe('снимок черновика · проверки мест html и b
     const { deps } = withPage();
     expect(errorOf(await runLookJob(deps, job({ section: 'hero-1', sections: [] })))?.code).toBe('invalid');
     expect(errorOf(await runLookJob(deps, job({ sections: ['hero 1'] })))?.code).toBe('invalid');
+  });
+});
+
+describe('снимок черновика · Web Vitals и Lighthouse (место browser)', () => {
+  // Прыжки при загрузке в двух секциях (вместе CLS 0,20) и находки Lighthouse в тех же секциях.
+  const JUMPS = {
+    ...CLEAN_VITALS,
+    shifts: [
+      { value: 0.15, t: 400, input: false, section: 'hero-1', where: 'секция выросла на 300 px' },
+      { value: 0.05, t: 450, input: false, section: 'faq-1', where: 'секция выросла на 90 px' },
+    ],
+  };
+  const AUDIT = [
+    { audit: 'unsized-images', section: 'hero-1', where: 'img scarf.png' },
+    { audit: 'crawlable-anchors', section: 'faq-1', where: 'a «Каталог»' },
+  ];
+  const browserOf = (reply: LookReply) =>
+    snapshotOf(reply)
+      .checks.findings.filter((finding) => finding.place === 'browser')
+      .map((finding) => `${finding.check}:${finding.rule}:${finding.section}`);
+  const pass = async (ms: number) => {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    await vi.advanceTimersByTimeAsync(ms);
+  };
+  // Часы после открытия страницы: до срока задания остаётся `left`.
+  const withClock = (left: number, renderer: FakeRendererOptions) => {
+    const made = setup(renderer);
+    const open = made.deps.renderer.open.bind(made.deps.renderer);
+    made.deps.renderer = {
+      open: async (input) => {
+        const rendered = await open(input);
+        made.deps.now = () => NOW + 55_000 - left;
+        return rendered;
+      },
+    };
+    return made;
+  };
+
+  it('снимок секции — находки только этой секции; замер и Lighthouse — на первом устройстве, где её видно', async () => {
+    const { deps, fake } = setup({
+      mobile: { vitals: JUMPS, lighthouse: AUDIT },
+      desktop: { vitals: JUMPS, lighthouse: AUDIT },
+    });
+    const reply = await runLookJob(deps, job({ section: 'hero-1' }));
+    expect(browserOf(reply)).toEqual(['vitals:cls:hero-1', 'lighthouse:unsized-images:hero-1']);
+    expect(snapshotOf(reply).checks.failed).toEqual([]);
+    expect(fake.sectionCalls.vitals).toEqual(['mobile']);
+    expect(fake.sectionCalls.lighthouse).toEqual(['mobile']);
+  });
+
+  it('sections задания — находки изменённых секций; секцию видно только на компьютере — проверки там', async () => {
+    const changed = setup({ mobile: { vitals: JUMPS, lighthouse: AUDIT } });
+    const reply = await runLookJob(changed.deps, job({ devices: 'mobile', section: 'hero-1', sections: ['faq-1'] }));
+    expect(browserOf(reply)).toEqual(['vitals:cls:faq-1', 'lighthouse:crawlable-anchors:faq-1']);
+
+    const desktopOnly = setup({ mobile: { section: { place: null } }, desktop: { vitals: JUMPS } });
+    await runLookJob(desktopOnly.deps, job({ section: 'hero-1' }));
+    expect(desktopOnly.fake.sectionCalls.vitals).toEqual(['desktop']);
+  });
+
+  it('снимок страницы — находки всех секций; в журнале — число находок каждой проверки', async () => {
+    const { deps, log } = setup({ mobile: { vitals: JUMPS, lighthouse: AUDIT } });
+    expect(browserOf(await runLookJob(deps, job({ devices: 'mobile' })))).toEqual([
+      'vitals:cls:hero-1',
+      'vitals:cls:faq-1',
+      'lighthouse:unsized-images:hero-1',
+      'lighthouse:crawlable-anchors:faq-1',
+    ]);
+
+    let deliver: ((delivery: Delivery) => Promise<void>) | undefined;
+    const broker = {
+      consume: (_queue: string, _prefetch: number, next: (delivery: Delivery) => Promise<void>) => {
+        deliver = next;
+        return Promise.resolve();
+      },
+      reply: () => Promise.resolve(),
+    };
+    await startLooks(broker, deps);
+    await deliver?.({ exchange: '', body: job({ devices: 'mobile' }) });
+    expect(log).toHaveBeenCalledWith('look-done', expect.objectContaining({ semantic: 0, vitals: 2, lighthouse: 2 }));
+  });
+
+  it('замер упал или ответил не по форме — причина в failed, Lighthouse и снимок на месте', async () => {
+    const broken = setup({ mobile: { vitalsError: new Error('замер Web Vitals не подключился'), lighthouse: AUDIT } });
+    const reply = await runLookJob(broken.deps, job({ devices: 'mobile', section: 'hero-1' }));
+    expect(browserOf(reply)).toEqual(['lighthouse:unsized-images:hero-1']);
+    expect(snapshotOf(reply).checks.failed).toEqual([
+      { place: 'browser', check: 'vitals', reason: 'замер Web Vitals не подключился' },
+    ]);
+    expect(snapshotOf(reply).devices[0]?.images).toHaveLength(1);
+
+    const odd = setup({ mobile: { vitals: { ...CLEAN_VITALS, shifts: 'нет' } } });
+    const failed = snapshotOf(await runLookJob(odd.deps, job({ devices: 'mobile', section: 'hero-1' }))).checks.failed;
+    expect(failed.map((entry) => `${entry.place}:${entry.check}`)).toEqual(['browser:vitals']);
+    expect(failed[0]?.reason).toMatch(/^ответ страницы не по форме: shifts — /);
+  });
+
+  it('Lighthouse упал — причина в failed, замер и снимок на месте', async () => {
+    const { deps } = setup({ mobile: { vitals: JUMPS, lighthouseError: new Error('Target closed') } });
+    const reply = await runLookJob(deps, job({ devices: 'mobile', section: 'hero-1' }));
+    expect(browserOf(reply)).toEqual(['vitals:cls:hero-1']);
+    expect(snapshotOf(reply).checks.failed).toEqual([
+      { place: 'browser', check: 'lighthouse', reason: 'Target closed' },
+    ]);
+  });
+
+  it('Lighthouse завис — в снимке секции ждём не дольше предела, проверка меток идёт дальше', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { deps } = setup({ mobile: { lighthouseHangs: true } });
+      const running = runLookJob(deps, job({ devices: 'mobile', section: 'hero-1' }));
+      await pass(SECTION_LIGHTHOUSE_TIMEOUT_MS);
+      const snapshot = snapshotOf(await running);
+      expect(SECTION_LIGHTHOUSE_TIMEOUT_MS).toBe(6_000);
+      expect(snapshot.checks.failed).toEqual([{ place: 'browser', check: 'lighthouse', reason: 'не успел за 6 с' }]);
+      expect(snapshot.marks).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('до срока мало — Lighthouse не начинается (его не прервать), остальные проверки идут', async () => {
+    // Остаток 9 с: запас ответа 1,5 с, метки 3 + 2 с — Lighthouse остаётся 2,5 с, меньше 3 с.
+    const short = withClock(9_000, { mobile: { vitals: JUMPS, lighthouse: AUDIT } });
+    const reply = await runLookJob(short.deps, job({ devices: 'mobile', section: 'hero-1' }));
+    expect(MIN_LIGHTHOUSE_MS).toBe(3_000);
+    expect(short.fake.sectionCalls.lighthouse).toEqual([]);
+    expect(browserOf(reply)).toEqual(['vitals:cls:hero-1']);
+    expect(snapshotOf(reply).checks.failed).toEqual([
+      { place: 'browser', check: 'lighthouse', reason: 'не успел: срок снимка почти вышел' },
+    ]);
+
+    // Остаток 10 с: Lighthouse остаётся 3,5 с — начинается.
+    const enough = withClock(10_000, { mobile: { lighthouse: AUDIT } });
+    expect(browserOf(await runLookJob(enough.deps, job({ devices: 'mobile', section: 'hero-1' })))).toEqual([
+      'lighthouse:unsized-images:hero-1',
+    ]);
   });
 });
 

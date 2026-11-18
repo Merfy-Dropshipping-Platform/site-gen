@@ -21,6 +21,9 @@ export default defineConfig({
         // Снимок черновика (28.10): задание, вес снимков, фильтр адресов. Браузерная часть (look-browser, look-page)
         // проверяется настоящим Chromium в __tests__/look-browser.test.ts — без браузера тест пропускается.
         'src/look/{look-job,look-fit,look-guard,look-queue,look-layout}.ts',
+        // Web Vitals и Lighthouse в снимке (18.11): разбор и находки. Скрипты страниц и подключение Lighthouse к вкладке
+        // (look-audit) проверяет настоящий Chromium в __tests__/look-vitals-browser.test.ts.
+        'src/checks/browser/{vitals,lighthouse}.ts',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },

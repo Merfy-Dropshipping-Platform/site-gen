@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import type { Broker } from '../broker';
+import { lighthouseFindings } from '../checks/browser/lighthouse';
 import { semanticBrowser } from '../checks/browser/semantic';
-import { inSections, type CheckReport } from '../checks/finding';
+import { vitalsFindings } from '../checks/browser/vitals';
+import { inSections, type CheckFinding, type CheckReport } from '../checks/finding';
 import { semanticHtml } from '../checks/html/semantic';
 import { errorText } from '../errors';
 import type { Log } from '../log';
@@ -54,6 +56,14 @@ export const PAGE_MARKS_TIMEOUT_MS = 8_000;
 // страницы — свободнее. Не успел — проверки по HTML всё равно в ответе, причина — в `checks.failed`.
 export const SECTION_SEMANTIC_TIMEOUT_MS = 2_000;
 export const PAGE_SEMANTIC_TIMEOUT_MS = 5_000;
+// Предел чтения Web Vitals (`checks/browser/vitals.ts`): данные собраны при загрузке, чтение — доли секунды.
+export const VITALS_TIMEOUT_MS = 1_000;
+// Предел Lighthouse по вкладке (`checks/browser/lighthouse.ts`): на главной nova 2,1 с (замер 18.11, Mac), на сервере
+// дольше. Прервать его нельзя, поэтому он начинается, только если до срока остаётся время и на него, и на проверку
+// меток: не успев, он мешал бы ей на той же странице.
+export const SECTION_LIGHTHOUSE_TIMEOUT_MS = 6_000;
+export const PAGE_LIGHTHOUSE_TIMEOUT_MS = 10_000;
+export const MIN_LIGHTHOUSE_MS = 3_000;
 // Сверх предела — на метку, начатую в последний момент; дальше проверка считается зависшей.
 export const MARKS_OVERRUN_MS = 2_000;
 
@@ -135,8 +145,9 @@ export interface LookSnapshot {
   layout: { ok: true } | { ok: false; reason: string };
   // Сначала находки детектора, потом проверок вёрстки (телефон первым).
   findings: LookFinding[];
-  // Находки мест проверок (`src/checks/`) в общем виде: сейчас семантика по HTML и в странице. Только секций из
-  // `sections` задания (нет — секции снимка; снимок страницы — все). Проверка не отработала — причина в `failed`.
+  // Находки мест проверок (`src/checks/`) в общем виде: семантика по HTML и в странице, Web Vitals загрузки, Lighthouse
+  // по вкладке. Только секций из `sections` задания (нет — секции снимка; снимок страницы — все). Проверка не
+  // отработала — причина в `failed`.
   checks: CheckReport;
   // Проверка меток витрины кликами (`look-marks.ts`): отказ самой проверки — причина, а не поломка магазина.
   marks: { ok: true; results: LookMark[] } | { ok: false; reason: string };
@@ -263,15 +274,22 @@ async function marksOn(sessions: PageSession[], limitMs: number, section?: strin
   }
 }
 
-// Проверки мест `html` и `browser` (`src/checks/`): HTML превью — без браузера, axe — в открытой странице, в пределе
-// `limitMs`. Отказ одной проверки не мешает другой и снимку — он идёт в `failed`.
+// Пределы проверок в открытой странице. У Lighthouse — функцией: его предел считается, когда до него дошла очередь.
+interface BrowserLimits {
+  semantic: number;
+  vitals: number;
+  lighthouse: () => number;
+}
+
+// Проверки мест `html` и `browser` (`src/checks/`): HTML превью — без браузера, в открытой странице — axe, Web Vitals и
+// Lighthouse, каждая в своём пределе. Отказ одной проверки не мешает другим и снимку — он идёт в `failed`.
 async function checksOn(
   html: string,
   session: PageSession | undefined,
   wanted: readonly string[] | undefined,
-  limitMs: number,
+  limits: BrowserLimits,
 ): Promise<CheckReport> {
-  const parts = [await htmlChecks(html), await browserChecks(session, limitMs)];
+  const parts = [await htmlChecks(html), ...(await browserChecks(session, limits))];
   return {
     findings: inSections(
       parts.flatMap((part) => part.findings),
@@ -289,21 +307,60 @@ async function htmlChecks(html: string): Promise<CheckReport> {
   }
 }
 
-async function browserChecks(session: PageSession | undefined, limitMs: number): Promise<CheckReport> {
-  const refused = (reason: string): CheckReport => ({
-    findings: [],
-    failed: [{ place: 'browser', check: 'semantic', reason }],
-  });
-  if (session === undefined) return refused('секции не видно');
-  if (limitMs <= 0) return refused('не успел: срок снимка почти вышел');
+// Ответ страницы не по форме — первая ошибка разбора с путём (текст ZodError — JSON всех ошибок, первая строка — «[»).
+const checkFailure = (error: unknown): string => {
+  if (!(error instanceof z.ZodError)) return firstLine(errorText(error));
+  const issue = error.issues[0];
+  const path = issue === undefined || issue.path.length === 0 ? 'весь ответ' : issue.path.join('.');
+  return `ответ страницы не по форме: ${path} — ${issue?.message ?? 'не тот вид'}`.slice(0, 200);
+};
+
+// Одна проверка в открытой странице: работа страницы в пределе `limitMs` и разбор её ответа. Меньше `minMs` — не
+// начинается.
+async function browserCheck(
+  check: string,
+  limitMs: number,
+  work: () => Promise<unknown>,
+  parse: (raw: unknown) => CheckFinding[],
+  minMs = 1,
+): Promise<CheckReport> {
+  const refused = (reason: string): CheckReport => ({ findings: [], failed: [{ place: 'browser', check, reason }] });
+  if (limitMs < minMs) return refused('не успел: срок снимка почти вышел');
   try {
-    return { findings: semanticBrowser(await within(session.semantic(), limitMs)), failed: [] };
+    return { findings: parse(await within(work(), limitMs)), failed: [] };
   } catch (error) {
     if (error instanceof LookError) throw error;
-    return refused(
-      error instanceof DetectorLate ? `не успел за ${secondsText(limitMs)} с` : firstLine(errorText(error)),
-    );
+    return refused(error instanceof DetectorLate ? `не успел за ${secondsText(limitMs)} с` : checkFailure(error));
   }
+}
+
+// По очереди, на одной странице: axe, Web Vitals (данные загрузки, телефон первым), Lighthouse — самый долгий, последним.
+async function browserChecks(session: PageSession | undefined, limits: BrowserLimits): Promise<CheckReport[]> {
+  if (session === undefined) {
+    const failed = ['semantic', 'vitals', 'lighthouse'].map((check) => ({
+      place: 'browser' as const,
+      check,
+      reason: 'секции не видно',
+    }));
+    return [{ findings: [], failed }];
+  }
+  const device = session.device;
+  return [
+    await browserCheck('semantic', limits.semantic, () => session.semantic(), semanticBrowser),
+    await browserCheck(
+      'vitals',
+      limits.vitals,
+      () => session.vitals(),
+      (raw) => vitalsFindings(raw, device),
+    ),
+    await browserCheck(
+      'lighthouse',
+      limits.lighthouse(),
+      () => session.lighthouse(),
+      lighthouseFindings,
+      MIN_LIGHTHOUSE_MS,
+    ),
+  ];
 }
 
 const tidyFacts = (facts: PageFacts): PageFacts => ({
@@ -355,11 +412,32 @@ const headOf = (
   ...factsOf(sample),
 });
 
+// Предел Lighthouse: свой, но не больше того, что остаётся до срока за вычетом проверки меток и запаса на ответ.
+const lighthouseRoom = (job: LookJob, now: () => number, own: number, marks: number): number =>
+  Math.min(own, job.deadline - now() - DETECTOR_DEADLINE_MARGIN_MS - marks - MARKS_OVERRUN_MS);
+
+// Пределы проверок в открытой странице: в снимке страницы — свои; в снимке секции — ещё и не дальше срока шлюза.
+const pageLimits = (job: LookJob, now: () => number): BrowserLimits => ({
+  semantic: PAGE_SEMANTIC_TIMEOUT_MS,
+  vitals: VITALS_TIMEOUT_MS,
+  lighthouse: () => lighthouseRoom(job, now, PAGE_LIGHTHOUSE_TIMEOUT_MS, PAGE_MARKS_TIMEOUT_MS),
+});
+
+function sectionLimits(job: LookJob, now: () => number): BrowserLimits {
+  const left = job.deadline - now() - DETECTOR_DEADLINE_MARGIN_MS;
+  return {
+    semantic: Math.min(SECTION_SEMANTIC_TIMEOUT_MS, left),
+    vitals: Math.min(VITALS_TIMEOUT_MS, left),
+    lighthouse: () => lighthouseRoom(job, now, SECTION_LIGHTHOUSE_TIMEOUT_MS, SECTION_MARKS_TIMEOUT_MS),
+  };
+}
+
 // Снимок страницы: экраны, детектор дизайна и проверки вёрстки.
 async function pageSnapshot(
   sessions: PageSession[],
   first: PageSession,
   job: LookJob,
+  now: () => number,
   html: string,
   sample: LookSample | null,
 ): Promise<LookSnapshot> {
@@ -373,7 +451,7 @@ async function pageSnapshot(
     deviceShots(session, shots[index] ?? { device: session.device, total: 1, shots: [] }),
   );
   const motion = job.motion === true ? await motionOn(sessions, job, checks.clipBytes, shots) : undefined;
-  const report = await checksOn(html, first, job.sections, PAGE_SEMANTIC_TIMEOUT_MS);
+  const report = await checksOn(html, first, job.sections, pageLimits(job, now));
   const marks = await marksOn(sessions, PAGE_MARKS_TIMEOUT_MS);
   return {
     ...headOf(job, sample, null),
@@ -436,8 +514,7 @@ async function sectionSnapshot(
   const { detector, findings } = await detectInSection(sessions, places, section, job.deadline - now());
   const devices = sessions.map((session, index) => sectionShots(session, places[index] ?? null, shots[index] ?? null));
   const seen = sessions.filter((_, index) => places[index] != null);
-  const semanticLimit = Math.min(SECTION_SEMANTIC_TIMEOUT_MS, job.deadline - now() - DETECTOR_DEADLINE_MARGIN_MS);
-  const report = await checksOn(html, seen[0], job.sections ?? [section], semanticLimit);
+  const report = await checksOn(html, seen[0], job.sections ?? [section], sectionLimits(job, now));
   const room = job.deadline - now() - DETECTOR_DEADLINE_MARGIN_MS - MARKS_OVERRUN_MS;
   const marks = await marksOn(seen, Math.min(SECTION_MARKS_TIMEOUT_MS, room), section);
   return {
@@ -461,7 +538,7 @@ async function snapshotOf(
   if (first === undefined) throw new Error('отрисовщик не открыл ни одного экрана');
   const sample = parseSample(html);
   return job.section === undefined
-    ? pageSnapshot(sessions, first, job, html, sample)
+    ? pageSnapshot(sessions, first, job, now, html, sample)
     : sectionSnapshot(sessions, job, job.section, now, html, sample);
 }
 
@@ -503,6 +580,27 @@ export async function runLookJob(deps: LookDeps, body: unknown): Promise<LookRep
   return render(deps, job, preview.html);
 }
 
+// Картинки ответа для журнала — экраны, вырезки находок, кадры анимаций: сколько и сколько КБ.
+function imagesOf(snapshot: LookSnapshot): { images: number; kb: number } {
+  const clips = snapshot.findings.flatMap((finding) => (finding.image === null ? [] : [finding.image]));
+  const motion = snapshot.motion?.ok
+    ? snapshot.motion.sections.flatMap((entry) => entry.frames.map((frame) => frame.image))
+    : [];
+  const all = [...snapshot.devices.flatMap((device) => device.images), ...clips, ...motion];
+  return { images: all.length, kb: Math.round(all.reduce((sum, image) => sum + image.length, 0) / 1024) };
+}
+
+// Сколько находок у проверок для журнала: вёрстки (`checks`, прежнее поле `findings`) и каждой проверки поля `checks`.
+function foundByCheck(snapshot: LookSnapshot): Record<'checks' | 'semantic' | 'vitals' | 'lighthouse', number> {
+  const found = (check: string): number => snapshot.checks.findings.filter((finding) => finding.check === check).length;
+  return {
+    checks: snapshot.findings.filter((finding) => finding.source === 'layout').length,
+    semantic: found('semantic'),
+    vitals: found('vitals'),
+    lighthouse: found('lighthouse'),
+  };
+}
+
 function logOutcome(deps: LookDeps, body: unknown, reply: LookReply, startedAt: number): void {
   const job = parseLookJob(body);
   const fields = {
@@ -515,17 +613,15 @@ function logOutcome(deps: LookDeps, body: unknown, reply: LookReply, startedAt: 
     deps.log('look-failed', { ...fields, code: reply.error.code, error: reply.error.message });
     return;
   }
-  const { findings, layout } = reply.snapshot;
-  const clips = findings.flatMap((finding) => (finding.image === null ? [] : [finding.image]));
-  const motion = reply.snapshot.motion?.ok
-    ? reply.snapshot.motion.sections.flatMap((entry) => entry.frames.map((frame) => frame.image))
-    : [];
-  const images = [...reply.snapshot.devices.flatMap((device) => device.images), ...clips, ...motion];
-  const kb = Math.round(images.reduce((sum, image) => sum + image.length, 0) / 1024);
+  const { layout } = reply.snapshot;
   const devices = reply.snapshot.devices.map((device) => device.device).join(',');
-  const checks = findings.filter((finding) => finding.source === 'layout').length;
-  const semantic = reply.snapshot.checks.findings.length;
-  deps.log('look-done', { ...fields, devices, full: reply.snapshot.full, images: images.length, kb, checks, semantic });
+  deps.log('look-done', {
+    ...fields,
+    devices,
+    full: reply.snapshot.full,
+    ...imagesOf(reply.snapshot),
+    ...foundByCheck(reply.snapshot),
+  });
   for (const failed of reply.snapshot.checks.failed) {
     deps.log('look-check-failed', { ...fields, place: failed.place, check: failed.check, error: failed.reason });
   }

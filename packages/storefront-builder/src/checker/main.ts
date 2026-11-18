@@ -28,10 +28,14 @@ await startChecker(broker, {
   homePollMs: 250,
   homeWaitMs: 30_000,
 });
-// Снимки — свой браузер процесса (запускается при первом снимке): проверки выпуска открывают свой через stand-check.
-const renderer = new ChromiumRenderer();
+// Снимки — свой браузер процесса: проверки выпуска открывают свой через stand-check. Браузер и замер скорости машины
+// (замедление ЦП телефона для Web Vitals, `cpuRateFor`) — прогревом при старте, а не в сроке первого снимка.
+const renderer = new ChromiumRenderer({
+  onCalibrated: (benchmarkIndex, cpuRate) => log('look-calibrated', { benchmarkIndex, cpuRate }),
+});
 if (settings.sitesUrl === null) log('look-disabled', { reason: 'SITES_SERVICE_URL не задан' });
-else
+else {
+  void renderer.warm().catch((error: unknown) => log('look-warm-failed', { error: String(error) }));
   await startLooks(broker, {
     renderer,
     fetch: (address, init) => fetch(address, init),
@@ -39,6 +43,7 @@ else
     log,
     now: () => Date.now(),
   });
+}
 const server = createServer((request, response) => {
   response.writeHead(request.url === '/health' ? 200 : 404).end();
 }).listen(settings.port);

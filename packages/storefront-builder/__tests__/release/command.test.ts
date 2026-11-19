@@ -95,4 +95,17 @@ describe('разбор команды section', () => {
       theme: 'nova',
     });
   });
+
+  it('--all вместо папки — folder null; --only ограничивает магазином; папка вместе с --all или ни того ни другого — отказ', () => {
+    expect(parseCommand(['section', '--all', '--write', '--only', 's1', '--test-shop', 's1'])).toEqual({
+      name: 'section',
+      folder: null,
+      write: true,
+      testShop: 's1',
+      theme: 'nova',
+      only: 's1',
+    });
+    expect(thrown(() => parseCommand(['section', 'x', '--all']))).toMatchObject({ code: 'release-args' });
+    expect(thrown(() => parseCommand(['section']))).toMatchObject({ code: 'release-args' });
+  });
 });

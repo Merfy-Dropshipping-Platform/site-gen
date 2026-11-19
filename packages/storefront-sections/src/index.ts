@@ -20,6 +20,7 @@ export { listSectionFolders, readSectionFolder } from './read-folder';
 // История библиотеки (20.11): отпечатки всех версий секций платформы и версии папки из git.
 export { libraryHashesOf, libraryVersionOf, type LibraryHistory, type LibraryVersion } from './library-history';
 export { gitSectionVersions } from './generate/git-versions';
+export { libraryFolders } from './generate/library-index';
 export {
   SECTION_AUTHORS,
   currentDraft,

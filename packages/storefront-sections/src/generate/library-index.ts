@@ -15,8 +15,13 @@ export function nameOf(files: SectionFiles): string | undefined {
   return typeof name === 'string' ? name : undefined;
 }
 
+// Папки всех библиотечных секций: packageDir — каталог пакета storefront-sections.
+export async function libraryFolders(packageDir: string): Promise<string[]> {
+  return (await Promise.all(LIBRARY_DIRS.map((root) => listSectionFolders(join(packageDir, root))))).flat();
+}
+
 export async function libraryIndexOf(packageDir: string): Promise<LibraryIndex> {
-  const folders = (await Promise.all(LIBRARY_DIRS.map((root) => listSectionFolders(join(packageDir, root))))).flat();
+  const folders = await libraryFolders(packageDir);
   const sections = await Promise.all(folders.map((folder) => readSectionFolder(folder)));
   const index: Record<string, string> = {};
   for (const files of sections) {

@@ -26,13 +26,12 @@ describe('REBUILD_EVENT_INPUTS', () => {
     expect(paths.filter((path) => !isInputPath(path))).toEqual([]);
   });
 
-  // ext-value (значения сторов расширений с prerender) меняет событие правки записи расширения: его вводит отдельная
-  // задача вместе со строкой в event-inputs.ts. Когда строка появится — убрать исключение.
-  const WITHOUT_EVENT_YET: readonly string[] = ['ext-value'];
-
   it('каждый тип сущности снимка меняет хотя бы одно событие', () => {
     const covered = new Set(Object.values(REBUILD_EVENT_INPUTS).flat());
-    const uncovered = ENTITY_TYPES.filter((type) => !covered.has(`${DATA_PREFIX}${type}`));
-    expect(uncovered.filter((type) => !WITHOUT_EVENT_YET.includes(type))).toEqual([]);
+    expect(ENTITY_TYPES.filter((type) => !covered.has(`${DATA_PREFIX}${type}`))).toEqual([]);
+  });
+
+  it('правка записи расширения обновляет значения сторов с prerender (ext-value)', () => {
+    expect(REBUILD_EVENT_INPUTS['extension-record-change']).toEqual(['data.ext-value']);
   });
 });

@@ -25,9 +25,10 @@ export const REBUILD_EVENT_INPUTS: Readonly<Record<string, readonly string[]>> =
   'extension-toggle': ['code'],
   // Блок 12 «Секций и SDK», часть 12в: откат секции с ролью меняет код своей секции магазина.
   'section-rollback': ['code'],
-  // Правка записей расширения (сервис extensions, tables.commit): данные его сторов попадают в HTML при сборке;
-  // вход — тот же, что у кода расширения (code.extensions).
-  'extension-record-change': ['code'],
+  // Правка записей расширения (сервис extensions, tables.commit): значения его сторов с prerender лежат в снимке
+  // сущностями ext-value. Карта — по типам сущностей, не по записям: обновляются все ext-value магазина, а сборка
+  // читает значения заново, поэтому лишнее обновление ничего не стоит (сборка выйдет skipped, если ключ не поменялся).
+  'extension-record-change': ['data.ext-value'],
   'domain-change': ['site.publicUrl'],
   'shop-name-change': ['site.name'],
   'policy-change': ['data.policy'],

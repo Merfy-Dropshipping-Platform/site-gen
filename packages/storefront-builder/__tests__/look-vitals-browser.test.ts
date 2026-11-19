@@ -66,8 +66,9 @@ const LATE_PAGE = `<!doctype html><html lang="ru"><head><meta charset="utf-8">
 const bannerPage = (shownByCss: boolean): string => `<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>body{margin:0}merfy-section{display:block}p{font-size:32px;margin:0}
-[hidden]:where(:not([hidden='until-found'])){display:none!important}
-html.mfy-consent-new [data-role="cookie-banner"]>[hidden]{display:block!important}</style>
+@layer theme, base, components, utilities;
+@layer base{[hidden]:where(:not([hidden='until-found'])){display:none!important}}
+@layer theme{html.mfy-consent-new [data-role="cookie-banner"]>[hidden]{display:block!important}}</style>
 ${shownByCss ? '<script>document.documentElement.classList.add("mfy-consent-new")</script>' : ''}
 </head><body>
 <merfy-section data-section-id="banner-1" data-role="cookie-banner"><section hidden><p>Мы используем файлы cookie, чтобы сайт работал корректно</p></section></merfy-section>

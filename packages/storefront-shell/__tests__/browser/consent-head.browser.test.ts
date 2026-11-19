@@ -26,8 +26,10 @@ const CONFIG = {
   page: { id: 'home', path: '/' },
   analytics: null,
 };
+// Правило базы страницы в слое base, как в @merfy/tokens (generated/base.css): у !important слой побеждает правило без слоя.
 const PAGE_CSS = [
-  "[hidden]:where(:not([hidden='until-found'])){display:none!important}",
+  '@layer theme, base, components, utilities;',
+  "@layer base{[hidden]:where(:not([hidden='until-found'])){display:none!important}}",
   '.fixed{position:fixed}.bottom-0{bottom:0}.inset-x-0{left:0;right:0}',
   CONSENT_CSS,
 ].join('');

@@ -18,6 +18,8 @@ export const CONSENT_HEAD_SCRIPT =
   `d.classList.add(${JSON.stringify(CONSENT_CLASS)});` +
   `document.addEventListener(${JSON.stringify(READY)},()=>d.classList.remove(${JSON.stringify(CONSENT_CLASS)}),{once:true})})()`;
 
-// Корень секции — прямой потомок обёртки (в обёртке лежит разметка секции как есть). !important — как у правила базы
-// страницы [hidden] (preflight, @merfy/tokens), иначе оно перебьёт; побеждает селектор, он специфичнее.
-export const CONSENT_CSS = `html.${CONSENT_CLASS} [${ROLE_ATTRIBUTE}="${CONSENT_ROLE}"]>[hidden]{display:block!important}`;
+// Корень секции — прямой потомок обёртки (в обёртке лежит разметка секции как есть). Правило [hidden] базы страницы
+// (preflight, @merfy/tokens) — display:none!important в слое base, а у !important слои идут в обратном порядке: раньше
+// объявленный слой сильнее позднего, любой слой — сильнее правила без слоя. Поэтому наше правило — тоже !important и
+// в слое theme (первом в порядке слоёв страницы: theme, base, components, utilities); без слоя оно бы проиграло.
+export const CONSENT_CSS = `@layer theme{html.${CONSENT_CLASS} [${ROLE_ATTRIBUTE}="${CONSENT_ROLE}"]>[hidden]{display:block!important}}`;

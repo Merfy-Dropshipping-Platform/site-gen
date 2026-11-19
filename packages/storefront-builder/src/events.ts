@@ -8,6 +8,7 @@ import { parseWith } from './parse';
 //                    (rebuild-events.json) или служебное: old-path — старый путь сборки отдал магазин сборщику,
 //                    reconcile — сверка нашла расхождение, restart — служебная команда перезапуска; у публикации —
 //                    адрес ответа (replyTo, correlationId): сборщик отвечает номером сборки (buildReplyBody);
+//                    extension-record-change (сервис extensions) несёт ещё extensionId и recordIds;
 //   product.events — готовые события сервиса product: { event, tenantId, productIds, timestamp }; tenantId — id
 //                    организации или id сайта (product-update.listener.ts:207-219).
 // Задание сборки в очереди storefront_builds — { v: 1, siteId, build }: всё остальное лежит в строке магазина.
@@ -17,6 +18,8 @@ export const PRODUCT_EXCHANGE = 'product.events';
 const FORMAT_VERSION = 1;
 const EVENT_TYPE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const PRODUCT_CHANGE = 'product-change';
+// Правка записей расширения: событие из сервиса extensions (tables.commit), тело — конверт и extensionId, recordIds.
+export const EXTENSION_RECORD_CHANGE = 'extension-record-change';
 
 // Приоритет задания: публикация › правка › выпуск темы (архитектура этапа, В-3 А). RabbitMQ советует 2–4 уровня.
 export const PRIORITY = { publish: 3, edit: 2, release: 1 } as const;
@@ -46,13 +49,37 @@ export interface EntityPathsChange {
 
 const instant = z.iso.datetime({ offset: true });
 
-const contentEventSchema = z.strictObject({
+const contentEventShape = {
   v: z.literal(FORMAT_VERSION),
   type: z.string().regex(EVENT_TYPE),
   siteId: z.string().min(1),
   eventAt: instant,
   source: z.string().min(1),
+};
+const contentEventSchema = z.strictObject(contentEventShape);
+
+// Правка записей расширения (сервис extensions, tables.commit): к конверту — какое расширение и какие записи. Сборка
+// целиком, поэтому id записей сборщику не нужны; они в теле для подписчиков и журнала.
+const recordChangeSchema = z.strictObject({
+  ...contentEventShape,
+  extensionId: z.string().min(1),
+  recordIds: z.array(z.string().min(1)),
 });
+
+type ContentEnvelope = z.infer<typeof contentEventSchema>;
+
+// Тип события → схема тела; остальные события — просто конверт.
+const CONTENT_SCHEMAS: Readonly<Record<string, z.ZodType<ContentEnvelope>>> = {
+  [EXTENSION_RECORD_CHANGE]: recordChangeSchema,
+};
+
+const typeOf = (body: unknown): string => {
+  if (typeof body !== 'object' || body === null || !('type' in body)) return '';
+  return typeof body.type === 'string' ? body.type : '';
+};
+
+const contentSchemaOf = (body: unknown): z.ZodType<ContentEnvelope> =>
+  CONTENT_SCHEMAS[typeOf(body)] ?? contentEventSchema;
 
 // Сообщения product.events пишет другой сервис: лишние поля не ошибка, время правки — если есть.
 const productEventSchema = z.object({
@@ -73,7 +100,7 @@ export interface ContentEvent {
 }
 
 function contentEvent(body: unknown): IncomingEvent {
-  const event = parseWith(contentEventSchema, body, 'message-invalid', CONTENT_EXCHANGE);
+  const event = parseWith(contentSchemaOf(body), body, 'message-invalid', CONTENT_EXCHANGE);
   return { owner: 'site', siteId: event.siteId, type: event.type, eventAt: event.eventAt };
 }
 

@@ -60,6 +60,37 @@ describe('событие content.events', () => {
   });
 });
 
+describe('событие extension-record-change (сервис extensions)', () => {
+  const body = {
+    ...contentEventBody({ type: 'extension-record-change', siteId: SITE, eventAt: AT, source: 'extensions' }),
+    extensionId: 'popups',
+    recordIds: ['p-1', 'p-2'],
+  };
+
+  it('принято как событие сайта: extensionId и recordIds сборке не нужны, правка — приоритет 2', () => {
+    const event = parseIncoming(CONTENT_EXCHANGE, body, RECEIVED);
+    expect(event).toEqual({ owner: 'site', siteId: SITE, type: 'extension-record-change', eventAt: AT });
+    expect(priorityOf(event.type)).toBe(2);
+  });
+
+  it('без extensionId или с кривым recordIds — message-invalid с путём поля', () => {
+    const noExtension = { ...body, extensionId: undefined };
+    expect(failure(() => parseIncoming(CONTENT_EXCHANGE, noExtension, RECEIVED)).path).toBe(
+      'content.events#extensionId',
+    );
+    const badIds = failure(() => parseIncoming(CONTENT_EXCHANGE, { ...body, recordIds: 'p-1' }, RECEIVED));
+    expect(badIds.path).toBe('content.events#recordIds');
+  });
+
+  it('лишнее поле у этого события и extensionId у чужого события — message-invalid', () => {
+    expect(failure(() => parseIncoming(CONTENT_EXCHANGE, { ...body, tenantId: 'x' }, RECEIVED)).path).toBe(
+      'content.events#tenantId',
+    );
+    const other = { ...body, type: 'shop-name-change' };
+    expect(failure(() => parseIncoming(CONTENT_EXCHANGE, other, RECEIVED)).path).toBe('content.events#extensionId');
+  });
+});
+
 describe('событие product.events', () => {
   it('событие организации «product-change»; время — из timestamp, иначе время получения', () => {
     const body = { event: 'product.updated', tenantId: 'org-1', productIds: ['p1'], timestamp: AT };

@@ -183,6 +183,18 @@
       "scope": "store",
       "delayMs": 0,
       "status": "works"
+    },
+    {
+      "id": "extension-record-change",
+      "title": "Правка записей расширения со сторами витрины: данные первого кадра в HTML обновляются пересборкой",
+      "trigger": {
+        "service": "extensions",
+        "description": "RPC extensions.tables.commit: событие после успешного коммита, правки подряд склеены (тишина 5 с, не дольше 30 с)"
+      },
+      "themes": "new",
+      "scope": "store",
+      "delayMs": 5000,
+      "status": "works"
     }
   ]
 }

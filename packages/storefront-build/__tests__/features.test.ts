@@ -47,6 +47,25 @@ describe('набор поведений страницы', () => {
     expect(kitPlanOf(KNOWN, ['<p>scroll inView</p>'], [])).not.toHaveProperty('scroll');
   });
 
+  it.each([
+    ['стор страницы $scroll и ref("scroll")', 'mount(e){e.watch(e.page.$scroll,n=>e.ref("scroll")?.text(String(n)))}'],
+    ['событие страницы', 'mount(e){e.on("window","scroll",()=>{});e.on("window","resize",()=>{})}'],
+    ['имена классов', 'mount(e){e.toggleClass("animate-pulse");e.toggleClass("scroll-smooth")}'],
+    ['прокрутка окна и слово в имени', 'mount(){window.scrollTo(0,0);const inViewport=1,scrolled=2}'],
+  ])('19.11: %s — не обращение к ctx, файлов анимаций нет', (_, script) => {
+    expect(kitPlanOf(KNOWN, [], [script])).toEqual({ behaviors: [], reveal: false, animate: false });
+  });
+
+  it.each([
+    ['сжатый скрипт: e.scroll(…)', 'mount(e){e.scroll(e.ref("a"),r=>r)}', { scroll: true }],
+    ['необязательный вызов', 'mount(e){e?.inView?.(e.ref("a"),()=>{})}', { inView: true }],
+    ['поля в параметре mount', 'mount({scroll:e,inView:n}){e(a)}', { scroll: true, inView: true }],
+    ['деструктуризация ctx', 'mount(c){const{animate:a}=c;a(c.ref("a"),{})}', { animate: true }],
+    ['имя в скобках', 'mount(e){e["inView"](e.ref("a"),()=>{})}', { inView: true }],
+  ])('19.11: %s — обращение к ctx, файл подключается', (_, script, expected) => {
+    expect(kitPlanOf(KNOWN, [], [script])).toMatchObject(expected);
+  });
+
   it('13.11: библиотеки — по "lib:<имя>" в uses секций, только известные сборке ядра', () => {
     expect(libsOf(['motion'], ['cart', 'lib:motion', 'lib:gsap'])).toEqual(['motion']);
     expect(libsOf(['motion'], ['cart'])).toEqual([]);

@@ -1,4 +1,4 @@
-import { brotliCompressSync } from 'node:zlib';
+import { brotliCompressSync, gzipSync } from 'node:zlib';
 import { build, type BuildFailure, type Message, type OnResolveResult, type Plugin } from 'esbuild';
 import { sha256 } from './canonical';
 import type { BuildFile } from './client-files';
@@ -28,6 +28,7 @@ const KIT_NAMESPACE = 'merfy-kit';
 const KIT_FILE = /^[A-Za-z0-9_-]+\.js$/;
 const KIT_NAME = /^[a-z][a-z-]*$/;
 const SECTION_FILE = `${SECTION_NAMESPACE}:`;
+const ENTRY_FILE = 'merfy-page.js';
 const HEX64 = /^[0-9a-f]{64}$/;
 const UNSAFE_INLINE = /<\/script|<!--/i;
 const HASH_PREFIX = 'sha256:';
@@ -246,17 +247,53 @@ const pagePlugin = (source: BundleSource): Plugin => ({
   },
 });
 
+const entryOf = (source: BundleSource): string =>
+  bundleEntry(source.parts, source.sections, source.kit?.plan, source.preview === true);
+
+const buildOptionsOf = (source: BundleSource) => ({
+  ...ESBUILD_OPTIONS,
+  stdin: { contents: entryOf(source), loader: 'js' as const, sourcefile: ENTRY_FILE },
+  plugins: [pagePlugin(source)],
+});
+
 async function bundleText(source: BundleSource): Promise<string> {
-  const result = await build({
-    ...ESBUILD_OPTIONS,
-    stdin: {
-      contents: bundleEntry(source.parts, source.sections, source.kit?.plan, source.preview === true),
-      loader: 'js',
-      sourcefile: 'merfy-page.js',
-    },
-    plugins: [pagePlugin(source)],
-  });
+  const result = await build(buildOptionsOf(source));
   return result.outputFiles.map((file) => file.text).join('');
+}
+
+// Вес модуля бандла страницы: ядро (merfy-core:core), файл поведений (merfy-kit:<файл>), модуль секции
+// (merfy-section:<hex>) и строка входа (merfy-page.js). rawBytes — байты модуля в бандле после выкидывания
+// неиспользованного (minify уже сделан), gzipBytes — оценка: gzip текста модуля, пропорционально доле, что осталась.
+export interface ModuleWeight {
+  module: string;
+  rawBytes: number;
+  gzipBytes: number;
+}
+
+// Текст модуля до сборки — по имени из metafile.
+function moduleText(module: string, source: BundleSource): string {
+  const [namespace = '', path = ''] = module.split(/:(.*)/s);
+  if (namespace === CORE_NAMESPACE) return source.core;
+  if (namespace === KIT_NAMESPACE) return source.kit?.files.get(path) ?? '';
+  if (namespace === SECTION_NAMESPACE) return source.modules.get(path) ?? '';
+  return entryOf(source);
+}
+
+function weightOf(module: string, rawBytes: number, source: BundleSource): ModuleWeight {
+  const text = moduleText(module, source);
+  const whole = Buffer.byteLength(text, 'utf8');
+  const gzipBytes = whole === 0 ? 0 : Math.round((gzipSync(text).length * rawBytes) / whole);
+  return { module, rawBytes, gzipBytes };
+}
+
+// Состав бандла страницы по модулям — esbuild metafile; только для замеров, в ответ витрине и в сборку магазина не идёт.
+// Модули секций, на которых esbuild упал, не пропускаются: замер падает так же, как сборка без пропуска.
+export async function bundleWeights(source: BundleSource): Promise<ModuleWeight[]> {
+  const result = await build({ ...buildOptionsOf(source), metafile: true });
+  const inputs = Object.values(result.metafile.outputs).flatMap((output) => Object.entries(output.inputs));
+  return inputs
+    .map(([module, input]) => weightOf(module, input.bytesInOutput, source))
+    .sort((left, right) => right.rawBytes - left.rawBytes);
 }
 
 const isBuildFailure = (error: unknown): error is BuildFailure =>

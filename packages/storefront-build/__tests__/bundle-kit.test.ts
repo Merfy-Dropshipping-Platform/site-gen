@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { bundleEntry, bundlePage, type BundleSection, type BundleSource, type KitPlan } from '../src/bundle';
+import {
+  bundleEntry,
+  bundlePage,
+  bundleWeights,
+  type BundleSection,
+  type BundleSource,
+  type KitPlan,
+} from '../src/bundle';
 import { sha256 } from '../src/canonical';
 import { KIT_FILES } from './support-kit';
 
@@ -119,5 +126,27 @@ describe('бандл с поведениями', () => {
     await expect(bundlePage(sourceOf(plan({ behaviors: ['accordion'] }), [], foreign))).rejects.toMatchObject({
       code: 'bundle-failed',
     });
+  });
+});
+
+describe('состав бандла по модулям (metafile, 19.11)', () => {
+  const weights = (kit: KitPlan) => bundleWeights(sourceOf(kit, [section('shop:quiet', MODULES.quiet)]));
+
+  it('ядро, части поведений, общий кусок и модуль секции — по строке; неподключённого файла нет', async () => {
+    const names = (await weights(plan({ behaviors: ['accordion', 'carousel'] }))).map((row) => row.module);
+    expect(names).toContain('merfy-core:core');
+    expect(names).toContain('merfy-kit:part.js');
+    expect(names).toContain(`merfy-section:${hexOf(MODULES.quiet)}`);
+    expect(names.filter((name) => name === 'merfy-kit:chunk-AAA111.js')).toHaveLength(1);
+    expect(names).not.toContain('merfy-kit:nav-menu.js');
+  });
+
+  it('байты — после выкидывания неиспользованного: частей ядра, которых нет в строке, нет; порядок по убыванию', async () => {
+    const rows = await weights(NONE);
+    const core = rows.find((row) => row.module === 'merfy-core:core');
+    expect(core?.rawBytes).toBeLessThan(Buffer.byteLength(CORE, 'utf8'));
+    const sizes = rows.map((row) => row.rawBytes);
+    expect(sizes).toEqual([...sizes].sort((left, right) => right - left));
+    expect(rows.every((row) => row.gzipBytes > 0)).toBe(true);
   });
 });

@@ -4,7 +4,7 @@
 // не найдётся. HTML — тот, что уходит поисковику: исходник страницы, а не DOM после скриптов, поэтому видны и заголовки
 // в закрытых окнах, которые axe в браузере пропускает (прогон 16.11 на главной nova).
 import { HtmlValidate, Parser, StaticConfigLoader, type HtmlElement, type Message } from 'html-validate';
-import { grouped, type CheckFinding } from '../finding';
+import { grouped, type CheckFinding, type FindingDraft } from '../finding';
 
 // Правила html-validate. Важность в конфиге — только чтобы правило работало; свою ставит `LEVEL`.
 const RULES = {
@@ -106,7 +106,7 @@ function insideHidden(element: HtmlElement | null): boolean {
 }
 
 // Своё правило: у фото товара alt стоит, но пустой (без alt вовсе — уже `wcag/h37`).
-function productPhotosWithoutAlt(root: HtmlElement): Omit<CheckFinding, 'count'>[] {
+function productPhotosWithoutAlt(root: HtmlElement): FindingDraft[] {
   return root
     .querySelectorAll('img')
     .filter((image) => image.hasAttribute('alt') && (image.getAttributeValue('alt') ?? '').trim() === '')

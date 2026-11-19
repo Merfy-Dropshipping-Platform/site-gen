@@ -2,8 +2,8 @@ import { z } from 'zod';
 import type { Broker } from '../broker';
 import { lighthouseFindings } from '../checks/browser/lighthouse';
 import { semanticBrowser } from '../checks/browser/semantic';
-import { vitalsFindings } from '../checks/browser/vitals';
-import { inSections, type CheckFinding, type CheckReport } from '../checks/finding';
+import { vitalsCheck } from '../checks/browser/vitals';
+import { inSections, type CheckReport } from '../checks/finding';
 import { semanticHtml } from '../checks/html/semantic';
 import { errorText } from '../errors';
 import type { Log } from '../log';
@@ -290,12 +290,14 @@ async function checksOn(
   limits: BrowserLimits,
 ): Promise<CheckReport> {
   const parts = [await htmlChecks(html), ...(await browserChecks(session, limits))];
+  const vitals = parts.find((part) => part.vitals !== undefined)?.vitals;
   return {
     findings: inSections(
       parts.flatMap((part) => part.findings),
       wanted,
     ),
     failed: parts.flatMap((part) => part.failed),
+    ...(vitals === undefined ? {} : { vitals }),
   };
 }
 
@@ -315,19 +317,24 @@ const checkFailure = (error: unknown): string => {
   return `ответ страницы не по форме: ${path} — ${issue?.message ?? 'не тот вид'}`.slice(0, 200);
 };
 
+// Разбор ответа страницы: находки и, у Web Vitals, сводка замера.
+type Parsed = Pick<CheckReport, 'findings' | 'vitals'>;
+const semanticParsed = (raw: unknown): Parsed => ({ findings: semanticBrowser(raw) });
+const lighthouseParsed = (raw: unknown): Parsed => ({ findings: lighthouseFindings(raw) });
+
 // Одна проверка в открытой странице: работа страницы в пределе `limitMs` и разбор её ответа. Меньше `minMs` — не
 // начинается.
 async function browserCheck(
   check: string,
   limitMs: number,
   work: () => Promise<unknown>,
-  parse: (raw: unknown) => CheckFinding[],
+  parse: (raw: unknown) => Parsed,
   minMs = 1,
 ): Promise<CheckReport> {
   const refused = (reason: string): CheckReport => ({ findings: [], failed: [{ place: 'browser', check, reason }] });
   if (limitMs < minMs) return refused('не успел: срок снимка почти вышел');
   try {
-    return { findings: parse(await within(work(), limitMs)), failed: [] };
+    return { ...parse(await within(work(), limitMs)), failed: [] };
   } catch (error) {
     if (error instanceof LookError) throw error;
     return refused(error instanceof DetectorLate ? `не успел за ${secondsText(limitMs)} с` : checkFailure(error));
@@ -346,18 +353,18 @@ async function browserChecks(session: PageSession | undefined, limits: BrowserLi
   }
   const device = session.device;
   return [
-    await browserCheck('semantic', limits.semantic, () => session.semantic(), semanticBrowser),
+    await browserCheck('semantic', limits.semantic, () => session.semantic(), semanticParsed),
     await browserCheck(
       'vitals',
       limits.vitals,
       () => session.vitals(),
-      (raw) => vitalsFindings(raw, device),
+      (raw) => vitalsCheck(raw, device),
     ),
     await browserCheck(
       'lighthouse',
       limits.lighthouse(),
       () => session.lighthouse(),
-      lighthouseFindings,
+      lighthouseParsed,
       MIN_LIGHTHOUSE_MS,
     ),
   ];

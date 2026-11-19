@@ -21,7 +21,7 @@
 // следующей секции (первой — нет: в её промежуток входит запуск самого ядра).
 import { z } from 'zod';
 import type { LookDevice } from '../../look/look-types';
-import { grouped, type CheckFinding } from '../finding';
+import { grouped, type CheckFinding, type CheckFix, type FindingDraft } from '../finding';
 
 // Пороги «хорошо» у Google: CLS — Web Vitals; TBT — оценка Lighthouse (телефон 200 мс, компьютер 150 мс).
 export const VITALS_LIMITS: Record<LookDevice, { cls: number; tbt: number }> = {
@@ -233,8 +233,8 @@ type Raw = VitalsRaw;
 type ShiftRaw = Raw['shifts'][number];
 type LcpRaw = NonNullable<Raw['lcp']>;
 
-type Draft = Omit<CheckFinding, 'count'>;
-const finding = (rule: string, section: string | null, where: string, text: string): Draft => ({
+// `fix` — только если у находки исключение из таблицы мест (`FIX_BY_PLACE`); сейчас таких нет.
+const finding = (rule: string, section: string | null, where: string, text: string, fix?: CheckFix): FindingDraft => ({
   place: 'browser',
   check: 'vitals',
   rule,
@@ -242,6 +242,7 @@ const finding = (rule: string, section: string | null, where: string, text: stri
   section,
   where,
   text,
+  ...(fix === undefined ? {} : { fix }),
 });
 
 // 0,23 — как в отчёте PageSpeed по-русски.
@@ -298,7 +299,7 @@ function sharesBySection(shifts: readonly ShiftRaw[]): Map<string | null, { shar
   return bySection;
 }
 
-function clsFindings(raw: Raw, device: LookDevice): Draft[] {
+function clsFindings(raw: Raw, device: LookDevice): FindingDraft[] {
   const worst = worstWindow(loadShifts(raw));
   const limit = VITALS_LIMITS[device].cls;
   if (worst.value <= limit) return [];
@@ -351,7 +352,7 @@ const LCP_CAUSES: Array<{ rule: string; applies: (lcp: LcpRaw) => boolean; text:
   },
 ];
 
-function lcpFindings(raw: Raw): Draft[] {
+function lcpFindings(raw: Raw): FindingDraft[] {
   const lcp = raw.lcp;
   if (lcp === null) return [];
   const cause = LCP_CAUSES.find((entry) => entry.applies(lcp));
@@ -387,7 +388,7 @@ export function totalBlocking(raw: Pick<Raw, 'long' | 'fcp' | 'loadedAt' | 'read
   return Math.round(blocked);
 }
 
-function tbtFindings(raw: Raw, device: LookDevice): Draft[] {
+function tbtFindings(raw: Raw, device: LookDevice): FindingDraft[] {
   const tbt = totalBlocking(raw);
   const limit = VITALS_LIMITS[device].tbt;
   if (tbt <= limit) return [];
@@ -413,9 +414,35 @@ function tbtFindings(raw: Raw, device: LookDevice): Draft[] {
   );
 }
 
-// Находки Web Vitals по тому, что отдала страница (`VITALS_READ` и замедление ЦП). Ответ не по форме — ошибка: проверка
-// не отработала, а не «находок нет».
-export function vitalsFindings(raw: unknown, device: LookDevice): CheckFinding[] {
-  const parsed = VitalsRaw.parse(raw);
-  return grouped([...clsFindings(parsed, device), ...lcpFindings(parsed), ...tbtFindings(parsed, device)]);
+// Сводка Web Vitals черновика рядом с находками (`checks.vitals` ответа снимка): что намерили и пороги платформы —
+// MCP своих порогов не держит. CLS — худшее окно загрузки (то же, что у находок), сдвигов нет — 0; элемента LCP нет — null.
+export interface VitalsSummary {
+  device: LookDevice;
+  cls: number;
+  tbtMs: number;
+  limits: { cls: number; tbtMs: number };
+  lcp: { section: string | null; where: string } | null;
 }
+
+function vitalsSummary(raw: Raw, device: LookDevice): VitalsSummary {
+  const limits = VITALS_LIMITS[device];
+  return {
+    device,
+    cls: worstWindow(loadShifts(raw)).value,
+    tbtMs: totalBlocking(raw),
+    limits: { cls: limits.cls, tbtMs: limits.tbt },
+    lcp: raw.lcp === null ? null : { section: raw.lcp.section, where: raw.lcp.where },
+  };
+}
+
+// Находки и сводка Web Vitals по тому, что отдала страница (`VITALS_READ` и замедление ЦП). Ответ не по форме — ошибка:
+// проверка не отработала, а не «находок нет».
+export function vitalsCheck(raw: unknown, device: LookDevice): { findings: CheckFinding[]; vitals: VitalsSummary } {
+  const parsed = VitalsRaw.parse(raw);
+  return {
+    findings: grouped([...clsFindings(parsed, device), ...lcpFindings(parsed), ...tbtFindings(parsed, device)]),
+    vitals: vitalsSummary(parsed, device),
+  };
+}
+
+export const vitalsFindings = (raw: unknown, device: LookDevice): CheckFinding[] => vitalsCheck(raw, device).findings;

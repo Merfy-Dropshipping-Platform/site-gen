@@ -85,6 +85,7 @@ describe('находки Lighthouse', () => {
         where: 'img scarf.png',
         text: 'Картинка без размеров — страница прыгнет, когда она загрузится · задай width и height (или aspect-ratio в CSS)',
         count: 2,
+        fix: 'silent',
       },
       {
         place: 'browser',
@@ -95,6 +96,7 @@ describe('находки Lighthouse', () => {
         where: 'a «Каталог»',
         text: 'Ссылка, по которой поисковик не пройдёт · дай ей настоящий адрес в href, а действие без перехода сделай кнопкой',
         count: 1,
+        fix: 'silent',
       },
     ]);
   });

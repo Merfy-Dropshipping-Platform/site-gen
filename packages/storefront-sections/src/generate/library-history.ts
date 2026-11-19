@@ -1,10 +1,9 @@
-import { join } from 'node:path';
 import { hashOf } from '@merfy/storefront-build';
 import { z } from 'zod';
 import type { SectionFiles } from '../format';
 import type { LibraryHistory, LibraryVersion } from '../library-history';
-import { listSectionFolders, readSectionFolder } from '../read-folder';
-import { LIBRARY_DIRS, nameOf } from './library-index';
+import { readSectionFolder } from '../read-folder';
+import { libraryFolders, nameOf } from './library-index';
 
 // История библиотеки (library-history.ts) для pnpm generate: прежний файл + версии папок из git + текущие файлы папок.
 // Файл только пополняется: записи не удаляются и не переименовываются, номер новой версии — следующий за наибольшим у
@@ -53,7 +52,7 @@ export async function libraryHistoryOf(
   previous: LibraryHistory,
   versionsOf: VersionsOf,
 ): Promise<LibraryHistory> {
-  const folders = (await Promise.all(LIBRARY_DIRS.map((root) => listSectionFolders(join(packageDir, root))))).flat();
+  const folders = await libraryFolders(packageDir);
   const lineages = await Promise.all(folders.map((folder) => lineageOf(folder, versionsOf)));
   return lineages.reduce<LibraryHistory>(
     (history, lineage) => (lineage === null ? history : addLineage(history, lineage)),

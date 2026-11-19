@@ -46,6 +46,7 @@ export function copyAction(copy: ShopCopy, known: ReadonlySet<string>, next: str
 export interface SectionSources {
   read: (folder: string) => Promise<SectionFiles>; // новая версия — readSectionFolder
   versions: (folder: string) => Promise<SectionFiles[]>; // наши версии — gitSectionVersions
+  folders?: () => Promise<string[]>; // папки библиотечных секций для --all — libraryFolders
 }
 
 export interface ResaveDeps extends SectionSources {
@@ -63,6 +64,7 @@ export interface ResaveCommand {
   write: boolean;
   testShop: string | null;
   theme: string;
+  only?: string; // магазин, которым ограничен прогон; нет — все магазины темы
 }
 
 export interface ShopResult {
@@ -124,6 +126,10 @@ async function readCopies(db: Database, name: string, theme: string): Promise<Sh
     };
   });
 }
+
+// --only: из копий остаётся одна — магазин, на котором проверяют выпуск, остальные не трогаются.
+export const onlyShop = (copies: readonly ShopCopy[], only: string | undefined): ShopCopy[] =>
+  copies.filter((copy) => only === undefined || copy.siteId === only);
 
 // Какие файлы копии меняются: имена против текущей правки, по алфавиту.
 function filesDiff(before: SectionFiles, after: SectionFiles): ShopResult['files'] {
@@ -278,7 +284,7 @@ export async function resaveSection(deps: ResaveDeps, command: ResaveCommand): P
   const name = shopNameOf(prepared.section.manifest.name);
   const next = hashOf(files);
   const known = await knownHashes(deps, command.folder, prepared.section.manifest.name, next);
-  const copies = await readCopies(deps.db, name, command.theme);
+  const copies = onlyShop(await readCopies(deps.db, name, command.theme), command.only);
   const planned = await Promise.all(
     copies.map(async (copy): Promise<ShopResult> => planOf(deps, copy, copyAction(copy, known, next), name, files)),
   );

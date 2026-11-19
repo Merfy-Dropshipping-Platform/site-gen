@@ -4,7 +4,7 @@ import { tmpdir, userInfo } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectPassport, openPage, takeShots } from '@merfy/stand-check';
-import { readSectionFolder } from '@merfy/storefront-sections';
+import { libraryFolders, readSectionFolder } from '@merfy/storefront-sections';
 import { createS3Store } from '@merfy/storefront-storage';
 import { Pool } from 'pg';
 import { StorefrontBuilderError, errorText } from '../src/errors';
@@ -24,7 +24,7 @@ const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 const USAGE =
   'theme-release start <тема> [--test-shop <id>] [--version <x.y.z>] [--no-shots] [--expect-hash sha256:…] | ' +
   'approve <№> | status [<№>] | skip <№> <магазин> | revert-all <№> | extension <расширение> <x.y.z> | ' +
-  'section <папка> [--write] [--test-shop <id>] [--theme <id>]';
+  'section (<папка> | --all) [--write] [--test-shop <id>] [--only <магазин>] [--theme <id>]';
 const REFUSED: ReadonlySet<string> = new Set(['release-refused', 'release-conflict']);
 
 const say = (line: string): void => {
@@ -48,7 +48,11 @@ async function depsOf(settings: CommandSettings, db: Pool): Promise<CommandDeps>
     say,
     browser: { passport, shots: (url) => takeShots(url) },
     versions: (themeId, version) => versionFiles(store, themeId, version, workDir),
-    sections: { read: readSectionFolder, versions: gitSectionVersions },
+    sections: {
+      read: readSectionFolder,
+      versions: gitSectionVersions,
+      folders: () => libraryFolders(join(ROOT, 'packages', 'storefront-sections')),
+    },
     pollMs: 5_000,
     waitMs: 30 * 60_000,
   };
@@ -58,7 +62,9 @@ async function main(): Promise<number> {
   const command = parseCommand(process.argv.slice(2));
   // Процессы проверки секций — свежие (часть 15з): хеш правки зависит от их кода, как у `pnpm sections accept`.
   if (command.name === 'section')
-    execFileSync('pnpm', ['--dir', join(ROOT, 'packages', 'storefront-sections'), 'build:workers'], { stdio: 'inherit' });
+    execFileSync('pnpm', ['--dir', join(ROOT, 'packages', 'storefront-sections'), 'build:workers'], {
+      stdio: 'inherit',
+    });
   const settings = readCommandSettings(process.env);
   const db = new Pool({ connectionString: settings.databaseUrl });
   try {

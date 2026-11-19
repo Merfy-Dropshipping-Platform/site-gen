@@ -25,6 +25,7 @@ import { dryRun, type DryRun, type ShopEdits, type VersionFiles } from './dry-ru
 import { KINDS } from './kinds';
 import { renderReleaseReport, type ReleaseReport, type ShotLink } from './report';
 import { resaveSection, reportLines, type SectionSources } from './section';
+import { allLines, resaveAll, totalsOf } from './section-all';
 import {
   createRelease,
   notifyRelease,
@@ -168,24 +169,29 @@ const commandSchema = z.union([
       rest: z.tuple([z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/), z.string().regex(/^\d+\.\d+\.\d+$/)]),
     })
     .transform((value) => ({ name: value.name, extension: value.rest[0], version: value.rest[1] })),
-  // Блок 15, часть 15з: новая версия нашей секции во всех магазинах; без --write — сухой прогон.
+  // Блок 15, часть 15з: новая версия нашей секции во всех магазинах; без --write — сухой прогон. Вместо папки —
+  // --all: все библиотечные секции, версии из истории библиотеки; --only <магазин> ограничивает прогон одним магазином.
   z
     .object({
       name: z.literal('section'),
-      rest: z.tuple([z.string().min(1)]),
+      rest: z.union([z.tuple([z.string().min(1)]), z.tuple([])]),
+      all: z.boolean(),
       write: z.boolean(),
       'test-shop': z.string().min(1).optional(),
+      only: z.string().min(1).optional(),
       theme: z
         .string()
         .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
         .optional(),
     })
+    .refine((value) => value.all !== (value.rest.length === 1), 'нужна одна папка или --all, но не вместе')
     .transform((value) => ({
       name: value.name,
-      folder: value.rest[0],
+      folder: value.rest[0] ?? null,
       write: value.write,
       testShop: value['test-shop'] ?? null,
       theme: value.theme ?? 'nova',
+      only: value.only,
     })),
 ]);
 
@@ -198,6 +204,8 @@ const OPTIONS = {
   'no-shots': { type: 'boolean', default: false },
   'expect-hash': { type: 'string' },
   write: { type: 'boolean', default: false },
+  all: { type: 'boolean', default: false },
+  only: { type: 'string' },
   theme: { type: 'string' },
 } as const;
 
@@ -567,14 +575,24 @@ async function extensionRelease(deps: CommandDeps, extension: string, version: s
 
 // Блок 15, часть 15з: новая версия нашей секции во всех магазинах с её копией (theme-release section). Сама работа —
 // section.ts (стек-тесты), разбор команды — command.test.ts; сюда стенд не заходит.
-async function sectionRelease(
-  deps: CommandDeps,
-  command: Extract<Command, { name: 'section' }>,
-): Promise<number> {
+async function sectionRelease(deps: CommandDeps, command: Extract<Command, { name: 'section' }>): Promise<number> {
   if (deps.sections === undefined) throw refuse('section: команде не переданы источники версий секции');
-  const report = await resaveSection({ ...deps, ...deps.sections }, command);
+  if (command.folder === null) return sectionReleaseAll(deps, deps.sections, command);
+  const report = await resaveSection({ ...deps, ...deps.sections }, { ...command, folder: command.folder });
   for (const line of reportLines(report)) deps.say(line);
   return report.counts.failed > 0 ? EXIT.refused : EXIT.done;
+}
+
+// --all: каждая библиотечная папка, версии — из истории библиотеки.
+async function sectionReleaseAll(
+  deps: CommandDeps,
+  sections: SectionSources,
+  command: Extract<Command, { name: 'section' }>,
+): Promise<number> {
+  if (sections.folders === undefined) throw refuse('section --all: команде не передан список библиотечных папок');
+  const results = await resaveAll({ ...deps, ...sections }, await sections.folders(), command, resaveSection);
+  for (const line of allLines(results, command.write)) deps.say(line);
+  return totalsOf(results).failed > 0 ? EXIT.refused : EXIT.done;
 }
 
 export function runCommand(deps: CommandDeps, command: Command): Promise<number> {

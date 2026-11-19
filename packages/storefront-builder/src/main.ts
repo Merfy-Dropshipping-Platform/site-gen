@@ -21,6 +21,7 @@ import { openBroker } from './broker';
 import { startDrawServer } from './draw';
 import { errorText } from './errors';
 import { createIndexNow } from './indexnow';
+import { createImageMarkers } from './image-markers';
 import { jsonLog } from './log';
 import { previewVia } from './preview';
 import { loadSdkDocs } from './sdk-docs';
@@ -111,7 +112,9 @@ const products = { call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 // Код магазина (блок 7): реестр секций, места из ревизии, включённые расширения; тайм-аут — как у товаров.
 const code = { db, shell, call: rpc.call, timeoutMs: settings.productTimeoutMs, log };
 const counters = { call: rpc.call, timeoutMs: settings.analyticsTimeoutMs, log };
-const snapshot = { db, products, code, counters, platform, themes: loaded.themes, clock };
+// Копии картинок (модуль картинок, шаг 3): маркеры читаются с хранилища контура — тот же origin, что у STOREFRONT_UPLOAD_URL.
+const images = createImageMarkers({ origin: settings.uploadUrl, hosts: settings.storageHosts, fetch, clock, log });
+const snapshot = { db, products, code, counters, platform, themes: loaded.themes, clock, images };
 
 // Включённые расширения магазина для выпуска расширения (задача 11) — тот же вызов extensions.enabledForShop и тот же
 // тайм-аут, что у снимка. Сервис не ответил — шаг ведущего падает, сверка повторит его через 30 с.

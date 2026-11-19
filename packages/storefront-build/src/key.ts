@@ -8,6 +8,10 @@ import type { BuildInputs } from './inputs';
 // 7 — блок 5 «Секций и SDK», часть 5б: ядро секций { version, hash, parts } вместо файлов старого ядра, бандл страницы.
 export const KEY_VERSION = 7;
 
+// Копии картинок (модуль картинок, шаг 3): появился или сменился маркер — страницы другие. Нет копий — ключа нет, и
+// ключи магазинов без них прежние.
+const imagesPart = ({ images }: BuildInputs) => (images === undefined ? {} : { images });
+
 // Ключ сборки (design.md блока 4, раздел 1): хэш всех входов. Одинаковые входы — одинаковый ключ и одинаковые файлы;
 // ключ тот же — сборка не нужна. Данные и сайт входят картой «сущность → хэш» (В4-2 Б). Справки — коммит платформы —
 // в ключ не входят.
@@ -23,6 +27,7 @@ export const buildKey = (inputs: BuildInputs): string =>
     env: inputs.env,
     year: inputs.year,
     entities: entityHashes(inputs),
+    ...imagesPart(inputs),
   });
 
 // Ключ данных (блок 10, задача 11) — его сравнивает сверка сборщика раз в час. В нём только то, что доходит до витрины
@@ -34,8 +39,8 @@ export const buildKey = (inputs: BuildInputs): string =>
 // Код платформы — renderHash и ядро @merfy/shell — в ключ не входит: его разносит выпуск платформы. Экземпляры секций
 // на страницах (code.pages) и глобальные скрипты — целиком: их меняет мерчант. Р5: DATA_KEY_VERSION остаётся 1.
 // Поменяли состав — поднять DATA_KEY_VERSION. 2 — часть 4 блока 1: в ревизии настройки темы и свои страницы, у кода —
-// меню и флаги секций.
-export const DATA_KEY_VERSION = 2;
+// меню и флаги секций. 3 — модуль картинок, шаг 3: маркеры копий картинок (images).
+export const DATA_KEY_VERSION = 3;
 type CodeSectionInput = BuildInputs['code']['sections'][number];
 
 const isOwn = (name: string): boolean => name.slice(0, name.indexOf(':')) === 'shop';
@@ -61,4 +66,5 @@ export const dataKey = (inputs: BuildInputs): string =>
     env: inputs.env,
     year: inputs.year,
     entities: entityHashes(inputs),
+    ...imagesPart(inputs),
   });

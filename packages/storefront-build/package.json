@@ -23,6 +23,7 @@
     "test:browser": "vitest run --config vitest.browser.config.ts"
   },
   "dependencies": {
+    "@merfy-dropshipping-platform/images": "0.1.1",
     "@merfy/storefront-config": "workspace:*",
     "@merfy/tokens": "workspace:*",
     "@merfy/shell": "workspace:*",

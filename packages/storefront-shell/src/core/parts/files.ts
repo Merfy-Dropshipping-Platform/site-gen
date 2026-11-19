@@ -240,6 +240,7 @@ function previewImage(state: FilesState, img: El, key: string): void {
   if (file === undefined || !isImage(file)) return;
   const link = state.links.get(key) ?? URL.createObjectURL(file);
   state.links.set(key, link);
+  node.removeAttribute('srcset');
   node.setAttribute('src', link);
   node.hidden = false;
   state.images.set(key, node);

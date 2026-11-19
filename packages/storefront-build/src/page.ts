@@ -14,6 +14,7 @@ import { entityKey } from './entities';
 import { extDepsOf, extValueIndexOf } from './ext-values';
 import { pageLocals, shopName } from './head';
 import { withImageLoading } from './image-loading';
+import { withImageSizes } from './image-sizes';
 import { withSingleH1 } from './page-h1';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
@@ -148,13 +149,17 @@ function pageContentOf(
   route: ShopRoute,
   inputs: BuildInputs,
 ): PageContent {
-  // Порядок загрузки картинок (image-loading.ts) — по готовой разметке трёх списков: главная картинка — в <main>.
-  // Один h1 на страницу (page-h1.ts) — по той же разметке.
+  // Копии картинок (image-sizes.ts): srcset у <img> нашего хранилища — раньше порядка загрузки, чтобы предзагрузка главной
+  // картинки взяла из <img> и srcset, и sizes. Порядок загрузки (image-loading.ts) — по готовой разметке трёх списков:
+  // главная картинка — в <main>. Один h1 на страницу (page-h1.ts) — по той же разметке.
   const content = withSingleH1(
     withImageLoading(
-      splitContent(
-        rendered,
-        lists.map((list) => list.length),
+      withImageSizes(
+        splitContent(
+          rendered,
+          lists.map((list) => list.length),
+        ),
+        inputs.images,
       ),
     ),
   );

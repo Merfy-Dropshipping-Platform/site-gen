@@ -61,6 +61,19 @@ const LATE_PAGE = `<!doctype html><html lang="ru"><head><meta charset="utf-8">
 </script>
 </body></html>`;
 
+// Баннер cookie (19.11): корень баннера с атрибутом hidden. Со стилем платформы (класс на <html> ставит скрипт в <head>)
+// он виден с первого кадра; без стиля его показывает скрипт после разбора HTML — первый экран ждёт скрипта.
+const bannerPage = (shownByCss: boolean): string => `<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}merfy-section{display:block}p{font-size:32px;margin:0}
+[hidden]:where(:not([hidden='until-found'])){display:none!important}
+html.mfy-consent-new [data-role="cookie-banner"]>[hidden]{display:block!important}</style>
+${shownByCss ? '<script>document.documentElement.classList.add("mfy-consent-new")</script>' : ''}
+</head><body>
+<merfy-section data-section-id="banner-1" data-role="cookie-banner"><section hidden><p>Мы используем файлы cookie, чтобы сайт работал корректно</p></section></merfy-section>
+${shownByCss ? '' : '<script>addEventListener("DOMContentLoaded",()=>{document.querySelector("[hidden]").hidden=false})</script>'}
+</body></html>`;
+
 // Lighthouse: картинка без размеров (адрес в сети, не data:), ссылка javascript:void(0), поле с запретом вставки — каждое
 // в своей секции.
 const LIGHTHOUSE_PAGE = `<!doctype html><html lang="ru"><head><meta charset="utf-8">
@@ -112,6 +125,27 @@ describe.skipIf(!hasChromium)('Web Vitals и Lighthouse по вкладке сн
       await rendered.close();
     }
   }, 60_000);
+
+  it.each([
+    [true, []],
+    [false, ['lcp-hidden']],
+  ])(
+    'баннер cookie, показан стилем платформы: %s — находки LCP %j',
+    async (shownByCss, rules) => {
+      const rendered = await renderer.open({ html: bannerPage(shownByCss), devices: ['mobile'] });
+      try {
+        const [mobile] = rendered.sessions;
+        if (mobile === undefined) throw new Error('нет экрана');
+        const found = vitalsFindings(await mobile.vitals(), 'mobile').filter((finding) =>
+          finding.rule.startsWith('lcp-'),
+        );
+        expect(found.map((finding) => finding.rule)).toEqual(rules);
+      } finally {
+        await rendered.close();
+      }
+    },
+    60_000,
+  );
 
   it('Lighthouse по вкладке: находки по секциям, страница не перезагружается и снимается дальше', async () => {
     const rendered = await renderer.open({ html: LIGHTHOUSE_PAGE, devices: ['mobile'] });

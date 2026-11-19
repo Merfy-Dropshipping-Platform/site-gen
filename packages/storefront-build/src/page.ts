@@ -1,3 +1,4 @@
+import { CONSENT_CSS, CONSENT_HEAD_SCRIPT, CONSENT_ROLE } from '@merfy/shell/behaviors/consent-head';
 import {
   readSettingsEdits,
   resolveSettings,
@@ -288,8 +289,14 @@ function headTagsOf(
       bytes,
       message: `JSON вариантов страницы — ${bytes} байт`,
     });
-  return `${meta}${tag}`;
+  return `${meta}${consentHeadOf(placed)}${tag}`;
 }
+
+// Баннер cookie с первого кадра (19.11): скрипт и стиль в <head> страницы, где стоит секция с ролью баннера, — и в
+// превью, и на витрине (устройство — consent-head.ts в ядре; CSP — по хешу скрипта, csp.ts).
+const CONSENT_HEAD = `<script>${CONSENT_HEAD_SCRIPT}</script><style id="merfy-consent">${CONSENT_CSS}</style>`;
+const consentHeadOf = (placed: readonly PlacedSection[]): string =>
+  placed.some((section) => section.role === CONSENT_ROLE) ? CONSENT_HEAD : '';
 
 // Зависимости списка — карточки этой страницы (Р11а-8): их правки меняют страницу.
 function listDepsOf(list: PageList | null): string[] {

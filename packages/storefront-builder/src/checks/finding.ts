@@ -26,6 +26,15 @@ export const FIX_BY_PLACE: Record<CheckPlace, CheckFix> = {
   release: 'platform',
 };
 
+// Кто чинит находку в секции платформы (19.11): секция с ролью (`data-role`) — место, которым управляет ядро SDK:
+// поведение корзины, согласия, оформления — его код платформы, а не агента. Что агент чинил молча (`silent`) — теперь
+// дело платформы и ему не показывается; вопрос мерчанту (`ask`) — данные магазина, от секции не зависит.
+export const FIX_ON_PLATFORM_SECTION: Record<CheckFix, CheckFix> = {
+  silent: 'platform',
+  ask: 'ask',
+  platform: 'platform',
+};
+
 export interface CheckFinding {
   place: CheckPlace;
   // Проверка: `semantic`.
@@ -75,6 +84,15 @@ export function grouped(findings: readonly FindingDraft[]): CheckFinding[] {
     else known.count += 1;
   }
   return [...groups.values()];
+}
+
+// Находки секций платформы (`platform` — id их экземпляров, `platformSections` в `html/platform.ts`) — со своим `fix`.
+export function onPlatformSections(findings: readonly CheckFinding[], platform: ReadonlySet<string>): CheckFinding[] {
+  return findings.map((finding) =>
+    finding.section !== null && platform.has(finding.section)
+      ? { ...finding, fix: FIX_ON_PLATFORM_SECTION[finding.fix] }
+      : finding,
+  );
 }
 
 // Только находки нужных секций. `sections` не задан — все (снимок страницы целиком). Находки вне секций в снимок секций

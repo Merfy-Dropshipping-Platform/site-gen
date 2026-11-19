@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import addedScript from '../sections/cart-added/script';
+import badgeScript from '../sections/cart-badge/script';
 import drawerScript from '../sections/cart-drawer/script';
 import { CART_ID_KEY, cart } from '../src/core/parts/cart';
 import { start, type StartedCore } from '../src/core/start';
@@ -16,6 +17,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const source = (path: string): string => readFileSync(join(here, path), 'utf8');
 const DRAWER = source('../sections/cart-drawer/template.astro');
 const ADDED = source('../sections/cart-added/template.astro');
+const BADGE = source('../sections/cart-badge/template.astro');
 const HEADER = source('../../storefront-sections/fixtures/shop/header/template.astro');
 const CART = { id: 'c-1', subtotalCents: 498000, discountCents: 0, totalCents: 498000, promoCode: null };
 const STORE_UNMOUNT_DELAY = 1000;
@@ -29,6 +31,13 @@ const shown = (root: Element, ref: string): string[] =>
   [...root.querySelectorAll(`[data-ref="${ref}"]`)]
     .filter((el) => !el.closest('[hidden]'))
     .map((el) => el.textContent?.trim() ?? '');
+// Строки панели: заготовка <template> в счёт не идёт.
+const rowsOf = (drawer: Element): number => drawer.querySelectorAll('[data-ref="lines"] > :not(template)').length;
+// Покупатель нажимает на значок корзины: cart.open → merfy:cart:open, панель заполняется.
+const openDrawer = async (): Promise<void> => {
+  document.querySelector<HTMLAnchorElement>('[data-action="cart.open"]')?.click();
+  await settle();
+};
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -101,7 +110,10 @@ describe('скрипты окон', () => {
     const gateway = fakeGateway();
     document.head.innerHTML = configTag('live');
     const drawer = placeSection('shop:cart-drawer', 'drawer-1', DRAWER);
+    // Выезжающую корзину ядро находит по роли на обёртке (блок 12, часть 12а): без неё cart.open ведёт на /cart.
+    drawer.setAttribute('data-role', 'cart-drawer');
     const added = placeSection('shop:cart-added', 'added-1', ADDED);
+    const badge = placeSection('shop:cart-badge', 'badge-1', BADGE);
     placeSection(
       'shop:buy',
       'buy-1',
@@ -112,9 +124,10 @@ describe('скрипты окон', () => {
       sections: [
         entry('shop:cart-drawer', drawerScript, { uses: ['cart'] }),
         entry('shop:cart-added', addedScript, { uses: ['cart'] }),
+        entry('shop:cart-badge', badgeScript, { uses: ['cart'] }),
       ],
     });
-    return { gateway, drawer, added };
+    return { gateway, drawer, added, badge };
   }
 
   it('«В корзину»: окно — название и цена добавленной строки, число штук; панель — строка и итог', async () => {
@@ -133,8 +146,62 @@ describe('скрипты окон', () => {
     expect(shown(added, 'count')).toEqual(['2']);
     expect(shown(added, 'options')).toEqual([]);
     expect(shown(added, 'compare')).toEqual([]);
+    // Панель закрыта: пока её не открыли, она не заполняется (19.11, Web Vitals) — строк и итога нет.
+    expect(rowsOf(drawer)).toBe(0);
+    expect(shown(drawer, 'total')).toEqual([]);
+    await openDrawer();
     expect(shown(drawer, 'title')).toEqual(['Шарф']);
     expect(shown(drawer, 'total').at(-1)?.replace(/\s/g, '')).toBe('4980₽');
+    expect(failures.details).toEqual([]);
+  });
+
+  it('панель закрыта: при загрузке страницы с непустой корзиной форматтер денег не создаётся и разметка не трогается; значок считает штуки сам, открытие заполняет панель', async () => {
+    const created = vi.spyOn(Intl, 'NumberFormat');
+    localStorage.setItem(CART_ID_KEY, 'c-1');
+    const gateway = fakeGateway();
+    gateway.answer('GET /store/carts/c-1', { status: 200, body: { cart: CART, items: [serverItem('l-1', 'p12', 2)] } });
+    document.head.innerHTML = configTag('live');
+    const drawer = placeSection('shop:cart-drawer', 'drawer-1', DRAWER);
+    drawer.setAttribute('data-role', 'cart-drawer');
+    const badge = placeSection('shop:cart-badge', 'badge-1', BADGE);
+    core = start({
+      parts: [cart],
+      sections: [
+        entry('shop:cart-drawer', drawerScript, { uses: ['cart'] }),
+        entry('shop:cart-badge', badgeScript, { uses: ['cart'] }),
+      ],
+    });
+    await settle();
+    expect(created).not.toHaveBeenCalled();
+    expect(shown(badge, 'count')).toEqual(['2']);
+    expect(rowsOf(drawer)).toBe(0);
+    expect(drawer.querySelector('[data-ref="summary"]')?.hasAttribute('hidden')).toBe(true);
+    await openDrawer();
+    expect(created).toHaveBeenCalledTimes(1);
+    expect(rowsOf(drawer)).toBe(1);
+    expect(drawer.querySelector('[data-ref="summary"]')?.hasAttribute('hidden')).toBe(false);
+    expect(shown(drawer, 'total').at(-1)?.replace(/\s/g, '')).toBe('4980₽');
+    expect(shown(badge, 'count')).toEqual(['2']);
+    expect(failures.details).toEqual([]);
+  });
+
+  it('второе открытие панели не заполняет её заново: строки не дублируются, а смена корзины доходит', async () => {
+    const { gateway, drawer } = openPage();
+    gateway.answer('POST /store/carts', {
+      status: 201,
+      body: { cart: { id: 'c-1', shopId: SHOP_ID, status: 'cart' } },
+    });
+    gateway.answer('POST /store/carts/c-1/items', { status: 201, body: { item: serverItem('l-1', 'p12', 2) } });
+    gateway.answer('GET /store/carts/c-1', { status: 200, body: { cart: CART, items: [serverItem('l-1', 'p12', 2)] } });
+    await settle();
+    document.querySelector<HTMLButtonElement>('[data-action="cart.add"]')?.click();
+    await settle();
+    await openDrawer();
+    await openDrawer();
+    expect(rowsOf(drawer)).toBe(1);
+    document.querySelector<HTMLButtonElement>('[data-action="cart.add"]')?.click();
+    await settle();
+    expect(rowsOf(drawer)).toBe(1);
     expect(failures.details).toEqual([]);
   });
 
@@ -163,6 +230,7 @@ describe('скрипты окон', () => {
     const { gateway, drawer } = openPage();
     gateway.answer('GET /store/carts/c-gone', { status: 404, body: { message: 'Cart not found' } });
     await settle();
+    await openDrawer();
     expect(drawer.querySelector('[data-ref="empty"]')?.hasAttribute('hidden')).toBe(false);
     expect(shown(drawer, 'title')).toEqual([]);
     expect(drawer.querySelector('[data-ref="summary"]')?.hasAttribute('hidden')).toBe(true);

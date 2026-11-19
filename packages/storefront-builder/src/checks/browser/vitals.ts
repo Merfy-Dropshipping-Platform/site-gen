@@ -95,7 +95,8 @@ export const VITALS_INIT = `(() => {
     start.taken = true;
     for (const el of document.querySelectorAll('*')) {
       start.all.add(el);
-      if (el.hasAttribute('hidden')) start.hidden.add(el);
+      // Скрыт — если и стили его не показывают: атрибут hidden с display из CSS (баннер cookie, 19.11) виден с первого кадра.
+      if (el.hasAttribute('hidden') && getComputedStyle(el).display === 'none') start.hidden.add(el);
       if (el.tagName === 'IMG' && !el.hasAttribute('src') && !el.hasAttribute('srcset')) start.noSrc.add(el);
     }
     for (const el of document.querySelectorAll('[data-section-id]')) ro.observe(el);

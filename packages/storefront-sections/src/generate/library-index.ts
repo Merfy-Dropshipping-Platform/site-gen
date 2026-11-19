@@ -9,7 +9,7 @@ import { listSectionFolders, readSectionFolder } from '../read-folder';
 export const LIBRARY_DIRS: readonly string[] = ['fixtures/shop', '../storefront-shell/sections'];
 export const LIBRARY_INDEX_PATH = 'generated/library-index.json';
 
-function nameOf(files: SectionFiles): string | undefined {
+export function nameOf(files: SectionFiles): string | undefined {
   const manifest: unknown = JSON.parse(files['section.json'] ?? '{}');
   const name: unknown = typeof manifest === 'object' && manifest !== null ? Reflect.get(manifest, 'name') : undefined;
   return typeof name === 'string' ? name : undefined;

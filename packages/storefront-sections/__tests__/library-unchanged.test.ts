@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { isLibrarySection } from '../src/library-copy';
+import { isLibrarySection } from '../src/library-history';
 import { readSectionFolder } from '../src/read-folder';
 import { libraryUnchanged, type RowsQuery } from '../src/registry';
 
@@ -31,14 +31,14 @@ function registry(sources: Record<string, Record<string, string>>): RowsQuery & 
 }
 
 describe('секция осталась библиотечной', () => {
-  it('не тронутая — да, под другим именем и названием — тоже; изменённая и чужая — нет', async () => {
+  it('не тронутая — да; под другим именем, изменённая и чужая — нет (отпечаток точный)', async () => {
     const hero = await readSectionFolder(`${PACKAGE_DIR}fixtures/shop/hero`);
     const renamed = {
       ...hero,
       'section.json': (hero['section.json'] ?? '').replace('"name": "hero"', '"name": "top"'),
     };
     expect(isLibrarySection(hero)).toBe(true);
-    expect(isLibrarySection(renamed)).toBe(true);
+    expect(isLibrarySection(renamed)).toBe(false);
     expect(isLibrarySection(withTemplate(hero, '<!-- правка -->'))).toBe(false);
     expect(isLibrarySection({ 'template.astro': 'x' })).toBe(false);
     expect(isLibrarySection({ 'section.json': '{' })).toBe(false);

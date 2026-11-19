@@ -17,6 +17,9 @@ export {
 export { prepareSection, type PrepareInput, type PrepareResult, type PreparedSection } from './prepare';
 export { problemText, type ProblemCode, type SectionProblem } from './problems';
 export { listSectionFolders, readSectionFolder } from './read-folder';
+// История библиотеки (20.11): отпечатки всех версий секций платформы и версии папки из git.
+export { libraryHashesOf, libraryVersionOf, type LibraryHistory, type LibraryVersion } from './library-history';
+export { gitSectionVersions } from './generate/git-versions';
 export {
   SECTION_AUTHORS,
   currentDraft,

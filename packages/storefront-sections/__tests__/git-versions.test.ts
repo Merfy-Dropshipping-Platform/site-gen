@@ -3,13 +3,23 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hashOf } from '@merfy/storefront-build';
-import { readSectionFolder } from '@merfy/storefront-sections';
 import { describe, expect, it } from 'vitest';
-import { gitSectionVersions } from '../../src/release/section-versions';
+import { gitSectionVersions } from '../src/generate/git-versions';
+import { readSectionFolder } from '../src/read-folder';
 
 // Версии папки нашей секции из истории git (часть 15з, Р15з-3): хеш версии из git — как у той же папки с диска.
-const GIT = ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null'];
-const git = (cwd: string, ...args: string[]): string => execFileSync('git', [...GIT, ...args], { cwd, encoding: 'utf8' });
+const GIT = [
+  '-c',
+  'user.name=t',
+  '-c',
+  'user.email=t@t',
+  '-c',
+  'commit.gpgsign=false',
+  '-c',
+  'core.hooksPath=/dev/null',
+];
+const git = (cwd: string, ...args: string[]): string =>
+  execFileSync('git', [...GIT, ...args], { cwd, encoding: 'utf8' });
 
 function repoWithFolder(): { repo: string; folder: string } {
   const repo = mkdtempSync(join(tmpdir(), 's2-b15z-'));

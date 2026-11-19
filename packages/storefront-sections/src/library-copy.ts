@@ -52,6 +52,13 @@ export function libraryKeyOf(files: SectionFiles): string | null {
     .digest('hex');
 }
 
+// Секция осталась библиотечной (19.11): отпечаток её файлов есть в индексе библиотеки, под любым именем. Правка кода,
+// разметки или параметров — отпечаток другой, секция уже авторская: её находки чинит агент, а не платформа.
+export function isLibrarySection(files: SectionFiles, index: LibraryIndex = INDEX): boolean {
+  const key = libraryKeyOf(files);
+  return key !== null && Object.hasOwn(index, key);
+}
+
 export function libraryCopyProblems(files: SectionFiles, name: string, index: LibraryIndex = INDEX): SectionProblem[] {
   const key = libraryKeyOf(files);
   const library = key === null ? undefined : index[key];

@@ -82,6 +82,8 @@ function depsOf(
     [HERO.name, HERO],
     [ANALYTICS.name, ANALYTICS],
   ]),
+  // Секции магазина, оставшиеся библиотечными (по файлам реестра).
+  library: ReadonlySet<string> = new Set(),
 ) {
   const rendered: [string, SectionRenderRequest][] = [];
   const deps: ShopPreviewDeps = {
@@ -90,6 +92,7 @@ function depsOf(
     inputs: () => Promise.resolve({ inputs: INPUTS, renders: new Map([[HASH, MODULE]]) }),
     theme: () => Promise.resolve(THEME),
     sections: () => Promise.resolve(sections),
+    library: (_shopId, names) => Promise.resolve(new Set(names.filter((name) => library.has(name)))),
     render: (shopId, request) => {
       rendered.push([shopId, request]);
       const heading = request.settings.heading;
@@ -672,6 +675,16 @@ describe('превью шаблонов записей (блок 8 «Секци�
     const checkout = parseSample((await shopPreview(deps, url(`shop=${SHOP}&page=page-checkout`))).body);
     expect(checkout?.cart?.lines).toHaveLength(2);
     expect(parseSample((await shopPreview(deps, url(`shop=${SHOP}&page=page-wishlist`))).body)).toBeNull();
+  });
+
+  it('снимок черновика: неизменённая библиотечная секция — в теге как платформенная; изменённая и своя — нет', async () => {
+    const platformOf = async (library: ReadonlySet<string>) => {
+      const { deps } = depsOf(undefined, library);
+      return parseSample((await shopPreview(deps, url(`shop=${SHOP}`))).body)?.platform;
+    };
+    expect(await platformOf(new Set([HERO.name]))).toEqual(['hero-1']);
+    // Секцию правили (или она своя): реестр её библиотечной не признал — тега нет совсем.
+    expect(await platformOf(new Set())).toBeUndefined();
   });
 
   it('page=policy без секций и без политик — текст примера от платформы', async () => {

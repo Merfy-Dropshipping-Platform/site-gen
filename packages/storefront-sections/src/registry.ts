@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 import { z } from 'zod';
 import type { DoorFields } from './doors';
 import { SECTION_KINDS, type SectionFiles } from './format';
+import { isLibrarySection } from './library-copy';
 import type { PreparedSection } from './prepare';
 import { sectionProblemSchema } from './problems';
 import { isSectionRole, type SectionRole } from './roles';
@@ -525,6 +526,19 @@ const sourceRow = z.object({ id: z.string(), source: z.record(z.string(), z.stri
 export interface DraftSource {
   id: string;
   files: SectionFiles;
+}
+
+const SOURCES_SQL = `SELECT name, source FROM storefront_section
+  WHERE author = 'shop' AND owner = $1 AND name = ANY($2::text[]) AND draft`;
+const namedSourceRow = z.object({ name: z.string(), source: z.record(z.string(), z.string()) });
+
+// Какие из своих секций магазина (полные имена) в текущей правке остались библиотечными (`isLibrarySection`): секции
+// платформы для проверок черновика (19.11). Секции расширений и чужих магазинов сюда не попадают.
+export async function libraryUnchanged(db: RowsQuery, shopId: string, names: readonly string[]): Promise<Set<string>> {
+  if (names.length === 0) return new Set();
+  const { rows } = await db.query(SOURCES_SQL, [shopId, names]);
+  const sources = rows.map((row) => namedSourceRow.parse(row));
+  return new Set(sources.filter((row) => isLibrarySection(row.source)).map((row) => row.name));
 }
 
 // Файлы текущей правки своей секции магазина — чтобы ИИ дорабатывал её (блок 14, 14.7). Нет такой секции — null.

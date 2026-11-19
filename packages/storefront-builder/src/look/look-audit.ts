@@ -35,6 +35,51 @@ export async function freePort(): Promise<number> {
   });
 }
 
+// Очередь прогонов Lighthouse (19.11). Lighthouse ведёт замеры через глобальный `performance` процесса: два прогона разом
+// затирают метки друг друга и падают с `lh:runner:gather` («The start lh:gather:getBenchmarkIndex performance mark has
+// not been set»). А снимки идут по два сразу (`MAX_CONCURRENT_RENDERS`), поэтому прогоны встают в очередь: по одному на
+// процесс, а значит и на его браузер.
+export class LighthouseBusy extends Error {
+  constructor(waitMs: number) {
+    super(`очередь Lighthouse занята другим снимком: не дождался за ${Math.round(waitMs / 100) / 10} с`);
+  }
+}
+
+export class LighthouseTurns {
+  private busy = false;
+  private readonly waiting: Array<() => void> = [];
+
+  // Место в очереди: ждёт не дольше `waitMs`; не дождался — `LighthouseBusy`, и очередь он не занимает. Отдаёт, чем
+  // место освободить.
+  take(waitMs: number): Promise<() => void> {
+    if (!this.busy) {
+      this.busy = true;
+      return Promise.resolve(this.release);
+    }
+    return new Promise((resolve, reject) => {
+      const turn = (): void => {
+        clearTimeout(timer);
+        resolve(this.release);
+      };
+      const giveUp = (): void => {
+        this.waiting.splice(this.waiting.indexOf(turn), 1);
+        reject(new LighthouseBusy(waitMs));
+      };
+      const timer = setTimeout(giveUp, waitMs);
+      this.waiting.push(turn);
+    });
+  }
+
+  // Место отдаётся следующему в очереди, не освобождаясь между ними.
+  private readonly release = (): void => {
+    const next = this.waiting.shift();
+    if (next === undefined) this.busy = false;
+    else next();
+  };
+}
+
+const turns = new LighthouseTurns();
+
 const TOKEN_KEY = '__lookAuditToken';
 
 // Секции элементов непройденных проверок: страница находит их по путям Lighthouse; элемента уже нет — описание по
@@ -55,8 +100,18 @@ async function placesOf(page: Page, nodes: FailedNode[]): Promise<unknown[]> {
 export class LighthouseLink {
   constructor(private readonly port: number) {}
 
-  // Прогон Lighthouse по вкладке `page`: элементы непройденных проверок с секциями (`LighthouseRaw`).
-  async run(page: Page, device: LookDevice): Promise<unknown> {
+  // Прогон Lighthouse по вкладке `page`: элементы непройденных проверок с секциями (`LighthouseRaw`). Идёт в очереди
+  // процесса, ждать её — не дольше `waitMs`.
+  async run(page: Page, device: LookDevice, waitMs: number): Promise<unknown> {
+    const release = await turns.take(waitMs);
+    try {
+      return await this.measure(page, device);
+    } finally {
+      release();
+    }
+  }
+
+  private async measure(page: Page, device: LookDevice): Promise<unknown> {
     // Метка вкладки: на тот же адрес может быть открыто несколько вкладок (телефон, компьютер, соседнее задание).
     const token = randomUUID();
     await page.evaluate(([key, value]) => Reflect.set(window, key, value), [TOKEN_KEY, token] as const);

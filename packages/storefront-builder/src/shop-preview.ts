@@ -28,6 +28,7 @@ import {
 } from '@merfy/storefront-build';
 import {
   isOverlaySection,
+  libraryUnchanged,
   propsUsesOf,
   resolveSectionBlocks,
   resolveSectionSettings,
@@ -61,7 +62,7 @@ import {
 } from './preview-code';
 import { inlineFonts } from './preview-fonts';
 import { withPreviewPolicy } from './preview-policy';
-import { previewSampleTag } from './preview-sample';
+import { platformIdsOf, previewSampleTag } from './preview-sample';
 import { readSnapshot, type ProductRequest } from './snapshot';
 import { answer, isAnswer, jsonAnswer, standPreview, standShop, type PreviewDeps } from './stand-preview';
 
@@ -84,6 +85,8 @@ export interface ShopPreviewDeps {
   theme: (id: string, version: string) => Promise<ShopTheme>;
   // Видимые секции; у секций включённых расширений — их id и название (блок 12, часть 12б).
   sections: (shopId: string) => Promise<ReadonlyMap<string, VisibleSection> | null>;
+  // Из своих секций магазина (полные имена) — те, что остались библиотечными: секции платформы для проверок снимка.
+  library: (shopId: string, names: readonly string[]) => Promise<ReadonlySet<string>>;
   render: (shopId: string, request: SectionRenderRequest) => Promise<string>;
   fonts: (css: string) => Promise<string>;
   // Сборка ядра сервиса (блок 5, часть 5г): её части — uses кода секции до части 5в; нет — uses пустой.
@@ -133,6 +136,7 @@ export const shopPreviewDeps = (preview: PreviewDeps): ShopPreviewDeps => ({
   },
   theme: async (id, version) => (await preview.catalog.themeAt(id, version)).build,
   sections: (shopId) => readVisibleSections(preview.snapshot.code, shopId),
+  library: (shopId, names) => libraryUnchanged(preview.snapshot.code.db, shopId, names),
   render: (shopId, request) => preview.renderers.render(shopId, request),
   fonts: (css) => inlineFonts(css, preview.fonts),
   shell: preview.snapshot.code.shell,
@@ -234,8 +238,11 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   const agents = `<script>${PREVIEW_AGENT}</script><script>${PREVIEW_SECTIONS_AGENT}</script>`;
   const code = await previewTags(inputs, assets);
   // Снимок черновика (`look/look-sample.ts`): какая запись показана и строки корзины — данными, скрипта в теге нет.
-  const sample = previewSampleTag(inputs, page, recordOf(url));
-  const html = beforeBodyEnd(new TextDecoder().decode(rendered.file.content), `${agents}${code}${sample}`);
+  // Секции платформы страницы — в том же теге: что в них найдёт проверка, чинит платформа.
+  const pageHtml = new TextDecoder().decode(rendered.file.content);
+  const platform = await platformIdsOf(pageHtml, (names) => deps.library(found.shopId, names));
+  const sample = previewSampleTag(inputs, page, recordOf(url), platform);
+  const html = beforeBodyEnd(pageHtml, `${agents}${code}${sample}`);
   return answer(200, withPreviewPolicy(found.inline(withoutFontPreloads(await inlinePageFonts(html, deps)))));
 }
 

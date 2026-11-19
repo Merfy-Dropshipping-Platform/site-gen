@@ -43,12 +43,45 @@ function cartLinesOf(inputs: BuildInputs): LookCartLine[] {
   return ordered.slice(0, SAMPLE_CART_LINES).map(lineOf);
 }
 
-export function previewSampleTag(inputs: BuildInputs, page: string, record: string | null): string {
+// `platform` — id экземпляров секций платформы на странице (`platformIdsOf`).
+export function previewSampleTag(
+  inputs: BuildInputs,
+  page: string,
+  record: string | null,
+  platform: readonly string[] = [],
+): string {
   const sample: LookSample = { v: 1 };
   if (isRecordType(page) && record !== null) {
     const found = findPreviewRecord(inputs, page, record);
     sample.record = { type: page, asked: record, found: found !== null, title: titleOf(found) };
   }
   if (CART_PAGES.has(page)) sample.cart = { lines: cartLinesOf(inputs) };
-  return sample.record === undefined && sample.cart === undefined ? '' : sampleTagOf(sample);
+  if (platform.length > 0) sample.platform = [...platform];
+  const empty = sample.record === undefined && sample.cart === undefined && sample.platform === undefined;
+  return empty ? '' : sampleTagOf(sample);
+}
+
+const WRAPPER_TAG = /<merfy-section\b[^>]*>/g;
+
+const attributeOf = (tag: string, name: string): string | null =>
+  new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1] ?? null;
+
+// Экземпляры секций на странице: id и полное имя с обёртки (`data-section-id`, `data-section`).
+function placedOn(html: string): Array<{ id: string; name: string }> {
+  return [...html.matchAll(WRAPPER_TAG)].flatMap(([tag]) => {
+    const id = attributeOf(tag, 'data-section-id');
+    const name = attributeOf(tag, 'data-section');
+    return id === null || name === null ? [] : [{ id, name }];
+  });
+}
+
+// Секции платформы на странице (19.11): библиотечные, которые в магазине не меняли. Какие секции такие — решает
+// `unchanged` по именам секций страницы; роль секции (`data-role`) тут ни при чём: своя корзина агента — его секция.
+export async function platformIdsOf(
+  html: string,
+  unchanged: (names: readonly string[]) => Promise<ReadonlySet<string>>,
+): Promise<string[]> {
+  const placed = placedOn(html);
+  const library = await unchanged([...new Set(placed.map((section) => section.name))]);
+  return placed.filter((section) => library.has(section.name)).map((section) => section.id);
 }

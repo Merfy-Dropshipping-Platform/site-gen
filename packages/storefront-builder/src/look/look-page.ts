@@ -446,7 +446,7 @@ export interface OpenOptions {
   // Во сколько раз замедлить ЦП на время загрузки, как Lighthouse замедляет телефон (`cpuRateFor`); 1 — не замедлять.
   cpuRate?: number;
   // Lighthouse по вкладке (`look-audit.ts`); нет — отрисовщик без порта отладки, проверка отвечает отказом.
-  audit?: (page: Page, device: LookDevice) => Promise<unknown>;
+  audit?: (page: Page, device: LookDevice, waitMs: number) => Promise<unknown>;
 }
 
 // Замедление ЦП вкладки на время загрузки: CDP Emulation.setCPUThrottlingRate держится и после перехода на адрес магазина
@@ -491,10 +491,10 @@ function pageChecks(
       const raw: unknown = await page.evaluate(VITALS_READ);
       return raw !== null && typeof raw === 'object' ? { ...raw, cpuRate } : raw;
     },
-    lighthouse: () =>
+    lighthouse: (waitMs) =>
       audit === undefined
         ? Promise.reject(new Error('Lighthouse не подключён к браузеру снимков'))
-        : audit(page, device),
+        : audit(page, device, waitMs),
   };
 }
 

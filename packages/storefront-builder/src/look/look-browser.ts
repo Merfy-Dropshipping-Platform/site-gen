@@ -6,7 +6,7 @@
 // между магазинами). Не больше двух отрисовок одновременно, остальные ждут. На задание — один общий срок 30 секунд (или
 // меньше, если задание долго шло до процесса): по его концу контексты закрываются, операция над страницей отвечает
 // понятным отказом.
-import type { Browser, BrowserContext, Page } from 'playwright';
+import type { Browser, BrowserContext } from 'playwright';
 import { DEFAULT_CPU_RATE, cpuRateFor } from '../checks/browser/vitals';
 import { LighthouseLink, freePort } from './look-audit';
 import { MOTION_EXTRA_MS } from './look-motion';
@@ -234,12 +234,12 @@ export class ChromiumRenderer implements PageRenderer {
     });
     await job.track(context);
     // ЦП замедляется только телефону: пороги TBT у Lighthouse для компьютера — без замедления.
-    const options = { cpuRate: mobile ? this.cpuRate : 1, audit: (page: Page) => audit.run(page, device) };
+    const options = { cpuRate: mobile ? this.cpuRate : 1, audit: audit.run.bind(audit) };
     const session = await job.guard(() => openPage(context, device, html, options));
     return {
       ...session,
       vitals: () => job.guard(() => session.vitals()),
-      lighthouse: () => job.guard(() => session.lighthouse()),
+      lighthouse: (waitMs) => job.guard(() => session.lighthouse(waitMs)),
       shoot: (index, quality) => job.guard(() => session.shoot(index, quality)),
       detect: (section) => job.guard(() => session.detect(section)),
       layout: (section) => job.guard(() => session.layout(section)),

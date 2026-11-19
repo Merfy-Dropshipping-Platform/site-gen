@@ -171,8 +171,9 @@ export interface PageSession {
   // страницы, и во сколько раз был замедлен ЦП. Разбирает `vitalsFindings`. Ничего на странице не меняет.
   vitals(): Promise<unknown>;
   // Lighthouse по этой вкладке в режиме snapshot (`checks/browser/lighthouse.ts`, `look-audit.ts`): элементы
-  // непройденных проверок с секциями. Разбирает `lighthouseFindings`. Страницу не перезагружает.
-  lighthouse(): Promise<unknown>;
+  // непройденных проверок с секциями. Разбирает `lighthouseFindings`. Страницу не перезагружает. Прогоны Lighthouse в
+  // процессе идут по одному; `waitMs` — сколько можно ждать своей очереди, дольше — отказ с причиной.
+  lighthouse(waitMs: number): Promise<unknown>;
   // Проверка меток витрины кликами (`look-marks.ts`). Меняет страницу, поэтому идёт последней. За `limitMs` новые метки
   // не начинаются, что успела — отдаёт. С `section` — метки этой секции, без него — всей страницы.
   marks(limitMs: number, section?: string): Promise<MarkResult[]>;

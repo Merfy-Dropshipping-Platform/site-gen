@@ -225,7 +225,14 @@ const drawDeps = {
   log,
   preview,
   // Инструменты секций и документация SDK (блок 14 «Секций и SDK»).
-  sections: sectionToolsDeps({ db, store, themeIds: deps.themeIds, open: sectionUploadsOpen(sandbox), log }),
+  sections: sectionToolsDeps({
+    db,
+    store,
+    themeIds: deps.themeIds,
+    open: sectionUploadsOpen(sandbox),
+    log,
+    libraryDir: join(ROOT, 'packages/storefront-sections'),
+  }),
   docs: await loadSdkDocs(ROOT, settings.apiUrl, log),
 };
 const slots = createSlots(settings.drawSlots);

@@ -12,6 +12,7 @@ import {
   insertRelease,
   RoleTakenError,
   saveDraft,
+  setLibraryBase,
   StoreCycleError,
   type Database,
   type NewSection,
@@ -36,6 +37,9 @@ export interface AcceptDeps {
 // секции нет), иначе DraftChangedError таблицы секций, ничего не записано. У выпуска расширения условия нет.
 export interface AcceptOptions {
   expectDraft?: string | null;
+  // Основа копии магазина — отпечаток версии библиотеки (library-update.ts), уже проверенный вызывающим. Нет — правка
+  // наследует основу прошлой текущей.
+  libraryBase?: string;
 }
 
 export type AcceptResult =
@@ -115,6 +119,14 @@ const DRAFT: Storage = {
   },
 };
 
+// Правка уже текущая («без изменений»), а вызов принёс основу: она записывается на ту же строку. Перенос правок на новую
+// версию библиотеки, который не изменил код копии, всё равно снимает предложение обновить.
+async function withBase(db: Database, answer: AcceptResult, base: string | undefined): Promise<AcceptResult> {
+  if (answer.status !== 'unchanged' || base === undefined || answer.row.libraryBase === base) return answer;
+  const row = await setLibraryBase(db, answer.row.id, base);
+  return row === null ? answer : { status: 'unchanged', row };
+}
+
 const storageOf = (door: DoorFields): Storage => (door.release === null ? DRAFT : RELEASE);
 
 // Файл скрипта — в storefront/blobs по sha256, как файлы сборок (С7-10 Б): превью и сборка берут его по отпечатку.
@@ -178,13 +190,14 @@ export async function acceptSection(
   const storage = storageOf(fields);
   const known = await storage.find(deps.db, fields, `${fields.prefix}:${manifest.value.name}`);
   const answer = known === null ? null : storage.known(known, hashOf(files));
-  if (answer !== null) return answer;
+  if (answer !== null) return withBase(deps.db, answer, options.libraryBase);
   const retired = await overlayRetiredProblems(deps.db, fields, manifest.value);
   if (retired.length > 0) return refused(retired);
   const prepared = await prepareInWorker({ prefix: fields.prefix, files }, deps.sandbox ?? DEFAULT_SANDBOX);
   if (!prepared.ok) return refused(prepared.problems);
   const scriptHash = await uploadScript(deps.store, prepared.section.script);
-  return storage.save(deps.db, newRow(fields, prepared.section, files, scriptHash), options);
+  const row = { ...newRow(fields, prepared.section, files, scriptHash), libraryBase: options.libraryBase };
+  return storage.save(deps.db, row, options);
 }
 
 // Проверка без записи (POST /sections/check): та же проверка в процессе, что у приёма, и те же отказы, которые видны

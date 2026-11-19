@@ -4,10 +4,11 @@ import {
   type PrepareResult,
   type SectionProblem,
   type SectionRow,
+  type UpdateOffer,
 } from '@merfy/storefront-sections';
 import { describe, expect, it, vi } from 'vitest';
 import type { DrawAnswer } from '../src/draw';
-import { sectionTool, sectionUploadsOpen, type SectionToolsDeps } from '../src/section-tools';
+import { sectionTool, sectionUploadsOpen, type SectionToolsDeps, type UpdateTools } from '../src/section-tools';
 
 // Входы sites для инструментов секций (блок 14, 14.7): договор — plan-14b.md, «Договор».
 const SHOP = '7d9f2a51-3c4e-4b8a-9f1d-2e6c8a4b5d70';
@@ -47,6 +48,38 @@ function row(id: string, draft: boolean, published: boolean): SectionRow {
   };
 }
 
+// Проверка без ошибок: собранная секция без предупреждений.
+const PASSED: PrepareResult = {
+  ok: true,
+  section: {
+    name: 'reviews',
+    manifest: { sdk: 1, name: 'reviews', kind: 'section', title: 'Отзывы', settings: [] },
+    template: '<div></div>',
+    render: null,
+    script: null,
+    warnings: [],
+    scriptMeta: { uses: [], parts: [], classes: [] },
+  },
+};
+
+// Предложение обновить копию: версия 2 → 4 секции reviews в библиотеке.
+const OFFER: UpdateOffer = {
+  name: 'reviews',
+  base: { hash: 'sha256:base', name: 'reviews', version: 2 },
+  latest: { hash: 'sha256:latest', name: 'reviews', version: 4 },
+};
+const LATEST_FILES = { ...FILES, 'template.astro': '<section></section>' };
+
+function updatesOf(over: Partial<UpdateTools> = {}): UpdateTools {
+  return {
+    offer: vi.fn(() => Promise.resolve(undefined)),
+    basedOn: vi.fn(() => Promise.resolve(null)),
+    decline: vi.fn(() => Promise.resolve(undefined)),
+    versions: vi.fn(() => Promise.resolve({ base: FILES, latest: LATEST_FILES })),
+    ...over,
+  };
+}
+
 function depsOf(over: Partial<SectionToolsDeps> = {}): SectionToolsDeps & { logged: string[] } {
   const logged: string[] = [];
   return {
@@ -54,6 +87,7 @@ function depsOf(over: Partial<SectionToolsDeps> = {}): SectionToolsDeps & { logg
     open: () => true,
     check: vi.fn((): Promise<PrepareResult> => Promise.resolve({ ok: false, problems: [UNKNOWN] })),
     accept: vi.fn((): Promise<AcceptResult> => Promise.resolve({ status: 'accepted', row: row(E1, true, false) })),
+    update: updatesOf(),
     source: (_shop, name) => Promise.resolve(name === 'shop:reviews' ? { id: E1, files: FILES } : null),
     history: (_shop, name) =>
       Promise.resolve(name === 'shop:reviews' ? [row(E0, false, true), row(E1, true, false)] : []),
@@ -75,6 +109,7 @@ const DOC = 'errors.md#setting-name-unknown';
 
 // expect.any возвращает any: через хелпер с типом unknown — без unsafe-assignment (RULES секций, §8, с 24.10).
 const anyText = (): unknown => expect.any(String);
+const containing = (text: string): unknown => expect.stringContaining(text);
 
 describe('проверить', () => {
   it('200 и ответ проверки с doc; AGENTS.md и CLAUDE.md в проверку не уходят; строка журнала', async () => {
@@ -86,9 +121,43 @@ describe('проверить', () => {
       name: 'shop:reviews',
       problems: [{ ...UNKNOWN, doc: DOC }],
       warnings: [],
+      findings: [],
     });
     expect(deps.check).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES);
     expect(deps.logged).toEqual(['section-checked']);
+  });
+
+  it('копия изменена и есть новая версия библиотеки — находка library-update, fix ask; служебные файлы в проверку не уходят', async () => {
+    const check = vi.fn((): Promise<PrepareResult> => Promise.resolve(PASSED));
+    const deps = depsOf({ check, update: updatesOf({ offer: vi.fn(() => Promise.resolve(OFFER)) }) });
+    const body = filesBody({ ...FILES, '.merfy/based-on': 'sha256:base' });
+    const answer = await call(deps, 'POST', `/sections/check?shop=${SHOP}`, body);
+    expect(check).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES);
+    expect(deps.update.offer).toHaveBeenCalledWith(SHOP, 'shop:reviews');
+    expect(json(answer)).toMatchObject({
+      ok: true,
+      findings: [
+        {
+          place: 'shop',
+          check: 'library-update',
+          rule: 'newer-version',
+          level: 'warning',
+          section: null,
+          where: 'shop:reviews',
+          fix: 'ask',
+          count: 1,
+          text: containing('основа копии версия 2, в библиотеке версия 4'),
+        },
+      ],
+    });
+  });
+
+  it('проверка не прошла — находок библиотеки нет: сначала ошибки', async () => {
+    const offer = vi.fn(() => Promise.resolve(OFFER));
+    const deps = depsOf({ update: updatesOf({ offer }) });
+    const answer = await call(deps, 'POST', `/sections/check?shop=${SHOP}`, filesBody(FILES));
+    expect(json(answer)).toMatchObject({ ok: false, findings: [] });
+    expect(offer).not.toHaveBeenCalled();
   });
 });
 
@@ -102,10 +171,71 @@ describe('сохранить', () => {
       name: 'shop:reviews',
       problems: [],
       warnings: [],
+      findings: [],
       status: 'accepted',
       id: E1,
     });
-    expect(deps.accept).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES);
+    expect(deps.accept).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES, {});
+  });
+
+  it('с основой (.merfy/based-on): отпечаток проверен, в приём — libraryBase, служебного файла в секции нет', async () => {
+    const deps = depsOf();
+    const body = filesBody({ ...FILES, '.merfy/based-on': ' sha256:latest\n' });
+    const answer = await call(deps, 'POST', `/sections/save?shop=${SHOP}`, body);
+    expect(answer.status).toBe(200);
+    expect(deps.update.basedOn).toHaveBeenCalledWith(SHOP, FILES, 'sha256:latest');
+    expect(deps.accept).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES, { libraryBase: 'sha256:latest' });
+  });
+
+  it('основа чужая или неизвестная — 400 based-on-invalid с текстом, ничего не записано', async () => {
+    const basedOn = vi.fn(() => Promise.resolve('basedOn нет в истории библиотеки'));
+    const deps = depsOf({ update: updatesOf({ basedOn }) });
+    const answer = await call(
+      deps,
+      'POST',
+      `/sections/save?shop=${SHOP}`,
+      filesBody({ ...FILES, '.merfy/based-on': 'x' }),
+    );
+    expect([answer.status, json(answer)]).toEqual([
+      400,
+      { ok: false, error: { code: 'based-on-invalid', message: 'basedOn нет в истории библиотеки' } },
+    ]);
+    expect(deps.accept).not.toHaveBeenCalled();
+  });
+
+  it('в ответе сохранения — находки по записанной секции, пока предложение обновить остаётся', async () => {
+    const offer = vi.fn(() => Promise.resolve(OFFER));
+    const deps = depsOf({ update: updatesOf({ offer }) });
+    const answer = await call(deps, 'POST', `/sections/save?shop=${SHOP}`, filesBody(FILES));
+    expect(json(answer)).toMatchObject({ ok: true, findings: [{ check: 'library-update', fix: 'ask' }] });
+  });
+
+  it('отказ мерчанта (.merfy/decline-update без файлов секции): версия записана, секция не сохраняется', async () => {
+    const decline = vi.fn(() => Promise.resolve(OFFER));
+    const deps = depsOf({ update: updatesOf({ decline }) });
+    const answer = await call(
+      deps,
+      'POST',
+      `/sections/save?shop=${SHOP}`,
+      filesBody({ '.merfy/decline-update': 'reviews' }),
+    );
+    expect([answer.status, json(answer)]).toEqual([200, { ok: true, name: 'shop:reviews', declined: { version: 4 } }]);
+    expect(decline).toHaveBeenCalledWith(SHOP, 'shop:reviews');
+    expect(deps.accept).not.toHaveBeenCalled();
+    expect(deps.logged).toEqual(['section-update-declined']);
+  });
+
+  it('отказ, когда предлагать нечего — 404 update-not-offered', async () => {
+    const answer = await call(
+      depsOf(),
+      'POST',
+      `/sections/save?shop=${SHOP}`,
+      filesBody({ '.merfy/decline-update': 'shop:reviews' }),
+    );
+    expect([answer.status, json(answer)]).toEqual([
+      404,
+      { ok: false, error: { code: 'update-not-offered', message: anyText() } },
+    ]);
   });
 
   it('отказ: 422 и проблемы с doc, ничего не записано', async () => {
@@ -183,6 +313,24 @@ describe('файлы, правки, откат', () => {
       404,
       { ok: false, error: { code: 'section-not-found', message: anyText() } },
     ]);
+  });
+
+  it('есть предложение обновить — в ответе три версии: основа, новая версия и их отпечатки; текущая копия — в files', async () => {
+    const deps = depsOf({ update: updatesOf({ offer: vi.fn(() => Promise.resolve(OFFER)) }) });
+    const answer = json(await call(deps, 'GET', `/sections/source?shop=${SHOP}&name=reviews`));
+    expect(answer).toEqual({
+      name: 'shop:reviews',
+      id: E1,
+      files: FILES,
+      libraryUpdate: {
+        name: 'reviews',
+        base: OFFER.base,
+        latest: OFFER.latest,
+        baseFiles: FILES,
+        latestFiles: LATEST_FILES,
+      },
+    });
+    expect(deps.update.versions).toHaveBeenCalledWith(SHOP, 'shop:reviews', OFFER);
   });
 
   it('правки — по времени, с флагами; секции нет — 404', async () => {

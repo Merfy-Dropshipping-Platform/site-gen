@@ -18,7 +18,15 @@ export { prepareSection, type PrepareInput, type PrepareResult, type PreparedSec
 export { problemText, type ProblemCode, type SectionProblem } from './problems';
 export { listSectionFolders, readSectionFolder } from './read-folder';
 // История библиотеки (20.11): отпечатки всех версий секций платформы и версии папки из git.
-export { libraryHashesOf, libraryVersionOf, type LibraryHistory, type LibraryVersion } from './library-history';
+export {
+  libraryHashesOf,
+  libraryLatestOf,
+  libraryRefOf,
+  libraryVersionOf,
+  type LibraryHistory,
+  type LibraryRef,
+  type LibraryVersion,
+} from './library-history';
 export { gitSectionVersions } from './generate/git-versions';
 export { libraryFolders } from './generate/library-index';
 export {
@@ -125,6 +133,20 @@ export { SDK_KINDS } from './names';
 
 // Инструменты секций (блок 14, часть 14б): что видит конструктор и файлы текущей правки.
 export { draftSource, editableSections, libraryUnchanged, type DraftSource } from './registry';
+// Обновление копии библиотечной секции (20.11): основа копии, предложение, отказ; служебные файлы тела; версия с диска.
+export {
+  basedOnProblem,
+  baseOf,
+  declineUpdate,
+  offerOf,
+  sourceWithHash,
+  updateOfferOf,
+  updateOffersOf,
+  type CopyRow,
+  type UpdateOffer,
+} from './library-update';
+export { libraryFilesOf } from './library-files';
+export { BASED_ON_FILE, DECLINE_FILE, splitMeta, type SplitFiles } from './meta-files';
 // Свои сторы (01.11): круг чтений сторов — отказ приёма и отката; сторы, которые читает правка.
 export { StoreCycleError } from './registry';
 export { STORE_USE_PREFIX, isStoreUse } from './format';

@@ -5,6 +5,7 @@ import {
   RequestMethod,
 } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { StorefrontAuditController } from "./storefront-audit.controller";
 import { StorefrontBuilderClient } from "./storefront-builder.client";
 import { StorefrontPreviewController } from "./storefront-preview.controller";
 import {
@@ -22,6 +23,7 @@ import { StorefrontSectionsController } from "./storefront-sections.controller";
   imports: [ConfigModule],
   controllers: [
     StorefrontPreviewController,
+    StorefrontAuditController,
     StorefrontSectionsController,
     SdkDocsController,
   ],

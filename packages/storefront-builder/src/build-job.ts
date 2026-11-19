@@ -4,6 +4,7 @@ import {
   buildStorefront,
   parseBuildInputs,
   routeDuplicates,
+  type BuildInputs,
   type Changelog,
   type CodeNoticed,
   type SectionFailure,
@@ -11,6 +12,9 @@ import {
 } from '@merfy/storefront-build';
 import { withSectionRenderer } from '@merfy/storefront-sections';
 import { publishBuild, type ObjectStore } from '@merfy/storefront-storage';
+import type { AuditJob } from './audit/contract';
+import type { Pages } from './audit/plan';
+import { pageIdOf, startAudits } from './audit/start';
 import { StorefrontBuilderError, errorText } from './errors';
 import { shouldAnnounce, type Announce } from './indexnow';
 import { liveManifest } from './live';
@@ -71,6 +75,8 @@ export interface BuilderDeps {
   afterBuild?: (build: FinishedBuild) => Promise<void>;
   // Журналы версий тем образа: IndexNow при смене версии — только с пометкой «поисковикам» (блок 10).
   changelogs?: ReadonlyMap<string, Changelog>;
+  // Аудит после публикации: задание на страницу — проверяющему процессу. Нет — аудит не ставится.
+  publishAudit?: (job: AuditJob) => Promise<void>;
 }
 
 export interface RunningBuild {
@@ -190,6 +196,24 @@ async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, t
   return { ...(await publishBuild(deps.store, options)), pages: build.manifest.pages };
 }
 
+// Аудит после публикации (место `audit`): задания на изменённые страницы. Сбой постановки сборку не роняет: витрина
+// уже переключена, причина — в журнал.
+async function queueAudits(
+  deps: BuilderDeps,
+  job: ClaimedJob,
+  snapshot: Snapshot,
+  inputs: BuildInputs,
+  previous: Pages | null,
+  next: Pages,
+): Promise<void> {
+  if (deps.publishAudit === undefined) return;
+  const pageId = pageIdOf(inputs);
+  const published = { siteId: job.siteId, build: job.build, publicUrl: snapshot.address.url, pageId, previous, next };
+  await startAudits({ publish: deps.publishAudit, log: deps.log }, published).catch((error: unknown) =>
+    deps.log('audit-queue-failed', { shopId: job.siteId, buildId: job.build, error: errorText(error) }),
+  );
+}
+
 async function attempt(deps: BuilderDeps, job: ClaimedJob, steps: Steps): Promise<Attempt> {
   const time = stepTimer(deps, job, steps);
   await pin(deps, job.siteId);
@@ -205,6 +229,7 @@ async function attempt(deps: BuilderDeps, job: ClaimedJob, steps: Steps): Promis
   const result = await time('build', () => publish(deps, job, snapshot, theme));
   if (result.status === 'live' && deps.indexable && shouldAnnounce(deps.changelogs, live, snapshot.inputs))
     await deps.announce?.(snapshot.address.url, live?.pages ?? [], result.pages);
+  if (result.status === 'live') await queueAudits(deps, job, snapshot, inputs, live?.pages ?? null, result.pages);
   if (result.status !== 'blocked') return { outcome: result.status, error: null, code: null };
   const problems = result.problems.map((problem) => `${problem.rule}: ${problem.text}`).join('; ');
   throw new StorefrontBuilderError('build-blocked', problems, { path: `site/${job.siteId}` });

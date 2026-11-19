@@ -25,6 +25,7 @@ import {
   bigint,
   check,
   primaryKey,
+  real,
   serial,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -857,5 +858,57 @@ export const storefrontSectionError = pgTable(
       table.message,
     ),
     minuteIdx: index("idx_storefront_section_error_minute").on(table.minute),
+  }),
+);
+
+/**
+ * storefront_audit — аудит опубликованных страниц после публикации (drizzle/0037, место проверок `audit`): строка на
+ * магазин, сборку и страницу. Lighthouse по опубликованной странице: оценка, LCP, FCP, TBT, CLS, Speed Index, главный
+ * элемент первого экрана и его секция, главные возможности. previous — метрики прошлого аудита той же страницы,
+ * findings — находки «стало хуже». status failed — «не отработал», причина в reason. Пишет и читает сборщик витрин
+ * (packages/storefront-builder/src/audit/store.ts).
+ */
+export const storefrontAudit = pgTable(
+  "storefront_audit",
+  {
+    siteId: text("site_id").notNull(),
+    build: bigint("build", { mode: "number" }).notNull(),
+    path: text("path").notNull(),
+    pageId: text("page_id").notNull(),
+    status: text("status").notNull(),
+    reason: text("reason"),
+    perf: real("perf"),
+    lcpMs: integer("lcp_ms"),
+    fcpMs: integer("fcp_ms"),
+    tbtMs: integer("tbt_ms"),
+    cls: real("cls"),
+    siMs: integer("si_ms"),
+    lcpElement: text("lcp_element"),
+    lcpSection: text("lcp_section"),
+    opportunities: jsonb("opportunities")
+      .default(sql`'[]'::jsonb`)
+      .notNull(),
+    previous: jsonb("previous"),
+    findings: jsonb("findings")
+      .default(sql`'[]'::jsonb`)
+      .notNull(),
+    measuredAt: timestamp("measured_at", { withTimezone: true }).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.siteId, table.build, table.path] }),
+    statusCheck: check(
+      "storefront_audit_status_check",
+      sql`${table.status} IN ('done', 'failed')`,
+    ),
+    pathIdx: index("idx_storefront_audit_site_path").on(
+      table.siteId,
+      table.path,
+      table.measuredAt,
+    ),
+    pageIdx: index("idx_storefront_audit_site_page").on(
+      table.siteId,
+      table.pageId,
+      table.measuredAt,
+    ),
   }),
 );

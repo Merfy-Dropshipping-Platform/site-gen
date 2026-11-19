@@ -76,6 +76,9 @@ describe('код секций на рисовальщике nova', () => {
     const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
     expect(head).toContain('<link rel="preconnect" href="http://localhost:4321" crossorigin>');
     expect(head).toContain('<link rel="preconnect" href="https://minio.example">');
+    expect(head).toContain(
+      '<link rel="preload" as="image" href="https://minio.example/shop:cart-badge.jpg" fetchpriority="high">',
+    );
   });
 
   it('магазин без кода — ни стилей секций, ни ядра, ни <merfy-section>', async () => {

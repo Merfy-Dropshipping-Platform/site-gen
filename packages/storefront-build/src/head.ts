@@ -300,8 +300,8 @@ function headOf(
     configHtml: configTag(config),
     ...styles,
     // Код секций страницы (блок 7) — готовой строкой, как конфиг и токены: стили секций и тег бандла (часть 5б). Перед
-    // ним — переход между страницами (13.11), если он выбран.
-    codeHtml: `${transitionHead(styles.attributes, content.mode)}${codeHead(inputs, route.id, content.sectionsCss, content.bundleTag)}`,
+    // ним — переход между страницами (13.11), если он выбран. Самым первым — предзагрузка главной картинки (19.11).
+    codeHtml: `${content.mainImageLink ?? ''}${transitionHead(styles.attributes, content.mode)}${codeHead(inputs, route.id, content.sectionsCss, content.bundleTag)}`,
     social: socialOf(name, config.locale, inputs.site.logoUrl, route.record),
     ...structuredDataOf(route, canonical),
   };

@@ -37,6 +37,18 @@ describe('страница с секциями', () => {
     expect(html).not.toContain('id="merfy-modules"');
   });
 
+  // Замер на стенде 19.11.2026: на главной два h1 — шапка и секция «Страница».
+  it('h1 на странице один: у секций, у которых он свой, первый остаётся, следующие становятся h2', async () => {
+    const withTitles = (request: SectionRenderRequest): Promise<string> =>
+      Promise.resolve(`<h1 class="flex">${request.section}</h1>`);
+    const page: PageRender = { ...pageOf('live'), sections: { modules: RENDERS, render: withTitles } };
+    const html = text((await renderShopPage(codeInputs(), '/', theme, page)).file.content);
+    expect(html.match(/<h1 class="flex">/g)).toHaveLength(1);
+    expect(html.match(/<h2 class="flex">/g)).toHaveLength(3);
+    expect(html).toContain('<h1 class="flex">shop:cart-badge</h1>');
+    expect(html).toContain('<h2 class="flex">shop:hero</h2>');
+  });
+
   it('превью: стили секций и теги входных данных, без бандла страницы и без аналитики', async () => {
     const html = text((await renderShopPage(codeInputs(), '/', theme, pageOf('preview'))).file.content);
     expect(html).toContain('<style id="merfy-sections">');

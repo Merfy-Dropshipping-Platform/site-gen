@@ -23,8 +23,8 @@ describe('общий вид находки', () => {
       { ...base, section: 'hero-1', where: 'h2', text: 'Пустой h2' },
     ]);
     expect(found).toEqual([
-      { ...base, section: 'faq-1', where: 'h2 первый', text: 'Пустой h2', count: 2 },
-      { ...base, section: 'hero-1', where: 'h2', text: 'Пустой h2', count: 1 },
+      { ...base, fix: 'silent', section: 'faq-1', where: 'h2 первый', text: 'Пустой h2', count: 2 },
+      { ...base, fix: 'silent', section: 'hero-1', where: 'h2', text: 'Пустой h2', count: 1 },
     ]);
   });
 
@@ -54,6 +54,7 @@ describe('семантика по HTML (html-validate + своё правило)
         where: 'h2 «Простые вещи»',
         text: 'Первый заголовок страницы — h2 · главный заголовок страницы делай h1',
         count: 1,
+        fix: 'silent',
       },
     ]);
   });
@@ -117,6 +118,7 @@ describe('семантика по HTML (html-validate + своё правило)
         where: 'img sharf.jpg',
         text: 'Фото товара без alt · alt — название товара: так фото найдут в поиске по картинкам',
         count: 2,
+        fix: 'silent',
       },
     ]);
   });
@@ -203,6 +205,7 @@ describe('семантика в странице (разбор нарушени�
         where: 'div «Каталог Доставка»',
         text: 'Содержимое вне ориентиров страницы · шапку оберни в <header>, подвал — в <footer>, остальное лежит в <main>',
         count: 2,
+        fix: 'silent',
       },
       {
         place: 'browser',
@@ -213,6 +216,7 @@ describe('семантика в странице (разбор нарушени�
         where: 'li «Купить»',
         text: 'role="button" не подходит тегу li · убери role или смени тег',
         count: 1,
+        fix: 'silent',
       },
       {
         place: 'browser',
@@ -223,6 +227,7 @@ describe('семантика в странице (разбор нарушени�
         where: 'html',
         text: 'На странице нет <main> · основное содержимое — в <main>',
         count: 1,
+        fix: 'silent',
       },
     ]);
   });

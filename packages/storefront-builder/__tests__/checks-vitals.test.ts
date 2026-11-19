@@ -6,6 +6,7 @@ import {
   loadShifts,
   mountTimes,
   totalBlocking,
+  vitalsCheck,
   vitalsFindings,
   worstWindow,
   type VitalsRaw,
@@ -114,6 +115,7 @@ describe('CLS: находки', () => {
         where: 'секция выросла на 321 px',
         text: `Вёрстка прыгает при загрузке: CLS 0,24 при норме до 0,10, из-за этой секции 0,21 · ${FIX}`,
         count: 1,
+        fix: 'silent',
       },
       {
         place: 'browser',
@@ -124,6 +126,7 @@ describe('CLS: находки', () => {
         where: 'div «Шарф 1»',
         text: `Вёрстка прыгает при загрузке: CLS 0,24 при норме до 0,10, из-за этой секции 0,02 · ${FIX}`,
         count: 1,
+        fix: 'silent',
       },
     ]);
   });
@@ -172,6 +175,7 @@ describe('главный элемент первого экрана', () => {
         where: 'img hero.jpg',
         text: 'Главная картинка первого экрана грузится лениво (loading="lazy") · убери loading="lazy": она нужна сразу',
         count: 1,
+        fix: 'silent',
       },
     ]);
   });
@@ -242,6 +246,7 @@ describe('TBT', () => {
           'Запуск секции держит страницу 320 мс: TBT 295 мс при норме до 200 (ЦП замедлен ×4, как у телефона в ' +
           'Lighthouse) · тяжёлую работу раздели на части или отложи до показа секции',
         count: 1,
+        fix: 'silent',
       },
     ]);
   });
@@ -261,6 +266,56 @@ describe('TBT', () => {
 describe('замедление ЦП телефона по скорости машины (таблица Lighthouse)', () => {
   it('индекс 1500 и выше — ×4, 1000–1500 — ×2, слабее — без замедления', () => {
     expect([2_400, 1_500, 1_499, 1_000, 999, 0].map(cpuRateFor)).toEqual([4, 4, 2, 2, 1, 1]);
+  });
+});
+
+describe('сводка Web Vitals рядом с находками', () => {
+  it('CLS — худшее окно загрузки, TBT — сумма блокировок, LCP — секция и «где» элемента, пороги — платформы', () => {
+    const raw = {
+      ...clean,
+      shifts: [shift(400, 0.05), shift(2_000, 0.07), shift(2_300, 0.05)],
+      long: [{ t: 200, d: 400 }],
+      lcp: lcp({ section: 'hero-1', where: 'img hero.jpg' }),
+    };
+    const { vitals } = vitalsCheck(raw, 'mobile');
+    expect(vitals).toEqual({
+      device: 'mobile',
+      cls: worstWindow(loadShifts(raw)).value,
+      tbtMs: totalBlocking(raw),
+      limits: { cls: 0.1, tbtMs: 200 },
+      lcp: { section: 'hero-1', where: 'img hero.jpg' },
+    });
+    expect(vitals.cls).toBeCloseTo(0.12, 5);
+    expect(vitals.tbtMs).toBe(350);
+  });
+
+  it('пороги — по устройству: у компьютера TBT строже', () => {
+    expect(vitalsCheck(clean, 'desktop').vitals).toMatchObject({ device: 'desktop', limits: { cls: 0.1, tbtMs: 150 } });
+  });
+
+  it('сдвигов нет — CLS 0; элемента LCP нет — null; без секции — section null', () => {
+    expect(vitalsCheck(clean, 'mobile').vitals).toMatchObject({ cls: 0, tbtMs: 0, lcp: null });
+    const outside = vitalsCheck({ ...clean, lcp: lcp({ section: null, where: 'p «Скидки»' }) }, 'mobile').vitals;
+    expect(outside.lcp).toEqual({ section: null, where: 'p «Скидки»' });
+  });
+
+  it('сдвиги после метки конца загрузки и после ввода в CLS не идут', () => {
+    const raw = {
+      ...clean,
+      shifts: [shift(400, 0.02), shift(3_500, 0.9), shift(600, 0.5, { input: true })],
+    };
+    expect(vitalsCheck(raw, 'mobile').vitals.cls).toBeCloseTo(0.02, 5);
+  });
+
+  it('сводка есть и когда находок нет; находки те же, что у vitalsFindings', () => {
+    const raw = { ...clean, shifts: [shift(400, 0.3)] };
+    const checked = vitalsCheck(raw, 'mobile');
+    expect(checked.findings).toEqual(vitalsFindings(raw, 'mobile'));
+    expect(vitalsCheck(clean, 'mobile').findings).toEqual([]);
+  });
+
+  it('ответ не по форме — ошибка, сводки нет', () => {
+    expect(() => vitalsCheck({ ...clean, lcp: { t: 1 } }, 'mobile')).toThrow();
   });
 });
 

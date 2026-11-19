@@ -1006,6 +1006,53 @@ describe('снимок черновика · Web Vitals и Lighthouse (мест�
     expect(failed[0]?.reason).toMatch(/^ответ страницы не по форме: shifts — /);
   });
 
+  it('в ответе у каждой находки заполнен fix, а сводка Web Vitals — в снимке страницы и секции', async () => {
+    const heavy = {
+      ...JUMPS,
+      lcp: {
+        t: 500,
+        section: 'hero-1',
+        where: 'img hero.jpg',
+        kind: 'image' as const,
+        lazy: true,
+        srcByScript: false,
+        shownByScript: false,
+        insertedByScript: false,
+      },
+      long: [{ t: 200, d: 400 }],
+    };
+    const { deps } = setup({ mobile: { vitals: heavy, lighthouse: AUDIT }, desktop: { vitals: heavy } });
+    const page = snapshotOf(await runLookJob(deps, job()));
+    expect(page.checks.findings.length).toBeGreaterThan(0);
+    expect(page.checks.findings.map((finding) => finding.fix)).toEqual(page.checks.findings.map(() => 'silent'));
+    expect(page.checks.vitals).toMatchObject({
+      device: 'mobile',
+      limits: { cls: 0.1, tbtMs: 200 },
+      lcp: { section: 'hero-1', where: 'img hero.jpg' },
+    });
+    expect(page.checks.vitals?.cls).toBeCloseTo(0.2, 5);
+    expect(page.checks.vitals?.tbtMs).toBe(350);
+
+    const section = snapshotOf(await runLookJob(deps, job({ section: 'hero-1' })));
+    expect(section.checks.vitals).toEqual(page.checks.vitals);
+  });
+
+  it('устройство сводки — то, на котором шли проверки: секцию видно только на компьютере — компьютер', async () => {
+    const { deps } = setup({ mobile: { section: { place: null } }, desktop: { vitals: JUMPS } });
+    const snapshot = snapshotOf(await runLookJob(deps, job({ section: 'hero-1' })));
+    expect(snapshot.checks.vitals).toMatchObject({ device: 'desktop', limits: { cls: 0.1, tbtMs: 150 }, lcp: null });
+  });
+
+  it('замера нет (сбой или не по форме) — поля vitals нет, а не пустое', async () => {
+    const broken = setup({ mobile: { vitalsError: new Error('замер Web Vitals не подключился') } });
+    const failed = snapshotOf(await runLookJob(broken.deps, job({ devices: 'mobile' })));
+    expect(failed.checks).not.toHaveProperty('vitals');
+    expect(failed.checks.failed.map((entry) => entry.check)).toEqual(['vitals']);
+
+    const odd = setup({ mobile: { vitals: { ...CLEAN_VITALS, shifts: 'нет' } } });
+    expect(snapshotOf(await runLookJob(odd.deps, job({ devices: 'mobile' }))).checks).not.toHaveProperty('vitals');
+  });
+
   it('Lighthouse упал — причина в failed, замер и снимок на месте', async () => {
     const { deps } = setup({ mobile: { vitals: JUMPS, lighthouseError: new Error('Target closed') } });
     const reply = await runLookJob(deps, job({ devices: 'mobile', section: 'hero-1' }));

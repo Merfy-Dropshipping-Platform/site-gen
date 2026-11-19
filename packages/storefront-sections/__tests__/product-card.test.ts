@@ -32,11 +32,12 @@ const manifestOf = (name: Name): SectionManifest => {
   return manifest;
 };
 
-// Карточка — от `<li` после `.map((card) =>` до своего `</li>`: внутри неё вложенных списков нет. Отступы разные.
+// Карточка — от `<li` после `.map((card, position) =>` до своего `</li>`: внутри неё вложенных списков нет. Отступы
+// разные. position — номер карточки: первые четыре картинки eager (loading в шаблоне).
 const flat = (source: string): string => source.replace(/^\s+/gm, '').trim();
 function cardMarkup(name: Name): string {
   const template = read(name, 'template.astro');
-  const start = template.search(/\.map\(\(card\) => \(\s*<li/);
+  const start = template.search(/\.map\(\(card, position\) => \(\s*<li/);
   const end = template.indexOf('</li>', start);
   return flat(template.slice(start, end + '</li>'.length));
 }

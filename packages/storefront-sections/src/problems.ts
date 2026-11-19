@@ -111,7 +111,7 @@ export const PROBLEM_CODES = [
   'taste-literal-image',
   'taste-dead-setting',
   'taste-library-copy',
-  // loading="eager" и fetchpriority у <img> (img-loading.ts): порядок загрузки ставит сборка — предупреждение.
+  // fetchpriority у <img> (img-loading.ts): «high» ставит сборка одной главной картинке — предупреждение.
   'taste-img-loading',
 ] as const;
 export type ProblemCode = (typeof PROBLEM_CODES)[number];

@@ -14,18 +14,39 @@ describe('порядок загрузки картинок', () => {
     );
   });
 
-  it('главная картинка — eager и fetchpriority="high", её lazy заменяется', () => {
-    expect(withImgLoading('<img src="/a.jpg" loading="lazy" alt="">', 0)).toBe(
+  it('главная картинка без своего loading — eager и fetchpriority="high"', () => {
+    expect(withImgLoading('<img src="/a.jpg" alt="">', 0)).toBe(
       '<img src="/a.jpg" alt="" loading="eager" fetchpriority="high" decoding="async">',
     );
   });
 
-  it('loading и fetchpriority автора снимаются — их решает платформа; свой decoding остаётся', () => {
-    expect(withImgLoading('<img src="/a.jpg" loading="eager" fetchpriority="high" decoding="sync">')).toBe(
+  it('шаблон главнее сборки: явный loading="eager" остаётся, не главная картинка не становится lazy', () => {
+    expect(withImgLoading('<img src="/a.jpg" alt="" loading="eager">')).toBe(
+      '<img src="/a.jpg" alt="" loading="eager" decoding="async">',
+    );
+    expect(withImgLoading('<img LOADING=EAGER src="/a.jpg" />')).toBe(
+      '<img LOADING=EAGER src="/a.jpg" decoding="async" />',
+    );
+  });
+
+  it('явный loading="lazy" остаётся lazy, даже у главной картинки; fetchpriority="high" у неё остаётся', () => {
+    expect(withImgLoading('<img src="/a.jpg" loading="lazy" alt="">')).toBe(
+      '<img src="/a.jpg" loading="lazy" alt="" decoding="async">',
+    );
+    expect(withImgLoading('<img src="/a.jpg" loading="lazy" alt="">', 0)).toBe(
+      '<img src="/a.jpg" loading="lazy" alt="" fetchpriority="high" decoding="async">',
+    );
+  });
+
+  it('чужое значение loading снимается, fetchpriority автора снимается всегда; свой decoding остаётся', () => {
+    expect(withImgLoading('<img src="/a.jpg" loading="auto" fetchpriority="high" decoding="sync">')).toBe(
       '<img src="/a.jpg" decoding="sync" loading="lazy">',
     );
-    expect(withImgLoading('<img LOADING=eager src="/a.jpg" fetchpriority=\'low\' />', 0)).toBe(
+    expect(withImgLoading('<img loading src="/a.jpg" fetchpriority=\'low\' />', 0)).toBe(
       '<img src="/a.jpg" loading="eager" fetchpriority="high" decoding="async" />',
+    );
+    expect(withImgLoading('<img src="/a.jpg" loading="eager" fetchpriority="high">')).toBe(
+      '<img src="/a.jpg" loading="eager" decoding="async">',
     );
   });
 
@@ -137,7 +158,7 @@ describe('главная картинка — первая видимая с а�
     const out = withImageLoading(
       page({ sections: ['<img data-ref="cover" alt="" loading="eager" fetchpriority="high">', '<img src=" ">', hero] }),
     );
-    expect(out.sections[0]).toBe('<img data-ref="cover" alt="" loading="lazy" decoding="async">');
+    expect(out.sections[0]).toBe('<img data-ref="cover" alt="" loading="eager" decoding="async">');
     expect(out.sections[1]).toBe('<img src=" " loading="lazy" decoding="async">');
     expect(out.sections[2]).toContain(EAGER);
     expect(out.mainImage).toBe('https://cdn.example/hero.jpg');
@@ -169,14 +190,15 @@ describe('главная картинка — первая видимая с а�
     expect(out.mainImageLink).toBe('<link rel="preload" as="image" href="/a&quot;b.jpg" fetchpriority="high">');
   });
 
-  it('подходящей нет — eager и high не получает никто, preload и адреса нет, loading автора снят', () => {
+  it('подходящей нет — high не получает никто, preload и адреса нет, fetchpriority автора снят, его eager остаётся', () => {
     const sections = [
       '<img data-ref="cover" hidden loading="eager" fetchpriority="high">',
       '<div hidden><img src="/a.jpg"></div>',
       '<template><img src="/t.jpg"></template>',
     ];
     const out = withImageLoading(page({ sections }));
-    expect(out.sections.join('')).not.toContain('eager');
+    expect(out.sections[0]).toBe('<img data-ref="cover" hidden loading="eager" decoding="async">');
+    expect(out.sections.slice(1).join('')).not.toContain('eager');
     expect(out.sections.join('')).not.toContain('fetchpriority');
     expect(out.mainImage).toBeUndefined();
     expect(out.mainImageLink).toBeUndefined();
@@ -187,5 +209,25 @@ describe('главная картинка — первая видимая с а�
     expect(out.sections.filter((html) => html.includes(EAGER))).toEqual([
       `<img src="https://cdn.example/hero.jpg" alt="" ${EAGER} decoding="async">`,
     ]);
+  });
+});
+
+describe('сетка карточек: шаблон решает, какие картинки eager', () => {
+  const EAGER_CARDS = 4;
+  const card = (position: number): string =>
+    `<li><img src="/p${position}.jpg" alt="" loading="${position <= EAGER_CARDS ? 'eager' : 'lazy'}"></li>`;
+  const grid = `<ul>${[1, 2, 3, 4, 5, 6].map(card).join('')}</ul>`;
+  const loadingOf = (html: string): Array<string | undefined> =>
+    imgTags(html).map((tag) => tag.attributes.find((attribute) => attribute.name === 'loading')?.value);
+
+  it('первые четыре карточки остаются eager, остальные lazy', () => {
+    const out = withImageLoading(page({ sections: [grid] }));
+    expect(loadingOf(out.sections[0] ?? '')).toEqual(['eager', 'eager', 'eager', 'eager', 'lazy', 'lazy']);
+  });
+
+  it('fetchpriority="high" — только у главной картинки, то есть у первой карточки', () => {
+    const html = withImageLoading(page({ sections: [grid] })).sections[0] ?? '';
+    expect(html.match(/fetchpriority="high"/g)).toHaveLength(1);
+    expect(imgTags(html)[0]?.attributes.map((attribute) => attribute.name)).toContain('fetchpriority');
   });
 });

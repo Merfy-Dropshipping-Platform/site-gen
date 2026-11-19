@@ -60,17 +60,27 @@ describe('текст и адреса картинок в разметке', () =
     expect(result[0]?.message).toContain('(2): «https://images.unsplash.com/photo-1», «https://example.com/a.jpg»');
   });
 
-  // Замер PageSpeed 02.11.2026: loading="eager" у скрытых картинок меню — порядок загрузки ставит сборка.
-  it('loading="eager", loading={…} и fetchpriority у <img> — одно предупреждение taste-img-loading; lazy — нет', async () => {
+  // Шаблон главнее сборки (19.11.2026): свой loading у <img> остаётся, снимается только fetchpriority.
+  it('fetchpriority у <img> — одно предупреждение taste-img-loading; loading eager, lazy и {…} — нет', async () => {
     const files = {
       'section.json': manifest,
       'template.astro':
-        '<section><img src={settings.image} alt="" loading="eager" fetchpriority="high" /><img src={settings.image} alt="" loading={settings.heading ? "eager" : "lazy"} /><img src={settings.image} alt="" loading="lazy" /><h2>{settings.heading}</h2></section>',
+        '<section><img src={settings.image} alt="" loading="eager" fetchpriority="high" /><img src={settings.image} alt="" fetchpriority="low" /><img src={settings.image} alt="" loading={settings.heading ? "eager" : "lazy"} /><img src={settings.image} alt="" loading="lazy" /><h2>{settings.heading}</h2></section>',
     };
     const result = (await authoringProblems(files)).filter((item) => item.code === 'taste-img-loading');
     expect(result).toHaveLength(1);
-    expect(result[0]?.message).toContain('loading и fetchpriority у <img> (3) не действуют');
+    expect(result[0]?.message).toContain('fetchpriority у <img> (2) не действует');
     expect(result.every(isWarning)).toBe(true);
+  });
+
+  it('loading="eager", loading="lazy" и loading={…} у <img> без fetchpriority — без предупреждений', async () => {
+    const files = {
+      'section.json': manifest,
+      'template.astro':
+        '<section><img src={settings.image} alt="" loading="eager" /><img src={settings.image} alt="" loading={settings.heading ? "eager" : "lazy"} /><img src={settings.image} alt="" loading="lazy" /><h2>{settings.heading}</h2></section>',
+    };
+    const result = (await authoringProblems(files)).filter((item) => item.code === 'taste-img-loading');
+    expect(result).toEqual([]);
   });
 
   it('src с выражением и пустой src — без предупреждений', async () => {

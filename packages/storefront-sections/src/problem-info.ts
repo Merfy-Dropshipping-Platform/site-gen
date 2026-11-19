@@ -258,11 +258,11 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     fix: 'Поставь библиотечную секцию как есть либо измени копию: параметры, разметку, вид.',
   },
   'taste-img-loading': {
-    when: 'У <img> в шаблоне стоит loading="eager", loading={…} или fetchpriority: сборка их снимает — порядок загрузки картинок ставит платформа; секция сохраняется.',
-    fix: 'Убери атрибут: главной картинке страницы (первой в <main>) сборка ставит eager и fetchpriority="high", остальным, в том числе в меню, поиске и окнах, — lazy.',
+    when: 'У <img> в шаблоне стоит fetchpriority: сборка его снимает — «high» она ставит одной главной картинке страницы; секция сохраняется.',
+    fix: 'Убери fetchpriority. Главной картинке страницы (первой видимой в <main>) сборка ставит eager и fetchpriority="high"; нужна сразу другая картинка (первые карточки ряда) — поставь ей loading="eager": явный loading шаблона сборка не меняет.',
     example: {
-      before: '<img src={settings.image} alt="" loading="eager" fetchpriority="high" />',
-      after: '<img src={settings.image} alt="" />',
+      before: '<img src={settings.image} alt="" fetchpriority="high" />',
+      after: '<img src={settings.image} alt="" loading="eager" />',
     },
     doc: 'styles.md#картинки',
   },

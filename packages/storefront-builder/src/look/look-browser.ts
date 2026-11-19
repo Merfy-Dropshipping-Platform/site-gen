@@ -7,6 +7,7 @@
 // меньше, если задание долго шло до процесса): по его концу контексты закрываются, операция над страницей отвечает
 // понятным отказом.
 import type { Browser, BrowserContext } from 'playwright';
+import type { AuditReport } from '../checks/audit/report';
 import { DEFAULT_CPU_RATE, cpuRateFor } from '../checks/browser/vitals';
 import { LighthouseLink, freePort } from './look-audit';
 import { MOTION_EXTRA_MS } from './look-motion';
@@ -23,6 +24,10 @@ import {
 
 export const RENDER_TIMEOUT_MS = 30_000;
 export const MAX_CONCURRENT_RENDERS = 2;
+// Как часто аудит проверяет, что снимков черновика нет.
+const IDLE_POLL_MS = 500;
+
+const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const timeoutText = (ms: number): string => `Не успел отрисовать страницу за ${Math.round(ms / 1000)} с`;
 const NO_BROWSER_TEXT = 'Не запустился браузер для снимков в проверяющем процессе';
@@ -37,8 +42,13 @@ export class Slots {
   private free: number;
   private readonly waiting: Array<() => void> = [];
 
-  constructor(size: number) {
+  constructor(private readonly size: number) {
     this.free = size;
+  }
+
+  // Ни одного занятого места: снимков сейчас нет.
+  idle(): boolean {
+    return this.free === this.size;
   }
 
   acquire(): Promise<void> {
@@ -199,6 +209,16 @@ export class ChromiumRenderer implements PageRenderer {
     const running = this.running;
     this.running = undefined;
     if (running) await (await running).browser.close();
+  }
+
+  // Аудит опубликованной страницы (Lighthouse navigation, `look-audit.ts`): начинается, когда снимков черновика нет, —
+  // иначе они разделили бы с ним процессор и исказили замер. Ждёт тишины в пределах бюджета; снимок, пришедший во время
+  // аудита, получает место раньше него (`LighthouseTurns`).
+  async audit(url: string, budgetMs: number): Promise<AuditReport> {
+    const startedAt = Date.now();
+    const { audit } = await this.start();
+    while (!this.slots.idle() && Date.now() - startedAt < budgetMs / 2) await pause(IDLE_POLL_MS);
+    return audit.navigate(url, budgetMs - (Date.now() - startedAt));
   }
 
   async open(input: RenderInput): Promise<RenderedPage> {

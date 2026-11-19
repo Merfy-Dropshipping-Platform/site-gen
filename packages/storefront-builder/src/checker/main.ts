@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { collectPassport, loadReleaseRules, openPage } from '@merfy/stand-check';
+import { consumeAudits } from '../audit/run';
 import { openBroker } from '../broker';
 import { jsonLog } from '../log';
 import { ChromiumRenderer } from '../look/look-browser';
@@ -44,6 +45,18 @@ else {
     now: () => Date.now(),
   });
 }
+// Аудит опубликованных страниц после публикации (место проверок `audit`): тот же браузер, Lighthouse — фоном, после
+// снимков черновика; адрес sites ему не нужен. Бюджет на страницу — 2 минуты, из них на ожидание новой страницы в
+// раздаче — до 30 с.
+await consumeAudits(broker, {
+  measure: (url, budgetMs) => renderer.audit(url, budgetMs),
+  fetch: (address) => fetch(address),
+  pollMs: 250,
+  waitMs: 30_000,
+  budgetMs: 120_000,
+  now: clock,
+  log,
+});
 const server = createServer((request, response) => {
   response.writeHead(request.url === '/health' ? 200 : 404).end();
 }).listen(settings.port);

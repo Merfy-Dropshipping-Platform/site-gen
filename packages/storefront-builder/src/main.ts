@@ -3,10 +3,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseChangelog, platformRenderHash, readShellBuild } from '@merfy/storefront-build';
-import { editableSections, sandboxReport } from '@merfy/storefront-sections';
+import { editableSections, libraryUnchanged, sandboxReport } from '@merfy/storefront-sections';
 import { createS3Store } from '@merfy/storefront-storage';
 import { Pool } from 'pg';
 import { raiseAlert } from './alert';
+import { consumeAuditResults } from './audit/results';
 import { enabledExtensions } from './code';
 import { createConductor } from './release/conductor';
 import { consumeExtensionVersions } from './release/extension-version';
@@ -162,6 +163,7 @@ const deps: RuntimeDeps = {
   alert: (stopped) => raiseAlert({ db, publishActivity: broker.publishActivity, log, clock }, stopped),
   announce: settings.indexNow === null ? undefined : createIndexNow({ ...settings.indexNow, log }),
   preview: previewVia(broker.publishPreview, log),
+  publishAudit: broker.publishAudit,
   broker,
   themeIds: [...loaded.themes.keys()],
   slots: settings.buildSlots,
@@ -179,6 +181,8 @@ const rollback = roleRollback({
   log,
 });
 await consumeSectionErrors({ broker, db, log, roles: { db, after: rollback } });
+// Аудит после публикации (место проверок `audit`): ответы проверяющего процесса → сравнение с прошлым → storefront_audit.
+await consumeAuditResults(broker, { db, library: (siteId, names) => libraryUnchanged(db, siteId, names), log });
 // Выпуск платформы (задача 11): новый образ — новый код платформы (renderHash, в нём ядро и секции платформы); тот же
 // отпечаток — ничего. Заводится до подписки: resume ниже сразу поведёт его волну 0.
 const platformRelease = {

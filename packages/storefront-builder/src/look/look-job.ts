@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import type { LatestAudit } from '../audit/contract';
+import { readLatestAudit } from '../audit/read';
 import type { Broker } from '../broker';
 import { lighthouseFindings } from '../checks/browser/lighthouse';
 import { semanticBrowser } from '../checks/browser/semantic';
@@ -154,6 +156,9 @@ export interface LookSnapshot {
   marks: { ok: true; results: LookMark[] } | { ok: false; reason: string };
   // Раскадровка (`look-motion.ts`): есть только если просили (`motion` задания) и снимок страницы, а не секции.
   motion?: LookMotion;
+  // Последний аудит этой страницы после публикации (`audit/`, место проверок `audit`): только снимок страницы; аудита
+  // не было или его не прочитали — поля нет.
+  audit?: LatestAudit;
 }
 
 export type LookReply =
@@ -593,9 +598,17 @@ export async function runLookJob(deps: LookDeps, body: unknown): Promise<LookRep
   if (job === null) return failure('invalid', 'Задание снимка не по форме');
   const budgetMs = job.deadline - deps.now();
   if (budgetMs < MIN_BUDGET_MS) return failure('expired', 'Снимок не успел начаться: очередь снимков занята');
-  const preview = await readPreview(deps, job, budgetMs);
+  const previewing = readPreview(deps, job, budgetMs);
+  // Аудит после публикации читается, пока идёт превью и отрисовка; только у снимка страницы.
+  const audit = job.section === undefined ? readLatestAudit(deps, job.siteId, job.page) : Promise.resolve(null);
+  const preview = await previewing;
   if (!preview.ok) return preview;
-  return render(deps, job, preview.html);
+  return withAudit(await render(deps, job, preview.html), await audit);
+}
+
+// Последний аудит страницы после публикации — в снимок; аудита нет — снимок как был.
+function withAudit(reply: LookReply, audit: LatestAudit | null): LookReply {
+  return !reply.ok || audit === null ? reply : { ok: true, snapshot: { ...reply.snapshot, audit } };
 }
 
 // Картинки ответа для журнала — экраны, вырезки находок, кадры анимаций: сколько и сколько КБ.

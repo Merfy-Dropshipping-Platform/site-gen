@@ -61,8 +61,9 @@ export function failedNodes(report: unknown): FailedNode[] {
   });
 }
 
-// Скрипт страницы: элементы по путям Lighthouse и их секции. Путь — пары «номер среди соседей, имя узла» от документа
-// вниз; соседи — без пустых текстовых узлов, теневой корень — номер `a` (getNodePath в core/lib/page-functions.js).
+// Скрипт страницы: элементы по путям Lighthouse и их секции (id и полное имя — по ним аудит после публикации находит
+// секцию LCP). Путь — пары «номер среди соседей, имя узла» от документа вниз; соседи — без пустых текстовых узлов,
+// теневой корень — номер `a` (getNodePath в core/lib/page-functions.js).
 export const PLACES_BY_PATH = `(paths) => {
   const resolve = (path) => {
     if (!path) return null;
@@ -96,7 +97,11 @@ export const PLACES_BY_PATH = `(paths) => {
     const el = resolve(path);
     if (el === null) return null;
     const wrapper = el.closest('[data-section-id]');
-    return { section: wrapper ? wrapper.getAttribute('data-section-id') : null, where: describe(el) };
+    return {
+      section: wrapper ? wrapper.getAttribute('data-section-id') : null,
+      name: wrapper ? wrapper.getAttribute('data-section') : null,
+      where: describe(el),
+    };
   });
 }`;
 

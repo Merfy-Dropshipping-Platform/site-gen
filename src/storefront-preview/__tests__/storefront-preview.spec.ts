@@ -73,6 +73,7 @@ async function startBuilder(seen: Seen[]): Promise<Server> {
         req.url?.startsWith("/preview/tokens") ||
         req.url?.startsWith("/preview/section") ||
         req.url?.startsWith("/sections") ||
+        req.url?.startsWith("/audit") ||
         req.url?.startsWith("/theme-panel");
       res.writeHead(200, {
         "content-type": json
@@ -169,6 +170,20 @@ describe("превью новой темы — от сборщика, нынеш
       .post(`/api/sites/${OLD_SITE}/preview/tokens`)
       .send(tokens);
     expect(old.status).toBe(404);
+  });
+
+  it("аудит страницы после публикации — JSON сборщика как есть; page и магазин уходят в запрос", async () => {
+    const audit = await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/audit?page=catalog`,
+    );
+    expect(audit.status).toBe(200);
+    expect(audit.body).toEqual({ ok: true });
+    expect(audit.headers["cache-control"]).toBe("no-store");
+    await request(app.getHttpServer()).get(`/api/sites/${NEW_SITE}/audit`);
+    expect(seen.map((call) => call.url)).toEqual([
+      `/audit?shop=${NEW_SITE}&page=catalog`,
+      `/audit?shop=${NEW_SITE}&page=`,
+    ]);
   });
 
   it("превью без page и стенд — page уходит к сборщику как есть", async () => {

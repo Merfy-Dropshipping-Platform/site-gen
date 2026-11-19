@@ -260,6 +260,13 @@
       "when": 1792713600000,
       "tag": "0036_site_published_revision",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792800000000,
+      "tag": "0037_storefront_audit",
+      "breakpoints": true
     }
   ]
 }

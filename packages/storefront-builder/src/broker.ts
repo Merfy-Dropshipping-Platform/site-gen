@@ -12,6 +12,7 @@ import {
   type ContentEvent,
 } from './events';
 import type { Log } from './log';
+import { AUDITS_QUEUE, AUDIT_RESULTS_QUEUE, type AuditJob, type AuditResult } from './audit/contract';
 import { PREVIEW_EXCHANGE, type PreviewSignal } from './preview';
 import { LOOKS_QUEUE } from './look/look-queue';
 import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } from './release/checks';
@@ -26,7 +27,9 @@ import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } fr
 //                    заводит выпуск расширения (блок 10, release/extension-version.ts);
 //   storefront_checks         — задания проверки в браузере (блок 10), их берёт проверяющий процесс;
 //   storefront_check_results  — ответы проверки, их берёт ведущий волн сборщика;
-//   storefront_looks          — снимки черновика (RPC шлюза), их берёт проверяющий процесс.
+//   storefront_looks          — снимки черновика (RPC шлюза), их берёт проверяющий процесс;
+//   storefront_audits         — аудит опубликованной страницы после публикации (Lighthouse), его берёт проверяющий процесс;
+//   storefront_audit_results  — ответы аудита, их берёт сборщик.
 // Объявление — на каждом канале при каждом подключении (факт 6): брокер перезапустился — очереди на месте.
 
 export const EVENTS_QUEUE = 'storefront_builder_events';
@@ -61,6 +64,9 @@ export interface Broker {
   publishCheck: (job: CheckJob) => Promise<void>;
   // Ответ проверки (блок 10): проверяющий процесс → ведущий волн.
   publishCheckResult: (result: CheckResult) => Promise<void>;
+  // Аудит после публикации: сборщик → проверяющий процесс (задание), обратно — ответ.
+  publishAudit: (job: AuditJob) => Promise<void>;
+  publishAuditResult: (result: AuditResult) => Promise<void>;
   consume: (queue: string, prefetch: number, handler: Handler) => Promise<void>;
   // Штатная остановка: новых сообщений не брать. Взятые обработчики доделывают, отправка работает до close.
   pause: () => Promise<void>;
@@ -85,6 +91,8 @@ export async function declareTopology(channel: ConfirmChannel): Promise<void> {
   // Снимки черновика (28.10): объявляют только сборщик и проверяющий процесс; шлюз очередь не объявляет, а проверяет
   // (checkQueue), поэтому аргументов, которые пришлось бы держать одинаковыми с ним, нет.
   await channel.assertQueue(LOOKS_QUEUE, { durable: true });
+  await channel.assertQueue(AUDITS_QUEUE, { durable: true });
+  await channel.assertQueue(AUDIT_RESULTS_QUEUE, { durable: true });
 }
 
 const json = (value: unknown): Buffer => Buffer.from(JSON.stringify(value));
@@ -159,6 +167,12 @@ const publishersOf = (publisher: ChannelWrapper): Publishers => ({
   },
   publishCheckResult: async (result) => {
     await publisher.sendToQueue(CHECK_RESULTS_QUEUE, json(result), persistent());
+  },
+  publishAudit: async (job) => {
+    await publisher.sendToQueue(AUDITS_QUEUE, json(job), persistent());
+  },
+  publishAuditResult: async (result) => {
+    await publisher.sendToQueue(AUDIT_RESULTS_QUEUE, json(result), persistent());
   },
 });
 

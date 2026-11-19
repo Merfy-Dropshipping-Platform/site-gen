@@ -12,6 +12,14 @@ import { createServer } from 'node:net';
 import type { Page } from 'playwright';
 import type { Page as PuppeteerPage, Target, TargetType } from 'puppeteer-core';
 import {
+  AuditLcp,
+  lcpNodeOf,
+  metricsOf,
+  opportunitiesOf,
+  type AuditReport,
+  type LcpNodeRaw,
+} from '../checks/audit/report';
+import {
   PLACES_BY_PATH,
   failedNodes,
   lighthouseConfig,
@@ -45,40 +53,109 @@ export class LighthouseBusy extends Error {
   }
 }
 
+// Фоновый прогон — аудит опубликованной страницы (`navigate`, место проверок `audit`): он ниже снимков черновика. Снимки
+// в очереди идут раньше него, а идущий фоновый прогон по просьбе снимка отдаёт место (`yield`) — снимки он не задерживает.
+export interface TurnOptions {
+  background?: boolean;
+  // Освободить место как можно скорее: вызывается, когда в очередь встал снимок.
+  yield?: () => void;
+}
+
 export class LighthouseTurns {
   private busy = false;
+  private holder: TurnOptions = {};
   private readonly waiting: Array<() => void> = [];
+  private readonly background: Array<() => void> = [];
 
   // Место в очереди: ждёт не дольше `waitMs`; не дождался — `LighthouseBusy`, и очередь он не занимает. Отдаёт, чем
   // место освободить.
-  take(waitMs: number): Promise<() => void> {
-    if (!this.busy) {
-      this.busy = true;
-      return Promise.resolve(this.release);
-    }
+  take(waitMs: number, options: TurnOptions = {}): Promise<() => void> {
+    if (!this.busy) return Promise.resolve(this.grant(options));
+    if (options.background !== true) this.holder.yield?.();
+    const queue = options.background === true ? this.background : this.waiting;
     return new Promise((resolve, reject) => {
       const turn = (): void => {
         clearTimeout(timer);
-        resolve(this.release);
+        resolve(this.grant(options));
       };
       const giveUp = (): void => {
-        this.waiting.splice(this.waiting.indexOf(turn), 1);
+        queue.splice(queue.indexOf(turn), 1);
         reject(new LighthouseBusy(waitMs));
       };
       const timer = setTimeout(giveUp, waitMs);
-      this.waiting.push(turn);
+      queue.push(turn);
     });
   }
 
-  // Место отдаётся следующему в очереди, не освобождаясь между ними.
+  private grant(options: TurnOptions): () => void {
+    this.busy = true;
+    this.holder = options;
+    return this.release;
+  }
+
+  // Место отдаётся следующему в очереди, не освобождаясь между ними: сначала снимкам, потом фоновым.
   private readonly release = (): void => {
-    const next = this.waiting.shift();
-    if (next === undefined) this.busy = false;
-    else next();
+    const next = this.waiting.shift() ?? this.background.shift();
+    if (next !== undefined) return next();
+    this.busy = false;
+    this.holder = {};
   };
 }
 
 const turns = new LighthouseTurns();
+
+// Аудит не уложился в бюджет страницы; аудит уступил место снимку черновика.
+export class AuditTimeout extends Error {
+  constructor(budgetMs: number) {
+    super(`Lighthouse не уложился в ${Math.round(budgetMs / 1000)} с`);
+  }
+}
+
+export class LighthouseYielded extends Error {
+  constructor() {
+    super('Lighthouse уступил место снимку черновика');
+  }
+}
+
+// Не дольше этого после закрытия вкладки ждём, пока Lighthouse остановится: место в очереди отдаётся только после него.
+const STOP_WAIT_MS = 5_000;
+
+const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Работа Lighthouse не дольше `ms` и пока снимок не попросил место. Остановка — закрытие вкладки: Lighthouse падает сам.
+async function stopWhen<T>(work: Promise<T>, ms: number, signal: AbortSignal, close: () => Promise<void>): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const stop = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new AuditTimeout(ms)), ms);
+    signal.addEventListener('abort', () => reject(new LighthouseYielded()), { once: true });
+  });
+  try {
+    return await Promise.race([work, stop]);
+  } catch (error) {
+    await close().catch(() => undefined);
+    await Promise.race([work.catch(() => undefined), pause(STOP_WAIT_MS)]);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Настройки аудита: только скорость; телефон и замедление — по умолчанию Lighthouse (симуляция: ЦП ×4, 1,6 Мбит/с).
+const AUDIT_CONFIG = {
+  extends: 'lighthouse:default' as const,
+  settings: { onlyCategories: ['performance'], disableFullPageScreenshot: true, locale: 'ru' as const },
+};
+
+// Секция главного элемента первого экрана: страница находит его по пути Lighthouse; нет — описание по началу разметки.
+async function lcpPlace(page: PuppeteerPage, node: LcpNodeRaw | null): Promise<AuditLcp | null> {
+  if (node === null) return null;
+  const fallback = { where: tagOfSnippet(node.snippet), section: null, name: null };
+  if (node.path === null) return fallback;
+  const script = `(${PLACES_BY_PATH})(${JSON.stringify([node.path])})`;
+  const places: unknown = await page.evaluate(script).catch(() => null);
+  const place = AuditLcp.safeParse(Array.isArray(places) ? places[0] : null);
+  return place.success ? place.data : fallback;
+}
 
 const TOKEN_KEY = '__lookAuditToken';
 
@@ -130,6 +207,43 @@ export class LighthouseLink {
       if (result === undefined) throw new Error('Lighthouse не вернул отчёт');
       return await placesOf(page, failedNodes(result.lhr));
     } finally {
+      await browser.disconnect();
+    }
+  }
+
+  // Аудит опубликованной страницы (место проверок `audit`): Lighthouse navigation в новой вкладке, телефон, стандартное
+  // замедление. Идёт в той же очереди процесса, но фоном: снимки черновика идут раньше и, если в очередь встал снимок,
+  // аудит отдаёт место (`LighthouseYielded`). Бюджет `budgetMs` — вместе с ожиданием очереди; не уложился —
+  // `AuditTimeout`, вкладка закрыта.
+  async navigate(url: string, budgetMs: number): Promise<AuditReport> {
+    const startedAt = Date.now();
+    const stop = new AbortController();
+    const release = await turns.take(budgetMs, { background: true, yield: () => stop.abort() });
+    try {
+      return await this.audit(url, budgetMs - (Date.now() - startedAt), stop.signal);
+    } finally {
+      release();
+    }
+  }
+
+  private async audit(url: string, budgetMs: number, signal: AbortSignal): Promise<AuditReport> {
+    const { default: puppeteer, TargetType: types } = await import('puppeteer-core');
+    // Чужие вкладки не трогаем: подключаемся только к пустым (новая вкладка аудита начинается с about:blank).
+    const browser = await puppeteer.connect({
+      browserURL: `http://127.0.0.1:${this.port}`,
+      defaultViewport: null,
+      targetFilter: (target) => target.type() !== types.PAGE || target.url() === 'about:blank',
+    });
+    const page = await browser.newPage();
+    try {
+      const { default: lighthouse } = await import('lighthouse');
+      const run = lighthouse(url, { logLevel: 'error' }, AUDIT_CONFIG, page);
+      const result = await stopWhen(run, budgetMs, signal, () => page.close());
+      if (result === undefined) throw new Error('Lighthouse не вернул отчёт');
+      const lcp = await lcpPlace(page, lcpNodeOf(result.lhr));
+      return { metrics: metricsOf(result.lhr), lcp, opportunities: opportunitiesOf(result.lhr) };
+    } finally {
+      await page.close().catch(() => undefined);
       await browser.disconnect();
     }
   }

@@ -24,6 +24,10 @@ export default defineConfig({
         // Web Vitals и Lighthouse в снимке (18.11): разбор и находки. Скрипты страниц и подключение Lighthouse к вкладке
         // (look-audit) проверяет настоящий Chromium в __tests__/look-vitals-browser.test.ts.
         'src/checks/browser/{vitals,lighthouse}.ts',
+        // Аудит опубликованных страниц после публикации (20.11): отчёт Lighthouse, правила «стало хуже», запуск, прогон,
+        // запись и чтение итога. Прогон в настоящем Chromium — __tests__/look-audit-browser.test.ts.
+        'src/checks/audit/{report,compare}.ts',
+        'src/audit/{contract,plan,start,run,results,store,answer,read}.ts',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },

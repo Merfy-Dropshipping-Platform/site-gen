@@ -1,4 +1,5 @@
 import { routeOf, type BuildInputs } from '@merfy/storefront-build';
+import { hexOf } from '@merfy/storefront-storage';
 import { errorText } from '../errors';
 import type { Log } from '../log';
 import type { AuditJob } from './contract';
@@ -43,7 +44,8 @@ export function auditJobsOf(published: PublishedBuild): AuditJob[] {
     pageId: published.pageId(page.path),
     path: page.path,
     url: new URL(page.path, published.publicUrl).href,
-    hash: page.hash,
+    // ETag раздачи — hex отпечатка без «sha256:».
+    hash: hexOf(page.hash),
   }));
 }
 

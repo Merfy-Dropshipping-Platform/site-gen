@@ -4,10 +4,13 @@ import { MAX_AUDITS_PER_PUBLISH, type AuditJob } from '../src/audit/contract';
 import { auditPlan, changedPages, type Pages } from '../src/audit/plan';
 import { auditJobsOf, startAudits, type PublishedBuild } from '../src/audit/start';
 
-const row = (path: string, hash = 'a'.repeat(64), list?: { page: number }): Pages[number] => ({
+// Отпечаток страницы — «sha256:» и 64 знака hex; `digit` — из чего он собран.
+const hashOf = (digit: string): string => `sha256:${digit.repeat(64)}`;
+
+const row = (path: string, digit = 'a', list?: { page: number }): Pages[number] => ({
   path,
   file: `${path === '/' ? '' : path.slice(1) + '/'}index.html`,
-  hash,
+  hash: hashOf(digit),
   entity: { type: 'site', id: 'shop' },
   deps: [],
   dataUpdatedAt: '2026-11-20T10:00:00.000Z',
@@ -22,8 +25,8 @@ describe('изменённые страницы', () => {
   });
 
   it('с другим отпечатком и новые; те же и удалённые — нет', () => {
-    const before = [row('/', 'a'.repeat(64)), row('/catalog', 'b'.repeat(64)), row('/old', 'c'.repeat(64))];
-    const after = [row('/', 'a'.repeat(64)), row('/catalog', 'd'.repeat(64)), row('/cart')];
+    const before = [row('/', 'a'), row('/catalog', 'b'), row('/old', 'c')];
+    const after = [row('/', 'a'), row('/catalog', 'd'), row('/cart')];
     expect(pathsOf(changedPages(before, after))).toEqual(['/catalog', '/cart']);
   });
 });
@@ -42,7 +45,7 @@ describe('план аудита', () => {
   });
 
   it('страницы списка после первой не аудируются', () => {
-    const next = [row('/catalog', 'a'.repeat(64), { page: 1 }), row('/catalog/page/2', 'b'.repeat(64), { page: 2 })];
+    const next = [row('/catalog', 'a', { page: 1 }), row('/catalog/page/2', 'b', { page: 2 })];
     expect(pathsOf(auditPlan(null, next))).toEqual(['/catalog']);
   });
 
@@ -58,17 +61,21 @@ const published = (patch: Partial<PublishedBuild> = {}): PublishedBuild => ({
   publicUrl: 'https://25669e806add.dev.merfy.ru',
   pageId: (path) => (path === '/' ? 'home' : path.slice(1)),
   previous: null,
-  next: [row('/'), row('/catalog', 'b'.repeat(64))],
+  next: [row('/'), row('/catalog', 'b')],
   ...patch,
 });
 
 describe('задания аудита', () => {
   it('на каждую страницу плана: адрес на витрине, отпечаток файла, номер сборки', () => {
     const jobs = auditJobsOf(published());
-    expect(jobs.map((job) => [job.pageId, job.path, job.url, job.hash.slice(0, 1), job.build])).toEqual([
-      ['home', '/', 'https://25669e806add.dev.merfy.ru/', 'a', 1795000000000],
-      ['catalog', '/catalog', 'https://25669e806add.dev.merfy.ru/catalog', 'b', 1795000000000],
+    expect(jobs.map((job) => [job.pageId, job.path, job.url, job.build])).toEqual([
+      ['home', '/', 'https://25669e806add.dev.merfy.ru/', 1795000000000],
+      ['catalog', '/catalog', 'https://25669e806add.dev.merfy.ru/catalog', 1795000000000],
     ]);
+  });
+
+  it('в задании отпечаток — hex без «sha256:», как ETag раздачи', () => {
+    expect(auditJobsOf(published()).map((job) => job.hash)).toEqual(['a'.repeat(64), 'b'.repeat(64)]);
   });
 
   it('ставятся по порядку приоритета и считаются', async () => {

@@ -11,6 +11,7 @@ export const EXPRESSION_GLOBALS: ReadonlySet<string> = new Set([
   'settings',
   'blocks',
   'page',
+  'ext',
   'undefined',
   'NaN',
   'Infinity',
@@ -70,7 +71,7 @@ const LABELS: Partial<Record<string, string>> = {
 
 const TEXT = {
   name: (name: string) =>
-    `имя ${name}: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array, Object`,
+    `имя ${name}: в выражениях шаблона — только settings, blocks, page, ext, параметры функций и Math, Number, String, Boolean, JSON, Array, Object`,
   objectMethod: (name: string) =>
     `Object.${name}: в шаблоне — только чтение: Object.keys, values, entries, fromEntries, hasOwn, groupBy`,
   property: (name: string) => `свойство ${name}: в шаблоне секции нельзя`,

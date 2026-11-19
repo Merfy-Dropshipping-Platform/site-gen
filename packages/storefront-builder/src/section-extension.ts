@@ -1,3 +1,4 @@
+import type { ExtBindings } from '@merfy/storefront-build';
 import type { CurrentSection } from '@merfy/storefront-sections';
 
 // Чьё расширение — секция списка /sections (блок 12 «Секций и SDK», часть 12б, Р12б-10; конструктор — план 12г,
@@ -11,6 +12,8 @@ export interface SectionExtension {
 // Секция, видимая магазину, и её расширение — для списка /sections.
 export interface VisibleSection extends CurrentSection {
   extension?: SectionExtension;
+  // ext секции со стором prerender (20.11): превью блока читает значения для шаблона так же, как сборка.
+  ext?: ExtBindings;
 }
 
 export interface TitledExtension {

@@ -136,6 +136,14 @@ const API = [
   'DATA_NAME',
   'RECORD_FIELD_KINDS',
   'BLOCK_RECORD_KINDS',
+  // Значения сторов расширений с prerender (20.11).
+  'EXT_VALUE_LIMITS',
+  'EXT_VALUE_TYPE',
+  'extValueBytes',
+  'extValueEntity',
+  'extValueIndexOf',
+  'extValueWants',
+  'extValueWantsOf',
   // Свои сторы (01.11): uses "store:<префикс>:<имя>" во входах сборки.
   'STORE_USE_PREFIX',
   'storeUseSchema',

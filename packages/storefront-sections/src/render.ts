@@ -2,6 +2,7 @@ import type { ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import type {
+  ExtValue,
   MenuTree,
   PageInfo,
   RenderBlock,
@@ -39,6 +40,8 @@ export interface SectionRenderRequest {
   records?: SectionRecordValues;
   // Записи полей с записями в блоках (29.10): id блока → id поля → запись; нет — {} (render-worker.ts).
   blockRecords?: Readonly<Record<string, SectionRecordValues>>;
+  // Значения сторов расширений с prerender по именам ext секции — Astro.props.ext; нет — {} (render-worker.ts).
+  ext?: Readonly<Record<string, ExtValue | null>>;
 }
 
 export interface SectionRenderer {
@@ -265,7 +268,8 @@ class Renderer implements SectionRenderer {
 
   private send(running: Running, job: Job): void {
     const id = this.nextId++;
-    const { hash, settings, module, blocks, preview, menus, theme, shop, page, records, blockRecords } = job.request;
+    const { hash, settings, module, blocks, preview, menus, theme, shop, page, records, blockRecords, ext } =
+      job.request;
     const message = {
       id,
       hash,
@@ -278,6 +282,7 @@ class Renderer implements SectionRenderer {
       ...(page === undefined ? {} : { page }),
       ...(records === undefined ? {} : { records }),
       ...(blockRecords === undefined ? {} : { blockRecords }),
+      ...(ext === undefined ? {} : { ext }),
       ...(running.sent.has(hash) ? {} : { module }),
     };
     running.sent.add(hash);

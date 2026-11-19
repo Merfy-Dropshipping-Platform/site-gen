@@ -9,6 +9,7 @@ import {
   type RevisionPage,
   type ThemeState,
   checkoutBlockSchema,
+  extValueWants,
 } from '@merfy/storefront-build';
 import { cleanArticleHtml } from '@merfy/storefront-sections';
 import { z } from 'zod';
@@ -17,6 +18,7 @@ import { COLLECTIONS_PATTERN, collectionEntityOf, productEntityOf } from './cata
 import { NO_CODE, readShopCode, type CodeDeps } from './code';
 import { fetchCounters, type CounterRequest } from './counters';
 import { StorefrontBuilderError, errorText } from './errors';
+import { fetchExtValues } from './ext-values';
 import type { Log, LogFields } from './log';
 import type { Call } from './rpc';
 import { revisionPagesOf } from './revision-pages';
@@ -399,7 +401,16 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string, previewSe
     fetchCounters(deps.counters, shop),
     fetchBilling(deps.products, siteId),
   ]);
-  const entities = [...siteEntities, ...(products ?? []), ...(collections ?? []), ...(counters ?? []), billing];
+  // Значения сторов расширений с prerender (20.11): по записям, выбранным в полях секций; сбой — без значений, не без снимка.
+  const extValues = shopCode === null ? [] : await fetchExtValues(deps.code, siteId, extValueWants(shopCode.code));
+  const entities = [
+    ...siteEntities,
+    ...(products ?? []),
+    ...(collections ?? []),
+    ...(counters ?? []),
+    billing,
+    ...extValues,
+  ];
   const year = deps.clock().getUTCFullYear();
   const received = products !== null && collections !== null && shopCode !== null && counters !== null;
   const { shell, code, assets, extensions } = shopCode ?? NO_CODE;

@@ -9,6 +9,8 @@ import {
   STATIC_SPECIAL_PAGES,
   StorefrontBuildError,
   checkoutFiles,
+  extValueIndexOf,
+  extValueWantsOf,
   isRecordType,
   listSourceOf,
   pageInfoById,
@@ -21,6 +23,8 @@ import {
   renderPlacedSections,
   renderShopPage,
   type BuildInputs,
+  type Entity,
+  type ExtValueWant,
   type PageProps,
   type PageRender,
   type SettingValues,
@@ -48,6 +52,7 @@ import { z } from 'zod';
 import { instanceSchema, readVisibleSections, wrapperOf, type SectionInstance } from './code';
 import { extensionKey, type VisibleSection } from './section-extension';
 import type { DrawAnswer } from './draw';
+import { fetchExtValues } from './ext-values';
 import { LIST_ARGS_MAX, listRequestOf } from './list-rpc';
 import { inlineAssets } from './inline-assets';
 import {
@@ -90,6 +95,9 @@ export interface ShopPreviewDeps {
   shell?: PreviewShell;
   // Блок 11, часть 11а-2: сервис product — список блока с параметрами; нет — список из записей.
   products?: ProductRequest;
+  // Значения сторов расширений с prerender для блока (20.11): читает записи, выбранные в блоке, — в том числе
+  // несохранённые правки мерчанта; нет — блок без значений, их принесёт скрипт.
+  extValues?: (shopId: string, wants: readonly ExtValueWant[]) => Promise<Entity[]>;
 }
 
 const HOME_PAGES: ReadonlySet<string> = new Set(['', '/', 'home']);
@@ -137,6 +145,7 @@ export const shopPreviewDeps = (preview: PreviewDeps): ShopPreviewDeps => ({
   fonts: (css) => inlineFonts(css, preview.fonts),
   shell: preview.snapshot.code.shell,
   products: preview.snapshot.products,
+  extValues: (shopId, wants) => fetchExtValues(preview.snapshot.code, shopId, wants),
 });
 
 const previewPage = (deps: ShopPreviewDeps, shopId: string, modules: ReadonlyMap<string, string>): PageRender => ({
@@ -266,12 +275,11 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
       : { blocks: resolveSectionBlocks(current.manifest, instance.blocks).blocks };
   // Часть 4 (Р1-4-11): деревья меню по значениям настроек; uses — только если объявлен.
   const placed = previewPlaced(instance, current, settings, blocks, menus ?? [], current.renderHash);
-  // page — у каждой секции (часть 7а): без page и без uses пропсы не читаются, страница — главная.
-  const needsProps = propsUsesOf(current.manifest).length > 0 || page !== undefined;
-  const base = needsProps ? await previewProps(deps, found.shopId, theme, page, record) : undefined;
+  const base = needsProps(current, page) ? await previewProps(deps, found.shopId, theme, page, record) : undefined;
   // Список страницы блока (блок 11, часть 11а-2, Р11а-19): по этому блоку и параметрам списка из тела.
-  const props =
+  const listed =
     base === undefined ? undefined : await withBlockList(deps, found.shopId, base, placed, { page, record, list });
+  const props = await withExtValues(deps, found.shopId, listed, placed);
   const modules = new Map([[current.renderHash, current.render]]);
   const content = await renderPlacedSections([placed], found.dictionary, {
     ...previewPage(deps, found.shopId, modules),
@@ -287,10 +295,28 @@ export async function sectionPreview(deps: ShopPreviewDeps, rawShop: string | nu
   });
 }
 
+// page — у каждой секции (часть 7а): без page и без uses пропсы не читаются, страница — главная. Блоку со значениями
+// сторов расширений (ext, prerender) пропсы нужны, чтобы нести их в шаблон.
+const needsProps = (current: VisibleSection, page: string | undefined): boolean =>
+  propsUsesOf(current.manifest).length > 0 || page !== undefined || current.ext !== undefined;
+
+// Значения сторов расширений блока (prerender, 20.11): читаются по записям из настроек блока, как в сборке. Блока с такими
+// записями нет или читать некому — пропсы как есть; не прочиталось — значений нет, блок рисуется без prerender.
+async function withExtValues(
+  deps: ShopPreviewDeps,
+  shopId: string,
+  props: PageProps | undefined,
+  placed: ReturnType<typeof previewPlaced>,
+): Promise<PageProps | undefined> {
+  const wants = extValueWantsOf([placed]);
+  if (props === undefined || wants.length === 0 || deps.extValues === undefined) return props;
+  return { ...props, extValues: extValueIndexOf(await deps.extValues(shopId, wants)) };
+}
+
 // Экземпляр превью: блоки, деревья меню и uses — только те ключи, что у секции есть.
 function previewPlaced(
   instance: SectionInstance,
-  current: CurrentSection,
+  current: VisibleSection,
   settings: SettingValues,
   blocks: Record<string, unknown>,
   menus: readonly RevisionMenu[],
@@ -309,6 +335,7 @@ function previewPlaced(
     ...(isOverlaySection(current.manifest) ? { overlay: true as const } : {}),
     ...wrapperOf(instance, current),
     ...sectionRecordKeys(current.manifest),
+    ...(current.ext === undefined ? {} : { ext: current.ext }),
     ...blocks,
     ...(Object.keys(trees).length === 0 ? {} : { menus: trees }),
     ...(current.manifest.uses === undefined ? {} : { uses: propsUsesOf(current.manifest) }),

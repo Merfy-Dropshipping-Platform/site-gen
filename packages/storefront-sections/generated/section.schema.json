@@ -16187,6 +16187,30 @@
         "additionalProperties": false
       }
     },
+    "ext": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^settings\\.[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "store": {
+            "type": "string",
+            "pattern": "^[a-z][a-zA-Z0-9]{0,31}$"
+          }
+        },
+        "required": [
+          "from",
+          "store"
+        ],
+        "additionalProperties": false
+      }
+    },
     "themeSettings": {
       "maxItems": 4,
       "type": "array",

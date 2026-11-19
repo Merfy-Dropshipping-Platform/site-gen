@@ -282,6 +282,9 @@
                   "type": "boolean",
                   "const": true
                 },
+                "prerender": {
+                  "type": "boolean"
+                },
                 "refreshOn": {
                   "maxItems": 10,
                   "type": "array",

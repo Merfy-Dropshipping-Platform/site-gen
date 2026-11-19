@@ -1,6 +1,7 @@
 import {
   PREVIEW_AGENT,
   PREVIEW_SECTIONS_AGENT,
+  extValueEntity,
   parseBuildInputs,
   sha256,
   type ShopTheme,
@@ -748,6 +749,58 @@ describe('поля с записями в превью одного блока (
       { product: null },
     ];
     expect(rendered.map(([, request]) => request.records)).toEqual(expected);
+  });
+});
+
+describe('значения сторов расширений в превью одного блока (prerender, 20.11)', () => {
+  const PICK = 'f0c6c004-7c4e-4896-bab8-adfc23ba0f3b';
+  const VALUE = { title: 'Подборка', cover: 'https://s3.merfy.ru/p/cover.png' };
+  const PICKS: VisibleSection = {
+    name: 'picks:pick',
+    manifest: {
+      sdk: 1,
+      name: 'pick',
+      kind: 'section',
+      title: 'Подборка',
+      settings: [
+        { id: 'pick', label: 'Подборка', setting: { kind: 'ext-record', ext: 'picks', record: 'pick', default: null } },
+      ],
+      ext: { card: { from: 'settings.pick', store: 'pickCard' } },
+    },
+    render: MODULE,
+    renderHash: HASH,
+    ext: { card: { field: 'pick', ext: 'picks', store: 'pickCard', fn: 'pickCard' } },
+  };
+  const instance = { id: 'pick-1', section: 'picks:pick', settings: { pick: PICK } };
+
+  it('запись из несохранённых настроек блока читается у расширения и уходит шаблону в ext', async () => {
+    const { deps, rendered } = depsOf(new Map([[PICKS.name, PICKS]]));
+    const asked: unknown[] = [];
+    deps.extValues = (shopId, wants) => {
+      asked.push([shopId, wants]);
+      return Promise.resolve([extValueEntity('picks', 'pickCard', PICK, VALUE)]);
+    };
+    expect((await sectionPreview(deps, SHOP, block(instance))).status).toBe(200);
+    expect(asked).toEqual([[SHOP, [{ ext: 'picks', fn: 'pickCard', recordIds: [PICK] }]]]);
+    expect(rendered.map(([, request]) => request.ext)).toEqual([{ card: VALUE }]);
+  });
+
+  it('значения не прочитались — блок рисуется с ext.card = null, а не падает', async () => {
+    const { deps, rendered } = depsOf(new Map([[PICKS.name, PICKS]]));
+    deps.extValues = () => Promise.resolve([]);
+    expect((await sectionPreview(deps, SHOP, block(instance))).status).toBe(200);
+    expect(rendered.map(([, request]) => request.ext)).toEqual([{ card: null }]);
+  });
+
+  it('запись не выбрана — расширение не зовут', async () => {
+    const { deps } = depsOf(new Map([[PICKS.name, PICKS]]));
+    const asked: unknown[] = [];
+    deps.extValues = (_shopId, wants) => {
+      asked.push(wants);
+      return Promise.resolve([]);
+    };
+    await sectionPreview(deps, SHOP, block({ ...instance, settings: { pick: null } }));
+    expect(asked).toEqual([]);
   });
 });
 

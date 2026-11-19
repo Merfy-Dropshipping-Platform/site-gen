@@ -3,7 +3,7 @@ import { BLOCK_RECORD_KINDS, STORE_USE_PREFIX, libUseSchema, storeUseSchema } fr
 import { EXT_POINTS } from '@merfy/shell/ext-points';
 import { z } from 'zod';
 import { blockFormatProblems } from './blocks';
-import { EXT_RECORD_KIND } from './ext-record-field';
+import { EXT_RECORD_KIND, sectionExtShape } from './ext-record-field';
 import { sectionFieldShape, settingFieldsOf, settingsEntryShape } from './fields';
 import { ownNameShape } from './names';
 import { problem, when, type Checked, type SectionProblem } from './problems';
@@ -137,6 +137,8 @@ export const sectionManifestSchema = z.strictObject({
   wrapperSpec: wrapperSpecShape.optional(),
   // Поля записей для скрипта (блок 8 «Секций и SDK», часть 8г): имя → { from, fields }; смысл — section-data.ts.
   data: sectionDataShape.optional(),
+  // Значения сторов расширений для шаблона (prerender, 20.11): имя → { from, store }; смысл — ext-values.ts.
+  ext: sectionExtShape.optional(),
   // Поля «Настроек темы» в панели секции (блок 10 «Секций и SDK», часть 10б, Р10б-11): id сквозных настроек;
   // имена сверяет theme-setting-unknown (script-names.ts).
   themeSettings: z.array(sectionIdSchema).max(4).refine(unique, { error: 'значение дважды' }).optional(),

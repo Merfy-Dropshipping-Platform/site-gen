@@ -17,20 +17,30 @@ export const extIdSchema = z
   .string()
   .regex(EXT_ID, { error: 'id расширения: строчные латинские буквы, цифры и дефис, 3–32 знака' });
 
+// Имя стора и метода (в секции — $имя) и имя функции расширения: их же читает сборка секций (code.sections[].ext).
+export const extMemberSchema = z.string().regex(EXT_MEMBER);
+export const extFunctionSchema = z.string().regex(FUNCTION_NAME);
+
 // "ext:<id>" в uses секции: скрипту секции нужен ctx.ext.<id>.
 export const extUseSchema = z.templateLiteral([EXT_USE_PREFIX, extIdSchema]);
 export type ExtUse = z.infer<typeof extUseSchema>;
 
 // Стор: функция расширения; by: product — стор на товар; by: record — стор на запись расширения (record — вид записи
 // из records манифеста, id берёт секция из своего параметра ext-record); customer — только вошедшему покупателю;
-// refreshOn — события витрины, после которых стор читается заново.
-const storeSchema = z.strictObject({
-  fn: z.string().regex(FUNCTION_NAME),
-  by: z.enum(['product', 'record']).optional(),
-  record: z.string().regex(EXT_MEMBER).optional(),
-  customer: z.literal(true).optional(),
-  refreshOn: z.array(z.string().regex(STOREFRONT_EVENT)).max(LIMITS.refreshOn).optional(),
-});
+// refreshOn — события витрины, после которых стор читается заново. prerender (20.11) — согласие автора: функция
+// публичная, одинаковая для всех и без побочных эффектов, поэтому сборка может вызвать её сама и положить значение в
+// HTML секции (действует у стора by: record). Значение покупателя сборка не знает: prerender вместе с customer — ошибка.
+const PRERENDER_WITH_CUSTOMER = 'prerender и customer вместе нельзя: сборка не знает покупателя';
+const storeSchema = z
+  .strictObject({
+    fn: z.string().regex(FUNCTION_NAME),
+    by: z.enum(['product', 'record']).optional(),
+    record: z.string().regex(EXT_MEMBER).optional(),
+    customer: z.literal(true).optional(),
+    prerender: z.boolean().optional(),
+    refreshOn: z.array(z.string().regex(STOREFRONT_EVENT)).max(LIMITS.refreshOn).optional(),
+  })
+  .refine((store) => !(store.prerender === true && store.customer === true), { error: PRERENDER_WITH_CUSTOMER });
 // Метод: функция расширения; params — data-атрибуты для data-action="ext.<id>.<метод>".
 const methodSchema = z.strictObject({
   fn: z.string().regex(FUNCTION_NAME),

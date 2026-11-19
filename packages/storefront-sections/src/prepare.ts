@@ -5,6 +5,7 @@ import { platformDictionary, sectionTailwindTheme } from '@merfy/tokens';
 import { classProblems, type ClassField, type ClassFields } from './classes';
 import { settingFieldsOf } from './fields';
 import { fieldRuleProblems } from './field-rules';
+import { extProblems } from './ext-values';
 import { dataProblems } from './section-data';
 import type { SectionField } from './fields';
 import {
@@ -75,6 +76,7 @@ function manifestProblems(manifest: Checked<SectionManifest>, files: SectionFile
     ...kindProblems(manifest.value, files),
     ...fieldRuleProblems(manifest.value, text),
     ...dataProblems(manifest.value, text),
+    ...extProblems(manifest.value, text),
   ];
 }
 

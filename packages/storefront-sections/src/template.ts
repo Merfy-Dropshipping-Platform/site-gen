@@ -33,9 +33,9 @@ const HANDLER = /^on/i;
 const SCRIPT_URL = /^\s*javascript:/i;
 // Оператор frontmatter — без пробелов и «;»: const { <имена> } = Astro.props. Имена — settings и blocks (части 1, 3),
 // theme и shop — только с "uses" в section.json (часть 4, Р1-4-5); page — у каждой секции (блок 7, часть 7а); каждое
-// один раз, порядок любой.
+// один раз, порядок любой. ext — значения сторов расширений по объявлению ext в section.json (prerender, 20.11).
 const FRONTMATTER = /^const\{([A-Za-z_$][\w$]*(?:,[A-Za-z_$][\w$]*)*)\}=Astro\.props$/;
-const BASE_PROPS: ReadonlySet<string> = new Set(['settings', 'blocks', 'page']);
+const BASE_PROPS: ReadonlySet<string> = new Set(['settings', 'blocks', 'page', 'ext']);
 
 const TEXT = {
   tag: (name: string) => `тег <${name}> в шаблоне секции запрещён: скрипт — script.ts, документ — у сборки`,

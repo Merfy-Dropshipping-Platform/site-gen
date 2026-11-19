@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { hashSchema } from './canonical';
 import { entityKey } from './entities';
 import { StorefrontBuildError } from './errors';
+import { extBindingsSchema } from './ext-values';
 import { parseWith } from './parse';
 import { BLOCK_RECORD_KINDS, DATA_FIELDS_MAX, DATA_FROM, DATA_NAME, RECORD_FIELD_KINDS } from './section-records';
 import { SPECIAL_PAGE_IDS, SPECIAL_PAGE_SLUGS } from './special-pages';
@@ -28,6 +29,8 @@ export const ENTITY_TYPES = [
   'counter',
   // Блог (блок 8 «Секций и SDK», часть 8а): название и адрес; статьи ссылаются на него (blogId).
   'blog',
+  // Значение стора расширения с prerender (ext-values.ts): id — «расширение:функция:запись», данные — { value }.
+  'ext-value',
 ] as const;
 
 // Правила id, версии, адресов — те же, что у конфига витрины (блок 3): входы проходят его писатель без сюрпризов.
@@ -103,6 +106,8 @@ const codeSectionSchema = z.strictObject({
   // Поля с записями в типах блоков (базовые секции, 29.10): тип блока → id поля → вид; только если объявлены.
   blockRecordFields: z.record(z.string().min(1), z.record(z.string().min(1), z.enum(BLOCK_RECORD_KINDS))).optional(),
   data: z.record(z.string().regex(DATA_NAME), sectionDataEntrySchema).optional(),
+  // Свойство шаблона ext (prerender, 20.11): имя → поле с записью расширения и стор с prerender: true; только если есть.
+  ext: extBindingsSchema.optional(),
   uses: z.array(z.enum(['theme', 'shop'])).optional(),
   // Свои токены секции из section.json (блок 4, Р4-10) — только если объявлены.
   tokens: z.record(z.string(), z.unknown()).optional(),

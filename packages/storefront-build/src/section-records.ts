@@ -227,12 +227,13 @@ export function menusWithRecordPaths(
   return Object.fromEntries(Object.entries(menus).map(([id, menu]) => [id, menuOf(menu)]));
 }
 
-// recordFields и data секции из кода магазина — только если есть (placedSections, code.ts).
+// recordFields, data и ext секции из кода магазина — только если есть (placedSections, code.ts).
 export function recordKeysOf(
   section: CodeSection | undefined,
-): Pick<PlacedSection, 'recordFields' | 'blockRecordFields' | 'data'> {
+): Pick<PlacedSection, 'recordFields' | 'blockRecordFields' | 'data' | 'ext'> {
   if (section === undefined) return {};
   return {
+    ...(section.ext === undefined ? {} : { ext: section.ext }),
     ...(section.recordFields === undefined ? {} : { recordFields: section.recordFields }),
     ...(section.blockRecordFields === undefined ? {} : { blockRecordFields: section.blockRecordFields }),
     ...(section.data === undefined ? {} : { data: section.data }),

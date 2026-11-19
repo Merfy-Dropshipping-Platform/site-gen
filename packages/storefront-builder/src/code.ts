@@ -5,6 +5,7 @@ import {
   OVERLAY_LIST,
   partsOfExtPoints,
   type BuildInputs,
+  type ExtBinding,
   type CodeAssets,
   type CodeInstance,
   type CodeSection,
@@ -21,6 +22,7 @@ import {
 } from '@merfy/storefront-config';
 import {
   currentSection,
+  extDeclarationsOf,
   isOverlaySection,
   propsUsesOf,
   resolveSectionBlocks,
@@ -32,6 +34,7 @@ import {
   sectionRecordKeys,
   visibleSections,
   type CurrentSection,
+  type ExtDeclaration,
   type Queryable,
   type RevisionMenu,
   type Visibility,
@@ -294,7 +297,37 @@ export function extPointPartsOf(list: readonly EnabledExtension[]): readonly str
   return partsOfExtPoints(extPointsOf(list, QUIET));
 }
 
-const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
+type StoreContext = Pick<CodeContext, 'log' | 'shopId' | 'extensions'>;
+
+// Привязка ext секции к стору расширения (prerender, 20.11): стор из описания включённого расширения — by: record того же
+// вида записи, что у параметра секции. Нет стора или он на другую запись — строка журнала, у секции нет prerender.
+function extBindingOf(declaration: ExtDeclaration, section: string, context: StoreContext): [string, ExtBinding][] {
+  const { name, field, ext, store: storeName, record } = declaration;
+  const store = context.extensions?.get(ext)?.stores[storeName];
+  const fields = { shopId: context.shopId, section, extension: ext, store: storeName };
+  if (store === undefined) {
+    context.log('section-ext-store-missing', fields);
+    return [];
+  }
+  if (store.by !== 'record' || store.record !== record) {
+    context.log('section-ext-store-invalid', fields);
+    return [];
+  }
+  // prerender — согласие автора расширения; без него значение читает скрипт, как раньше.
+  return store.prerender === true ? [[name, { field, ext, store: storeName, fn: store.fn }]] : [];
+}
+
+// ext секции для входов сборки и превью: только объявления со стором prerender; нет таких — ключа нет.
+export function extBindingsOf(
+  manifest: CurrentSection['manifest'],
+  section: string,
+  context: StoreContext,
+): Pick<CodeSection, 'ext'> {
+  const bindings = extDeclarationsOf(manifest).flatMap((declaration) => extBindingOf(declaration, section, context));
+  return bindings.length === 0 ? {} : { ext: Object.fromEntries(bindings) };
+}
+
+const sectionOf = ([row, current]: VisibleRow, context: CodeContext): CodeSection => ({
   name: row.name,
   kind: row.kind,
   hash: row.contentHash,
@@ -302,6 +335,8 @@ const sectionOf = ([row, current]: VisibleRow): CodeSection => ({
   script: row.scriptHash,
   // Блок 8, часть 8г: поля с записями и data секции — только если объявлены, иначе входы и ключ прежние.
   ...sectionRecordKeys(current.manifest),
+  // Значения сторов расширений с prerender (20.11) — только если есть, иначе входы и ключ прежние.
+  ...extBindingsOf(current.manifest, row.name, context),
   // Часть 4: флаги section.json — только если объявлены, иначе входы и ключ прежние.
   ...(current.manifest.removable === undefined ? {} : { removable: current.manifest.removable }),
   // Блок 12, часть 12а: роль секции — только если объявлена, иначе входы и ключ прежние.
@@ -496,7 +531,7 @@ export function codeOf(
   const { shell } = context;
   const input = { version: shell.version, hash: shell.hash, parts: shell.parts };
   const code = {
-    sections: used.map(sectionOf),
+    sections: used.map((row) => sectionOf(row, context)),
     pages,
     globals,
     ...codeExtras(usedExtensions(used, context), context),
@@ -538,12 +573,15 @@ export async function readVisibleSections(deps: CodeDeps, shopId: string): Promi
   if (enabled === null) return null;
   const extensions = enabled.map(({ id, version }) => ({ id, version }));
   const rows = await (deps.rows ?? visibleSections)(deps.db, { shopId, extensions });
+  // Описания сторов — для ext секций (prerender): превью блока читает значения по ним же, что сборка.
+  const context = { log: deps.log, shopId, extensions: storefrontsOf(enabled, { log: deps.log, shopId }) };
   return new Map(
     rows.flatMap((row): [string, VisibleSection][] => {
       const current = currentSection(row);
       if (current === null) return [];
       const extension = sectionExtensionOf(row.name, enabled);
-      return [[row.name, extension === undefined ? current : { ...current, extension }]];
+      const visible = { ...current, ...extBindingsOf(current.manifest, row.name, context) };
+      return [[row.name, extension === undefined ? visible : { ...visible, extension }]];
     }),
   );
 }

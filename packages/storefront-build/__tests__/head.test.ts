@@ -177,6 +177,13 @@ describe('иконка вкладки и ранние соединения', () 
     ]);
   });
 
+  it('предзагрузка главной картинки — первым тегом кода страницы; нет картинки — нет и ссылки', () => {
+    const link = '<link rel="preload" as="image" href="/a.jpg" fetchpriority="high">';
+    const withLink = pageLocals(standInputs, HOME, novaTokens, undefined, content({ mainImageLink: link }));
+    expect(withLink.head.codeHtml.startsWith(link)).toBe(true);
+    expect(locals.head.codeHtml).not.toContain('rel="preload"');
+  });
+
   it('без бандла и без картинки соединений нет; картинка с адреса магазина и не https — тоже', () => {
     expect(locals.head.preconnect).toEqual([]);
     const at = (mainImage: string) =>

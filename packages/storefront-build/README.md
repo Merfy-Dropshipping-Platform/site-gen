@@ -142,8 +142,11 @@
 - Служебные страницы (`"index": false`: корзина, оформление, кабинет, избранное, вход, 404; 02.11.2026) — с
   `<meta name="robots" content="noindex">`; их адреса и копии — `NOINDEX_PATHS`, по нему карта сайта storefront-storage
   их не берёт.
-- Порядок загрузки картинок (`src/image-loading.ts`, 02.11.2026): первая `<img>` в `<main>` — `loading="eager"` и
-  `fetchpriority="high"`, остальные — `loading="lazy"`; свои `loading` и `fetchpriority` секций снимаются. В `<head>` —
+- Порядок загрузки картинок (`src/image-loading.ts`, 02.11.2026): первая видимая `<img>` с `src` или `srcset` в
+  `<main>` (не в `<template>`, без `hidden`, `display:none`, `visibility:hidden`, `<noscript>`, закрытого `<dialog>`
+  у неё и предков; 19.11.2026) — `loading="eager"` и `fetchpriority="high"`, остальные — `loading="lazy"`; подходящей
+  нет — высокого приоритета нет ни у кого; свои `loading` и `fetchpriority` секций снимаются. В `<head>` —
+  `<link rel="preload" as="image">` главной (с `imagesrcset` и `imagesizes`, если они есть у `<img>`),
   иконка вкладки (`branding.favicons.universal`, нет — `data:,`) и `preconnect` к шлюзу и хосту главной картинки;
   пустое описание страницы — описание магазина, иначе «<имя> — интернет-магазин».
 - `src/routes.ts`: страница на каждую запись (`recordIndex`), если в списке шаблона есть видимая секция

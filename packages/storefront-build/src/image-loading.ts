@@ -3,8 +3,11 @@ import type { PageContent } from './sections-render';
 // Порядок загрузки картинок страницы (замер PageSpeed 02.11.2026: витрина мерчанта качала разом восемь исходных фото
 // на 3,2 МБ — картинки скрытого меню шапки и окна поиска наравне с главной, LCP на мобильном 19 с). Секции пишут
 // мерчант и агент, поэтому порядок ставит сборка, а не автор секции:
-// - главная картинка — первая <img> в <main> вне <template>: loading="eager" и fetchpriority="high", браузер берёт её
-//   раньше остальных;
+// - главная картинка — первая <img> в <main> вне <template>, у которой есть src или srcset и которая не скрыта (hidden,
+//   display:none и visibility:hidden в style у неё или предка, <noscript>, <dialog> без open): loading="eager" и
+//   fetchpriority="high", браузер берёт её раньше остальных; подходящей нет — высокого приоритета нет ни у кого (замер
+//   на dev 19.11.2026: главной считалась пустая скрытая <img> секции расширения, а видимая ниже становилась lazy).
+//   К главной в <head> — <link rel="preload" as="image">;
 // - остальные <img> — loading="lazy": картинки меню, поиска и окон не качаются, пока их не покажут;
 // - у каждой <img> без своего decoding — decoding="async".
 // loading и fetchpriority решает только платформа: в той витрине автор сам поставил loading="eager" восемнадцати
@@ -19,18 +22,67 @@ interface ImgAttribute {
   end: number;
 }
 
-interface ImgTag {
-  start: number;
+// Разобранный открывающий тег.
+interface TagParse {
   end: number;
   // Где вставлять новые атрибуты: перед «>» или «/>».
   insertAt: number;
   attributes: ImgAttribute[];
-  inTemplate: boolean;
+  selfClosing: boolean;
 }
 
+interface ImgTag extends TagParse {
+  start: number;
+  inTemplate: boolean;
+  // Скрыта сама или внутри скрытого предка.
+  hidden: boolean;
+}
+
+// Открытый элемент разметки: нужен, чтобы знать, что <img> лежит в шаблоне или под скрытым предком.
+interface OpenElement {
+  name: string;
+  hidden: boolean;
+}
+
+type OpenElements = readonly OpenElement[];
+
 const RAW_TEXT = ['script', 'style', 'textarea', 'title'] as const;
+const VOID_ELEMENTS: ReadonlySet<string> = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+]);
 const SPACE = /\s/;
 const NAME_END = /[\s=>/]/;
+const INLINE_HIDDEN = /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\s*(?:!important\s*)?(?:;|$)/i;
+
+const valueOf = (attributes: readonly ImgAttribute[], name: string): string =>
+  attributes.find((attribute) => attribute.name === name)?.value.trim() ?? '';
+const hasAttribute = (attributes: readonly ImgAttribute[], name: string): boolean =>
+  attributes.some((attribute) => attribute.name === name);
+
+// Признаки скрытости элемента, которые сборка видит надёжно: по имени и атрибутам. Классы (hidden, md:hidden) и
+// таблицы стилей сюда не входят — их условие знает только браузер.
+const HIDING_RULES: readonly ((name: string, attributes: readonly ImgAttribute[]) => boolean)[] = [
+  (_name, attributes) => hasAttribute(attributes, 'hidden'),
+  (_name, attributes) => INLINE_HIDDEN.test(valueOf(attributes, 'style')),
+  (name) => name === 'noscript',
+  (name, attributes) => name === 'dialog' && !hasAttribute(attributes, 'open'),
+];
+
+const isHiddenElement = (name: string, attributes: readonly ImgAttribute[]): boolean =>
+  HIDING_RULES.some((rule) => rule(name, attributes));
 
 const isSpace = (char: string | undefined): boolean => char !== undefined && SPACE.test(char);
 
@@ -73,17 +125,18 @@ function attributeAt(html: string, from: number): ImgAttribute | null {
   return { name, value: parsed.value, start: from, end: parsed.end };
 }
 
-// Тег <img> с позиции «<»: атрибуты и место вставки новых.
-function imgTagAt(html: string, start: number, inTemplate: boolean): ImgTag {
+// Открывающий тег с позиции «<»: атрибуты и место вставки новых.
+function tagAt(html: string, start: number, name: string): TagParse {
   const attributes: ImgAttribute[] = [];
-  let at = start + '<img'.length;
+  let at = start + 1 + name.length;
   for (let attribute = attributeAt(html, at); attribute !== null; attribute = attributeAt(html, at)) {
     if (attribute.name !== '') attributes.push(attribute);
     at = attribute.end;
   }
   // Вставка — сразу после последнего атрибута: перед «>» или «/>», пробелы автора остаются после новых атрибутов.
   const close = html.indexOf('>', at);
-  return { start, end: close === -1 ? html.length : close + 1, insertAt: at, attributes, inTemplate };
+  const end = close === -1 ? html.length : close + 1;
+  return { end, insertAt: at, attributes, selfClosing: html.slice(at, end).includes('/') };
 }
 
 // Конец комментария или содержимого тега с сырым текстом (без учёта регистра); не нашли — конец строки.
@@ -94,26 +147,54 @@ function skipTo(html: string, marker: string, from: number): number {
   return found === null ? html.length : found.index + marker.length;
 }
 
-// Что стоит на позиции «<»: картинка, пропуск (комментарий, сырой текст) или шаблон.
-function stepAt(html: string, at: number, depth: number): { next: number; depth: number; img?: ImgTag } {
-  if (html.startsWith('<!--', at)) return { next: skipTo(html, '-->', at + 4), depth };
+// Закрывающий тег снимает элемент и всё, что открыто внутри него; без пары — игнорируется.
+function closeElement(open: OpenElements, name: string): OpenElements {
+  const index = open.map((element) => element.name).lastIndexOf(name);
+  return index === -1 ? open : open.slice(0, index);
+}
+
+// Открытые элементы после открывающего тега: пустые элементы и самозакрытые стек не меняют.
+function openElement(open: OpenElements, name: string, tag: TagParse): OpenElements {
+  if (VOID_ELEMENTS.has(name) || tag.selfClosing) return open;
+  return [...open, { name, hidden: isHiddenElement(name, tag.attributes) }];
+}
+
+function imgTagOf(start: number, tag: TagParse, open: OpenElements): ImgTag {
+  const own = isHiddenElement('img', tag.attributes);
+  return {
+    ...tag,
+    start,
+    inTemplate: open.some((element) => element.name === 'template'),
+    hidden: own || open.some((element) => element.hidden),
+  };
+}
+
+interface Step {
+  next: number;
+  open: OpenElements;
+  img?: ImgTag;
+}
+
+// Что стоит на позиции «<»: картинка, пропуск (комментарий, сырой текст) или другой тег — он меняет открытые элементы.
+function stepAt(html: string, at: number, open: OpenElements): Step {
+  if (html.startsWith('<!--', at)) return { next: skipTo(html, '-->', at + 4), open };
   const closing = html[at + 1] === '/';
   const name = tagNameAt(html, at + (closing ? 2 : 1));
-  if (name === 'template') return { next: at + 1, depth: Math.max(0, depth + (closing ? -1 : 1)) };
-  if (closing) return { next: at + 1, depth };
-  if (RAW_TEXT.some((raw) => raw === name)) return { next: skipTo(html, `</${name}`, at + name.length + 1), depth };
-  if (name !== 'img') return { next: at + 1, depth };
-  const img = imgTagAt(html, at, depth > 0);
-  return { next: img.end, depth, img };
+  if (name === '') return { next: at + 1, open };
+  if (closing) return { next: at + 1, open: closeElement(open, name) };
+  if (RAW_TEXT.some((raw) => raw === name)) return { next: skipTo(html, `</${name}`, at + name.length + 1), open };
+  const tag = tagAt(html, at, name);
+  const step = { next: tag.end, open: openElement(open, name, tag) };
+  return name === 'img' ? { ...step, img: imgTagOf(at, tag, open) } : step;
 }
 
 // Все теги <img> разметки по порядку.
 export function imgTags(html: string): ImgTag[] {
   const tags: ImgTag[] = [];
-  let depth = 0;
+  let open: OpenElements = [];
   for (let at = html.indexOf('<'); at !== -1; ) {
-    const step = stepAt(html, at, depth);
-    depth = step.depth;
+    const step = stepAt(html, at, open);
+    open = step.open;
     if (step.img !== undefined) tags.push(step.img);
     at = html.indexOf('<', step.next);
   }
@@ -153,21 +234,48 @@ export function withImgLoading(html: string, mainIndex = -1): string {
   return out + html.slice(at);
 }
 
-// Номер главной картинки в разметке секции: первая <img> вне <template>; нет — -1.
-const mainImgIndex = (html: string): number => imgTags(html).findIndex((tag) => !tag.inTemplate);
+// Годится в главные: вне <template>, видима и с адресом — src или srcset.
+const isMainCandidate = (tag: ImgTag): boolean =>
+  !tag.inTemplate && !tag.hidden && (valueOf(tag.attributes, 'src') !== '' || valueOf(tag.attributes, 'srcset') !== '');
 
-// src главной картинки секции; нет атрибута — пустая строка.
-function mainSrc(html: string): string {
-  const tag = imgTags(html).find((candidate) => !candidate.inTemplate);
-  return tag?.attributes.find((attribute) => attribute.name === 'src')?.value.trim() ?? '';
+// Номер главной картинки в разметке секции — первая подходящая; нет — -1.
+const mainImgIndex = (html: string): number => imgTags(html).findIndex(isMainCandidate);
+
+// Атрибуты <link rel="preload" as="image"> из атрибутов <img>: адрес, набор адресов и размеры. Значения — как в
+// разметке автора (уже с экранированием), только кавычка заменяется.
+const PRELOAD_FROM_IMG = [
+  ['href', 'src'],
+  ['imagesrcset', 'srcset'],
+  ['imagesizes', 'sizes'],
+] as const;
+
+const quoted = (value: string): string => value.replace(/"/g, '&quot;');
+
+// Предзагрузка главной картинки для <head>. sizes без srcset ничего не значит — не переносится.
+function preloadLink(tag: ImgTag): string {
+  const hasSet = valueOf(tag.attributes, 'srcset') !== '';
+  const attributes = PRELOAD_FROM_IMG.filter(([link]) => hasSet || link !== 'imagesizes')
+    .map(([link, img]) => ({ link, value: valueOf(tag.attributes, img) }))
+    .filter(({ value }) => value !== '')
+    .map(({ link, value }) => ` ${link}="${quoted(value)}"`);
+  return `<link rel="preload" as="image"${attributes.join('')} fetchpriority="high">`;
 }
 
-// Секции <main> с главной картинкой в первой секции, где она есть, и её src.
-function mainSections(sections: readonly string[]): { sections: string[]; mainImage?: string } {
+type MainImageFields = Pick<PageContent, 'mainImage' | 'mainImageLink'>;
+
+// Поля главной картинки страницы: src — для preconnect (нет src — только srcset — поля нет), ссылка предзагрузки.
+function mainImageFields(tag: ImgTag | undefined): MainImageFields {
+  if (tag === undefined) return {};
+  const src = valueOf(tag.attributes, 'src');
+  return { ...(src === '' ? {} : { mainImage: src }), mainImageLink: preloadLink(tag) };
+}
+
+// Секции <main> с главной картинкой в первой секции, где она есть, и поля главной картинки страницы.
+function mainSections(sections: readonly string[]): { sections: string[] } & MainImageFields {
   const first = sections.findIndex((html) => mainImgIndex(html) !== -1);
   const rewritten = sections.map((html, index) => withImgLoading(html, index === first ? mainImgIndex(html) : -1));
-  const src = first === -1 ? '' : mainSrc(sections[first] ?? '');
-  return src === '' ? { sections: rewritten } : { sections: rewritten, mainImage: src };
+  const main = first === -1 ? undefined : imgTags(sections[first] ?? '').find(isMainCandidate);
+  return { sections: rewritten, ...mainImageFields(main) };
 }
 
 // Разметка страницы с порядком загрузки картинок: шапка, подвал и окна — только ленивые, главная — в <main>.

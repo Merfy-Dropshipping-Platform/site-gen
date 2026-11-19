@@ -187,6 +187,9 @@ export interface PageContent {
   // Адрес главной картинки <main> как в src (image-loading.ts): к её хосту — <link rel="preconnect"> (head.ts). Нет —
   // картинок в <main> нет или порядок загрузки не считали.
   mainImage?: string;
+  // Готовый <link rel="preload" as="image"> главной картинки <main> (image-loading.ts): head.ts ставит его в <head>
+  // страницы. Нет — главной картинки нет (нет видимой <img> с src или srcset).
+  mainImageLink?: string;
   // Значения настроек темы страницы — те же, что у секций в Astro.props.theme: сквозные из них идут в theme.settings
   // конфига (блок 9 «Секций и SDK», часть 9б). Нет — поля в конфиге нет.
   themeSettings?: SettingValues;

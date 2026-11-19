@@ -233,6 +233,38 @@ export class S3StorageService {
     return this.getPublicUrl(bucket, key);
   }
 
+  /** Записать объект с заголовками, которые задал вызывающий (копии картинок и маркер). */
+  async putObjectWithHeaders(
+    bucket: string,
+    key: string,
+    body: Buffer,
+    headers: Record<string, string>,
+  ): Promise<void> {
+    if (!this.client) throw new Error("S3 client not initialized");
+    await this.client.putObject(bucket, key, body, body.length, headers);
+  }
+
+  async getObjectBuffer(bucket: string, key: string): Promise<Buffer> {
+    if (!this.client) throw new Error("S3 client not initialized");
+    const stream = await this.client.getObject(bucket, key);
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) chunks.push(chunk);
+    return Buffer.concat(chunks);
+  }
+
+  /** Все объекты под префиксом одним обходом бакета. */
+  async listObjects(
+    bucket: string,
+    prefix: string,
+  ): Promise<Array<{ key: string; size: number }>> {
+    if (!this.client) throw new Error("S3 client not initialized");
+    const objects: Array<{ key: string; size: number }> = [];
+    for await (const item of this.client.listObjectsV2(bucket, prefix, true)) {
+      if (item.name) objects.push({ key: item.name, size: item.size });
+    }
+    return objects;
+  }
+
   /**
    * Получить публичный URL для файла.
    * Использует S3_PUBLIC_ENDPOINT если настроен, иначе внутренний endpoint.

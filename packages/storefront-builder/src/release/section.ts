@@ -5,10 +5,12 @@ import {
   acceptSection,
   currentDraft,
   draftSource,
+  libraryHashesOf,
   prepareInWorker,
   problemText,
   type Database,
   type Door,
+  type LibraryHistory,
   type SandboxOptions,
   type SectionFiles,
 } from '@merfy/storefront-sections';
@@ -53,6 +55,7 @@ export interface ResaveDeps extends SectionSources {
   startedBy: string;
   say: (line: string) => void;
   sandbox?: SandboxOptions;
+  history?: LibraryHistory; // история библиотеки; нет — встроенная (generated/library-history.json)
 }
 
 export interface ResaveCommand {
@@ -143,8 +146,7 @@ async function planOf(
   name: string,
   files: SectionFiles,
 ): Promise<ShopResult> {
-  if (action !== 'update')
-    return { siteId: copy.siteId, action, inRelease: copy.published && action === 'pending' };
+  if (action !== 'update') return { siteId: copy.siteId, action, inRelease: copy.published && action === 'pending' };
   const current = await draftSource(deps.db, copy.siteId, name);
   const diff = current === null ? undefined : filesDiff(current.files, files);
   return { siteId: copy.siteId, action, files: diff, inRelease: copy.published };
@@ -162,7 +164,12 @@ async function resaveShop(
   try {
     const result = await acceptSection({ db: deps.db, store: deps.store }, door, files, { expectDraft: copy.draft });
     if (result.status === 'refused')
-      return { siteId: copy.siteId, action: 'failed', error: result.problems.map(problemText).join('; '), inRelease: false };
+      return {
+        siteId: copy.siteId,
+        action: 'failed',
+        error: result.problems.map(problemText).join('; '),
+        inRelease: false,
+      };
     const action = result.status === 'accepted' ? 'update' : 'pending';
     return { siteId: copy.siteId, action, files: dry.files, inRelease: copy.published };
   } catch (error) {
@@ -251,6 +258,18 @@ async function releaseOf(
   return { id: release.id, status: release.status };
 }
 
+// Какие отпечатки копии — наши (Р15з-3): версии папки из git, все версии из истории библиотеки (без git, в образе
+// сборщика) и новая. Копия с любым из них не тронута мерчантом.
+export async function knownHashes(
+  deps: Pick<ResaveDeps, 'versions' | 'history'>,
+  folder: string,
+  libraryName: string,
+  next: string,
+): Promise<ReadonlySet<string>> {
+  const fromGit = (await deps.versions(folder)).map((files) => hashOf(files));
+  return new Set([...fromGit, ...libraryHashesOf(libraryName, deps.history), next]);
+}
+
 // Проверка не прошла — StorefrontBuilderError('release-refused', 'новая версия не прошла проверку: …'), ничего не записано.
 export async function resaveSection(deps: ResaveDeps, command: ResaveCommand): Promise<ResaveReport> {
   const files = await deps.read(command.folder);
@@ -258,16 +277,18 @@ export async function resaveSection(deps: ResaveDeps, command: ResaveCommand): P
   if (!prepared.ok) throw refuse(`новая версия не прошла проверку: ${prepared.problems.map(problemText).join('; ')}`);
   const name = shopNameOf(prepared.section.manifest.name);
   const next = hashOf(files);
-  const known = new Set([...(await deps.versions(command.folder)).map(hashOf), next]);
+  const known = await knownHashes(deps, command.folder, prepared.section.manifest.name, next);
   const copies = await readCopies(deps.db, name, command.theme);
   const planned = await Promise.all(
     copies.map(async (copy): Promise<ShopResult> => planOf(deps, copy, copyAction(copy, known, next), name, files)),
   );
-  if (!command.write) return { name, sourceHash: next, write: false, shops: planned, release: null, counts: countsOf(planned) };
+  if (!command.write)
+    return { name, sourceHash: next, write: false, shops: planned, release: null, counts: countsOf(planned) };
   const saved = await Promise.all(
     copies.map(async (copy, index): Promise<ShopResult> => {
       const dry = planned[index];
-      if (dry === undefined || dry.action !== 'update') return dry ?? { siteId: copy.siteId, action: 'failed', error: 'нет плана', inRelease: false };
+      if (dry === undefined || dry.action !== 'update')
+        return dry ?? { siteId: copy.siteId, action: 'failed', error: 'нет плана', inRelease: false };
       return resaveShop(deps, copy, name, files, dry);
     }),
   );

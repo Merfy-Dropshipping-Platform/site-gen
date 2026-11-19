@@ -3,7 +3,7 @@ import type { Pool } from 'pg';
 import { z } from 'zod';
 import type { DoorFields } from './doors';
 import { SECTION_KINDS, type SectionFiles } from './format';
-import { isLibrarySection } from './library-copy';
+import { isLibrarySection } from './library-history';
 import type { PreparedSection } from './prepare';
 import { sectionProblemSchema } from './problems';
 import { isSectionRole, type SectionRole } from './roles';

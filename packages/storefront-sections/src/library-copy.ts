@@ -7,7 +7,9 @@ import { problem, type SectionProblem } from './problems';
 // взятая под другим именем и не тронутая, — это та же секция с лишним названием: вид и параметры прежние, а
 // агент считает, что переделал. Предупреждение просит поставить библиотечную как есть или изменить. Сверка — по
 // отпечатку файлов без name и title; отпечатки библиотеки лежат в generated/library-index.json (pnpm generate),
-// читать диск проверка не может — она идёт в процессе без доступа к файлам.
+// читать диск проверка не может — она идёт в процессе без доступа к файлам. Только подсказка авторам: названия и
+// концевые пробелы здесь не в счёт. «Осталась ли секция магазина библиотечной» решает точный отпечаток из истории
+// (library-history.ts), а не этот.
 export type LibraryIndex = Readonly<Record<string, string>>; // отпечаток → имя библиотечной секции
 
 const INDEX: LibraryIndex = libraryIndex;
@@ -50,13 +52,6 @@ export function libraryKeyOf(files: SectionFiles): string | null {
   return createHash('sha256')
     .update(JSON.stringify([canonical(kept), others]))
     .digest('hex');
-}
-
-// Секция осталась библиотечной (19.11): отпечаток её файлов есть в индексе библиотеки, под любым именем. Правка кода,
-// разметки или параметров — отпечаток другой, секция уже авторская: её находки чинит агент, а не платформа.
-export function isLibrarySection(files: SectionFiles, index: LibraryIndex = INDEX): boolean {
-  const key = libraryKeyOf(files);
-  return key !== null && Object.hasOwn(index, key);
 }
 
 export function libraryCopyProblems(files: SectionFiles, name: string, index: LibraryIndex = INDEX): SectionProblem[] {

@@ -13,6 +13,7 @@
     "./behaviors/presets": "./src/core/behaviors/presets.ts",
     "./behaviors/motion-css": "./src/core/behaviors/motion-css.ts",
     "./behaviors/page-transition": "./src/core/behaviors/page-transition.ts",
+    "./behaviors/consent-head": "./src/core/behaviors/consent-head.ts",
     "./libraries": "./src/core/behaviors/libraries.ts",
     "./keyframes": "./src/core/keyframes.ts",
     "./preview": "./src/core/preview-protocol.ts",

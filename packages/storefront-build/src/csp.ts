@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { CONSENT_HEAD_SCRIPT } from '@merfy/shell/behaviors/consent-head';
 import { MOTION_HEAD_SCRIPT } from '@merfy/shell/behaviors/motion-css';
 import { PAGE_TRANSITION_SCRIPT } from '@merfy/shell/behaviors/page-transition';
 import { counterScripts } from '@merfy/shell/counters';
@@ -123,8 +124,13 @@ function counterParts(counters: readonly Counter[]): CounterParts {
 
 const directives = (rows: readonly (readonly string[])[]): string => rows.map((row) => row.join(' ')).join('; ');
 
-// Встроенные скрипты SDK в <head>: флаг появлений (блок 6) и имена переходов между страницами (13.11, head.ts).
-const SDK_HASHES = (): string[] => [textHash(MOTION_HEAD_SCRIPT), textHash(PAGE_TRANSITION_SCRIPT)];
+// Встроенные скрипты SDK в <head>: флаг появлений (блок 6), имена переходов между страницами (13.11, head.ts) и класс
+// «ответа о cookie нет» для баннера (19.11, page.ts).
+const SDK_HASHES = (): string[] => [
+  textHash(MOTION_HEAD_SCRIPT),
+  textHash(PAGE_TRANSITION_SCRIPT),
+  textHash(CONSENT_HEAD_SCRIPT),
+];
 
 function normalPolicy(source: CspSource, counters: CounterParts): string {
   const hashes = unique([...SDK_HASHES(), ...counters.hashes, ...pageHashes(source)]);

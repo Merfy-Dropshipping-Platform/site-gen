@@ -1,3 +1,4 @@
+import { CONSENT_CSS, CONSENT_HEAD_SCRIPT } from '@merfy/shell/behaviors/consent-head';
 import { panelForTheme, parsePanel } from '@merfy/tokens';
 import { describe, expect, it } from 'vitest';
 import panelJson from '../../theme-contract/panel/theme-panel.json';
@@ -114,6 +115,23 @@ describe('группа overlay', () => {
     expect(banner).toContain('data-role="cookie-banner"');
     expect(footer).not.toContain('data-role');
     expect(seen[0]?.head.codeHtml).toContain('id="merfy-sections"');
+  });
+
+  it('баннер cookie с первого кадра (19.11): скрипт и стиль в <head> — на витрине и в превью, только со страницей с ролью баннера', async () => {
+    const head = `<script>${CONSENT_HEAD_SCRIPT}</script><style id="merfy-consent">${CONSENT_CSS}</style>`;
+    for (const mode of ['live', 'preview'] as const) {
+      const seen: ShopPageLocals[] = [];
+      await renderShopPage(shopInputs(), '/', themeOf(seen), { ...pageOf([]), mode });
+      expect(seen[0]?.head.codeHtml).toContain(head);
+    }
+    const noBanner = changedInputs((draft) => {
+      const base = shopInputs();
+      draft.revision = base.revision;
+      draft.code = { ...base.code, pages: { ...base.code.pages, overlay: [instance('drawer-1', 'shop:cart-drawer')] } };
+    });
+    const seen: ShopPageLocals[] = [];
+    await renderShopPage(noBanner, '/', themeOf(seen), pageOf([]));
+    expect(seen[0]?.head.codeHtml).not.toContain('merfy-consent');
   });
 
   it('ошибка рендера секции с ролью — render-failed, сборку не выкладываем; обычная секция — пропущена', async () => {

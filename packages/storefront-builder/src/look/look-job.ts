@@ -3,7 +3,8 @@ import type { Broker } from '../broker';
 import { lighthouseFindings } from '../checks/browser/lighthouse';
 import { semanticBrowser } from '../checks/browser/semantic';
 import { vitalsCheck } from '../checks/browser/vitals';
-import { inSections, type CheckReport } from '../checks/finding';
+import { inSections, onPlatformSections, type CheckReport } from '../checks/finding';
+import { platformSections } from '../checks/html/platform';
 import { semanticHtml } from '../checks/html/semantic';
 import { errorText } from '../errors';
 import type { Log } from '../log';
@@ -293,7 +294,10 @@ async function checksOn(
   const vitals = parts.find((part) => part.vitals !== undefined)?.vitals;
   return {
     findings: inSections(
-      parts.flatMap((part) => part.findings),
+      onPlatformSections(
+        parts.flatMap((part) => part.findings),
+        platformSections(html),
+      ),
       wanted,
     ),
     failed: parts.flatMap((part) => part.failed),

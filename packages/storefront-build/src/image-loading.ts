@@ -1,4 +1,4 @@
-import { tagsNamed, valueOf, type HtmlTag } from './html-tags';
+import { tagsNamed, valueOf, type HtmlTag, type TagAttribute } from './html-tags';
 import type { PageContent } from './sections-render';
 
 // Порядок загрузки картинок страницы (замер PageSpeed 02.11.2026: витрина мерчанта качала разом восемь исходных фото
@@ -11,30 +11,46 @@ import type { PageContent } from './sections-render';
 //   К главной в <head> — <link rel="preload" as="image">;
 // - остальные <img> — loading="lazy": картинки меню, поиска и окон не качаются, пока их не покажут;
 // - у каждой <img> без своего decoding — decoding="async".
-// loading и fetchpriority решает только платформа: в той витрине автор сам поставил loading="eager" восемнадцати
-// скрытым картинкам. Свои значения автора снимаются, проверка кода секции предупреждает о них (problem-info.ts,
-// img-loading). Разбор — по тегам, без DOM (html-tags.ts).
+// Шаблон главнее сборки (19.11.2026: LCP каталога — вторая карточка сетки, а она lazy, и автор секции не мог это
+// исправить): явный loading="eager" или loading="lazy" у <img> остаётся как есть, сборка ставит loading только там,
+// где его нет или значение чужое. fetchpriority — только платформа: «high» у одной главной картинки, свой fetchpriority
+// автора снимается, проверка кода секции предупреждает о нём (problem-info.ts, img-loading). Разбор — по тегам,
+// без DOM (html-tags.ts).
 
 // Все теги <img> разметки по порядку.
 export const imgTags = (html: string): HtmlTag[] => tagsNamed(html, ['img']);
 
-// Атрибуты, которые ставит платформа: свои значения автора у них снимаются.
-const PLATFORM_ATTRIBUTES: readonly string[] = ['loading', 'fetchpriority'];
+// Значения loading, которые автор вправе выбрать сам.
+const AUTHOR_LOADING: readonly string[] = ['eager', 'lazy'];
 
-// Новый вид тега: свои loading и fetchpriority автора снимаются; главной — eager и high, остальным — lazy.
-// decoding="async" — всем без своего decoding.
+const hasAuthorLoading = (tag: HtmlTag): boolean =>
+  AUTHOR_LOADING.includes(valueOf(tag.attributes, 'loading').toLowerCase());
+
+// Атрибуты, которые сборка снимает с тега: fetchpriority — всегда, loading — если значение не eager и не lazy.
+const droppedAttributes = (tag: HtmlTag): TagAttribute[] =>
+  tag.attributes.filter(
+    (attribute) => attribute.name === 'fetchpriority' || (attribute.name === 'loading' && !hasAuthorLoading(tag)),
+  );
+
+// loading, который ставит сборка: нет своего у автора — главной eager, остальным lazy.
+const platformLoading = (tag: HtmlTag, main: boolean): string => {
+  if (hasAuthorLoading(tag)) return '';
+  return main ? ' loading="eager"' : ' loading="lazy"';
+};
+
+// Новый вид тега: чужие loading и fetchpriority сняты, главной добавлен fetchpriority="high", decoding="async" —
+// всем без своего decoding.
 function rewriteImg(html: string, tag: HtmlTag, main: boolean): string {
-  const dropped = tag.attributes.filter((attribute) => PLATFORM_ATTRIBUTES.includes(attribute.name));
   let head = '';
   let at = tag.start;
-  for (const attribute of dropped) {
+  for (const attribute of droppedAttributes(tag)) {
     head += html.slice(at, attribute.start);
     at = attribute.end;
   }
   head += html.slice(at, tag.insertAt);
   const decoding = tag.attributes.some((attribute) => attribute.name === 'decoding') ? '' : ' decoding="async"';
-  const loading = main ? ' loading="eager" fetchpriority="high"' : ' loading="lazy"';
-  return `${head}${loading}${decoding}${html.slice(tag.insertAt, tag.end)}`;
+  const priority = main ? ' fetchpriority="high"' : '';
+  return `${head}${platformLoading(tag, main)}${priority}${decoding}${html.slice(tag.insertAt, tag.end)}`;
 }
 
 // Разметка с атрибутами загрузки у каждой <img>; mainIndex — номер главной картинки среди тегов этой разметки

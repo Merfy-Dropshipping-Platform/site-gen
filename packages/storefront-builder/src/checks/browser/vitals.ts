@@ -349,7 +349,9 @@ const LCP_CAUSES: Array<{ rule: string; applies: (lcp: LcpRaw) => boolean; text:
   {
     rule: 'lcp-lazy',
     applies: (lcp) => lcp.lazy,
-    text: 'Главная картинка первого экрана грузится лениво (loading="lazy") · убери loading="lazy": она нужна сразу',
+    text:
+      'Главная картинка экрана грузится лениво · поставь в шаблоне секции loading="eager" этой картинке ' +
+      '(первым карточкам ряда)',
   },
 ];
 

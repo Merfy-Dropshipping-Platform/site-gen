@@ -1,11 +1,11 @@
 import { fieldOf, isNode, nodesOf, type AstNode } from './ast';
 import type { CodeFound } from './taste-code';
 
-// Порядок загрузки картинок решает платформа (storefront-build, image-loading.ts; замер PageSpeed 02.11.2026: секция
-// шапки с loading="eager" у восемнадцати скрытых картинок меню и поиска — LCP 19 с). Главной картинке страницы сборка
-// ставит loading="eager" и fetchpriority="high", остальным — loading="lazy"; свои loading и fetchpriority шаблона
-// снимаются. loading="eager" и fetchpriority в шаблоне — предупреждение: они не действуют, а автор думает, что
-// действуют. loading="lazy" — не предупреждение: сборка ставит то же. Одно предупреждение на секцию.
+// Порядок загрузки картинок ставит платформа (storefront-build, image-loading.ts). Шаблон главнее сборки (19.11.2026):
+// явные loading="eager" и loading="lazy" у <img> сборка оставляет — так секция делает eager первые карточки сетки.
+// fetchpriority="high" сборка ставит одной главной картинке страницы, свой fetchpriority шаблона снимается: он не
+// действует, а автор думает, что действует — предупреждение. loading={…} и loading="eager" — не предупреждение.
+// Одно предупреждение на секцию.
 
 const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
 
@@ -26,17 +26,8 @@ const attributeName = (attribute: AstNode): string => {
   return isNode(name) ? stringOf(fieldOf(name, 'name')).toLowerCase() : '';
 };
 
-// Значение строкой; выражение {…} — null: что в нём, видно только при рендере.
-const literalValue = (attribute: AstNode): string | null => {
-  const value = fieldOf(attribute, 'value');
-  return isNode(value) && value.type === 'Literal' ? stringOf(fieldOf(value, 'value')).trim().toLowerCase() : null;
-};
-
-// Атрибут, который сборка снимет зря: fetchpriority — любой, loading — кроме строки lazy.
-const ignored = (attribute: AstNode): boolean => {
-  const name = attributeName(attribute);
-  return name === 'fetchpriority' || (name === 'loading' && literalValue(attribute) !== 'lazy');
-};
+// Атрибут, который сборка снимет зря: fetchpriority — любой.
+const ignored = (attribute: AstNode): boolean => attributeName(attribute) === 'fetchpriority';
 
 export function imgLoadingFound(ast: unknown): CodeFound[] {
   const found = nodesOf(ast)
@@ -44,9 +35,6 @@ export function imgLoadingFound(ast: unknown): CodeFound[] {
     .flatMap((element) => attributesOf(element).filter(ignored));
   const first = found[0];
   if (first === undefined) return [];
-  const names = ['loading', 'fetchpriority']
-    .filter((name) => found.some((item) => attributeName(item) === name))
-    .join(' и ');
-  const message = `${names} у <img> (${found.length}) не действуют: порядок загрузки ставит платформа — главной картинке страницы eager и fetchpriority="high", остальным lazy. Убери атрибут`;
+  const message = `fetchpriority у <img> (${found.length}) не действует: «high» сборка ставит одной главной картинке страницы сама. Убери атрибут; нужна сразу — поставь loading="eager"`;
   return [{ at: first.start, code: 'taste-img-loading', message }];
 }

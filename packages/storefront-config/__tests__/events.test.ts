@@ -74,6 +74,7 @@ describe('события пересборки (design.md блока 3, 5.7)', ()
       ['stock-change', 'new', 'dependent-pages', 'works'],
       ['extension-toggle', 'new', 'store', 'works'],
       ['analytics-counters-change', 'new', 'store', 'works'],
+      ['extension-record-change', 'new', 'store', 'works'],
     ]);
   });
 
@@ -87,6 +88,7 @@ describe('события пересборки (design.md блока 3, 5.7)', ()
       ['payment-settings-change', 'billing'],
       ['stock-change', 'product'],
       ['analytics-counters-change', 'analytics-collector'],
+      ['extension-record-change', 'extensions'],
     ]);
   });
 

@@ -14,6 +14,7 @@ import { entityKey } from './entities';
 import { extDepsOf, extValueIndexOf } from './ext-values';
 import { pageLocals, shopName } from './head';
 import { withImageLoading } from './image-loading';
+import { withSingleH1 } from './page-h1';
 import type { BuildInputs } from './inputs';
 import type { ShopPageLocals } from './locals';
 import { checkPageRow, type PageRow } from './manifest';
@@ -148,10 +149,13 @@ function pageContentOf(
   inputs: BuildInputs,
 ): PageContent {
   // Порядок загрузки картинок (image-loading.ts) — по готовой разметке трёх списков: главная картинка — в <main>.
-  const content = withImageLoading(
-    splitContent(
-      rendered,
-      lists.map((list) => list.length),
+  // Один h1 на страницу (page-h1.ts) — по той же разметке.
+  const content = withSingleH1(
+    withImageLoading(
+      splitContent(
+        rendered,
+        lists.map((list) => list.length),
+      ),
     ),
   );
   if (route.record?.type === 'policy' && (lists[1] ?? []).length === 0)

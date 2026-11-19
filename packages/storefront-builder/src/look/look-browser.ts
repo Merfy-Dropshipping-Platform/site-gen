@@ -6,7 +6,9 @@
 // между магазинами). Не больше двух отрисовок одновременно, остальные ждут. На задание — один общий срок 30 секунд (или
 // меньше, если задание долго шло до процесса): по его концу контексты закрываются, операция над страницей отвечает
 // понятным отказом.
-import type { Browser, BrowserContext } from 'playwright';
+import type { Browser, BrowserContext, Page } from 'playwright';
+import { DEFAULT_CPU_RATE, cpuRateFor } from '../checks/browser/vitals';
+import { LighthouseLink, freePort } from './look-audit';
 import { MOTION_EXTRA_MS } from './look-motion';
 import { openPage } from './look-page';
 import {
@@ -102,49 +104,101 @@ export interface ChromiumRendererOptions {
   executablePath?: string;
   timeoutMs?: number;
   maxConcurrent?: number;
+  // Замедление ЦП телефона на время загрузки — задать вручную (тесты); нет — по скорости машины (`cpuRateFor`).
+  cpuRate?: number;
+  // Скорость машины измерена: индекс Lighthouse и выбранное замедление (в журнал процесса).
+  onCalibrated?: (benchmarkIndex: number, cpuRate: number) => void;
+}
+
+// Индекс скорости машины тем же тестом, что у Lighthouse (`computeBenchmarkIndex`, около 1 с), на пустой вкладке.
+async function benchmarkIndex(browser: Browser): Promise<number | null> {
+  const { pageFunctions } = await import('lighthouse/core/lib/page-functions.js');
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    const index: unknown = await page.evaluate(`(${pageFunctions.computeBenchmarkIndex.toString()})()`);
+    return typeof index === 'number' && Number.isFinite(index) ? index : null;
+  } finally {
+    await context.close();
+  }
+}
+
+// Браузер снимков и Lighthouse к нему: связь живёт, пока жив этот браузер.
+interface Running {
+  browser: Browser;
+  audit: LighthouseLink;
 }
 
 export class ChromiumRenderer implements PageRenderer {
-  private browser: Promise<Browser> | undefined;
+  private running: Promise<Running> | undefined;
   private readonly slots: Slots;
   private readonly timeoutMs: number;
+  // До замера скорости машины — замедление Lighthouse по умолчанию.
+  private cpuRate: number;
+  private calibrated = false;
+  private calibration: Promise<void> = Promise.resolve();
 
   constructor(private readonly options: ChromiumRendererOptions = {}) {
     this.slots = new Slots(options.maxConcurrent ?? MAX_CONCURRENT_RENDERS);
     this.timeoutMs = options.timeoutMs ?? RENDER_TIMEOUT_MS;
+    this.cpuRate = options.cpuRate ?? DEFAULT_CPU_RATE;
+    this.calibrated = options.cpuRate !== undefined;
   }
 
-  private start(): Promise<Browser> {
-    this.browser ??= this.launch().catch((error: unknown) => {
-      this.browser = undefined;
+  private start(): Promise<Running> {
+    this.running ??= this.launch().catch((error: unknown) => {
+      this.running = undefined;
       throw error;
     });
-    return this.browser;
+    return this.running;
   }
 
-  private async launch(): Promise<Browser> {
+  private async launch(): Promise<Running> {
     const { chromium } = await import('playwright');
     const executablePath = this.options.executablePath;
+    // Порт отладки — для Lighthouse (`look-audit.ts`): Playwright держит браузер по каналу, Puppeteer — по порту.
+    const port = await freePort();
     try {
       const browser = await chromium.launch({
         headless: true,
-        args: LAUNCH_ARGS,
+        args: [...LAUNCH_ARGS, `--remote-debugging-port=${port}`],
         ...(executablePath ? { executablePath } : {}),
       });
       browser.on('disconnected', () => {
-        this.browser = undefined;
+        this.running = undefined;
       });
-      return browser;
+      if (!this.calibrated) this.calibration = this.calibrate(browser);
+      return { browser, audit: new LighthouseLink(port) };
     } catch (error) {
       throw new LookError('no-browser', NO_BROWSER_TEXT, { cause: error });
     }
   }
 
+  // Скорость машины — один раз на процесс и не в сроке задания: до конца замера снимки идут с замедлением по умолчанию.
+  // Не вышло — оно и остаётся.
+  private async calibrate(browser: Browser): Promise<void> {
+    this.calibrated = true;
+    try {
+      const index = await benchmarkIndex(browser);
+      if (index === null) return;
+      this.cpuRate = cpuRateFor(index);
+      this.options.onCalibrated?.(Math.round(index), this.cpuRate);
+    } catch {
+      this.calibrated = false;
+    }
+  }
+
+  // Прогрев при старте процесса: браузер и замер скорости машины — до первого задания, а не в его сроке.
+  async warm(): Promise<void> {
+    await this.start();
+    await this.calibration;
+  }
+
   // Закрывает браузер (при остановке процесса и в тестах); следующая отрисовка запустит новый.
   async close(): Promise<void> {
-    const running = this.browser;
-    this.browser = undefined;
-    if (running) await (await running).close();
+    const running = this.running;
+    this.running = undefined;
+    if (running) await (await running).browser.close();
   }
 
   async open(input: RenderInput): Promise<RenderedPage> {
@@ -154,9 +208,9 @@ export class ChromiumRenderer implements PageRenderer {
     const own = this.timeoutMs + (input.motion === true ? MOTION_EXTRA_MS : 0);
     const job = new RenderJob(this.slots, Math.min(own, input.timeoutMs ?? own));
     try {
-      const browser = await job.guard(() => this.start());
+      const running = await job.guard(() => this.start());
       const sessions = await Promise.all(
-        input.devices.map((device) => this.openDevice(browser, job, device, input.html)),
+        input.devices.map((device) => this.openDevice(running, job, device, input.html)),
       );
       return { sessions, close: () => job.close() };
     } catch (error) {
@@ -165,7 +219,8 @@ export class ChromiumRenderer implements PageRenderer {
     }
   }
 
-  private async openDevice(browser: Browser, job: RenderJob, device: LookDevice, html: string): Promise<PageSession> {
+  private async openDevice(running: Running, job: RenderJob, device: LookDevice, html: string): Promise<PageSession> {
+    const { browser, audit } = running;
     const mobile = device === 'mobile';
     const context = await browser.newContext({
       viewport: VIEWPORTS[device],
@@ -178,9 +233,13 @@ export class ChromiumRenderer implements PageRenderer {
       bypassCSP: true,
     });
     await job.track(context);
-    const session = await job.guard(() => openPage(context, device, html));
+    // ЦП замедляется только телефону: пороги TBT у Lighthouse для компьютера — без замедления.
+    const options = { cpuRate: mobile ? this.cpuRate : 1, audit: (page: Page) => audit.run(page, device) };
+    const session = await job.guard(() => openPage(context, device, html, options));
     return {
       ...session,
+      vitals: () => job.guard(() => session.vitals()),
+      lighthouse: () => job.guard(() => session.lighthouse()),
       shoot: (index, quality) => job.guard(() => session.shoot(index, quality)),
       detect: (section) => job.guard(() => session.detect(section)),
       layout: (section) => job.guard(() => session.layout(section)),

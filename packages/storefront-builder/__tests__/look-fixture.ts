@@ -39,6 +39,14 @@ export interface FakeSessionOptions {
   semantic?: unknown[];
   semanticError?: Error;
   semanticHangs?: boolean;
+  // Что вернёт замер Web Vitals (`checks/browser/vitals.ts`, по умолчанию — чистая загрузка) и Lighthouse по вкладке
+  // (`checks/browser/lighthouse.ts`, по умолчанию — без находок); `…Error` — падает, `lighthouseHangs` — не отвечает.
+  // Настоящие замер и Lighthouse в Chromium проверяет `look-browser.test.ts`.
+  vitals?: unknown;
+  vitalsError?: Error;
+  lighthouse?: unknown;
+  lighthouseError?: Error;
+  lighthouseHangs?: boolean;
   // Что вернёт проверка меток; `marksHang` — она не отвечает.
   marks?: MarkResult[];
   marksHang?: boolean;
@@ -72,9 +80,24 @@ export interface SectionCalls {
   layout: Array<{ device: LookDevice; section: string | undefined }>;
   // Запуски детектора: с id секции — в снимке секции, без него — в снимке страницы.
   detect: Array<{ device: LookDevice; section: string | undefined }>;
+  // На каких устройствах читали Web Vitals и запускали Lighthouse.
+  vitals?: LookDevice[];
+  lighthouse?: LookDevice[];
 }
 
 const PLACE: SectionPlace = { x: 0, y: 0, width: 390, height: 600, fullHeight: 600, pinned: false };
+
+// Загрузка без прыжков, длинных задач и проблем с главным элементом.
+export const CLEAN_VITALS = {
+  shifts: [],
+  lcp: null,
+  long: [],
+  mounts: [],
+  fcp: 120,
+  loadedAt: 1_500,
+  readAt: 3_000,
+  cpuRate: 4,
+};
 
 export function fakeSession(
   device: LookDevice,
@@ -132,6 +155,17 @@ export function fakeSession(
       if (options.semanticHangs) return new Promise<unknown>(() => undefined);
       return Promise.resolve(options.semantic ?? []);
     },
+    vitals() {
+      sectionCalls.vitals?.push(device);
+      if (options.vitalsError) return Promise.reject(options.vitalsError);
+      return Promise.resolve(options.vitals ?? CLEAN_VITALS);
+    },
+    lighthouse() {
+      sectionCalls.lighthouse?.push(device);
+      if (options.lighthouseError) return Promise.reject(options.lighthouseError);
+      if (options.lighthouseHangs) return new Promise<unknown>(() => undefined);
+      return Promise.resolve(options.lighthouse ?? []);
+    },
     marks() {
       if (options.marksHang) return new Promise<MarkResult[]>(() => undefined);
       return Promise.resolve(options.marks ?? []);
@@ -177,7 +211,7 @@ export interface FakeRendererOptions {
 
 export function fakeRenderer(options: FakeRendererOptions = {}) {
   const calls: ShootCall[] = [];
-  const sectionCalls: SectionCalls = { located: [], shot: [], layout: [], detect: [] };
+  const sectionCalls: SectionCalls = { located: [], shot: [], layout: [], detect: [], vitals: [], lighthouse: [] };
   const opened: RenderInput[] = [];
   const motionCalls: MotionCalls[] = [];
   const state = { closed: 0 };

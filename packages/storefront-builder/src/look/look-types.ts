@@ -167,6 +167,12 @@ export interface PageSession {
   // Нарушения axe-core по правилам `AXE_RULES` (`checks/browser/semantic.ts`), как их отдала страница: разбирает
   // `semanticBrowser`. Ничего на странице не меняет. Всегда по всему документу — секции отбирает вызывающий.
   semantic(): Promise<unknown>;
+  // Web Vitals загрузки этой страницы (`checks/browser/vitals.ts`): что собрали наблюдатели, поставленные до скриптов
+  // страницы, и во сколько раз был замедлен ЦП. Разбирает `vitalsFindings`. Ничего на странице не меняет.
+  vitals(): Promise<unknown>;
+  // Lighthouse по этой вкладке в режиме snapshot (`checks/browser/lighthouse.ts`, `look-audit.ts`): элементы
+  // непройденных проверок с секциями. Разбирает `lighthouseFindings`. Страницу не перезагружает.
+  lighthouse(): Promise<unknown>;
   // Проверка меток витрины кликами (`look-marks.ts`). Меняет страницу, поэтому идёт последней. За `limitMs` новые метки
   // не начинаются, что успела — отдаёт. С `section` — метки этой секции, без него — всей страницы.
   marks(limitMs: number, section?: string): Promise<MarkResult[]>;

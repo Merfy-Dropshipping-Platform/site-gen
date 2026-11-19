@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 import type { BrowserContext, Page, Route } from 'playwright';
 import { z } from 'zod';
 import { AXE_IN_PAGE, AXE_RULES, axeScript } from '../checks/browser/semantic';
+import { VITALS_INIT, VITALS_LOADED, VITALS_READ } from '../checks/browser/vitals';
 import { isAllowedRequest } from './look-guard';
 import { layoutSource, parseLayout } from './look-layout';
 import { answerCartWrite, checkMarks } from './look-marks';
@@ -423,9 +424,12 @@ async function shootClip(page: Page, viewport: Viewport, finding: LayoutFinding,
   }
 }
 
-async function settlePage(page: Page, entry: string): Promise<void> {
+// `loaded` — между загрузкой и прокруткой: там снимок ставит метку конца загрузки (Web Vitals меряются до неё) и снимает
+// замедление ЦП.
+async function settlePage(page: Page, entry: string, loaded?: () => Promise<void>): Promise<void> {
   await page.goto(entry, { waitUntil: 'load' });
   await waitForQuiet(page);
+  if (loaded !== undefined) await loaded();
   await scrollThrough(page);
   await waitForQuiet(page);
   await page.evaluate(() => document.fonts.ready);
@@ -438,8 +442,69 @@ function motionSetup(html: string, entry: string) {
   return { html: motionHtml, entry: url, route: motionHtml.ok ? { url, html: motionHtml.html } : null };
 }
 
+export interface OpenOptions {
+  // Во сколько раз замедлить ЦП на время загрузки, как Lighthouse замедляет телефон (`cpuRateFor`); 1 — не замедлять.
+  cpuRate?: number;
+  // Lighthouse по вкладке (`look-audit.ts`); нет — отрисовщик без порта отладки, проверка отвечает отказом.
+  audit?: (page: Page, device: LookDevice) => Promise<unknown>;
+}
+
+// Замедление ЦП вкладки на время загрузки: CDP Emulation.setCPUThrottlingRate держится и после перехода на адрес магазина
+// (проверено 18.11: работа в 66 мс без замедления — 251 мс при ×4). Возвращает, чем его снять.
+async function slowDown(context: BrowserContext, page: Page, rate: number): Promise<() => Promise<void>> {
+  if (rate <= 1) return () => Promise.resolve();
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate });
+  return async () => {
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    await cdp.detach();
+  };
+}
+
+// Новая вкладка на адресе магазина, готовая к снимкам. Наблюдатели Web Vitals — до скриптов страницы: иначе первые сдвиги
+// и задачи прошли бы мимо.
+async function loadPage(
+  context: BrowserContext,
+  entry: string,
+  cpuRate: number,
+): Promise<{ page: Page; collector: Collector }> {
+  const page = await context.newPage();
+  const collector = collect(page);
+  await page.addInitScript(VITALS_INIT);
+  const restore = await slowDown(context, page, cpuRate);
+  await settlePage(page, entry, async () => {
+    await page.evaluate(VITALS_LOADED);
+    await restore();
+  });
+  return { page, collector };
+}
+
+// Проверки места `browser` по открытой вкладке (`src/checks/browser/`).
+function pageChecks(
+  page: Page,
+  device: LookDevice,
+  { cpuRate = 1, audit }: OpenOptions,
+): Pick<PageSession, 'semantic' | 'vitals' | 'lighthouse'> {
+  return {
+    semantic: () => runSemantic(page),
+    vitals: async () => {
+      const raw: unknown = await page.evaluate(VITALS_READ);
+      return raw !== null && typeof raw === 'object' ? { ...raw, cpuRate } : raw;
+    },
+    lighthouse: () =>
+      audit === undefined
+        ? Promise.reject(new Error('Lighthouse не подключён к браузеру снимков'))
+        : audit(page, device),
+  };
+}
+
 // Открывает страницу под нужный экран и возвращает её готовой к снимкам. Контекст закрывает вызывающий.
-export async function openPage(context: BrowserContext, device: LookDevice, html: string): Promise<PageSession> {
+export async function openPage(
+  context: BrowserContext,
+  device: LookDevice,
+  html: string,
+  options: OpenOptions = {},
+): Promise<PageSession> {
   const viewport = VIEWPORTS[device];
   const base = entryUrlOf(html);
   // Корзина снимка: номер в адресе, как у превью конструктора, а строки подставляет `answerCart`.
@@ -448,9 +513,7 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
   const writes: string[] = [];
   const motion = motionSetup(html, entry);
   await context.route('**/*', entryRoute(entry, html, cart, writes, motion.route));
-  const page = await context.newPage();
-  const collector = collect(page);
-  await settlePage(page, entry);
+  const { page, collector } = await loadPage(context, entry, options.cpuRate ?? 1);
   const facts = await measure(page, collector);
 
   return {
@@ -460,7 +523,7 @@ export async function openPage(context: BrowserContext, device: LookDevice, html
     shoot: (index, quality) => shootScreen(page, viewport, index, quality),
     detect: (section) => runDetector(page, section),
     layout: (section) => runLayout(page, device, section),
-    semantic: () => runSemantic(page),
+    ...pageChecks(page, device, options),
     shootClip: (finding, quality) => shootClip(page, viewport, finding, quality),
     locateSection: (section) => locateSection(page, viewport, section),
     shootSection: (place, section, quality) => shootSection(page, place, section, quality),

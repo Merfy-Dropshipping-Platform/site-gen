@@ -1,4 +1,11 @@
-import type { MenuTree, PageInfo, SectionRecordValues, SettingValues, ShopProps } from '@merfy/storefront-build';
+import type {
+  ExtValue,
+  MenuTree,
+  PageInfo,
+  SectionRecordValues,
+  SettingValues,
+  ShopProps,
+} from '@merfy/storefront-build';
 import type { experimental_AstroContainer } from 'astro/container';
 
 // Рендер секции по модулю шаблона (блок 1 «Секций и SDK»): контейнер Astro, один на процесс, создаётся при первом
@@ -33,6 +40,8 @@ export interface TemplateProps {
   records: SectionRecordValues;
   // Записи полей с записями в блоках (29.10): id блока → id поля → запись; в block.settings.<id> вместо id записи.
   blockRecords?: Readonly<Record<string, SectionRecordValues>>;
+  // Значения сторов расширений с prerender (ext секции): в Astro.props.ext по именам; значение или null (20.11).
+  ext?: Readonly<Record<string, ExtValue | null>>;
 }
 
 let container: Promise<AstroContainer> | null = null;
@@ -59,7 +68,7 @@ const marksOf = (preview: boolean) => ({
 });
 
 export async function renderTemplate(component: TemplateComponent, props: TemplateProps): Promise<string> {
-  const { settings, blocks, preview, menus, theme, shop, page, records, blockRecords = {} } = props;
+  const { settings, blocks, preview, menus, theme, shop, page, records, blockRecords = {}, ext = {} } = props;
   const values = { ...settings, ...menus, ...records };
   const withRecords = blocks.map((block) =>
     Object.hasOwn(blockRecords, block.id)
@@ -67,6 +76,6 @@ export async function renderTemplate(component: TemplateComponent, props: Templa
       : block,
   );
   return (await containerOf()).renderToString(component, {
-    props: { settings: values, blocks: withRecords, theme, shop, page, __merfy: marksOf(preview) },
+    props: { settings: values, blocks: withRecords, theme, shop, page, ext, __merfy: marksOf(preview) },
   });
 }

@@ -65,6 +65,34 @@ describe('extensions в конфиге страницы', () => {
     expect(storefrontExtensionsSchema.safeParse(extensions).success).toBe(false);
   });
 
+  it('prerender у стора на запись идёт в конфиг как есть, по умолчанию его нет', () => {
+    const card = { fn: 'itemCard', by: 'record' as const, record: 'item', prerender: true };
+    const withPrerender = { ...TEST_EXT, stores: { card, plain: { fn: 'itemPlain', by: 'record' as const } } };
+    expect(buildStorefrontConfig(input({ 'test-ext': withPrerender })).extensions).toEqual({
+      'test-ext': withPrerender,
+    });
+    expect(Object.hasOwn(withPrerender.stores.plain, 'prerender')).toBe(false);
+  });
+
+  it.each<[string, unknown, boolean]>([
+    ['prerender: true', { fn: 'itemCard', by: 'record', record: 'item', prerender: true }, true],
+    ['prerender: false', { fn: 'itemCard', by: 'record', record: 'item', prerender: false }, true],
+    ['prerender не булево', { fn: 'itemCard', by: 'record', record: 'item', prerender: 'yes' }, false],
+    [
+      'prerender вместе с customer',
+      { fn: 'itemCard', by: 'record', record: 'item', prerender: true, customer: true },
+      false,
+    ],
+    [
+      'prerender: false с customer',
+      { fn: 'itemCard', by: 'record', record: 'item', prerender: false, customer: true },
+      true,
+    ],
+  ])('prerender: %s', (_title, store, valid) => {
+    const extensions = { 'test-ext': { ...TEST_EXT, stores: { card: store } } };
+    expect(storefrontExtensionsSchema.safeParse(extensions).success).toBe(valid);
+  });
+
   it('сторов больше 20 — ошибка', () => {
     const stores = Object.fromEntries(
       Array.from({ length: 21 }, (_, index) => [`store${index}`, { fn: 'shopSummary' }]),

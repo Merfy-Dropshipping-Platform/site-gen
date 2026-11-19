@@ -11,6 +11,7 @@ import type { BuildFile } from './client-files';
 import { globalClasses, pageBundle, placedSections, withoutHidden } from './code';
 import { emptyShopHtml, mcpUrlOf } from './empty-shop';
 import { entityKey } from './entities';
+import { extDepsOf, extValueIndexOf } from './ext-values';
 import { pageLocals, shopName } from './head';
 import { withImageLoading } from './image-loading';
 import type { BuildInputs } from './inputs';
@@ -122,7 +123,7 @@ export function pagePropsOf(
       ? {}
       : resolveSettings(theme.platformPanel ?? theme.panel, readSettingsEdits(theme.panel, settingsEdits).edits);
   const shop = shopPropsOf(shopName(inputs.site), inputs.data.entities, catalogUrlOf(inputs), inputs.site.signature);
-  return { theme: settings, shop, page: HOME_PAGE };
+  return { theme: settings, shop, page: HOME_PAGE, extValues: extValueIndexOf(inputs.data.entities) };
 }
 
 // Разметка четырёх списков одного прохода — обратно по спискам: шапка, страница, подвал, поверх страницы (блок 12).
@@ -361,7 +362,8 @@ export async function renderShopPage(
   const { html, bundle } = await renderWithBundle(shown, route, theme, page, withTheme);
   checkSeo(route.path, html);
   const content = Buffer.from(html, 'utf8');
-  const row = pageRowOf(inputs, route, content, [...recordDepsOf(placed, props), ...listDepsOf(pageList)], pageList);
+  const deps = [...recordDepsOf(placed, props), ...listDepsOf(pageList), ...extDepsOf(placed, props.extValues)];
+  const row = pageRowOf(inputs, route, content, deps, pageList);
   const file = bundle?.file ?? null;
   return { row, file: { path: route.file, content }, ...(file === null ? {} : { bundle: file }) };
 }

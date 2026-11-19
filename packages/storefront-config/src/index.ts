@@ -19,6 +19,9 @@ export { THEME_SETTING_NAMES, type ThemeSettings } from './theme-settings';
 // Блок 9 «Секций и SDK», часть 9в: сторы и методы расширений для секций и "ext:<id>" в uses.
 export {
   EXT_USE_PREFIX,
+  extFunctionSchema,
+  extIdSchema,
+  extMemberSchema,
   extUseSchema,
   extensionStorefrontSchema,
   storefrontExtensionsSchema,

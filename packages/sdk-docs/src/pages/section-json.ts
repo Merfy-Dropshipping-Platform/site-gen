@@ -34,6 +34,7 @@ const KEY_NOTES: Readonly<Record<string, string>> = {
     'своё умолчание общих настроек секции, у «Отступов» ещё `max` и `step`: `{ "padding": { "default": { "top": 8, "bottom": 8 }, "max": 64, "step": 4 }, "scheme": { "default": "scheme-4" } }`; только для id из `wrapper`. Умолчание видно и в «Добавить секцию», и у экземпляров без правки; нет ключа — умолчания платформы',
   themeSettings: 'сквозные настройки темы, которые читает секция: имена полей панели с пометкой "shared": true',
   data: 'Поля записей для `script.ts`: имя → `from` (`page.record` или `settings.<id поля с записью>`) и `fields` — публичные поля записи. В `ctx.data.<имя>` — объявленные поля или `null`.',
+  ext: 'Значения сторов расширения для шаблона: имя → `from` (`settings.<id поля вида ext-record>`) и `store` — стор `by: "record"` из манифеста расширения. Если у стора `prerender: true`, в шаблоне `ext.<имя>` — его значение или `null` (data.md#данные-расширения-прямо-в-html-prerender-и-ext); до 4 имён.',
 };
 
 const keyRows = (): string[] => {

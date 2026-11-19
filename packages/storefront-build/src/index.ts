@@ -69,6 +69,21 @@ export {
   type SectionDataEntry,
   type SectionRecordValues,
 } from './section-records';
+// Значения сторов расширений с prerender в HTML секций (20.11): сущность снимка, пределы и что читать у расширений.
+export {
+  EXT_VALUE_LIMITS,
+  EXT_VALUE_TYPE,
+  extValueBytes,
+  extValueEntity,
+  extValueIndexOf,
+  extValueWants,
+  extValueWantsOf,
+  type ExtBinding,
+  type ExtBindings,
+  type ExtValue,
+  type ExtValueLookup,
+  type ExtValueWant,
+} from './ext-values';
 export {
   HOME_PAGE,
   NOINDEX_PATHS,

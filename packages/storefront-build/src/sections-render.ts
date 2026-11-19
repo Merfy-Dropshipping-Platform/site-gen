@@ -4,6 +4,14 @@ import type { CodeNoticed } from './bundle';
 import { sha256 } from './canonical';
 import type { CodeAssets } from './code';
 import { StorefrontBuildError } from './errors';
+import {
+  sectionExt,
+  sectionExtTag,
+  type ExtBindings,
+  type ExtValue,
+  type ExtValueLookup,
+  type SectionExt,
+} from './ext-values';
 import { sectionInputTag } from './input-tag';
 import { htmlClasses, sectionCss } from './section-css';
 import { EMPTY_SHOP, type ShopProps } from './shop-props';
@@ -66,6 +74,8 @@ export interface PageProps {
   page: PageInfo;
   // Блок 8, часть 8г: записи магазина — полям с записями и ссылкам меню; нет — у полей null, ссылки как есть.
   records?: RecordIndex;
+  // Значения сторов расширений с prerender из снимка (ext-values.ts); нет — у секций ext со значениями null.
+  extValues?: ExtValueLookup;
 }
 
 export const NO_PAGE_PROPS: PageProps = { theme: {}, shop: EMPTY_SHOP, page: HOME_PAGE };
@@ -88,6 +98,8 @@ export interface SectionRenderRequest {
   records?: SectionRecordValues;
   // Записи полей с записями в блоках: id блока → id поля → запись; только у блоков с такими полями.
   blockRecords?: Readonly<Record<string, SectionRecordValues>>;
+  // Значения сторов расширений по именам ext секции (prerender): значение или null; только у секции с ext в section.json.
+  ext?: Readonly<Record<string, ExtValue | null>>;
 }
 
 export type RenderSection = (request: SectionRenderRequest) => Promise<string>;
@@ -165,6 +177,8 @@ export interface PlacedSection {
   // Поля с записями в типах блоков (базовые секции, 29.10): тип блока → id поля → вид.
   blockRecordFields?: BlockRecordFields;
   data?: Readonly<Record<string, SectionDataEntry>>;
+  // Свойство шаблона ext (prerender, ext-values.ts): имя → поле с записью расширения и стор с prerender: true.
+  ext?: ExtBindings;
 }
 
 // HTML секций одной страницы, байт (блок 2, «Решил сам» п. 3): секция, которая не влезает, не рендерится (render-output).
@@ -274,8 +288,10 @@ const propsOf = (
   placed: PlacedSection,
   props: PageProps,
   records: Pick<SectionRecords, 'values' | 'blocks'>,
-): Pick<SectionRenderRequest, 'menus' | 'theme' | 'shop' | 'page' | 'records' | 'blockRecords'> => ({
+  ext: SectionExt,
+): Pick<SectionRenderRequest, 'menus' | 'theme' | 'shop' | 'page' | 'records' | 'blockRecords' | 'ext'> => ({
   page: props.page,
+  ...(placed.ext === undefined ? {} : { ext: ext.values }),
   ...(placed.menus === undefined ? {} : { menus: menusWithRecordPaths(placed.menus, props.records) }),
   ...(placed.uses?.includes('theme') === true ? { theme: props.theme } : {}),
   ...(placed.uses?.includes('shop') === true ? { shop: props.shop } : {}),
@@ -298,7 +314,9 @@ export async function renderSection(
   try {
     // Записи полей с записями (часть 8г): в запрос рендера и, по data, в тег входных данных.
     const records = sectionRecords(placed, props);
-    const input = placed.script === true ? sectionInputTag(placed, records.data) : '';
+    // Значения сторов расширений (prerender): шаблону — свойством ext, скрипту — начальным значением стора.
+    const ext = sectionExt(placed, props.extValues);
+    const input = placed.script === true ? `${sectionInputTag(placed, records.data)}${sectionExtTag(ext.seeds)}` : '';
     const html = await sections.render({
       section: placed.name,
       hash: placed.hash,
@@ -306,7 +324,7 @@ export async function renderSection(
       settings: placed.settings,
       blocks: placed.blocks ?? [],
       preview: mode === 'preview',
-      ...propsOf(placed, props, records),
+      ...propsOf(placed, props, records, ext),
     });
     return wrapper(placed, `${html}${input}`);
   } catch (error) {

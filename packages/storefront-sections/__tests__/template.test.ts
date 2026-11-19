@@ -85,8 +85,8 @@ describe('запреты шаблона секции', () => {
     const functions = '{(() => { while (true) {} })()}{function () {}}{async () => 1}';
     const only = 'выражение только читает данные секции';
     expect(await textsOf(`${FRONT}<p>${body}${functions}</p>`)).toEqual([
-      'имя process: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array, Object',
-      'имя fetch: в выражениях шаблона — только settings, blocks, page, параметры функций и Math, Number, String, Boolean, JSON, Array, Object',
+      'имя process: в выражениях шаблона — только settings, blocks, page, ext, параметры функций и Math, Number, String, Boolean, JSON, Array, Object',
+      'имя fetch: в выражениях шаблона — только settings, blocks, page, ext, параметры функций и Math, Number, String, Boolean, JSON, Array, Object',
       `new: в шаблоне секции нельзя — ${only}`,
       `this: в шаблоне секции нельзя — ${only}`,
       `import(): в шаблоне секции нельзя — ${only}`,

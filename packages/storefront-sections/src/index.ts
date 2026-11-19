@@ -64,6 +64,8 @@ export { defaultSettings, resolveSectionSettings, settingsTexts, type ResolvedSe
 export { cleanArticleHtml } from './richtext';
 // Поля с записями (блок 8 «Секций и SDK», часть 8г): recordFields и data секции для входов сборки.
 export { sectionRecordKeys } from './section-data';
+// Значения сторов расширений в шаблоне (prerender, 20.11): объявления ext секции для входов сборки.
+export { extDeclarationsOf, type ExtDeclaration } from './ext-values';
 export { DEFAULT_SANDBOX, prepareInWorker, type SandboxOptions } from './sandbox';
 export {
   RENDER_LIMITS,

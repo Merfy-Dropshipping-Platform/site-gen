@@ -15,6 +15,7 @@ import type {
   ExtModule,
   ExtStore,
   ExtValue,
+  InstanceHost,
   Json,
   MarkupAction,
   Mode,
@@ -56,8 +57,10 @@ interface ProductStore {
   readonly facades: Map<string, ReadableStore<ExtValue>>;
   readonly queue: Flight;
   readonly pending: Set<string>;
+  readonly seeded: Set<string>; // записи с начальным значением из HTML: первое чтение — после загрузки страницы
   empty: ReadableStore<ExtValue> | null; // только у by: record: стор «запись не выбрана»
   scheduled: boolean;
+  settling: boolean;
   mounted: number;
   stopListeners: (() => void) | null;
 }
@@ -142,6 +145,10 @@ function readingQueue(): Flight {
   return { enqueue, sync: (): Promise<void> => tail };
 }
 
+// Равенство по значению: перечитанное то же, что в HTML, — подписчики и разметка не трогаются. Порядок ключей у обоих
+// один (значение отдаёт одна и та же функция расширения); если нет — лишнее обновление, не ошибка.
+const sameJson = (left: ExtValue, right: ExtValue): boolean => JSON.stringify(left) === JSON.stringify(right);
+
 // Запись значений одним batch: подписчики не видят промежуточных состояний; ошибка подписчика — строка в консоли.
 function writeAll(entries: readonly (readonly [Atom<ExtValue>, ExtValue])[]): void {
   try {
@@ -191,7 +198,7 @@ async function readProducts(state: ExtensionState, store: ProductStore, ids: rea
         const one = store.atoms.get(id);
         if (one === undefined) return [];
         const value: ExtValue = isRecord(data) && isJsonValue(data[id]) ? data[id] : null;
-        return [[one, value]];
+        return sameJson(valueOf(one), value) ? [] : [[one, value]];
       }),
     );
   }
@@ -235,16 +242,41 @@ function productStoreOf(spec: StoreSpec): ProductStore {
     facades: new Map(),
     queue: readingQueue(),
     pending: new Set(),
+    seeded: new Set(),
     empty: null,
     scheduled: false,
+    settling: false,
     mounted: 0,
     stopListeners: null,
   };
 }
 
+function afterLoad(run: () => void): void {
+  const later = (): void => void setTimeout(run, 0);
+  if (document.readyState === 'complete') later();
+  else window.addEventListener('load', later, { once: true });
+}
+
+// Записи с начальным значением из HTML перечитываются один раз после загрузки страницы, одним вызовом: первый экран не
+// ждёт запроса, а значение остаётся живым. Прочитанное то же — подписчики не зовутся (sameJson в readProducts).
+function settleLater(state: ExtensionState, store: ProductStore): void {
+  if (store.settling) return;
+  store.settling = true;
+  afterLoad(() => {
+    const ids = [...store.seeded].filter((id) => {
+      const one = store.atoms.get(id);
+      return one !== undefined && listenersOf(one) > 0;
+    });
+    store.seeded.clear();
+    store.settling = false;
+    if (ids.length > 0) store.queue.enqueue(() => readProducts(state, store, ids));
+  });
+}
+
 // Подписка фасада товара: первый слушатель включает обновление, последний — выключает.
 function productWatchOf(state: ExtensionState, store: ProductStore, productId: string): () => void {
-  store.pending.add(productId);
+  if (store.seeded.has(productId)) settleLater(state, store);
+  else store.pending.add(productId);
   store.mounted += 1;
   if (store.stopListeners === null)
     store.stopListeners = listenRefresh(refreshEvents(store.spec, state.core.mode), () => rereadProducts(state, store));
@@ -323,12 +355,15 @@ function productFacade(state: ExtensionState, name: string, store: ProductStore)
   return Object.freeze(facade);
 }
 
+function productStoreFor(state: ExtensionState, name: string, spec: StoreSpec): ProductStore {
+  const store = state.product.get(name) ?? productStoreOf(spec);
+  state.product.set(name, store);
+  return store;
+}
+
 function storeFacadeOf(state: ExtensionState, name: string, spec: StoreSpec): ExtStore {
-  if (spec.by === 'product' || spec.by === 'record') {
-    const store = state.product.get(name) ?? productStoreOf(spec);
-    state.product.set(name, store);
-    return productFacade(state, name, store);
-  }
+  if (spec.by === 'product' || spec.by === 'record')
+    return productFacade(state, name, productStoreFor(state, name, spec));
   const store = state.plain.get(name) ?? plainStoreOf(state, name, spec);
   state.plain.set(name, store);
   return plainFacadeOf(state, name, store);
@@ -414,6 +449,43 @@ function moduleOf(state: ExtensionState): ExtModule | null {
   return state.module;
 }
 
+// Начальные значения сторов из тега data-merfy-ext рядом с тегом входных данных секции (prerender: сборка положила
+// значения, которые прочла у расширения): { расширение: { стор: { id записи: значение } } }. Только сторы by: record без
+// customer. Запись, которую уже слушают или у которой есть значение, не трогаем: там данные свежее.
+export const EXT_SEED_ATTRIBUTE = 'data-merfy-ext';
+const SEED_SELECTOR = `:scope > script[type="application/json"][${EXT_SEED_ATTRIBUTE}]`;
+
+function seedTreeOf(element: Element): Record<string, unknown> {
+  const text = element.querySelector(SEED_SELECTOR)?.textContent;
+  if (text === undefined || text === null) return {};
+  try {
+    const tree: unknown = JSON.parse(text);
+    return isRecord(tree) ? tree : {};
+  } catch (error) {
+    console.error(`тег ${EXT_SEED_ATTRIBUTE}: ${messageOf(error)}`);
+    return {};
+  }
+}
+
+function seedStore(store: ProductStore, state: ExtensionState, name: string, values: Record<string, unknown>): void {
+  for (const [id, value] of Object.entries(values)) {
+    if (!RECORD_ID.test(id) || !isJsonValue(value)) continue;
+    productFacadeOf(state, name, store, id);
+    const one = store.atoms.get(id);
+    if (one === undefined || listenersOf(one) > 0 || valueOf(one) !== null) continue;
+    one.set(value);
+    store.seeded.add(id);
+  }
+}
+
+function seedExtension(state: ExtensionState, stores: Record<string, unknown>): void {
+  for (const [name, values] of Object.entries(stores)) {
+    const spec = state.entry.stores[name];
+    if (spec === undefined || spec.by !== 'record' || spec.customer === true || !isRecord(values)) continue;
+    seedStore(productStoreFor(state, name, spec), state, name, values);
+  }
+}
+
 const statesByApi = new WeakMap<object, Map<string, ExtensionState>>();
 
 function statesOf(core: CoreHandle): Map<string, ExtensionState> {
@@ -448,6 +520,14 @@ export const ext: SdkPart<'ext', object> = {
     });
     statesByApi.set(api, states);
     return api;
+  },
+  attach(api: object, host: InstanceHost): void {
+    const states = statesByApi.get(api);
+    if (states === undefined) return;
+    for (const [id, stores] of Object.entries(seedTreeOf(host.element))) {
+      const state = states.get(id);
+      if (state !== undefined && isRecord(stores)) seedExtension(state, stores);
+    }
   },
   markupOf(api: object, action: string): MarkupAction<object> | null {
     const state = statesByApi.get(api)?.get(action.slice(0, action.indexOf('.')));

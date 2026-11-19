@@ -11,6 +11,7 @@ import { enabledExtensions } from './code';
 import { createConductor } from './release/conductor';
 import { consumeExtensionVersions } from './release/extension-version';
 import { startPlatformRelease } from './release/platform';
+import { scheduleLibraryRelease } from './release/library-start';
 import { listenReleases } from './release/listen';
 import { checkShopPages } from './release/page-check';
 import { bootstrapRelease, releasedVersion } from './release/store';
@@ -195,6 +196,18 @@ await conductor.resume();
 // Новая версия расширения от сервиса extensions — выпуск расширения без команды (блок 10, П10-5 А). После resume:
 // выпуск, заведённый потребителем, будит ведущего NOTIFY уже подписанного listenReleases.
 await consumeExtensionVersions({ broker, db, contour: settings.contour, log });
+// Новые версии библиотечных секций — в копии магазинов (20.11): через минуту после старта, выпусками секций за выпуском
+// платформы. Флаг STORE_LIBRARY_RELEASE_ENABLED, по умолчанию выключен.
+const libraryRelease = scheduleLibraryRelease({
+  enabled: settings.libraryRelease,
+  db,
+  store,
+  contour: settings.contour,
+  themeIds: deps.themeIds,
+  testShop: settings.releaseTestShop,
+  packageDir: join(ROOT, 'packages', 'storefront-sections'),
+  log,
+});
 // Превью — версией закрепления магазина; схема панели — по темам образа (блок 10, задача 4).
 const previewOf = (themeId: string, version: string) => catalog.previewAt(themeId, version);
 const fonts = storeFontBytes(store);
@@ -236,6 +249,7 @@ log('builder-started', { ...started, themes: deps.themeIds.join(','), renderHash
 async function shutdown(): Promise<void> {
   // Ведущий волн (блок 10) не обрывается посреди шага: новых шагов не берёт, идущий доделывает — параллельно со
   // сборками и не дольше BUILD_DRAIN_MS. Не успел — шаг повторит resume следующего запуска: записи условные.
+  libraryRelease.stop();
   await stopListening();
   const [interrupted] = await Promise.all([runtime.shutdown(settings.drainMs), conductor.shutdown(settings.drainMs)]);
   if (interrupted > 0) {

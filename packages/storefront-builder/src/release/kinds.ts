@@ -19,6 +19,9 @@ export interface ReachedManifest {
 export interface KindRules {
   event: string;
   approval: boolean;
+  // «Да» человека нужно и там, где approval выключен, — но только на проде (20.11): наша секция на dev идёт волнами сама,
+  // на проде после тестового магазина ждёт approve. Решает needsApproval.
+  approvalOnProd: boolean;
   pin: boolean;
   pauseOnRevert: boolean;
   reached: (manifest: ReachedManifest, release: ReleaseRow) => boolean;
@@ -31,6 +34,7 @@ export const KINDS: Record<ReleaseKind, KindRules> = {
   theme: {
     event: 'theme-release',
     approval: true,
+    approvalOnProd: true,
     pin: true,
     pauseOnRevert: false,
     reached: (manifest, release) =>
@@ -43,6 +47,7 @@ export const KINDS: Record<ReleaseKind, KindRules> = {
   platform: {
     event: 'platform-release',
     approval: false,
+    approvalOnProd: false,
     pin: false,
     pauseOnRevert: true,
     reached: (manifest, release) => manifest.platform.renderHash === release.toHash,
@@ -53,6 +58,7 @@ export const KINDS: Record<ReleaseKind, KindRules> = {
   extension: {
     event: 'extension-release',
     approval: false,
+    approvalOnProd: false,
     pin: false,
     pauseOnRevert: true,
     reached: (manifest, release) =>
@@ -65,6 +71,7 @@ export const KINDS: Record<ReleaseKind, KindRules> = {
   section: {
     event: 'section-release',
     approval: false,
+    approvalOnProd: true,
     pin: false,
     pauseOnRevert: true,
     reached: (manifest, release) =>
@@ -74,6 +81,10 @@ export const KINDS: Record<ReleaseKind, KindRules> = {
     leaveUnchanged: true,
   },
 };
+
+// Ждать ли «да» человека после тестового магазина: approval везде, approvalOnProd — только на проде.
+export const needsApproval = (kind: ReleaseKind, contour: string): boolean =>
+  KINDS[kind].approval || (contour === 'prod' && KINDS[kind].approvalOnProd);
 
 // Сбой данных — не поломка версии: сервис не ответил, снимок не получен, магазин без адреса, ошибка без кода (база,
 // хранилище). Магазин ждёт повторов сборщика, волна ждёт магазин. Всё остальное — поломка: выпуск останавливается.

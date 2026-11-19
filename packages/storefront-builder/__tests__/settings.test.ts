@@ -45,6 +45,7 @@ describe('настройки', () => {
       contour: 'dev',
       releasePauseMs: 0,
       releaseTestShop: null,
+      libraryRelease: false,
       dadataToken: null,
     });
     expect(RETRY_DELAYS_MS).toEqual([5000, 30_000]);
@@ -92,6 +93,16 @@ describe('настройки', () => {
     const env = { ...ENV, STOREFRONT_CONTOUR: 'prod', RELEASE_PAUSE_MS: '3600000', RELEASE_TEST_SHOP: 'shop-1' };
     expect(readSettings(env)).toMatchObject({ contour: 'prod', releasePauseMs: 3_600_000, releaseTestShop: 'shop-1' });
     expect(() => readSettings({ ...ENV, STOREFRONT_CONTOUR: 'stage' })).toThrow('env#STOREFRONT_CONTOUR');
+  });
+
+  // 20.11: автозапуск выпуска библиотечных секций выключен, пока флаг не 'true'; мусор вместо true/false — ошибка.
+  it('STORE_LIBRARY_RELEASE_ENABLED — выключен по умолчанию, включается только значением true', () => {
+    expect(readSettings(ENV).libraryRelease).toBe(false);
+    expect(readSettings({ ...ENV, STORE_LIBRARY_RELEASE_ENABLED: 'false' }).libraryRelease).toBe(false);
+    expect(readSettings({ ...ENV, STORE_LIBRARY_RELEASE_ENABLED: 'true' }).libraryRelease).toBe(true);
+    expect(() => readSettings({ ...ENV, STORE_LIBRARY_RELEASE_ENABLED: '1' })).toThrow(
+      'env#STORE_LIBRARY_RELEASE_ENABLED',
+    );
   });
 
   // Предел выпуска K (В6-2 В): меньше числа мест, при одном месте — 1.

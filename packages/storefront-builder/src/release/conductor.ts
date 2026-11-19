@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { raiseReleaseStopped } from './alert';
 import type { CheckJob, CheckResult } from './checks';
 import { planExtensionRelease, type ExtensionDeps } from './extension';
-import { KINDS, isBreakage } from './kinds';
+import { KINDS, isBreakage, needsApproval } from './kinds';
 import type { PageCheck, PageExpectation } from './page-check';
 import {
   ACTIVE_STATUSES,
@@ -285,7 +285,7 @@ async function moveToWave(step: Step, release: ReleaseRow, next: number): Promis
 // Волна 0 (тестовый магазин) прошла: тема ждёт «да» человека (П10-2 В); платформа и расширение идут дальше сами.
 async function finishTesting(step: Step, release: ReleaseRow, next: number | null): Promise<void> {
   const { deps } = step;
-  if (KINDS[release.kind].approval) {
+  if (needsApproval(release.kind, deps.contour)) {
     if (await setRelease(deps.db, release.id, ['testing'], { status: 'awaiting' }))
       deps.log('release-awaiting', { release: release.id, to: release.toVersion });
     return;

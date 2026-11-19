@@ -35,12 +35,13 @@ export async function resaveAll<D extends VersionsDeps>(
   folders: readonly string[],
   command: AllCommand,
   resave: Resave<D>,
+  stopped: () => boolean = () => false,
 ): Promise<FolderResult[]> {
   const fromHistory: D = { ...deps, versions: noVersions };
-  return folders.reduce<Promise<FolderResult[]>>(
-    async (done, folder) => [...(await done), await resaveFolder(fromHistory, folder, command, resave)],
-    Promise.resolve([]),
-  );
+  return folders.reduce<Promise<FolderResult[]>>(async (previous, folder) => {
+    const done = await previous;
+    return stopped() ? done : [...done, await resaveFolder(fromHistory, folder, command, resave)];
+  }, Promise.resolve([]));
 }
 
 export interface AllTotals {

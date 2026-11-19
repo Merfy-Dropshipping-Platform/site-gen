@@ -153,7 +153,7 @@ describe.skipIf(!hasChromium)('Web Vitals и Lighthouse по вкладке сн
     try {
       const [mobile] = rendered.sessions;
       if (mobile === undefined) throw new Error('нет экрана');
-      const found = lighthouseFindings(await mobile.lighthouse());
+      const found = lighthouseFindings(await mobile.lighthouse(10_000));
       expect(found.map((finding) => [finding.rule, finding.section]).sort()).toEqual([
         ['crawlable-anchors', 'links-1'],
         ['paste-preventing-inputs', 'form-1'],
@@ -162,6 +162,34 @@ describe.skipIf(!hasChromium)('Web Vitals и Lighthouse по вкладке сн
       expect(found.find((finding) => finding.rule === 'crawlable-anchors')?.where).toBe('a «Открыть каталог»');
       const shot = await mobile.shoot(0, 60);
       expect(shot[0]).toBe(0xff);
+    } finally {
+      await rendered.close();
+    }
+  }, 60_000);
+
+  // Два снимка разом в одном браузере (так идут задания проверяющего процесса, `MAX_CONCURRENT_RENDERS`): Lighthouse
+  // у обоих отрабатывает по очереди, а не падает с `lh:runner:gather`.
+  it('Lighthouse на нескольких страницах разом: по очереди, все отрабатывают', async () => {
+    const jobs = await Promise.all(
+      [1, 2].map(() => renderer.open({ html: LIGHTHOUSE_PAGE, devices: ['mobile', 'desktop'] })),
+    );
+    try {
+      const runs = jobs.flatMap((job) => job.sessions.map((session) => session.lighthouse(60_000)));
+      const found = (await Promise.all(runs)).map((raw) => lighthouseFindings(raw).length);
+      expect(found).toEqual([3, 3, 3, 3]);
+    } finally {
+      await Promise.all(jobs.map((job) => job.close()));
+    }
+  }, 120_000);
+
+  it('не дождался очереди Lighthouse — отказ с причиной, прогон соседа не страдает', async () => {
+    const rendered = await renderer.open({ html: LIGHTHOUSE_PAGE, devices: ['mobile', 'desktop'] });
+    try {
+      const [mobile, desktop] = rendered.sessions;
+      if (mobile === undefined || desktop === undefined) throw new Error('нет экранов');
+      const running = mobile.lighthouse(1_000);
+      await expect(desktop.lighthouse(0)).rejects.toThrow(/очередь Lighthouse занята другим снимком/);
+      expect(lighthouseFindings(await running)).toHaveLength(3);
     } finally {
       await rendered.close();
     }

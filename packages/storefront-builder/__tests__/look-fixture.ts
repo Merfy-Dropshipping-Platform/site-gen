@@ -83,6 +83,8 @@ export interface SectionCalls {
   // На каких устройствах читали Web Vitals и запускали Lighthouse.
   vitals?: LookDevice[];
   lighthouse?: LookDevice[];
+  // Сколько Lighthouse позволили ждать своей очереди (мс), по запускам.
+  lighthouseWaits?: number[];
 }
 
 const PLACE: SectionPlace = { x: 0, y: 0, width: 390, height: 600, fullHeight: 600, pinned: false };
@@ -160,8 +162,9 @@ export function fakeSession(
       if (options.vitalsError) return Promise.reject(options.vitalsError);
       return Promise.resolve(options.vitals ?? CLEAN_VITALS);
     },
-    lighthouse() {
+    lighthouse(waitMs: number) {
       sectionCalls.lighthouse?.push(device);
+      sectionCalls.lighthouseWaits?.push(waitMs);
       if (options.lighthouseError) return Promise.reject(options.lighthouseError);
       if (options.lighthouseHangs) return new Promise<unknown>(() => undefined);
       return Promise.resolve(options.lighthouse ?? []);
@@ -211,7 +214,15 @@ export interface FakeRendererOptions {
 
 export function fakeRenderer(options: FakeRendererOptions = {}) {
   const calls: ShootCall[] = [];
-  const sectionCalls: SectionCalls = { located: [], shot: [], layout: [], detect: [], vitals: [], lighthouse: [] };
+  const sectionCalls: SectionCalls = {
+    located: [],
+    shot: [],
+    layout: [],
+    detect: [],
+    vitals: [],
+    lighthouse: [],
+    lighthouseWaits: [],
+  };
   const opened: RenderInput[] = [];
   const motionCalls: MotionCalls[] = [];
   const state = { closed: 0 };

@@ -1,5 +1,5 @@
 // Кто чинит находку (`fix`): значение по месту проверки, одна таблица `FIX_BY_PLACE`; проверка может задать своё;
-// в секции платформы (с ролью, `data-role`) то, что чинил бы агент, — дело платформы.
+// в секции платформы (библиотечной, не тронутой в магазине) то, что чинил бы агент, — дело платформы.
 import { describe, expect, it } from 'vitest';
 import {
   FIX_BY_PLACE,
@@ -12,6 +12,8 @@ import {
   type FindingDraft,
 } from '../src/checks/finding';
 import { platformSections } from '../src/checks/html/platform';
+import { sampleTagOf } from '../src/look/look-sample';
+import { platformIdsOf } from '../src/preview-sample';
 
 const draft = (place: CheckPlace, patch: Partial<FindingDraft> = {}): FindingDraft => ({
   place,
@@ -60,17 +62,34 @@ describe('fix по месту проверки', () => {
 const PAGE = `<body>
 <merfy-section data-section="shop:hero" data-section-id="hero-1" class="py-section"><h1>Шарфы</h1></merfy-section>
 <merfy-section data-section="shop:cart-drawer" data-section-id="drawer-1" data-role="cart-drawer"></merfy-section>
+<merfy-section data-section="shop:my-cart" data-section-id="cart-1" data-role="cart"></merfy-section>
 <merfy-section data-section="shop:cookie-banner" data-section-id="banner-1" data-role="cookie-banner" data-overlay hidden class="x"></merfy-section>
-<merfy-section data-section="shop:faq" data-section-id="faq-1" data-note="x data-role=y"></merfy-section>
+<merfy-section data-section="shop:faq" data-section-id="faq-1" data-note="x data-section-id=y"></merfy-section>
 </body>`;
 
+// Библиотечные и не тронутые: так их отобрало бы превью по файлам из реестра.
+const UNCHANGED = new Set(['shop:cart-drawer', 'shop:cookie-banner', 'shop:faq']);
+
 describe('секции платформы на странице', () => {
-  it('платформенные — секции с ролью на обёртке, остальные нет', () => {
-    expect([...platformSections(PAGE)].sort()).toEqual(['banner-1', 'drawer-1']);
+  it('превью отбирает неизменённые библиотечные; роль не решает: своя корзина с ролью — не платформа', async () => {
+    const asked: string[][] = [];
+    const ids = await platformIdsOf(PAGE, (names) => {
+      asked.push([...names]);
+      return Promise.resolve(new Set(names.filter((name) => UNCHANGED.has(name))));
+    });
+    expect(ids).toEqual(['drawer-1', 'banner-1', 'faq-1']);
+    expect(asked).toEqual([['shop:hero', 'shop:cart-drawer', 'shop:my-cart', 'shop:cookie-banner', 'shop:faq']]);
   });
 
-  it('роль не в обёртке секции и страница без секций — не платформа', () => {
-    expect(platformSections('<p data-role="x">текст</p>').size).toBe(0);
+  it('страница без секций — платформенных нет', async () => {
+    const ids = await platformIdsOf('<p data-role="x">текст</p>', () => Promise.resolve(new Set<string>()));
+    expect(ids).toEqual([]);
+  });
+
+  it('снимок читает id из тега превью; тега нет — таких секций нет', () => {
+    const tag = sampleTagOf({ v: 1, platform: ['drawer-1', 'banner-1'] });
+    expect([...platformSections(`<body>${tag}</body>`)].sort()).toEqual(['banner-1', 'drawer-1']);
+    expect(platformSections(PAGE).size).toBe(0);
     expect(platformSections('').size).toBe(0);
   });
 });

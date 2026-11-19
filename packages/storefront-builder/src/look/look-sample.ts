@@ -31,6 +31,9 @@ const sampleSchema = z.object({
     .optional(),
   // Строки корзины для страниц корзины и оформления; товаров у магазина нет — пустой список.
   cart: z.object({ lines: z.array(lineSchema) }).optional(),
+  // id экземпляров (`data-section-id`) секций платформы на странице (19.11): библиотечных, не тронутых в магазине. Их
+  // находки чинит платформа, а не агент; изменённая библиотечная и своя секция сюда не попадают.
+  platform: z.array(z.string()).optional(),
 });
 
 export type LookSample = z.infer<typeof sampleSchema>;

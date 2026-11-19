@@ -364,14 +364,21 @@ async function browserChecks(session: PageSession | undefined, limits: BrowserLi
       () => session.vitals(),
       (raw) => vitalsCheck(raw, device),
     ),
-    await browserCheck(
-      'lighthouse',
-      limits.lighthouse(),
-      () => session.lighthouse(),
-      lighthouseParsed,
-      MIN_LIGHTHOUSE_MS,
-    ),
+    await lighthouseCheck(session, limits),
   ];
+}
+
+// Lighthouse в очереди процесса: предел считается, когда до него дошла очередь. В очереди он ждёт ровно столько, чтобы
+// после неё оставалось не меньше `MIN_LIGHTHOUSE_MS` на сам прогон; иначе — отказ с причиной, а не падение снимка.
+function lighthouseCheck(session: PageSession, limits: BrowserLimits): Promise<CheckReport> {
+  const limitMs = limits.lighthouse();
+  return browserCheck(
+    'lighthouse',
+    limitMs,
+    () => session.lighthouse(limitMs - MIN_LIGHTHOUSE_MS),
+    lighthouseParsed,
+    MIN_LIGHTHOUSE_MS,
+  );
 }
 
 const tidyFacts = (facts: PageFacts): PageFacts => ({

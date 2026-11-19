@@ -19,6 +19,7 @@ import {
   type LookDeps,
   type LookReply,
 } from '../src/look/look-job';
+import { LighthouseBusy } from '../src/look/look-audit';
 import { LookError, type LayoutFinding } from '../src/look/look-types';
 import { CLEAN_VITALS, fakeRenderer, type FakeRendererOptions } from './look-fixture';
 
@@ -842,6 +843,19 @@ describe('снимок черновика · проверки мест html и b
   const sectionsOf = (reply: LookReply) =>
     snapshotOf(reply).checks.findings.map((finding) => `${finding.place}:${finding.rule}:${finding.section}`);
 
+  it('кто чинит: секция из тега превью (библиотечная, не тронутая) — platform; изменённая и своя с ролью — silent', async () => {
+    const tag = `<script type="application/json" id="merfy-look-sample">${JSON.stringify({ v: 1, platform: ['faq-1'] })}</script>`;
+    const page = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Магазин</title></head><body>
+      <merfy-section data-section-id="hero-1" data-role="cart"><h2>Простые вещи</h2></merfy-section>
+      <merfy-section data-section-id="faq-1" data-role="cart-drawer"><h2></h2></merfy-section>${tag}
+    </body></html>`;
+    const { deps } = setup({}, () => Promise.resolve(htmlResponse(page)));
+    const found = snapshotOf(await runLookJob(deps, job())).checks.findings.map(
+      (finding) => `${finding.section}:${finding.fix}`,
+    );
+    expect(found).toEqual(['hero-1:silent', 'faq-1:platform']);
+  });
+
   it('снимок секции — находки только этой секции, из обоих мест', async () => {
     const { deps } = withPage({ mobile: { semantic: AXE }, desktop: { semantic: AXE } });
     const reply = await runLookJob(deps, job({ section: 'hero-1' }));
@@ -1060,6 +1074,19 @@ describe('снимок черновика · Web Vitals и Lighthouse (мест�
     expect(snapshotOf(reply).checks.failed).toEqual([
       { place: 'browser', check: 'lighthouse', reason: 'Target closed' },
     ]);
+  });
+
+  it('Lighthouse не дождался очереди — причина в failed, снимок и остальные проверки на месте', async () => {
+    const { deps, fake } = setup({
+      mobile: { vitals: JUMPS, lighthouseError: new LighthouseBusy(3_000) },
+    });
+    const reply = await runLookJob(deps, job({ devices: 'mobile', section: 'hero-1' }));
+    expect(browserOf(reply)).toEqual(['vitals:cls:hero-1']);
+    expect(snapshotOf(reply).checks.failed).toEqual([
+      { place: 'browser', check: 'lighthouse', reason: 'очередь Lighthouse занята другим снимком: не дождался за 3 с' },
+    ]);
+    // Очереди отведён предел Lighthouse за вычетом времени на сам прогон.
+    expect(fake.sectionCalls.lighthouseWaits).toEqual([SECTION_LIGHTHOUSE_TIMEOUT_MS - MIN_LIGHTHOUSE_MS]);
   });
 
   it('Lighthouse завис — в снимке секции ждём не дольше предела, проверка меток идёт дальше', async () => {

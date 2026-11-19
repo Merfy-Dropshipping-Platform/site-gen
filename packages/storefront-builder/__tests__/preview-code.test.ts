@@ -113,6 +113,7 @@ function depsOf(withAssets: boolean): ShopPreviewDeps {
           [HERO.name, HERO],
         ]),
       ),
+    library: () => Promise.resolve(new Set()),
     render: () => Promise.resolve('<div class="flex"><p>Подбор</p></div>'),
     fonts: (css) => Promise.resolve(css),
     shell: SHELL,

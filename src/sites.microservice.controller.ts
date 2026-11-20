@@ -24,6 +24,21 @@ import {
 } from "./content/store-content.port";
 import { SectionIdDuplicateError } from "./content/section-ids";
 import { RoleDuplicateError } from "./content/section-roles";
+import { CONSTRUCTOR_LABELS, labelsOf, parseWriter } from "./content/writer";
+
+/** Самая длинная длина ключа от повторов, которую пускает слой шлюза. */
+const IDEMPOTENCY_KEY_MAX = 255;
+
+/** Ключ от повторов из RPC: нет — `undefined`; не строка или слишком длинный — отказ. */
+function parseIdempotencyKey(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const valid =
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= IDEMPOTENCY_KEY_MAX;
+  if (!valid) throw new Error("invalid_idempotency_key");
+  return value;
+}
 
 /** Ошибка записи ревизии → устойчивый конверт RPC (шлюз отображает код в HTTP). */
 function revisionWriteFailure(e: any) {
@@ -407,9 +422,14 @@ export class SitesMicroserviceController {
         // Ревизия, которую видел конструктор (контракт конструктора).
         expectedCurrentRevisionId,
         mergeOnStale,
+        // Автор записи — только от шлюза (К1): из тела и `meta` не читается.
+        writer,
+        // Ключ от повторов (К3): повтор отдаёт сохранённый ответ.
+        idempotencyKey,
       } = data ?? {};
       if (!tenantId || !siteId)
         return { success: false, message: "tenantId and siteId required" };
+      const labels = labelsOf(parseWriter(writer), CONSTRUCTOR_LABELS);
       const res = await this.service.createRevision({
         tenantId,
         siteId,
@@ -424,8 +444,11 @@ export class SitesMicroserviceController {
           seen: expectedCurrentRevisionId,
           mergeOnStale: mergeOnStale === true,
         },
-        actor: "merchant",
-        source: "constructor",
+        // Мерчант — метки конструктора; агент — `agent/mcp`, Визи — `agent/vizi`.
+        // От автора зависит и политика слияния (`constructor-stale-base.ts`).
+        actor: labels.actor,
+        source: labels.source,
+        idempotencyKey: parseIdempotencyKey(idempotencyKey),
         // B17: внешний путь сохранения. Конструктор шлёт всю карту страниц,
         // включая досеянные сервером на чтении, — отсеиваем их здесь, иначе
         // они вмораживаются в ревизию и правки темы до них больше не доходят.
@@ -448,6 +471,7 @@ export class SitesMicroserviceController {
         actorUserId,
         // На проводе база отката называется expectedCurrentRevisionId (контракт шлюза).
         expectedCurrentRevisionId: base,
+        writer,
       } = data ?? {};
       if (!tenantId || !siteId || !revisionId)
         return {
@@ -464,6 +488,7 @@ export class SitesMicroserviceController {
         revisionId,
         actorUserId,
         base,
+        writer: parseWriter(writer),
       });
       return { success: true, ...res };
     } catch (e: any) {

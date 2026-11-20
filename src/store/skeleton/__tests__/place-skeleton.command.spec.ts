@@ -197,6 +197,28 @@ describe("PlaceSkeleton: новый магазин nova", () => {
   });
 });
 
+describe("PlaceSkeleton: автор записи (К1 этапа 3)", () => {
+  it.each([
+    [undefined, "system", "skeleton"],
+    ["agent", "agent", "mcp"],
+    ["vizi", "agent", "vizi"],
+  ] as const)(
+    "writer %s → actor %s, source %s",
+    async (writer, actor, source) => {
+      const { command, writes } = setup();
+
+      const result = await command.execute({
+        ...input,
+        ...(writer ? { writer } : {}),
+      });
+
+      expect(result.ok).toBe(true);
+      expect(writes).toHaveLength(1);
+      expect(writes[0]).toMatchObject({ actor, source });
+    },
+  );
+});
+
 describe("PlaceSkeleton: магазин, где уже что-то есть", () => {
   it("секция с тем же именем уже есть — не перезаписывается (мерчант мог её править)", async () => {
     const { command, saved } = setup({

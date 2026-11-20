@@ -24,11 +24,12 @@ import { apply, diff, isVolatile, merge3, paths } from "./operations";
 import type { Doc, MergePolicy, Op } from "./operations";
 import { deepEqual } from "./operations/json";
 import type { WriteModel } from "./write-model";
-import { checkScope } from "./check-scope";
+import { checkScope, isEmptyScope } from "./check-scope";
 import type { CheckScope } from "./check-scope";
 import { assertSectionIds } from "./section-ids";
 import {
   CLIENT_SNAPSHOT_KIND,
+  IdempotencyKeyTakenError,
   RevisionConflictError,
   RevisionMergeConflictError,
 } from "./store-content.port";
@@ -44,6 +45,65 @@ export interface NewRevision {
   id: string;
   data: Doc;
   meta: Record<string, unknown>;
+  /** Ключ от повторов (К3): колонка `site_revision.idempotency_key`; только у ревизии, которую вернёт повтор. */
+  idempotencyKey?: string;
+}
+
+/** Ревизия магазина с этим ключом от повторов: id и `meta` (в ней `reply`). */
+export interface KeyedRevision {
+  id: string;
+  meta: Record<string, unknown> | null;
+}
+
+/**
+ * Ответ записи, сохранённый в `meta.reply` ревизии с ключом: повтор отдаёт
+ * его, а не пишет заново (К3). Те же поля, что у ответа RPC записи.
+ */
+export interface StoredReply {
+  revisionId: string;
+  currentRevisionId: string;
+  merged: boolean;
+  overwritten: SaveEffect["overwritten"];
+  conflicts: SaveEffect["conflicts"];
+  checkScope: CheckScope | null;
+}
+
+function replyOf(version: string, effect: SaveEffect): StoredReply {
+  return {
+    revisionId: effect.clientVersion,
+    currentRevisionId: version,
+    merged: effect.merged,
+    overwritten: effect.overwritten,
+    conflicts: effect.conflicts,
+    checkScope: effect.checkScope,
+  };
+}
+
+/** Сохранённый ответ ревизии с ключом как результат записи; нет ответа в `meta` — `null`. */
+function replayOf(stored: KeyedRevision): SaveResult | null {
+  const meta = stored.meta ?? {};
+  const reply = meta.reply as StoredReply | undefined;
+  if (!reply) return null;
+  return {
+    version: reply.currentRevisionId,
+    effect: {
+      merged: reply.merged,
+      clientVersion: reply.revisionId,
+      overwritten: reply.overwritten,
+      conflicts: reply.conflicts,
+      changes: Array.isArray(meta.changes) ? (meta.changes as string[]) : null,
+      checkScope: reply.checkScope,
+      replayed: true,
+    },
+    unwritten: true,
+  };
+}
+
+/** «Ничего не легло» (К2): правку агента целиком остановили места мерчанта. Ревизию не пишем. */
+function landedNothing(
+  outcome: Pick<SaveEffect, "conflicts" | "checkScope">,
+): boolean {
+  return outcome.conflicts.length > 0 && isEmptyScope(outcome.checkScope);
 }
 
 /** Что алгоритму нужно от хранилища (адаптера модели контента). */
@@ -52,6 +112,11 @@ export interface RevisionStore {
   fetchData(revisionId: string, siteId: string): Promise<Doc | undefined>;
   /** Указатель текущей ревизии свежим чтением. */
   readPointer(siteId: string, tenantId: string): Promise<string | null>;
+  /** Ревизия ЭТОГО магазина с таким ключом от повторов; нет — `undefined`. Ключ другого магазина не виден. */
+  findByIdempotencyKey(
+    siteId: string,
+    key: string,
+  ): Promise<KeyedRevision | undefined>;
   /**
    * Модель записи документа (`write-model.ts`): шаги чтения адаптера, фильтр
    * досеянного с эталоном от `storedCurrent`, правила «не правка» (значения по
@@ -69,7 +134,8 @@ export interface RevisionStore {
    * задан — CAS (`null` — «указателя ещё нет», строка — конкретная прежняя
    * ревизия); не задан — переезд безусловный. Единая точка фиксации для обеих
    * форм записи (`save-on-base.ts` и `document.adapter.ts`.`saveWithoutBase`),
-   * без дублирования SQL. CAS не прошёл — `false`, ничего не записано.
+   * без дублирования SQL. CAS не прошёл — `false`, ничего не записано. Ключ от
+   * повторов уже занят — `IdempotencyKeyTakenError`, ничего не записано.
    */
   commit(write: {
     siteId: string;
@@ -183,7 +249,47 @@ class WriteOnBase {
     return this.params.base;
   }
 
+  /**
+   * Повтор записи с тем же ключом отдаёт сохранённый ответ до всякого слияния;
+   * одновременный дубль проигрывает уникальному индексу и тоже получает ответ
+   * победителя.
+   */
   async run(): Promise<SaveResult> {
+    const replayed = await this.replay();
+    if (replayed) return replayed;
+    try {
+      return await this.attempts();
+    } catch (e) {
+      if (!(e instanceof IdempotencyKeyTakenError)) throw e;
+      const winner = await this.replay();
+      if (winner) return winner;
+      throw e;
+    }
+  }
+
+  private async replay(): Promise<SaveResult | null> {
+    const key = this.params.idempotencyKey;
+    if (!key) return null;
+    const stored = await this.store.findByIdempotencyKey(this.siteId, key);
+    return stored ? replayOf(stored) : null;
+  }
+
+  /** Ответ и ключ — на ревизию, которую увидит повтор (только у записи с ключом). */
+  private keyed(
+    row: NewRevision,
+    version: string,
+    effect: SaveEffect,
+  ): NewRevision {
+    const key = this.params.idempotencyKey;
+    if (!key) return row;
+    return {
+      ...row,
+      idempotencyKey: key,
+      meta: { ...row.meta, reply: replyOf(version, effect) },
+    };
+  }
+
+  private async attempts(): Promise<SaveResult> {
     let current = await this.initialPointer();
     for (let attempt = 0; attempt < CAS_ATTEMPTS; attempt += 1) {
       const written =
@@ -242,12 +348,6 @@ class WriteOnBase {
         ? { report: NO_BASE_REPORT, scope: null }
         : await this.changesBetween(model, stored, incoming);
     const id = randomUUID();
-    const ok = await this.commit(
-      [{ id, data: model.filterForWrite(incoming), meta: this.meta(report) }],
-      id,
-      this.base,
-    );
-    if (!ok) return null;
     const effect: SaveEffect = {
       merged: false,
       clientVersion: id,
@@ -256,6 +356,12 @@ class WriteOnBase {
       changes: report.changes,
       checkScope: scope,
     };
+    const row = this.keyed(
+      { id, data: model.filterForWrite(incoming), meta: this.meta(report) },
+      id,
+      effect,
+    );
+    if (!(await this.commit([row], id, this.base))) return null;
     return { version: id, effect };
   }
 
@@ -308,15 +414,25 @@ class WriteOnBase {
     });
     if (!result.merged) throw new RevisionMergeConflictError(result.conflicts);
 
-    const mergedId = randomUUID();
-    const snapshotId = deepEqual(result.merged, incoming) ? null : randomUUID();
-    const clientVersion = snapshotId ?? mergedId;
     const report =
       this.base === null
         ? NO_BASE_REPORT
         : reportChanges(result.applied, currentDoc, result.merged, model);
-    const rows: NewRevision[] = [
-      ...(snapshotId ? [this.snapshotRow(snapshotId, incoming, mergedId)] : []),
+    const outcome: Omit<SaveEffect, "clientVersion"> = {
+      merged: true,
+      overwritten: result.overwritten,
+      conflicts: result.conflicts,
+      changes: report.changes,
+      checkScope: scopeOf(report, result.merged),
+    };
+    if (current !== null && landedNothing(outcome))
+      return this.untouched(current, outcome);
+
+    const mergedId = randomUUID();
+    const snapshotId = deepEqual(result.merged, incoming) ? null : randomUUID();
+    const clientVersion = snapshotId ?? mergedId;
+    const written: SaveEffect = { ...outcome, clientVersion };
+    const mergedRow = this.keyed(
       {
         id: mergedId,
         data: result.merged,
@@ -326,23 +442,41 @@ class WriteOnBase {
             onto: current,
             clientVersion,
             overwritten: result.overwritten,
+            conflicts: result.conflicts,
           },
         }),
       },
+      mergedId,
+      written,
+    );
+    const rows: NewRevision[] = [
+      ...(snapshotId ? [this.snapshotRow(snapshotId, incoming, mergedId)] : []),
+      mergedRow,
     ];
     if (!(await this.commit(rows, mergedId, current))) return null;
     this.logger.log(
-      `revision merged site=${this.siteId} base=${this.base} onto=${current} → ${mergedId} (снимок ${snapshotId ?? "—"}, перезаписано ${result.overwritten.length})`,
+      `revision merged site=${this.siteId} base=${this.base} onto=${current} → ${mergedId} (снимок ${snapshotId ?? "—"}, перезаписано ${result.overwritten.length}, оставлено мерчанту ${result.conflicts.length})`,
     );
-    const effect: SaveEffect = {
-      merged: true,
-      clientVersion,
-      overwritten: result.overwritten,
-      conflicts: [],
-      changes: report.changes,
-      checkScope: scopeOf(report, result.merged),
+    return { version: mergedId, effect: written };
+  }
+
+  /**
+   * «Ничего не легло» (К2): правки агента целиком остановили места мерчанта.
+   * Ревизия не пишется, голова не двигается; ответ несёт текущую ревизию и
+   * места, оставленные мерчанту.
+   */
+  private untouched(
+    current: string,
+    outcome: Omit<SaveEffect, "clientVersion">,
+  ): SaveResult {
+    this.logger.log(
+      `revision nothing landed site=${this.siteId} base=${this.base} onto=${current} (оставлено мерчанту ${outcome.conflicts.length})`,
+    );
+    return {
+      version: current,
+      effect: { ...outcome, merged: false, clientVersion: current },
+      unwritten: true,
     };
-    return { version: mergedId, effect };
   }
 
   private snapshotRow(id: string, data: Doc, mergedId: string): NewRevision {

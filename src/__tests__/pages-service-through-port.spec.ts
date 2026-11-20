@@ -300,3 +300,37 @@ describe("resetContentPages — через порт", () => {
     );
   });
 });
+
+describe("PagesService: автор записи (К1 этапа 3)", () => {
+  it.each([
+    [undefined, "merchant", "admin-pages"],
+    ["merchant", "merchant", "admin-pages"],
+    ["agent", "agent", "mcp"],
+    ["vizi", "agent", "vizi"],
+  ] as const)(
+    "writer %s: createPage/updatePage/deletePage → actor %s, source %s",
+    async (writer, actor, source) => {
+      const { fake, pages } = await setup();
+      const scope = { tenantId: TENANT, siteId: SITE, writer };
+      const { page } = await pages.createPage({
+        ...scope,
+        name: "Акции",
+        slug: "/sale",
+      });
+      expect(fake.storedMeta(fake.site.currentRevisionId!)).toMatchObject({
+        actor,
+        source,
+      });
+      await pages.updatePage({ ...scope, pageId: page.id, name: "Скидки" });
+      expect(fake.storedMeta(fake.site.currentRevisionId!)).toMatchObject({
+        actor,
+        source,
+      });
+      await pages.deletePage({ ...scope, pageId: page.id });
+      expect(fake.storedMeta(fake.site.currentRevisionId!)).toMatchObject({
+        actor,
+        source,
+      });
+    },
+  );
+});

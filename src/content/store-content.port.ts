@@ -14,6 +14,7 @@
  */
 import type { CheckScope } from "./check-scope";
 import type { ContestedValue, MergePolicy, Op } from "./operations";
+import type { Writer } from "./writer";
 
 /**
  * Метаданные магазина, нужные адаптеру, чтобы построить документ.
@@ -86,7 +87,11 @@ export type WriteSource =
   /** Заготовка магазина новой темы (`PlaceSkeleton`, src/store/skeleton). */
   | "skeleton"
   | "draft"
-  | "ops";
+  | "ops"
+  /** Агент через MCP (`writer: "agent"`, `content/writer.ts`). */
+  | "mcp"
+  /** Визи (`writer: "vizi"`). */
+  | "vizi";
 
 /** `meta.kind` снимка документа клиента («линия клиента», И4). Такая ревизия никогда не текущая. */
 export const CLIENT_SNAPSHOT_KIND = "client-snapshot";
@@ -148,6 +153,13 @@ export type SaveOnBaseParams = WriteCommon & {
   /** Ревизия, от которой сделана правка; `null` — ревизии у магазина ещё нет. */
   base: string | null;
   mergePolicy: StaleBasePolicy;
+  /**
+   * Ключ от повторов (К3): запись с уже виденным ключом магазина ничего не
+   * пишет и отдаёт сохранённый ответ с `replayed: true`. Ключ лежит на
+   * ревизии (`site_revision.idempotency_key`), запоминается только
+   * успешной записью.
+   */
+  idempotencyKey?: string;
 } & (
     | { document: Record<string, unknown>; ops?: never }
     | { ops: Op[]; document?: never }
@@ -199,6 +211,8 @@ export interface CreateRevisionParams {
   actor?: WriteActor;
   source?: WriteSource;
   mergePolicy?: StaleBasePolicy;
+  /** Ключ от повторов (только запись от базы), см. `SaveOnBaseParams.idempotencyKey`. */
+  idempotencyKey?: string;
 }
 
 export interface CreateRevisionResult {
@@ -211,6 +225,8 @@ export interface CreateRevisionResult {
   conflicts?: ContestedValue[];
   /** Что проверить после правки (см. `SaveEffect.checkScope`); есть только при записи от базы. */
   checkScope?: CheckScope | null;
+  /** Ответ повторён по ключу от повторов: новая ревизия не писалась. */
+  replayed?: boolean;
 }
 
 /** Эффект записи с базой — то, что видит клиент (раздел «Контракт записи» плана этапа 2). */
@@ -224,7 +240,11 @@ export interface SaveEffect {
   clientVersion: string;
   /** Чужие значения, перезаписанные этой записью (`last-writer-wins`). */
   overwritten: ContestedValue[];
-  /** Всегда пусто в успешном ответе: при `reject-conflicts` конфликт — ошибка. */
+  /**
+   * Места, где правка не легла, потому что их поменял мерчант (`keep-current`,
+   * запись агента). Пусто у мерчанта: при `reject-conflicts` конфликт — ошибка,
+   * при `last-writer-wins` — `overwritten`.
+   */
   conflicts: ContestedValue[];
   /** Адреса, изменённые относительно прежней текущей ревизии; `null` — не удалось посчитать. */
   changes: string[] | null;
@@ -234,6 +254,8 @@ export interface SaveEffect {
    * `meta` не пишется; `null` — когда `changes` не посчитались.
    */
   checkScope: CheckScope | null;
+  /** Ответ повторён по ключу от повторов (К3); новая ревизия не писалась. */
+  replayed?: boolean;
 }
 
 export interface SaveResult {
@@ -241,6 +263,12 @@ export interface SaveResult {
   version: string;
   /** Есть у записи от базы (`mode: "on-base"`). */
   effect?: SaveEffect;
+  /**
+   * Новой ревизии нет: повтор по ключу от повторов или «ничего не легло»
+   * (все правки агента остановили места мерчанта). `version` — ревизия, которую
+   * видит клиент; указатель не двигался, сигнала «черновик изменился» нет.
+   */
+  unwritten?: true;
 }
 
 /**
@@ -253,6 +281,18 @@ export class RevisionConflictError extends Error {
   constructor() {
     super("revision_conflict");
     this.name = "RevisionConflictError";
+  }
+}
+
+/**
+ * Ключ от повторов уже занят ревизией этого магазина: параллельный дубль
+ * проиграл уникальному индексу. Ничего не записано; `save-on-base.ts` ловит
+ * её и отдаёт ответ победителя.
+ */
+export class IdempotencyKeyTakenError extends Error {
+  constructor() {
+    super("idempotency_key_taken");
+    this.name = "IdempotencyKeyTakenError";
   }
 }
 
@@ -356,6 +396,8 @@ export interface RollbackParams {
   site: StoreContentSite;
   revisionId: string;
   actorUserId?: string;
+  /** Кто откатывает: агент ставит свои метки вместо `merchant/rollback` (`content/writer.ts`). */
+  writer?: Writer;
   /**
    * База отката — текущая ревизия, которую видел клиент. Не передана —
    * текущая на момент чтения. `null` — «ревизии нет»: явное значение, не

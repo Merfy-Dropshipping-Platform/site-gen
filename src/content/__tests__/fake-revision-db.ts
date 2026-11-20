@@ -27,6 +27,8 @@ export interface FakeRevision {
   meta: Record<string, unknown>;
   createdAt: Date;
   createdBy?: string | null;
+  /** Ключ от повторов (drizzle/0039): уникален в пределах магазина, `null` индекс не касается. */
+  idempotencyKey?: string | null;
 }
 
 export interface FakeSite {
@@ -99,6 +101,11 @@ export function makeFakeRevisionDb(
         !sql.includes('"site_revision"."site_id"') || row?.siteId === params[1];
       return row && siteMatches ? [row] : [];
     }
+    if (sql.includes('"site_revision"."idempotency_key" =')) {
+      return [...revisions.values()].filter(
+        (r) => r.siteId === params[0] && r.idempotencyKey === params[1],
+      );
+    }
     const hideSnapshots = params.includes("client-snapshot");
     return [...revisions.values()]
       .filter((r) => r.siteId === params[0])
@@ -163,6 +170,23 @@ export function makeFakeRevisionDb(
     else target.set(row.id, row);
   }
 
+  /**
+   * Уникальный частичный индекс `idx_site_revision_site_idempotency_key`: как в
+   * Postgres, проверяется в момент фиксации — параллельный дубль, успевший
+   * вставить строку раньше, роняет транзакцию с кодом 23505.
+   */
+  function assertKeyFree(row: FakeRevision) {
+    if (row.idempotencyKey == null) return;
+    const taken = [...revisions.values()].some(
+      (r) => r.siteId === row.siteId && r.idempotencyKey === row.idempotencyKey,
+    );
+    if (!taken) return;
+    throw Object.assign(new Error("duplicate key value"), {
+      code: "23505",
+      constraint: "idx_site_revision_site_idempotency_key",
+    });
+  }
+
   function makeUpdate(
     table: unknown,
     applyPatch: (p: Partial<FakeSite>) => void = applyNow,
@@ -218,6 +242,7 @@ export function makeFakeRevisionDb(
           makeUpdate(table, (p) => stagedPatches.push(p)),
       };
       const out = await callback(tx);
+      staged.forEach(assertKeyFree);
       staged.forEach((row) => revisions.set(row.id, row));
       stagedPatches.forEach(applyNow);
       return out;
@@ -250,10 +275,17 @@ export function makeFakeRevisionDb(
         current?: boolean;
         meta?: Record<string, unknown>;
         siteId?: string;
+        idempotencyKey?: string;
       } = {},
     ) {
       const siteId = opts.siteId ?? site.id;
-      insertRevision(revisions, { id, siteId, data, meta: opts.meta ?? {} });
+      insertRevision(revisions, {
+        id,
+        siteId,
+        data,
+        meta: opts.meta ?? {},
+        idempotencyKey: opts.idempotencyKey ?? null,
+      });
       const current = opts.current ?? siteId === site.id;
       if (current) site.currentRevisionId = id;
     },

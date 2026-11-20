@@ -211,21 +211,35 @@ export const siteDomain = pgTable("site_domain", {
   verifiedAt: timestamp("verified_at"),
 });
 
-export const siteRevision = pgTable("site_revision", {
-  id: text("id").primaryKey(),
-  siteId: text("site_id").notNull(),
-  data: jsonb("data"),
-  meta: jsonb("meta"),
-  // R3 (drizzle/0020): вид ревизии — колонка вместо meta->>'kind'
-  // (content/revision-kinds.ts). NULL — обычная версия магазина;
-  // 'client-snapshot' — служебная база слияния (никогда не текущая).
-  // DocumentAdapter.commit() пишет обе копии на время выкатки.
-  kind: text("kind"),
-  createdAt: timestamp("created_at")
-    .$defaultFn(() => new Date())
-    .notNull(),
-  createdBy: text("created_by"),
-});
+export const siteRevision = pgTable(
+  "site_revision",
+  {
+    id: text("id").primaryKey(),
+    siteId: text("site_id").notNull(),
+    data: jsonb("data"),
+    meta: jsonb("meta"),
+    // R3 (drizzle/0020): вид ревизии — колонка вместо meta->>'kind'
+    // (content/revision-kinds.ts). NULL — обычная версия магазина;
+    // 'client-snapshot' — служебная база слияния (никогда не текущая).
+    // DocumentAdapter.commit() пишет обе копии на время выкатки.
+    kind: text("kind"),
+    createdAt: timestamp("created_at")
+      .$defaultFn(() => new Date())
+      .notNull(),
+    createdBy: text("created_by"),
+    // Ключ от повторов записи агента (этап 3, К3; drizzle/0039): повтор с тем
+    // же ключом получает ответ, сохранённый в meta.reply, и ничего не пишет.
+    // NULL — запись без ключа (конструктор, служебные снимки).
+    idempotencyKey: text("idempotency_key"),
+  },
+  (table) => ({
+    siteIdempotencyKeyUniq: uniqueIndex(
+      "idx_site_revision_site_idempotency_key",
+    )
+      .on(table.siteId, table.idempotencyKey)
+      .where(sql`${table.idempotencyKey} is not null`),
+  }),
+);
 
 /**
  * Live media slots — merchant uploads from the constructor keyed by

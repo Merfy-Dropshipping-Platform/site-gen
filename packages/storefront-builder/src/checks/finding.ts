@@ -26,15 +26,53 @@ export const FIX_BY_PLACE: Record<CheckPlace, CheckFix> = {
   release: 'platform',
 };
 
-// Кто чинит находку в секции платформы (19.11): платформенная — библиотечная секция, которую в магазине не меняли
-// (`html/platform.ts`); её код — код платформы, а не агента. Что агент чинил молча (`silent`) — теперь дело платформы и
-// ему не показывается; вопрос мерчанту (`ask`) — данные магазина, от секции не зависит. Изменённая и своя секция сюда
-// не попадают, даже если у неё есть роль (`data-role`): агент мог написать свою корзину.
+// Исключения из таблицы мест — по коду проверки (правило находки `rule`, у старой формы — `code`; решение 19.11 и
+// этап 5, 21.11). `ask` — исправление меняет вид или тексты, значит, решает мерчант: агент говорит, как исправит, и
+// спрашивает. Нет в таблице — по месту. Спорные (`text-content`, `heading-level`, `nested-interactive`, `lcp-background`)
+// остаются `silent`: агент выбирает исправление без смены вида (aria-label, тег без смены стиля).
+export const FIX_BY_CHECK: Record<string, CheckFix> = {
+  // Lighthouse, Web Vitals и семантика: картинке меняют пропорции, первый экран — показ, пустому заголовку — текст.
+  'image-aspect-ratio': 'ask',
+  'lcp-hidden': 'ask',
+  'empty-heading': 'ask',
+  // Проверки вёрстки (`LAYOUT_CODES`): правка вёрстки видна глазом.
+  'row-unequal': 'ask',
+  'row-not-filling': 'ask',
+  'overflow-x': 'ask',
+  'text-clipped': 'ask',
+  overlap: 'ask',
+  'image-distorted': 'ask',
+  'columns-many': 'ask',
+  'tap-small': 'ask',
+  'text-small': 'ask',
+};
+
+// Старая форма находки (`LookFinding`): код проверки вёрстки — по таблице выше, остальное — по источнику. Детектор
+// Impeccable ловит приёмы дизайна (градиентный текст, боковая рамка): любая правка меняет вид, поэтому все его коды `ask`.
+const FIX_BY_LOOK_SOURCE: Record<'impeccable' | 'layout', CheckFix> = {
+  impeccable: 'ask',
+  layout: 'ask',
+};
+
+// Кто чинит находку нового вида: код проверки, иначе место.
+export const fixOf = (place: CheckPlace, rule: string): CheckFix => FIX_BY_CHECK[rule] ?? FIX_BY_PLACE[place];
+
+// Кто чинит находку старой формы: код проверки, иначе источник.
+export const lookFixOf = (source: 'impeccable' | 'layout', code: string): CheckFix =>
+  FIX_BY_CHECK[code] ?? FIX_BY_LOOK_SOURCE[source];
+
+// Кто чинит находку в секции платформы (19.11, 21.11): платформенная — библиотечная секция, которую в магазине не
+// меняли (`html/platform.ts`); её код — код платформы, а не агента. Что чинят правкой кода секции — молча (`silent`) или
+// после вопроса (`ask`) — теперь дело платформы и агенту не показывается. Изменённая и своя секция сюда не попадают,
+// даже если у неё есть роль (`data-role`): агент мог написать свою корзину.
 export const FIX_ON_PLATFORM_SECTION: Record<CheckFix, CheckFix> = {
   silent: 'platform',
-  ask: 'ask',
+  ask: 'platform',
   platform: 'platform',
 };
+
+// Места, чьи находки от секции не зависят: вопрос мерчанту про данные магазина (`library-update`) остаётся `ask`.
+const KEEP_FIX_ON_PLATFORM_SECTION: ReadonlySet<CheckPlace> = new Set<CheckPlace>(['shop']);
 
 export interface CheckFinding {
   place: CheckPlace;
@@ -55,7 +93,8 @@ export interface CheckFinding {
   fix: CheckFix;
 }
 
-// То, что отдаёт проверка: без счётчика (его ставит `grouped`) и, как правило, без `fix` (берётся из `FIX_BY_PLACE`).
+// То, что отдаёт проверка: без счётчика (его ставит `grouped`) и, как правило, без `fix` (берётся из `FIX_BY_CHECK`,
+// иначе из `FIX_BY_PLACE`).
 export type FindingDraft = Omit<CheckFinding, 'count' | 'fix'> & { fix?: CheckFix };
 
 // Проверка не отработала — это не находка в магазине, а причина, почему находок может не хватать.
@@ -76,7 +115,7 @@ export interface CheckReport {
 export function grouped(findings: readonly FindingDraft[]): CheckFinding[] {
   const groups = new Map<string, CheckFinding>();
   for (const draft of findings) {
-    const finding: Omit<CheckFinding, 'count'> = { ...draft, fix: draft.fix ?? FIX_BY_PLACE[draft.place] };
+    const finding: Omit<CheckFinding, 'count'> = { ...draft, fix: draft.fix ?? fixOf(draft.place, draft.rule) };
     const key = [finding.place, finding.check, finding.rule, finding.section ?? '', finding.text, finding.fix].join(
       '\u0000',
     );
@@ -87,11 +126,15 @@ export function grouped(findings: readonly FindingDraft[]): CheckFinding[] {
   return [...groups.values()];
 }
 
+// `fix` находки в секции платформы: по таблице, кроме мест, чьё решение от секции не зависит.
+const fixOnPlatformSection = (finding: CheckFinding): CheckFix =>
+  KEEP_FIX_ON_PLATFORM_SECTION.has(finding.place) ? finding.fix : FIX_ON_PLATFORM_SECTION[finding.fix];
+
 // Находки секций платформы (`platform` — id их экземпляров, `platformSections` в `html/platform.ts`) — со своим `fix`.
 export function onPlatformSections(findings: readonly CheckFinding[], platform: ReadonlySet<string>): CheckFinding[] {
   return findings.map((finding) =>
     finding.section !== null && platform.has(finding.section)
-      ? { ...finding, fix: FIX_ON_PLATFORM_SECTION[finding.fix] }
+      ? { ...finding, fix: fixOnPlatformSection(finding) }
       : finding,
   );
 }

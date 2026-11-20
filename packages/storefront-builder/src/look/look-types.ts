@@ -1,5 +1,6 @@
 // Снимок черновика: общие типы (перенесено 28.10 из merfy-mcp `src/nova/look-types.ts`). Отрисовщик (Chromium) стоит за
 // интерфейсом `PageRenderer`: логика задания (`look-job.ts`, `look-fit.ts`) от браузера не зависит и проверяется подменой.
+import type { CheckFix } from '../checks/finding';
 
 export type LookDevice = 'mobile' | 'desktop';
 
@@ -72,12 +73,14 @@ export interface LayoutFinding {
 // Находка в ответе снимка. Источники: детектор Impeccable (`section`, `clip` и `image` у него null) и проверки вёрстки
 // (`layout`). `section` — id экземпляра секции на странице (`data-section-id`, как в `merfy_pages · outline`), `clip` —
 // прямоугольник места в пикселях страницы, `image` — вырезка этого места, JPEG в base64 (есть не у каждой находки: не
-// больше `MAX_CLIPS` на ответ).
+// больше `MAX_CLIPS` на ответ). `fix` — кто чинит (этап 5, 21.11): по коду проверки и источнику, `lookFixOf` в
+// `checks/finding.ts`; вид меняет любая правка, поэтому сейчас у всех `ask`.
 export interface LookFinding {
   source: 'impeccable' | 'layout';
   code: string;
   name: string;
   text: string;
+  fix: CheckFix;
   device: LookDevice;
   section: string | null;
   clip: Clip | null;

@@ -101,6 +101,13 @@ describe('находки Lighthouse', () => {
     ]);
   });
 
+  it('кто чинит: растянутая картинка — вопрос мерчанту (меняет вид), остальные — молча', () => {
+    const fixes = lighthouseFindings(
+      LIGHTHOUSE_AUDITS.map((audit) => ({ audit, section: 'shop-1', where: 'элемент' })),
+    ).map((finding) => [finding.rule, finding.fix]);
+    expect(fixes).toEqual(LIGHTHOUSE_AUDITS.map((audit) => [audit, audit === 'image-aspect-ratio' ? 'ask' : 'silent']));
+  });
+
   it('у каждой проверки свой текст «что не так · как починить»', () => {
     const texts = lighthouseFindings(
       LIGHTHOUSE_AUDITS.map((audit) => ({ audit, section: 'shop-1', where: 'элемент' })),

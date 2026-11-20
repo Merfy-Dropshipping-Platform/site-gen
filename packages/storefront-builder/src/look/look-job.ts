@@ -5,7 +5,7 @@ import type { Broker } from '../broker';
 import { lighthouseFindings } from '../checks/browser/lighthouse';
 import { semanticBrowser } from '../checks/browser/semantic';
 import { vitalsCheck } from '../checks/browser/vitals';
-import { inSections, onPlatformSections, type CheckReport } from '../checks/finding';
+import { inSections, lookFixOf, onPlatformSections, type CheckReport } from '../checks/finding';
 import { platformSections } from '../checks/html/platform';
 import { semanticHtml } from '../checks/html/semantic';
 import { errorText } from '../errors';
@@ -248,6 +248,7 @@ async function detectOn(
       code: finding.rule,
       name: finding.name,
       text: finding.detail,
+      fix: lookFixOf('impeccable', finding.rule),
       device: session.device,
       section: null,
       clip: null,

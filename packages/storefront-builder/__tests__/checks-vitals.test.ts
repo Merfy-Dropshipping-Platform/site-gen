@@ -164,6 +164,18 @@ describe('главный элемент первого экрана', () => {
     }
   });
 
+  it('кто чинит: показ первого экрана скриптом (lcp-hidden) — вопрос мерчанту, остальные причины — молча', () => {
+    const causes: Array<[Partial<NonNullable<VitalsRaw['lcp']>>, string]> = [
+      [{ insertedByScript: true }, 'silent'],
+      [{ shownByScript: true }, 'ask'],
+      [{ srcByScript: true }, 'silent'],
+      [{ kind: 'background' }, 'silent'],
+      [{ lazy: true }, 'silent'],
+    ];
+    const fixes = causes.map(([patch]) => vitalsFindings({ ...clean, lcp: lcp(patch) }, 'mobile')[0]?.fix);
+    expect(fixes).toEqual(causes.map(([, fix]) => fix));
+  });
+
   it('находка — у секции и элемента LCP, с текстом «что не так · как починить»', () => {
     expect(vitalsFindings({ ...clean, lcp: lcp({ lazy: true }) }, 'mobile')).toEqual([
       {

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
+import { lookFixOf } from '../checks/finding';
 import { errorText } from '../errors';
 import { base64Size } from './look-fit';
 import {
@@ -141,6 +142,7 @@ const toLookFinding = (layout: DeviceLayout, finding: LayoutFinding, image: Uint
   code: finding.code,
   name: LAYOUT_NAMES[finding.code],
   text: finding.text,
+  fix: lookFixOf('layout', finding.code),
   device: layout.session.device,
   section: finding.section,
   clip: finding.clip,

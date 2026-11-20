@@ -18,11 +18,20 @@
 - Находка — один вид на все места: `CheckFinding` в `finding.ts`
   (`place`, `check`, `rule`, `level`, `section`, `where`, `text`, `count`, `fix`). `text` — «что не так · как починить».
 - `fix` — кто чинит: `silent` (агент молча), `ask` (данные магазина — предложить мерчанту и спросить), `platform`
-  (чинит платформа, агенту не показывается). Значение по месту — таблица `FIX_BY_PLACE` в `finding.ts`: code, html,
-  browser, audit — `silent`; shop — `ask`; release — `platform`. Проверка с исключением задаёт `fix` сама. В ответе
-  поле заполнено всегда.
-- Секции платформы (19.11): платформенная — библиотечная секция, которую в магазине не меняли. Находка в ней получает
-  `fix` по таблице `FIX_ON_PLATFORM_SECTION`: `silent` → `platform`, `ask` остаётся. Секции нашей библиотеки лежат в
+  (чинит платформа, агенту не показывается). Порядок подстановки (этап 5, 21.11): своё поле находки → таблица
+  `FIX_BY_CHECK` по коду проверки (`rule`) → таблица `FIX_BY_PLACE` по месту: code, html, browser, audit — `silent`;
+  shop — `ask`; release — `platform`. В ответе поле заполнено всегда.
+- `FIX_BY_CHECK` — исключения по коду проверки; `ask` у тех, чьё исправление меняет вид или тексты:
+  `image-aspect-ratio`, `lcp-hidden`, `empty-heading` и все коды проверок вёрстки (`row-unequal`, `row-not-filling`,
+  `overflow-x`, `text-clipped`, `overlap`, `image-distorted`, `columns-many`, `tap-small`, `text-small`). Остальные —
+  по месту (`silent`); спорные (`text-content`, `heading-level`, `nested-interactive`, `lcp-background`) нарочно
+  `silent`: агент выбирает исправление без смены вида (aria-label, тег без смены стиля). Находки старой формы
+  (`LookFinding`, поле `findings` снимка) тоже несут `fix`: `lookFixOf(source, code)` — код вёрстки по той же таблице,
+  детектор Impeccable (`source: 'impeccable'`) — `ask` для любого кода, потому что правка дизайна меняет вид.
+- Секции платформы (19.11, 21.11): платформенная — библиотечная секция, которую в магазине не меняли. Находка в ней,
+  которую чинят правкой кода секции, получает `fix` по таблице `FIX_ON_PLATFORM_SECTION`: `silent` и `ask` → `platform`.
+  Исключение — места из `KEEP_FIX_ON_PLATFORM_SECTION` (сейчас `shop`: данные магазина, `library-update`), у них `ask`
+  остаётся. Секции нашей библиотеки лежат в
   магазине как свои (`shop:…`), поэтому признак — файлы: отпечаток правки секции (`libraryKeyOf`) есть в индексе
   библиотеки (`isLibrarySection`, `storefront-sections`). Файлы знает только реестр, поэтому отбирает превью
   (`platformIdsOf` в `preview-sample.ts`, запрос `libraryUnchanged`) и кладёт id экземпляров в тег снимка

@@ -234,7 +234,8 @@ type Raw = VitalsRaw;
 type ShiftRaw = Raw['shifts'][number];
 type LcpRaw = NonNullable<Raw['lcp']>;
 
-// `fix` — только если у находки исключение из таблицы мест (`FIX_BY_PLACE`); сейчас таких нет.
+// `fix` — только если у находки исключение из таблиц места и кода проверки (`FIX_BY_PLACE`, `FIX_BY_CHECK`); сейчас таких
+// нет: `lcp-hidden` — `ask` по таблице кодов.
 const finding = (rule: string, section: string | null, where: string, text: string, fix?: CheckFix): FindingDraft => ({
   place: 'browser',
   check: 'vitals',

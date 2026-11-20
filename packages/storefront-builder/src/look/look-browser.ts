@@ -9,7 +9,7 @@
 import type { Browser, BrowserContext } from 'playwright';
 import type { AuditReport } from '../checks/audit/report';
 import { DEFAULT_CPU_RATE, cpuRateFor } from '../checks/browser/vitals';
-import { LighthouseLink, freePort } from './look-audit';
+import { LighthouseLink, freePort, yieldToSnapshots } from './look-audit';
 import { MOTION_EXTRA_MS } from './look-motion';
 import { openPage } from './look-page';
 import {
@@ -223,6 +223,7 @@ export class ChromiumRenderer implements PageRenderer {
 
   async open(input: RenderInput): Promise<RenderedPage> {
     await this.slots.acquire();
+    yieldToSnapshots();
     // Раскадровка грузит страницу второй раз и снимает до 12 кадров: сроку отрисовщика прибавляется `MOTION_EXTRA_MS`,
     // но срок задания (`input.timeoutMs`) он не превышает.
     const own = this.timeoutMs + (input.motion === true ? MOTION_EXTRA_MS : 0);

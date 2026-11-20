@@ -100,7 +100,7 @@ function draftOf(rule: Rule, change: AuditChange): FindingDraft {
     rule: rule.rule,
     level: 'warning',
     section: atLcp?.section ?? null,
-    where: atLcp?.where ?? `страница ${change.path}`,
+    where: atLcp?.where ?? change.path,
     text: textOf(rule, change),
   };
 }

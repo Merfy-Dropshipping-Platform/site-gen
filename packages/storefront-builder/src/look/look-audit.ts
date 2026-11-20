@@ -87,6 +87,12 @@ export class LighthouseTurns {
     });
   }
 
+  // Начался снимок черновика: идущий фоновый прогон просят уступить место заранее, пока снимок готовит страницу, а не
+  // когда он дойдёт до своего Lighthouse и станет ждать.
+  preempt(): void {
+    if (this.busy) this.holder.yield?.();
+  }
+
   private grant(options: TurnOptions): () => void {
     this.busy = true;
     this.holder = options;
@@ -103,6 +109,9 @@ export class LighthouseTurns {
 }
 
 const turns = new LighthouseTurns();
+
+// Снимок черновика начался: аудит опубликованной страницы, если идёт, уступает место (`LighthouseTurns.preempt`).
+export const yieldToSnapshots = (): void => turns.preempt();
 
 // Аудит не уложился в бюджет страницы; аудит уступил место снимку черновика.
 export class AuditTimeout extends Error {

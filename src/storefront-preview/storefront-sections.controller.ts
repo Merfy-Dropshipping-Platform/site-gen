@@ -6,6 +6,8 @@
  * - POST /api/sites/:id/sections/check — проверить файлы { files }, ничего не записывая (блок 14).
  * - POST /api/sites/:id/sections — сохранить { files } своей секцией магазина, черновиком.
  * - GET  /api/sites/:id/sections/:name/source и …/history; POST …/:name/rollback с { id }.
+ * - POST …/:name/update-decline — отказ обновлять копию библиотечной секции (тела нет).
+ * - Тело сохранения: { files, basedOn? } — основа копии (отпечаток версии библиотеки).
  *
  * Договор тел и ответов — packages/storefront-builder/src/section-tools.ts.
  */
@@ -88,6 +90,15 @@ export class StorefrontSectionsController {
     @Res() res: Response,
   ): Promise<void> {
     await this.tool(res, siteId, "/sections/rollback", { name }, body);
+  }
+
+  @Post(":name/update-decline")
+  async updateDecline(
+    @Param("id") siteId: string,
+    @Param("name") name: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    await this.tool(res, siteId, "/sections/update-decline", { name }, {});
   }
 
   private async tool(

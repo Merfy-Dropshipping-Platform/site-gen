@@ -146,7 +146,6 @@ export {
   type UpdateOffer,
 } from './library-update';
 export { libraryFilesOf } from './library-files';
-export { BASED_ON_FILE, DECLINE_FILE, splitMeta, type SplitFiles } from './meta-files';
 // Свои сторы (01.11): круг чтений сторов — отказ приёма и отката; сторы, которые читает правка.
 export { StoreCycleError } from './registry';
 export { STORE_USE_PREFIX, isStoreUse } from './format';

@@ -89,8 +89,8 @@
   магазина, а не экземпляра на странице). Агент видит её в ответах `sections/check` и `sections/save` (поле `findings`)
   и пометкой `libraryUpdate` в списке секций `GET /sections` (там её берёт `merfy_pages outline`). Снимок страницы её
   не несёт: основа и отказ — не свойство HTML. Шаги агента — `merfy_sections`: `read` с `upgrade: true`, `save` с
-  `basedOn`, `decline`. Основа и отказ едут служебными файлами `.merfy/based-on` и `.merfy/decline-update` в `files`
-  (шлюз пересылает sites только `files`; `storefront-sections/src/meta-files.ts`).
+  `basedOn`, `decline`. Основа едёт полем `basedOn` тела `POST /sections` (формат `sha256:<64 hex>`, шлюз его
+  проверяет и пересылает), отказ — отдельным маршрутом `POST /sections/:name/update-decline` без тела.
 
 Проверки `html` и `browser` запускает снимок черновика (`look/look-job.ts`, поле `checks` ответа). Находки детектора и
 проверок вёрстки пока идут прежним полем `findings` — переедут сюда отдельной задачей.

@@ -8,7 +8,12 @@
  */
 import { Injectable, Optional } from "@nestjs/common";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { StorefrontHandoff } from "../storefront-handoff/storefront-handoff.service";
+import {
+  StorefrontHandoff,
+  type DraftAuthor,
+  type DraftSignalExtra,
+} from "../storefront-handoff/storefront-handoff.service";
+import { labelsOf, type Writer } from "./writer";
 import { DocumentAdapter } from "./document.adapter";
 import { buildThemeCanon } from "./canon";
 import { isNewThemeId } from "./new-theme-pages";
@@ -45,16 +50,20 @@ export class StoreContentService implements StoreContent {
 
   /**
    * Запись сделала ревизию текущей — открытые редакторы магазина новой темы подтянут её по сигналу
-   * (`/sites/:id/preview/events`). Не ждём: сигнал записи не задерживает и не ломает.
+   * (`/sites/:id/preview/events`). Не ждём: сигнал записи не задерживает и не ломает. `extra` — автор записи и её
+   * область, чтобы редактор отличил чужую правку и обновил только тронутые секции.
    */
   private signalDraft(
     siteId: string,
     site: StoreContentSite,
     revisionId: string,
+    extra: DraftSignalExtra = {},
   ): void {
     if (!this.handoff || !isNewThemeId(site.themeId)) return;
     // signalDraft сбои брокера глотает сам; catch — страховка, запись важнее сигнала.
-    void this.handoff.signalDraft(siteId, revisionId).catch(() => undefined);
+    void this.handoff
+      .signalDraft(siteId, revisionId, extra)
+      .catch(() => undefined);
   }
 
   async load(siteId: string, opts: LoadOptions): Promise<LoadResult> {
@@ -77,7 +86,11 @@ export class StoreContentService implements StoreContent {
     // Запись от базы всегда делает ревизию текущей; вслепую — только с setCurrent.
     // Повтор по ключу и «ничего не легло» ревизии не создают — сигналить не о чем.
     if (!saved.unwritten && (params.mode === "on-base" || params.setCurrent))
-      this.signalDraft(siteId, params.site, saved.version);
+      this.signalDraft(siteId, params.site, saved.version, {
+        author: authorOf(params.actor, params.source),
+        // Области нет у записи вслепую и у записи, где `changes` не посчитались (null) — тогда редактор перечитает всё.
+        scope: saved.effect?.checkScope ?? undefined,
+      });
     return saved;
   }
 
@@ -114,8 +127,11 @@ export class StoreContentService implements StoreContent {
       params,
     );
     // Выбранная версия уже текущая — ничего не писалось, сигналить не о чем.
+    // Область у отката не считается — сигнал без неё, редактор перечитает всё.
     if (params.revisionId !== params.site.currentRevisionId)
-      this.signalDraft(siteId, params.site, restored.revisionId);
+      this.signalDraft(siteId, params.site, restored.revisionId, {
+        author: rollbackAuthor(params.writer),
+      });
     return restored;
   }
 
@@ -189,6 +205,19 @@ export class StoreContentService implements StoreContent {
   async historyCounts(siteIds: string[]): Promise<Map<string, number>> {
     return this.documentAdapter.historyCounts(siteIds);
   }
+}
+
+/** Автор записи для сигнала: обе метки заданы — они же, что в истории ревизий; иначе автора нет. */
+function authorOf(
+  actor: string | undefined,
+  source: string | undefined,
+): DraftAuthor | undefined {
+  return actor && source ? { actor, source } : undefined;
+}
+
+/** Автор отката: мерчант — `merchant/rollback`, агент — свои метки (`labelsOf`, как в истории). */
+function rollbackAuthor(writer: Writer | undefined): DraftAuthor {
+  return labelsOf(writer, { actor: "merchant", source: "rollback" });
 }
 
 /** `CreateRevisionParams` → форма записи порта: с базой — от базы, без неё — вслепую. */

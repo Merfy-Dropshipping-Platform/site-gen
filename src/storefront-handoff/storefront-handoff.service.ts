@@ -41,6 +41,7 @@ import { readFileSync } from "fs";
 import * as path from "path";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
+import type { CheckScope } from "../content/check-scope";
 
 export const CONTENT_EXCHANGE = "content.events";
 // Сигналы превью — та же точка обмена, что объявляет сборщик (fanout, durable): её читает шлюз
@@ -48,6 +49,18 @@ export const CONTENT_EXCHANGE = "content.events";
 export const PREVIEW_EXCHANGE = "storefront.preview";
 // Что поменялось для подписчика: сама ревизия магазина (черновик), не вход сборки.
 export const DRAFT_ENTITY = "revision";
+
+/** Кто записал ревизию — те же значения, что в истории: `merchant/constructor`, `agent/vizi`, `agent/mcp`. */
+export interface DraftAuthor {
+  actor: string;
+  source: string;
+}
+
+/** Добавочные поля сигнала записи: автор и область записи (`CheckScope` как есть). Нет данных — поля нет. */
+export interface DraftSignalExtra {
+  author?: DraftAuthor;
+  scope?: CheckScope;
+}
 // Прямой ответ RabbitMQ: своей очереди нет, ответ приходит на канал, который
 // опубликовал событие (https://www.rabbitmq.com/docs/direct-reply-to).
 export const REPLY_QUEUE = "amq.rabbitmq.reply-to";
@@ -169,10 +182,16 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
   /**
    * Запись черновой ревизии (текущей) магазина новой темы: сигнал «данные магазина изменились» открытым
    * редакторам — `{ shopId, entities: ["revision"], revisionId }` в точку обмена storefront.preview. Сборщик не
-   * участвует: черновик витрину не пересобирает. `revisionId` нужен редактору, чтобы узнать свою запись. Сбой
-   * брокера записи не ломает — пишется в лог; вызывающий проверяет тему сам (`isNewThemeId`).
+   * участвует: черновик витрину не пересобирает. `revisionId` нужен редактору, чтобы узнать свою запись. Автор и
+   * область (`extra`) — добавочные поля: по ним редактор отличает чужую запись и знает, какие секции она тронула;
+   * пустые поля в сообщение не попадают. Сбой брокера записи не ломает — пишется в лог; вызывающий проверяет тему
+   * сам (`isNewThemeId`).
    */
-  async signalDraft(siteId: string, revisionId: string): Promise<void> {
+  async signalDraft(
+    siteId: string,
+    revisionId: string,
+    extra: DraftSignalExtra = {},
+  ): Promise<void> {
     if (!this.channel) {
       this.logger.warn(`broker not ready, dropping draft signal for ${siteId}`);
       return;
@@ -186,6 +205,9 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
             shopId: siteId,
             entities: [DRAFT_ENTITY],
             revisionId,
+            // undefined JSON.stringify отбрасывает сам: сигнал без автора и области — прежней формы.
+            author: extra.author,
+            scope: extra.scope,
           }),
         ),
         { contentType: "application/json" },

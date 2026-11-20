@@ -105,6 +105,40 @@ describe("автозначение панели", () => {
     expect(isAuto(op, base, doc({}))).toBe(expected);
   });
 
+  it.each<[string, Op]>([
+    [
+      "поле блока nova",
+      set("sections/home/hero-1/blocks/heading-1/settings/heading", "x"),
+    ],
+    ["блок nova целиком", set("sections/home/hero-1/blocks/heading-1", {})],
+    [
+      "порядок блоков nova",
+      { op: "order", path: "sections/home/hero-1/blocks/order", ids: ["a"] },
+    ],
+    [
+      "поле блока с id «order»",
+      { op: "remove", path: "sections/home/hero-1/blocks/~3order/settings/x" },
+    ],
+  ])(
+    "пути блоков nova — всегда правка, не автозначение и не копия: %s",
+    (_label, op) => {
+      const nova = {
+        sections: {
+          home: [
+            {
+              id: "hero-1",
+              section: "Hero",
+              settings: {},
+              blocks: [{ id: "heading-1", type: "Hero", settings: {} }],
+            },
+          ],
+        },
+      };
+      expect(isAuto(op, nova, nova)).toBe(false);
+      expect(isChromeCopy(op, nova)).toBe(false);
+    },
+  );
+
   it("нет дефолтов для темы (сбой загрузки) — автозначений нет", () => {
     const none = makeAutoValueRule({});
     expect(none(set(`${HERO}/alignment`, "center"), doc({}), doc({}))).toBe(

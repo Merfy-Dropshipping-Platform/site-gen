@@ -14,6 +14,7 @@ describe("MediaImagesService", () => {
     await service.processUpload("media/o/s/1-a.jpg", Buffer.from("photo"));
 
     expect(putObjectWithHeaders.mock.calls.map(([, key]) => key)).toEqual([
+      "media/o/s/1-a.jpg.s.webp",
       "media/o/s/1-a.jpg.m.webp",
       "media/o/s/1-a.jpg.d.webp",
       "media/o/s/1-a.jpg.v.json",

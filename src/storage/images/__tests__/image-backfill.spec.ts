@@ -1,8 +1,14 @@
 import { Logger } from "@nestjs/common";
-import { ImageBackfill, findUnmarked } from "../image-backfill";
+import { ImageBackfill, findMarked, findUnmarked } from "../image-backfill";
 import type { BackfillOptions } from "../image-backfill";
 import { ImageVariants } from "../image-variants";
-import { FakeGenerator, MemoryStore, fakeNames, libOf } from "./doubles";
+import {
+  FakeGenerator,
+  MemoryStore,
+  fakeNames,
+  libOf,
+  markerJson,
+} from "./doubles";
 
 const OPTIONS: BackfillOptions = {
   prefix: "",
@@ -90,6 +96,7 @@ describe("ImageBackfill.runPass", () => {
     expect(stats).toEqual({
       listed: 2,
       pending: 2,
+      outdated: 0,
       done: 2,
       failed: 0,
       skipped: 0,
@@ -200,5 +207,124 @@ describe("ImageBackfill.runPass", () => {
 
     await expect(backfill.runPass()).rejects.toThrow("sharp_missing");
     expect(store.objects.has("a.jpg.v.json")).toBe(false);
+  });
+});
+
+describe("findMarked", () => {
+  it("берёт только оригиналы с маркером", () => {
+    const objects = [
+      "done.jpg",
+      "done.jpg.v.json",
+      "done.jpg.s.webp",
+      "new.jpg",
+      "clip.mp4",
+      "clip.mp4.v.json",
+    ].map((key) => ({ key, size: 1 }));
+
+    expect(
+      findMarked(objects, fakeNames.isDerivedKey, fakeNames.markerKey),
+    ).toEqual(["done.jpg"]);
+  });
+});
+
+describe("ImageBackfill.runPass: догенерация по маркеру версии 1", () => {
+  const V1_MARKER = markerJson({
+    rulesVersion: 1,
+    variants: [{ kind: "m", width: 800, key: "a.jpg.m.webp" }],
+  });
+  const withV1 = (extra: Record<string, string> = {}) =>
+    setup({
+      "a.jpg": "x",
+      "a.jpg.m.webp": "m",
+      "a.jpg.v.json": V1_MARKER,
+      ...extra,
+    });
+
+  it("берёт оригинал с маркером версии 1: делает недостающие копии, готовую не пишет, маркер последним", async () => {
+    const { backfill, store, generator } = withV1();
+
+    const stats = await backfill.runPass();
+
+    expect(stats).toMatchObject({ pending: 1, outdated: 1, done: 1 });
+    expect(generator.calls[0].previous).toMatchObject({ rulesVersion: 1 });
+    expect(store.writes).toEqual([
+      "a.jpg.s.webp",
+      "a.jpg.d.webp",
+      "a.jpg.v.json",
+    ]);
+    expect(store.objects.get("a.jpg.m.webp")?.toString()).toBe("m");
+    const marker = JSON.parse(store.objects.get("a.jpg.v.json").toString());
+    expect(marker.rulesVersion).toBe(2);
+    expect(marker.variants.map((v: { kind: string }) => v.kind)).toEqual([
+      "m",
+      "s",
+      "d",
+    ]);
+  });
+
+  it("идемпотентно: второй проход не берёт и маркеры текущей версии не перечитывает", async () => {
+    const { backfill, store, generator } = withV1();
+    await backfill.runPass();
+    const read = jest.spyOn(store, "get");
+
+    const second = await backfill.runPass();
+    const third = await backfill.runPass();
+
+    expect(second).toMatchObject({ pending: 0, outdated: 0 });
+    expect(third.pending).toBe(0);
+    expect(generator.calls).toHaveLength(1);
+    expect(read).toHaveBeenCalledTimes(1); // маркер прочитан один раз, на втором проходе
+  });
+
+  it("оригиналы без маркера и со старым маркером в одном проходе; свежие и failed не трогает", async () => {
+    const { backfill, generator } = withV1({
+      "new.jpg": "n",
+      "fresh.jpg": "f",
+      "fresh.jpg.v.json": markerJson({}),
+      "bad.jpg": "b",
+      "bad.jpg.v.json": markerJson({
+        rulesVersion: 1,
+        status: "failed",
+        width: null,
+        height: null,
+      }),
+    });
+
+    const stats = await backfill.runPass();
+
+    expect(stats).toMatchObject({ pending: 2, outdated: 1, done: 2 });
+    expect(generator.calls.map((call) => call.key).sort()).toEqual([
+      "a.jpg",
+      "new.jpg",
+    ]);
+  });
+
+  it("битый маркер не берётся и проход не валит", async () => {
+    const { backfill, generator } = setup({
+      "a.jpg": "x",
+      "a.jpg.v.json": "{oops",
+    });
+
+    const stats = await backfill.runPass();
+
+    expect(stats.pending).toBe(0);
+    expect(generator.calls).toEqual([]);
+  });
+
+  it("оригинал не читается три раза: прежний маркер остаётся с версией 2, копии не теряются", async () => {
+    const { backfill, store } = withV1();
+    const read = store.get.bind(store);
+    jest.spyOn(store, "get").mockImplementation(async (key) => {
+      if (key === "a.jpg") throw new Error("storage_down");
+      return read(key);
+    });
+
+    const stats = await backfill.runPass();
+
+    expect(stats).toMatchObject({ outdated: 1, done: 0, failed: 1 });
+    const marker = JSON.parse(store.objects.get("a.jpg.v.json").toString());
+    expect(marker).toMatchObject({ status: "ok", rulesVersion: 2 });
+    expect(marker.variants).toHaveLength(1);
+    expect(store.writes).toEqual(["a.jpg.v.json"]);
   });
 });

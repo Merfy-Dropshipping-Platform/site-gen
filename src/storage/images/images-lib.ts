@@ -25,6 +25,8 @@ export interface GenerateInput {
   key: string;
   bytes: Uint8Array;
   previousAttempts?: number;
+  /** Прежний маркер старой версии правил: делаются только недостающие копии. */
+  previous?: Marker;
 }
 
 /** Вход `/generate` пакета: копии и маркер из байтов оригинала (sharp). */

@@ -38,6 +38,40 @@ describe('srcset у картинок нашего хранилища', () => {
     expect(DEFAULT_SIZES).toBe('(max-width: 767px) 266px, 100vw');
   });
 
+  it('маркер версии 2: три копии, ширина d — фактическая (оригинал 1200 px даёт 1200w)', () => {
+    const v2: Marker = {
+      rulesVersion: 2,
+      status: 'ok',
+      attempts: 1,
+      width: 1200,
+      height: 800,
+      variants: [
+        { kind: 's', width: 400, key: 'any/s' },
+        { kind: 'm', width: 800, key: 'any/m' },
+        { kind: 'd', width: 1200, key: 'any/d' },
+      ],
+    };
+    const base = `${ORIGIN}/product-images/a.jpg`;
+    const set = `${base}.s.webp 400w, ${base}.m.webp 800w, ${base}.d.webp 1200w`;
+    expect(withImgSizes(`<img src="${PHOTO}">`, imagesOf({ [PHOTO]: v2 }))).toBe(
+      `<img src="${PHOTO}" srcset="${set}" sizes="${DEFAULT_SIZES}">`,
+    );
+  });
+
+  it('смесь версий в одной странице: маркер версии 1 и версии 2 строят srcset каждый по своим копиям', () => {
+    const other = `${ORIGIN}/product-images/z.png`;
+    const v2: Marker = {
+      ...markerOf(['m', 'd']),
+      rulesVersion: 2,
+      variants: [{ kind: 's', width: 400, key: 'any/s' }],
+    };
+    const images = imagesOf({ [PHOTO]: markerOf(['m', 'd']), [other]: v2 });
+    expect(withImgSizes(`<img src="${PHOTO}"><img src="${other}">`, images)).toBe(
+      `<img src="${PHOTO}" srcset="${SET}" sizes="${DEFAULT_SIZES}">` +
+        `<img src="${other}" srcset="${ORIGIN}/product-images/z.png.s.webp 400w, ${other} 2400w" sizes="${DEFAULT_SIZES}">`,
+    );
+  });
+
   it('нет маркера — картинка как есть', () => {
     const html = `<img src="${PHOTO}" alt="">`;
     expect(withImgSizes(html, imagesOf({}))).toBe(html);

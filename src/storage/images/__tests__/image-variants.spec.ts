@@ -41,6 +41,7 @@ describe("ImageVariants.processUpload", () => {
     await variants.processUpload("uuid-1.jpg", PHOTO);
 
     expect(store.writes).toEqual([
+      "uuid-1.jpg.s.webp",
       "uuid-1.jpg.m.webp",
       "uuid-1.jpg.d.webp",
       "uuid-1.jpg.v.json",
@@ -65,6 +66,7 @@ describe("ImageVariants.processUpload", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(store.writes).toEqual([
+      "uuid-2.jpg.s.webp",
       "uuid-2.jpg.m.webp",
       "uuid-2.jpg.d.webp",
       "uuid-2.jpg.v.json",

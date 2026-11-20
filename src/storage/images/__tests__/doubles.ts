@@ -44,16 +44,31 @@ export class MemoryStore implements ImageStore {
   }
 }
 
-/** Имена копий — как в пакете (`<ключ>.d.webp`, `.m.webp`, `.v.json`). */
+const KINDS = ["s", "m", "d"] as const;
+const CURRENT_VERSION = 2;
+
+const parseMarker = (text: string): Marker | null => {
+  try {
+    return JSON.parse(text) as Marker;
+  } catch {
+    return null;
+  }
+};
+
+/** Имена и маркеры — как в пакете (`<ключ>.s|m|d.webp`, `.v.json`, версия правил 2). */
 export const fakeNames = {
-  RULES_VERSION: 1,
-  isDerivedKey: (key: string) => /\.(?:[dm]\.webp|v\.json)$/.test(key),
+  RULES_VERSION: CURRENT_VERSION,
+  VARIANT_KINDS: KINDS,
+  isDerivedKey: (key: string) => /\.(?:[smd]\.webp|v\.json)$/.test(key),
   markerKey: (key: string) => `${key}.v.json`,
   variantKey: (key: string, kind: string) => `${key}.${kind}.webp`,
+  parseMarker,
+  needsUpgrade: (m: Marker) =>
+    m.status === "ok" && m.rulesVersion < CURRENT_VERSION,
 } as unknown as ImagesNames;
 
 const marker = (overrides: Partial<Marker>): Marker => ({
-  rulesVersion: 1,
+  rulesVersion: CURRENT_VERSION,
   status: "ok",
   attempts: 1,
   width: 2000,
@@ -62,16 +77,30 @@ const marker = (overrides: Partial<Marker>): Marker => ({
   ...overrides,
 });
 
-const file = (key: string, contentType: string): GeneratedFile => ({
+/** Тело маркера в хранилище — JSON, как у настоящего пакета. */
+export const markerJson = (overrides: Partial<Marker>): string =>
+  JSON.stringify(marker(overrides));
+
+const variantOf = (key: string, kind: (typeof KINDS)[number]) => ({
+  kind,
+  width: 100,
+  key: `${key}.${kind}.webp`,
+});
+
+const file = (key: string, contentType: string, body = key): GeneratedFile => ({
   key,
-  body: Buffer.from(key),
+  body: Buffer.from(body),
   contentType,
   cacheControl: "x",
 });
 
+const markerFile = (key: string, m: Marker): GeneratedFile =>
+  file(`${key}.v.json`, "application/json", JSON.stringify(m));
+
 /**
- * Генератор-двойник: обычные байты — две копии и маркер `ok`, пустые — маркер
- * `failed`. `gate` держит работу, пока тест её не отпустит.
+ * Генератор-двойник: обычные байты — недостающие копии из s, m, d и маркер `ok`
+ * версии 2, пустые — маркер `failed` (с `previous` — прежний маркер версии 2).
+ * `gate` держит работу, пока тест её не отпустит.
  */
 export class FakeGenerator implements ImagesGenerator {
   readonly calls: GenerateInput[] = [];
@@ -93,20 +122,35 @@ export class FakeGenerator implements ImagesGenerator {
     }
   }
 
-  private result({ key, bytes, previousAttempts = 0 }: GenerateInput) {
+  private result({
+    key,
+    bytes,
+    previousAttempts = 0,
+    previous,
+  }: GenerateInput) {
     const attempts = previousAttempts + 1;
+    if (bytes.length === 0 && previous) {
+      const carried = marker({
+        ...previous,
+        rulesVersion: CURRENT_VERSION,
+        attempts,
+      });
+      return { marker: carried, files: [markerFile(key, carried)] };
+    }
     if (bytes.length === 0) {
       const failed = marker({ status: "failed", attempts, width: null });
-      return { marker: failed, files: [file(`${key}.v.json`, "json")] };
+      return { marker: failed, files: [markerFile(key, failed)] };
     }
-    return {
-      marker: marker({ attempts }),
-      files: [
-        file(`${key}.m.webp`, "image/webp"),
-        file(`${key}.d.webp`, "image/webp"),
-        file(`${key}.v.json`, "application/json"),
-      ],
-    };
+    const kept = previous?.variants ?? [];
+    const created = KINDS.filter((kind) => !kept.some((v) => v.kind === kind));
+    const result = marker({
+      attempts,
+      variants: [...kept, ...created.map((kind) => variantOf(key, kind))],
+    });
+    const copies = created.map((kind) =>
+      file(`${key}.${kind}.webp`, "image/webp"),
+    );
+    return { marker: result, files: [...copies, markerFile(key, result)] };
   }
 }
 

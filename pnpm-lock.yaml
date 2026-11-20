@@ -26,8 +26,8 @@ importers:
         specifier: ^0.1.9
         version: 0.1.10(react@19.2.5)
       '@merfy-dropshipping-platform/images':
-        specifier: 0.1.1
-        version: 0.1.1(sharp@0.34.5)
+        specifier: 0.2.0
+        version: 0.2.0(sharp@0.34.5)
       '@nanostores/persistent':
         specifier: ^0.10.2
         version: 0.10.2(nanostores@0.11.4)
@@ -317,8 +317,8 @@ importers:
   packages/storefront-build:
     dependencies:
       '@merfy-dropshipping-platform/images':
-        specifier: 0.1.1
-        version: 0.1.1(sharp@0.34.5)
+        specifier: 0.2.0
+        version: 0.2.0(sharp@0.34.5)
       '@merfy/shell':
         specifier: workspace:*
         version: link:../storefront-shell
@@ -372,8 +372,8 @@ importers:
   packages/storefront-builder:
     dependencies:
       '@merfy-dropshipping-platform/images':
-        specifier: 0.1.1
-        version: 0.1.1(sharp@0.34.5)
+        specifier: 0.2.0
+        version: 0.2.0(sharp@0.34.5)
       '@merfy/stand-check':
         specifier: workspace:*
         version: link:../stand-check
@@ -2681,8 +2681,8 @@ packages:
     peerDependencies:
       react: '>=18'
 
-  '@merfy-dropshipping-platform/images@0.1.1':
-    resolution: {integrity: sha512-0KrayURUe7zM9xxRWb+6W9VKMossYiJjZdnPh/wgc2UxY069gppOFCyzleRbEjgOC/2qnqtuemRGrT7hV8g9yw==, tarball: https://npm.pkg.github.com/download/@merfy-dropshipping-platform/images/0.1.1/fbdbc4cfe11313b994e0d26e8589d7389cf61971}
+  '@merfy-dropshipping-platform/images@0.2.0':
+    resolution: {integrity: sha512-yiIt6eHeA68wivsxuQE1GmUl6uwOtYRr15WoZtb82yPDBwL7wCG7aUybFQRDp/l8t3uFqhpNCxr/EqVw2rVItg==, tarball: https://npm.pkg.github.com/download/@merfy-dropshipping-platform/images/0.2.0/a28c0129e2294f0bfd469a7a4f67d13ae4503028}
     engines: {node: '>=22'}
     peerDependencies:
       sharp: ^0.34.0 || ^0.35.0
@@ -10721,7 +10721,7 @@ snapshots:
     dependencies:
       react: 19.2.5
 
-  '@merfy-dropshipping-platform/images@0.1.1(sharp@0.34.5)':
+  '@merfy-dropshipping-platform/images@0.2.0(sharp@0.34.5)':
     dependencies:
       sharp: 0.34.5
       zod: 4.6.7

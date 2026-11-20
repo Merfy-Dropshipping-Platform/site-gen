@@ -24,6 +24,7 @@ describe("ImageBackfillService", () => {
     runPass = jest.spyOn(ImageBackfill.prototype, "runPass").mockResolvedValue({
       listed: 1,
       pending: 1,
+      outdated: 0,
       done: 1,
       failed: 0,
       skipped: 0,

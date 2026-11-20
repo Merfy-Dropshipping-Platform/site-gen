@@ -65,6 +65,7 @@ describe("MediaUploadController.upload: копии картинок", () => {
     expect(url).toContain(original);
     expect(bucket.writes).toEqual([
       original,
+      `${original}.s.webp`,
       `${original}.m.webp`,
       `${original}.d.webp`,
       `${original}.v.json`,

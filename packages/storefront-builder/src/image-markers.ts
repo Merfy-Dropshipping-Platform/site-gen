@@ -1,4 +1,4 @@
-import { parseMarker, type Marker } from '@merfy-dropshipping-platform/images';
+import { needsUpgrade, parseMarker, type Marker } from '@merfy-dropshipping-platform/images';
 import { imageUrlsIn, markerUrlOf, type BuildInputs } from '@merfy/storefront-build';
 import type { Log } from './log';
 
@@ -8,9 +8,9 @@ import type { Log } from './log';
 // (404), сбой сети или битый маркер — картинки без копий: страница рисует оригинал, битой картинки не бывает. Имя
 // маркера строится от пути адреса, читается он с хоста хранилища контура (image-urls.ts в storefront-build).
 //
-// Кеш в памяти процесса: найденный маркер — навсегда (оригинал не меняется, копию пережимают редко — тогда
-// перезапуск), ненайденный — MISS_MS: копии делают сервисы позже загрузки, и часовая сверка (reconcile) увидит
-// появившийся маркер как смену ключа сборки. Сборки магазинов берут одни и те же картинки (витрина — десятки
+// Кеш в памяти процесса: найденный маркер текущей версии — навсегда (оригинал не меняется, копию пережимают редко —
+// тогда перезапуск), ненайденный и маркер старой версии (ждёт догенерации копий) — MISS_MS: копии делают сервисы
+// позже загрузки, и часовая сверка (reconcile) увидит появившийся или переписанный маркер как смену ключа сборки. Сборки магазинов берут одни и те же картинки (витрина — десятки
 // запросов), без кеша каждая сборка ходила бы в хранилище за каждой.
 export const MARKER_PARALLEL = 16;
 export const MARKER_MISS_MS = 5 * 60_000;
@@ -46,6 +46,10 @@ interface CacheEntry {
 }
 
 const FOUND_FOREVER = Number.POSITIVE_INFINITY;
+
+// Маркер текущей версии правил — окончательный. Нет маркера или он старой версии (копии доделывает пережатие сервисов:
+// появится `s`, маркер перепишут) — перечитать через MARKER_MISS_MS, иначе srcset так и остался бы без новых копий.
+const isSettled = (marker: Marker | null): boolean => marker !== null && !needsUpgrade(marker);
 const NOT_FOUND: Reply = { marker: null, failed: false };
 
 // Маркер, у которого есть копии, — только такой нужен странице: без копий srcset не строится.
@@ -85,7 +89,7 @@ function markerCache(clock: () => Date): MarkerCache {
     has: (address) => entries.has(address),
     markerAt: (address) => entries.get(address)?.marker ?? null,
     keep: (address, marker) =>
-      entries.set(address, { marker, until: marker === null ? now() + MARKER_MISS_MS : FOUND_FOREVER }),
+      entries.set(address, { marker, until: isSettled(marker) ? FOUND_FOREVER : now() + MARKER_MISS_MS }),
     // Истёкшие «нет маркера» уходят из памяти при чтении: кеш не растёт от картинок, которых давно нет в данных.
     dropExpired: () => {
       for (const [address, entry] of entries) if (entry.until <= now()) entries.delete(address);

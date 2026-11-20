@@ -5,7 +5,7 @@ import type { Broker } from '../broker';
 import { lighthouseFindings } from '../checks/browser/lighthouse';
 import { semanticBrowser } from '../checks/browser/semantic';
 import { vitalsCheck } from '../checks/browser/vitals';
-import { inSections, lookFixOf, onPlatformSections, type CheckReport } from '../checks/finding';
+import { inSections, lookFixOf, lookOnPlatformSections, onPlatformSections, type CheckReport } from '../checks/finding';
 import { platformSections } from '../checks/html/platform';
 import { semanticHtml } from '../checks/html/semantic';
 import { errorText } from '../errors';
@@ -482,7 +482,7 @@ async function pageSnapshot(
     devices,
     detector,
     layout: checks.status,
-    findings: [...findings, ...checks.findings],
+    findings: [...findings, ...lookOnPlatformSections(checks.findings, platformSections(html))],
     checks: report,
     marks,
     ...(motion === undefined ? {} : { motion }),
@@ -546,7 +546,7 @@ async function sectionSnapshot(
     devices,
     detector,
     layout: checks.status,
-    findings: [...findings, ...checks.findings],
+    findings: [...findings, ...lookOnPlatformSections(checks.findings, platformSections(html))],
     checks: report,
     marks,
   };

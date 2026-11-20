@@ -139,6 +139,19 @@ export function onPlatformSections(findings: readonly CheckFinding[], platform: 
   );
 }
 
+// То же правило для находок старой формы (`LookFinding`): вёрстка в секции платформы — дело платформы. Находки без
+// секции (детектор Impeccable) остаются как есть: правило не к чему применить.
+export function lookOnPlatformSections<T extends { section: string | null; fix: CheckFix }>(
+  findings: readonly T[],
+  platform: ReadonlySet<string>,
+): T[] {
+  return findings.map((finding) =>
+    finding.section !== null && platform.has(finding.section)
+      ? { ...finding, fix: FIX_ON_PLATFORM_SECTION[finding.fix] }
+      : finding,
+  );
+}
+
 // Только находки нужных секций. `sections` не задан — все (снимок страницы целиком). Находки вне секций в снимок секций
 // не идут: «на странице нет h1» приходит находкой той секции, где стоит первый заголовок.
 export function inSections(findings: readonly CheckFinding[], sections?: readonly string[]): CheckFinding[] {

@@ -8,6 +8,7 @@ import {
   fixOf,
   grouped,
   lookFixOf,
+  lookOnPlatformSections,
   onPlatformSections,
   type CheckFinding,
   type CheckPlace,
@@ -99,12 +100,7 @@ describe('секции платформы на странице', () => {
 });
 
 describe('fix по коду проверки (FIX_BY_CHECK)', () => {
-  const asked = [
-    'image-aspect-ratio',
-    'lcp-hidden',
-    'empty-heading',
-    ...LAYOUT_CODES,
-  ];
+  const asked = ['image-aspect-ratio', 'lcp-hidden', 'empty-heading', ...LAYOUT_CODES];
   // Спорные: агент выбирает исправление без смены вида — остаются по месту.
   const silent = ['text-content', 'heading-level', 'nested-interactive', 'lcp-background'];
 
@@ -139,6 +135,15 @@ describe('fix у находок старой формы', () => {
       'ask',
       'ask',
     ]);
+  });
+});
+
+describe('fix у находок старой формы в секциях платформы', () => {
+  const old = (section: string | null) => ({ section, fix: 'ask' as CheckFix });
+
+  it('вёрстка в секции платформы — platform; в своей — ask; без секции (Impeccable) — ask', () => {
+    const found = lookOnPlatformSections([old('faq-1'), old('hero-1'), old(null)], new Set(['faq-1']));
+    expect(found.map((finding) => finding.fix)).toEqual(['platform', 'ask', 'ask']);
   });
 });
 
@@ -177,7 +182,10 @@ describe('fix в секциях платформы', () => {
 
   it('находка по коду проверки: ask → platform в платформенной секции, silent → platform, в своей — как была', () => {
     const [onPlatform, own] = onPlatformSections(
-      grouped([draft('browser', { rule: 'image-aspect-ratio', section: 'drawer-1' }), draft('browser', { rule: 'image-aspect-ratio' })]),
+      grouped([
+        draft('browser', { rule: 'image-aspect-ratio', section: 'drawer-1' }),
+        draft('browser', { rule: 'image-aspect-ratio' }),
+      ]),
       platform,
     );
     expect([onPlatform?.fix, own?.fix]).toEqual(['platform', 'ask']);

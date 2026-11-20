@@ -16,6 +16,9 @@ import type { PageContent } from './sections-render';
 // где его нет или значение чужое. fetchpriority — только платформа: «high» у одной главной картинки, свой fetchpriority
 // автора снимается, проверка кода секции предупреждает о нём (problem-info.ts, img-loading). Разбор — по тегам,
 // без DOM (html-tags.ts).
+// Явный eager от автора — только в первом экране (замер 20.11.2026: четыре eager-карточки «Коллекции» под hero качались
+// вместе с ним, LCP главной 8,1 с вместо 3,2 с): сохраняется в секциях до конца той, где стоит главная картинка, и в её
+// самой. В секциях ниже, в подвале и окнах eager автора становится lazy. Главной нет — правило «шаблон главнее» как было.
 
 // Все теги <img> разметки по порядку.
 export const imgTags = (html: string): HtmlTag[] => tagsNamed(html, ['img']);
@@ -23,45 +26,50 @@ export const imgTags = (html: string): HtmlTag[] => tagsNamed(html, ['img']);
 // Значения loading, которые автор вправе выбрать сам.
 const AUTHOR_LOADING: readonly string[] = ['eager', 'lazy'];
 
-const hasAuthorLoading = (tag: HtmlTag): boolean =>
-  AUTHOR_LOADING.includes(valueOf(tag.attributes, 'loading').toLowerCase());
+// Свой loading автора, который сборка оставляет: eager или lazy; eager ниже первого экрана не остаётся. Нет — ''.
+function keptLoading(tag: HtmlTag, belowFirstScreen: boolean): string {
+  const value = valueOf(tag.attributes, 'loading').toLowerCase();
+  if (!AUTHOR_LOADING.includes(value)) return '';
+  return belowFirstScreen && value === 'eager' ? '' : value;
+}
 
-// Атрибуты, которые сборка снимает с тега: fetchpriority — всегда, loading — если значение не eager и не lazy.
-const droppedAttributes = (tag: HtmlTag): TagAttribute[] =>
+// Атрибуты, которые сборка снимает с тега: fetchpriority — всегда, loading — если автор его не оставляет.
+const droppedAttributes = (tag: HtmlTag, below: boolean): TagAttribute[] =>
   tag.attributes.filter(
-    (attribute) => attribute.name === 'fetchpriority' || (attribute.name === 'loading' && !hasAuthorLoading(tag)),
+    (attribute) =>
+      attribute.name === 'fetchpriority' || (attribute.name === 'loading' && keptLoading(tag, below) === ''),
   );
 
 // loading, который ставит сборка: нет своего у автора — главной eager, остальным lazy.
-const platformLoading = (tag: HtmlTag, main: boolean): string => {
-  if (hasAuthorLoading(tag)) return '';
+const platformLoading = (tag: HtmlTag, main: boolean, below: boolean): string => {
+  if (keptLoading(tag, below) !== '') return '';
   return main ? ' loading="eager"' : ' loading="lazy"';
 };
 
 // Новый вид тега: чужие loading и fetchpriority сняты, главной добавлен fetchpriority="high", decoding="async" —
 // всем без своего decoding.
-function rewriteImg(html: string, tag: HtmlTag, main: boolean): string {
+function rewriteImg(html: string, tag: HtmlTag, main: boolean, below: boolean): string {
   let head = '';
   let at = tag.start;
-  for (const attribute of droppedAttributes(tag)) {
+  for (const attribute of droppedAttributes(tag, below)) {
     head += html.slice(at, attribute.start);
     at = attribute.end;
   }
   head += html.slice(at, tag.insertAt);
   const decoding = tag.attributes.some((attribute) => attribute.name === 'decoding') ? '' : ' decoding="async"';
   const priority = main ? ' fetchpriority="high"' : '';
-  return `${head}${platformLoading(tag, main)}${priority}${decoding}${html.slice(tag.insertAt, tag.end)}`;
+  return `${head}${platformLoading(tag, main, below)}${priority}${decoding}${html.slice(tag.insertAt, tag.end)}`;
 }
 
 // Разметка с атрибутами загрузки у каждой <img>; mainIndex — номер главной картинки среди тегов этой разметки
-// (-1 — её здесь нет).
-export function withImgLoading(html: string, mainIndex = -1): string {
+// (-1 — её здесь нет); belowFirstScreen — разметка ниже секции с главной картинкой: eager автора здесь станет lazy.
+export function withImgLoading(html: string, mainIndex = -1, belowFirstScreen = false): string {
   const tags = imgTags(html);
   if (tags.length === 0) return html;
   let out = '';
   let at = 0;
   for (const [index, tag] of tags.entries()) {
-    out += html.slice(at, tag.start) + rewriteImg(html, tag, index === mainIndex);
+    out += html.slice(at, tag.start) + rewriteImg(html, tag, index === mainIndex, belowFirstScreen);
     at = tag.end;
   }
   return out + html.slice(at);
@@ -106,19 +114,25 @@ function mainImageFields(tag: HtmlTag | undefined): MainImageFields {
 // Секции <main> с главной картинкой в первой секции, где она есть, и поля главной картинки страницы.
 function mainSections(sections: readonly string[]): { sections: string[] } & MainImageFields {
   const first = sections.findIndex((html) => mainImgIndex(html) !== -1);
-  const rewritten = sections.map((html, index) => withImgLoading(html, index === first ? mainImgIndex(html) : -1));
+  const rewritten = sections.map((html, index) =>
+    withImgLoading(html, index === first ? mainImgIndex(html) : -1, first !== -1 && index > first),
+  );
   const main = first === -1 ? undefined : imgTags(sections[first] ?? '').find(isMainCandidate);
   return { sections: rewritten, ...mainImageFields(main) };
 }
 
-// Разметка страницы с порядком загрузки картинок: шапка, подвал и окна — только ленивые, главная — в <main>.
+// Разметка страницы с порядком загрузки картинок: шапка, подвал и окна — только ленивые, главная — в <main>. Шапка
+// выше первого экрана — её eager остаётся; подвал и окна ниже — их eager снимается, если главная картинка есть.
 export function withImageLoading(content: PageContent): PageContent {
-  const lazy = (list: readonly string[] | undefined): string[] | undefined => list?.map((html) => withImgLoading(html));
+  const main = mainSections(content.sections);
+  const hasMain = main.mainImageLink !== undefined;
+  const lazy = (list: readonly string[] | undefined, below: boolean): string[] | undefined =>
+    list?.map((html) => withImgLoading(html, -1, below));
   return {
     ...content,
-    ...mainSections(content.sections),
-    ...(content.header === undefined ? {} : { header: lazy(content.header) }),
-    ...(content.footer === undefined ? {} : { footer: lazy(content.footer) }),
-    ...(content.overlay === undefined ? {} : { overlay: lazy(content.overlay) }),
+    ...main,
+    ...(content.header === undefined ? {} : { header: lazy(content.header, false) }),
+    ...(content.footer === undefined ? {} : { footer: lazy(content.footer, hasMain) }),
+    ...(content.overlay === undefined ? {} : { overlay: lazy(content.overlay, hasMain) }),
   };
 }

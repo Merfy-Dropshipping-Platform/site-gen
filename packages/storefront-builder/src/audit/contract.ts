@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SERIES_RUNS } from '../checks/audit/median';
 import { AuditMetrics, AuditOpportunity, AuditReport } from '../checks/audit/report';
 import { parseWith } from '../parse';
 
@@ -23,6 +24,14 @@ const auditJobSchema = z.strictObject({
   url: z.url(),
   // Отпечаток файла страницы из манифеста новой сборки: ETag раздачи совпал — отдаётся новая страница.
   hash: z.string().min(1),
+  // Секции этой сборки, оставшиеся библиотечными (по её опубликованным исходникам): находки в них чинит платформа.
+  platform: z.array(z.string()).default([]),
+  // Прогоны серии (`checks/audit/median.ts`): задание, поставленное сборкой, пусто; перемер после сработавшего правила
+  // несёт уже снятые прогоны.
+  samples: z
+    .array(AuditReport)
+    .max(SERIES_RUNS - 1)
+    .default([]),
 });
 
 const auditResultSchema = z.strictObject({
@@ -31,6 +40,8 @@ const auditResultSchema = z.strictObject({
   build: z.int().positive(),
   pageId: z.string().min(1),
   path: z.string().startsWith('/'),
+  // Задание целиком: по нему сборщик ставит перемер. Ответы без него (прежний проверяющий процесс) серий не ведут.
+  job: auditJobSchema.optional(),
   // `failed` — «не отработал»: причина в `reason`, отчёта нет.
   status: z.enum(['done', 'failed']),
   reason: z.string().nullable(),

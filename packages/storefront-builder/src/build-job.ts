@@ -10,12 +10,13 @@ import {
   type SectionFailure,
   type ThemeBuild,
 } from '@merfy/storefront-build';
-import { withSectionRenderer } from '@merfy/storefront-sections';
+import { libraryUnchangedIn, withSectionRenderer } from '@merfy/storefront-sections';
 import { publishBuild, type ObjectStore } from '@merfy/storefront-storage';
 import type { AuditJob } from './audit/contract';
 import type { Pages } from './audit/plan';
 import { pageIdOf, startAudits } from './audit/start';
 import { StorefrontBuilderError, errorText } from './errors';
+import { PRIORITY } from './events';
 import { shouldAnnounce, type Announce } from './indexnow';
 import { liveManifest } from './live';
 import type { Log } from './log';
@@ -196,6 +197,24 @@ async function publish(deps: BuilderDeps, job: ClaimedJob, snapshot: Snapshot, t
   return { ...(await publishBuild(deps.store, options)), pages: build.manifest.pages };
 }
 
+// Причина сборки — в приоритете задания (`events.ts`): самое важное из склеенных событий. Публикацию (мерчант или агент)
+// даёт только `merchant-publish`; выпуск платформы и тем, сверка (`reconcile`), правка записей расширения, правка товара
+// и `restart` — ниже. Аудит ставит только публикация: остальные сборки пересобирают магазин без решения мерчанта, и
+// аудит на каждую из них — десятки прогонов Lighthouse на волну выпуска.
+export const fromPublish = (job: Pick<ClaimedJob, 'priority'>): boolean => job.priority >= PRIORITY.publish;
+
+// Секции магазина в этой сборке, оставшиеся библиотечными, — по её опубликованным исходникам (не по черновым): находки
+// в них чинит платформа. Не прочиталось — ни одна не считается платформенной, и находки идут агенту.
+async function platformSections(deps: BuilderDeps, job: ClaimedJob, inputs: BuildInputs): Promise<string[]> {
+  const own = inputs.code.sections.filter((section) => section.name.startsWith('shop:'));
+  try {
+    return [...(await libraryUnchangedIn(deps.db, job.siteId, own))];
+  } catch (error) {
+    deps.log('audit-platform-failed', { shopId: job.siteId, buildId: job.build, error: errorText(error) });
+    return [];
+  }
+}
+
 // Аудит после публикации (место `audit`): задания на изменённые страницы. Сбой постановки сборку не роняет: витрина
 // уже переключена, причина — в журнал.
 async function queueAudits(
@@ -207,9 +226,17 @@ async function queueAudits(
   next: Pages,
 ): Promise<void> {
   if (deps.publishAudit === undefined) return;
+  if (!fromPublish(job))
+    return deps.log('audit-skipped', {
+      shopId: job.siteId,
+      buildId: job.build,
+      reason: 'build-not-from-publish',
+      priority: job.priority,
+    });
   const pageId = pageIdOf(inputs);
-  const published = { siteId: job.siteId, build: job.build, publicUrl: snapshot.address.url, pageId, previous, next };
-  await startAudits({ publish: deps.publishAudit, log: deps.log }, published).catch((error: unknown) =>
+  const base = { siteId: job.siteId, build: job.build, publicUrl: snapshot.address.url, pageId, previous, next };
+  const platform = await platformSections(deps, job, inputs);
+  await startAudits({ publish: deps.publishAudit, log: deps.log }, { ...base, platform }).catch((error: unknown) =>
     deps.log('audit-queue-failed', { shopId: job.siteId, buildId: job.build, error: errorText(error) }),
   );
 }

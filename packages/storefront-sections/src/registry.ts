@@ -541,6 +541,27 @@ export async function libraryUnchanged(db: RowsQuery, shopId: string, names: rea
   return new Set(sources.filter((row) => isLibrarySection(row.source)).map((row) => row.name));
 }
 
+const BUILD_SOURCES_SQL = `SELECT name, source FROM storefront_section
+  WHERE author = 'shop' AND owner = $1 AND (name, content_hash) IN (SELECT * FROM unnest($2::text[], $3::text[]))`;
+
+// Какие из своих секций сборки (имя и отпечаток правки из её входов) остались библиотечными — по исходникам именно этой
+// сборки, опубликованным, а не по черновым (аудит после публикации, 20.11). Секции расширений и чужих магазинов сюда не
+// попадают.
+export async function libraryUnchangedIn(
+  db: RowsQuery,
+  shopId: string,
+  sections: ReadonlyArray<{ name: string; hash: string }>,
+): Promise<Set<string>> {
+  if (sections.length === 0) return new Set();
+  const { rows } = await db.query(BUILD_SOURCES_SQL, [
+    shopId,
+    sections.map((section) => section.name),
+    sections.map((section) => section.hash),
+  ]);
+  const sources = rows.map((row) => namedSourceRow.parse(row));
+  return new Set(sources.filter((row) => isLibrarySection(row.source)).map((row) => row.name));
+}
+
 // Файлы текущей правки своей секции магазина — чтобы ИИ дорабатывал её (блок 14, 14.7). Нет такой секции — null.
 export async function draftSource(db: Queryable, shopId: string, name: string): Promise<DraftSource | null> {
   const { rows } = await db.query(SOURCE_SQL, [shopId, name]);

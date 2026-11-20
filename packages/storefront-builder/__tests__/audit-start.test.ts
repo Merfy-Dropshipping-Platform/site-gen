@@ -62,6 +62,7 @@ const published = (patch: Partial<PublishedBuild> = {}): PublishedBuild => ({
   pageId: (path) => (path === '/' ? 'home' : path.slice(1)),
   previous: null,
   next: [row('/'), row('/catalog', 'b')],
+  platform: ['shop:hero'],
   ...patch,
 });
 
@@ -76,6 +77,11 @@ describe('задания аудита', () => {
 
   it('в задании отпечаток — hex без «sha256:», как ETag раздачи', () => {
     expect(auditJobsOf(published()).map((job) => job.hash)).toEqual(['a'.repeat(64), 'b'.repeat(64)]);
+  });
+
+  it('задание несёт платформенные секции сборки и пустую серию прогонов', () => {
+    const [job] = auditJobsOf(published({ platform: ['shop:hero', 'shop:footer'] }));
+    expect(job).toMatchObject({ platform: ['shop:hero', 'shop:footer'], samples: [] });
   });
 
   it('ставятся по порядку приоритета и считаются', async () => {

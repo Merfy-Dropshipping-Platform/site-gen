@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AUDIT_LIMITS } from '../checks/audit/compare';
+import { BASELINE_AUDITS, medianMetrics } from '../checks/audit/median';
 import { AuditMetrics, AuditOpportunity, type AuditReport } from '../checks/audit/report';
 import type { CheckFinding } from '../checks/finding';
 import type { Queryable } from '../shop-state';
@@ -23,13 +24,13 @@ export interface AuditRecord {
   measuredAt: string;
 }
 
-// Прошлый аудит той же страницы — последний удавшийся из более ранних сборок.
+// Прошлые аудиты той же страницы — последние удавшиеся из более ранних сборок: их медиана — база сравнения.
 const PREVIOUS_SQL = `
 SELECT perf, lcp_ms AS "lcpMs", fcp_ms AS "fcpMs", tbt_ms AS "tbtMs", cls, si_ms AS "siMs"
 FROM storefront_audit
 WHERE site_id = $1 AND path = $2 AND status = 'done' AND build < $3
 ORDER BY measured_at DESC
-LIMIT 1`;
+LIMIT ${BASELINE_AUDITS}`;
 
 const RECORD_SQL = `
 INSERT INTO storefront_audit (site_id, build, path, page_id, status, reason, perf, lcp_ms, fcp_ms, tbt_ms, cls, si_ms,
@@ -49,6 +50,8 @@ WHERE site_id = $1 AND page_id = $2
 ORDER BY measured_at DESC
 LIMIT 1`;
 
+// База сравнения — медиана метрик последних трёх аудитов страницы (один прошлый шумный замер не должен решать); аудитов
+// не было — null.
 export async function previousMetrics(
   db: Queryable,
   siteId: string,
@@ -56,8 +59,19 @@ export async function previousMetrics(
   build: number,
 ): Promise<AuditMetrics | null> {
   const { rows } = await db.query(PREVIOUS_SQL, [siteId, path, build]);
-  const [row] = z.array(AuditMetrics).parse(rows);
-  return row ?? null;
+  const past = z.array(AuditMetrics).parse(rows);
+  return past.length === 0 ? null : medianMetrics(past);
+}
+
+const NEWER_BUILD_SQL = `
+SELECT 1 FROM storefront_build WHERE site_id = $1 AND build > $2 AND outcome = 'live' LIMIT 1`;
+
+// Вышла ли после сборки `build` новая живая сборка магазина. Строка сборки пишется сразу после выкладки, а проверка
+// идёт через секунды после постановки аудита: гонки, из-за которой вытеснение пропустили бы, нет — худшее, что бывает,
+// аудит страницы выполнится зря.
+export async function newerLiveBuild(db: Queryable, siteId: string, build: number): Promise<boolean> {
+  const { rows } = await db.query(NEWER_BUILD_SQL, [siteId, build]);
+  return rows.length > 0;
 }
 
 // Числа в колонках времени — целые мс.

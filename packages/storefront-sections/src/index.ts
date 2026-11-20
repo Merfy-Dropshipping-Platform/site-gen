@@ -124,7 +124,7 @@ export { FORBIDDEN_TAGS } from './template';
 export { SDK_KINDS } from './names';
 
 // Инструменты секций (блок 14, часть 14б): что видит конструктор и файлы текущей правки.
-export { draftSource, editableSections, libraryUnchanged, type DraftSource } from './registry';
+export { draftSource, editableSections, libraryUnchanged, libraryUnchangedIn, type DraftSource } from './registry';
 // Свои сторы (01.11): круг чтений сторов — отказ приёма и отката; сторы, которые читает правка.
 export { StoreCycleError } from './registry';
 export { STORE_USE_PREFIX, isStoreUse } from './format';

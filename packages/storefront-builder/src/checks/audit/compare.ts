@@ -6,11 +6,23 @@ import { VITALS_LIMITS } from '../browser/vitals';
 import { grouped, type CheckFinding, type FindingDraft } from '../finding';
 import type { AuditLcp, AuditMetrics, AuditOpportunity } from './report';
 
-// LCP вырос на 20 % и больше, но не меньше чем на 300 мс: меньшие скачки — шум замера.
+// Пороги «стало хуже» откалиброваны замером 20.11 на стенде (магазин 25669e80, проверяющий процесс dev, тот же код, что у
+// аудита): неизменённые страницы — главная 7 прогонов, каталог 8, товар 8. Решающая величина — медиана трёх прогонов
+// против базы (медиана трёх), разброс считался перебором 20 000 пар из снятых прогонов; 90-й перцентиль «хуже»:
+//   LCP   до 152 мс и 7,6 % (товар: 1955 ↔ 2106 мс);
+//   perf  0,13 на главной (TBT там 16 ↔ 1211 мс от загрузки процессора), 0 на лёгких страницах;
+//   TBT   498 мс на главной, до 19 мс на каталоге и товаре (95-й перцентиль главной — 667 мс);
+//   CLS   до 0,0007.
+// Пороги стоят выше этих чисел: до калибровки (LCP +20 %/300 мс, perf −0,05, TBT «выше нормы и выше прошлого») perf и TBT
+// срабатывали на шуме главной в трёх прогонах из семи.
+//
+// LCP вырос на 20 % и больше, но не меньше чем на 300 мс (вдвое выше шума по мс и в 2,6 раза по процентам).
 export const LCP_GROWTH = 0.2;
 export const LCP_MIN_GROWTH_MS = 300;
-// Оценка упала на 5 пунктов (0,05) и больше.
-export const PERF_DROP = 0.05;
+// Оценка упала на 15 пунктов (0,15) и больше.
+export const PERF_DROP = 0.15;
+// TBT выше нормы телефона и вырос не меньше чем на 700 мс (выше 95-го перцентиля шума главной).
+export const TBT_MIN_GROWTH_MS = 700;
 // Аудит идёт на телефоне — пороги телефона.
 const LIMITS = VITALS_LIMITS.mobile;
 // Пороги «хорошо» для показа: LCP — Web Vitals у Google (2,5 с), CLS и TBT — телефона (`VITALS_LIMITS`). Платформа
@@ -60,7 +72,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: 'tbt-over-limit',
-    worse: (was, now) => now.tbtMs > LIMITS.tbt && now.tbtMs > was.tbtMs,
+    worse: (was, now) => now.tbtMs > LIMITS.tbt && now.tbtMs - was.tbtMs >= TBT_MIN_GROWTH_MS,
     change: (was, now) => `TBT ${Math.round(was.tbtMs)} → ${Math.round(now.tbtMs)} мс (норма ${LIMITS.tbt})`,
     fix: 'найди секцию с тяжёлым скриптом запуска и отложи работу, которая не нужна на первом экране',
     atLcp: false,

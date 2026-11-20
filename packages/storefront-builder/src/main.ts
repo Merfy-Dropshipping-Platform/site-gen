@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseChangelog, platformRenderHash, readShellBuild } from '@merfy/storefront-build';
-import { editableSections, libraryUnchanged, sandboxReport } from '@merfy/storefront-sections';
+import { editableSections, sandboxReport } from '@merfy/storefront-sections';
 import { createS3Store } from '@merfy/storefront-storage';
 import { Pool } from 'pg';
 import { raiseAlert } from './alert';
@@ -183,7 +183,7 @@ const rollback = roleRollback({
 });
 await consumeSectionErrors({ broker, db, log, roles: { db, after: rollback } });
 // Аудит после публикации (место проверок `audit`): ответы проверяющего процесса → сравнение с прошлым → storefront_audit.
-await consumeAuditResults(broker, { db, library: (siteId, names) => libraryUnchanged(db, siteId, names), log });
+await consumeAuditResults(broker, { db, publishAudit: broker.publishAudit, log });
 // Выпуск платформы (задача 11): новый образ — новый код платформы (renderHash, в нём ядро и секции платформы); тот же
 // отпечаток — ничего. Заводится до подписки: resume ниже сразу поведёт его волну 0.
 const platformRelease = {

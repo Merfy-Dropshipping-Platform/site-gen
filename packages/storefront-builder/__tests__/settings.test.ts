@@ -27,6 +27,7 @@ describe('настройки', () => {
       apiUrl: ENV.STOREFRONT_API_URL,
       analyticsUrl: 'https://analytics.dev.merfy.ru',
       uploadUrl: 'https://minio.dev.merfy.ru',
+      storageHosts: ['minio.dev.merfy.ru'],
       commit: ENV.SOURCE_COMMIT,
       port: 8080,
       buildSlots: 1,
@@ -63,6 +64,17 @@ describe('настройки', () => {
 
   it('нет STOREFRONT_UPLOAD_URL — settings-invalid с именем переменной (часть 15е, И4: запасного адреса нет)', () => {
     expect(() => readSettings({ ...ENV, STOREFRONT_UPLOAD_URL: undefined })).toThrow(/STOREFRONT_UPLOAD_URL/);
+  });
+
+  // Модуль картинок, шаг 3: копии ищутся у адресов с наших хостов; хост хранилища контура — первым и всегда.
+  it('хосты картинок: хост хранилища контура и MERFY_STORAGE_HOSTS — строчными, без пустых и повторов', () => {
+    const hosts = (list: string | undefined) => readSettings({ ...ENV, MERFY_STORAGE_HOSTS: list }).storageHosts;
+    expect(hosts('minio.merfy.ru, MINIO.dev.merfy.ru ,,cdn.merfy.ru')).toEqual([
+      'minio.dev.merfy.ru',
+      'minio.merfy.ru',
+      'cdn.merfy.ru',
+    ]);
+    expect(hosts(undefined)).toEqual(['minio.dev.merfy.ru']);
   });
 
   it('нет ANALYTICS_COLLECTOR_URL — settings-invalid с именем переменной (И4: запасного адреса нет)', () => {

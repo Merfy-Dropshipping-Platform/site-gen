@@ -220,7 +220,7 @@ const { settings, blocks, page, theme } = Astro.props;
               >
                 {card.image ? (
                   <div class="size-full" data-behavior="card-photos" data-photos={card.images.join(' ')} data-hover-next={settings['next-photo']}>
-                    <img class="size-full in-data-[image-fit=contain]:object-contain in-data-[image-fit=cover]:object-cover" data-part="image" src={card.image} alt={card.title} loading={position < 4 ? 'eager' : 'lazy'} />
+                    <img class="size-full in-data-[image-fit=contain]:object-contain in-data-[image-fit=cover]:object-cover" data-part="image" src={card.image} sizes={((columns, mobile) => `(max-width: 767px) ${Math.ceil(100 / mobile)}vw, (max-width: 1023px) ${Math.ceil(100 / Math.min(columns, 3))}vw, ${Math.ceil(100 / columns)}vw`)(Number(settings.columns) || 3, settings['columns-mobile'] === '1' ? 1 : 2)} alt={card.title} loading={position < 4 ? 'eager' : 'lazy'} />
                   </div>
                 ) : (
                   <span class="flex size-full items-center justify-center text-muted-foreground in-data-[aspect-ratio=auto]:aspect-square">

@@ -316,6 +316,9 @@ importers:
 
   packages/storefront-build:
     dependencies:
+      '@merfy-dropshipping-platform/images':
+        specifier: 0.1.1
+        version: 0.1.1(sharp@0.34.5)
       '@merfy/shell':
         specifier: workspace:*
         version: link:../storefront-shell
@@ -368,6 +371,9 @@ importers:
 
   packages/storefront-builder:
     dependencies:
+      '@merfy-dropshipping-platform/images':
+        specifier: 0.1.1
+        version: 0.1.1(sharp@0.34.5)
       '@merfy/stand-check':
         specifier: workspace:*
         version: link:../stand-check

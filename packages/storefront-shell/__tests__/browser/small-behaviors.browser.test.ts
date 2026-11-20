@@ -171,6 +171,37 @@ describe('card-photos', () => {
     await page.close();
   });
 
+  // Копии картинок (модуль картинок, шаг 3): сборка ставит у картинки нашего хранилища srcset, и пока он стоит, браузер новый
+  // src не показывает. Листание снимает srcset (показывается оригинал) или берёт его у такой же картинки страницы.
+  describe('серверный srcset', () => {
+    const SET = '/p/1.jpg.m.webp 800w, /p/1.jpg.d.webp 1600w';
+    const withSet = (html: string): string =>
+      html.replace('src="/p/1.jpg"', `src="/p/1.jpg" srcset="${SET}" sizes="(max-width: 767px) 50vw, 25vw"`);
+    const state = (page: Page) =>
+      page.$eval('#img', (el) => [el.getAttribute('src'), el.getAttribute('srcset'), el.getAttribute('sizes')]);
+
+    it('листание: новое фото без srcset — показывается оригинал, sizes остаётся; возврат к первому — srcset обратно', async () => {
+      const body = withSet(card('/p/1.jpg /p/2.jpg'));
+      const { page } = await openPage(browser, { body, behaviors: ['cardPhotos'] });
+      await swipe(page, -60, 0);
+      expect(await state(page)).toEqual(['/p/2.jpg', null, '(max-width: 767px) 50vw, 25vw']);
+      await swipe(page, 60, 0);
+      expect(await state(page)).toEqual(['/p/1.jpg', SET, '(max-width: 767px) 50vw, 25vw']);
+      await page.close();
+    });
+
+    it('на странице есть картинка с таким же src и своим srcset — он переносится', async () => {
+      const twin = '<img id="twin" src="/p/2.jpg" srcset="/p/2.jpg.m.webp 800w">';
+      const { page } = await openPage(browser, {
+        body: withSet(card('/p/1.jpg /p/2.jpg')) + twin,
+        behaviors: ['cardPhotos'],
+      });
+      await swipe(page, -60, 0);
+      expect(await state(page)).toEqual(['/p/2.jpg', '/p/2.jpg.m.webp 800w', '(max-width: 767px) 50vw, 25vw']);
+      await page.close();
+    });
+  });
+
   it('после свайпа нажатие 400 мс не срабатывает, потом — переход по ссылке', async () => {
     const { page } = await openPage(browser, { body: card('/p/1.jpg /p/2.jpg'), behaviors: ['cardPhotos'] });
     await swipe(page, -60, 0);

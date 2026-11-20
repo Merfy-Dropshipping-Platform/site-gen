@@ -1,3 +1,4 @@
+import { markerSchema, type Marker } from '@merfy-dropshipping-platform/images';
 import { SECTION_ROLES } from '@merfy/shell/roles';
 import { extUseSchema, storefrontExtPointsSchema, storefrontExtensionsSchema } from '@merfy/storefront-config';
 import { z } from 'zod';
@@ -50,6 +51,12 @@ export const instantSchema = z.iso.datetime({
   error: 'нужна дата UTC с миллисекундами: 2026-10-06T09:00:00.000Z',
 });
 const jsonObject = z.record(z.string(), z.json());
+
+// Маркер копий картинки (модуль картинок Merfy): схема — самого модуля, у него своя копия zod, поэтому проверка идёт
+// его функцией, а не вложением схемы.
+const imageMarkerSchema = z.custom<Marker>((value) => markerSchema.safeParse(value).success, {
+  error: 'нужен маркер копий картинки',
+});
 
 // Код секций (design.md блока 7, п. 19 и 22): полное имя — приставка автора и имя секции, как в списке модулей ядра.
 const SECTION_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -265,6 +272,17 @@ const buildInputsSchema = z.strictObject({
     status: z.enum(['received', 'failed']),
     entities: z.array(entitySchema),
   }),
+  // Копии картинок (модуль картинок, шаг 3): маркеры по адресу картинки, как он стоит в данных, и хост хранилища контура,
+  // откуда маркеры прочитаны и где лежат копии. В списке — только картинки нашего хранилища с найденным маркером, у которого
+  // есть копии: нет маркера — картинка без srcset. Нет ни одной — ключа нет, и входы магазина без картинок прежние.
+  images: z
+    .strictObject({
+      origin: z
+        .url({ protocol: /^https?$/, error: 'нужен адрес http:// или https://' })
+        .refine((url) => !url.endsWith('/'), { error: 'адрес хранилища — без косой черты в конце' }),
+      markers: z.record(z.string(), imageMarkerSchema),
+    })
+    .optional(),
 });
 
 export type BuildInputs = z.infer<typeof buildInputsSchema>;

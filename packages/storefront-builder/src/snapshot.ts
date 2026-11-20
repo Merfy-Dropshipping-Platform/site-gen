@@ -19,6 +19,7 @@ import { NO_CODE, readShopCode, type CodeDeps } from './code';
 import { fetchCounters, type CounterRequest } from './counters';
 import { StorefrontBuilderError, errorText } from './errors';
 import { fetchExtValues } from './ext-values';
+import type { ImageMarkers } from './image-markers';
 import type { Log, LogFields } from './log';
 import type { Call } from './rpc';
 import { revisionPagesOf } from './revision-pages';
@@ -343,6 +344,8 @@ export interface InputsParts {
   revision: RevisionInput;
   shell: BuildInputs['shell'];
   code: BuildInputs['code'];
+  // Маркеры копий картинок (image-markers.ts); нет — картинки без копий.
+  images?: BuildInputs['images'];
 }
 
 // Тема магазина — только новой архитектуры: те, что записаны в theme-versions.json блока 4 и загружены сборщиком.
@@ -371,6 +374,8 @@ export interface SnapshotDeps {
   // Версии тем и выпущенная версия (блок 10, theme-catalog.ts).
   pins: ThemePins;
   clock: () => Date;
+  // Копии картинок (модуль картинок, шаг 3): маркеры наших картинок из данных магазина. Нет — копий во входах нет.
+  images?: ImageMarkers;
 }
 
 export interface Snapshot {
@@ -382,6 +387,9 @@ export interface Snapshot {
   // Включённые расширения и их версии (блок 10, задача 11): справка в манифест сборки.
   extensions: readonly { id: string; version: string }[];
 }
+
+// Сущности снимка по порядку источников; источник, который не ответил (null), сущностей не даёт.
+const entitiesOf = (...lists: readonly (readonly Entity[] | null)[]): Entity[] => lists.flatMap((list) => list ?? []);
 
 // Снимок целиком: строка сайта, его сущности, товары и код секций разом. Магазина нет — ошибка shop-invalid.
 // previewSection — только у превью секции расширения в кабинете: секция входит в код страницы, как будто стоит в магазине.
@@ -403,19 +411,14 @@ export async function readSnapshot(deps: SnapshotDeps, siteId: string, previewSe
   ]);
   // Значения сторов расширений с prerender (20.11): по записям, выбранным в полях секций; сбой — без значений, не без снимка.
   const extValues = shopCode === null ? [] : await fetchExtValues(deps.code, siteId, extValueWants(shopCode.code));
-  const entities = [
-    ...siteEntities,
-    ...(products ?? []),
-    ...(collections ?? []),
-    ...(counters ?? []),
-    billing,
-    ...extValues,
-  ];
+  const entities = entitiesOf(siteEntities, products, collections, counters, [billing], extValues);
   const year = deps.clock().getUTCFullYear();
   const received = products !== null && collections !== null && shopCode !== null && counters !== null;
   const { shell, code, assets, extensions } = shopCode ?? NO_CODE;
+  // Маркеры копий — по картинкам ревизии, секций на страницах и сущностей; сбой чтения маркера — картинка без копий.
+  const images = await deps.images?.read([revision, code.pages, entities]);
   const parts = { platform: deps.platform, theme, shop, address, year, entities, received, revision, shell, code };
-  return { shop, address, inputs: buildInputsOf(parts), assets, extensions };
+  return { shop, address, inputs: buildInputsOf({ ...parts, images }), assets, extensions };
 }
 
 // Входы сборки блока 4 одним объектом. Правки токенов мерчанта — из текущей ревизии (их пишет панель темы, блок 8).
@@ -449,4 +452,5 @@ export const buildInputsOf = (parts: InputsParts) => ({
   },
   year: parts.year,
   data: { status: parts.received ? 'received' : 'failed', entities: parts.entities },
+  ...(parts.images === undefined ? {} : { images: parts.images }),
 });

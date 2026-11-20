@@ -59,7 +59,11 @@ function attrOf(node: Element, state: ScopeState) {
     if (state.signal.aborted) return; // сигнал проверяется раньше границы записи: снятие не бросает
     const allowed = checkAttributeWrite(node.localName, name, value);
     if (value === null) node.removeAttribute(allowed);
-    else node.setAttribute(allowed, value);
+    else {
+      node.setAttribute(allowed, value);
+      // Серверный srcset (копии картинки, image-sizes.ts в сборке) главнее src: новое фото он бы не показал (img-src.ts).
+      if (allowed === 'src') node.removeAttribute('srcset');
+    }
   }
   return attr;
 }
@@ -154,12 +158,12 @@ function checkedOf(node: Element, state: ScopeState) {
 
 // Поле формы по name: флажок — boolean, выбранное радио — значение (невыбранное пропускается), кнопки пропускаются.
 const fieldValue = (field: Element): string | boolean | undefined => {
-  if (field instanceof HTMLButtonElement) return undefined;
-  if (field instanceof HTMLInputElement && field.type === 'checkbox') return field.checked;
-  if (field instanceof HTMLInputElement && field.type === 'radio') return field.checked ? field.value : undefined;
-  if (field instanceof HTMLInputElement && freeButtonTypes.has(field.type)) return undefined;
+  if (field instanceof HTMLInputElement) {
+    if (field.type === 'checkbox') return field.checked;
+    if (field.type === 'radio') return field.checked ? field.value : undefined;
+    return freeButtonTypes.has(field.type) ? undefined : field.value;
+  }
   if (field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) return field.value;
-  if (field instanceof HTMLInputElement) return field.value;
   return undefined;
 };
 

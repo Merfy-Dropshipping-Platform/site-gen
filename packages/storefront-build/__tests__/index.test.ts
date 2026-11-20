@@ -87,6 +87,8 @@ const API = [
   'entityKey',
   'hashOf',
   'htmlClasses',
+  'imageUrlsIn',
+  'markerUrlOf',
   'lookTokensBetween',
   'manifestSchema',
   'pagePropsOf',

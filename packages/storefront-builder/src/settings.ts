@@ -60,6 +60,10 @@ const envSchema = z.object({
   // Публичный ключ подсказок адреса DaData (оформление заказа, 03.11) — та же переменная, что у sites: ключ видит браузер,
   // как у пяти тем. Нет — у оформления подсказок адреса нет.
   DADATA_API_KEY: z.string().min(1).max(100).optional(),
+  // Хосты хранилища картинок через запятую (модуль картинок, шаг 3; как MERFY_STORAGE_HOSTS у merfy-mcp): у адресов с этих
+  // хостов ищутся копии. Хост STOREFRONT_UPLOAD_URL входит всегда — маркеры читаются с него. На dev в данных бывают адреса
+  // с хостом прода, его добавляют сюда.
+  MERFY_STORAGE_HOSTS: z.string().optional(),
 });
 
 // Паузы перед повторами упавшей сборки: три запуска — первый и два повтора (раздел 4, В6-4).
@@ -72,6 +76,8 @@ export interface Settings {
   apiUrl: string;
   analyticsUrl: string;
   uploadUrl: string;
+  // Хосты, чьи картинки имеют копии: хост хранилища контура первым (image-markers.ts).
+  storageHosts: string[];
   commit: string;
   port: number;
   buildSlots: number;
@@ -115,6 +121,13 @@ function servicesOf(value: Env): Pick<Settings, 'apiUrl' | 'analyticsUrl' | 'upl
   };
 }
 
+// Хосты картинок с копиями: хост хранилища контура и хосты из MERFY_STORAGE_HOSTS, строчными, без повторов.
+function storageHostsOf(value: Env): string[] {
+  const listed = (value.MERFY_STORAGE_HOSTS ?? '').split(',').map((host) => host.trim().toLowerCase());
+  const own = new URL(value.STOREFRONT_UPLOAD_URL).host.toLowerCase();
+  return [...new Set([own, ...listed.filter((host) => host !== '')])];
+}
+
 // Хранилище и брокер из переменных окружения.
 function connectionsOf(value: Env): Pick<Settings, 'databaseUrl' | 'rabbitmqUrl' | 's3'> {
   return {
@@ -134,6 +147,7 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
   return {
     ...connectionsOf(value),
     ...servicesOf(value),
+    storageHosts: storageHostsOf(value),
     commit: value.SOURCE_COMMIT,
     port: value.PORT,
     buildSlots: value.BUILD_SLOTS,

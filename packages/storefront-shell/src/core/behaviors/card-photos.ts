@@ -1,4 +1,5 @@
 import type { Behavior, BehaviorHost, BehaviorInstance } from './types';
+import { setImgSrc } from '../img-src';
 import { safePhotos } from './photos';
 
 // Фото карточки (design.md блока 6, раздел 8; Р6-15): мышь — второе фото при наведении, телефон — свайп от 30 px
@@ -92,7 +93,7 @@ export const cardPhotos: Behavior<'card-photos'> = {
     // фото выбранного варианта «Товара»), и свайп идёт от того, что видно. Фото вне списка — перед первым.
     const at = (): number => photos.indexOf(image.getAttribute('src') ?? '');
     const show = (index: number): void => {
-      image.setAttribute('src', photos[index] ?? photos[0] ?? '');
+      setImgSrc(image, photos[index] ?? photos[0] ?? '');
     };
 
     const nextBySwipe = (from: Swipe, to: Swipe): number | null => {

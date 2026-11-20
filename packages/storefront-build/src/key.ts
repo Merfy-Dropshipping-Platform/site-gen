@@ -40,8 +40,9 @@ export const buildKey = (inputs: BuildInputs): string =>
 // на страницах (code.pages) и глобальные скрипты — целиком: их меняет мерчант. Р5: DATA_KEY_VERSION остаётся 1.
 // Поменяли состав — поднять DATA_KEY_VERSION. 2 — часть 4 блока 1: в ревизии настройки темы и свои страницы, у кода —
 // меню и флаги секций. 3 — модуль картинок, шаг 3: маркеры копий картинок (images). 4 — модуль картинок, версия 2:
-// копия s (400w), d от 800 px — srcset страниц пересобирается по новым правилам.
-export const DATA_KEY_VERSION = 4;
+// копия s (400w), d от 800 px — srcset страниц пересобирается по новым правилам. 5 — копия s только у <img> со своим
+// sizes: страницы с обложкой на всю ширину пересобираются без 400w.
+export const DATA_KEY_VERSION = 5;
 type CodeSectionInput = BuildInputs['code']['sections'][number];
 
 const isOwn = (name: string): boolean => name.slice(0, name.indexOf(':')) === 'shop';

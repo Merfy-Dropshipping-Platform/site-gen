@@ -28,7 +28,9 @@ import { OVERLAY_ATTRIBUTE } from '@merfy/shell/roles';
 // POST <адрес превью>/block с экземпляром и замена секции по data-section-id; ответ на старую правку отбрасывается.
 // reconcile — лишние секции убираются, новые и изменённые запрашиваются, порядок — как в списке, ответ —
 // reconcile-ack; ответ блока, на который уже ушёл более новый запрос, тоже отбрасывается — на странице остаётся новый
-// (Р11). Ошибка запроса — render-error. Скрипт — строкой ES5: страница печатает его как есть. Рамка и плашка — как у
+// (Р11). set-agent-frame { sectionId, label? } (этап 4 «Живой холст») — рамка Визи #merfy-agent-frame: фиолетовая, с
+// подписью «Визи · <label>», без кнопок; выбор мерчанта не трогает, секция за краем окна — прокрутка, как у select();
+// sectionId: null — рамки нет. Ошибка запроса — render-error. Скрипт — строкой ES5: страница печатает его как есть. Рамка и плашка — как у
 // превью нынешних тем (site-gen, src/services/preview.service.ts): рамка 2px #88b0da, плашка #181818, текст #c3c3c3,
 // шрифт системный, значок «Удалить» — мусорная корзина.
 export const PREVIEW_SECTIONS_AGENT = `(function () {
@@ -142,6 +144,9 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var STYLE = '#merfy-selection{position:absolute;display:none;pointer-events:none;box-sizing:border-box;margin:0;padding:0;max-width:none;background:none;border:2px solid #88b0da;z-index:2147483646}'
     + '#merfy-selection [data-merfy-label]{position:absolute;left:-2px;top:-26px;display:flex;align-items:center;gap:8px;height:24px;padding:0 8px;border-radius:8px 8px 0 0;background:#181818;color:#c3c3c3;font:500 12px/24px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:auto;white-space:nowrap}'
     + '#merfy-selection [data-merfy-delete],#merfy-selection [data-merfy-duplicate]{display:flex;align-items:center;gap:4px;border:0;padding:0;background:none;color:inherit;font:inherit;cursor:pointer}'
+    // Рамка Визи (этап 4): фиолетовая #5b45e0 — акцент прототипа; z-index на единицу ниже рамки выбора, подпись без кнопок.
+    + '#merfy-agent-frame{position:absolute;display:none;pointer-events:none;box-sizing:border-box;margin:0;padding:0;max-width:none;background:none;border:2px solid #5b45e0;z-index:2147483645}'
+    + '#merfy-agent-frame [data-merfy-agent-label]{position:absolute;left:-2px;top:-26px;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px 8px 0 0;background:#5b45e0;color:#fff;font:500 12px/24px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;white-space:nowrap}'
     + '[data-merfy-block][data-merfy-block-hint]{outline:2px solid #cfdff0 !important;outline-offset:2px}'
     + '[data-merfy-block][data-merfy-block-selected]{outline:2px solid #88b0da !important;outline-offset:2px}'
     + 'merfy-section[data-merfy-state="failed"]{outline:2px solid #dc2626 !important;outline-offset:-2px}'
@@ -157,6 +162,14 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   var actions = {};
   var selected = null;
   var frame = null;
+  // Рамка Визи (set-agent-frame): секция, где работает Визи, и подпись; своя, выбор мерчанта не трогает. revealed —
+  // прокрутка к цели уже была (секции ещё могло не быть на странице: прокрутим, когда она встанет).
+  var agentTarget = null;
+  var agentFrame = null;
+  var revealed = true;
+  // «Визи · » — escape-последовательности, как подсказки кнопок: страница превью может быть не в UTF-8.
+  var AGENT_PREFIX = '\\u0412\\u0438\\u0437\\u0438';
+  var AGENT_SEPARATOR = ' \\u00b7 ';
   // Подпункты (часть 3, Р59, Р60): выбранный — секция и место среди разных data-merfy-block секции; секция под курсором.
   var blockParent = null;
   var blockIndex = null;
@@ -239,11 +252,18 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     announced = next;
     if (next !== null) sendBlock(SELECT_EVENT, next.section, next.block);
   }
-  function ensureFrame() {
-    if (frame) return frame;
+  // Стили скрипта — один раз: их нужны обе рамки, выбора и Визи.
+  var styled = false;
+  function ensureStyle() {
+    if (styled) return;
+    styled = true;
     var style = document.createElement('style');
     style.textContent = STYLE;
     document.head.appendChild(style);
+  }
+  function ensureFrame() {
+    if (frame) return frame;
+    ensureStyle();
     frame = document.createElement('div');
     frame.id = 'merfy-selection';
     // Подсказки кнопок — escape-последовательности: страница превью может быть декодирована не в UTF-8, литералы в
@@ -254,7 +274,25 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     document.body.appendChild(frame);
     return frame;
   }
+  // Обе рамки — рамка выбора и рамка Визи — пересчитываются вместе: на scroll, resize, после замены секции.
   function place() {
+    placeSelection();
+    placeAgent();
+  }
+  // Рамка вокруг секции: слой и координаты — frameBox. У верхнего края страницы (или слоя окна) подпись — внутри
+  // рамки: над рамкой её не видно и «Удалить» не нажать. Подпись — первый потомок рамки.
+  function layFrame(element, section) {
+    var box = frameBox(section);
+    if (element.parentNode !== box.layer) box.layer.appendChild(element);
+    element.style.display = 'block';
+    element.style.top = box.top + 'px';
+    element.style.left = box.left + 'px';
+    element.style.width = box.width + 'px';
+    element.style.height = box.height + 'px';
+    var label = element.firstElementChild;
+    label.style.top = box.top < label.offsetHeight + 2 ? '0' : '';
+  }
+  function placeSelection() {
     if (!frame) return;
     var section = selected === null ? null : byId(selected);
     if (!section) {
@@ -262,17 +300,48 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       return;
     }
     var name = section.getAttribute('data-section') || '';
-    var box = frameBox(section);
-    if (frame.parentNode !== box.layer) box.layer.appendChild(frame);
-    frame.style.display = 'block';
-    frame.style.top = box.top + 'px';
-    frame.style.left = box.left + 'px';
-    frame.style.width = box.width + 'px';
-    frame.style.height = box.height + 'px';
     frame.querySelector('[data-merfy-name]').textContent = labels[name] || name;
-    // У верхнего края страницы (или слоя окна) подпись — внутри рамки: над рамкой её не видно и «Удалить» не нажать.
-    var label = frame.querySelector('[data-merfy-label]');
-    label.style.top = box.top < label.offsetHeight + 2 ? '0' : '';
+    layFrame(frame, section);
+  }
+  // Рамка Визи: подпись «Визи · <label>» (label не прислали — название секции, нет и его — просто «Визи»).
+  function placeAgent() {
+    if (!agentFrame) return;
+    var section = agentTarget === null ? null : byId(agentTarget.id);
+    if (!section) {
+      agentFrame.style.display = 'none';
+      return;
+    }
+    var name = section.getAttribute('data-section') || '';
+    var text = agentTarget.label || labels[name] || name;
+    agentFrame.firstElementChild.textContent = text ? AGENT_PREFIX + AGENT_SEPARATOR + text : AGENT_PREFIX;
+    layFrame(agentFrame, section);
+    if (!revealed) {
+      revealed = true;
+      reveal(section, 'start');
+    }
+  }
+  function ensureAgentFrame() {
+    if (agentFrame) return agentFrame;
+    ensureStyle();
+    agentFrame = document.createElement('div');
+    agentFrame.id = 'merfy-agent-frame';
+    agentFrame.innerHTML = '<div data-merfy-agent-label></div>';
+    document.body.appendChild(agentFrame);
+    return agentFrame;
+  }
+  // Секция (блок) за краем окна — прокрутка к ней; на виду — страница стоит.
+  function reveal(target, align) {
+    var rect = target.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > window.innerHeight) target.scrollIntoView({ block: align });
+  }
+  // set-agent-frame { sectionId, label? }: рамка Визи на секции; null или пусто — рамки нет. Выбор мерчанта и панель
+  // не трогает; прокрутка — по правилу select().
+  function setAgentFrame(data) {
+    var id = typeof data.sectionId === 'string' && data.sectionId !== '' ? data.sectionId : null;
+    agentTarget = id === null ? null : { id: id, label: typeof data.label === 'string' ? data.label : '' };
+    revealed = id === null;
+    if (id !== null) ensureAgentFrame();
+    placeAgent();
   }
   // Что обводит рамка и в каком слое она лежит. Секция страницы — сама секция, рамка в body по координатам документа.
   // Окно поверх страницы (01.11) — корень шаблона: <merfy-section> окна — прозрачный слой на весь экран в верхнем слое
@@ -280,7 +349,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   // координатам раскладки корня (offset*): с ними рамку масштабирует та же анимация, что и окно.
   function frameBox(section) {
     var root = section.hasAttribute(OVERLAY_ATTRIBUTE) ? section.firstElementChild : null;
-    if (root && root !== frame) {
+    if (root && root !== frame && root !== agentFrame) {
       return { layer: section, top: root.offsetTop, left: root.offsetLeft, width: root.offsetWidth, height: root.offsetHeight };
     }
     var rect = section.getBoundingClientRect();
@@ -310,9 +379,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     var block = showBlock();
     var section = id === null ? null : byId(id);
     var target = block || section;
-    if (!target) return;
-    var rect = target.getBoundingClientRect();
-    if (rect.bottom < 0 || rect.top > window.innerHeight) target.scrollIntoView({ block: block ? 'center' : 'start' });
+    if (target) reveal(target, block ? 'center' : 'start');
   }
   function showActions() {
     if (!frame) return;
@@ -711,24 +778,36 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     }
     (node || document).dispatchEvent(new Event(REPLAY_EVENT, { bubbles: true }));
   }
+  function setSelection(data) {
+    actions = data.actions || {};
+    blockParent = data.subsectionParentId || null;
+    blockIndex = typeof data.subsectionIndex === 'number' ? data.subsectionIndex : null;
+    select(data.sectionId || null);
+    showActions();
+    announce(false);
+  }
+  // Сообщения конструктора по типу; незнакомый тип (в том числе от нового конструктора к старому скрипту) молча
+  // пропускается.
+  var MESSAGES = {
+    'init': function () {
+      initialized = true;
+    },
+    'set-labels': function (data) {
+      labels = data.componentLabels || {};
+      place();
+    },
+    'set-selection': setSelection,
+    'set-agent-frame': setAgentFrame,
+    'ext-store-values': function (data) {
+      setStoreValues(data.values);
+    },
+    'update-block': updateBlock,
+    'reconcile': reconcile,
+    'replay': replay
+  };
   window.addEventListener('message', function (event) {
     var data = event.data;
     if (event.source !== window.parent || !data || typeof data.type !== 'string') return;
-    if (data.type === 'init') initialized = true;
-    else if (data.type === 'set-labels') {
-      labels = data.componentLabels || {};
-      place();
-    } else if (data.type === 'set-selection') {
-      actions = data.actions || {};
-      blockParent = data.subsectionParentId || null;
-      blockIndex = typeof data.subsectionIndex === 'number' ? data.subsectionIndex : null;
-      select(data.sectionId || null);
-      showActions();
-      announce(false);
-    }
-    else if (data.type === 'ext-store-values') setStoreValues(data.values);
-    else if (data.type === 'update-block') updateBlock(data);
-    else if (data.type === 'reconcile') reconcile(data);
-    else if (data.type === 'replay') replay(data);
+    if (Object.prototype.hasOwnProperty.call(MESSAGES, data.type)) MESSAGES[data.type](data);
   });
 })();`;

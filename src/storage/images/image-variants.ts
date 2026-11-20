@@ -8,7 +8,7 @@ import {
 } from "./async-utils";
 import type { Limiter } from "./async-utils";
 import type { ImageStore } from "./image-store";
-import type { ImagesLib } from "./images-lib";
+import type { GenerateInput, ImagesLib } from "./images-lib";
 
 /** Расширения картинок, для которых заводим копии или маркер. Видео и прочие файлы пропускаем. */
 const IMAGE_EXTENSIONS = new Set([
@@ -37,7 +37,7 @@ export interface VariantsOptions {
 
 /**
  * Копии картинок при загрузке. Оригинал в хранилище не меняется:
- * рядом пишутся `.m.webp`, `.d.webp` и последним — маркер `.v.json`.
+ * рядом пишутся `.s.webp`, `.m.webp`, `.d.webp` и последним — маркер `.v.json`.
  */
 export class ImageVariants {
   private readonly limiter: Limiter;
@@ -71,18 +71,22 @@ export class ImageVariants {
     await waitUpTo(job, this.options.budgetMs);
   }
 
-  /** Копии и маркер оригинала в хранилище. `null` — это сама копия или маркер, их не трогаем. */
+  /**
+   * Копии и маркер оригинала в хранилище. `null` — это сама копия или маркер, их не трогаем.
+   * С `previous` (маркер старой версии) делаются только недостающие копии, готовые не пишутся.
+   */
   async generate(
     key: string,
     bytes: Uint8Array,
     previousAttempts = 0,
+    previous?: Marker,
   ): Promise<Marker | null> {
     const { isDerivedKey } = await this.lib.names();
     if (isDerivedKey(key)) return null;
     this.inFlight.add(key);
     try {
       return await this.limiter.run(() =>
-        this.generateAndWrite(key, bytes, previousAttempts),
+        this.generateAndWrite({ key, bytes, previousAttempts, previous }),
       );
     } finally {
       this.inFlight.delete(key);
@@ -92,23 +96,20 @@ export class ImageVariants {
   /**
    * Маркер `failed` с числом попыток: оригинал не удалось обработать, дальше
    * его не трогаем. Тело маркера и заголовки делает генератор — пустые байты
-   * дают у него `failed` с `unreadable`.
+   * дают у него `failed` с `unreadable`. С `previous` вместо `failed` остаётся
+   * прежний маркер текущей версии: готовые копии не теряются.
    */
-  async markFailed(key: string, attempts: number): Promise<void> {
-    await this.generate(key, new Uint8Array(0), attempts - 1);
+  async markFailed(
+    key: string,
+    attempts: number,
+    previous?: Marker,
+  ): Promise<void> {
+    await this.generate(key, new Uint8Array(0), attempts - 1, previous);
   }
 
-  private async generateAndWrite(
-    key: string,
-    bytes: Uint8Array,
-    previousAttempts: number,
-  ): Promise<Marker> {
+  private async generateAndWrite(input: GenerateInput): Promise<Marker> {
     const generator = await this.lib.generator();
-    const { marker, files } = await generator.generateImage({
-      key,
-      bytes,
-      previousAttempts,
-    });
+    const { marker, files } = await generator.generateImage(input);
     // Копии, затем маркер: так велит пакет, и битой картинки не бывает.
     for (const file of files) {
       await this.store.put(file.key, file.body, {

@@ -26,8 +26,8 @@ const withImages = (markers: Record<string, Marker>): BuildInputs =>
   });
 
 describe('вход images', () => {
-  it('версия ключа данных поднята: формула с картинками — третья', () => {
-    expect(DATA_KEY_VERSION).toBe(3);
+  it('версия ключа данных поднята: правила картинок версии 2 — четвёртая формула', () => {
+    expect(DATA_KEY_VERSION).toBe(4);
   });
 
   it('входы с маркерами проходят разбор без изменений', () => {

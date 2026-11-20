@@ -9,16 +9,20 @@ const HOSTS = ['minio.dev.merfy.ru', 'minio.merfy.ru'];
 const photo = (name: string): string => `${ORIGIN}/product-images/${name}.jpg`;
 
 const MARKER: Marker = {
-  rulesVersion: 1,
+  rulesVersion: 2,
   status: 'ok',
   attempts: 1,
   width: 2400,
   height: 1600,
   variants: [
+    { kind: 's', width: 400, key: 's' },
     { kind: 'm', width: 800, key: 'm' },
     { kind: 'd', width: 1600, key: 'd' },
   ],
 };
+
+// Маркер версии 1 (до копии s): сервисы допишут копии и перепишут маркер.
+const MARKER_V1: Marker = { ...MARKER, rulesVersion: 1, variants: MARKER.variants.slice(1) };
 
 // Хранилище: адрес маркера → ответ. Нет в таблице — 404.
 function storage(answers: Record<string, Response | Error>) {
@@ -112,6 +116,22 @@ describe('маркеры копий картинок', () => {
     const again = await reader.read([[photo('a')]]);
     expect(Object.keys(again?.markers ?? {})).toEqual([photo('a')]);
     expect(store.asked).toHaveLength(1);
+  });
+
+  it('маркер версии 1 — в кеше 5 минут, как ненайденный: после перезаписи сервисом подхватывается версия 2 без перезапуска', async () => {
+    const answers: Record<string, Response | Error> = { [`${photo('a')}.v.json`]: ok(MARKER_V1) };
+    const { reader, store, wait } = setup(answers);
+    expect((await reader.read([[photo('a')]]))?.markers[photo('a')]).toEqual(MARKER_V1);
+    answers[`${photo('a')}.v.json`] = ok();
+    wait(MARKER_MISS_MS - 1);
+    expect((await reader.read([[photo('a')]]))?.markers[photo('a')]).toEqual(MARKER_V1);
+    expect(store.asked).toHaveLength(1);
+    wait(1);
+    expect((await reader.read([[photo('a')]]))?.markers[photo('a')]).toEqual(MARKER);
+    expect(store.asked).toHaveLength(2);
+    wait(24 * 60 * 60_000);
+    await reader.read([[photo('a')]]);
+    expect(store.asked).toHaveLength(2);
   });
 
   it('ненайденный маркер — в кеше 5 минут: до истечения запроса нет, после — снова спрашиваем и подхватываем появившийся', async () => {

@@ -137,7 +137,7 @@
     "@astrojs/compiler": "^3.0.1",
     "@aws-sdk/client-s3": "^3.978.0",
     "@merfy-dropshipping-platform/design-systems-theme": "^0.1.9",
-    "@merfy-dropshipping-platform/images": "0.1.1",
+    "@merfy-dropshipping-platform/images": "0.2.0",
     "@nanostores/persistent": "^0.10.2",
     "@nanostores/react": "^0.8.4",
     "@nestjs/common": "^11.0.1",

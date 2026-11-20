@@ -257,6 +257,21 @@ describe('список секций магазина', () => {
     });
   });
 
+  it('изменённая копия с новой версией библиотеки — libraryUpdate с версиями, у остальных ключа нет', async () => {
+    const { deps } = depsOf();
+    const offer = {
+      name: 'hero',
+      base: { hash: 'sha256:b', name: 'hero', version: 2 },
+      latest: { hash: 'sha256:l', name: 'hero', version: 4 },
+    };
+    deps.updates = () => Promise.resolve(new Map([['shop:hero', offer]]));
+    expect(JSON.parse((await shopSections(deps, SHOP)).body)).toMatchObject({
+      sections: [{ name: 'shop:hero', libraryUpdate: { from: 2, to: 4 } }],
+    });
+    deps.updates = () => Promise.resolve(new Map());
+    expect(JSON.parse((await shopSections(deps, SHOP)).body)).not.toHaveProperty('sections.0.libraryUpdate');
+  });
+
   // wrapperSpec (базовые секции, 29.10): у секции со своими умолчанием, пределом и шагом — её объявления целиком.
   it('секция с wrapperSpec — ключ wrapperFields с её объявлениями; превью блока — с её умолчаниями', async () => {
     const PROMO: CurrentSection = {

@@ -26,6 +26,26 @@ export function libraryVersionOf(files: SectionFiles, history: LibraryHistory = 
   return Object.hasOwn(history, hash) ? history[hash] : undefined;
 }
 
+// Версия по отпечатку вместе с отпечатком — ссылка на версию библиотеки.
+export interface LibraryRef extends LibraryVersion {
+  hash: string;
+}
+
+export function libraryRefOf(hash: string, history: LibraryHistory = HISTORY): LibraryRef | undefined {
+  return Object.hasOwn(history, hash) ? { hash, ...history[hash] } : undefined;
+}
+
+// Самая новая версия библиотечной секции по имени из section.json; секции в истории нет — undefined.
+export function libraryLatestOf(name: string, history: LibraryHistory = HISTORY): LibraryRef | undefined {
+  return Object.entries(history)
+    .filter(([, version]) => version.name === name)
+    .map(([hash, version]) => ({ hash, ...version }))
+    .reduce<LibraryRef | undefined>(
+      (latest, ref) => (latest === undefined || ref.version > latest.version ? ref : latest),
+      undefined,
+    );
+}
+
 // Секция осталась библиотечной (19.11): её файлы — любая версия из истории, под тем же именем и названием. Правка кода,
 // разметки, параметров, названия — отпечаток другой, секция уже авторская: её находки чинит агент, а не платформа.
 export function isLibrarySection(files: SectionFiles, history: LibraryHistory = HISTORY): boolean {

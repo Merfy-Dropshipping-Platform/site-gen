@@ -29,7 +29,7 @@ export const SECTION_AUTHORS = ['platform', 'theme', 'shop', 'extension'] as con
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 const COLUMNS = `id, name, kind, author, owner, release, source_hash AS "sourceHash", content_hash AS "contentHash",
   manifest, token_order AS "tokenOrder", template, style, render, render_hash AS "renderHash", script, script_hash AS "scriptHash", warnings,
-  script_meta AS "scriptMeta", draft, published,
+  script_meta AS "scriptMeta", library_base AS "libraryBase", draft, published,
   to_char(created_at AT TIME ZONE 'UTC', ${ISO}) AS "createdAt"`;
 
 const sectionRowSchema = z.object({
@@ -54,6 +54,9 @@ const sectionRowSchema = z.object({
   // Часть 5в блока 5 (drizzle/0032): что нужно скрипту — как записал приём; у строк до 5в — null. Форму сверяет
   // currentSection: значение не той формы сборка считает строкой до 5в.
   scriptMeta: z.unknown().optional(),
+  // Версия библиотеки, от которой пошла копия магазина (drizzle/0038, library-update.ts): отпечаток из истории; у
+  // строк без основы и у выпусков — null.
+  libraryBase: z.string().nullish(),
   warnings: z.array(sectionProblemSchema),
   draft: z.boolean(),
   published: z.boolean(),
@@ -74,6 +77,9 @@ export interface NewSection {
   source: SectionFiles;
   // Порядок ключей tokens из section.json (блок 4а): сохраняется при приёме, при чтении по нему собирается tokens.
   tokenOrder: readonly string[] | null;
+  // Основа копии магазина: отпечаток версии библиотеки (библиотечная секция и копия по ней). Нет — строка наследует
+  // основу прошлой текущей правки.
+  libraryBase?: string | null;
 }
 
 // Что видно магазину: его опубликованные секции и секции включённых у него расширений — в версиях, с которыми он
@@ -89,8 +95,9 @@ export interface SavedDraft {
 }
 
 const INSERT_SQL = `INSERT INTO storefront_section (id, name, kind, author, owner, release, source_hash, content_hash,
-  manifest, token_order, source, template, style, script, script_hash, warnings, draft, render, render_hash, script_meta)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`;
+  manifest, token_order, source, template, style, script, script_hash, warnings, draft, render, render_hash, script_meta,
+  library_base)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`;
 const RELEASE_INSERT_SQL = `${INSERT_SQL}
   ON CONFLICT (author, owner, name, release) WHERE release IS NOT NULL DO NOTHING RETURNING ${COLUMNS}`;
 const DRAFT_INSERT_SQL = `${INSERT_SQL} RETURNING ${COLUMNS}`;
@@ -142,7 +149,7 @@ function withTokenOrder(row: SectionRow): SectionRow {
 
 const first = (rows: readonly SectionRow[]): SectionRow | null => rows.at(0) ?? null;
 
-function insertParams(row: NewSection, draft: boolean): unknown[] {
+function insertParams(row: NewSection, draft: boolean, libraryBase: string | null = null): unknown[] {
   const { door, section } = row;
   return [
     randomUUID(),
@@ -166,6 +173,7 @@ function insertParams(row: NewSection, draft: boolean): unknown[] {
     section.render,
     row.renderHash,
     JSON.stringify(section.scriptMeta),
+    libraryBase,
   ];
 }
 
@@ -310,9 +318,20 @@ export async function saveDraft(db: Database, row: NewSection, expectDraft?: str
       scriptMeta: row.section.scriptMeta,
     });
     await client.query(CLEAR_DRAFT_SQL, [owner, row.section.name]);
-    const [inserted] = await select(client, DRAFT_INSERT_SQL, insertParams(row, true));
+    // Основа: явная у правки, иначе от прошлой текущей правки (library-update.ts).
+    const libraryBase = row.libraryBase ?? current?.libraryBase ?? null;
+    const [inserted] = await select(client, DRAFT_INSERT_SQL, insertParams(row, true, libraryBase));
     return { row: inserted, created: true };
   });
+}
+
+const SET_BASE_SQL = `UPDATE storefront_section SET library_base = $2
+  WHERE id = $1 AND author = 'shop' RETURNING ${COLUMNS}`;
+
+// Основа уже записанной правки магазина: перенос правок на новую версию библиотеки без изменения кода («без изменений»
+// у приёма) всё равно меняет основу — иначе предложение обновить осталось бы.
+export async function setLibraryBase(db: Queryable, id: string, base: string): Promise<SectionRow | null> {
+  return first(await select(db, SET_BASE_SQL, [id, base]));
 }
 
 // Публикация магазина: текущие правки своих секций — на витрину. Ответ — имена секций, у которых витрина сменилась.

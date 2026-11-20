@@ -104,7 +104,10 @@ function depsOf(over: Partial<SectionToolsDeps> = {}): SectionToolsDeps & { logg
 const call = (deps: SectionToolsDeps, method: string, path: string, body = ''): Promise<DrawAnswer> =>
   sectionTool(deps, method, new URL(`http://builder${path}`), () => Promise.resolve(body));
 const json = (answer: DrawAnswer): unknown => JSON.parse(answer.body);
-const filesBody = (files: Record<string, string>): string => JSON.stringify({ files });
+const filesBody = (files: Record<string, string>, basedOn?: string): string =>
+  JSON.stringify(basedOn === undefined ? { files } : { files, basedOn });
+const BASE = `sha256:${'b'.repeat(64)}`;
+const LATEST = `sha256:${'a'.repeat(64)}`;
 const DOC = 'errors.md#setting-name-unknown';
 
 // expect.any возвращает any: через хелпер с типом unknown — без unsafe-assignment (RULES секций, §8, с 24.10).
@@ -127,10 +130,10 @@ describe('проверить', () => {
     expect(deps.logged).toEqual(['section-checked']);
   });
 
-  it('копия изменена и есть новая версия библиотеки — находка library-update, fix ask; служебные файлы в проверку не уходят', async () => {
+  it('копия изменена и есть новая версия библиотеки — находка library-update, fix ask; основа в проверку не уходит', async () => {
     const check = vi.fn((): Promise<PrepareResult> => Promise.resolve(PASSED));
     const deps = depsOf({ check, update: updatesOf({ offer: vi.fn(() => Promise.resolve(OFFER)) }) });
-    const body = filesBody({ ...FILES, '.merfy/based-on': 'sha256:base' });
+    const body = filesBody(FILES, BASE);
     const answer = await call(deps, 'POST', `/sections/check?shop=${SHOP}`, body);
     expect(check).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES);
     expect(deps.update.offer).toHaveBeenCalledWith(SHOP, 'shop:reviews');
@@ -178,24 +181,41 @@ describe('сохранить', () => {
     expect(deps.accept).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES, {});
   });
 
-  it('с основой (.merfy/based-on): отпечаток проверен, в приём — libraryBase, служебного файла в секции нет', async () => {
+  it('с основой (поле basedOn): отпечаток проверен, в приём — libraryBase', async () => {
     const deps = depsOf();
-    const body = filesBody({ ...FILES, '.merfy/based-on': ' sha256:latest\n' });
-    const answer = await call(deps, 'POST', `/sections/save?shop=${SHOP}`, body);
+    const answer = await call(deps, 'POST', `/sections/save?shop=${SHOP}`, filesBody(FILES, LATEST));
     expect(answer.status).toBe(200);
-    expect(deps.update.basedOn).toHaveBeenCalledWith(SHOP, FILES, 'sha256:latest');
-    expect(deps.accept).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES, { libraryBase: 'sha256:latest' });
+    expect(deps.update.basedOn).toHaveBeenCalledWith(SHOP, FILES, LATEST);
+    expect(deps.accept).toHaveBeenCalledWith({ author: 'shop', shopId: SHOP }, FILES, { libraryBase: LATEST });
+  });
+
+  it.each([['sha256:base'], ['b'.repeat(64)], [`sha256:${'B'.repeat(64)}`], [`sha256:${'b'.repeat(63)}`]])(
+    'basedOn %s не по формату — 400 body-invalid, приём не вызван',
+    async (basedOn) => {
+      const deps = depsOf();
+      const answer = await call(deps, 'POST', `/sections/save?shop=${SHOP}`, filesBody(FILES, basedOn));
+      expect([answer.status, json(answer)]).toEqual([
+        400,
+        { ok: false, error: { code: 'body-invalid', message: anyText() } },
+      ]);
+      expect(deps.accept).not.toHaveBeenCalled();
+    },
+  );
+
+  it('служебные пути .merfy/* больше не особые: это обычные файлы секции', async () => {
+    const deps = depsOf();
+    await call(deps, 'POST', `/sections/save?shop=${SHOP}`, filesBody({ ...FILES, '.merfy/based-on': LATEST }));
+    expect(deps.accept).toHaveBeenCalledWith(
+      { author: 'shop', shopId: SHOP },
+      { ...FILES, '.merfy/based-on': LATEST },
+      {},
+    );
   });
 
   it('основа чужая или неизвестная — 400 based-on-invalid с текстом, ничего не записано', async () => {
     const basedOn = vi.fn(() => Promise.resolve('basedOn нет в истории библиотеки'));
     const deps = depsOf({ update: updatesOf({ basedOn }) });
-    const answer = await call(
-      deps,
-      'POST',
-      `/sections/save?shop=${SHOP}`,
-      filesBody({ ...FILES, '.merfy/based-on': 'x' }),
-    );
+    const answer = await call(deps, 'POST', `/sections/save?shop=${SHOP}`, filesBody(FILES, BASE));
     expect([answer.status, json(answer)]).toEqual([
       400,
       { ok: false, error: { code: 'based-on-invalid', message: 'basedOn нет в истории библиотеки' } },
@@ -210,35 +230,7 @@ describe('сохранить', () => {
     expect(json(answer)).toMatchObject({ ok: true, findings: [{ check: 'library-update', fix: 'ask' }] });
   });
 
-  it('отказ мерчанта (.merfy/decline-update без файлов секции): версия записана, секция не сохраняется', async () => {
-    const decline = vi.fn(() => Promise.resolve(OFFER));
-    const deps = depsOf({ update: updatesOf({ decline }) });
-    const answer = await call(
-      deps,
-      'POST',
-      `/sections/save?shop=${SHOP}`,
-      filesBody({ '.merfy/decline-update': 'reviews' }),
-    );
-    expect([answer.status, json(answer)]).toEqual([200, { ok: true, name: 'shop:reviews', declined: { version: 4 } }]);
-    expect(decline).toHaveBeenCalledWith(SHOP, 'shop:reviews');
-    expect(deps.accept).not.toHaveBeenCalled();
-    expect(deps.logged).toEqual(['section-update-declined']);
-  });
-
-  it('отказ, когда предлагать нечего — 404 update-not-offered', async () => {
-    const answer = await call(
-      depsOf(),
-      'POST',
-      `/sections/save?shop=${SHOP}`,
-      filesBody({ '.merfy/decline-update': 'shop:reviews' }),
-    );
-    expect([answer.status, json(answer)]).toEqual([
-      404,
-      { ok: false, error: { code: 'update-not-offered', message: anyText() } },
-    ]);
-  });
-
-  it('отказ: 422 и проблемы с doc, ничего не записано', async () => {
+  it('отказ проверки: 422 и проблемы с doc, ничего не записано', async () => {
     const accept = vi.fn((): Promise<AcceptResult> => Promise.resolve({ status: 'refused', problems: [UNKNOWN] }));
     const answer = await call(depsOf({ accept }), 'POST', `/sections/save?shop=${SHOP}`, filesBody(FILES));
     expect(answer.status).toBe(422);
@@ -248,6 +240,44 @@ describe('сохранить', () => {
       problems: [{ ...UNKNOWN, doc: DOC }],
       warnings: [],
     });
+  });
+});
+
+describe('отказ обновлять копию', () => {
+  const path = `/sections/update-decline?shop=${SHOP}&name=reviews`;
+
+  it('версия предложения записана, секция не сохраняется; имя — из адреса', async () => {
+    const decline = vi.fn(() => Promise.resolve(OFFER));
+    const deps = depsOf({ update: updatesOf({ decline }) });
+    const answer = await call(deps, 'POST', path, '{}');
+    expect([answer.status, json(answer)]).toEqual([200, { ok: true, name: 'shop:reviews', declined: { version: 4 } }]);
+    expect(decline).toHaveBeenCalledWith(SHOP, 'shop:reviews');
+    expect(deps.accept).not.toHaveBeenCalled();
+    expect(deps.logged).toEqual(['section-update-declined']);
+  });
+
+  it('предлагать нечего — 404 update-not-offered', async () => {
+    const answer = await call(depsOf(), 'POST', path, '{}');
+    expect([answer.status, json(answer)]).toEqual([
+      404,
+      { ok: false, error: { code: 'update-not-offered', message: anyText() } },
+    ]);
+  });
+
+  it('имя не по форме — 400 name-invalid, отказ не записан', async () => {
+    const decline = vi.fn(() => Promise.resolve(OFFER));
+    const answer = await call(
+      depsOf({ update: updatesOf({ decline }) }),
+      'POST',
+      `/sections/update-decline?shop=${SHOP}&name=Bad_Name`,
+      '{}',
+    );
+    expect(answer.status).toBe(400);
+    expect(decline).not.toHaveBeenCalled();
+  });
+
+  it('GET — 405', async () => {
+    expect((await call(depsOf(), 'GET', path)).status).toBe(405);
   });
 });
 

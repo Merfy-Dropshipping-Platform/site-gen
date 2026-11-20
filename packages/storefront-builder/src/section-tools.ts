@@ -13,7 +13,6 @@ import {
   sectionAnswer,
   sectionHistory,
   sourceWithHash,
-  splitMeta,
   storeCycleText,
   updateOfferOf,
   withoutAiFiles,
@@ -155,11 +154,16 @@ export interface SectionToolsDeps {
 }
 
 // Тело с файлами: путь → текст; тело с id правки. Лишние ключи — отказ: магазин и автора тело не задаёт.
-export const filesBodySchema = z.strictObject({ files: z.record(z.string().min(1).max(200), z.string()) });
+// basedOn — отпечаток версии библиотеки, на которой стоят правки копии (как hashOf секции); проверка сохранения — в save.
+export const BASED_ON_FORMAT = /^sha256:[0-9a-f]{64}$/;
+export const filesBodySchema = z.strictObject({
+  files: z.record(z.string().min(1).max(200), z.string()),
+  basedOn: z.string().regex(BASED_ON_FORMAT).optional(),
+});
 export const rollbackBodySchema = z.strictObject({ id: z.uuid() });
 
 const TEXT = {
-  body: 'нужно тело JSON { "files": { "<путь>": "<текст>" } }',
+  body: 'нужно тело JSON { "files": { "<путь>": "<текст>" }, "basedOn": "sha256:<64 hex>" } (basedOn не обязателен)',
   rollback: 'нужно тело JSON { "id": "<id правки>" }',
   name: 'имя секции в адресе — name из section.json: строчные латинские буквы и цифры через одиночный дефис',
   shop: 'магазина нет или он не на теме новой архитектуры',
@@ -204,7 +208,7 @@ async function check(deps: SectionToolsDeps, request: ToolRequest): Promise<Draw
   if (!deps.open()) return toolError(503, 'uploads-closed', TEXT.closed);
   const parsed = filesBodySchema.safeParse(readJson(request.body));
   if (!parsed.success) return toolError(400, 'body-invalid', TEXT.body);
-  const { files } = splitMeta(withoutAiFiles(parsed.data.files));
+  const files = withoutAiFiles(parsed.data.files);
   const result = await deps.check({ author: 'shop', shopId: request.shopId }, files);
   const answer = sectionAnswer(SECTION_TOOL_PREFIX, files, result);
   deps.log('section-checked', {
@@ -228,22 +232,24 @@ async function findingsOf(
   return libraryUpdateFindings(name, files, await deps.update.offer(shopId, name));
 }
 
-// Отказ от обновления: тело из одного служебного файла (шлюз других команд не знает), секция сохранена не будет.
-async function declined(deps: SectionToolsDeps, shopId: string, name: string): Promise<DrawAnswer> {
+// Отказ от обновления копии: платформа запоминает версию предложения и молчит до следующей версии библиотеки.
+// Тела нет — имя секции в адресе, версию знает само предложение.
+async function declineUpdateOffer(deps: SectionToolsDeps, request: ToolRequest): Promise<DrawAnswer> {
+  const { shopId, name } = request;
   const offer = await deps.update.decline(shopId, name);
   if (offer === undefined) return toolError(404, 'update-not-offered', TEXT.noOffer(name));
   deps.log('section-update-declined', { shopId, name, version: offer.latest.version });
   return jsonAnswer(200, { ok: true, name, declined: { version: offer.latest.version } } satisfies DeclineAnswer);
 }
 
-// Сохранить файлы своей секцией магазина — черновиком; отказ проверки — 422, ничего не записано. Служебный файл
-// основы (`basedOn`) сверяется с историей библиотеки до записи; служебный файл отказа без файлов секции — отказ.
+// Сохранить файлы своей секцией магазина — черновиком; отказ проверки — 422, ничего не записано. Основа (`basedOn`)
+// сверяется с историей библиотеки до записи: чужой или неизвестный отпечаток — 400 based-on-invalid.
 async function save(deps: SectionToolsDeps, request: ToolRequest): Promise<DrawAnswer> {
   if (!deps.open()) return toolError(503, 'uploads-closed', TEXT.closed);
   const parsed = filesBodySchema.safeParse(readJson(request.body));
   if (!parsed.success) return toolError(400, 'body-invalid', TEXT.body);
-  const { files, basedOn, decline } = splitMeta(withoutAiFiles(parsed.data.files));
-  if (decline !== undefined && Object.keys(files).length === 0) return declined(deps, request.shopId, decline);
+  const files = withoutAiFiles(parsed.data.files);
+  const { basedOn } = parsed.data;
   const baseText = basedOn === undefined ? null : await deps.update.basedOn(request.shopId, files, basedOn);
   if (baseText !== null) return toolError(400, 'based-on-invalid', baseText);
   const door: Door = { author: 'shop', shopId: request.shopId };
@@ -347,6 +353,7 @@ export const SECTION_TOOL_ROUTES: Readonly<Record<string, ToolRoute>> = {
   '/sections/source': { method: 'GET', named: true, handle: source },
   '/sections/history': { method: 'GET', named: true, handle: history },
   '/sections/rollback': { method: 'POST', named: true, handle: rollback },
+  '/sections/update-decline': { method: 'POST', named: true, handle: declineUpdateOffer },
 };
 
 // Вход сборщика: маршрут → метод → магазин → имя → обработчик. Сбой обработчика — 500 tool-failed и строка журнала

@@ -125,12 +125,17 @@ describe("sites: инструменты секций и документация
     await request(app.getHttpServer())
       .post(`/api/sites/${NEW_SITE}/sections/reviews/rollback`)
       .send({ id: "e0" });
+    await request(app.getHttpServer()).post(
+      `/api/sites/${NEW_SITE}/sections/reviews/update-decline`,
+    );
     expect(seen.map(({ method, url }) => `${method} ${url}`)).toEqual([
       `GET /sections/source?shop=${NEW_SITE}&name=reviews`,
       `GET /sections/history?shop=${NEW_SITE}&name=reviews`,
       `POST /sections/rollback?shop=${NEW_SITE}&name=reviews`,
+      `POST /sections/update-decline?shop=${NEW_SITE}&name=reviews`,
     ]);
     expect(seen[2]?.body).toBe('{"id":"e0"}');
+    expect(seen[3]?.body).toBe("{}");
   });
 
   it("магазин нынешней темы — 404 shop-not-found, сборщик не зовём", async () => {

@@ -40,9 +40,11 @@ import {
   roleKeysOf,
   sectionMenus,
   sectionRecordKeys,
+  updateOffersOf,
   type CurrentSection,
   type RevisionMenu,
   type SectionRenderRequest,
+  type UpdateOffer,
   settingFieldsOf,
   wrapperFieldsOf,
   wrapperIdsOf,
@@ -53,6 +55,7 @@ import { z } from 'zod';
 import { instanceSchema, readVisibleSections, wrapperOf, type SectionInstance } from './code';
 import { extensionKey, type VisibleSection } from './section-extension';
 import type { DrawAnswer } from './draw';
+import { errorText } from './errors';
 import { fetchExtValues } from './ext-values';
 import { LIST_ARGS_MAX, listRequestOf } from './list-rpc';
 import { inlineAssets } from './inline-assets';
@@ -92,6 +95,8 @@ export interface ShopPreviewDeps {
   sections: (shopId: string) => Promise<ReadonlyMap<string, VisibleSection> | null>;
   // Из своих секций магазина (полные имена) — те, что остались библиотечными: секции платформы для проверок снимка.
   library: (shopId: string, names: readonly string[]) => Promise<ReadonlySet<string>>;
+  // Предложения обновить изменённые копии библиотечных секций (полное имя → предложение); нет — предложений нет.
+  updates?: (shopId: string) => Promise<ReadonlyMap<string, UpdateOffer>>;
   render: (shopId: string, request: SectionRenderRequest) => Promise<string>;
   fonts: (css: string) => Promise<string>;
   // Сборка ядра сервиса (блок 5, часть 5г): её части — uses кода секции до части 5в; нет — uses пустой.
@@ -145,6 +150,12 @@ export const shopPreviewDeps = (preview: PreviewDeps): ShopPreviewDeps => ({
   theme: async (id, version) => (await preview.catalog.themeAt(id, version)).build,
   sections: (shopId) => readVisibleSections(preview.snapshot.code, shopId),
   library: (shopId, names) => libraryUnchanged(preview.snapshot.code.db, shopId, names),
+  // Пометка в списке секций необязательна: сбой запроса не должен ронять список, которым открывается конструктор.
+  updates: (shopId) =>
+    updateOffersOf(preview.snapshot.code.db, shopId).catch((error: unknown) => {
+      preview.log('library-update-failed', { shopId, error: errorText(error) });
+      return new Map<string, UpdateOffer>();
+    }),
   render: (shopId, request) => preview.renderers.render(shopId, request),
   fonts: (css) => inlineFonts(css, preview.fonts),
   shell: preview.snapshot.code.shell,
@@ -234,7 +245,8 @@ export async function shopPreview(deps: ShopPreviewDeps, url: URL): Promise<Draw
   const theme = await deps.theme(inputs.theme.id, inputs.theme.version);
   // Оформление и «Спасибо за заказ»: у версий темы с "checkout": "sections" (03.11) — страницы из секций, как корзина;
   // у прежних — страницы сборки (часть 10а, Р10а-17) со своими локалами блоков (в превью — все четыре, Р10а-19).
-  const checkout = theme.checkout === 'sections' ? undefined : CHECKOUT_PAGES.find((candidate) => candidate.id === page);
+  const checkout =
+    theme.checkout === 'sections' ? undefined : CHECKOUT_PAGES.find((candidate) => candidate.id === page);
   const rendered = await (async (): Promise<{ file: { content: Uint8Array } }> => {
     if (checkout === undefined) return renderShopPage(inputs, path, theme, previewPage(deps, found.shopId, renders));
     const files = (await checkoutFiles(inputs, theme, previewPage(deps, found.shopId, renders))).files;
@@ -396,11 +408,15 @@ async function withBlockList(
   }
 }
 
+const updateKey = (offer: UpdateOffer | undefined): { libraryUpdate?: { from: number; to: number } } =>
+  offer === undefined ? {} : { libraryUpdate: { from: offer.base.version, to: offer.latest.version } };
+
 export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null): Promise<DrawAnswer> {
   const found = await deps.shop(rawShop);
   if (isPreviewAnswer(found)) return found;
   const sections = await deps.sections(found.shopId);
   if (sections === null) return jsonAnswer(502, { problems: [TEXT.extensions] });
+  const updates = (await deps.updates?.(found.shopId)) ?? new Map<string, UpdateOffer>();
   const list = [...sections.values()]
     .filter((section) => section.manifest.kind === 'section')
     .map((section) => ({
@@ -423,6 +439,8 @@ export async function shopSections(deps: ShopPreviewDeps, rawShop: string | null
       ...scriptHashOf(section),
       // Расширение секции (блок 12, часть 12б, Р12б-10): «<секция> · <название>» в конструкторе; своим секциям — нет.
       ...extensionKey(section),
+      // Новая версия библиотеки у изменённой копии (20.11): основа и версия в библиотеке; агент видит пометку в списке секций.
+      ...updateKey(updates.get(section.name)),
     }));
   return jsonAnswer(200, { sections: list, wrapper: WRAPPER_FIELDS });
 }

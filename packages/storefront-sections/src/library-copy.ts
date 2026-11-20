@@ -54,6 +54,13 @@ export function libraryKeyOf(files: SectionFiles): string | null {
     .digest('hex');
 }
 
+// Имя библиотечной секции, с которой эти файлы совпадают по отпечатку без name и title (текущая версия библиотеки);
+// не совпали — undefined.
+export function libraryNameOf(files: SectionFiles, index: LibraryIndex = INDEX): string | undefined {
+  const key = libraryKeyOf(files);
+  return key === null ? undefined : index[key];
+}
+
 export function libraryCopyProblems(files: SectionFiles, name: string, index: LibraryIndex = INDEX): SectionProblem[] {
   const key = libraryKeyOf(files);
   const library = key === null ? undefined : index[key];

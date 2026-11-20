@@ -2,6 +2,7 @@ import { hashOf, sha256 } from '@merfy/storefront-build';
 import { blobKey, contentTypeOf, type ObjectStore } from '@merfy/storefront-storage';
 import { doorFields, type Door, type DoorFields } from './doors';
 import { MANIFEST_FILE, readManifest, type SectionFiles } from './format';
+import { libraryBaseOf } from './library-update';
 import type { PreparedSection, PrepareResult } from './prepare';
 import { overlayRetiredProblems } from './overlay-retired';
 import { problem, type SectionProblem } from './problems';
@@ -178,6 +179,12 @@ export function newRow(
   };
 }
 
+// Основа первой правки новой секции магазина без явного `basedOn`: копия неизменённой библиотечной секции под новым
+// именем (или такая же, написанная заново) помнит версию библиотеки (library-update.ts, `libraryBaseOf`). У расширений
+// библиотеки нет. Вторая и следующие правки основу наследуют (`saveDraft`).
+const firstBaseOf = (fields: DoorFields, files: SectionFiles): string | undefined =>
+  fields.author === 'shop' ? libraryBaseOf(files) : undefined;
+
 export async function acceptSection(
   deps: AcceptDeps,
   door: Door,
@@ -196,7 +203,8 @@ export async function acceptSection(
   const prepared = await prepareInWorker({ prefix: fields.prefix, files }, deps.sandbox ?? DEFAULT_SANDBOX);
   if (!prepared.ok) return refused(prepared.problems);
   const scriptHash = await uploadScript(deps.store, prepared.section.script);
-  const row = { ...newRow(fields, prepared.section, files, scriptHash), libraryBase: options.libraryBase };
+  const libraryBase = options.libraryBase ?? (known === null ? firstBaseOf(fields, files) : undefined);
+  const row = { ...newRow(fields, prepared.section, files, scriptHash), libraryBase };
   return storage.save(deps.db, row, options);
 }
 

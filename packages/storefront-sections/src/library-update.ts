@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { readManifest, type SectionFiles } from './format';
+import { libraryNameOf, type LibraryIndex } from './library-copy';
 import { libraryLatestOf, libraryRefOf, type LibraryHistory, type LibraryRef } from './library-history';
 import type { RowsQuery } from './registry';
 
@@ -44,6 +45,14 @@ export function baseOf(rows: readonly CopyRow[], history?: LibraryHistory): Libr
   const seen = rows.map((row) => libraryRefOf(row.sourceHash, history)).filter(defined);
   const name = explicit?.name ?? seen.at(-1)?.name;
   return newest([...(explicit === undefined ? [] : [explicit]), ...seen].filter((ref) => ref.name === name));
+}
+
+// Основа новой секции магазина без явного `basedOn`: файлы совпали с текущей версией библиотечной секции по отпечатку
+// без name, title и концевых пробелов (library-copy.ts) — основа это точный отпечаток этой версии из истории. Не
+// совпали (копию меняли, секция авторская, версия устарела) — основы нет.
+export function libraryBaseOf(files: SectionFiles, index?: LibraryIndex, history?: LibraryHistory): string | undefined {
+  const name = libraryNameOf(files, index);
+  return name === undefined ? undefined : libraryLatestOf(name, history)?.hash;
 }
 
 const isDeclined = (declined: number | undefined, latest: LibraryRef): boolean =>

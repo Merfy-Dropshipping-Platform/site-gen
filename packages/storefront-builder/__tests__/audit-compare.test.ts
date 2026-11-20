@@ -50,7 +50,7 @@ describe('LCP', () => {
 describe('CLS', () => {
   it('перешёл порог 0,1 — находка', () => {
     const [finding] = auditFindings(change({ cls: 0.14 }));
-    expect(finding).toMatchObject({ rule: 'cls-over-limit', section: null, where: 'страница /catalog' });
+    expect(finding).toMatchObject({ rule: 'cls-over-limit', section: null, where: '/catalog' });
     expect(finding?.text).toMatch(/^Стало хуже: CLS 0 → 0,14 \(норма 0,1\) · /);
   });
 
@@ -108,7 +108,7 @@ describe('вместе', () => {
 
   it('LCP без элемента — где: страница', () => {
     const [finding] = auditFindings(change({ lcpMs: 3400 }, { lcp: null }));
-    expect(finding).toMatchObject({ section: null, where: 'страница /catalog' });
+    expect(finding).toMatchObject({ section: null, where: '/catalog' });
   });
 });
 

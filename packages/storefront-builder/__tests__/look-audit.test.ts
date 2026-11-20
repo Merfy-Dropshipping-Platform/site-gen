@@ -84,6 +84,21 @@ describe('очередь Lighthouse: фоновый прогон (аудит)', 
     (await other)();
   });
 
+  it('начался снимок: идущий аудит просят уступить заранее, не дожидаясь снимкового Lighthouse', async () => {
+    const turns = new LighthouseTurns();
+    const yielded = vi.fn();
+    const audit = await turns.take(1_000, { background: true, yield: yielded });
+    turns.preempt();
+    expect(yielded).toHaveBeenCalledTimes(1);
+    audit();
+    // Свободное место и идущий снимок никого не просят.
+    turns.preempt();
+    const look = await turns.take(1_000);
+    turns.preempt();
+    expect(yielded).toHaveBeenCalledTimes(1);
+    look();
+  });
+
   it('не дождавшийся фоновый — отказ, очередь не портит', async () => {
     const turns = new LighthouseTurns();
     const first = await turns.take(1_000);

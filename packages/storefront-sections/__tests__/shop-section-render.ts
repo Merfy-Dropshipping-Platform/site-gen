@@ -55,7 +55,7 @@ export async function renderSection(name: string): Promise<RenderedSection> {
   if (checked.render === null) throw new Error(JSON.stringify(checked.problems));
   const module = checked.render;
   const hash = sha256(Buffer.from(module, 'utf8'));
-  const renderer = startSectionRenderer({ limits: { timeoutMs: TEST_RENDER_MS } });
+  const renderer = startSectionRenderer({ limits: { timeoutMs: TEST_RENDER_MS, wallMs: TEST_RENDER_MS } });
   return {
     manifest,
     html: (variant = {}) =>

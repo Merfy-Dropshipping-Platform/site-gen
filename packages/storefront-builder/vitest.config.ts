@@ -10,6 +10,9 @@ export default defineConfig({
     include: ['__tests__/*.test.ts', '__tests__/release/*.test.ts'],
     // Тест тем грузит серверную сборку nova и под нагрузкой машины не укладывается в 5 с по умолчанию.
     testTimeout: 20_000,
+    // Сторож стенных часов процесса рендера секций (storefront-sections/render.ts) в тестах щедрый — как в vitest.config.ts
+    // пакета sections: на загруженной машине процесс долго ждёт процессор. В проде переменных нет.
+    env: { MERFY_RENDER_WALL_MS: '60000', MERFY_RENDER_READY_MS: '60000' },
     coverage: {
       provider: 'v8',
       include: [

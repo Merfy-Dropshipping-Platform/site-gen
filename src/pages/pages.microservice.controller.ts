@@ -12,6 +12,7 @@
 import { Controller, Logger } from "@nestjs/common";
 import { Ctx, MessagePattern, Payload, RmqContext } from "@nestjs/microservices";
 import { PagesService } from "./pages.service";
+import { parseWriter } from "../content/writer";
 
 interface CreatePagePayload {
   tenantId: string;
@@ -19,12 +20,15 @@ interface CreatePagePayload {
   name: string;
   slug: string;
   templatePageId?: string;
+  /** Автор записи — только от шлюза (`content/writer.ts`); нет — мерчант. */
+  writer?: unknown;
 }
 
 interface DeletePagePayload {
   tenantId: string;
   siteId: string;
   pageId: string;
+  writer?: unknown;
 }
 
 interface ListPagesPayload {
@@ -40,6 +44,7 @@ interface UpdatePagePayload {
   name?: string;
   /** Тело контент-страницы («Описание») → секция «Страница» дерева страницы. */
   content?: string;
+  writer?: unknown;
 }
 
 @Controller()
@@ -55,7 +60,7 @@ export class PagesMicroserviceController {
   ) {
     try {
       this.logger.log(`pages.create request: ${JSON.stringify(data)}`);
-      const { tenantId, siteId, name, slug, templatePageId } = data ?? ({} as CreatePagePayload);
+      const { tenantId, siteId, name, slug, templatePageId, writer } = data ?? ({} as CreatePagePayload);
       if (!tenantId || !siteId || !name || !slug) {
         return {
           success: false,
@@ -68,6 +73,7 @@ export class PagesMicroserviceController {
         name,
         slug,
         ...(templatePageId ? { templatePageId } : {}),
+        writer: parseWriter(writer),
       });
       return { success: true, ...result };
     } catch (e: any) {
@@ -83,7 +89,8 @@ export class PagesMicroserviceController {
   ) {
     try {
       this.logger.log(`pages.delete request: ${JSON.stringify(data)}`);
-      const { tenantId, siteId, pageId } = data ?? ({} as DeletePagePayload);
+      const { tenantId, siteId, pageId, writer } =
+        data ?? ({} as DeletePagePayload);
       if (!tenantId || !siteId || !pageId) {
         return {
           success: false,
@@ -94,6 +101,7 @@ export class PagesMicroserviceController {
         tenantId,
         siteId,
         pageId,
+        writer: parseWriter(writer),
       });
       return { success: true, ...result };
     } catch (e: any) {
@@ -131,7 +139,7 @@ export class PagesMicroserviceController {
   ) {
     try {
       this.logger.log(`pages.update request: ${JSON.stringify(data)}`);
-      const { tenantId, siteId, pageId, seo, name, content } =
+      const { tenantId, siteId, pageId, seo, name, content, writer } =
         data ?? ({} as UpdatePagePayload);
       if (!tenantId || !siteId || !pageId) {
         return {
@@ -149,6 +157,7 @@ export class PagesMicroserviceController {
         ...(seo !== undefined ? { seo } : {}),
         ...(name !== undefined ? { name } : {}),
         ...(content !== undefined ? { content } : {}),
+        writer: parseWriter(writer),
       });
       return { success: true, ...result };
     } catch (e: any) {

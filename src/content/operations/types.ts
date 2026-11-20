@@ -50,9 +50,15 @@ export type Op = SetOp | RemoveOp | AddOp | OrderOp;
  *  - `last-writer-wins` — побеждает входящая правка, чужое значение уходит в
  *    `overwritten` (интерактивное сохранение конструктора, откат);
  *  - `reject-conflicts` — ничего не сливается, список мест уходит в `conflicts`
- *    (черновики и API-операции, ответ 409).
+ *    (черновики и API-операции, ответ 409);
+ *  - `keep-current` — спорное место остаётся значением текущей стороны
+ *    (мерчанта), оно уходит в `conflicts`, `overwritten` пуст; остальные
+ *    правки входящей стороны сливаются (запись агента).
  */
-export type MergePolicy = "last-writer-wins" | "reject-conflicts";
+export type MergePolicy =
+  | "last-writer-wins"
+  | "reject-conflicts"
+  | "keep-current";
 
 /** Значения одного места у двух сторон; `null` — значения нет. */
 export interface ContestedValue {
@@ -66,7 +72,10 @@ export interface MergeResult {
   merged: Doc | null;
   /** Чужие значения, которые перезаписала входящая правка (`last-writer-wins`). */
   overwritten: ContestedValue[];
-  /** Места, где правки сторон расходятся (`reject-conflicts`). */
+  /**
+   * Места, где правки сторон расходятся: `reject-conflicts` — ничего не
+   * слито; `keep-current` — слито остальное, а эти места остались как были.
+   */
   conflicts: ContestedValue[];
   /** Операции, которые превращают `current` в `merged`. */
   applied: Op[];

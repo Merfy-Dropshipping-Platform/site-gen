@@ -38,6 +38,8 @@ import {
 import { toStoreContentSite } from "../content/store-content.port";
 import type { StoreContent } from "../content/store-content.port";
 import { rewriteCurrent } from "../content/rewrite-current";
+import { labelsOf } from "../content/writer";
+import type { Writer } from "../content/writer";
 import {
   SPECIAL_PAGE_IDS,
   SPECIAL_PAGE_SLUGS,
@@ -133,14 +135,14 @@ export class PagesService {
     site: SiteRow,
     baseRevisionId: string,
     data: Record<string, unknown>,
+    writer?: Writer,
   ): Promise<void> {
     await this.storeContent.save(site.id, {
       mode: "on-base",
       document: data,
       base: baseRevisionId,
       tenantId,
-      actor: "merchant",
-      source: "admin-pages",
+      ...labelsOf(writer, { actor: "merchant", source: "admin-pages" }),
       mergePolicy: "reject-conflicts",
       site: toStoreContentSite({ ...site, currentRevisionId: baseRevisionId }),
     });
@@ -152,6 +154,7 @@ export class PagesService {
     name: string;
     slug: string;
     templatePageId?: string;
+    writer?: Writer;
   }) {
     return rewriteCurrent(() => this.createPageOnce(params));
   }
@@ -162,6 +165,7 @@ export class PagesService {
     name: string;
     slug: string;
     templatePageId?: string;
+    writer?: Writer;
   }) {
     const { site, revisionId, revData } = await this.readCurrent(params);
     if (await this.isNewTheme(site.id))
@@ -282,7 +286,13 @@ export class PagesService {
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
-    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
+    await this.saveRevision(
+      params.tenantId,
+      site,
+      revisionId,
+      newRevData,
+      params.writer,
+    );
 
     return { page: newPage };
   }
@@ -291,6 +301,7 @@ export class PagesService {
     tenantId: string;
     siteId: string;
     pageId: string;
+    writer?: Writer;
   }) {
     return rewriteCurrent(() => this.deletePageOnce(params));
   }
@@ -299,6 +310,7 @@ export class PagesService {
     tenantId: string;
     siteId: string;
     pageId: string;
+    writer?: Writer;
   }) {
     const { site, revisionId, revData } = await this.readCurrent(params);
     if (await this.isNewTheme(site.id))
@@ -344,7 +356,13 @@ export class PagesService {
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
-    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
+    await this.saveRevision(
+      params.tenantId,
+      site,
+      revisionId,
+      newRevData,
+      params.writer,
+    );
 
     return { deleted: params.pageId };
   }
@@ -368,7 +386,7 @@ export class PagesService {
   // списка секций магазина (сборщик, GET /sections), в её настройку пишется имя страницы; такой секции нет — секций
   // нет. Пункт страницы — в конец меню main (В1-4 А); меню нет — создаётся.
   private async createNewThemePage(
-    params: { tenantId: string; name: string; slug: string },
+    params: { tenantId: string; name: string; slug: string; writer?: Writer },
     site: SiteRow,
     revisionId: string,
     revData: Record<string, any>,
@@ -404,14 +422,20 @@ export class PagesService {
       menus,
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
-    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
+    await this.saveRevision(
+      params.tenantId,
+      site,
+      revisionId,
+      newRevData,
+      params.writer,
+    );
     return { page, sections: { [newId]: placed }, menus };
   }
 
   // Главную удалить нельзя. Удаление убирает строку страницы, её дерево и секции, её пункты (с подпунктами) из всех
   // меню (п. 20: на проде пункты оставались и вели на 404).
   private async deleteNewThemePage(
-    params: { tenantId: string; pageId: string },
+    params: { tenantId: string; pageId: string; writer?: Writer },
     site: SiteRow,
     revisionId: string,
     revData: Record<string, any>,
@@ -447,7 +471,13 @@ export class PagesService {
           : revData.currentPageId,
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
-    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
+    await this.saveRevision(
+      params.tenantId,
+      site,
+      revisionId,
+      newRevData,
+      params.writer,
+    );
     return { deleted: params.pageId, menus };
   }
 
@@ -480,6 +510,7 @@ export class PagesService {
     seo?: { title?: string; description?: string; keywords?: string };
     name?: string;
     content?: string;
+    writer?: Writer;
   }) {
     return rewriteCurrent(() => this.updatePageOnce(params));
   }
@@ -491,6 +522,7 @@ export class PagesService {
     seo?: { title?: string; description?: string; keywords?: string };
     name?: string;
     content?: string;
+    writer?: Writer;
   }) {
     const { site, revisionId, revData } = await this.readCurrent(params);
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
@@ -600,7 +632,13 @@ export class PagesService {
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
-    await this.saveRevision(params.tenantId, site, revisionId, newRevData);
+    await this.saveRevision(
+      params.tenantId,
+      site,
+      revisionId,
+      newRevData,
+      params.writer,
+    );
 
     return { page: nextPage };
   }

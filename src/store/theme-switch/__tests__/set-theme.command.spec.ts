@@ -423,6 +423,34 @@ describe("SetTheme: пять тем по кругу — отчёт совпад�
   });
 });
 
+describe("SetTheme: автор записи (К1 этапа 3)", () => {
+  it.each([
+    [undefined, "merchant", "theme-switch"],
+    ["agent", "agent", "mcp"],
+    ["vizi", "agent", "vizi"],
+  ] as const)(
+    "writer %s → meta ревизии: actor %s, source %s",
+    async (writer, actor, source) => {
+      const { doc } = await merchantRoseStore();
+      const { command, store } = setup({ themeId: "rose", initial: doc });
+
+      const result = await command.execute({
+        tenantId: "t1",
+        siteId: "site-1",
+        themeId: "flux",
+        actorUserId: "u1",
+        ...(writer ? { writer } : {}),
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(
+        store.revisions.get(result.effect.revisionId!)!.meta,
+      ).toMatchObject({ actor, source });
+    },
+  );
+});
+
 describe("SetTheme: проверки входа и тема по каталогу", () => {
   it("опечатка в слаге темы — unknown_theme, ничего не записано, тема магазина прежняя", async () => {
     const { command, sites, site, store } = setup({

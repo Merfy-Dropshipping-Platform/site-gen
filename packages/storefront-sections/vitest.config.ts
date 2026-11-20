@@ -8,6 +8,9 @@ export default defineConfig({
   test: {
     include: ['__tests__/*.test.ts'],
     testTimeout: 20_000,
+    // Сторож стенных часов процесса рендера (render.ts) в тестах щедрый: на загруженной машине процесс долго ждёт
+    // процессор. Вердикт «секция медленная» от него не зависит — он по процессорному времени. В проде переменных нет.
+    env: { MERFY_RENDER_WALL_MS: '60000', MERFY_RENDER_READY_MS: '60000' },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

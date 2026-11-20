@@ -52,9 +52,11 @@ import {
 import { cleanSectionText } from "./section-text";
 import type { RevisionStore } from "./save-on-base";
 import {
+  IdempotencyKeyTakenError,
   RevisionConflictError,
   RevisionNotFoundError,
 } from "./store-content.port";
+import { labelsOf } from "./writer";
 import type {
   BlindSaveParams,
   DiffOptions,
@@ -193,6 +195,22 @@ function stepContextFor(
 
 /** CAS не прошёл внутри транзакции — откатить вставку и сообщить наружу `false`. */
 class CasMiss extends Error {}
+
+/** Имя уникального индекса ключа от повторов (drizzle/0039). */
+const IDEMPOTENCY_INDEX = "idx_site_revision_site_idempotency_key";
+
+/**
+ * Нарушение уникального индекса ключа от повторов: код Postgres 23505 и имя
+ * индекса. Драйвер или drizzle могут завернуть исходную ошибку в `cause`.
+ */
+function isIdempotencyKeyViolation(e: unknown): boolean {
+  const err = e as
+    | { code?: string; constraint?: string; cause?: unknown }
+    | undefined;
+  if (!err) return false;
+  if (err.code === "23505" && err.constraint === IDEMPOTENCY_INDEX) return true;
+  return err.cause !== undefined && isIdempotencyKeyViolation(err.cause);
+}
 
 /** R3: колонка `kind` из `meta.kind` — та же метка, только не внутри jsonb. */
 function kindOfMeta(meta: Record<string, unknown> | undefined): string | null {
@@ -440,8 +458,7 @@ export class DocumentAdapter implements StoreContent {
       document: target.document,
       base: seen ?? null,
       tenantId: params.tenantId,
-      actor: "merchant",
-      source: "rollback",
+      ...labelsOf(params.writer, { actor: "merchant", source: "rollback" }),
       mergePolicy: "refuse",
       meta: { restoredFrom: params.revisionId },
       actorUserId: params.actorUserId,
@@ -506,6 +523,8 @@ export class DocumentAdapter implements StoreContent {
           | Record<string, unknown>
           | undefined,
       readPointer: (siteId, tenantId) => this.readPointer(siteId, tenantId),
+      findByIdempotencyKey: (siteId, key) =>
+        this.findByIdempotencyKey(siteId, key),
       commit: (write) => this.commit(write),
       writeModel: (siteId, params: SaveOnBaseParams, storedCurrent) =>
         this.writeModel(
@@ -562,6 +581,31 @@ export class DocumentAdapter implements StoreContent {
       panelDefaults: themeId ? await this.panelDefaults(themeId) : {},
       warn: (message) => this.logger.warn(`site ${siteId}: ${message}`),
     });
+  }
+
+  /** Ревизия этого магазина с ключом от повторов (К3); ключ другого магазина не виден. */
+  private async findByIdempotencyKey(
+    siteId: string,
+    key: string,
+  ): Promise<{ id: string; meta: Record<string, unknown> | null } | undefined> {
+    const [row] = await this.db
+      .select({
+        id: schema.siteRevision.id,
+        meta: schema.siteRevision.meta,
+      })
+      .from(schema.siteRevision)
+      .where(
+        and(
+          eq(schema.siteRevision.siteId, siteId),
+          eq(schema.siteRevision.idempotencyKey, key),
+        ),
+      );
+    return row
+      ? {
+          id: row.id,
+          meta: (row.meta ?? null) as Record<string, unknown> | null,
+        }
+      : undefined;
   }
 
   private async readPointer(
@@ -648,6 +692,7 @@ export class DocumentAdapter implements StoreContent {
             kind: kindOfMeta(row.meta),
             createdAt: new Date(),
             createdBy: write.createdBy,
+            idempotencyKey: row.idempotencyKey ?? null,
           });
         }
         if (write.current === undefined) return;
@@ -692,6 +737,7 @@ export class DocumentAdapter implements StoreContent {
       return true;
     } catch (e) {
       if (e instanceof CasMiss) return false;
+      if (isIdempotencyKeyViolation(e)) throw new IdempotencyKeyTakenError();
       throw e;
     }
   }

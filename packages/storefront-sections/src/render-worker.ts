@@ -9,7 +9,7 @@ import { renderTemplate, type TemplateComponent } from './trial-render';
 // Процесс рендера секций (render.ts; блок 2 «Секций и SDK», «Решил сам» п. 2). Запросы — строки JSON на stdin: первая —
 // ключ процесса, дальше { id, hash, module?, settings }; module приходит один раз на hash, загруженный шаблон хранится
 // по hash. Ответы — рамками в дескриптор 3: строка «<ключ> <id> <байт>\n» и ровно столько байт JSON — { ready: true }
-// (id 0), { html } или { error, denied }. Ключа у модуля секции нет: подделать ответ записью в дескриптор он не может.
+// (id 0), { html, cpuMs } или { error, denied, cpuMs } (cpuMs — процессорное время запроса, мс). Ключа у модуля секции нет: подделать ответ записью в дескриптор он не может.
 // Запись в дескриптор сохранена до первого модуля секции — модуль её не подменит.
 const write = writeSync;
 const CHANNEL = 3;
@@ -145,6 +145,13 @@ async function answerTo(line: string): Promise<{ id: number; answer: object }> {
   }
 }
 
+// Процессорное время процесса с момента started, мс: родитель судит о медленной секции по нему, а не по стенным часам —
+// на загруженной машине процесс ждёт процессор, и стенные часы растут при неизменной работе.
+function cpuMsSince(started: NodeJS.CpuUsage): number {
+  const { user, system } = process.cpuUsage(started);
+  return (user + system) / 1000;
+}
+
 let key: string | null = null;
 let queue = Promise.resolve();
 createInterface({ input: process.stdin }).on('line', (line) => {
@@ -155,7 +162,8 @@ createInterface({ input: process.stdin }).on('line', (line) => {
   }
   const current = key;
   queue = queue.then(async () => {
+    const started = process.cpuUsage();
     const { id, answer } = await answerTo(line);
-    send(current, id, answer);
+    send(current, id, { ...answer, cpuMs: cpuMsSince(started) });
   });
 });

@@ -172,6 +172,14 @@ function keyOf(segment: string): string | null {
   return parsed.kind === "key" ? parsed.key : null;
 }
 
+/** Проверять нечего: итога нет, или в нём ни секций, ни страниц, ни темы. */
+export function isEmptyScope(scope: CheckScope | null): boolean {
+  return (
+    scope === null ||
+    (scope.sections.length === 0 && scope.pages.length === 0 && !scope.theme)
+  );
+}
+
 export function checkScope(
   changes: readonly string[],
   after: unknown,

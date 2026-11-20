@@ -22,6 +22,9 @@ import { WORKER_FILES } from './worker-files';
 // доверяет: рамка с ключом процесса, id запроса в работе и длиной не больше предела; иначе процесс убит. Срок, размер
 // ответа и память — снаружи процесса: нарушение — SIGKILL, отказ этой секции со стадией для таблицы ошибок, следующая
 // секция рендерится в свежем процессе. После limits.renders рендеров процесс тоже заменяется свежим.
+// Вердикт «секция слишком медленная» — по процессорному времени, которое меряет сам процесс (process.cpuUsage вокруг
+// рендера секции) и отдаёт в ответе: на загруженной машине процесс ждёт процессор, стенные часы растут, процессорное
+// время — нет. Сторож по стенным часам (wallMs) остаётся только от зависания и бесконечного цикла.
 export interface SectionRenderRequest {
   section: string;
   hash: string;
@@ -52,8 +55,10 @@ export interface SectionRenderer {
 }
 
 export interface RenderLimits {
-  // Срок одной секции с отправки запроса, мс: дольше — render-timeout.
+  // Процессорное время одной секции, мс: больше — render-timeout. Ответ без cpuMs (старый процесс) — стенные часы.
   timeoutMs: number;
+  // Сторож по стенным часам с отправки запроса, мс: процесс не ответил — render-timeout. Меньше DRAW_TIMEOUT_MS.
+  wallMs: number;
   // Запуск процесса до ответа { ready }, мс.
   readyMs: number;
   // Ответ одной секции, байт: больше — render-output.
@@ -65,15 +70,29 @@ export interface RenderLimits {
   renders: number;
 }
 
-// Сроки — меньше DRAW_TIMEOUT_MS 3000 и BUILD_DRAIN_MS 20000 сборщика (факт 6 design.md блока 2).
+// Сроки — меньше DRAW_TIMEOUT_MS 3000 и BUILD_DRAIN_MS 20000 сборщика (факт 6 design.md блока 2): сторож секции — меньше
+// первого, запуск процесса и сторож вместе — меньше второго.
 export const RENDER_LIMITS: RenderLimits = {
   timeoutMs: 1_000,
-  readyMs: 5_000,
+  wallMs: 2_500,
+  readyMs: 10_000,
   sectionBytes: 1024 * 1024,
   memoryMb: 256,
   rssMb: 512,
   renders: 200,
 };
+
+// Сроки по стенным часам из окружения — только для тестов и CI на загруженной машине; в проде переменных нет, значения
+// по умолчанию (RENDER_LIMITS). Не целое положительное — переменная игнорируется.
+const WALL_ENV: Readonly<Record<'wallMs' | 'readyMs', string>> = {
+  wallMs: 'MERFY_RENDER_WALL_MS',
+  readyMs: 'MERFY_RENDER_READY_MS',
+};
+
+function envLimits(env: NodeJS.ProcessEnv): Partial<RenderLimits> {
+  const entries = Object.entries(WALL_ENV).map(([limit, name]) => [limit, Number(env[name])] as const);
+  return Object.fromEntries(entries.filter(([, value]) => Number.isInteger(value) && value > 0));
+}
 
 export interface RendererOptions {
   // Другой процесс вместо render-worker — только для тестов.
@@ -98,14 +117,16 @@ const TEXT = {
   exited: 'процесс рендера завершился',
   ready: (ms: number) => `процесс рендера не запустился за ${ms} мс`,
   timeout: (ms: number) => `секция рендерилась дольше ${ms} мс`,
+  wall: (ms: number) => `секция не ответила за ${ms} мс`,
   output: (bytes: number) => `ответ секции больше ${bytes} байт`,
   memory: 'процессу рендера не хватило памяти',
 } as const;
 
 const answerSchema = z.union([
   z.strictObject({ ready: z.literal(true) }),
-  z.strictObject({ html: z.string() }),
-  z.strictObject({ error: z.string(), denied: z.boolean() }),
+  // cpuMs — процессорное время секции в процессе рендера; у старого процесса поля нет.
+  z.strictObject({ html: z.string(), cpuMs: z.number().nonnegative().optional() }),
+  z.strictObject({ error: z.string(), denied: z.boolean(), cpuMs: z.number().nonnegative().optional() }),
 ]);
 type Answer = z.infer<typeof answerSchema>;
 
@@ -195,6 +216,8 @@ interface Running {
 interface InFlight {
   id: number;
   job: Job;
+  // Стенные часы отправки запроса (performance.now): для ответа без cpuMs.
+  sentAt: number;
 }
 
 const MEMORY_SIGNALS: ReadonlySet<string> = new Set(['SIGABRT', 'SIGTRAP']);
@@ -222,7 +245,7 @@ class Renderer implements SectionRenderer {
   private readonly limits: RenderLimits;
 
   constructor(private readonly options: RendererOptions) {
-    this.limits = { ...RENDER_LIMITS, ...options.limits };
+    this.limits = { ...RENDER_LIMITS, ...envLimits(process.env), ...options.limits };
   }
 
   render = (request: SectionRenderRequest): Promise<string> =>
@@ -286,13 +309,13 @@ class Renderer implements SectionRenderer {
       ...(running.sent.has(hash) ? {} : { module }),
     };
     running.sent.add(hash);
-    this.current = { id, job };
-    this.arm(running, this.limits.timeoutMs, { stage: 'render-timeout', message: TEXT.timeout(this.limits.timeoutMs) });
+    this.current = { id, job, sentAt: performance.now() };
+    this.arm(running, this.limits.wallMs, { stage: 'render-timeout', message: TEXT.wall(this.limits.wallMs) });
     running.child.stdin?.write(`${JSON.stringify(message)}\n`);
     this.watchMemory(running, id);
   }
 
-  // Один таймер на процесс: срок запуска или срок секции в работе.
+  // Один таймер на процесс: срок запуска или сторож секции в работе.
   private arm(running: Running, ms: number, fault: Fault): void {
     if (running.timer !== null) clearTimeout(running.timer);
     running.timer = setTimeout(() => this.fail(running, fault), ms);
@@ -335,6 +358,7 @@ class Renderer implements SectionRenderer {
     if ('ready' in frame.answer) return this.onReady(running, frame.id);
     const current = this.current;
     if (current === null || current.id !== frame.id) return this.fail(running, shape);
+    if (this.tooSlow(current, frame.answer.cpuMs)) return this.fail(running, this.slow());
     this.current = null;
     if (running.timer !== null) clearTimeout(running.timer);
     running.renders += 1;
@@ -343,6 +367,15 @@ class Renderer implements SectionRenderer {
       current.job.reject(new SectionRenderError(frame.answer.denied ? 'render-denied' : 'render', frame.answer.error));
     if (running.renders >= this.limits.renders) this.retire(running);
     this.pump();
+  }
+
+  private slow(): Fault {
+    return { stage: 'render-timeout', message: TEXT.timeout(this.limits.timeoutMs) };
+  }
+
+  // Процессорное время из ответа; нет поля (старый процесс) — стенные часы с отправки запроса.
+  private tooSlow(current: InFlight, cpuMs: number | undefined): boolean {
+    return (cpuMs ?? performance.now() - current.sentAt) > this.limits.timeoutMs;
   }
 
   private onReady(running: Running, id: number): void {

@@ -274,6 +274,13 @@
       "when": 1792886400000,
       "tag": "0038_storefront_section_library_base",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792972800000,
+      "tag": "0039_site_revision_idempotency_key",
+      "breakpoints": true
     }
   ]
 }

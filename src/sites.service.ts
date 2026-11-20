@@ -52,6 +52,7 @@ import { StoreContentService, resolveStoreContent } from "./content/store-conten
 import { rewriteCurrent } from "./content/rewrite-current";
 import { toStoreContentSite } from "./content/store-content.port";
 import { constructorStaleBase } from "./content/constructor-stale-base";
+import type { Writer } from "./content/writer";
 import type {
   HistoryCursor,
   StaleBasePolicy,
@@ -2109,6 +2110,8 @@ export class SitesDomainService {
     actor?: WriteActor;
     source?: WriteSource;
     mergePolicy?: StaleBasePolicy;
+    /** Ключ от повторов записи (К3): повтор отдаёт сохранённый ответ с `replayed: true`. */
+    idempotencyKey?: string;
     /**
      * Запись из конструктора/MCP: база — ревизия, которую видел клиент.
      * Слияние или жёсткий CAS выбирает сам сервис по теме магазина (nova —
@@ -2130,6 +2133,7 @@ export class SitesDomainService {
             site.themeId,
             constructorBase.mergeOnStale,
             constructorBase.seen,
+            params.actor,
           )
         : {}),
       site: toStoreContentSite(site),
@@ -2154,6 +2158,8 @@ export class SitesDomainService {
      * «ревизии нет»: явное значение, не подменяется текущей.
      */
     base?: string | null;
+    /** Кто откатывает (К1): агент ставит свои метки вместо `merchant/rollback`. */
+    writer?: Writer;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");

@@ -54,6 +54,7 @@ import { storeSlugFromName } from "../store-slug";
 import { toStoreView, type StoreView } from "../store-view";
 import { THEME_CATALOG, type ThemeCatalog } from "../theme-catalog";
 import { isNewThemeId } from "../../content/new-theme-pages";
+import { WriterSchema } from "../../content/writer";
 import {
   PlaceSkeletonCommand,
   type PlaceSkeletonEffect,
@@ -86,6 +87,8 @@ export const CreateStoreInputSchema = z.object({
   /** Создать, только если у тенанта ещё нет ни одного магазина (регистрация, cron). */
   ifNoStores: z.boolean().default(false),
   source: z.enum(CREATE_STORE_SOURCES).default("cabinet"),
+  /** Кто создаёт (К1): ставит шлюз; уходит в заготовку (`skeleton:true`), её ревизия получает метки агента. */
+  writer: WriterSchema,
   /** Поставить заготовку сразу (только nova). По умолчанию магазин пустой; кабинет флаг не передаёт. */
   skeleton: z.boolean().default(false),
 });
@@ -238,6 +241,7 @@ export class CreateStoreCommand {
         tenantId: input.tenantId,
         siteId,
         actorUserId: input.actorUserId,
+        writer: input.writer,
       });
   }
 

@@ -63,6 +63,7 @@ describe("id секций на странице", () => {
     const store: RevisionStore = {
       fetchData: async () => ({ sections: { home: [hero("hero-1")] } }),
       readPointer: async () => "r0",
+      findByIdempotencyKey: async () => undefined,
       writeModel: async () => IDENTITY_MODEL,
       commit,
     };

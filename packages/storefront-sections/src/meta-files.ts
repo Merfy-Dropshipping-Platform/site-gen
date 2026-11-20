@@ -13,7 +13,7 @@ const META_FILES: ReadonlySet<string> = new Set([BASED_ON_FILE, DECLINE_FILE]);
 export interface SplitFiles {
   files: SectionFiles; // файлы секции без служебных
   basedOn?: string;
-  decline?: string; // полное имя секции магазина: `shop:faq`
+  decline?: string; // полное имя секции магазина: «shop:<имя>»
 }
 
 const textOf = (files: SectionFiles, path: string): string | undefined => {
@@ -21,7 +21,7 @@ const textOf = (files: SectionFiles, path: string): string | undefined => {
   return text === undefined || text === '' ? undefined : text;
 };
 
-// `faq` и `shop:faq` — одна секция; не по форме имени секции — undefined (отказ даст тот, кто читает).
+// «имя» и «shop:имя» — одна секция; не по форме имени секции — undefined (отказ даст тот, кто читает).
 const shopNameOf = (raw: string | undefined): string | undefined => {
   const bare = raw?.replace(/^shop:/, '');
   return bare !== undefined && SECTION_ID.test(bare) ? `shop:${bare}` : undefined;

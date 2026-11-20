@@ -108,7 +108,7 @@ async function offersOf(
   return new Map(offers.flatMap(([name, offer]) => (offer === undefined ? [] : [[name, offer] as const])));
 }
 
-// Предложения магазина: полное имя секции (`shop:faq`) → предложение.
+// Предложения магазина: полное имя секции («shop:<имя>») → предложение.
 export const updateOffersOf = (
   db: RowsQuery,
   shopId: string,

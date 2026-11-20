@@ -38,37 +38,48 @@ describe('srcset у картинок нашего хранилища', () => {
     expect(DEFAULT_SIZES).toBe('(max-width: 767px) 266px, 100vw');
   });
 
-  it('маркер версии 2: три копии, ширина d — фактическая (оригинал 1200 px даёт 1200w)', () => {
-    const v2: Marker = {
-      rulesVersion: 2,
-      status: 'ok',
-      attempts: 1,
-      width: 1200,
-      height: 800,
-      variants: [
-        { kind: 's', width: 400, key: 'any/s' },
-        { kind: 'm', width: 800, key: 'any/m' },
-        { kind: 'd', width: 1200, key: 'any/d' },
-      ],
-    };
-    const base = `${ORIGIN}/product-images/a.jpg`;
-    const set = `${base}.s.webp 400w, ${base}.m.webp 800w, ${base}.d.webp 1200w`;
-    expect(withImgSizes(`<img src="${PHOTO}">`, imagesOf({ [PHOTO]: v2 }))).toBe(
-      `<img src="${PHOTO}" srcset="${set}" sizes="${DEFAULT_SIZES}">`,
+  const v2Marker = (width: number, kinds: Marker['variants']): Marker => ({
+    rulesVersion: 2,
+    status: 'ok',
+    attempts: 1,
+    width,
+    height: 800,
+    variants: kinds,
+  });
+  const V2_FULL = v2Marker(1200, [
+    { kind: 's', width: 400, key: 'any/s' },
+    { kind: 'm', width: 800, key: 'any/m' },
+    { kind: 'd', width: 1200, key: 'any/d' },
+  ]);
+  const BASE = `${ORIGIN}/product-images/a.jpg`;
+
+  it('обложка без своего sizes: srcset без 400w — только m и d, ширина d фактическая (1200w)', () => {
+    expect(withImgSizes(`<img src="${PHOTO}">`, imagesOf({ [PHOTO]: V2_FULL }))).toBe(
+      `<img src="${PHOTO}" srcset="${BASE}.m.webp 800w, ${BASE}.d.webp 1200w" sizes="${DEFAULT_SIZES}">`,
+    );
+  });
+
+  it('карточка со своим sizes: srcset с 400w', () => {
+    const own = '(max-width: 767px) 50vw, 25vw';
+    expect(withImgSizes(`<img src="${PHOTO}" sizes="${own}">`, imagesOf({ [PHOTO]: V2_FULL }))).toBe(
+      `<img src="${PHOTO}" sizes="${own}" srcset="${BASE}.s.webp 400w, ${BASE}.m.webp 800w, ${BASE}.d.webp 1200w">`,
+    );
+  });
+
+  it('копия s одна (оригинал 600–799 px): без своего sizes srcset не нужен, со своим — есть', () => {
+    const only = imagesOf({ [PHOTO]: v2Marker(700, [{ kind: 's', width: 400, key: 'any/s' }]) });
+    expect(withImgSizes(`<img src="${PHOTO}">`, only)).toBe(`<img src="${PHOTO}">`);
+    expect(withImgSizes(`<img src="${PHOTO}" sizes="50vw">`, only)).toBe(
+      `<img src="${PHOTO}" sizes="50vw" srcset="${BASE}.s.webp 400w, ${PHOTO} 700w">`,
     );
   });
 
   it('смесь версий в одной странице: маркер версии 1 и версии 2 строят srcset каждый по своим копиям', () => {
     const other = `${ORIGIN}/product-images/z.png`;
-    const v2: Marker = {
-      ...markerOf(['m', 'd']),
-      rulesVersion: 2,
-      variants: [{ kind: 's', width: 400, key: 'any/s' }],
-    };
-    const images = imagesOf({ [PHOTO]: markerOf(['m', 'd']), [other]: v2 });
-    expect(withImgSizes(`<img src="${PHOTO}"><img src="${other}">`, images)).toBe(
+    const images = imagesOf({ [PHOTO]: markerOf(['m', 'd']), [other]: V2_FULL });
+    expect(withImgSizes(`<img src="${PHOTO}"><img src="${other}" sizes="50vw">`, images)).toBe(
       `<img src="${PHOTO}" srcset="${SET}" sizes="${DEFAULT_SIZES}">` +
-        `<img src="${other}" srcset="${ORIGIN}/product-images/z.png.s.webp 400w, ${other} 2400w" sizes="${DEFAULT_SIZES}">`,
+        `<img src="${other}" sizes="50vw" srcset="${ORIGIN}/product-images/z.png.s.webp 400w, ${ORIGIN}/product-images/z.png.m.webp 800w, ${ORIGIN}/product-images/z.png.d.webp 1200w">`,
     );
   });
 
@@ -173,6 +184,28 @@ describe('предзагрузка главной картинки', () => {
     );
     expect(out.sections[0]).toContain(`srcset="${SET}"`);
     expect(out.sections[0]).toContain('loading="eager" fetchpriority="high"');
+  });
+
+  it('главная без своего sizes: preload без 400w, а у неё со своим sizes — с 400w', () => {
+    const base = `${ORIGIN}/product-images/a.jpg`;
+    const marker: Marker = {
+      rulesVersion: 2,
+      status: 'ok',
+      attempts: 1,
+      width: 2400,
+      height: 1600,
+      variants: [
+        { kind: 's', width: 400, key: 'any/s' },
+        { kind: 'm', width: 800, key: 'any/m' },
+        { kind: 'd', width: 1600, key: 'any/d' },
+      ],
+    };
+    const images = imagesOf({ [PHOTO]: marker });
+    const cover = withImageLoading(withImageSizes(page({ sections: [`<img src="${PHOTO}">`] }), images));
+    expect(cover.mainImageLink).toContain(`imagesrcset="${base}.m.webp 800w, ${base}.d.webp 1600w"`);
+    expect(cover.mainImageLink).not.toContain('400w');
+    const card = withImageLoading(withImageSizes(page({ sections: [`<img src="${PHOTO}" sizes="50vw">`] }), images));
+    expect(card.mainImageLink).toContain('400w');
   });
 
   it('нет копий — preload прежний, без imagesrcset', () => {

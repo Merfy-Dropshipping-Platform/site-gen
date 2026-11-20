@@ -1,4 +1,4 @@
-import { buildSrcset, variantKey, type Marker } from '@merfy-dropshipping-platform/images';
+import { buildSrcset, variantKey, type Marker, type VariantKind } from '@merfy-dropshipping-platform/images';
 import { valueOf, type HtmlTag } from './html-tags';
 import { imgTags } from './image-loading';
 import { imageKeyOf } from './image-urls';
@@ -34,22 +34,42 @@ const withCopyKeys = (marker: Marker, key: string): Marker => ({
   variants: marker.variants.map((variant) => ({ ...variant, key: variantKey(key, variant.kind) })),
 });
 
+// Какие копии идут в srcset, смотря на то, кто назвал размер показа. Маленькая копия (400w) — только при своём sizes
+// автора: он честно называет долю экрана (карточки сеток 50vw/25vw). У sizes сборки число 266 — порог выбора между 800 и
+// 1600, а не ширина показа: рядом с кандидатом 400 браузер берёт меньшего при среднем геометрическом плотностей выше DPR
+// (400w и 800w: 1,5 и 3,0 → 2,12 > 1,75), и обложка во всю ширину телефона рисовалась бы из 400 px.
+const SIZES_OWNER = { own: 'own', build: 'build' } as const;
+type SizesOwner = (typeof SIZES_OWNER)[keyof typeof SIZES_OWNER];
+const KINDS_IN_SRCSET: Record<SizesOwner, readonly VariantKind[]> = {
+  own: ['s', 'm', 'd'],
+  build: ['m', 'd'],
+};
+
+// Маркер только с теми копиями, что нужны этому <img>.
+const withKinds = (marker: Marker, kinds: readonly VariantKind[]): Marker => ({
+  ...marker,
+  variants: marker.variants.filter((variant) => kinds.includes(variant.kind)),
+});
+
 // Значение srcset для адреса картинки: копии — на хосте хранилища контура, оригинал — по своему адресу (в конце, если
-// копии для компьютера нет). Нет маркера, копий или ключа — пустая строка.
-function srcsetOf(url: string, images: Images): string {
+// копии для компьютера нет). Нет маркера, нужных копий или ключа — пустая строка.
+function srcsetOf(url: string, images: Images, owner: SizesOwner): string {
   const marker = images.markers[url];
   const key = imageKeyOf(url);
-  if (marker === undefined || key === null || marker.variants.length === 0) return '';
+  if (marker === undefined || key === null) return '';
+  const needed = withKinds(withCopyKeys(marker, key), KINDS_IN_SRCSET[owner]);
+  if (needed.variants.length === 0) return '';
   const toUrl = (copyKey: string): string => (copyKey === key ? url : `${images.origin}/${copyKey}`);
-  return buildSrcset({ key, marker: withCopyKeys(marker, key), toUrl });
+  return buildSrcset({ key, marker: needed, toUrl });
 }
 
 // Атрибуты, которые сборка добавляет к <img>: srcset и, если автор не задал свой, sizes.
 function sizeAttributes(tag: HtmlTag, images: Images): string {
   if (hasAttribute(tag, 'srcset')) return '';
-  const srcset = srcsetOf(valueOf(tag.attributes, 'src'), images);
+  const owner = hasAttribute(tag, 'sizes') ? SIZES_OWNER.own : SIZES_OWNER.build;
+  const srcset = srcsetOf(valueOf(tag.attributes, 'src'), images, owner);
   if (srcset === '') return '';
-  const sizes = hasAttribute(tag, 'sizes') ? '' : ` sizes="${DEFAULT_SIZES}"`;
+  const sizes = owner === SIZES_OWNER.own ? '' : ` sizes="${DEFAULT_SIZES}"`;
   return ` srcset="${srcset}"${sizes}`;
 }
 

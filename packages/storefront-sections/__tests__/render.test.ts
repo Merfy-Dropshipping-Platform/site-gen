@@ -1,9 +1,12 @@
+import { spawn, type ChildProcess } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { sha256 } from '@merfy/storefront-build';
 import { afterEach, describe, expect, it } from 'vitest';
 import { compileTemplate } from '../src/compile';
 import {
+  RENDER_LIMITS,
   SectionRenderError,
   startSectionRenderer,
   withSectionRenderer,
@@ -26,6 +29,33 @@ async function moduleOf(template: string): Promise<{ module: string; hash: strin
   const compiled = await compileTemplate(template);
   if (!compiled.ok) throw new Error(JSON.stringify(compiled.problems));
   return { module: compiled.code, hash: sha256(Buffer.from(compiled.code, 'utf8')) };
+}
+
+// Секция, которая жжёт процессор ровно столько мс процессорного времени (не стенных часов): на загруженной машине её
+// стенное время длиннее, процессорное — то же.
+const BURN_CPU = `---
+function burnCpu(ms) {
+  const from = process.cpuUsage();
+  while (((used) => used.user + used.system)(process.cpuUsage(from)) < ms * 1000) {}
+  return 'done';
+}
+---
+`;
+
+// Чужая нагрузка на процессор: вдвое больше занятых процессов, чем ядер (не меньше 8).
+const BUSY_PROCESSES = Math.max(8, availableParallelism() * 2);
+
+function occupyCpu(): ChildProcess[] {
+  return Array.from({ length: BUSY_PROCESSES }, () =>
+    spawn(process.execPath, ['-e', 'for(;;){}'], { stdio: 'ignore' }),
+  );
+}
+
+// Занятые процессы убиты и завершились — иначе они остаются на машине после теста.
+async function release(busy: ChildProcess[]): Promise<void> {
+  const exits = busy.map((child) => new Promise<void>((resolve) => child.once('exit', () => resolve())));
+  for (const child of busy) child.kill('SIGKILL');
+  await Promise.all(exits);
 }
 
 const opened: SectionRenderer[] = [];
@@ -103,17 +133,68 @@ describe('процесс рендера секций', () => {
 });
 
 describe('пределы процесса рендера', () => {
-  it('секция дольше срока — render-timeout; следующая секция — в свежем процессе', async () => {
-    // Срок 1000 мс: следующая секция идёт в свежем процессе, и его холодный старт (импорт Astro,
+  it('бесконечный цикл — сторож стенных часов: render-timeout; следующая секция — в свежем процессе', async () => {
+    // Сторож 1000 мс: следующая секция идёт в свежем процессе, и его холодный старт (импорт Astro,
     // контейнер) на медленном CI-раннере не укладывается в меньший срок — проверено на GitHub Actions.
-    const renderer = open({ limits: { timeoutMs: 1_000 } });
+    const renderer = open({ limits: { wallMs: 1_000 } });
     const endless = await moduleOf(`${FRONT}<p>{(() => { while (true) {} })()}</p>`);
     expect(await refusal(renderer.render({ section: 'shop:endless', ...endless, settings: {} }))).toEqual({
       stage: 'render-timeout',
-      message: 'секция рендерилась дольше 1000 мс',
+      message: 'секция не ответила за 1000 мс',
     });
     const hero = await moduleOf(HERO);
     expect(await renderer.render({ section: 'shop:hero', ...hero, settings: SETTINGS })).toContain('Шарфы');
+  }, 30_000);
+
+  it('сторож стенных часов берёт значение из MERFY_RENDER_WALL_MS; не число — по умолчанию', async () => {
+    const endless = await moduleOf(`${FRONT}<p>{(() => { while (true) {} })()}</p>`);
+    const request = { section: 'shop:endless', ...endless, settings: {} };
+    const before = process.env.MERFY_RENDER_WALL_MS;
+    try {
+      for (const [value, ms] of [
+        ['700', 700],
+        ['abc', RENDER_LIMITS.wallMs],
+      ] as const) {
+        process.env.MERFY_RENDER_WALL_MS = value;
+        expect((await refusal(open().render(request))).message).toBe(`секция не ответила за ${ms} мс`);
+      }
+    } finally {
+      if (before === undefined) delete process.env.MERFY_RENDER_WALL_MS;
+      else process.env.MERFY_RENDER_WALL_MS = before;
+    }
+  }, 30_000);
+
+  it('секция медленная по процессору — render-timeout, хотя сторож стенных часов не сработал', async () => {
+    const renderer = open({ limits: { timeoutMs: 1_000, wallMs: 20_000 } });
+    const slow = await moduleOf(`${BURN_CPU}<p>{burnCpu(1500)}</p>`);
+    expect(await refusal(renderer.render({ section: 'shop:slow', ...slow, settings: {} }))).toEqual({
+      stage: 'render-timeout',
+      message: 'секция рендерилась дольше 1000 мс',
+    });
+    expect(renderer.pid()).toBeNull();
+    const hero = await moduleOf(HERO);
+    expect(await renderer.render({ section: 'shop:hero', ...hero, settings: SETTINGS })).toContain('Шарфы');
+  }, 60_000);
+
+  it('быстрая секция проходит, пока процессор занят чужими процессами', async () => {
+    const renderer = open({ limits: { timeoutMs: 1_000, wallMs: 60_000, readyMs: 60_000 } });
+    const hero = await moduleOf(HERO);
+    const busy = occupyCpu();
+    try {
+      expect(await renderer.render({ section: 'shop:hero', ...hero, settings: SETTINGS })).toContain('Шарфы');
+    } finally {
+      await release(busy);
+    }
+  }, 60_000);
+
+  it('ответ без процессорного времени (старый процесс) судится по стенным часам', async () => {
+    const renderer = open({ workerPath: workerOf('render-old-slow'), limits: { timeoutMs: 200 } });
+    const request = { section: 'shop:hero', settings: {} };
+    expect(await renderer.render({ ...request, hash: 'sha256:a', module: '0' })).toBe('old');
+    expect(await refusal(renderer.render({ ...request, hash: 'sha256:b', module: '600' }))).toEqual({
+      stage: 'render-timeout',
+      message: 'секция рендерилась дольше 200 мс',
+    });
   }, 30_000);
 
   it('ответ секции больше предела — render-output', async () => {

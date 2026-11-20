@@ -47,12 +47,16 @@ describe('сломанные секции для проверки руками',
       ['long-output', { heading: 'шарф', subheading: '1000000' }, 'render-output'],
       ['slow-grid', { heading: '100000' }, 'render-timeout'],
     ];
-    const stages = await withSectionRenderer(async (render) => {
-      const found: string[] = [];
-      for (const [name, settings] of cases)
-        found.push(await render(await requestOf(name, settings)).then(() => 'отрендерилась', stageOf));
-      return found;
-    });
+    // slow-grid не заканчивается: его останавливает сторож стенных часов, свой — короче щедрого из vitest.config.ts.
+    const stages = await withSectionRenderer(
+      async (render) => {
+        const found: string[] = [];
+        for (const [name, settings] of cases)
+          found.push(await render(await requestOf(name, settings)).then(() => 'отрендерилась', stageOf));
+        return found;
+      },
+      { limits: { wallMs: 5_000 } },
+    );
     expect(stages).toEqual(cases.map(([, , stage]) => stage));
   }, 30_000);
 });

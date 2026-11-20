@@ -62,7 +62,7 @@ const envSchema = z.object({
   DADATA_API_KEY: z.string().min(1).max(100).optional(),
   // Хосты хранилища картинок через запятую (модуль картинок, шаг 3; как MERFY_STORAGE_HOSTS у merfy-mcp): у адресов с этих
   // хостов ищутся копии. Хост STOREFRONT_UPLOAD_URL входит всегда — маркеры читаются с него. На dev в данных бывают адреса
-  // с хостом прода (minio.merfy.ru), их добавляют сюда.
+  // с хостом прода, его добавляют сюда.
   MERFY_STORAGE_HOSTS: z.string().optional(),
 });
 

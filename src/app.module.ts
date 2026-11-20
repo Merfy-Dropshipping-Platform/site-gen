@@ -49,6 +49,8 @@ import { CoolifyProvider } from "./deployments/coolify.provider";
 import { DeploymentsService } from "./deployments/deployments.service";
 import { TraefikRouterService } from "./deployments/traefik-router.service";
 import { S3StorageService } from "./storage/s3.service";
+import { MediaImagesService } from "./storage/images/media-images.service";
+import { ImageBackfillService } from "./storage/images/image-backfill.service";
 import { ScheduleModule } from "@nestjs/schedule";
 import { RetentionScheduler } from "./scheduler/retention.scheduler";
 import { BillingSyncScheduler } from "./scheduler/billing-sync.scheduler";
@@ -139,6 +141,8 @@ import { STORE_CONTROLLERS, STORE_PROVIDERS } from "./store/store.providers";
     DeploymentsService,
     TraefikRouterService,
     S3StorageService,
+    MediaImagesService,
+    ImageBackfillService,
     RetentionScheduler,
     BillingSyncScheduler,
     SiteProvisioningScheduler,

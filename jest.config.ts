@@ -38,6 +38,8 @@ const config: Config = {
   // Большой прогон (весь набор, каталог, 4+ файлов) встаёт в очередь на машину.
   globalSetup: '<rootDir>/jest.global-setup.cjs',
   globalTeardown: '<rootDir>/jest.global-teardown.cjs',
+  // Двойники хранилища и генератора для тестов модуля картинок лежат рядом с ними и сами тестов не содержат.
+  testPathIgnorePatterns: ['/node_modules/', '/storage/images/__tests__/doubles\\.ts$'],
   verbose: false,
 };
 

@@ -14,6 +14,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, sql } from "drizzle-orm";
 import { S3StorageService } from "../storage/s3.service";
+import { MediaImagesService } from "../storage/images/media-images.service";
 import { SitesDomainService } from "../sites.service";
 import * as schema from "../db/schema";
 import { PG_CONNECTION } from "../constants";
@@ -47,6 +48,7 @@ export class MediaUploadController {
 
   constructor(
     private readonly s3: S3StorageService,
+    private readonly images: MediaImagesService,
     private readonly sitesService: SitesDomainService,
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
@@ -226,6 +228,7 @@ export class MediaUploadController {
         file.buffer,
         file.mimetype,
       );
+      await this.images.processUpload(key, file.buffer);
       this.logger.log(
         `Media uploaded for site ${siteId}: ${url} (${file.size}B, ${file.mimetype})`,
       );

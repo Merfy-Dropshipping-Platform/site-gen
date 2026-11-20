@@ -68,19 +68,35 @@ describe('текст и адреса картинок в разметке', () =
         '<section><img src={settings.image} alt="" loading="eager" fetchpriority="high" /><img src={settings.image} alt="" fetchpriority="low" /><img src={settings.image} alt="" loading={settings.heading ? "eager" : "lazy"} /><img src={settings.image} alt="" loading="lazy" /><h2>{settings.heading}</h2></section>',
     };
     const result = (await authoringProblems(files)).filter((item) => item.code === 'taste-img-loading');
-    expect(result).toHaveLength(1);
-    expect(result[0]?.message).toContain('fetchpriority у <img> (2) не действует');
+    const priority = result.filter((item) => item.message.startsWith('fetchpriority'));
+    expect(priority).toHaveLength(1);
+    expect(priority[0]?.message).toContain('fetchpriority у <img> (2) не действует');
+    expect(result).toHaveLength(2);
     expect(result.every(isWarning)).toBe(true);
   });
 
-  it('loading="eager", loading="lazy" и loading={…} у <img> без fetchpriority — без предупреждений', async () => {
+  it('loading="lazy" и loading={…} у <img> без fetchpriority — без предупреждений', async () => {
     const files = {
       'section.json': manifest,
       'template.astro':
-        '<section><img src={settings.image} alt="" loading="eager" /><img src={settings.image} alt="" loading={settings.heading ? "eager" : "lazy"} /><img src={settings.image} alt="" loading="lazy" /><h2>{settings.heading}</h2></section>',
+        '<section><img src={settings.image} alt="" loading={settings.heading ? "eager" : "lazy"} /><img src={settings.image} alt="" loading="lazy" /><h2>{settings.heading}</h2></section>',
     };
     const result = (await authoringProblems(files)).filter((item) => item.code === 'taste-img-loading');
     expect(result).toEqual([]);
+  });
+
+  // 20.11.2026: eager автора сборка оставляет только в первом экране — подсказка, не ошибка.
+  it('loading="eager" строкой — одна подсказка: сборка оставит его только в первом экране', async () => {
+    const files = {
+      'section.json': manifest,
+      'template.astro':
+        '<section><img src={settings.image} alt="" loading="eager" /><img src={settings.image} alt="" loading="eager" /><h2>{settings.heading}</h2></section>',
+    };
+    const result = (await authoringProblems(files)).filter((item) => item.code === 'taste-img-loading');
+    expect(result).toHaveLength(1);
+    expect(result[0]?.message).toContain('loading="eager" у <img> (2)');
+    expect(result[0]?.message).toContain('только в первом экране');
+    expect(result.every(isWarning)).toBe(true);
   });
 
   it('src с выражением и пустой src — без предупреждений', async () => {

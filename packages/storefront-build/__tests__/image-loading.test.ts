@@ -212,6 +212,63 @@ describe('главная картинка — первая видимая с а�
   });
 });
 
+// 20.11.2026: eager автора — только в первом экране; ниже секции с главной картинкой он становится lazy.
+describe('eager автора ниже первого экрана', () => {
+  const cards = (loading: string): string =>
+    [1, 2].map((n) => `<li><img src="/p${n}.jpg" alt="" loading="${loading}"></li>`).join('');
+  const loadingOf = (html: string): Array<string | undefined> =>
+    imgTags(html).map((tag) => tag.attributes.find((attribute) => attribute.name === 'loading')?.value);
+
+  it('сетка первой секцией — главная её первая карточка, eager остаётся у всех', () => {
+    const out = withImageLoading(page({ sections: [`<ul>${cards('eager')}</ul>`] }));
+    expect(loadingOf(out.sections[0] ?? '')).toEqual(['eager', 'eager']);
+  });
+
+  it('сетка под hero — eager становится lazy, hero остаётся главной', () => {
+    const out = withImageLoading(page({ sections: [hero, `<ul>${cards('eager')}</ul>`] }));
+    expect(loadingOf(out.sections[0] ?? '')).toEqual(['eager']);
+    expect(loadingOf(out.sections[1] ?? '')).toEqual(['lazy', 'lazy']);
+    expect(out.sections[1]).not.toContain('eager');
+    expect(out.mainImage).toBe('https://cdn.example/hero.jpg');
+  });
+
+  it('главная в той же секции, что и eager-карточки — они остаются eager', () => {
+    const out = withImageLoading(page({ sections: [`${hero}<ul>${cards('eager')}</ul>`] }));
+    expect(loadingOf(out.sections[0] ?? '')).toEqual(['eager', 'eager', 'eager']);
+  });
+
+  it('секция выше главной (картинки скрыты) сохраняет eager автора', () => {
+    const above = '<img data-ref="cover" hidden loading="eager">';
+    const out = withImageLoading(page({ sections: [above, hero, `<ul>${cards('eager')}</ul>`] }));
+    expect(loadingOf(out.sections[0] ?? '')).toEqual(['eager']);
+    expect(loadingOf(out.sections[2] ?? '')).toEqual(['lazy', 'lazy']);
+  });
+
+  it('главной картинки нет — «шаблон главнее» как раньше: eager автора везде остаётся', () => {
+    const sections = ['<img data-ref="cover" hidden loading="eager">', `<div hidden>${cards('eager')}</div>`];
+    const out = withImageLoading(page({ sections, footer: ['<img src="/f.jpg" loading="eager">'] }));
+    expect(loadingOf(out.sections.join(''))).toEqual(['eager', 'eager', 'eager']);
+    expect(out.footer?.[0]).toContain('loading="eager"');
+  });
+
+  it('подвал и окна при главной картинке — eager становится lazy, шапка остаётся как есть', () => {
+    const eager = '<img src="/x.jpg" loading="eager">';
+    const out = withImageLoading(page({ header: [eager], sections: [hero], footer: [eager], overlay: [eager] }));
+    expect(out.header?.[0]).toContain('loading="eager"');
+    expect(out.footer?.[0]).toContain('loading="lazy"');
+    expect(out.overlay?.[0]).toContain('loading="lazy"');
+  });
+
+  it('свой lazy ниже первого экрана остаётся, чужое значение loading заменяется на lazy', () => {
+    expect(withImgLoading('<img src="/a.jpg" loading="lazy">', -1, true)).toBe(
+      '<img src="/a.jpg" loading="lazy" decoding="async">',
+    );
+    expect(withImgLoading('<img src="/a.jpg" loading="auto">', -1, true)).toBe(
+      '<img src="/a.jpg" loading="lazy" decoding="async">',
+    );
+  });
+});
+
 describe('сетка карточек: шаблон решает, какие картинки eager', () => {
   const EAGER_CARDS = 4;
   const card = (position: number): string =>

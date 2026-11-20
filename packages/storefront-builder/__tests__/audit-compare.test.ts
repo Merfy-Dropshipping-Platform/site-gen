@@ -1,6 +1,13 @@
 // Сравнение аудита страницы с прошлым (место `audit`): каждое правило «стало хуже» — одна находка; `fix` — по месту.
 import { describe, expect, it } from 'vitest';
-import { LCP_MIN_GROWTH_MS, PERF_DROP, RULES, auditFindings, type AuditChange } from '../src/checks/audit/compare';
+import {
+  LCP_MIN_GROWTH_MS,
+  PERF_DROP,
+  RULES,
+  TBT_MIN_GROWTH_MS,
+  auditFindings,
+  type AuditChange,
+} from '../src/checks/audit/compare';
 import type { AuditMetrics } from '../src/checks/audit/report';
 import { onPlatformSections } from '../src/checks/finding';
 
@@ -63,15 +70,16 @@ describe('CLS', () => {
 });
 
 describe('TBT', () => {
-  it('выше нормы телефона (200 мс) и выше прошлого — находка', () => {
-    const [finding] = auditFindings(change({ tbtMs: 380 }));
+  it(`выше нормы телефона (200 мс) и вырос на ${TBT_MIN_GROWTH_MS} мс и больше — находка`, () => {
+    const [finding] = auditFindings(change({ tbtMs: 100 + TBT_MIN_GROWTH_MS }));
     expect(finding?.rule).toBe('tbt-over-limit');
-    expect(finding?.text).toMatch(/^Стало хуже: TBT 100 → 380 мс \(норма 200\) · /);
+    expect(finding?.text).toMatch(/^Стало хуже: TBT 100 → 800 мс \(норма 200\) · /);
   });
 
   it.each([
     ['в норме', 100, 200],
     ['выше нормы, но не хуже прошлого', 300, 300],
+    ['выше нормы, рост меньше порога (шум главной: 16 ↔ 544 мс)', 100, 100 + TBT_MIN_GROWTH_MS - 1],
   ])('нет находки: %s', (_name, wasMs, nowMs) => {
     const value = change({ tbtMs: nowMs });
     expect(rulesOf({ ...value, was: { ...GOOD, tbtMs: wasMs } })).toEqual([]);
@@ -79,18 +87,19 @@ describe('TBT', () => {
 });
 
 describe('оценка', () => {
-  it('упала на 5 пунктов — находка', () => {
-    expect(rulesOf(change({ perf: 0.86 }))).toEqual(['perf-dropped']);
+  it('упала на 16 пунктов — находка', () => {
+    expect(rulesOf(change({ perf: 0.75 }))).toEqual(['perf-dropped']);
   });
 
-  it(`порог — ${PERF_DROP}: на 4 пункта не находка`, () => {
-    expect(rulesOf(change({ perf: 0.87 }))).toEqual([]);
+  it(`порог — ${PERF_DROP}: ровно на 15 пунктов — находка, на 14 — нет (шум главной стенда до 13)`, () => {
+    expect(rulesOf(change({ perf: 0.76 }))).toEqual(['perf-dropped']);
+    expect(rulesOf(change({ perf: 0.77 }))).toEqual([]);
   });
 });
 
 describe('вместе', () => {
   it('несколько правил — по находке на правило, порядок таблицы', () => {
-    const found = rulesOf(change({ lcpMs: 4000, cls: 0.2, tbtMs: 500, perf: 0.5 }));
+    const found = rulesOf(change({ lcpMs: 4000, cls: 0.2, tbtMs: 900, perf: 0.5 }));
     expect(found).toEqual(RULES.map((rule) => rule.rule));
   });
 

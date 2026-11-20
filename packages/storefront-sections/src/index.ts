@@ -132,7 +132,7 @@ export { FORBIDDEN_TAGS } from './template';
 export { SDK_KINDS } from './names';
 
 // Инструменты секций (блок 14, часть 14б): что видит конструктор и файлы текущей правки.
-export { draftSource, editableSections, libraryUnchanged, type DraftSource } from './registry';
+export { draftSource, editableSections, libraryUnchanged, libraryUnchangedIn, type DraftSource } from './registry';
 // Обновление копии библиотечной секции (20.11): основа копии, предложение, отказ; служебные файлы тела; версия с диска.
 export {
   basedOnProblem,

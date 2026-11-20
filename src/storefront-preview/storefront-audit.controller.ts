@@ -26,4 +26,24 @@ export class StorefrontAuditController {
       await this.builder.call("/audit", { shop: siteId, page: page ?? "" }),
     );
   }
+
+  /**
+   * GET /api/sites/:id/audit/superseded?build=<номер> — вышла ли после сборки новая живая
+   * сборка магазина: проверяющий процесс спрашивает перед прогоном аудита, не вытеснено ли
+   * задание. Ответ сборщика: { superseded: boolean }.
+   */
+  @Get("superseded")
+  async superseded(
+    @Param("id") siteId: string,
+    @Query("build") build: string | undefined,
+    @Res() res: Response,
+  ): Promise<void> {
+    sendAnswer(
+      res,
+      await this.builder.call("/audit/superseded", {
+        shop: siteId,
+        build: build ?? "",
+      }),
+    );
+  }
 }

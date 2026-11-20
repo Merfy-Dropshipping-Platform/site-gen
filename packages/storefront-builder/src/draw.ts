@@ -11,7 +11,7 @@ import {
 } from '@merfy/storefront-build';
 import { withSectionRenderer } from '@merfy/storefront-sections';
 import { hexOf, recordDrawnPage, type ObjectStore } from '@merfy/storefront-storage';
-import { AUDIT_ROUTE, auditAnswer } from './audit/answer';
+import { AUDIT_ROUTE, AUDIT_SUPERSEDED_ROUTE, auditAnswer, supersededAnswer } from './audit/answer';
 import { LIST_ARGS_MAX, listAt } from './list-rpc';
 import { z } from 'zod';
 import type { LoadedTheme } from './build-job';
@@ -253,6 +253,12 @@ async function route(deps: DrawDeps, request: IncomingMessage): Promise<DrawAnsw
     if (request.method !== 'GET') return { status: 405, body: '' };
     const query = url.searchParams;
     return auditAnswer({ db: deps.snapshot.db, log: deps.log }, query.get('shop'), query.get('page'));
+  }
+  // Вытеснено ли задание аудита новой сборкой: для проверяющего процесса перед прогоном.
+  if (url.pathname === AUDIT_SUPERSEDED_ROUTE) {
+    if (request.method !== 'GET') return { status: 405, body: '' };
+    const query = url.searchParams;
+    return supersededAnswer({ db: deps.snapshot.db, log: deps.log }, query.get('shop'), query.get('build'));
   }
   // Секция версии расширения от сервиса extensions через sites (блок 12 «Секций и SDK», 12.6).
   if (url.pathname === EXTENSION_SECTION_ROUTE && deps.sections) {

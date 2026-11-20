@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { isLibrarySection } from '../src/library-history';
 import { readSectionFolder } from '../src/read-folder';
-import { libraryUnchanged, type RowsQuery } from '../src/registry';
+import { libraryUnchanged, libraryUnchangedIn, type RowsQuery } from '../src/registry';
 
 // Секция платформы для проверок черновика (19.11): библиотечная, которую в магазине не меняли. Роль секции признаком не
 // служит: своя корзина агента — его секция.
@@ -66,5 +66,33 @@ describe('какие секции магазина платформенные', 
     const db = registry({});
     expect((await libraryUnchanged(db, 'shop-1', [])).size).toBe(0);
     expect(db.asked).toEqual([]);
+  });
+});
+
+// Аудит после публикации (20.11): секции платформы — по исходникам именно этой сборки (пара «имя, отпечаток правки»), а
+// не по текущему черновику.
+describe('какие секции сборки платформенные', () => {
+  it('спрашивает базу парами имя-отпечаток и берёт только библиотечные; пусто — в базу не ходит', async () => {
+    const hero = await readSectionFolder(`${PACKAGE_DIR}fixtures/shop/hero`);
+    const asked: unknown[][] = [];
+    const db: RowsQuery = {
+      query: (_sql, values) => {
+        asked.push(values);
+        return Promise.resolve({
+          rows: [
+            { name: 'shop:hero', source: hero },
+            { name: 'shop:hero-edited', source: withTemplate(hero, '<!-- правка -->') },
+          ],
+        });
+      },
+    };
+    const sections = [
+      { name: 'shop:hero', hash: 'sha256:aa' },
+      { name: 'shop:hero-edited', hash: 'sha256:bb' },
+    ];
+    expect([...(await libraryUnchangedIn(db, 'shop-1', sections))]).toEqual(['shop:hero']);
+    expect(asked).toEqual([['shop-1', ['shop:hero', 'shop:hero-edited'], ['sha256:aa', 'sha256:bb']]]);
+    expect((await libraryUnchangedIn(db, 'shop-1', [])).size).toBe(0);
+    expect(asked).toHaveLength(1);
   });
 });

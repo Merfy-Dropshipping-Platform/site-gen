@@ -23,6 +23,8 @@ export interface PublishedBuild {
   // Страницы живой сборки до публикации; null — живой сборки не было.
   previous: Pages | null;
   next: Pages;
+  // Секции этой сборки, оставшиеся библиотечными: полные имена (`data-section`).
+  platform: readonly string[];
 }
 
 // id страницы в конфиге витрины по адресу; адреса нет в таблице страниц — сам адрес.
@@ -46,6 +48,8 @@ export function auditJobsOf(published: PublishedBuild): AuditJob[] {
     url: new URL(page.path, published.publicUrl).href,
     // ETag раздачи — hex отпечатка без «sha256:».
     hash: hexOf(page.hash),
+    platform: [...published.platform],
+    samples: [],
   }));
 }
 

@@ -186,6 +186,17 @@ describe("превью новой темы — от сборщика, нынеш
     ]);
   });
 
+  it("вытеснено ли задание аудита новой сборкой — запрос сборщику с магазином и номером сборки", async () => {
+    const answer = await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/audit/superseded?build=1795000000000`,
+    );
+    expect(answer.status).toBe(200);
+    expect(answer.body).toEqual({ ok: true });
+    expect(seen.map((call) => call.url)).toEqual([
+      `/audit/superseded?shop=${NEW_SITE}&build=1795000000000`,
+    ]);
+  });
+
   it("превью без page и стенд — page уходит к сборщику как есть", async () => {
     await request(app.getHttpServer()).get(`/api/sites/${NEW_SITE}/preview`);
     await request(app.getHttpServer()).get(

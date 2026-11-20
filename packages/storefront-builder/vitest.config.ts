@@ -26,7 +26,7 @@ export default defineConfig({
         'src/checks/browser/{vitals,lighthouse}.ts',
         // Аудит опубликованных страниц после публикации (20.11): отчёт Lighthouse, правила «стало хуже», запуск, прогон,
         // запись и чтение итога. Прогон в настоящем Chromium — __tests__/look-audit-browser.test.ts.
-        'src/checks/audit/{report,compare}.ts',
+        'src/checks/audit/{report,compare,median}.ts',
         'src/audit/{contract,plan,start,run,results,store,answer,read}.ts',
       ],
       reporter: ['text', 'json-summary'],

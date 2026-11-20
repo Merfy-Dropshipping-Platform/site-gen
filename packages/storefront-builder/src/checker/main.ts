@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { collectPassport, loadReleaseRules, openPage } from '@merfy/stand-check';
+import { readSuperseded } from '../audit/read';
 import { consumeAudits } from '../audit/run';
 import { openBroker } from '../broker';
 import { jsonLog } from '../log';
@@ -46,10 +47,15 @@ else {
   });
 }
 // Аудит опубликованных страниц после публикации (место проверок `audit`): тот же браузер, Lighthouse — фоном, после
-// снимков черновика; адрес sites ему не нужен. Бюджет на страницу — 2 минуты, из них на ожидание новой страницы в
-// раздаче — до 30 с.
+// снимков черновика. Адрес sites нужен, чтобы спросить, не вытеснена ли страница новой сборкой (нет адреса — не
+// спрашиваем). Бюджет на страницу — 2 минуты, из них на ожидание новой страницы в раздаче — до 30 с.
+const { sitesUrl } = settings;
 await consumeAudits(broker, {
   measure: (url, budgetMs) => renderer.audit(url, budgetMs),
+  superseded: (siteId, build) =>
+    sitesUrl === null
+      ? Promise.resolve(false)
+      : readSuperseded({ fetch: (address, init) => fetch(address, init), sitesUrl }, siteId, build),
   fetch: (address) => fetch(address),
   pollMs: 250,
   waitMs: 30_000,

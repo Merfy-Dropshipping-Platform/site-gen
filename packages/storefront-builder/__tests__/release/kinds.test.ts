@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PRIORITY, priorityOf } from '../../src/events';
-import { KINDS, isBreakage, type ReachedManifest } from '../../src/release/kinds';
+import { KINDS, isBreakage, needsApproval, type ReachedManifest } from '../../src/release/kinds';
 import type { ReleaseRow } from '../../src/release/store';
 
 const RELEASE: ReleaseRow = {
@@ -70,6 +70,17 @@ describe('выпуск нашей секции', () => {
     expect(KINDS.section.reached(withSections([{ name: 'shop:hero', hash: 'sha256:h' }]), SECTION)).toBe(true);
     expect(KINDS.section.reached(withSections([{ name: 'shop:cart-badge', hash: 'sha256:old' }]), SECTION)).toBe(false);
     expect(KINDS.section.reached(withSections(), SECTION)).toBe(false);
+  });
+
+  it.each([
+    ['theme', 'dev', true],
+    ['theme', 'prod', true],
+    ['platform', 'prod', false],
+    ['extension', 'prod', false],
+    ['section', 'dev', false],
+    ['section', 'prod', true],
+  ] as const)('«да» человека после тестового магазина: %s на %s — %s', (kind, contour, expected) => {
+    expect(needsApproval(kind, contour)).toBe(expected);
   });
 
   it('без «да» и закрепления, откат с паузой, неизменная сборка — пропуск; событие с приоритетом выпуска', () => {

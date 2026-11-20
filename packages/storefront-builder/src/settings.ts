@@ -54,6 +54,9 @@ const envSchema = z.object({
   STOREFRONT_CONTOUR: z.enum(['dev', 'prod']).default('dev'),
   RELEASE_PAUSE_MS: z.coerce.number().int().nonnegative().default(0),
   RELEASE_TEST_SHOP: z.string().min(1).optional(),
+  // Автозапуск выпуска библиотечных секций при старте (20.11): новые версии секций платформы — в копии магазинов, по
+  // истории библиотеки. Выключен по умолчанию; на dev включает владелец, на проде после тестового магазина ждёт approve.
+  STORE_LIBRARY_RELEASE_ENABLED: z.enum(['true', 'false']).default('false'),
   // Публичный ключ подсказок адреса DaData (оформление заказа, 03.11) — та же переменная, что у sites: ключ видит браузер,
   // как у пяти тем. Нет — у оформления подсказок адреса нет.
   DADATA_API_KEY: z.string().min(1).max(100).optional(),
@@ -87,6 +90,7 @@ export interface Settings {
   contour: 'dev' | 'prod';
   releasePauseMs: number;
   releaseTestShop: string | null;
+  libraryRelease: boolean;
   dadataToken: string | null;
 }
 
@@ -147,6 +151,7 @@ export function readSettings(env: NodeJS.ProcessEnv): Settings {
     contour: value.STOREFRONT_CONTOUR,
     releasePauseMs: value.RELEASE_PAUSE_MS,
     releaseTestShop: value.RELEASE_TEST_SHOP ?? null,
+    libraryRelease: value.STORE_LIBRARY_RELEASE_ENABLED === 'true',
     dadataToken: value.DADATA_API_KEY ?? null,
   };
 }

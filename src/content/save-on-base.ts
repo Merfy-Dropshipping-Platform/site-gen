@@ -463,7 +463,8 @@ class WriteOnBase {
   /**
    * «Ничего не легло» (К2): правки агента целиком остановили места мерчанта.
    * Ревизия не пишется, голова не двигается; ответ несёт текущую ревизию и
-   * места, оставленные мерчанту.
+   * места, оставленные мерчанту. `merged: true`: база была устаревшей, слияние
+   * посчитано (клиент не должен принимать `revisionId` за свою ревизию).
    */
   private untouched(
     current: string,
@@ -474,7 +475,7 @@ class WriteOnBase {
     );
     return {
       version: current,
-      effect: { ...outcome, merged: false, clientVersion: current },
+      effect: { ...outcome, merged: true, clientVersion: current },
       unwritten: true,
     };
   }

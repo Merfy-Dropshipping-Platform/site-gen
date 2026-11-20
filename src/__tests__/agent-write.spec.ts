@@ -335,8 +335,11 @@ describe("К2: политика слияния по автору", () => {
       { writer: "vizi" },
     );
     expect(res.success).toBe(true);
+    // База была устаревшей и слияние посчитано — merged: true, хотя ревизия не записана.
+    expect(res.merged).toBe(true);
     expect(res.conflicts).toHaveLength(1);
     expect(res.checkScope).toEqual({ sections: [], pages: [], theme: false });
+    expect(res.revisionId).toBe(s.merchantHead);
     expect(res.currentRevisionId).toBe(s.merchantHead);
     expect(s.fake.revisions.size).toBe(revisionsBefore);
     expect(s.fake.site.currentRevisionId).toBe(s.merchantHead);

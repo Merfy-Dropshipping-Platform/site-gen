@@ -29,6 +29,7 @@ function alwaysLosingStore() {
   const store: RevisionStore = {
     fetchData: async () => DOC,
     readPointer: async () => "r0",
+    findByIdempotencyKey: async () => undefined,
     writeModel: async () => IDENTITY_MODEL,
     commit: async (write) => {
       commits.push(write.current);

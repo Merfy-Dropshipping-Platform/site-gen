@@ -275,6 +275,7 @@ describe("что проверить — в ответе записи", () => {
     const store: RevisionStore = {
       fetchData: async () => clone(current),
       readPointer: async () => "r0",
+      findByIdempotencyKey: async () => undefined,
       writeModel: async () => IDENTITY_MODEL,
       commit,
     };

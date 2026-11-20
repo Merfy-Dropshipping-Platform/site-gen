@@ -19,6 +19,7 @@ import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { z } from "zod";
 import { isNewThemeId } from "../../content/new-theme-pages";
 import { StoreContentService } from "../../content/store-content.service";
+import { WriterSchema, labelsOf } from "../../content/writer";
 import {
   RevisionConflictError,
   toStoreContentSite,
@@ -45,6 +46,8 @@ export const PlaceSkeletonInputSchema = z.object({
   tenantId: z.string().trim().min(1),
   siteId: z.string().trim().min(1),
   actorUserId: z.string().trim().min(1).optional(),
+  /** Кто ставит заготовку (К1): ставит шлюз; агент пишет метки `agent/mcp|vizi`. Нет — `system/skeleton`. */
+  writer: WriterSchema,
   /**
    * Только эти списки раскладки и только те, которых в ревизии ещё нет (ключа нет; пустой список — мерчант убрал
    * секции сам, его не трогаем); без «О нас». Так существующие магазины получают новые секции заготовки
@@ -176,8 +179,7 @@ export class PlaceSkeletonCommand {
           base: loaded.version,
           mergePolicy: "last-writer-wins",
           tenantId: input.tenantId,
-          actor: "system",
-          source: "skeleton",
+          ...labelsOf(input.writer, { actor: "system", source: "skeleton" }),
           actorUserId: input.actorUserId,
           meta: { title: "Заготовка магазина" },
           site: toStoreContentSite(site),

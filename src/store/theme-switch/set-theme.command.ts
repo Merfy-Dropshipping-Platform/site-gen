@@ -23,6 +23,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { z } from "zod";
 import { StoreContentService } from "../../content/store-content.service";
+import { WriterSchema, labelsOf } from "../../content/writer";
 import {
   RevisionConflictError,
   toStoreContentSite,
@@ -47,6 +48,8 @@ export const SetThemeInputSchema = z.object({
   siteId: z.string().trim().min(1),
   themeId: z.string().trim().min(1),
   actorUserId: z.string().trim().min(1).optional(),
+  /** Кто меняет тему (К1): ставит шлюз; агент пишет метки `agent/mcp|vizi`. Нет — мерчант. */
+  writer: WriterSchema,
   /** Дождаться итога переиздания опубликованного магазина. */
   wait: z.boolean().default(false),
   waitTimeoutMs: z.number().int().min(1_000).max(300_000).default(120_000),
@@ -207,8 +210,10 @@ export class SetThemeCommand {
         mode: "blind",
         document,
         tenantId: input.tenantId,
-        actor: "merchant",
-        source: "theme-switch",
+        ...labelsOf(input.writer, {
+          actor: "merchant",
+          source: "theme-switch",
+        }),
         actorUserId: input.actorUserId,
         setCurrent: true,
         expectedVersion,

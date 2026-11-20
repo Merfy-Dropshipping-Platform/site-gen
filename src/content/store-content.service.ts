@@ -75,7 +75,8 @@ export class StoreContentService implements StoreContent {
     assertSectionIds(params.document);
     const saved = await this.resolveAdapter(params.site).save(siteId, params);
     // Запись от базы всегда делает ревизию текущей; вслепую — только с setCurrent.
-    if (params.mode === "on-base" || params.setCurrent)
+    // Повтор по ключу и «ничего не легло» ревизии не создают — сигналить не о чем.
+    if (!saved.unwritten && (params.mode === "on-base" || params.setCurrent))
       this.signalDraft(siteId, params.site, saved.version);
     return saved;
   }
@@ -161,6 +162,7 @@ export class StoreContentService implements StoreContent {
       overwritten: saved.effect.overwritten,
       conflicts: saved.effect.conflicts,
       checkScope: saved.effect.checkScope,
+      ...(saved.effect.replayed ? { replayed: true } : {}),
     };
   }
 
@@ -219,6 +221,7 @@ function toSaveParams(params: CreateRevisionParams): SaveParams {
     mode: "on-base",
     base: params.base,
     mergePolicy: params.mergePolicy ?? "reject-conflicts",
+    idempotencyKey: params.idempotencyKey,
     ...common,
   };
 }

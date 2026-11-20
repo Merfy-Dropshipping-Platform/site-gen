@@ -10,7 +10,9 @@
  * 4. Остальные входящие операции применяются к `current` как есть.
  * 5. Спорные места: `last-writer-wins` — ставится значение входящей стороны
  *    (секция возвращается на своё место, если чужая сторона её удалила);
- *    `reject-conflicts` — ничего не сливается.
+ *    `reject-conflicts` — ничего не сливается; `keep-current` — остаётся
+ *    текущее значение (удалённая чужой стороной секция не возвращается,
+ *    правленая секция не удаляется), место уходит в `conflicts`.
  * В отчёт (`overwritten`/`conflicts`) попадают только места, которые чужая
  * сторона действительно меняла. Служебные поля (`VOLATILE_PATHS`) спорами не
  * бывают: берётся входящее значение, если входящая сторона его меняла.
@@ -98,6 +100,42 @@ function withPageCounterparts(
     .filter((p) => !contested.some((r) => coversPath(r, p)))
     .filter(differs(current, incoming));
   return [...contested, ...counterparts];
+}
+
+/**
+ * Что делает политика со спорными местами, где чужая сторона правила:
+ * отказывает (`rejects`), оставляет текущее значение (`keepsCurrent`) и в какой
+ * список отчёта их кладёт. Остальные правки входящей стороны сливаются всегда.
+ */
+const DISPUTE_RULES: Record<
+  MergePolicy,
+  {
+    rejects: boolean;
+    keepsCurrent: boolean;
+    reports: "overwritten" | "conflicts";
+  }
+> = {
+  "last-writer-wins": {
+    rejects: false,
+    keepsCurrent: false,
+    reports: "overwritten",
+  },
+  "reject-conflicts": {
+    rejects: true,
+    keepsCurrent: false,
+    reports: "conflicts",
+  },
+  "keep-current": { rejects: false, keepsCurrent: true, reports: "conflicts" },
+};
+
+/** Места, где остаётся текущее: спорные и вторая половина их страницы (страница спорится целиком). */
+function keptWithCounterparts(
+  contested: string[],
+  disputed: string[],
+): string[] {
+  const isKept = (path: string) =>
+    disputed.includes(path) || disputed.includes(pageCounterpart(path) ?? "");
+  return contested.filter(isKept);
 }
 
 /** Операция, которая ставит в спорное место значение входящей стороны. */
@@ -214,28 +252,32 @@ function mergeDocs(
   // 2. Что попадёт в отчёт: спорные места, которые чужая сторона
   //    действительно меняла. При `reject-conflicts` это конфликты, и ничего
   //    не сливается.
-  const disputes = contested
-    .filter(differs(current, base))
-    .map(valuePair(current, incoming));
-  if (policy === "reject-conflicts" && disputes.length > 0) {
+  const disputed = contested.filter(differs(current, base));
+  const disputes = disputed.map(valuePair(current, incoming));
+  const rule = DISPUTE_RULES[policy];
+  if (rule.rejects && disputes.length > 0) {
     return { merged: null, overwritten: [], conflicts: disputes, applied: [] };
   }
 
   // 3. Что берём от входящей: её правки вне спорных мест — как есть, в
-  //    спорных местах — её значение (`last-writer-wins`). Всё это ложится
-  //    поверх текущей.
+  //    спорных местах — её значение (`last-writer-wins`) или ничего
+  //    (`keep-current`: остаётся текущее, страница — обеими половинами).
+  //    Всё это ложится поверх текущей.
   const settled = [...regions, ...contested];
   const free = ours.filter(
     (op) => !settled.some((r) => coversPath(r, op.path)),
   );
-  const resolved = contested.map((path) =>
-    takeIncoming(path, current, incoming),
-  );
+  const kept = rule.keepsCurrent
+    ? keptWithCounterparts(contested, disputed)
+    : [];
+  const resolved = contested
+    .filter((path) => !kept.includes(path))
+    .map((path) => takeIncoming(path, current, incoming));
   const applied = inApplyOrder([...free, ...resolved], incoming);
   return {
     merged: apply(current, applied),
-    overwritten: policy === "last-writer-wins" ? disputes : [],
-    conflicts: [],
+    overwritten: rule.reports === "overwritten" ? disputes : [],
+    conflicts: rule.reports === "conflicts" ? disputes : [],
     applied,
   };
 }

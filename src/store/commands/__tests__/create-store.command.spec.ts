@@ -542,6 +542,26 @@ describe("CreateStore: магазин новой темы рождается п�
     expect(result.effect.ready).toBe(true);
   });
 
+  it("writer команды уходит в заготовку: её ревизия получит метки агента", async () => {
+    const skeleton = {
+      execute: jest.fn(async () => ({ ok: true as const, effect: summary })),
+    };
+    const { command } = setup({ catalog: withNova(), skeleton });
+
+    const result = await command.execute({
+      ...base,
+      themeId: "nova",
+      skeleton: true,
+      wait: true,
+      writer: "vizi",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(skeleton.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ writer: "vizi" }),
+    );
+  });
+
   it("создать магазин nova → заготовка на месте: настоящая PlaceSkeleton, секции в магазине, списки и «О нас» в текущей ревизии", async () => {
     const shop: { name: string; role: string | null }[] = [];
     const sections = {

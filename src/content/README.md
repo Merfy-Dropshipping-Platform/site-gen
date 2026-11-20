@@ -140,6 +140,12 @@ const { revisionId, restoredFrom } = await storeContent.rollback(siteId, {
 | Писатель | Форма | При устаревшей базе |
 |---|---|---|
 | конструктор (`sites.revisions.create`) | `on-base` | слить, `last-writer-wins`; чужое — в `overwritten` |
+| агент (`sites.revisions.create` с `writer: "agent" \| "vizi"`, `constructor-stale-base.ts`) | `on-base` | слить, `keep-current`; места мерчанта остаются, список — в `conflicts`; «ничего не легло» (`conflicts` не пуст, `checkScope` пуст) — ревизия не пишется, голова не двигается |
+
+Автор записи (`writer`, `writer.ts`) приходит от шлюза: `merchant` — метки пути записи (`constructor`, `admin-pages`,
+`rollback`, `theme-switch`, `skeleton`), `agent` — `actor: agent, source: mcp`, `vizi` — `actor: agent, source: vizi`.
+Ключ от повторов (`idempotencyKey`, `site_revision.idempotency_key`): повтор отдаёт ответ из `meta.reply` с
+`replayed: true` и ничего не пишет; ключ запоминает только ревизия, которую запись создала.
 | страницы кабинета (`pages.service`) | `on-base` | слить, `reject-conflicts`; спор — пересчитать правку (`rewriteCurrent`) |
 | сброс контент-страниц (`resetContentPages`) | `on-base` | так же, как страницы кабинета |
 | откат (`rollback`) | `on-base` | `refuse`: не сливать, `RevisionConflictError` (409) |

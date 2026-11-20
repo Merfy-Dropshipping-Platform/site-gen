@@ -73,12 +73,32 @@ const instanceId = (item: unknown): unknown =>
  * SDK», В1-1 А): страница → экземпляры `{ id, section, settings }` по
  * порядку, ключ — `id`. Сливаются по id, как секции пяти тем в `pagesData`:
  * `sections/home/hero-k3f9x2a1/settings/heading`, порядок —
- * `sections/home/order`.
+ * `sections/home/order`. Блоки экземпляра — вложенный список по `id`.
  */
 const SECTIONS: MapShape = {
   kind: "map",
   entryPrefix: "",
-  entry: { kind: "list", itemPrefix: "", idOf: instanceId, item: RECORD },
+  entry: {
+    kind: "list",
+    itemPrefix: "",
+    idOf: instanceId,
+    item: {
+      kind: "record",
+      fields: {
+        // Блоки экземпляра `{ id, type, settings, hidden? }` — тоже список по
+        // `id`: правки соседних блоков не спорят о массиве целиком
+        // (`sections/home/hero-1/blocks/heading-1/settings/heading`, порядок —
+        // `sections/home/hero-1/blocks/order`). Блоки без годных id остаются
+        // одним значением (`isKeyedList`).
+        blocks: {
+          kind: "list",
+          itemPrefix: "",
+          idOf: instanceId,
+          item: RECORD,
+        },
+      },
+    },
+  },
 };
 
 export const DOCUMENT: RecordShape = {

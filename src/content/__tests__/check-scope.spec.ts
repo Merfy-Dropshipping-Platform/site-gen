@@ -52,6 +52,80 @@ const scopeOf = (before: Doc, after: Doc) =>
 const homeSection = (doc: Doc, id: string): Doc =>
   doc.sections.home.find((s: Doc) => s.id === id);
 
+describe("блоки экземпляра: адрес глубже, итог — секция", () => {
+  const withBlocks = (): Doc => {
+    const doc = draft();
+    homeSection(doc, "hero-1").blocks = [
+      { id: "heading-1", type: "shop:heading", settings: { heading: "Раз" } },
+      { id: "heading-2", type: "shop:heading", settings: { heading: "Два" } },
+    ];
+    return doc;
+  };
+
+  it("правка поля блока — секция, а не страница", () => {
+    const before = withBlocks();
+    const after = clone(before);
+    homeSection(after, "hero-1").blocks[1].settings.heading = "Новый";
+    const changes = paths(diff(before, after));
+    expect(changes).toEqual([
+      "sections/home/hero-1/blocks/heading-2/settings/heading",
+    ]);
+    expect(checkScope(changes, after)).toEqual({
+      sections: [{ page: "home", id: "hero-1" }],
+      pages: [],
+      theme: false,
+    });
+  });
+
+  it("блок добавили, убрали, переставили — секция", () => {
+    const before = withBlocks();
+    const added = clone(before);
+    homeSection(added, "hero-1").blocks.push({
+      id: "heading-3",
+      type: "shop:heading",
+      settings: {},
+    });
+    const removed = clone(before);
+    homeSection(removed, "hero-1").blocks.pop();
+    const reordered = clone(before);
+    homeSection(reordered, "hero-1").blocks.reverse();
+    expect(paths(diff(before, reordered))).toEqual([
+      "sections/home/hero-1/blocks/order",
+    ]);
+    for (const after of [added, removed, reordered]) {
+      expect(scopeOf(before, after)).toEqual({
+        sections: [{ page: "home", id: "hero-1" }],
+        pages: [],
+        theme: false,
+      });
+    }
+  });
+
+  it("блок в шапке — шапка один раз", () => {
+    const before = withBlocks();
+    before.sections.header[0].blocks = [
+      { id: "link-1", type: "shop:link", settings: { label: "А" } },
+    ];
+    const after = clone(before);
+    after.sections.header[0].blocks[0].settings.label = "Б";
+    expect(scopeOf(before, after)).toEqual({
+      sections: [{ page: "header", id: "header-1" }],
+      pages: [],
+      theme: false,
+    });
+  });
+
+  it("блок с id «order» — секция, не порядок страницы", () => {
+    const changes = ["sections/home/hero-1/blocks/~3order/settings/heading"];
+    const after = withBlocks();
+    expect(checkScope(changes, after)).toEqual({
+      sections: [{ page: "home", id: "hero-1" }],
+      pages: [],
+      theme: false,
+    });
+  });
+});
+
 describe("что проверить после правки", () => {
   it("правка в одной секции — только она", () => {
     const before = draft();

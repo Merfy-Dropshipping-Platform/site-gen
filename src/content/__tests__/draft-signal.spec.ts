@@ -10,6 +10,11 @@ import type { SaveParams } from "../store-content.port";
 const DOC = { pages: [], pagesData: {} };
 const NOVA = { themeId: "nova", publicUrl: null, currentRevisionId: "r0" };
 const ROSE = { themeId: "rose", publicUrl: null, currentRevisionId: "r0" };
+const SCOPE = {
+  sections: [{ page: "home", id: "hero-1" }],
+  pages: [{ page: "about", whole: false }],
+  theme: false,
+};
 
 function setup() {
   const adapter = {
@@ -43,7 +48,71 @@ describe("сигнал о записи черновика (магазины но
   it("запись от базы — сигнал с id новой ревизии", async () => {
     const { service, handoff } = setup();
     await service.save("site-1", onBase(NOVA));
-    expect(handoff.signalDraft).toHaveBeenCalledWith("site-1", "r1");
+    expect(handoff.signalDraft).toHaveBeenCalledWith("site-1", "r1", {});
+  });
+
+  it("запись Визи — сигнал с автором agent/vizi и областью записи как есть", async () => {
+    const { service, handoff, adapter } = setup();
+    adapter.save.mockResolvedValueOnce({
+      version: "r1",
+      effect: { merged: false, checkScope: SCOPE },
+    });
+    await service.save("site-1", {
+      ...onBase(NOVA),
+      actor: "agent",
+      source: "vizi",
+    });
+    expect(handoff.signalDraft).toHaveBeenCalledWith("site-1", "r1", {
+      author: { actor: "agent", source: "vizi" },
+      scope: SCOPE,
+    });
+  });
+
+  it("запись конструктора — автор merchant/constructor; checkScope null — области нет", async () => {
+    const { service, handoff, adapter } = setup();
+    adapter.save.mockResolvedValueOnce({
+      version: "r1",
+      effect: { merged: false, checkScope: null },
+    });
+    await service.save("site-1", {
+      ...onBase(NOVA),
+      actor: "merchant",
+      source: "constructor",
+    });
+    expect(handoff.signalDraft).toHaveBeenCalledWith("site-1", "r1", {
+      author: { actor: "merchant", source: "constructor" },
+      scope: undefined,
+    });
+  });
+
+  it("автор без одной из меток не выдумывается", async () => {
+    const { service, handoff } = setup();
+    await service.save("site-1", { ...onBase(NOVA), actor: "agent" });
+    expect(handoff.signalDraft).toHaveBeenCalledWith("site-1", "r1", {
+      author: undefined,
+      scope: undefined,
+    });
+  });
+
+  it("откат — сигнал с автором, но без области; откат Визи — agent/vizi", async () => {
+    const { service, handoff } = setup();
+    await service.rollback("site-1", {
+      tenantId: "t-1",
+      site: NOVA,
+      revisionId: "r-old",
+    });
+    expect(handoff.signalDraft).toHaveBeenLastCalledWith("site-1", "r2", {
+      author: { actor: "merchant", source: "rollback" },
+    });
+    await service.rollback("site-1", {
+      tenantId: "t-1",
+      site: NOVA,
+      revisionId: "r-old",
+      writer: "vizi",
+    });
+    expect(handoff.signalDraft).toHaveBeenLastCalledWith("site-1", "r2", {
+      author: { actor: "agent", source: "vizi" },
+    });
   });
 
   it("запись вслепую с setCurrent — сигнал; без setCurrent ревизия не текущая — сигнала нет", async () => {
@@ -61,7 +130,9 @@ describe("сигнал о записи черновика (магазины но
       site: NOVA,
       revisionId: "r-old",
     });
-    expect(handoff.signalDraft).toHaveBeenCalledWith("site-1", "r2");
+    expect(handoff.signalDraft).toHaveBeenCalledWith("site-1", "r2", {
+      author: { actor: "merchant", source: "rollback" },
+    });
     handoff.signalDraft.mockClear();
     await service.rollback("site-1", {
       tenantId: "t-1",

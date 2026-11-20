@@ -144,6 +144,30 @@ describe("StorefrontHandoff", () => {
     ]);
   });
 
+  it("запись с автором и областью: в сообщении author и scope; без них — прежняя форма", async () => {
+    const service = handoff("nova");
+    const scope = {
+      sections: [{ page: "home", id: "hero-1" }],
+      pages: [{ page: "about", whole: true }],
+      theme: false,
+    };
+    await service.signalDraft(NOVA_SITE, "rev-43", {
+      author: { actor: "agent", source: "vizi" },
+      scope,
+    });
+    await service.signalDraft(NOVA_SITE, "rev-44", {});
+    expect(published().map((m) => m.body)).toEqual([
+      {
+        shopId: NOVA_SITE,
+        entities: ["revision"],
+        revisionId: "rev-43",
+        author: { actor: "agent", source: "vizi" },
+        scope,
+      },
+      { shopId: NOVA_SITE, entities: ["revision"], revisionId: "rev-44" },
+    ]);
+  });
+
   it("сбой брокера при сигнале — только лог, запись не ломается", async () => {
     const service = handoff("nova");
     mockPublish.mockRejectedValueOnce(new Error("channel closed"));

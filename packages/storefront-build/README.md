@@ -115,6 +115,12 @@
   (`set-selection`) — `merfy:block:select { blockId }` на первом узле блока (`data-merfy-block`); другой блок или снятие
   выбора — сначала `merfy:block:deselect` прежнему; после `merfy:preview:updated` секции с выбранным блоком —
   `merfy:block:select` ещё раз.
+- Метки проверок в превью (этап 5 «Проверки в окне»): сообщение конструктора `set-check-marks`
+  `{ marks: [{ sectionId, items: [{ title, text? }] }] }` — янтарный значок с числом находок в правом верхнем углу секции
+  (`[data-merfy-check-mark="<id секции>"]` > `[data-merfy-check-badge]` и `[data-merfy-check-list]`); клик по значку
+  открывает и закрывает список находок (текст — `textContent`); `marks: []` снимает все. Метка идёт за секцией вместе с
+  рамками выбора и Визи (scroll, resize, замена секции), у окна поверх страницы лежит в его слое. Сообщений в конструктор
+  метка не шлёт.
 - Превью секции расширения в кабинете (экран `editor`, поле `preview`): сообщение `ext-store-values` —
   `[{ extension, store, recordId, value }]`. Стор по записи (`by: "record"`) из `storefront.stores` манифеста отвечает
   присланным значением вместо вызова функции расширения: скрипт превью перехватывает `POST /store/extensions/<id>/fn/<fn>`

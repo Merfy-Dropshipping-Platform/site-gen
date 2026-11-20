@@ -30,7 +30,10 @@ import { OVERLAY_ATTRIBUTE } from '@merfy/shell/roles';
 // reconcile-ack; ответ блока, на который уже ушёл более новый запрос, тоже отбрасывается — на странице остаётся новый
 // (Р11). set-agent-frame { sectionId, label? } (этап 4 «Живой холст») — рамка Визи #merfy-agent-frame: фиолетовая, с
 // подписью «Визи · <label>», без кнопок; выбор мерчанта не трогает, секция за краем окна — прокрутка, как у select();
-// sectionId: null — рамки нет. Ошибка запроса — render-error. Скрипт — строкой ES5: страница печатает его как есть. Рамка и плашка — как у
+// sectionId: null — рамки нет. set-check-marks { marks: [{ sectionId, items: [{ title, text? }] }] } (этап 5 «Проверки в
+// окне») — янтарный значок с числом находок в правом верхнем углу секции (data-merfy-check-mark, в нём
+// data-merfy-check-badge и data-merfy-check-list), клик по значку открывает и закрывает список; marks: [] — метки сняты;
+// метки идут за секциями вместе с рамками. Ошибка запроса — render-error. Скрипт — строкой ES5: страница печатает его как есть. Рамка и плашка — как у
 // превью нынешних тем (site-gen, src/services/preview.service.ts): рамка 2px #88b0da, плашка #181818, текст #c3c3c3,
 // шрифт системный, значок «Удалить» — мусорная корзина.
 export const PREVIEW_SECTIONS_AGENT = `(function () {
@@ -147,6 +150,18 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     // Рамка Визи (этап 4): фиолетовая #5b45e0 — акцент прототипа; z-index на единицу ниже рамки выбора, подпись без кнопок.
     + '#merfy-agent-frame{position:absolute;display:none;pointer-events:none;box-sizing:border-box;margin:0;padding:0;max-width:none;background:none;border:2px solid #5b45e0;z-index:2147483645}'
     + '#merfy-agent-frame [data-merfy-agent-label]{position:absolute;left:-2px;top:-26px;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px 8px 0 0;background:#5b45e0;color:#fff;font:500 12px/24px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;white-space:nowrap}'
+    // Метка проверок (этап 5): слой на всю секцию без перехвата кликов, в нём янтарный значок с числом находок в правом
+    // верхнем углу и список находок под ним; список виден, пока у слоя стоит data-merfy-check-open. Ниже рамок Визи.
+    // pointer-events:none !important — слой окна поверх страницы отдаёт кликы всем своим потомкам (> *), а слой метки на
+    // всю секцию не должен их перехватывать.
+    + '[data-merfy-check-mark]{position:absolute;display:none;pointer-events:none !important;box-sizing:border-box;margin:0;padding:0;max-width:none;background:none;border:0;z-index:2147483644}'
+    + '[data-merfy-check-badge]{position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:24px;height:24px;margin:0;padding:0 6px;border:0;border-radius:12px;background:#f59e0b;color:#1f1300;font:600 12px/24px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer;pointer-events:auto;box-shadow:0 1px 4px rgba(0,0,0,.3)}'
+    + '[data-merfy-check-list]{position:absolute;top:40px;right:8px;box-sizing:border-box;width:280px;max-width:calc(100% - 16px);margin:0;padding:4px 0;border-radius:8px;background:#181818;color:#c3c3c3;font:400 12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:left;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.35)}'
+    + '[data-merfy-check-mark]:not([data-merfy-check-open]) [data-merfy-check-list]{display:none}'
+    + '[data-merfy-check-item]{margin:0;padding:8px 12px;border-top:1px solid #3a3a3a}'
+    + '[data-merfy-check-item]:first-child{border-top:0}'
+    + '[data-merfy-check-title]{margin:0;padding:0;color:#fff;font-weight:600}'
+    + '[data-merfy-check-text]{margin:4px 0 0;padding:0;white-space:pre-wrap}'
     + '[data-merfy-block][data-merfy-block-hint]{outline:2px solid #cfdff0 !important;outline-offset:2px}'
     + '[data-merfy-block][data-merfy-block-selected]{outline:2px solid #88b0da !important;outline-offset:2px}'
     + 'merfy-section[data-merfy-state="failed"]{outline:2px solid #dc2626 !important;outline-offset:-2px}'
@@ -170,6 +185,10 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
   // «Визи · » — escape-последовательности, как подсказки кнопок: страница превью может быть не в UTF-8.
   var AGENT_PREFIX = '\\u0412\\u0438\\u0437\\u0438';
   var AGENT_SEPARATOR = ' \\u00b7 ';
+  // Метки проверок (set-check-marks, этап 5): id секции → { items: [{ title, text? }], open, node }; node — слой метки,
+  // он создаётся при первом показе и живёт, пока секция в списке. «Находки проверок: » — подсказка значка.
+  var checkMarks = Object.create(null);
+  var CHECK_BADGE_TITLE = '\\u041d\\u0430\\u0445\\u043e\\u0434\\u043a\\u0438 \\u043f\\u0440\\u043e\\u0432\\u0435\\u0440\\u043e\\u043a: ';
   // Подпункты (часть 3, Р59, Р60): выбранный — секция и место среди разных data-merfy-block секции; секция под курсором.
   var blockParent = null;
   var blockIndex = null;
@@ -274,14 +293,15 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     document.body.appendChild(frame);
     return frame;
   }
-  // Обе рамки — рамка выбора и рамка Визи — пересчитываются вместе: на scroll, resize, после замены секции.
+  // Обе рамки — рамка выбора и рамка Визи — и метки проверок пересчитываются вместе: на scroll, resize, после замены
+  // секции.
   function place() {
     placeSelection();
     placeAgent();
+    placeMarks();
   }
-  // Рамка вокруг секции: слой и координаты — frameBox. У верхнего края страницы (или слоя окна) подпись — внутри
-  // рамки: над рамкой её не видно и «Удалить» не нажать. Подпись — первый потомок рамки.
-  function layFrame(element, section) {
+  // Слой и положение элемента по секции: слой и координаты — frameBox; узел переезжает в слой секции, если её заменили.
+  function layBox(element, section) {
     var box = frameBox(section);
     if (element.parentNode !== box.layer) box.layer.appendChild(element);
     element.style.display = 'block';
@@ -289,6 +309,12 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     element.style.left = box.left + 'px';
     element.style.width = box.width + 'px';
     element.style.height = box.height + 'px';
+    return box;
+  }
+  // Рамка вокруг секции: слой и координаты — layBox. У верхнего края страницы (или слоя окна) подпись — внутри
+  // рамки: над рамкой её не видно и «Удалить» не нажать. Подпись — первый потомок рамки.
+  function layFrame(element, section) {
+    var box = layBox(element, section);
     var label = element.firstElementChild;
     label.style.top = box.top < label.offsetHeight + 2 ? '0' : '';
   }
@@ -343,13 +369,106 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     if (id !== null) ensureAgentFrame();
     placeAgent();
   }
+  // Метки проверок (этап 5). Находка — { title, text? } со строковым непустым title; кривая находка выпадает, секция
+  // без находок и без id — тоже. Тексты находок — только textContent: HTML из них в страницу не попадает.
+  function itemOf(raw) {
+    var valid = raw && typeof raw.title === 'string' && raw.title !== '';
+    return valid ? { title: raw.title, text: typeof raw.text === 'string' ? raw.text : '' } : null;
+  }
+  function markOf(raw) {
+    var id = raw && typeof raw.sectionId === 'string' ? raw.sectionId : '';
+    var items = id !== '' && Array.isArray(raw.items) ? raw.items.map(itemOf).filter(Boolean) : [];
+    return items.length > 0 ? { id: id, items: items } : null;
+  }
+  function itemNode(item) {
+    var node = document.createElement('div');
+    node.setAttribute('data-merfy-check-item', '');
+    var title = document.createElement('div');
+    title.setAttribute('data-merfy-check-title', '');
+    title.textContent = item.title;
+    node.appendChild(title);
+    if (item.text === '') return node;
+    var text = document.createElement('div');
+    text.setAttribute('data-merfy-check-text', '');
+    text.textContent = item.text;
+    node.appendChild(text);
+    return node;
+  }
+  // Открыт ли список — атрибут слоя (стили показывают список только с ним) и aria-expanded значка.
+  function showOpen(entry) {
+    if (entry.open) entry.node.setAttribute('data-merfy-check-open', '');
+    else entry.node.removeAttribute('data-merfy-check-open');
+    entry.node.querySelector('[data-merfy-check-badge]').setAttribute('aria-expanded', entry.open ? 'true' : 'false');
+  }
+  // Слой метки: значок с числом находок и список; пересобирается при каждом set-check-marks (находки могли смениться).
+  function fillMark(id) {
+    var entry = checkMarks[id];
+    if (!entry.node) {
+      entry.node = document.createElement('div');
+      entry.node.setAttribute('data-merfy-check-mark', id);
+    }
+    entry.node.textContent = '';
+    var badge = document.createElement('button');
+    badge.type = 'button';
+    badge.setAttribute('data-merfy-check-badge', '');
+    badge.setAttribute('title', CHECK_BADGE_TITLE + entry.items.length);
+    badge.setAttribute('aria-label', CHECK_BADGE_TITLE + entry.items.length);
+    badge.textContent = String(entry.items.length);
+    var list = document.createElement('div');
+    list.setAttribute('data-merfy-check-list', '');
+    entry.items.forEach(function (item) {
+      list.appendChild(itemNode(item));
+    });
+    entry.node.appendChild(badge);
+    entry.node.appendChild(list);
+    showOpen(entry);
+  }
+  function placeMarks() {
+    var sections = {};
+    all().forEach(function (node) {
+      sections[node.getAttribute('data-section-id')] = node;
+    });
+    Object.keys(checkMarks).forEach(function (id) {
+      var section = Object.prototype.hasOwnProperty.call(sections, id) ? sections[id] : null;
+      if (section) layBox(checkMarks[id].node, section);
+      else checkMarks[id].node.style.display = 'none';
+    });
+  }
+  // set-check-marks { marks: [{ sectionId, items: [{ title, text? }] }] }: метки на секциях; marks: [] — снять все.
+  // Секция, что остаётся с меткой, сохраняет открытость списка. Не массив — сообщение пропускается.
+  function setCheckMarks(data) {
+    if (!Array.isArray(data.marks)) return;
+    var next = Object.create(null);
+    data.marks.map(markOf).filter(Boolean).forEach(function (mark) {
+      var old = checkMarks[mark.id];
+      next[mark.id] = { items: mark.items, open: old ? old.open : false, node: old ? old.node : null };
+    });
+    Object.keys(checkMarks).forEach(function (id) {
+      if (!next[id] && checkMarks[id].node.parentNode) checkMarks[id].node.parentNode.removeChild(checkMarks[id].node);
+    });
+    checkMarks = next;
+    if (Object.keys(next).length > 0) ensureStyle();
+    Object.keys(next).forEach(fillMark);
+    place();
+  }
+  // Клик внутри слоя метки: значок открывает и закрывает список; остальное (текст находки) просто не выбирает секцию.
+  // Возвращает true, если клик пришёлся на метку.
+  function markClick(target) {
+    var node = target.closest('[data-merfy-check-mark]');
+    var entry = node ? checkMarks[node.getAttribute('data-merfy-check-mark')] : null;
+    if (entry && target.closest('[data-merfy-check-badge]')) {
+      entry.open = !entry.open;
+      showOpen(entry);
+    }
+    return node !== null;
+  }
   // Что обводит рамка и в каком слое она лежит. Секция страницы — сама секция, рамка в body по координатам документа.
   // Окно поверх страницы (01.11) — корень шаблона: <merfy-section> окна — прозрачный слой на весь экран в верхнем слое
   // страницы, и рамка в body была бы вокруг экрана и под окном и подложкой. Поэтому рамка окна — внутри его слоя, по
   // координатам раскладки корня (offset*): с ними рамку масштабирует та же анимация, что и окно.
   function frameBox(section) {
     var root = section.hasAttribute(OVERLAY_ATTRIBUTE) ? section.firstElementChild : null;
-    if (root && root !== frame && root !== agentFrame) {
+    if (root && root !== frame && root !== agentFrame && !root.hasAttribute('data-merfy-check-mark')) {
       return { layer: section, top: root.offsetTop, left: root.offsetLeft, width: root.offsetWidth, height: root.offsetHeight };
     }
     var rect = section.getBoundingClientRect();
@@ -581,6 +700,12 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     'click',
     function (event) {
       var target = event.target;
+      // Метка проверок (этап 5): значок и список — своё дело метки; секцию клик по ним не выбирает и коду секции не уходит.
+      if (target && target.closest && markClick(target)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (target && target.closest && target.closest('[data-merfy-duplicate]')) {
         event.preventDefault();
         event.stopPropagation();
@@ -798,6 +923,7 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
     },
     'set-selection': setSelection,
     'set-agent-frame': setAgentFrame,
+    'set-check-marks': setCheckMarks,
     'ext-store-values': function (data) {
       setStoreValues(data.values);
     },

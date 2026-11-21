@@ -13,6 +13,10 @@ import { fileURLToPath } from 'node:url';
 // Образец — прототип Визи `vizi/design/node.py`.
 
 export const NETGUARD = fileURLToPath(new URL('./node/netguard.mjs', import.meta.url));
+// Флаги Node до скрипта инструмента. UNDICI-EHPA: Node 22 (CI, стенд на машине с Node 22) на NODE_USE_ENV_PROXY=1
+// печатает в stderr «EnvHttpProxyAgent is experimental», и причина отказа инструмента тонула в этом шуме; Node 24
+// (образ проверяющего) его не печатает. Остальные предупреждения пакета остаются в stderr.
+export const NODE_FLAGS = ['--disable-warning=UNDICI-EHPA', '--import', NETGUARD];
 const ERROR_CHARS = 400;
 const STDOUT_LIMIT = 48 * 1024 * 1024;
 
@@ -105,7 +109,7 @@ class Output {
 
 function collect(run: NodeRun, home: string): Promise<Finished> {
   return new Promise((resolve) => {
-    const child = spawn(run.node ?? process.execPath, ['--import', NETGUARD, run.script, ...run.args], {
+    const child = spawn(run.node ?? process.execPath, [...NODE_FLAGS, run.script, ...run.args], {
       env: nodeEnv(run, home),
       cwd: home,
       detached: true,

@@ -1,4 +1,5 @@
-# Эталонные сайты стенда «Дизайн по ссылке»: python -m vizi.design.lab --sites bench/design/sites.txt
+# Эталонные сайты стенда «Дизайн по ссылке»:
+#   pnpm --filter @merfy/storefront-builder design-lab --sites bench/design/sites.txt --out <папка>
 # Адрес — первое слово строки, после «#» — заметка. Платформа проверена по разметке страницы 21.11.2026
 # (tildacdn, insales, cdn.shopify.com, woocommerce/wp-content). Ozon и WB не включаем.
 

@@ -27,6 +27,14 @@ const doc = (home: Doc[], extra: Doc = {}): Doc => ({
   ...extra,
 });
 
+/** Документ новой темы, как его строит `doc`: списки секций по страницам. */
+interface SectionsDoc {
+  sections: Record<string, Array<{ id: string }>>;
+}
+
+const sectionIds = (document: unknown, page: string): string[] =>
+  ((document as SectionsDoc).sections[page] ?? []).map((s) => s.id);
+
 const step = (who: keyof typeof WHO, document: Doc): UndoStep => ({
   author: WHO[who],
   document,
@@ -122,7 +130,7 @@ describe("undoAgentDocs: секции", () => {
       step("vizi", doc([sec("c"), sec("a"), sec("b")])),
       step("merchant", doc([sec("c"), sec("m"), sec("a"), sec("b")])),
     ]);
-    expect(out.document.sections.home.map((s: Doc) => s.id)).toEqual([
+    expect(sectionIds(out.document, "home")).toEqual([
       "a",
       "m",
       "b",

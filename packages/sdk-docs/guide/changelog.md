@@ -1,3 +1,18 @@
+## 1.46.0 — 2026-11-21
+
+- [Список страницы](data.md#динамичные-фильтры-facetsfilters): `page.list.facets.filters` — фильтры одним видом, секция
+  рисует их по `type` (`range`, `flags`, `list`) и не знает конкретных групп. Значение — `{ value, label, count,
+  selected, url }`, `url` — ссылка «выбрать или снять», `clearUrl` — сброс фильтра. Старые `facets.price`, `groups` и
+  `collections` на месте. Без ответа сервиса (статичные страницы, превью) в `filters` только цена и группы вариантов.
+  Незнакомые `kind` и поля проходят как есть. Ключ группы вариантов берите из `filters[].param`, не из `groups[].key`:
+  у группы из нескольких слов они разные.
+- Параметры адреса списка: `tag`, `badge`, `min_discount`, `new_days`, `low_stock_max`; в `page.list.query` — `tags`,
+  `badges`, `minDiscount`, `newDays`, `lowStockMax`. У карточки списка — `badges`, `discountPercent`, `stockLeft`,
+  `tags` ([метки](data.md#карточка-списка-метки-скидка-остаток-теги)).
+- [Модули SDK](modules.md#catalog): `ctx.catalog.products(query)` принимает `tags`, `badges`, `minDiscount`, `newDays`,
+  `lowStockMax`, `filters`; `ctx.catalog.filters(query)` возвращает `filters` — тот же список по `type`;
+  `filters(query)` принимает `collectionIds`. Карточка `CatalogItem` — с `badges`, `discountPercent`, `stockLeft`, `tags`.
+
 ## 1.45.0 — 2026-11-20
 
 - [Картинки](styles.md#картинки): `eager` автора — только в первом экране. Сборка оставляет явный

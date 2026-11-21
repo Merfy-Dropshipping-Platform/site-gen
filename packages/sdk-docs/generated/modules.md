@@ -1,6 +1,6 @@
 # Модули SDK
 
-> SDK 1 · документация 1.45.0 · 2026-11-20
+> SDK 1 · документация 1.46.0 · 2026-11-21
 
 Ключ `uses` в `section.json` открывает секции данные и модули SDK. Значения:
 
@@ -57,7 +57,7 @@
 Действия: `search.open`.
 ## catalog
 
-Товары каталога: `products(query)` — страница товаров с фильтрами. В бандле только страниц, где секция объявила модуль в `uses` или поставила его действие в `data-action`.
+Товары каталога для своих секций: `products(query)` — страница товаров (`items`, `total`, `page`, `pages`), `filters(query)` — список фильтров под тот же запрос. Запрос (`CatalogQuery`): `page`, `limit`, `sort`, `minPrice`, `maxPrice` (рубли), `availability`, `collectionIds`, `q`, `tags` (хоть один), `badges` (`sale`, `new`, `low_stock`, `preorder`, `in_stock` — все выбранные), `minDiscount` (1–99), `newDays` (1–365), `lowStockMax` (1–1000), `filters` (ключ группы вариантов → значения); значение вне пределов — отказ `invalid` без запроса, `filters()` не берёт `page`, `limit` и `sort`. Карточка товара (`CatalogItem`) — карточка с `hasVariants` и полями `badges` (истинные признаки), `discountPercent` (целые проценты или `null`), `stockLeft` (остаток или `null`), `tags`; избранное и поиск отдают карточку без этих четырёх полей. Ответ `filters()` — `filters`: список фильтров по `type` (`range`: `min`, `max`, у цены — деньги и `params` с именами параметров; `list` и `flags`: `param` и `options` — `{ value, label, count, selected }`), секция рисует его по `type` и не знает конкретных групп; незнакомые `kind` и поля приходят как есть. Имя параметра запроса и ключ группы вариантов — `filters[].param`, не старого `groups[].key` (у группы из нескольких слов они разные); старые `groups`, `price` и `total` на месте. Страница списка собранного сайта получает то же в `page.list.facets.filters` — [data.md](data.md#динамичные-фильтры-facetsfilters). В бандле только страниц, где секция объявила модуль в `uses` или поставила его действие в `data-action`.
 
 Действий разметки нет.
 ## orders

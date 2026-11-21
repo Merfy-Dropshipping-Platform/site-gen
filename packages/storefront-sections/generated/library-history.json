@@ -227,5 +227,6 @@
   "sha256:857d40ea66bf432a40bc81b8adf7a26a78a6bb6621e87d2997d75b32b96a1d34": {"name":"wishlist","version":2},
   "sha256:84269fa15d09c7aefa5a783837656629fc91f7373bc298ea9e30380e75b02c9f": {"name":"wishlist","version":3},
   "sha256:1668d9f84e57b218dc943fcaf40964741e287865bf60f043689a6b4fa3c17b6b": {"name":"wishlist","version":4},
-  "sha256:2533afe3e151f1652f652739d9b6d2e7f1b6ad26ccf15a0f4806aa214e78788e": {"name":"wishlist","version":5}
+  "sha256:2533afe3e151f1652f652739d9b6d2e7f1b6ad26ccf15a0f4806aa214e78788e": {"name":"wishlist","version":5},
+  "sha256:1ac69a53228cfbc94b758ef3184b7b9b321fe4292ed79dac253f9c80ec44b0d0": {"name":"wishlist","version":6}
 }

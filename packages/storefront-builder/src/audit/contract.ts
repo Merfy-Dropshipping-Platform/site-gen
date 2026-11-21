@@ -32,6 +32,10 @@ const auditJobSchema = z.strictObject({
     .array(AuditReport)
     .max(SERIES_RUNS - 1)
     .default([]),
+  // Кто нажал публикацию (id пользователя): проверяющий процесс возвращает его в `job` ответа, по нему сборщик пишет
+  // событие «стало хуже» тому, кто опубликовал. Нет — публикация не человеком или автор неизвестен; задания прежней
+  // формы без поля остаются верными.
+  publishedBy: z.string().min(1).optional(),
 });
 
 const auditResultSchema = z.strictObject({

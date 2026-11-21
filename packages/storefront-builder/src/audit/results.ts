@@ -97,7 +97,7 @@ export async function onAuditResult(deps: AuditResultDeps, result: AuditResult):
   const { report, findings, status, reason } = outcomeOf(result, samples, baseline);
   const row = { siteId, build, path, pageId, status, reason, report, previous: baseline, findings, measuredAt };
   await recordAudit(deps.db, row);
-  await announceRegressed(deps, row);
+  await announceRegressed(deps, row, result.job?.publishedBy);
   deps.log('audit-recorded', {
     shopId: siteId,
     buildId: build,

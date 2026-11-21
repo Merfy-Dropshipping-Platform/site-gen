@@ -205,7 +205,11 @@ export const fromPublish = (job: Pick<ClaimedJob, 'priority'>): boolean => job.p
 
 // Секции магазина в этой сборке, оставшиеся библиотечными, — по её опубликованным исходникам (не по черновым): находки
 // в них чинит платформа. Не прочиталось — ни одна не считается платформенной, и находки идут агенту.
-async function platformSections(deps: BuilderDeps, job: ClaimedJob, inputs: BuildInputs): Promise<string[]> {
+async function platformSections(
+  deps: Pick<BuilderDeps, 'db' | 'log'>,
+  job: ClaimedJob,
+  inputs: BuildInputs,
+): Promise<string[]> {
   const own = inputs.code.sections.filter((section) => section.name.startsWith('shop:'));
   try {
     return [...(await libraryUnchangedIn(deps.db, job.siteId, own))];
@@ -216,11 +220,11 @@ async function platformSections(deps: BuilderDeps, job: ClaimedJob, inputs: Buil
 }
 
 // Аудит после публикации (место `audit`): задания на изменённые страницы. Сбой постановки сборку не роняет: витрина
-// уже переключена, причина — в журнал.
-async function queueAudits(
-  deps: BuilderDeps,
+// уже переключена, причина — в журнал. Автор публикации (`job.publishedBy`) идёт в каждое задание.
+export async function queueAudits(
+  deps: Pick<BuilderDeps, 'db' | 'log' | 'publishAudit'>,
   job: ClaimedJob,
-  snapshot: Snapshot,
+  snapshot: Pick<Snapshot, 'address'>,
   inputs: BuildInputs,
   previous: Pages | null,
   next: Pages,
@@ -233,8 +237,15 @@ async function queueAudits(
       reason: 'build-not-from-publish',
       priority: job.priority,
     });
-  const pageId = pageIdOf(inputs);
-  const base = { siteId: job.siteId, build: job.build, publicUrl: snapshot.address.url, pageId, previous, next };
+  const base = {
+    siteId: job.siteId,
+    build: job.build,
+    publicUrl: snapshot.address.url,
+    pageId: pageIdOf(inputs),
+    previous,
+    next,
+    publishedBy: job.publishedBy,
+  };
   const platform = await platformSections(deps, job, inputs);
   await startAudits({ publish: deps.publishAudit, log: deps.log }, { ...base, platform }).catch((error: unknown) =>
     deps.log('audit-queue-failed', { shopId: job.siteId, buildId: job.build, error: errorText(error) }),

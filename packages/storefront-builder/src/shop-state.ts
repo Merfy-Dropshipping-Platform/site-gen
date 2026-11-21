@@ -11,7 +11,9 @@ import { PRIORITY } from './events';
 //   stopped  — упали все запуски: тревога ушла, ждём события или команды перезапуска;
 //   held     — выпуск темы ждёт места: в работе уже K заданий выпуска (В6-2 В, drizzle/0022).
 // pending — сколько событий пришло, пока магазин занят или ждёт места: это «ещё раз», следующая сборка одна на все;
-// next_build — её номер в резерве (drizzle/0023).
+// next_build — её номер в резерве (drizzle/0023);
+// published_by — кто нажал публикацию в идущей или ждущей в очереди сборке, pending_published_by — в «ещё раз»
+// (drizzle/0040): автор доезжает до аудита и до сообщения мерчанту «после публикации стало медленнее».
 
 export type Queryable = Pick<Pool, 'query'>;
 // База с отдельным подключением — для транзакции под замком (порции выпуска).
@@ -44,6 +46,8 @@ export interface ShopEvent {
   siteId: string;
   priority: number;
   eventAt: string;
+  // Кто нажал публикацию (id пользователя); нет — null или поля нет (правка, выпуск, системная пересборка).
+  publishedBy?: string | null;
 }
 
 // Номер сборки: время в миллисекундах, но не меньше прошлого номера плюс один. Сборка, начатая позже, — с большим
@@ -66,19 +70,24 @@ const toStarted = (row: z.infer<typeof startedRow>): StartedJob => ({
 });
 
 // Свободен, остановлен или ждёт места выпуска — сборка сразу. События, что ждали в строке, едут в неё же: правка
-// или публикация магазина из волны выпуска не стоит в очереди волны.
+// или публикация магазина из волны выпуска не стоит в очереди волны. Автор публикации (published_by, drizzle/0040) —
+// у этого события, а нет — у ждавших: позднее событие важнее.
 const START_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${TAKE_BUILD}, next_build = NULL,
   lease_until = ${lease('$2')}, queued_at = now(), started_at = NULL, attempt = 0, retry_at = NULL, error = NULL,
   events = 1 + pending, priority = GREATEST($3, pending_priority), event_at = LEAST($4::timestamptz, pending_event_at),
+  published_by = COALESCE($5::text, pending_published_by), pending_published_by = NULL,
   pending = 0, pending_priority = 0, pending_event_at = NULL
   WHERE site_id = $1 AND state IN ('idle', 'stopped', 'held') RETURNING site_id, build, priority`;
 
 // Занят. Задание ещё в очереди (started_at пуст) — событие едет в него: данные сборка прочтёт при старте. Сборка уже
 // идёт или ждёт повтора — «ещё раз»: счётчик, самый высокий приоритет и самое раннее время правки среди ждущих, номер
-// следующей сборки — в резерв. В ответе — номер сборки, в которую войдёт событие.
+// следующей сборки — в резерв. В ответе — номер сборки, в которую войдёт событие. Автор публикации ($4) едет туда же,
+// куда само событие: в ждущее задание (published_by) или в «ещё раз» (pending_published_by); пустой — прежний остаётся.
 const QUEUED = "(state = 'busy' AND started_at IS NULL)";
 const COALESCE_SQL = `UPDATE storefront_shop SET
   next_build = CASE WHEN ${QUEUED} THEN next_build ELSE ${TAKE_BUILD} END,
+  published_by = CASE WHEN ${QUEUED} THEN COALESCE($4::text, published_by) ELSE published_by END,
+  pending_published_by = CASE WHEN ${QUEUED} THEN pending_published_by ELSE COALESCE($4::text, pending_published_by) END,
   events = CASE WHEN ${QUEUED} THEN events + 1 ELSE events END,
   priority = CASE WHEN ${QUEUED} THEN GREATEST(priority, $2) ELSE priority END,
   event_at = CASE WHEN ${QUEUED} THEN LEAST(event_at, $3::timestamptz) ELSE event_at END,
@@ -100,13 +109,13 @@ const ACCEPT_ATTEMPTS = 5;
 type AcceptStep = (db: Queryable, event: ShopEvent, options: ShopStateOptions) => Promise<Accepted | null>;
 
 const start: AcceptStep = async (db, event, options) => {
-  const values = [event.siteId, options.leaseMs, event.priority, event.eventAt];
+  const values = [event.siteId, options.leaseMs, event.priority, event.eventAt, event.publishedBy ?? null];
   const rows = (await db.query(START_SQL, values)).rows.map((row) => startedRow.parse(row));
   return rows.length === 0 ? null : { outcome: 'started', ...toStarted(rows[0]) };
 };
 
 const coalesce: AcceptStep = async (db, event) => {
-  const values = [event.siteId, event.priority, event.eventAt];
+  const values = [event.siteId, event.priority, event.eventAt, event.publishedBy ?? null];
   const rows = (await db.query(COALESCE_SQL, values)).rows.map((row) => coalescedRow.parse(row));
   return rows.length === 0 ? null : { outcome: 'coalesced', siteId: event.siteId, ...rows[0] };
 };
@@ -144,6 +153,7 @@ const RELEASES_IN_WORK = `SELECT count(*) FROM storefront_shop
 const START_HELD_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${TAKE_BUILD}, next_build = NULL,
   lease_until = ${lease('$1')}, queued_at = now(), started_at = NULL, attempt = 0, retry_at = NULL, error = NULL,
   events = pending, priority = pending_priority, event_at = pending_event_at,
+  published_by = pending_published_by, pending_published_by = NULL,
   pending = 0, pending_priority = 0, pending_event_at = NULL
   WHERE site_id IN (SELECT site_id FROM storefront_shop WHERE state = 'held' ORDER BY pending_event_at, site_id
     LIMIT GREATEST($2 - (${RELEASES_IN_WORK}), 0))
@@ -185,6 +195,7 @@ const claimedRow = z.object({
   event_at: z.date(),
   queued_at: z.date(),
   started_at: z.date(),
+  published_by: z.string().nullable(),
 });
 
 export interface ClaimedJob extends StartedJob {
@@ -193,11 +204,13 @@ export interface ClaimedJob extends StartedJob {
   eventAt: Date;
   queuedAt: Date;
   startedAt: Date;
+  // Кто нажал публикацию в этой сборке (id пользователя); null — не человек или не знаем.
+  publishedBy: string | null;
 }
 
 const CLAIM_SQL = `UPDATE storefront_shop SET started_at = now(), lease_until = ${lease('$2')}
   WHERE site_id = $1 AND build = $3 AND state = 'busy' AND (started_at IS NULL OR lease_until < now())
-  RETURNING build, attempt, priority, events, event_at, queued_at, started_at`;
+  RETURNING build, attempt, priority, events, event_at, queued_at, started_at, published_by`;
 
 const toClaimed = (siteId: string, row: z.infer<typeof claimedRow>): ClaimedJob => ({
   siteId,
@@ -208,6 +221,7 @@ const toClaimed = (siteId: string, row: z.infer<typeof claimedRow>): ClaimedJob 
   eventAt: row.event_at,
   queuedAt: row.queued_at,
   startedAt: row.started_at,
+  publishedBy: row.published_by,
 });
 
 // Взять задание: номер совпадает с номером в строке, и задание ещё никто не взял (или его замок истёк). Иначе — null:
@@ -230,6 +244,7 @@ const SUCCESS_SQL = `UPDATE storefront_shop SET
   queued_at = CASE WHEN pending > 0 THEN now() END,
   started_at = NULL, attempt = 0, error = NULL,
   events = pending, priority = pending_priority, event_at = pending_event_at,
+  published_by = pending_published_by, pending_published_by = NULL,
   pending = 0, pending_priority = 0, pending_event_at = NULL
   WHERE site_id = $1 AND build = $3 AND state = 'busy' RETURNING site_id, state, build, priority, attempt`;
 
@@ -282,7 +297,8 @@ export const finishFailure = (
 const INTERRUPT_SQL = `WITH released AS (
   UPDATE storefront_shop SET build = ${TAKE_BUILD}, next_build = NULL, lease_until = now(), queued_at = now(),
     started_at = NULL, events = events + pending, priority = GREATEST(priority, pending_priority),
-    event_at = LEAST(event_at, pending_event_at), pending = 0, pending_priority = 0, pending_event_at = NULL
+    event_at = LEAST(event_at, pending_event_at), published_by = COALESCE(pending_published_by, published_by),
+    pending_published_by = NULL, pending = 0, pending_priority = 0, pending_event_at = NULL
   WHERE site_id = $1 AND build = $2 AND state = 'busy' AND started_at IS NOT NULL AND lease_until > now()
   RETURNING build),
 recorded AS (
@@ -326,8 +342,8 @@ export async function interruptBuild(db: Queryable, interrupted: InterruptedBuil
 const RETRY_SQL = `UPDATE storefront_shop SET state = 'busy', build = ${TAKE_BUILD}, next_build = NULL,
   lease_until = ${lease('$1')}, queued_at = now(), started_at = NULL, retry_at = NULL,
   events = events + pending, priority = GREATEST(priority, pending_priority),
-  event_at = LEAST(event_at, pending_event_at),
-  pending = 0, pending_priority = 0, pending_event_at = NULL
+  event_at = LEAST(event_at, pending_event_at), published_by = COALESCE(pending_published_by, published_by),
+  pending_published_by = NULL, pending = 0, pending_priority = 0, pending_event_at = NULL
   WHERE state = 'retrying' AND retry_at <= now() RETURNING site_id, build, priority`;
 
 export async function startDueRetries(db: Queryable, options: ShopStateOptions): Promise<StartedJob[]> {

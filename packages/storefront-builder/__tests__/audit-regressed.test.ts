@@ -106,6 +106,29 @@ describe('onAuditResult: событие audit.regressed', () => {
     expect(event).not.toHaveProperty('publishedBy');
   });
 
+  it('публикацию нажал пользователь (job.publishedBy) — он в событии; задание без поля — события без поля', async () => {
+    const { db } = fakeDb(WAS);
+    const { deps, publishRegressed } = depsOf(db);
+    // Серия из трёх прогонов готова — перемер не нужен, строка и событие сразу.
+    const done = (job: Partial<AuditJob>) => result({ report: WORSE, job: { ...JOB, samples: [WORSE, WORSE], ...job } });
+    await onAuditResult(deps, done({ publishedBy: 'user-1' }));
+    await onAuditResult(deps, done({}));
+    await onAuditResult(deps, result({ report: WORSE }));
+    const [withAuthor, withoutAuthor, withoutJob] = publishRegressed.mock.calls.map(([event]) => event);
+    expect(withAuthor).toMatchObject({ type: 'audit.regressed', publishedBy: 'user-1' });
+    expect(withoutAuthor).not.toHaveProperty('publishedBy');
+    expect(withoutJob).not.toHaveProperty('publishedBy');
+  });
+
+  it('перемер несёт автора дальше: задание перемера — то же задание с publishedBy', async () => {
+    const { db } = fakeDb(WAS);
+    const { deps, publishAudit, publishRegressed } = depsOf(db);
+    const first = result({ report: WORSE, job: { ...JOB, publishedBy: 'user-1' } });
+    await onAuditResult(deps, first);
+    expect(publishRegressed).not.toHaveBeenCalled();
+    expect(publishAudit).toHaveBeenCalledWith(expect.objectContaining({ publishedBy: 'user-1' }));
+  });
+
   it('чистый аудит — события нет', async () => {
     const { db, writes } = fakeDb(WAS);
     const { deps, publishRegressed } = depsOf(db);

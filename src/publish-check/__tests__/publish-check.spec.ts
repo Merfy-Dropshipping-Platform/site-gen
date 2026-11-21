@@ -357,6 +357,26 @@ describe("sites.publish · проверка закрывает публикац�
     expect(updates).toEqual([{ publishedRevisionId: "r2" }]);
   });
 
+  it("actorUserId из RPC идёт в публикацию; не строка или пустой — публикация без автора", async () => {
+    const { controller, domain } = controllerWith();
+    await controller.publish({
+      tenantId: TENANT,
+      siteId: SITE,
+      actorUserId: "user-1",
+    });
+    expect(domain.publish).toHaveBeenLastCalledWith({
+      tenantId: TENANT,
+      siteId: SITE,
+      mode: undefined,
+      actorUserId: "user-1",
+    });
+    for (const actorUserId of ["", 42, null]) {
+      await controller.publish({ tenantId: TENANT, siteId: SITE, actorUserId });
+      const [params] = domain.publish.mock.calls.at(-1) as unknown as [object];
+      expect(params).not.toHaveProperty("actorUserId");
+    }
+  });
+
   it("skipChecks — «опубликовать как есть»: без снимков, публикует, запоминает текущую ревизию", async () => {
     const { controller, domain, looks, updates } = controllerWith({
       snapshot: brokenCart,

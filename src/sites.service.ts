@@ -1687,6 +1687,8 @@ export class SitesDomainService {
     tenantId: string;
     siteId: string;
     mode?: "draft" | "production";
+    /** Кто нажал «Опубликовать»: идёт в событие сборщику (`publishedBy`) и в журнал; системные вызовы — без него. */
+    actorUserId?: string;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
@@ -1883,7 +1885,7 @@ export class SitesDomainService {
         );
 
       const queuedBuildId = newTheme
-        ? await this.storefrontBuildId(params.siteId)
+        ? await this.storefrontBuildId(params.siteId, params.actorUserId)
         : "queued";
 
       this.events.emit("sites.site.published", {
@@ -1904,7 +1906,7 @@ export class SitesDomainService {
         organizationId: params.tenantId,
         siteId: params.siteId,
         actorType: "user",
-        actorUserId: null,
+        actorUserId: params.actorUserId ?? null,
         objectType: "site",
         objectId: params.siteId,
         objectRef: finalUrl ?? null,
@@ -1984,7 +1986,7 @@ export class SitesDomainService {
       );
 
     const buildId = newTheme
-      ? await this.storefrontBuildId(params.siteId)
+      ? await this.storefrontBuildId(params.siteId, params.actorUserId)
       : built.buildId;
 
     this.events.emit("sites.site.published", {
@@ -2005,7 +2007,7 @@ export class SitesDomainService {
       organizationId: params.tenantId,
       siteId: params.siteId,
       actorType: "user",
-      actorUserId: null,
+      actorUserId: params.actorUserId ?? null,
       objectType: "site",
       objectId: params.siteId,
       objectRef: finalUrl ?? null,
@@ -2027,10 +2029,14 @@ export class SitesDomainService {
    * STOREFRONT_BUILD_REPLY_MS (по умолчанию 3 с) — "queued": событие уже в его
    * очереди, магазин соберётся, когда сборщик до него дойдёт.
    */
-  private async storefrontBuildId(siteId: string): Promise<string> {
+  private async storefrontBuildId(
+    siteId: string,
+    publishedBy?: string,
+  ): Promise<string> {
     const build = await this.storefrontHandoff?.requestBuild(
       siteId,
       "SitesDomainService.publish",
+      publishedBy,
     );
     return typeof build === "number" ? String(build) : "queued";
   }

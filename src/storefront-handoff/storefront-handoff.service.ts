@@ -11,15 +11,16 @@
  * - `notify(siteId, type, source)` — событие сборщику из источника внутри
  *   site-gen (имя, домен, политики, контакты, брендинг), только для магазина
  *   новой темы.
- * - `requestBuild(siteId, source)` — публикация магазина новой темы: событие
- *   merchant-publish с адресом ответа, сборщик отвечает номером сборки, в
+ * - `requestBuild(siteId, source, publishedBy?)` — публикация магазина новой
+ *   темы: событие merchant-publish с адресом ответа (и id пользователя, что
+ *   нажал публикацию, — `publishedBy`), сборщик отвечает номером сборки, в
  *   которую вошла публикация (прямой ответ RabbitMQ, direct reply-to). Не
  *   ответил за STOREFRONT_BUILD_REPLY_MS (по умолчанию 3 с) — null: событие
  *   уже в очереди сборщика, публикация отвечает «queued».
  *
  * Новые темы — ключи packages/storefront-build/theme-versions.json (блок 4).
  * Событие — в точку обмена `content.events` (topic), ключ маршрута — тип
- * события: `{ v: 1, type, siteId, eventAt, source }`. Как ActivityLogPublisher:
+ * события: `{ v: 1, type, siteId, eventAt, source, publishedBy? }`. Как ActivityLogPublisher:
  * сбой брокера или базы не роняет вызывающего — пишется в лог; при сбое
  * проверки магазин идёт старым путём, как до блока 6.
  */
@@ -222,13 +223,20 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
    * в которую оно вошло. null — сборщик не ответил за тайм-аут или брокер
    * недоступен; событие, если ушло, сборщик возьмёт позже.
    */
-  async requestBuild(siteId: string, source: string): Promise<number | null> {
+  async requestBuild(
+    siteId: string,
+    source: string,
+    publishedBy?: string,
+  ): Promise<number | null> {
     const correlationId = randomUUID();
     const reply = this.waitReply(correlationId);
-    const sent = await this.publish(siteId, "merchant-publish", source, {
-      replyTo: REPLY_QUEUE,
-      correlationId,
-    });
+    const sent = await this.publish(
+      siteId,
+      "merchant-publish",
+      source,
+      { replyTo: REPLY_QUEUE, correlationId },
+      publishedBy,
+    );
     if (!sent) this.replies.get(correlationId)?.(null);
     const build = await reply;
     if (build === null)
@@ -257,6 +265,7 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
     type: string,
     source: string,
     reply: { replyTo?: string; correlationId?: string } = {},
+    publishedBy?: string,
   ): Promise<boolean> {
     if (!this.channel) {
       this.logger.warn(`broker not ready, dropping ${type} for ${siteId}`);
@@ -268,6 +277,8 @@ export class StorefrontHandoff implements OnModuleInit, OnModuleDestroy {
       siteId,
       eventAt: new Date().toISOString(),
       source,
+      // Автор публикации: пустого поля в сообщении нет — событие прежней формы (JSON.stringify отбрасывает undefined).
+      publishedBy: publishedBy || undefined,
     };
     try {
       await this.channel.publish(

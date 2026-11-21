@@ -44,6 +44,31 @@ describe('событие content.events', () => {
     expect(event).toEqual({ owner: 'site', siteId: SITE, type: 'shop-name-change', eventAt: AT });
   });
 
+  it('публикация с автором: publishedBy доезжает до события; без поля, как у прежних сообщений, — события без него', () => {
+    const body = contentEventBody({
+      type: 'merchant-publish',
+      siteId: SITE,
+      eventAt: AT,
+      source: 'sites',
+      publishedBy: 'user-1',
+    });
+    expect(parseIncoming(CONTENT_EXCHANGE, body, RECEIVED)).toEqual({
+      owner: 'site',
+      siteId: SITE,
+      type: 'merchant-publish',
+      eventAt: AT,
+      publishedBy: 'user-1',
+    });
+    // Сообщение прежнего формата (без publishedBy) остаётся верным.
+    const old = { v: 1, type: 'merchant-publish', siteId: SITE, eventAt: AT, source: 'sites' };
+    expect(parseIncoming(CONTENT_EXCHANGE, old, RECEIVED)).not.toHaveProperty('publishedBy');
+  });
+
+  it('publishedBy пустой строкой — message-invalid с путём поля', () => {
+    const body = { v: 1, type: 'merchant-publish', siteId: SITE, eventAt: AT, source: 'sites', publishedBy: '' };
+    expect(failure(() => parseIncoming(CONTENT_EXCHANGE, body, RECEIVED)).path).toBe('content.events#publishedBy');
+  });
+
   it('неизвестная точка обмена — разбирается как content.events', () => {
     const body = contentEventBody({ type: 'restart', siteId: SITE, eventAt: AT, source: 'pnpm shop' });
     expect(parseIncoming('', body, RECEIVED)).toMatchObject({ owner: 'site', type: 'restart' });

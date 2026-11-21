@@ -75,6 +75,18 @@ const { revisionId, restoredFrom } = await storeContent.rollback(siteId, {
 });
 ```
 
+**Отменить записи агента с ревизии R** — «Вернуть как было» после сборки Визи и «Вернуть» одной секции
+(этап 6 и 7 спеки «Визи делает сайты в конструкторе»); правки мерчанта остаются:
+```ts
+const { revisionId, undone, kept } = await storeContent.undoAgent(siteId, {
+  tenantId, site, since: planBaseRevisionId,
+  source: "vizi", // чьи записи; от него же метки новой ревизии
+  scope: { sections: [{ page: "home", id: "hero-k3f9x2a1" }] }, // необязательно
+});
+// revisionId: null — ничего не изменилось, ничего не записано
+```
+Как устроено — раздел «Отмена записей агента» ниже.
+
 Дешёвая проверка «есть ли такая ревизия» без содержимого (используется сборкой — см. `envelope` в
 карте модулей) — `storeContent.envelope(siteId, revisionId, { site })`, возвращает `null`, не бросает.
 
@@ -94,7 +106,9 @@ const { revisionId, restoredFrom } = await storeContent.rollback(siteId, {
 | `panel-defaults.ts` | значения по умолчанию панели из того же puck-config, что получает конструктор | `document.adapter`, дымовая проверка `scripts/smoke-panel-defaults.mjs` |
 | `rewrite-current.ts` | повтор «прочитал → посчитал → записал» при споре о том же месте | `pages.service`, `sites.service.resetContentPages` |
 | `revision-kinds.ts` | условие «ревизия — версия магазина, а не снимок клиента»: `coalesce(kind, meta->>'kind', '') <> 'client-snapshot'` — колонка в приоритете, `meta->>'kind'` только запасной путь на переходный период выкатки миграции 0020 | `document.adapter.history`/`historyCounts` (было — `sites.service.listRevisions` до R1), `admin/bulk` (через `historyCounts`) |
-| `operations/` | движок: `diff`, `apply`, `merge3`, адреса; чистые функции без базы | `save-on-base`, `change-kinds`, `write-model` |
+| `operations/` | движок: `diff`, `apply`, `merge3`, адреса; чистые функции без базы | `save-on-base`, `change-kinds`, `write-model`, `undo-agent` |
+| `undo-agent.ts` | отмена записей агента после ревизии R — чистая функция над цепочкой документов: обратные слияния, `kept`, `scope` | `undo-agent-write` |
+| `undo-agent-write.ts` | обвязка отмены: цепочка версий из `history`, одна версия формата через модель записи, запись от текущей (`reject-conflicts` + `rewriteCurrent`), ключ от повторов; разбор `scope` и автора RPC | `document.adapter.undoAgent`, RPC `sites.revisions.undo_agent` |
 
 ## Инварианты этапа 2
 
@@ -135,6 +149,49 @@ const { revisionId, restoredFrom } = await storeContent.rollback(siteId, {
   просмотр таблицы. `DocumentAdapter.commit()` пишет `kind` из `meta.kind` при каждой вставке —
   совместимость (`meta.kind` продолжает писаться) на время выкатки.
 
+## Отмена записей агента (`undoAgent`)
+
+RPC `sites.revisions.undo_agent` (вход `{ tenantId, siteId, since, scope?, writer, idempotencyKey?, actorUserId? }`,
+ответ `{ success, revisionId | null, restoredFrom, undone, kept: [{ path, reason, by }] }`), маршрут шлюза
+`POST /api/sites/:id/revisions/undo-agent`, в MCP — `merfy_pages restore` с `undoAgent: true`. Чьи записи
+отменяются — по автору от шлюза: `writer: "agent"` → `source: mcp`, `"vizi"` → `vizi`; мерчант — отказ
+`undo_agent_requires_agent`.
+
+**Смысл.** Документ — как если бы ревизий этого `source` после R не было, кроме мест, которые после последней
+правки агента менял кто-то другой: они остаются и уходят в `kept`. По месту: последним менял не агент — оставить;
+иначе — значение после последней правки не-агента (или из R).
+
+**Алгоритм (`undo-agent.ts`)** — «обратные слияния», как `git revert`, от новой записи агента к старой. Цепочка:
+R = d0, d1 … dn (текущая), документы в одной версии формата. Для каждой записи агента `d(i-1) → d(i)`:
+`merge3(база = d(i), текущая = документ на этом шаге, входящая = d(i-1), keep-current)`.
+- Чужие правки после записи — «текущая сторона»: где они задели то же место, остаётся их значение (место — в
+  `conflicts`), остальное возвращается к «до». Это и есть правило по месту: агент — мерчант — агент по одному
+  полю даёт значение мерчанта (отмена новой записи ставит его, отмена старой упирается в него же).
+- `kept` — спорные места, адрес которых не поставила отмена более новой записи агента (`settled`): в примере
+  выше поле не «оставлено», а отменено до значения мерчанта.
+- Секции и страницы: добавленная агентом убирается (обратная операция — `remove`), удалённая возвращается на
+  место (`add` с соседями слева), порядок — обратной `order` по слотам (чужие новые секции остаются на своих
+  местах). Правленая другим секция не удаляется, удалённая другим — не возвращается (`keep-current`).
+  Страница новой темы — одна единица: остались чужие секции — остаётся и мета `pages/<id>`; пустые списки
+  секций страниц, которых не было в R, убираются.
+- Служебные поля (`currentPageId`, `lockVersion`) не откатываются; автозначения панели не спорят (`isAutoValue`).
+- `scope.sections` — отменяются только операции внутри этих секций (`sections/<страница>/<id>` у новой темы,
+  `page:<страница>/block:<id>` у пяти тем); порядок страницы в `scope` не входит.
+- `by` у `kept` — метки последней не-агентской ревизии, задевшей место.
+
+**Обвязка (`undo-agent-write.ts`).** Текущая — свежим чтением указателя. R — версия магазина; снимок клиента
+разворачивается в свою ревизию-слияние (`meta.snapshotOf`). Цепочка — версии из `history` между R и текущей, не
+больше `UNDO_CHAIN_LIMIT` (500), иначе `undo_since_out_of_range`; R нет у магазина — `revision_not_found`.
+Ничего не поменялось (кроме служебных полей) — ничего не пишется, `revisionId: null`. Иначе одна ревизия от базы
+«текущая»: `actor: agent`, тот же `source`, `meta.restoredFrom = R`, `meta.undoAgent = { since, undone, kept,
+scope? }`, политика `reject-conflicts`: кто-то записал то же место между чтением и фиксацией — пересчёт от
+свежей текущей (`rewriteCurrent`, до 3 раз), в другое место — порт сливает сам. Ключ от повторов — как у записи
+агента; повтор после успешной отмены и так отвечает «ничего не изменилось». Сигнал «черновик изменился» — без
+области (редактор перечитает всё), как у отката.
+
+**Не покрыто.** Секции внутри зон пяти тем в `scope` (зона адресуется не под блоком). Смену темы агентом
+отмена не различает: она откатила бы документ, но не `site.themeId` — Визи тему не меняет.
+
 ## Писатели и политика при устаревшей базе
 
 | Писатель | Форма | При устаревшей базе |
@@ -149,6 +206,7 @@ const { revisionId, restoredFrom } = await storeContent.rollback(siteId, {
 | страницы кабинета (`pages.service`) | `on-base` | слить, `reject-conflicts`; спор — пересчитать правку (`rewriteCurrent`) |
 | сброс контент-страниц (`resetContentPages`) | `on-base` | так же, как страницы кабинета |
 | откат (`rollback`) | `on-base` | `refuse`: не сливать, `RevisionConflictError` (409) |
+| отмена записей агента (`undoAgent`) | `on-base` | `reject-conflicts`; спор — пересчитать отмену от свежей текущей (`rewriteCurrent`) |
 | создание магазина, сид саги рождения (`store/lifecycle`) | `blind` | не проверяется; с `expectedVersion` — жёсткий CAS |
 | смена темы (`store/theme-switch/SetThemeCommand`) | `blind` | жёсткий CAS по прочитанной версии; `sitePatch` (`themeId`/`themeAppliedAt`/`updatedBy`) едет в ТОЙ ЖЕ транзакции, что ревизия (R2, В4) |
 

@@ -37,6 +37,8 @@ import type {
   SaveResult,
   StoreContent,
   StoreContentSite,
+  UndoAgentParams,
+  UndoAgentResult,
 } from "./store-content.port";
 import type { CheckScope } from "./check-scope";
 
@@ -156,6 +158,23 @@ export class StoreContentService implements StoreContent {
       to,
       opts,
     );
+  }
+
+  async undoAgent(
+    siteId: string,
+    params: UndoAgentParams,
+  ): Promise<UndoAgentResult> {
+    const undone = await this.resolveAdapter(params.site).undoAgent(
+      siteId,
+      params,
+    );
+    // «Ничего не изменилось» и повтор по ключу ревизии не создают — сигналить не о чем.
+    // Область не считается — сигнал без неё, редактор перечитает всё (как у отката).
+    if (undone.revisionId !== null && !undone.replayed)
+      this.signalDraft(siteId, params.site, undone.revisionId, {
+        author: { actor: "agent", source: params.source },
+      });
+    return undone;
   }
 
   /**

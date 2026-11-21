@@ -25,6 +25,7 @@ import {
 import { SectionIdDuplicateError } from "./content/section-ids";
 import { RoleDuplicateError } from "./content/section-roles";
 import { CONSTRUCTOR_LABELS, labelsOf, parseWriter } from "./content/writer";
+import { parseUndoScope, undoSourceOf } from "./content/undo-agent-write";
 
 /** Самая длинная длина ключа от повторов, которую пускает слой шлюза. */
 const IDEMPOTENCY_KEY_MAX = 255;
@@ -493,6 +494,45 @@ export class SitesMicroserviceController {
       return { success: true, ...res };
     } catch (e: any) {
       this.logger.error("revisions.set_current failed", e);
+      return revisionWriteFailure(e);
+    }
+  }
+
+  /**
+   * Этап 6 Визи, Ч2: отменить записи агента с ревизии `since`, не трогая
+   * правки мерчанта (`content/undo-agent.ts`). Чьи записи — по автору от шлюза
+   * (`writer`: агент — `mcp`, Визи — `vizi`), не из тела. Ответ:
+   * `{ revisionId | null, restoredFrom, undone, kept }`.
+   */
+  @MessagePattern("sites.revisions.undo_agent")
+  async undoAgentRevisions(@Payload() data: any) {
+    try {
+      const {
+        tenantId,
+        siteId,
+        since,
+        scope,
+        actorUserId,
+        writer,
+        idempotencyKey,
+      } = data ?? {};
+      if (!tenantId || !siteId || typeof since !== "string" || !since)
+        return {
+          success: false,
+          message: "tenantId, siteId and since required",
+        };
+      const res = await this.service.undoAgentRevisions({
+        tenantId,
+        siteId,
+        since,
+        source: undoSourceOf(parseWriter(writer)),
+        scope: parseUndoScope(scope),
+        actorUserId,
+        idempotencyKey: parseIdempotencyKey(idempotencyKey),
+      });
+      return { success: true, ...res };
+    } catch (e: any) {
+      this.logger.error("revisions.undo_agent failed", e);
       return revisionWriteFailure(e);
     }
   }

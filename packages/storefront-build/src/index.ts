@@ -25,7 +25,16 @@ export { imageUrlsIn, markerUrlOf } from './image-urls';
 export { entityHashes, entityKey } from './entities';
 export { buildStorefront, type BuildReferences, type StorefrontBuild, type ThemeBuild } from './build';
 export { pagePropsOf, renderShopPage, type RenderPage, type RenderedPage, type ShopTheme } from './page';
-export { FOOTER_LIST, HEADER_LIST, NOT_FOUND_ROUTE, OVERLAY_LIST, SHOP_ROUTES, pageInfoById, routeOf, type ShopRoute } from './routes';
+export {
+  FOOTER_LIST,
+  HEADER_LIST,
+  NOT_FOUND_ROUTE,
+  OVERLAY_LIST,
+  SHOP_ROUTES,
+  pageInfoById,
+  routeOf,
+  type ShopRoute,
+} from './routes';
 // Страницы записей (блок 8 «Секций и SDK», часть 8б)
 export { recordIndex, routeDuplicates, shopRoutes, templateShown, type RouteDuplicate } from './routes';
 // Превью шаблонов записей (часть 8б-2)
@@ -38,15 +47,27 @@ export {
   // Блок 11, часть 11а-2: источник и список страницы — сборщику (дорисовка и превью одного блока).
   listSourceOf,
   pageListOf,
+  // Фильтры каталога, часть 1: поля товара из ответа product.findAll.
+  listedDetailsOf,
   type ListFacets,
   type ListProductCard,
   type ListSource,
+  type ListedDetails,
   type ListedPage,
   type PageList,
 } from './page-list';
+export {
+  BADGE_LABELS,
+  type ListFilter,
+  type ListFilterOption,
+  type ListOptionsFilter,
+  type ListRangeFilter,
+} from './list-filters';
 export { VARIANTS_ATTRIBUTE, type PageVariants } from './page-variants';
 export {
   EMPTY_LIST_QUERY,
+  LIST_BADGES,
+  LIST_PARAM_NAMES,
   LIST_SORTS,
   filtersRpcArgs,
   listQueryIsEmpty,
@@ -54,6 +75,7 @@ export {
   parseListQuery,
   productsRpcArgs,
   type FiltersRpcArgs,
+  type ListBadge,
   type ListQuery,
   type ProductsRpcArgs,
 } from './list-query';

@@ -232,6 +232,30 @@ nginx-minio-proxy). Две политики: обычная — `'self'`, хеш
 - `page.list` (`page-list.ts`) — у каждой секции страницы: карточки, `total`, номера, `prev`, `next`, выбранное (`query`),
   сортировки, значения фильтров. Параметры списка — `list-query.ts`: разбор, канонический вид, аргументы RPC
   `product.findAll` и `product.getFilters`, как у шлюза.
+- Фильтры каталога, часть 1 (21.11, контракт фильтров каталога): параметры адреса `tag` (повторяемый, теги — ИЛИ),
+  `badge` (повторяемый: `sale`, `new`, `low_stock`, `preorder`, `in_stock` — И; чужие отброшены), `min_discount`
+  (1–99), `new_days` (1–365), `low_stock_max` (1–1000); вне пределов — не выбрано. В RPC — `tags`, `badges`,
+  `minDiscount`, `newDays`, `lowStockMax`, у `getFilters` — и `collectionId` (те же коллекции, что у `findAll`).
+  Имена — `LIST_PARAM_NAMES`; тот же список — `LIST_NAMES` раздачи (nginx-minio-proxy, `storefront/njs/route.js`):
+  чего нет у раздачи, то до рисовальщика не дойдёт. Канонический вид обеих сторон сверяет `fixtures/list-canonical.json`
+  (копия — `storefront/test/list-canonical.json` раздачи): меняются вместе.
+- `page.list.facets.filters` (`list-filters.ts`) — фильтры одним видом, секция рисует их по `type`: `range` —
+  `{ key, kind, type, label, params: { min, max }, min, max, clearUrl }` (рубли), остальные — `{ key, kind, type,
+  label, param, options, clearUrl }`, значение — `{ value, label, count, selected, url }`. `param` и `value` — адреса
+  витрины (`badge`, `collection` со slug, `tag`, `filter.<ключ>`), `url` — первая страница списка с этим значением
+  выбранным или снятым, `clearUrl` — без значений фильтра (ничего не выбрано — `null`). Незнакомые `kind` и поля
+  проходят как есть; список незнакомого `kind` идёт параметром `filter.<param>`. Коллекции — только у `/catalog`.
+- Источник `filters` — ответ `product.getFilters` (страница с параметрами). Без ответа сервиса (страницы сборки, превью)
+  — снимок записей того же вида и с тем же смыслом счётчика, что у сервиса без выбранного: цена «от» и группы
+  вариантов по товарам этого списка (у коллекции — её товары). Признаков (`badge`), тегов и коллекций в снимке нет:
+  признаки по контракту считает только SQL сервиса product (пересчёт в сборке разошёлся бы с фильтром), тегов в
+  записях нет, а коллекцию по умолчанию («все товары»), которую сервис в фильтр не отдаёт, по записям не отличить.
+  Выбранное без ответа сервиса счётчики не меняет. Старые `price`, `groups`, `collections` — прежние.
+- Ключ группы у фильтра (`key`, `param` — `filter.<ключ>`) — как у сервиса: имя группы в нижнем регистре, пробелы не
+  заменяются (`filterKeyOf`). Его понимает фильтр выдачи; у старого `groups[].key` пробелы заменены на `_`, и группа из
+  нескольких слов по нему не фильтрует. Ссылки и выбор значений — по `filters[].param`.
+- Карточка списка (`ListProductCard`) — ещё `badges`, `discountPercent`, `stockLeft`, `tags` из ответа `product.findAll`
+  по id (`listedDetailsOf`); поле не той формы и список из записей сборки — `[]` и `null`.
 - Строка манифеста — `list: { page }` у страницы со списком; строка таблицы раздачи — `l: true`; в карте сайта страниц N
   нет. Страница с параметрами списка — `noindex, follow` и `meta[name=merfy-list]`.
 - JSON вариантов (`page-variants.ts`) — `<script type="application/json" data-merfy-variants>` перед тегом бандла: товар

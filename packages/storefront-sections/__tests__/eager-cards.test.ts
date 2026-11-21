@@ -17,7 +17,8 @@ const product = (position: number) => {
   const [first] = sampleRecord('collection').products;
   if (first === undefined) throw new Error('в примерах нет товаров');
   const image = `https://s3.merfy.ru/p/card-${position}.jpg`;
-  return { ...first, id: `p-${position}`, image, images: [image], hasVariants: false };
+  const details = { badges: [], discountPercent: null, stockLeft: null, tags: [] };
+  return { ...first, ...details, id: `p-${position}`, image, images: [image], hasVariants: false };
 };
 const products = Array.from({ length: CARDS }, (_, position) => product(position));
 const COLLECTION = { ...sampleRecord('collection'), products, productsCount: CARDS };

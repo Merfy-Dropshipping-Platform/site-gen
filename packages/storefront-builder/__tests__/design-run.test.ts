@@ -3,10 +3,13 @@ import { capRaw, runDesign, type RunDeps } from '../src/design/design-run';
 import type { StylePart } from '../src/design/design-style';
 import { DesignError } from '../src/design/design-types';
 import { dom } from '../src/design/tools/dom';
-import type { OutlineTool, StyleTool } from '../src/design/tools/tool';
+import { TAB_ORDER, type OutlineTool, type StyleTool, type TabUse } from '../src/design/tools/tool';
 import { domBlock, fakeCaptured, fakeSession } from './design-fake';
 
 // Оркестровка снятия без браузера: цепочки инструментов, дозаполнение, отказы, срок, содержимое своего сайта.
+
+// expect.any возвращает any: через хелпер с типом unknown — без unsafe-assignment.
+const anyNumber = (): unknown => expect.any(Number);
 
 const FULL: StylePart = {
   bands: { value: [{ bg: '#ffffff', area: 1, top: 0 }], confidence: 0.7 },
@@ -22,10 +25,16 @@ const FULL: StylePart = {
   'button.look': { value: 'filled', confidence: 0.8 },
 };
 
-function styleTool(name: string, part: StylePart | Error, calls: string[] = []): StyleTool {
+function styleTool(
+  name: string,
+  part: StylePart | Error,
+  calls: string[] = [],
+  tab: TabUse = { order: TAB_ORDER.reads, limitMs: 30_000 },
+): StyleTool {
   return {
     name,
     version: `${name}-1`,
+    ...tab,
     raw: () => {
       calls.push(name);
       return part instanceof Error ? Promise.reject(part) : Promise.resolve({ from: name });
@@ -37,9 +46,28 @@ function styleTool(name: string, part: StylePart | Error, calls: string[] = []):
 const failingOutline: OutlineTool = {
   name: 'broken',
   version: '0',
+  order: TAB_ORDER.reads,
+  limitMs: 30_000,
   raw: () => Promise.reject(new Error('упал')),
   outline: () => ({ v: 1, blocks: [] }),
 };
+
+// Инструмент, который отвечает не раньше, чем через `ms`, а свой срок `budgetMs` соблюдает как настоящий (kill по сроку).
+function slowTool(name: string, ms: number, tab: TabUse, calls: string[] = []): StyleTool {
+  return {
+    ...styleTool(name, FULL, calls, tab),
+    raw: ({ budgetMs }) => {
+      calls.push(name);
+      return new Promise((resolve, reject) => {
+        const late = budgetMs < ms;
+        setTimeout(
+          () => (late ? reject(new Error(`не уложился в ${budgetMs}`)) : resolve({ from: name })),
+          Math.min(ms, budgetMs),
+        );
+      });
+    },
+  };
+}
 
 function deps(
   style: StyleTool[],
@@ -72,8 +100,43 @@ describe('снятие дизайна', () => {
     });
     expect(snapshot.style.finalUrl).toBe('https://shop.example/home');
     expect(snapshot.outline.blocks.map((block) => block.role)).toEqual(['header', 'footer']);
-    expect(snapshot.raw).toEqual({ a: { from: 'a' }, dom: { blocks: 2 } });
+    const { ms, ...answers } = snapshot.raw;
+    expect(answers).toEqual({ a: { from: 'a' }, dom: { blocks: 2 } });
+    expect(ms).toEqual({ capture: anyNumber(), a: anyNumber(), dom: anyNumber() });
     expect(run.session.closed).toBe(1);
+  });
+
+  it('очередь на вкладке: свои скрипты → кто читает → кто меняет страницу; инструмент обеих цепочек — один раз', async () => {
+    const calls: string[] = [];
+    const changes = styleTool('changes', FULL, calls, { order: TAB_ORDER.changes, limitMs: 30_000 });
+    const ownTool = styleTool('own', FULL, calls, { order: TAB_ORDER.own, limitMs: 1_000 });
+    const reads = styleTool('reads', FULL, calls);
+    const both: OutlineTool = { ...reads, outline: () => ({ v: 1, blocks: [] }) };
+    const snapshot = await runDesign(deps([changes, ownTool], [both, dom]), input);
+    expect(calls).toEqual(['own', 'reads', 'changes']);
+    expect(snapshot.tool).toBe('changes');
+    expect(snapshot.outlineTool).toBe('reads');
+  });
+
+  it('чужой инструмент не уложился в свой срок — стиль своим скриптом, задолго до срока задания', async () => {
+    const hanging = slowTool('hanging', 10_000, { order: TAB_ORDER.changes, limitMs: 200 });
+    const ownTool = styleTool('own', FULL, [], { order: TAB_ORDER.own, limitMs: 1_000 });
+    const startedAt = Date.now();
+    const snapshot = await runDesign(deps([hanging, ownTool], [dom]), { ...input, deadline: Date.now() + 20_000 });
+    expect(Date.now() - startedAt).toBeLessThan(2_000);
+    expect(snapshot.tool).toBe('own');
+    expect(snapshot.raw.errors).toEqual({ hanging: 'не уложился в 200' });
+  });
+
+  it('содержимое своего сайта снимается до чужих инструментов: они меняют страницу', async () => {
+    const order: string[] = [];
+    const run = deps([styleTool('a', FULL, order)], [dom]);
+    run.session.captured.evaluate = () => {
+      order.push('content');
+      return Promise.resolve({ logo: null, menu: [], blocks: [] });
+    };
+    await runDesign(run, { ...input, owned: true });
+    expect(order).toEqual(['content', 'a']);
   });
 
   it('упал первый — запасной; ответил не всё — следующий дозаполняет', async () => {

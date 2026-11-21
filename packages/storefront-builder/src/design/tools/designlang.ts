@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { runNode } from '../design-node';
+import { runNode, tabRun } from '../design-node';
 import type { DomBlock } from '../design-dom';
 import { blockOf, contextOf, domRole } from '../design-outline';
 import { at, list, numberOf, record, text } from '../design-pick';
@@ -7,10 +7,10 @@ import { buildPart, type PartBand, type StylePart, type StyleTable, type StyleVa
 import type { Box, ButtonLook, CardLook, PageOutline, Role } from '../design-types';
 import { hexColor, opaqueHex, px, radius, visibleShadow } from '../design-values';
 import { partFont } from './shared';
-import { pinned, type OutlineTool, type StyleTool, type ToolFacts } from './tool';
+import { TAB_ORDER, pinned, type OutlineTool, type StyleTool, type ToolFacts } from './tool';
 
-// Переходник designlang (MIT): наш `node/designlang.mjs` — `extractDesignLanguage(url, { wsEndpoint })` подключается к
-// нашему Chromium по CDP (их src/crawler.js); `--smart` (модель) не включаем. Один ответ годится и для стиля, и для
+// Переходник designlang (MIT): наш `node/designlang.mjs` — `extractDesignLanguage` по уже открытой захватом вкладке
+// (`node/borrow.mjs`, их src/crawler.js); `--smart` (модель) не включаем. Один ответ годится и для стиля, и для
 // контура: в задании Node запускается один раз (`design-run.ts` кэширует сырой ответ).
 //
 // Цвета: `colors.dominance` — фоны с долей площади (порядка сверху вниз нет: полосы по площади, верх 0),
@@ -213,18 +213,15 @@ export function designlangOutline(raw: unknown, facts: Pick<ToolFacts, 'dom' | '
 
 const SCRIPT = fileURLToPath(new URL('../node/designlang.mjs', import.meta.url));
 
-const raw: StyleTool['raw'] = ({ captured, budgetMs }) =>
-  runNode({
-    script: SCRIPT,
-    args: [captured.finalUrl, captured.ws],
-    proxy: captured.proxy,
-    cdp: captured.cdp,
-    timeoutMs: budgetMs,
-  });
+const raw: StyleTool['raw'] = ({ captured, budgetMs }) => runNode(tabRun(SCRIPT, captured, budgetMs));
 
 export const designlang: StyleTool & OutlineTool = {
   name: 'designlang',
   version: pinned('designlang'),
+  // Только читает стили страницы — идёт до dembrandt. На вкладке захвата
+  // (стенд 21.11): 1–4 с на магазинах, 12 с на tilda.cc; раньше со своей загрузкой — 12–17 с.
+  order: TAB_ORDER.reads,
+  limitMs: 15_000,
   raw,
   style: designlangStyle,
   outline: designlangOutline,

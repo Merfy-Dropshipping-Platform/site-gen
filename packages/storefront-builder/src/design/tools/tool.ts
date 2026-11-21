@@ -5,7 +5,7 @@ import type { StylePart } from '../design-style';
 import type { Band, PageOutline } from '../design-types';
 
 // Общий вид сменных переходников «Дизайна по ссылке» (раздел 2 контракта). Переходник — две части: `raw` снимает
-// сырой ответ инструмента по открытой странице (его хранит `design_looks.raw` и показывает стенд), чистая функция
+// сырой ответ инструмента по уже открытой захватом вкладке (его хранит `design_looks.raw` и показывает стенд), чистая функция
 // `style`/`outline` переводит его в наш формат (её и проверяют тесты на записанных ответах). Новый инструмент — файл
 // переходника, строка в `registry.ts` и пакет с точной версией в package.json; выбор — DESIGN_STYLE и DESIGN_OUTLINE.
 
@@ -22,14 +22,27 @@ export interface ToolFacts {
   bands: Pick<Band, 'top'>[];
 }
 
-export interface StyleTool {
+// Как инструмент обходится с открытой вкладкой: все работают по одной и той же вкладке захвата и по очереди (вдвоём на
+// одной вкладке dembrandt и designlang шли 42 с против 16 с по очереди). Сначала те, кто только читает, потом те, кто
+// меняет страницу (кликает баннеры, замораживает анимации, раскрывает меню). `limitMs` — свой срок инструмента: не
+// уложился — цепочка берёт следующего, а не ждёт срока всего задания.
+export interface TabUse {
+  order: TabOrder;
+  limitMs: number;
+}
+
+// Номер очереди на вкладке: свои скрипты (миллисекунды) → чужие, что читают → чужие, что меняют страницу.
+export const TAB_ORDER = { own: 0, reads: 1, changes: 2 } as const;
+export type TabOrder = (typeof TAB_ORDER)[keyof typeof TAB_ORDER];
+
+export interface StyleTool extends TabUse {
   name: string;
   version: string;
   raw: (run: ToolRun) => Promise<unknown>;
   style: (raw: unknown, facts: ToolFacts) => StylePart;
 }
 
-export interface OutlineTool {
+export interface OutlineTool extends TabUse {
   name: string;
   version: string;
   raw: (run: ToolRun) => Promise<unknown>;

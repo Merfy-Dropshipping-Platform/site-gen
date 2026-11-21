@@ -108,7 +108,6 @@ process.stdout.write(JSON.stringify({
   it('настоящие dembrandt и designlang без браузера по CDP отказывают, а не запускают свой', async () => {
     const captured = fakeCaptured({
       cdp: 'http://127.0.0.1:1',
-      ws: 'ws://127.0.0.1:1/devtools/browser/x',
       proxy: 'http://127.0.0.1:2',
     });
     await expect(dembrandt.raw({ captured, budgetMs: 30_000 })).rejects.toThrow();

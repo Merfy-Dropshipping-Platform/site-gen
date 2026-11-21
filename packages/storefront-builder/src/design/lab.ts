@@ -1,5 +1,5 @@
 import type { Session } from './design-capture';
-import { chainStyle } from './design-run';
+import { chainStyle, runTools } from './design-run';
 import { finishStyle, type StylePart } from './design-style';
 import { DesignError, type PageOutline, type SiteStyle } from './design-types';
 import type { OutlineTool, StyleTool, ToolFacts } from './tools/tool';
@@ -43,15 +43,6 @@ type Timed = { raw: unknown; ms: number; error: string | null };
 
 const message = (error: unknown): string => String(error instanceof Error ? error.message : error).slice(0, 300);
 
-async function timed(work: () => Promise<unknown>, now: () => number): Promise<Timed> {
-  const startedAt = now();
-  try {
-    return { raw: await work(), ms: now() - startedAt, error: null };
-  } catch (error) {
-    return { raw: null, ms: now() - startedAt, error: message(error) };
-  }
-}
-
 function emptySite(url: string, ms: number, error: unknown): LabSite {
   const code = error instanceof DesignError ? error.code : 'tool-failed';
   return {
@@ -76,15 +67,16 @@ function styleOf(
   return { part, style: finishStyle(part, source) };
 }
 
-// Все инструменты разом (designlang — один раз на стиль и контур): сырой ответ, время, ошибка.
+// Все инструменты как в задании — по очереди на вкладке захвата (designlang — один раз на стиль и контур): сырой
+// ответ, время, ошибка. Срок стенда — `budgetMs` на сайт.
 async function runAll(deps: LabDeps, captured: Session['captured']): Promise<(name: string) => Timed> {
-  const tools = [...new Map([...deps.style, ...deps.outline].map((tool) => [tool.name, tool])).values()];
-  const budgetMs = deps.budgetMs;
-  const pairs = await Promise.all(
-    tools.map(async (tool) => [tool.name, await timed(() => tool.raw({ captured, budgetMs }), deps.now)] as const),
-  );
-  const runs = new Map(pairs);
-  return (name) => runs.get(name) ?? { raw: null, ms: 0, error: 'не запускался' };
+  const deadline = deps.now() + deps.budgetMs;
+  const raws = await runTools([...deps.style, ...deps.outline], captured, () => deadline - deps.now(), deps.now);
+  return (name) => ({
+    raw: raws.values[name] ?? null,
+    ms: raws.ms[name] ?? 0,
+    error: name in raws.values ? null : (raws.errors[name] ?? 'не запускался'),
+  });
 }
 
 async function measureSite(deps: LabDeps, session: Session, url: string, startedAt: number): Promise<LabSite> {

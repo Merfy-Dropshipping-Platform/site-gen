@@ -3,7 +3,7 @@ import type { StylePart } from '../src/design/design-style';
 import { DesignError } from '../src/design/design-types';
 import { labHtml, labSite, parseSites, summaryLine, type LabDeps } from '../src/design/lab';
 import { dom } from '../src/design/tools/dom';
-import type { StyleTool } from '../src/design/tools/tool';
+import { TAB_ORDER, type StyleTool } from '../src/design/tools/tool';
 import { domBlock, fakeCaptured, fakeSession } from './design-fake';
 
 // Стенд без браузера: все инструменты на одном захвате, итог цепочек, отчёт HTML.
@@ -20,8 +20,21 @@ const part: StylePart = {
   'radius.button': { value: 12, confidence: 0.8 },
   'button.look': { value: 'filled', confidence: 0.8 },
 };
-const good: StyleTool = { name: 'good', version: '1', raw: () => Promise.resolve({ ok: '<b>' }), style: () => part };
-const bad: StyleTool = { name: 'bad', version: '2', raw: () => Promise.reject(new Error('упал')), style: () => ({}) };
+const tab = { order: TAB_ORDER.reads, limitMs: 1000 };
+const good: StyleTool = {
+  name: 'good',
+  version: '1',
+  ...tab,
+  raw: () => Promise.resolve({ ok: '<b>' }),
+  style: () => part,
+};
+const bad: StyleTool = {
+  name: 'bad',
+  version: '2',
+  ...tab,
+  raw: () => Promise.reject(new Error('упал')),
+  style: () => ({}),
+};
 
 const deps = (fields: Partial<LabDeps> = {}): LabDeps => {
   const session = fakeSession(

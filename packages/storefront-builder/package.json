@@ -18,7 +18,8 @@
     "checker": "tsx src/checker/main.ts",
     "renderer": "tsx scripts/build-renderer.ts",
     "shop": "tsx scripts/shop.ts",
-    "probe": "tsx scripts/probe.ts"
+    "probe": "tsx scripts/probe.ts",
+    "design-lab": "tsx scripts/design-lab.ts"
   },
   "dependencies": {
     "@merfy-dropshipping-platform/images": "0.2.0",
@@ -31,6 +32,8 @@
     "amqp-connection-manager": "4.1.15",
     "amqplib": "0.10.9",
     "axe-core": "4.14.0",
+    "dembrandt": "0.41.0",
+    "designlang": "13.4.1",
     "html-validate": "11.17.0",
     "lighthouse": "13.6.0",
     "pg": "8.16.3",

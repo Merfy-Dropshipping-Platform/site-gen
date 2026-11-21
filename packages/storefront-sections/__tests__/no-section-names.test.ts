@@ -20,12 +20,16 @@ const NAMES =
   /^(?:(?:merfy|shop|platform):[a-z0-9]+(?:-[a-z0-9]+)*|hero|cart-badge|heading-size|button-label|button-link|faq|open-first|logo-position|menu-type|text-size|newsletter|error-404)$/;
 // Сервис sites (часть 4): страницы магазина и меню новой темы — тоже без имён секций; тесты (*.spec.ts) — нет.
 const SITES_SOURCES = ['../src/pages'];
+// Не код секций платформы: «Дизайн по ссылке» разбирает ЧУЖУЮ страницу, и роли её блоков (`hero`, `faq`, `newsletter`)
+// — слова формата PageOutline (контракт reports/vizi-design-copy/contract.md, раздел 1), а не имена наших секций.
+const NOT_SECTIONS = [join(PACKAGES, 'storefront-builder/src/design/')];
 const LITERAL = /'([^'\\\n]*)'|"([^"\\\n]*)"|`([^`\\]*)`/g;
 
 const filesOf = (dir: string): string[] =>
   readdirSync(dir, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile() && /\.(?:ts|mjs|js)$/.test(entry.name))
-    .map((entry) => join(entry.parentPath, entry.name));
+    .map((entry) => join(entry.parentPath, entry.name))
+    .filter((file) => !NOT_SECTIONS.some((dir) => file.startsWith(dir)));
 
 const namedLiterals = (file: string): string[] =>
   [...readFileSync(file, 'utf8').matchAll(LITERAL)]

@@ -9,7 +9,11 @@ export default tseslint.config(
   // vendor/ — сторонний сгенерированный код (детектор Impeccable, NOTICE.md рядом): его не правят.
   // src/look/browser/ — код, который исполняется в Chromium строкой (проверки вёрстки снимка): модулем он не
   // подключается, правила кода этапа к нему не применить; поведение держат тесты `look-layout.test.ts`.
-  { ignores: ['eslint.config.mjs', 'coverage/**', 'vendor/**', 'src/look/browser/**'] },
+  // src/design/browser/ — так же скрипты страницы «Дизайна по ссылке»; src/design/node/ — скрипты подпроцессов
+  // инструментов дизайна (Node, не TS): поведение держат `design-*.test.ts` и стенд `design-lab`.
+  {
+    ignores: ['eslint.config.mjs', 'coverage/**', 'vendor/**', 'src/look/browser/**', 'src/design/browser/**', 'src/design/node/**'],
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

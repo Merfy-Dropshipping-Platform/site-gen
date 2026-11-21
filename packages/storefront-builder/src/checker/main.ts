@@ -6,6 +6,11 @@ import { openBroker } from '../broker';
 import { jsonLog } from '../log';
 import { ChromiumRenderer } from '../look/look-browser';
 import { startLooks } from '../look/look-job';
+import { capture } from '../design/design-capture';
+import { DesignGuard } from '../design/design-guard';
+import { readDesignSettings, startDesigns } from '../design/design-job';
+import { runDesign, type RunDeps } from '../design/design-run';
+import { outlineChain, styleChain } from '../design/registry';
 import { openWithCheckout, readCheckerSettings, startChecker } from './check';
 
 // Точка входа проверяющего процесса (design.md блока 10, П10-3 В): `pnpm --filter @merfy/storefront-builder checker`;
@@ -46,6 +51,24 @@ else {
     now: () => Date.now(),
   });
 }
+// «Дизайн по ссылке» (21.11): свой браузер на задание за своим фильтром адресов, свои места и срок — снимки черновика
+// и дизайн друг друга не ждут. Неизвестный инструмент в DESIGN_STYLE / DESIGN_OUTLINE роняет запуск: настройку видно сразу.
+const design = readDesignSettings(process.env);
+const guard = DesignGuard.fromEnv(process.env);
+const designRun: RunDeps = {
+  capture: (url) =>
+    capture({ guard, onRefused: (host, reason) => log('design-egress-refused', { host, reason }) }, url),
+  style: styleChain(process.env),
+  outline: outlineChain(process.env),
+  now: () => Date.now(),
+};
+await startDesigns(broker, {
+  run: (input) => runDesign(designRun, input),
+  timeoutMs: design.timeoutMs,
+  slots: design.slots,
+  now: () => Date.now(),
+  log,
+});
 // Аудит опубликованных страниц после публикации (место проверок `audit`): тот же браузер, Lighthouse — фоном, после
 // снимков черновика. Адрес sites нужен, чтобы спросить, не вытеснена ли страница новой сборкой (нет адреса — не
 // спрашиваем). Бюджет на страницу — 2 минуты, из них на ожидание новой страницы в раздаче — до 30 с.
@@ -66,7 +89,14 @@ await consumeAudits(broker, {
 const server = createServer((request, response) => {
   response.writeHead(request.url === '/health' ? 200 : 404).end();
 }).listen(settings.port);
-log('checker-started', { port: settings.port, rules: rules.length, looks: settings.sitesUrl !== null });
+log('checker-started', {
+  port: settings.port,
+  rules: rules.length,
+  looks: settings.sitesUrl !== null,
+  designs: design.slots,
+  designStyle: designRun.style.map((tool) => tool.name).join(','),
+  designOutline: designRun.outline.map((tool) => tool.name).join(','),
+});
 
 // Остановка по сигналу Coolify: недоделанное задание брокер вернёт в очередь — его возьмёт следующий запуск (снимок с
 // истёкшим сроком следующий запуск отклонит сразу: вызывающий его уже не ждёт).

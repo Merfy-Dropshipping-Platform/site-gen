@@ -73,6 +73,11 @@ const ALLOWED: readonly { rule: string; file: string; why: string }[] = [
     why: 'паспорт стенда ищет глобалы — проверка И9',
   })),
   { rule: 'prod-address', file: 'packages/sdk-docs/src/meta.ts', why: 'Р14-6: адрес документации, сборщик подставляет свой' },
+  {
+    rule: 'google-fonts',
+    file: 'packages/storefront-builder/src/design/browser/probe.js',
+    why: '«Дизайн по ссылке»: узнаёт шрифты Google на чужой странице по её ссылкам, сам за шрифтами не ходит',
+  },
 ];
 
 const isAllowed = (violation: string): boolean =>

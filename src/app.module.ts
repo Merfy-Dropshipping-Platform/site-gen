@@ -41,6 +41,7 @@ import { ActivityLogModule } from "./activity-log/activity-log.module";
 import { StorefrontHandoffModule } from "./storefront-handoff/storefront-handoff.module";
 import { StorefrontPreviewModule } from "./storefront-preview/storefront-preview.module";
 import { ExtensionSectionsModule } from "./extension-sections/extension-sections.module";
+import { DesignModule } from "./design/design.module";
 import { BillingListenerController } from "./billing/billing.listener";
 import { BillingClient } from "./billing/billing.client";
 import { BillingEventsConsumer } from "./billing/billing-events.consumer";
@@ -103,6 +104,8 @@ import { STORE_CONTROLLERS, STORE_PROVIDERS } from "./store/store.providers";
     StorefrontPreviewModule,
     // Секции расширений от сервиса extensions (блок 12 «Секций и SDK»).
     ExtensionSectionsModule,
+    // «Дизайн по ссылке» (21.11): RPC design.* и чистка design_looks.
+    DesignModule,
     EventsModule,
     DatabaseModule,
     DomainModule,

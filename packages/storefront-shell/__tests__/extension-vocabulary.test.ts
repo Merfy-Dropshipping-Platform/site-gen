@@ -9,10 +9,14 @@ import { describe, expect, it } from 'vitest';
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url));
 const SOURCES = ['storefront-shell/src', 'storefront-sections/src', 'storefront-build/src', 'storefront-builder/src'];
 const NAMES = /loyalt|лояльн|балл|test-ext|отзыв|заявк|(^|[^p])reviews/i;
+// Не ядро витрины: «Дизайн по ссылке» разбирает ЧУЖУЮ страницу, и роль её блока `reviews` («отзывы») — слово формата
+// PageOutline (контракт reports/vizi-design-copy/contract.md, раздел 1), а не имя расширения.
+const NOT_CORE = new Set([path.join(PACKAGES, 'storefront-builder/src/design')]);
 
 function filesOf(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const full = path.join(dir, name);
+    if (NOT_CORE.has(full)) return [];
     if (statSync(full).isDirectory()) return name === '__tests__' ? [] : filesOf(full);
     return /\.(ts|astro|json)$/.test(name) ? [full] : [];
   });

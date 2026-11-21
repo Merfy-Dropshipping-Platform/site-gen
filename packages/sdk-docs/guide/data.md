@@ -228,15 +228,15 @@ const { page } = Astro.props;
 | Поле         | Что в нём                                                                                                   |
 | ------------ | ----------------------------------------------------------------------------------------------------------- |
 | `kind`       | `'products'` или `'articles'`                                                                               |
-| `items`      | карточки этой страницы: у товаров — поля карточки коллекции и `hasVariants`, у статей — карточки блога       |
+| `items`      | карточки этой страницы: у товаров — поля карточки коллекции, `hasVariants` и [метки](#карточка-списка-метки-скидка-остаток-теги) (`badges`, `discountPercent`, `stockLeft`, `tags`), у статей — карточки блога |
 | `total`      | сколько всего с выбранными фильтрами; `totalLabel` — число со словом: «1 товар», «3 товара», «12 товаров»      |
 | `page`       | номер этой страницы, с 1; `pages` — сколько страниц; `perPage` — размер страницы                             |
 | `url`        | адрес списка без номера и параметров: `/catalog`, `/collections/kashemir`                                   |
 | `prev`       | адрес предыдущей страницы или `null`; `next` — следующей или `null`                                         |
 | `links`      | номера для навигации: `{ page, url, current }`; `page: null` и `url: null` — многоточие                      |
-| `query`      | выбранное покупателем: `sort`, `minPrice`, `maxPrice` (рубли), `availability`, `collections`, `filters`, `q`, `page` |
+| `query`      | выбранное покупателем: `sort`, `minPrice`, `maxPrice` (рубли), `availability`, `collections`, `filters`, `q`, `page`, `tags`, `badges`, `minDiscount`, `newDays`, `lowStockMax` |
 | `sorts`      | сортировки: `{ value, label, selected }`; у статей — `[]`                                                   |
-| `facets`     | значения фильтров: `price` (`{ min, max }` — `Money`) или `null`, `groups` (`{ key, name, values: [{ value, selected }] }`), `collections` (`{ slug, title, selected }`, только у `/catalog`); у статей — `null` |
+| `facets`     | значения фильтров: `filters` — [список фильтров одним видом](#динамичные-фильтры-facetsfilters), рисуйте его по `type`; старые `price` (`{ min, max }` — `Money`) или `null`, `groups` (`{ key, name, values: [{ value, selected }] }`), `collections` (`{ slug, title, selected }`, только у `/catalog`) остаются; у статей — `null` |
 
 ### Страницы списка
 
@@ -253,12 +253,116 @@ const { page } = Astro.props;
 | `sort`                 | `popular`, `newest`, `price_desc`, `price_asc` — из `page.list.sorts` |
 | `availability`         | `in_stock`, `sold_out`; пусто — все                                   |
 | `min_price`, `max_price` | рубли                                                                 |
-| `filter.<key>`         | значение группы вариантов (флажок на каждое) — из `facets.groups`      |
-| `collection`           | адрес коллекции — только у `/catalog`, из `facets.collections`        |
+| `filter.<key>`         | значение группы вариантов (флажок на каждое) — `<key>` из `facets.filters[].param`, не из `facets.groups[].key` |
+| `collection`           | адрес коллекции — только у `/catalog`, из `facets.collections` или `facets.filters`    |
+| `tag`                  | тег товара; повторяется, теги — «или» (хоть один из выбранных)         |
+| `badge`                | признак товара: `sale`, `new`, `low_stock`, `preorder`, `in_stock`; повторяется, признаки — «и» (все выбранные); чужие значения отбрасываются |
+| `min_discount`         | скидка товара не меньше N процентов, целое 1–99                        |
+| `new_days`             | сколько дней товар считается новинкой (признак `new`), 1–365; без параметра — 30 |
+| `low_stock_max`        | при каком остатке (штук) товар считается «мало осталось» (`low_stock`), 1–1000; без параметра — 5 |
 | `q`                    | поиск — передайте скрытым полем, если он есть в `query.q`              |
 
-Страницу с параметрами (`/collections/kashemir?sort=price_asc&filter.цвет=Синий`) платформа рисует по запросу: секция
-получает тот же `page.list`, только с выбранным. Отмечать выбранное — по `selected` и `query`.
+Значение вне пределов (`min_discount=150`) платформа считает невыбранным. Страницу с параметрами
+(`/collections/kashemir?sort=price_asc&filter.цвет=Синий&badge=sale`) платформа рисует по запросу: секция получает тот
+же `page.list`, только с выбранным. Отмечать выбранное — по `selected` и `query`. Страница с параметрами списка не
+индексируется (`noindex, follow`).
+
+### Динамичные фильтры: `facets.filters`
+
+Секция рисует фильтры **по `type`** и не знает конкретных групп («страна», «цвет», «теги»): платформа отдаёт список,
+секция проходит по нему и рисует каждый фильтр. Какая группа за ним стоит, секция не проверяет — новый фильтр
+появляется в панели сам, без правки секции.
+
+| `type`   | Поля                                                                  | Как рисовать                                                          |
+| -------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `range`  | `key`, `kind`, `label`, `params: { min, max }`, `min`, `max`, `clearUrl` | два поля «от» и «до»; `name` — из `params.min` и `params.max`, подсказка — `min` и `max` (рубли) |
+| `flags`  | `key`, `kind`, `label`, `param`, `options`, `clearUrl`                | чипы или флажки: по одному на значение                                |
+| `list`   | те же, что у `flags`                                                  | список значений с подписью и числом `count`                           |
+
+Значение (`options[]`) — `{ value, label, count, selected, url }`: `label` — подпись для экрана, `count` — сколько
+товаров будет, если выбрать это значение, `selected` — выбрано сейчас, `url` — адрес первой страницы списка, где это
+значение выбрано (если выбрано — где снято): обычная ссылка `<a href>`, работает без скрипта и без формы. `clearUrl` —
+адрес списка без значений этого фильтра, `null`, если у фильтра ничего не выбрано. `param` — имя параметра адреса
+(`badge`, `collection`, `tag`, `filter.<ключ группы>`), `value` — его значение: для формы `name={param}` и
+`value={option.value}`. `kind` говорит, откуда фильтр (`price`, `badge`, `collection`, `tag`, `variant`): рисуйте по
+`type`, а не ветвитесь по `kind`.
+
+Незнакомые `type` пропускайте, а не падайте. Незнакомый `kind` и лишние поля фильтра или значения платформа
+пропускает как есть: фильтр с понятной формой (`list` со значениями, `range` с `min` и `max`) приходит в `filters`
+без правки платформы и без правки секции.
+
+Что в `filters` бывает: цена (`kind: 'price'`, `type: 'range'`), группы вариантов (`kind: 'variant'`), признаки
+(`kind: 'badge'`, `flags`), теги (`kind: 'tag'`) и коллекции (`kind: 'collection'`, только у `/catalog`). Страница с
+параметрами получает значения от сервиса товаров. Без ответа сервиса — статичные страницы каталога, коллекции и
+превью — в `filters` только цена и группы вариантов по товарам этого списка: признаков, тегов и коллекций нет. Секция
+не должна зависеть от того, что они есть.
+
+**Ключ группы вариантов — из `filters[].param`, а не из `groups[].key`.** У `kind: 'variant'` `key` и `param` — имя
+группы в нижнем регистре, пробелы остаются пробелами (`filter.цвет кожи`). В старом `groups[].key` пробелы заменены на
+`_`, и группа из нескольких слов по нему не фильтрует. Ссылки и имена полей формы берите из `filters[].param` и
+`option.url`. Старые `facets.price`, `groups` и `collections` на месте и работают, но новые секции рисуйте от `filters`.
+
+Фильтры рисуются ссылками `option.url`; бейджи — по `card.badges`:
+
+```astro
+---
+const { page } = Astro.props;
+const BADGE_TEXT = { sale: 'Скидка', new: 'Новинка', low_stock: 'Мало осталось', preorder: 'Предзаказ' };
+const list = page.list;
+---
+{list && list.facets && (
+  <form data-part="filters" method="get" action={list.url}>
+    {list.facets.filters.map((filter) => (
+      <fieldset>
+        <legend>{filter.label}</legend>
+        {filter.type === 'range' && (
+          <>
+            <input type="number" name={filter.params.min} placeholder={String(filter.min)} />
+            <input type="number" name={filter.params.max} placeholder={String(filter.max)} />
+          </>
+        )}
+        {(filter.type === 'list' || filter.type === 'flags') && filter.options.map((option) => (
+          <a href={option.url} aria-pressed={String(option.selected)}>{option.label} ({option.count})</a>
+        ))}
+        {filter.clearUrl && <a href={filter.clearUrl}>Сбросить</a>}
+      </fieldset>
+    ))}
+    <button type="submit">Применить</button>
+  </form>
+)}
+{list && (
+  <ul data-part="list" data-page={list.page}>
+    {list.items.map((card) => (
+      <li>
+        <a href={card.url}>{card.title}</a> {card.price.text}
+        {card.badges.map((badge) => BADGE_TEXT[badge] && <span>{BADGE_TEXT[badge]}</span>)}
+        {card.discountPercent && <span>−{card.discountPercent}%</span>}
+        {card.stockLeft !== null && card.badges.includes('low_stock') && <span>Осталось {card.stockLeft}</span>}
+      </li>
+    ))}
+  </ul>
+)}
+```
+
+Поля `range` уходят формой `GET` на `page.list.url` ([Фильтры и сортировка](#фильтры-и-сортировка)), значения
+`list` и `flags` — ссылками: кнопка «Применить» нужна только диапазону.
+
+### Карточка списка: метки, скидка, остаток, теги
+
+К полям карточки товара в `page.list.items` добавлены:
+
+| Поле              | Что в нём                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| `badges`          | признаки, которые у товара сейчас верны: `sale`, `new`, `low_stock`, `preorder`, `in_stock`; незнакомые строки приходят как есть |
+| `discountPercent` | самая большая скидка товара, целые проценты; скидки нет — `null`                                  |
+| `stockLeft`       | суммарный остаток, штук; данных нет — `null`                                                      |
+| `tags`            | теги товара, `[]`, если их нет                                                                    |
+
+Список собран только из записей сборки (статичные страницы, превью) — `badges` и `tags` пустые, `discountPercent` и
+`stockLeft` — `null`: рисуйте метку, только если значение есть.
+
+Следующие части (свои группы мерчанта, кружки цвета, распределение цен) расширят `filters`; секция, которая рисует
+список по `type`, подхватит их без правки.
 
 ### Поведение `catalog`
 
@@ -280,8 +384,8 @@ const { settings, page } = Astro.props;
       {page.list.sorts.map((sort) => (
         <label><input type="radio" name="sort" value={sort.value} checked={sort.selected} /> {sort.label}</label>
       ))}
-      {page.list.facets && page.list.facets.groups.map((group) => group.values.map((value) => (
-        <label><input type="checkbox" name={`filter.${group.key}`} value={value.value} checked={value.selected} /> {value.value}</label>
+      {page.list.facets && page.list.facets.filters.map((filter) => (filter.type === 'list' || filter.type === 'flags') && filter.options.map((option) => (
+        <label><input type="checkbox" name={filter.param} value={option.value} checked={option.selected} /> {option.label}</label>
       )))}
     </form>
   )}

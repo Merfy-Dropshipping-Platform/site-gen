@@ -84,6 +84,15 @@ describe('задания аудита', () => {
     expect(job).toMatchObject({ platform: ['shop:hero', 'shop:footer'], samples: [] });
   });
 
+  it('автор публикации — в каждом задании как publishedBy; нет автора (null или поля нет) — поля нет', () => {
+    const withAuthor = auditJobsOf(published({ publishedBy: 'user-1' }));
+    expect(withAuthor.map((job) => job.publishedBy)).toEqual(['user-1', 'user-1']);
+    for (const publishedBy of [null, undefined]) {
+      const jobs = auditJobsOf(published({ publishedBy }));
+      jobs.forEach((job) => expect(job).not.toHaveProperty('publishedBy'));
+    }
+  });
+
   it('ставятся по порядку приоритета и считаются', async () => {
     const sent: AuditJob[] = [];
     const log = vi.fn();

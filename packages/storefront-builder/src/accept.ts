@@ -58,6 +58,10 @@ const BEFORE_BUILD: Partial<Record<string, BeforeBuild>> = {
   },
 };
 
+// Кто нажал публикацию: поле есть у события магазина от человека; у остальных — null (в строке магазина «не знаем»).
+const publishedByOf = (event: IncomingEvent): string | null =>
+  event.owner === 'site' ? (event.publishedBy ?? null) : null;
+
 async function shopsOf(deps: AcceptDeps, event: IncomingEvent): Promise<string[]> {
   const [sql, owner] = event.owner === 'site' ? [SITE_SQL, event.siteId] : [TENANT_SQL, event.tenantId];
   const shops = (await deps.db.query(sql, [owner, deps.themeIds])).rows.map((row) => shopRow.parse(row));
@@ -84,7 +88,12 @@ export async function applyEntityPaths(
 async function acceptForShop(deps: AcceptDeps, event: IncomingEvent, siteId: string): Promise<Accepted> {
   await applyEntityPaths(deps, event, siteId);
   await BEFORE_BUILD[event.type]?.(deps, siteId);
-  const shopEvent = { siteId, priority: priorityOf(event.type), eventAt: event.eventAt };
+  const shopEvent = {
+    siteId,
+    priority: priorityOf(event.type),
+    eventAt: event.eventAt,
+    publishedBy: publishedByOf(event),
+  };
   const accepted = await acceptByPriority(shopEvent.priority)(deps.db, shopEvent, deps.shopState);
   const { outcome, ...fields } = accepted;
   deps.log('event-accepted', { type: event.type, shopId: siteId, outcome, ...fields });

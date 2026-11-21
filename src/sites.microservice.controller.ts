@@ -268,12 +268,13 @@ export class SitesMicroserviceController {
    * (`publish-check/`, 16.11) по изменённому с прошлой публикации: ошибка —
    * отказ `publish_blocked` с находками (`check`), `message` — список того,
    * что починить, словами. `skipChecks: true` — мерчант сам сказал
-   * «опубликовать как есть».
+   * «опубликовать как есть». `actorUserId` — кто нажал публикацию: уходит в
+   * событие сборщику (`publishedBy`) и в журнал.
    */
   @MessagePattern("sites.publish")
   async publish(@Payload() data: any) {
     try {
-      const { tenantId, siteId, mode, skipChecks } = data ?? {};
+      const { tenantId, siteId, mode, skipChecks, actorUserId } = data ?? {};
       if (!tenantId || !siteId)
         return { success: false, message: "tenantId and siteId required" };
       const gate = this.publishCheck
@@ -287,7 +288,15 @@ export class SitesMicroserviceController {
           check: gate.check,
         };
       }
-      const res = await this.service.publish({ tenantId, siteId, mode });
+      // Автор публикации — из сессии шлюза; не строка (старый шлюз, системный вызов) — публикация без автора.
+      const author =
+        typeof actorUserId === "string" && actorUserId ? { actorUserId } : {};
+      const res = await this.service.publish({
+        tenantId,
+        siteId,
+        mode,
+        ...author,
+      });
       await this.publishCheck?.markPublished(
         tenantId,
         siteId,

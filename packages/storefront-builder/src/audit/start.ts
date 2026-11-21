@@ -25,7 +25,13 @@ export interface PublishedBuild {
   next: Pages;
   // Секции этой сборки, оставшиеся библиотечными: полные имена (`data-section`).
   platform: readonly string[];
+  // Кто нажал публикацию (id пользователя); нет — null или поля нет: в задании поля не будет.
+  publishedBy?: string | null;
 }
+
+// Автор публикации в задании: есть — поле `publishedBy`, нет — задание прежней формы.
+const publishedByField = (published: PublishedBuild): Pick<AuditJob, 'publishedBy'> =>
+  published.publishedBy ? { publishedBy: published.publishedBy } : {};
 
 // id страницы в конфиге витрины по адресу; адреса нет в таблице страниц — сам адрес.
 export const pageIdOf =
@@ -50,6 +56,7 @@ export function auditJobsOf(published: PublishedBuild): AuditJob[] {
     hash: hexOf(page.hash),
     platform: [...published.platform],
     samples: [],
+    ...publishedByField(published),
   }));
 }
 

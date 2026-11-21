@@ -11,6 +11,11 @@ vi.mock('../src/shop-state', async (importOriginal) => ({
   acceptEvent: mocks.acceptEvent,
   holdRelease: mocks.holdRelease,
 }));
+// Публикация выносит текущие правки своих секций на витрину (accept.ts, BEFORE_BUILD) — здесь это база, не маршрут.
+vi.mock('@merfy/storefront-sections', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@merfy/storefront-sections')>()),
+  publishDrafts: vi.fn().mockResolvedValue([]),
+}));
 
 const SITE = '6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b';
 const AT = '2026-11-19T10:00:00.000Z';
@@ -64,7 +69,30 @@ describe('extension-record-change на стороне сборщика', () => {
     const { deps, enqueued } = setup();
     await acceptIncoming(deps, incoming());
     expect(enqueued).toEqual([expect.objectContaining({ siteId: SITE, build: 100, priority: 2 })]);
-    expect(mocks.acceptEvent).toHaveBeenCalledWith(deps.db, { siteId: SITE, priority: 2, eventAt: AT }, deps.shopState);
+    expect(mocks.acceptEvent).toHaveBeenCalledWith(
+      deps.db,
+      { siteId: SITE, priority: 2, eventAt: AT, publishedBy: null },
+      deps.shopState,
+    );
+  });
+
+  it('публикация с автором: publishedBy из события — в строку магазина; без автора — null', async () => {
+    const { deps } = setup();
+    const authors: (string | null | undefined)[] = [];
+    const row = shopLikeRow();
+    mocks.acceptEvent.mockImplementation((_db: unknown, event: ShopEvent) => {
+      authors.push(event.publishedBy);
+      return Promise.resolve(row(event));
+    });
+    const publish = (publishedBy?: string) =>
+      parseIncoming(
+        CONTENT_EXCHANGE,
+        contentEventBody({ type: 'merchant-publish', siteId: SITE, eventAt: AT, source: 'sites', publishedBy }),
+        AT,
+      );
+    await acceptIncoming(deps, publish('user-1'));
+    await acceptIncoming(deps, publish());
+    expect(authors).toEqual(['user-1', null]);
   });
 
   it('пачка событий подряд — одно задание, остальные склеены', async () => {

@@ -626,6 +626,10 @@ export const storefrontShop = pgTable(
     // Номер следующей сборки в резерве: публикация, вставшая в «ещё раз»,
     // сразу знает номер своей сборки (drizzle/0023).
     nextBuild: bigint("next_build", { mode: "number" }),
+    // Кто нажал публикацию: в идущей или ждущей в очереди сборке и в «ещё
+    // раз» (drizzle/0040) — доезжает до события аудита `publishedBy`.
+    publishedBy: text("published_by"),
+    pendingPublishedBy: text("pending_published_by"),
   },
   (table) => ({
     stateCheck: check(

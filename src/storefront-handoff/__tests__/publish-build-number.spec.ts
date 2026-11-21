@@ -115,11 +115,33 @@ describe.each(["true", "false"])(
       expect(handoff.requestBuild).toHaveBeenCalledWith(
         SITE,
         "SitesDomainService.publish",
+        undefined,
       );
       expect(order).toEqual(["db", "request"]);
       expect(activity.emit.mock.calls[0][0].payload.meta.buildId).toBe(
         String(BUILD),
       );
+      // Публикация без пользователя (системная): автора нет ни в событии, ни в журнале.
+      expect(activity.emit.mock.calls[0][0].actorUserId).toBeNull();
+    });
+
+    it("публикация с пользователем: автор — в событии сборщику и в журнале публикации", async () => {
+      const { service, handoff, activity } = makeService(true, BUILD);
+      await service.publish({
+        tenantId: TENANT,
+        siteId: SITE,
+        mode: "production",
+        actorUserId: "user-1",
+      });
+      expect(handoff.requestBuild).toHaveBeenCalledWith(
+        SITE,
+        "SitesDomainService.publish",
+        "user-1",
+      );
+      expect(activity.emit.mock.calls[0][0]).toMatchObject({
+        action: "published",
+        actorUserId: "user-1",
+      });
     });
 
     it("сборщик не ответил за 3 с — «queued»: событие уже в его очереди", async () => {

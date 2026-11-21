@@ -259,6 +259,20 @@ describe("StorefrontHandoff", () => {
     expect(await pending).toBe(1791590400123);
   });
 
+  it("публикация с автором: в событии publishedBy; без автора и с пустой строкой — поля нет", async () => {
+    const service = handoff("nova", { STOREFRONT_BUILD_REPLY_MS: "10" });
+    await service.requestBuild(NOVA_SITE, "test", "user-1");
+    await service.requestBuild(NOVA_SITE, "test");
+    await service.requestBuild(NOVA_SITE, "test", "");
+    const [withAuthor, anonymous, empty] = published().map((item) => item.body);
+    expect(withAuthor).toMatchObject({
+      type: "merchant-publish",
+      publishedBy: "user-1",
+    });
+    expect(anonymous).not.toHaveProperty("publishedBy");
+    expect(empty).not.toHaveProperty("publishedBy");
+  });
+
   it("сборщик не ответил за тайм-аут или брокер недоступен — null и строка в логе", async () => {
     const quiet = handoff("nova", { STOREFRONT_BUILD_REPLY_MS: "30" });
     expect(await quiet.requestBuild(NOVA_SITE, "test")).toBeNull();

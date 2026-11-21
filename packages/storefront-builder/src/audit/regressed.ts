@@ -30,7 +30,9 @@ export interface AuditRegressed {
   path: string;
   pageId: string;
   measuredAt: string;
-  // `publishedBy` (кто нажал публикацию) в событии нет: сборка этого не знает — см. комментарий в `regressedEvent`.
+  // Кто нажал публикацию (id пользователя); поля нет — публикации человеком не было или автор неизвестен, получатель
+  // берёт владельца организации. Сообщения без поля (прежней формы) остаются верными.
+  publishedBy?: string;
   metrics: AuditMetrics;
   previous: AuditMetrics | null;
   lcp: { element: string | null; section: string | null };
@@ -50,10 +52,18 @@ const lcpOf = (report: AuditReport): AuditRegressed['lcp'] => ({
   section: report.lcp?.section ?? null,
 });
 
-// Тело события. Кто нажал публикацию, сборка не знает: событие `merchant-publish` из sites несёт только магазин и
-// источник (`events.ts`), строка магазина и строка сборки пользователя не хранят. Поле появится, когда sites положит
-// пользователя в событие, а сборщик — в строку магазина и в задание аудита.
-export function regressedEvent(row: AuditRecord, report: AuditReport, tenantId: string): AuditRegressed {
+// Автор публикации в теле события: есть — поле `publishedBy`, нет — события нет такого поля вовсе.
+const publishedByField = (publishedBy: string | undefined): Pick<AuditRegressed, 'publishedBy'> =>
+  publishedBy ? { publishedBy } : {};
+
+// Тело события. `publishedBy` — тот, кто нажал публикацию: id пользователя идёт от sites в событии `merchant-publish`
+// (`events.ts`), через строку магазина и задание аудита (`job.publishedBy`) и возвращается в ответе проверяющего процесса.
+export function regressedEvent(
+  row: AuditRecord,
+  report: AuditReport,
+  tenantId: string,
+  publishedBy?: string,
+): AuditRegressed {
   return {
     type: 'audit.regressed',
     eventId: `${row.siteId}:${row.build}:${row.path}`,
@@ -63,6 +73,7 @@ export function regressedEvent(row: AuditRecord, report: AuditReport, tenantId: 
     path: row.path,
     pageId: row.pageId,
     measuredAt: row.measuredAt,
+    ...publishedByField(publishedBy),
     metrics: report.metrics,
     previous: row.previous,
     lcp: lcpOf(report),
@@ -70,13 +81,17 @@ export function regressedEvent(row: AuditRecord, report: AuditReport, tenantId: 
   };
 }
 
-export async function announceRegressed(deps: RegressedDeps, row: AuditRecord): Promise<void> {
+export async function announceRegressed(
+  deps: RegressedDeps,
+  row: AuditRecord,
+  publishedBy?: string,
+): Promise<void> {
   const { report } = row;
   if (report === null || !isRegression(row.status, row.findings)) return;
   const fields = { shopId: row.siteId, buildId: row.build, path: row.path };
   try {
     const tenantId = await tenantOf(deps.db, row.siteId);
-    await deps.publishRegressed(regressedEvent(row, report, tenantId));
+    await deps.publishRegressed(regressedEvent(row, report, tenantId, publishedBy));
     deps.log('audit-regressed', fields);
   } catch (error) {
     deps.log('audit-regressed-failed', { ...fields, error: errorText(error) });

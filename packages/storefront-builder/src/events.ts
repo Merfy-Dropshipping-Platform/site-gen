@@ -4,7 +4,7 @@ import { parseWith } from './parse';
 
 // События «в магазине что-то поменялось» и задания сборки (design.md блока 6, Св-3 А, В6-2). Сборщик слушает две
 // точки обмена RabbitMQ:
-//   content.events — события из site-gen: { v: 1, type, siteId, eventAt, source }; type — id события блока 3
+//   content.events — события из site-gen: { v: 1, type, siteId, eventAt, source, publishedBy? }; type — id события блока 3
 //                    (rebuild-events.json) или служебное: old-path — старый путь сборки отдал магазин сборщику,
 //                    reconcile — сверка нашла расхождение, restart — служебная команда перезапуска; у публикации —
 //                    адрес ответа (replyTo, correlationId): сборщик отвечает номером сборки (buildReplyBody);
@@ -37,7 +37,7 @@ export const priorityOf = (type: string): number => PRIORITY_OF_EVENT[type] ?? P
 
 // Событие, приведённое к одному виду: чьё оно — сайта или организации — и когда была правка.
 export type IncomingEvent =
-  | { owner: 'site'; siteId: string; type: string; eventAt: string }
+  | { owner: 'site'; siteId: string; type: string; eventAt: string; publishedBy?: string }
   | { owner: 'tenant'; tenantId: string; type: string; eventAt: string; paths?: EntityPathsChange };
 
 // Адреса страниц товара, которые событие дописывает в список адресов магазина и убирает из него (блок 8 «Секций и
@@ -55,6 +55,9 @@ const contentEventShape = {
   siteId: z.string().min(1),
   eventAt: instant,
   source: z.string().min(1),
+  // Кто нажал публикацию (id пользователя): есть только у `merchant-publish` от человека; системная пересборка и
+  // сообщения прежнего формата — без поля.
+  publishedBy: z.string().min(1).optional(),
 };
 const contentEventSchema = z.strictObject(contentEventShape);
 
@@ -97,11 +100,13 @@ export interface ContentEvent {
   siteId: string;
   eventAt: string;
   source: string;
+  publishedBy?: string;
 }
 
 function contentEvent(body: unknown): IncomingEvent {
   const event = parseWith(contentSchemaOf(body), body, 'message-invalid', CONTENT_EXCHANGE);
-  return { owner: 'site', siteId: event.siteId, type: event.type, eventAt: event.eventAt };
+  const accepted = { owner: 'site' as const, siteId: event.siteId, type: event.type, eventAt: event.eventAt };
+  return event.publishedBy === undefined ? accepted : { ...accepted, publishedBy: event.publishedBy };
 }
 
 // Адреса из события кабинета: создан — адрес товара; удалён — адрес и адрес по id. Без handle (импорт, правка) или не

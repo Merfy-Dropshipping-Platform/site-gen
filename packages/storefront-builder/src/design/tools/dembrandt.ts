@@ -1,14 +1,14 @@
-import { createRequire } from 'node:module';
-import { runNode } from '../design-node';
+import { fileURLToPath } from 'node:url';
+import { runNode, tabRun } from '../design-node';
 import { at, list, numberOf, record, text } from '../design-pick';
 import { buildPart, type PartBand, type StylePart, type StyleTable, type StyleValues } from '../design-style';
 import type { ButtonLook } from '../design-types';
 import { hexColor, opaqueHex, px, radius, visibleShadow } from '../design-values';
 import { TYPE_WORDS, byCount, partFont } from './shared';
-import { ToolFailed, pinned, type StyleTool, type ToolFacts } from './tool';
+import { TAB_ORDER, ToolFailed, pinned, type StyleTool, type ToolFacts } from './tool';
 
-// Переходник dembrandt (MIT): их CLI с `--json-only --browser chromium`, браузер — наш по BROWSER_CDP_ENDPOINT (их
-// docs/usage.md, «Connect to an existing browser (CDP)»); свой браузер пакет не запустит (`design-node.ts`). Отдаёт
+// Переходник dembrandt (MIT): наш `node/dembrandt.mjs` — их `extractBranding` из `dembrandt/extractors` по уже
+// открытой захватом вкладке (`node/borrow.mjs`): сайт второй раз не грузится, свой браузер пакет не запустит. Отдаёт
 // палитру с ролями, типографику по контекстам (heading-1, body…), радиусы, тени, кнопки и поля. Полос страницы не
 // отдаёт: полоса одна — фон и текст страницы, поэтому её уверенность ниже, чем у полос своего скрипта.
 //
@@ -131,21 +131,15 @@ export function trimmed(answer: unknown): Raw {
 export const dembrandtStyle = (raw: unknown, facts: Pick<ToolFacts, 'google'>): StylePart =>
   buildPart(record(raw), table(facts.google));
 
-const script = (): string => createRequire(import.meta.url).resolve('dembrandt');
+const SCRIPT = fileURLToPath(new URL('../node/dembrandt.mjs', import.meta.url));
 
 export const dembrandt: StyleTool = {
   name: 'dembrandt',
   version: pinned('dembrandt'),
-  raw: async ({ captured, budgetMs }) => {
-    const answer = await runNode({
-      script: script(),
-      args: [captured.finalUrl, '--json-only', '--browser', 'chromium'],
-      proxy: captured.proxy,
-      cdp: captured.cdp,
-      timeoutMs: budgetMs,
-      env: { BROWSER_CDP_ENDPOINT: captured.cdp },
-    });
-    return trimmed(answer);
-  },
+  // Меняет страницу (баннер cookie, заморозка анимаций, раскрытые меню) — идёт последним. На вкладке захвата
+  // (стенд 21.11): 4–12 с на магазинах, 24 с на длинном лендинге tilda.cc; раньше со своей загрузкой — 30–42 с.
+  order: TAB_ORDER.changes,
+  limitMs: 30_000,
+  raw: async ({ captured, budgetMs }) => trimmed(await runNode(tabRun(SCRIPT, captured, budgetMs))),
   style: dembrandtStyle,
 };

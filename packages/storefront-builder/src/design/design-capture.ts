@@ -3,6 +3,7 @@ import type { Browser, BrowserContext, Page, Response } from 'playwright';
 import { pageScript } from './design-scripts';
 import { DesignEgress, REFUSED_HEADER, type Dial } from './design-egress';
 import { AddressRefused, REFUSED_NAME, type DesignGuard } from './design-guard';
+import { skipMedia } from './design-media';
 import { DesignError, type DesignErrorCode } from './design-types';
 import { parseDom, parseProbe, type DomBlock, type PageProbe } from './design-dom';
 
@@ -10,12 +11,14 @@ import { parseDom, parseProbe, type DomBlock, type PageProbe } from './design-do
 // образе Playwright) со своим фильтром: весь трафик страницы, даже к 127.0.0.1, идёт через `DesignEgress`
 // (`--proxy-server`, `--proxy-bypass-list=<-loopback>`), поэтому страница не дотянется ни до порта CDP, ни до сети
 // контейнера. WebRTC без прокси выключен (иначе UDP мимо фильтра). Порт CDP слушает только 127.0.0.1: к нему подключаются
-// переходники dembrandt и designlang (`tools/`). После задания браузер закрывается: снимки черновика (`look/`) и дизайн
-// друг друга не ждут и не делят браузер.
+// переходники dembrandt и designlang (`tools/`) и работают по этой же вкладке (`target`), второй раз сайт не грузят.
+// Видео и шрифты в браузере задания не грузятся (`design-media.ts`). После задания браузер закрывается:
+// снимки черновика (`look/`) и дизайн друг друга не ждут и не делят браузер.
 
 const SCREEN = { width: 1366, height: 900 };
-// Ждём тишины в сети не дольше: аналитика и видео её не дают.
-const SETTLE_MS = 5_000;
+// После DOMContentLoaded ждём событие load не дольше: тишины в сети магазины не дают (аналитика), а dembrandt и так
+// ждёт стабильности страницы сам. Дальше — прокрутка за ленивыми блоками.
+const LOAD_MS = 3_000;
 const FULL_MAX_HEIGHT = 8_000;
 const PAGE_TIMEOUT_MS = 30_000;
 
@@ -40,11 +43,10 @@ const SCROLL = `(async () => {
   const max = Math.min(document.documentElement.scrollHeight, 30000);
   for (let y = 0; y < max; y += window.innerHeight) {
     window.scrollTo(0, y);
-    await new Promise((r) => setTimeout(r, 120));
+    await new Promise((r) => setTimeout(r, 80));
   }
   window.scrollTo(0, 0);
   await new Promise((r) => setTimeout(r, 300));
-  await document.fonts.ready;
   return document.documentElement.scrollHeight;
 })()`;
 
@@ -53,9 +55,9 @@ export interface Captured {
   finalUrl: string;
   title: string;
   status: number | null;
-  // http://127.0.0.1:<порт> и ws://… браузера — для переходников по CDP.
+  // http://127.0.0.1:<порт> браузера и targetId вкладки — для переходников по CDP.
   cdp: string;
-  ws: string;
+  target: string;
   proxy: string;
   height: number;
   dom: DomBlock[];
@@ -144,7 +146,7 @@ function freePort(): Promise<number> {
   });
 }
 
-async function launch(options: CaptureOptions, proxy: string): Promise<{ browser: Browser; cdp: string; ws: string }> {
+async function launch(options: CaptureOptions, proxy: string): Promise<{ browser: Browser; cdp: string }> {
   const { chromium } = await import('playwright');
   const port = await freePort();
   const browser = await chromium.launch({
@@ -158,13 +160,19 @@ async function launch(options: CaptureOptions, proxy: string): Promise<{ browser
     ],
     ...(options.executablePath ? { executablePath: options.executablePath } : {}),
   });
-  const cdp = `http://127.0.0.1:${port}`;
-  const version: unknown = await fetch(`${cdp}/json/version`).then((answer) => answer.json());
-  const ws =
-    typeof version === 'object' && version !== null && 'webSocketDebuggerUrl' in version
-      ? String(version.webSocketDebuggerUrl)
-      : '';
-  return { browser, cdp, ws };
+  await skipMedia(browser);
+  return { browser, cdp: `http://127.0.0.1:${port}` };
+}
+
+// targetId вкладки в CDP: по нему скрипты инструментов находят её среди вкладок браузера (`node/borrow.mjs`).
+async function targetOf(context: BrowserContext, page: Page): Promise<string> {
+  const session = await context.newCDPSession(page);
+  try {
+    const info: { targetInfo: { targetId: string } } = await session.send('Target.getTargetInfo');
+    return info.targetInfo.targetId;
+  } finally {
+    await session.detach().catch(() => undefined);
+  }
 }
 
 function withTimeout<T>(work: Promise<T>, ms: number, text: string): Promise<T> {
@@ -188,7 +196,7 @@ async function open(page: Page, url: string, timeoutMs: number, egress: DesignEg
 }
 
 async function settle(page: Page): Promise<number> {
-  await page.waitForLoadState('networkidle', { timeout: SETTLE_MS }).catch(() => undefined);
+  await page.waitForLoadState('load', { timeout: LOAD_MS }).catch(() => undefined);
   const height: unknown = await page.evaluate(SCROLL).catch(() => 0);
   return typeof height === 'number' ? height : 0;
 }
@@ -198,7 +206,7 @@ function capturedOf(
   url: string,
   response: Response | null,
   probe: PageProbe,
-  extra: Pick<Captured, 'cdp' | 'ws' | 'proxy' | 'height' | 'dom'>,
+  extra: Pick<Captured, 'cdp' | 'target' | 'proxy' | 'height' | 'dom'>,
 ): Captured {
   return {
     url,
@@ -226,16 +234,18 @@ async function snap(
   url: string,
   egress: DesignEgress,
   timeoutMs: number,
-  links: Pick<Captured, 'cdp' | 'ws' | 'proxy'>,
+  links: Pick<Captured, 'cdp' | 'proxy'>,
 ): Promise<Captured> {
   const page = await context.newPage();
+  const target = await targetOf(context, page);
   const response = await open(page, url, timeoutMs, egress);
   const height = await settle(page);
   const probe = parseProbe(await page.evaluate(pageScript('probe')));
   const problem = pageProblem(response?.status() ?? null, probe);
   if (problem !== null) throw new DesignError(problem.code, problem.message);
   const contour = parseDom(await page.evaluate(pageScript('contour')));
-  return capturedOf(page, url, response, probe, { ...links, height: contour.height || height, dom: contour.blocks });
+  const extra = { ...links, target, height: contour.height || height, dom: contour.blocks };
+  return capturedOf(page, url, response, probe, extra);
 }
 
 // Открыть страницу через фильтр и снять контур. Сессия живёт, пока по странице работают переходники; close — всегда.
@@ -256,7 +266,7 @@ export async function capture(options: CaptureOptions, url: string): Promise<Ses
     browser = launched.browser;
     const context = await browser.newContext({ viewport: SCREEN, locale: 'ru-RU', serviceWorkers: 'block' });
     await context.addInitScript(NO_WEBRTC);
-    const links = { cdp: launched.cdp, ws: launched.ws, proxy };
+    const links = { cdp: launched.cdp, proxy };
     const captured = await snap(context, url, egress, options.pageTimeoutMs ?? PAGE_TIMEOUT_MS, links);
     return { captured, close };
   } catch (error) {

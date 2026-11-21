@@ -4,7 +4,7 @@ import { at, flag, list, numberOf, record, text } from '../design-pick';
 import { buildPart, type PartBand, type StylePart, type StyleTable, type StyleValues } from '../design-style';
 import { hexColor, opaqueHex, radius, wholePx } from '../design-values';
 import { ALIGN_WORDS, BUTTON_WORDS, CARD_WORDS, TYPE_WORDS, byCount, partFont } from './shared';
-import { ToolFailed, type StyleTool, type ToolFacts } from './tool';
+import { TAB_ORDER, ToolFailed, type StyleTool, type ToolFacts } from './tool';
 
 // Переходник `own`: свой скрипт стиля в уже открытой нами странице (`browser/own.js`), без Node. Точка отсчёта для
 // сравнения на стенде и запасной путь, когда чужие инструменты упали. Версия — начало хеша скрипта: поменяли скрипт —
@@ -85,6 +85,9 @@ export const ownStyle = (raw: unknown, facts: Pick<ToolFacts, 'google'>): StyleP
 export const own: StyleTool = {
   name: 'own',
   version: OWN_VERSION,
+  // Свой скрипт по нетронутой странице, миллисекунды: готов раньше чужих, поэтому запасной путь не ждёт их срока.
+  order: TAB_ORDER.own,
+  limitMs: 15_000,
   raw: async ({ captured, budgetMs }) => {
     const found = await captured.evaluate(pageScript('own'), budgetMs);
     if (typeof found !== 'object' || found === null) throw new ToolFailed('свой скрипт вернул не объект');

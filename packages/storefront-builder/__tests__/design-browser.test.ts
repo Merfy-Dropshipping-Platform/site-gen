@@ -12,6 +12,8 @@ import { tcpDial, type Dial } from '../src/design/design-egress';
 import { DesignGuard, type HostLookup } from '../src/design/design-guard';
 import { runDesign } from '../src/design/design-run';
 import { DesignError } from '../src/design/design-types';
+import { dembrandt } from '../src/design/tools/dembrandt';
+import { designlang } from '../src/design/tools/designlang';
 import { dom } from '../src/design/tools/dom';
 import { own } from '../src/design/tools/own';
 
@@ -63,8 +65,23 @@ const dial: Dial = (address, port) =>
   address === PUBLIC_IP ? tcpDial('127.0.0.1', portOf(shop)) : tcpDial(address, port);
 const options = (): CaptureOptions => ({ guard: new DesignGuard({ lookup }), dial, pageTimeoutMs: 15_000 });
 
+// Страница с картинкой, фоном, шрифтом и видео с того же сайта: шрифт и видео в браузере задания не грузятся, картинки —
+// грузятся (`design-media.ts`).
+const MEDIA_PAGE = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Медиа</title><style>
+@font-face{font-family:Brand;src:url(/m/brand.woff2) format("woff2")}
+body{margin:0;font-family:Brand,Georgia,serif}header{height:80px}.hero{height:500px;background:#0f766e url(/m/bg.jpg);color:#fff}
+.hero button{background:#ffcc00;border:0;border-radius:12px;width:160px;height:44px}footer{height:200px;background:#111}</style></head>
+<body><header><a href="/a">Каталог</a> <a href="/b">О нас</a> <a href="/c">Доставка</a></header>
+<section class="hero"><h1>Тёплые шарфы</h1><p>Шерсть и кашемир на каждый день.</p><button>Купить</button>
+<img src="/m/photo.jpg" width="300" height="200" alt=""><video src="/m/clip.mp4" autoplay muted></video></section>
+<footer><a href="/1">1</a><a href="/2">2</a><a href="/3">3</a><a href="/4">4</a><a href="/5">5</a></footer></body></html>`;
+
+// Сколько раз сервер сайта отдал каждый адрес.
+const served = new Map<string, number>();
+
 const ROUTES: Record<string, (res: import('node:http').ServerResponse) => void> = {
   '/': (res) => res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(PAGE()),
+  '/media': (res) => res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(MEDIA_PAGE),
   '/redirect': (res) => res.writeHead(302, { location: `http://127.0.0.1:${portOf(internal)}/secret` }).end(),
   '/denied': (res) => res.writeHead(403, { 'content-type': 'text/html' }).end('<title>Access denied</title>'),
   '/canvas': (res) =>
@@ -84,7 +101,11 @@ beforeAll(async () => {
     hits += 1;
     socket.destroy();
   });
-  shop = createHttp((req, res) => (ROUTES[req.url ?? '/'] ?? ROUTES['/'] ?? (() => res.end()))(res));
+  shop = createHttp((req, res) => {
+    const path = req.url ?? '/';
+    served.set(path, (served.get(path) ?? 0) + 1);
+    (ROUTES[path] ?? ROUTES['/'] ?? (() => res.end()))(res);
+  });
   await Promise.all(
     [internal, socketTrap, shop].map(
       (server) => new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve())),
@@ -160,4 +181,26 @@ describe.skipIf(!hasChromium)('«Дизайн по ссылке» · насто�
     expect(snapshot.content?.menu.map((item) => item.label)).toContain('Каталог');
     expect(hits).toBe(0);
   }, 60_000);
+
+  it('настоящие dembrandt и designlang работают по вкладке захвата: страница загружена один раз, видео и шрифт — нет', async () => {
+    served.clear();
+    const snapshot = await runDesign(
+      {
+        capture: (url) => capture(options(), url),
+        style: [dembrandt, own],
+        outline: [designlang, dom],
+        now: () => Date.now(),
+      },
+      { url: 'http://shop.test/media', owned: false, deadline: Date.now() + 80_000 },
+    );
+    expect(snapshot).toMatchObject({ ok: true, tool: 'dembrandt', outlineTool: 'designlang' });
+    expect(snapshot.raw.errors).toBeUndefined();
+    expect(snapshot.style.fonts.body.family).toBe('Brand');
+    expect(snapshot.style.radius.button).toBe(12);
+    expect(served.get('/media')).toBe(1);
+    expect(served.get('/m/brand.woff2')).toBeUndefined();
+    expect(served.get('/m/clip.mp4')).toBeUndefined();
+    expect(served.get('/m/photo.jpg')).toBe(1);
+    expect(hits).toBe(0);
+  }, 90_000);
 });

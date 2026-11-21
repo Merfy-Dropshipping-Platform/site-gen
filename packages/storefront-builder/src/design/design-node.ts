@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Запуск Node-инструментов дизайна подпроцессом: срок, kill всей группы, JSON из stdout, сеть только фильтром.
+// Свою страницу инструмент не открывает: работает по вкладке захвата через CDP (`node/borrow.mjs`, `tabRun`).
 // - Окружение собирается с нуля: ключи и адреса процесса (RABBITMQ_URL, SITES_SERVICE_URL) в чужой пакет не идут.
 // - Сеть: HTTP(S)_PROXY = наш фильтр и NODE_USE_ENV_PROXY=1, плюс `node/netguard.mjs` до кода пакета — любое соединение,
 //   кроме фильтра и CDP на 127.0.0.1, отказ.
@@ -40,6 +41,24 @@ export interface NodeRun {
   env?: Record<string, string>;
   node?: string;
 }
+
+// Что скрипту инструмента нужно от захвата, чтобы работать по уже открытой вкладке (`node/borrow.mjs`).
+export interface TabLinks {
+  finalUrl: string;
+  status: number | null;
+  cdp: string;
+  target: string;
+  proxy: string;
+}
+
+// Запуск скрипта по вкладке захвата: аргументы — адрес страницы, CDP, targetId вкладки и HTTP-статус главной.
+export const tabRun = (script: string, tab: TabLinks, timeoutMs: number): NodeRun => ({
+  script,
+  args: [tab.finalUrl, tab.cdp, tab.target, String(tab.status ?? 200)],
+  proxy: tab.proxy,
+  cdp: tab.cdp,
+  timeoutMs,
+});
 
 // `http://127.0.0.1:9223` → `127.0.0.1:9223` — строка списка разрешённых адресов.
 export const loopbackKey = (url: string): string => {

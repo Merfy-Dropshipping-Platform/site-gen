@@ -9,7 +9,7 @@ export function fakeCaptured(fields: Partial<Captured> = {}): Captured {
     title: 'Магазин',
     status: 200,
     cdp: 'http://127.0.0.1:9222',
-    ws: 'ws://127.0.0.1:9222/devtools/browser/x',
+    target: 'TARGET-1',
     proxy: 'http://127.0.0.1:3128',
     height: 2000,
     dom: [],

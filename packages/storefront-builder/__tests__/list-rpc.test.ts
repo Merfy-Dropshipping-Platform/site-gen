@@ -80,6 +80,11 @@ describe('product.findAll и product.getFilters', () => {
             ],
           },
         ],
+        filters: [],
+      },
+      details: {
+        'p-3': { badges: [], discountPercent: null, stockLeft: null, tags: [] },
+        'p-1': { badges: [], discountPercent: null, stockLeft: null, tags: [] },
       },
     });
     expect(calls).toEqual([
@@ -100,7 +105,7 @@ describe('product.findAll и product.getFilters', () => {
     });
     const source: ListSource = { ...CATALOG, catalog: false, collectionId: C1 };
     const found = await listRequestOf(request, SHOP, INPUTS, source, 'availability=in_stock&collection=chuzhaya');
-    expect(found.listed).toEqual({ ids: [], total: 0, facets: { price: null, groups: [] } });
+    expect(found.listed).toEqual({ ids: [], total: 0, facets: { price: null, groups: [], filters: [] }, details: {} });
     expect(calls[0]?.[2]).toEqual({
       shopId: SHOP,
       skip: 0,
@@ -109,6 +114,30 @@ describe('product.findAll и product.getFilters', () => {
       collectionId: C1,
       availability: 'in_stock',
     });
+    // getFilters — с той же коллекцией (контракт фильтров каталога, часть 1, п. 2).
+    expect(calls[1]?.[2]).toEqual({ shopId: SHOP, collectionId: C1, availability: 'in_stock' });
+  });
+
+  it('фильтры каталога: признаки и теги — в оба RPC; filters ответа — как есть, поля товара — по id', async () => {
+    const filters = [{ key: 'badge', kind: 'badge', type: 'flags', label: 'Подборки', param: 'badge', options: [] }];
+    const { request, calls } = probe({
+      [PRODUCTS_FIND]: ok({
+        ...FOUND,
+        data: [
+          { id: 'p-3', badges: ['sale', 'low_stock'], discountPercent: 30, stockLeft: 2, tags: ['leto'] },
+          { id: 'p-1', badges: 'sale', discountPercent: '30', stockLeft: 0, tags: [1] },
+        ],
+      }),
+      [PRODUCTS_FILTERS]: ok({ ...FILTERS, data: { ...FILTERS.data, filters } }),
+    });
+    const found = await listRequestOf(request, SHOP, INPUTS, CATALOG, 'badge=sale&tag=leto&min_discount=10');
+    expect(found.listed?.facets?.filters).toEqual(filters);
+    expect(found.listed?.details).toEqual({
+      'p-3': { badges: ['sale', 'low_stock'], discountPercent: 30, stockLeft: 2, tags: ['leto'] },
+      'p-1': { badges: [], discountPercent: null, stockLeft: null, tags: [] },
+    });
+    const shared = { tags: ['leto'], badges: ['sale'], minDiscount: 10 };
+    expect(calls.map((call) => call[2])).toEqual([expect.objectContaining(shared), { shopId: SHOP, ...shared }]);
   });
 
   it('каталог: выбраны только неизвестные коллекции — пустой список без findAll', async () => {

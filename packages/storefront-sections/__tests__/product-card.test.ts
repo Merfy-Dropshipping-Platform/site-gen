@@ -92,6 +92,8 @@ describe('карточка товара: одна на три секции', () 
   });
 });
 
+// Поля фильтров каталога (badges, discountPercent, stockLeft, tags) — пустые, как у списка из записей сборки.
+const NO_DETAILS = { badges: [], discountPercent: null, stockLeft: null, tags: [] };
 const CARDS: ListProductCard[] = [
   {
     id: 'p-1',
@@ -109,6 +111,7 @@ const CARDS: ListProductCard[] = [
       { title: 'Серый', swatch: '#9ca3af' },
     ],
     hasVariants: true,
+    ...NO_DETAILS,
   },
   {
     id: 'p-2',
@@ -123,6 +126,7 @@ const CARDS: ListProductCard[] = [
     variantId: null,
     colors: [],
     hasVariants: false,
+    ...NO_DETAILS,
   },
   {
     id: 'p-3',
@@ -137,6 +141,7 @@ const CARDS: ListProductCard[] = [
     variantId: null,
     colors: [],
     hasVariants: false,
+    ...NO_DETAILS,
   },
 ];
 
@@ -162,6 +167,7 @@ const LIST = (overrides: Partial<PageList> = {}): PageList => ({
     price: { min: money(120000), max: money(350000) },
     groups: [{ key: 'цвет', name: 'Цвет', values: [{ value: 'Синий', selected: false }] }],
     collections: [{ slug: 'pledy', title: 'Пледы', selected: false }],
+    filters: [],
   },
   ...overrides,
 });
@@ -246,7 +252,7 @@ const COLLECTION_LIST = (overrides: Partial<PageList> = {}): PageList =>
     url: '/collections/pledy',
     links: [{ page: 1, url: '/collections/pledy', current: true }],
     sorts: LIST().sorts.map((sort) => ({ ...sort, selected: false })),
-    facets: { ...(LIST().facets ?? { price: null, groups: [] }), collections: [] },
+    facets: { ...(LIST().facets ?? { price: null, groups: [], filters: [] }), collections: [] },
     ...overrides,
   });
 function pageOf(name: Name, list: PageList | undefined): { id: string; path: string; list?: PageList } {
@@ -530,6 +536,7 @@ describe('«Каталог»: список страницы', () => {
           price: null,
           groups: [{ key: 'цвет', name: 'Цвет', values: [{ value: 'Синий', selected: true }] }],
           collections: [{ slug: 'pledy', title: 'Пледы', selected: true }],
+          filters: [],
         },
       }),
     });

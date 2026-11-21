@@ -3,6 +3,7 @@ import {
   filtersRpcArgs,
   listQueryIsEmpty,
   listSourceAt,
+  listedDetailsOf,
   money,
   parseListQuery,
   productsRpcArgs,
@@ -21,17 +22,19 @@ import { PRODUCT_QUEUE, type ProductRequest } from './snapshot';
 // Страница списка с параметрами (блок 11 «Секций и SDK», часть 11а-2; design.md 11.4, В11-1 «как на проде»): товары этой
 // страницы, сколько их всего и значения фильтров — у сервиса product, теми же RPC и аргументами, что у шлюза для витрин
 // пяти тем (api-gateway src/store/store.controller.ts, getProducts и getFilters). Карточки строит сборка из своих записей
-// по id: себестоимость и остатки из ответа сервиса в HTML не попадают (Р8а-2).
+// по id: себестоимость из ответа сервиса в HTML не попадает (Р8а-2); из полей товара — только поля фильтров каталога
+// (listedDetailsOf; stockLeft — суммарный остаток по контракту фильтров каталога, часть 1, п. 4).
 export const PRODUCTS_FIND = 'product.findAll';
 export const PRODUCTS_FILTERS = 'product.getFilters';
 // Длина параметров списка — как LIST_MAX раздачи (nginx-minio-proxy, storefront/njs/route.js).
 export const LIST_ARGS_MAX = 2048;
 const FAILED_LINE = 'list-failed';
 
-// Ответы — как у products-microservice.controller.ts сервиса product; из товара нужен только id.
+// Ответы — как у products-microservice.controller.ts сервиса product; из товара — id и поля фильтров каталога
+// (badges, discountPercent, stockLeft, tags — контракт фильтров каталога, часть 1, п. 4; разбирает listedDetailsOf).
 const findSchema = z.object({
   success: z.literal(true),
-  data: z.array(z.object({ id: z.string().min(1) })),
+  data: z.array(z.looseObject({ id: z.string().min(1) })),
   total: z.number().int().nonnegative(),
 });
 const filtersSchema = z.object({
@@ -40,6 +43,8 @@ const filtersSchema = z.object({
     groups: z.array(z.object({ name: z.string(), key: z.string(), values: z.array(z.string()) })),
     // Рубли, как basePrice сервиса; 0 и 0 — у магазина нет активных товаров.
     priceRange: z.object({ min: z.number().nonnegative(), max: z.number().nonnegative() }),
+    // Динамичные фильтры (п. 5 контракта): каждый разбирает сборка, не той формы — отброшен; сервис без них — [].
+    filters: z.array(z.unknown()).catch([]),
   }),
 });
 type FoundReply = z.infer<typeof findSchema>;
@@ -56,8 +61,11 @@ function facetsOf(filters: FiltersReply['data'], query: ListQuery): NonNullable<
     const values = group.values.map((value) => ({ value, selected: chosen.includes(value) }));
     return { key: group.key, name: group.name, values };
   });
-  return { price, groups };
+  return { price, groups, filters: filters.filters };
 }
+
+const detailsOf = (products: FoundReply | null): NonNullable<ListedPage['details']> =>
+  Object.fromEntries((products?.data ?? []).map((item) => [item.id, listedDetailsOf(item)]));
 
 async function callChecked<T>(
   request: ProductRequest,
@@ -95,10 +103,16 @@ async function fetchListed(
   const found: Promise<FoundReply | null> = nothingFound(source, query, collectionIds)
     ? Promise.resolve(null)
     : callChecked(request, shopId, PRODUCTS_FIND, findArgs, findSchema);
-  const filters = callChecked(request, shopId, PRODUCTS_FILTERS, filtersRpcArgs(shopId, query), filtersSchema);
+  const filtersArgs = filtersRpcArgs(shopId, query, collectionIds);
+  const filters = callChecked(request, shopId, PRODUCTS_FILTERS, filtersArgs, filtersSchema);
   const [products, values] = await Promise.all([found, filters]);
   const ids = products === null ? [] : products.data.map((item) => item.id);
-  return { ids, total: products === null ? 0 : products.total, facets: facetsOf(values.data, query) };
+  return {
+    ids,
+    total: products === null ? 0 : products.total,
+    facets: facetsOf(values.data, query),
+    details: detailsOf(products),
+  };
 }
 
 // Параметры списка (канонический вид, nginx route.js listArgs) → ListRequest для renderShopPage и pageListOf. Сервис

@@ -11,6 +11,34 @@ export type ListAvailability = (typeof LIST_AVAILABILITY)[number];
 export const LIST_FILTER_PREFIX = 'filter.';
 export const LIST_Q_MAX = 500;
 const PAGE_MAX = 100_000;
+// Признаки товара (контракт фильтров каталога, часть 1, п. 3): порядок — как BADGES сервиса product.
+export const LIST_BADGES = ['sale', 'new', 'low_stock', 'preorder', 'in_stock'] as const;
+export type ListBadge = (typeof LIST_BADGES)[number];
+// Имена параметров адреса списка, кроме filter.<ключ группы>. Тот же список — LIST_NAMES раздачи (nginx-minio-proxy,
+// storefront/njs/route.js): чего там нет, раздача отбросит до рисовальщика. Меняются вместе, сверяет
+// fixtures/list-canonical.json (его копия — storefront/test/list-canonical.json раздачи).
+export const LIST_PARAM_NAMES = [
+  'availability',
+  'badge',
+  'collection',
+  'low_stock_max',
+  'max_price',
+  'min_discount',
+  'min_price',
+  'new_days',
+  'page',
+  'q',
+  'sort',
+  'tag',
+] as const;
+// Целые параметры признаков: имя в адресе → поле ListQuery и пределы (контракт, п. 1); вне пределов — не выбрано.
+const INT_FIELDS = ['minDiscount', 'newDays', 'lowStockMax'] as const;
+type IntParam = (typeof INT_FIELDS)[number];
+const INT_PARAMS: Readonly<Record<IntParam, { name: string; min: number; max: number }>> = {
+  minDiscount: { name: 'min_discount', min: 1, max: 99 },
+  newDays: { name: 'new_days', min: 1, max: 365 },
+  lowStockMax: { name: 'low_stock_max', min: 1, max: 1000 },
+};
 // Поля поиска каталога витрины — как STOREFRONT_SEARCH_FIELDS шлюза (store.service.ts).
 export const STOREFRONT_SEARCH_FIELDS = ['title', 'sku'] as const;
 
@@ -27,6 +55,16 @@ export interface ListQuery {
   q: string | null;
   // Номер страницы, от 1.
   page: number;
+  // Теги (tag=…) — товар хоть с одним; без повторов, по порядку.
+  tags: string[];
+  // Признаки (badge=…) — товар со всеми выбранными; только из LIST_BADGES, без повторов, по порядку.
+  badges: ListBadge[];
+  // Скидка товара от N процентов (min_discount), 1–99.
+  minDiscount: number | null;
+  // Окно признака new в днях (new_days), 1–365; null — по умолчанию сервиса (30).
+  newDays: number | null;
+  // Порог признака low_stock (low_stock_max), 1–1000; null — по умолчанию сервиса (5).
+  lowStockMax: number | null;
 }
 
 export const EMPTY_LIST_QUERY: ListQuery = Object.freeze({
@@ -38,6 +76,11 @@ export const EMPTY_LIST_QUERY: ListQuery = Object.freeze({
   filters: {},
   q: null,
   page: 1,
+  tags: [],
+  badges: [],
+  minDiscount: null,
+  newDays: null,
+  lowStockMax: null,
 });
 
 const isOneOf = <T extends string>(values: readonly T[], value: string | null): value is T =>
@@ -71,6 +114,20 @@ function filtersOf(params: URLSearchParams): Record<string, string[]> {
   return Object.fromEntries(entries);
 }
 
+function intOf(raw: string | null, param: IntParam): number | null {
+  const { min, max } = INT_PARAMS[param];
+  const value = raw === null || raw.trim() === '' ? NaN : Number(raw);
+  return Number.isInteger(value) && value >= min && value <= max ? value : null;
+}
+
+const intsOf = (params: URLSearchParams): Pick<ListQuery, IntParam> => ({
+  minDiscount: intOf(last(params, INT_PARAMS.minDiscount.name), 'minDiscount'),
+  newDays: intOf(last(params, INT_PARAMS.newDays.name), 'newDays'),
+  lowStockMax: intOf(last(params, INT_PARAMS.lowStockMax.name), 'lowStockMax'),
+});
+
+export const isListBadge = (value: string): value is ListBadge => isOneOf(LIST_BADGES, value);
+
 export function parseListQuery(params: URLSearchParams): ListQuery {
   const sort = last(params, 'sort');
   const availability = last(params, 'availability');
@@ -83,6 +140,9 @@ export function parseListQuery(params: URLSearchParams): ListQuery {
     filters: filtersOf(params),
     q: qOf(last(params, 'q')),
     page: pageOf(last(params, 'page')),
+    tags: unique(params.getAll('tag')),
+    badges: unique(params.getAll('badge')).filter(isListBadge),
+    ...intsOf(params),
   };
 }
 
@@ -95,15 +155,23 @@ function pairsOf(query: ListQuery): [string, string][] {
     ['availability', query.availability],
     ['q', query.q],
     ['page', query.page > 1 ? query.page : null],
+    [INT_PARAMS.minDiscount.name, query.minDiscount],
+    [INT_PARAMS.newDays.name, query.newDays],
+    [INT_PARAMS.lowStockMax.name, query.lowStockMax],
   ];
   const singles = single.flatMap(([name, value]): [string, string][] =>
     value === null ? [] : [[name, String(value)]],
   );
-  const collections = query.collections.map((slug): [string, string] => ['collection', slug]);
+  const lists: [string, readonly string[]][] = [
+    ['collection', query.collections],
+    ['tag', query.tags],
+    ['badge', query.badges],
+  ];
+  const repeated = lists.flatMap(([name, values]) => values.map((value): [string, string] => [name, value]));
   const filters = Object.entries(query.filters).flatMap(([key, values]) =>
     values.map((value): [string, string] => [`${LIST_FILTER_PREFIX}${key}`, value]),
   );
-  return [...singles, ...collections, ...filters];
+  return [...singles, ...repeated, ...filters];
 }
 
 const byName = (left: [string, string], right: [string, string]): number => {
@@ -132,13 +200,19 @@ export interface FiltersRpcArgs {
   minPrice?: number;
   maxPrice?: number;
   variantFilters?: Record<string, RpcFilterValue>;
+  collectionId?: RpcFilterValue;
+  // Контракт фильтров каталога, часть 1, п. 2: теги и признаки — всегда массивом.
+  tags?: string[];
+  badges?: ListBadge[];
+  minDiscount?: number;
+  newDays?: number;
+  lowStockMax?: number;
 }
 
 export interface ProductsRpcArgs extends FiltersRpcArgs {
   skip: number;
   take: number;
   status: 'active';
-  collectionId?: RpcFilterValue;
   sort?: string;
 }
 
@@ -159,7 +233,20 @@ function pricesOf(query: ListQuery): Pick<FiltersRpcArgs, 'minPrice' | 'maxPrice
   return { ...(low === null ? {} : { minPrice: low }), ...(high === null ? {} : { maxPrice: high }) };
 }
 
-function sharedArgs(query: ListQuery): Omit<FiltersRpcArgs, 'shopId'> {
+// Признаки (контракт фильтров каталога, часть 1, п. 2): пустое и невыбранное не передаётся.
+function badgeArgs(query: ListQuery): Pick<FiltersRpcArgs, 'tags' | 'badges' | IntParam> {
+  const ints = INT_FIELDS.flatMap((param) => {
+    const value = query[param];
+    return value === null ? [] : [[param, value] as const];
+  });
+  return {
+    ...(query.tags.length === 0 ? {} : { tags: [...query.tags] }),
+    ...(query.badges.length === 0 ? {} : { badges: [...query.badges] }),
+    ...Object.fromEntries(ints),
+  };
+}
+
+function sharedArgs(query: ListQuery, collectionIds: readonly string[]): Omit<FiltersRpcArgs, 'shopId'> {
   const groups = Object.entries(query.filters);
   return {
     ...(query.availability === null ? {} : { availability: query.availability }),
@@ -168,6 +255,8 @@ function sharedArgs(query: ListQuery): Omit<FiltersRpcArgs, 'shopId'> {
     ...(groups.length === 0
       ? {}
       : { variantFilters: Object.fromEntries(groups.map(([key, values]) => [key, rpcValue(values)])) }),
+    ...(collectionIds.length === 0 ? {} : { collectionId: rpcValue(collectionIds) }),
+    ...badgeArgs(query),
   };
 }
 
@@ -184,11 +273,15 @@ export function productsRpcArgs(
     skip: (query.page - 1) * perPage,
     take: perPage,
     status: 'active',
-    ...(collectionIds.length === 0 ? {} : { collectionId: rpcValue(collectionIds) }),
     ...(query.sort === null ? {} : { sort: RPC_SORTS[query.sort] }),
-    ...sharedArgs(query),
+    ...sharedArgs(query, collectionIds),
   };
 }
 
-// product.getFilters: значения фильтров по магазину — без страницы, сортировки и коллекций (факт 8).
-export const filtersRpcArgs = (shopId: string, query: ListQuery): FiltersRpcArgs => ({ shopId, ...sharedArgs(query) });
+// product.getFilters: значения фильтров — без страницы и сортировки; коллекции — те же, что у findAll (сервис product
+// принимает collectionId и здесь, контракт фильтров каталога, часть 1, п. 2).
+export const filtersRpcArgs = (
+  shopId: string,
+  query: ListQuery,
+  collectionIds: readonly string[] = [],
+): FiltersRpcArgs => ({ shopId, ...sharedArgs(query, collectionIds) });

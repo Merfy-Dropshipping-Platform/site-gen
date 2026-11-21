@@ -1,6 +1,14 @@
 import { StorefrontBuildError } from './errors';
 import type { BuildInputs } from './inputs';
 import { z } from 'zod';
+import {
+  filterKeyOf,
+  pageFiltersOf,
+  snapshotFilters,
+  type FilterContext,
+  type ListFilter,
+  type SnapshotProduct,
+} from './list-filters';
 import { LIST_SORTS, listQueryIsEmpty, listQueryString, type ListQuery } from './list-query';
 import {
   BLOG_ARTICLES_MAX,
@@ -47,7 +55,18 @@ export function countLabelOf(kind: 'products' | 'articles', total: number): stri
   return `${total} ${word}`;
 }
 
-export interface ListProductCard extends ProductCard {
+// Что о товаре знает только сервис product (контракт фильтров каталога, часть 1, п. 4): из ответа product.findAll. Без
+// ответа сервиса или не той формы — [] и null: признаки не пересчитываются в сборке (одно определение — SQL сервиса).
+export interface ListedDetails {
+  // Признаки из LIST_BADGES (sale, new, low_stock, preorder, in_stock), порядок — как у сервиса.
+  badges: string[];
+  // Скидка в процентах, вниз до целого; скидки нет — null.
+  discountPercent: number | null;
+  // Суммарный положительный остаток; нет остатка — null.
+  stockLeft: number | null;
+  tags: string[];
+}
+export interface ListProductCard extends ProductCard, ListedDetails {
   hasVariants: boolean;
 }
 export interface PageListLink {
@@ -61,6 +80,8 @@ export interface ListFacets {
   groups: { key: string; name: string; values: { value: string; selected: boolean }[] }[];
   // Только у /catalog; у остальных списков — [].
   collections: { slug: string; title: string; selected: boolean }[];
+  // Динамичные фильтры одним видом (list-filters.ts): секция рисует их по type.
+  filters: ListFilter[];
 }
 export interface PageList {
   kind: 'products' | 'articles';
@@ -98,13 +119,35 @@ export type ListSource =
   | { kind: 'articles'; url: string; pages: 'built'; blogId: string; perPage: number };
 
 // Ответ сервиса product для страницы с параметрами списка (план 11а-2): id карточек этой страницы по порядку, всего с
-// фильтрами, значения фильтров (цена и группы; коллекции pageListOf читает из записей). Карточки — из записей сборки по
-// id; id без записи пропускается.
+// фильтрами, значения фильтров (цена и группы; коллекции pageListOf читает из записей; filters — как отдал
+// product.getFilters, разбирает list-filters.ts). Карточки — из записей сборки по id; id без записи пропускается;
+// details — поля товара от сервиса по id (listedDetailsOf).
 export interface ListedPage {
   ids: string[];
   total: number;
-  facets: Omit<ListFacets, 'collections'> | null;
+  facets: (Omit<ListFacets, 'collections' | 'filters'> & { filters?: readonly unknown[] }) | null;
+  details?: Readonly<Record<string, ListedDetails>>;
 }
+
+export const EMPTY_DETAILS: ListedDetails = Object.freeze({
+  badges: [],
+  discountPercent: null,
+  stockLeft: null,
+  tags: [],
+});
+
+// Поле не той формы — своё пустое значение, остальные поля товара не теряются; не объект — все пустые.
+const detailsSchema = z
+  .object({
+    badges: z.array(z.string()).catch([]),
+    discountPercent: z.number().int().min(0).max(100).nullable().catch(null),
+    stockLeft: z.number().int().positive().nullable().catch(null),
+    tags: z.array(z.string()).catch([]),
+  })
+  .catch(() => ({ badges: [], discountPercent: null, stockLeft: null, tags: [] }));
+
+// Поля товара из ответа product.findAll → ListedDetails.
+export const listedDetailsOf = (raw: unknown): ListedDetails => detailsSchema.parse(raw);
 
 // id записи из значения поля с записью (section-records): публичные поля или null. У значения пустого поля (правило
 // «все товары», allProductsRule) id пустой — это не запись: null, список из всех товаров магазина.
@@ -187,9 +230,13 @@ function sectionListSourceOf(route: ShopRoute, placed: readonly PlacedSection[],
   return null;
 }
 
-const listProductCardOf = (record: ProductRecord): ListProductCard => ({
+const listProductCardOf = (record: ProductRecord, details: ListedDetails = EMPTY_DETAILS): ListProductCard => ({
   ...cardOfRecord(record),
   hasVariants: record.variants.length > 0,
+  badges: [...details.badges],
+  discountPercent: details.discountPercent,
+  stockLeft: details.stockLeft,
+  tags: [...details.tags],
 });
 
 // Товары каталога (Р11а-8): RecordIndex.products — новые сверху, как product.list.
@@ -324,13 +371,57 @@ function collectionsOf(index: RecordIndex, query: ListQuery): ListFacets['collec
     }));
 }
 
-// Значения фильтров из сборки (Р11а-9): цена и группы — по всем товарам магазина, коллекции — у каталога.
-function facetsOf(index: RecordIndex, query: ListQuery, source: ListSource): ListFacets {
-  if (source.kind !== 'products') return { price: null, groups: [], collections: [] };
+type ProductsSource = Extract<ListSource, { kind: 'products' }>;
+
+const collectionEntriesOf = (index: RecordIndex) =>
+  index.entries.flatMap((entry) => (entry.type === 'collection' ? [entry] : []));
+
+// Фильтры одним видом (list-filters.ts): ссылки — первая страница этого списка, коллекции по id → адрес записи.
+function filterContextOf(index: RecordIndex, query: ListQuery, source: ProductsSource): FilterContext {
+  const slugs = new Map(collectionEntriesOf(index).map((entry): [string, string] => [entry.id, entry.record.slug]));
+  return {
+    query,
+    catalog: source.catalog,
+    slugOf: (id) => slugs.get(id) ?? null,
+    addressOf: (chosen) => pageAddressOf(source, { ...chosen, page: 1 }, 1),
+  };
+}
+
+// Товар списка для фильтров снимка: цена «от» в рублях, группы без скрытой (Р11а-9) с ключом как у сервиса.
+const snapshotProductOf = (record: ProductRecord): SnapshotProduct => ({
+  price: record.price.amount / 100,
+  groups: record.options
+    .filter((option) => groupKeyOf(option.name) !== HIDDEN_GROUP_KEY)
+    .map((option) => ({
+      key: filterKeyOf(option.name),
+      name: option.name.trim(),
+      values: option.values.map((value) => value.value),
+    })),
+});
+
+// Фильтры снимка — по товарам этого списка (у коллекции — её товары), счётчики без выбранного (list-filters.ts).
+function snapshotFiltersOf(
+  index: RecordIndex,
+  query: ListQuery,
+  source: ProductsSource,
+  records: readonly ProductRecord[],
+): ListFilter[] {
+  return pageFiltersOf(snapshotFilters(records.map(snapshotProductOf)), filterContextOf(index, query, source));
+}
+
+// Значения фильтров из сборки (Р11а-9): цена и группы — по всем товарам магазина, коллекции — у каталога; filters — по
+// товарам этого списка.
+function facetsOf(
+  index: RecordIndex,
+  query: ListQuery,
+  source: ProductsSource,
+  records: readonly ProductRecord[],
+): ListFacets {
   return {
     price: priceRangeOf(index),
     groups: groupsOf(index, query),
     collections: source.catalog ? collectionsOf(index, query) : [],
+    filters: snapshotFiltersOf(index, query, source, records),
   };
 }
 
@@ -348,21 +439,27 @@ function listedCardsOf(index: RecordIndex, source: ListSource, listed: ListedPag
   }
   return listed.ids.flatMap((id) => {
     const found = index.find('product', id);
-    return found?.type === 'product' ? [listProductCardOf(found.record)] : [];
+    return found?.type === 'product' ? [listProductCardOf(found.record, listed.details?.[id])] : [];
   });
 }
 
-// Значения фильтров страницы: с ответом сервиса — его цена и группы, коллекции — из записей (Р11а-9).
+// Значения фильтров страницы: с ответом сервиса — его цена, группы и filters, коллекции — из записей (Р11а-9).
 function facetsOfPage(
   index: RecordIndex,
   query: ListQuery,
   source: ListSource,
   listed: ListedPage | null,
+  records: readonly ProductRecord[],
 ): ListFacets | null {
   if (source.kind === 'articles') return null;
-  if (listed === null) return facetsOf(index, query, source);
+  if (listed === null) return facetsOf(index, query, source, records);
   if (listed.facets === null) return null;
-  return { ...listed.facets, collections: collectionsOf(index, query) };
+  const { filters = [], ...facets } = listed.facets;
+  return {
+    ...facets,
+    collections: collectionsOf(index, query),
+    filters: pageFiltersOf(filters, filterContextOf(index, query, source)),
+  };
 }
 
 // Карточки этой страницы: с ответом сервиса — по его id, без — срез списка сборки.
@@ -388,7 +485,8 @@ export function pageListOf(
   query: ListQuery,
   listed: ListedPage | null,
 ): PageList {
-  const products = source.kind === 'products' ? productsOf(index, inputs, source).map(listProductCardOf) : [];
+  const records = source.kind === 'products' ? productsOf(index, inputs, source) : [];
+  const products = records.map((record) => listProductCardOf(record));
   const articles = source.kind === 'articles' ? articleCardsOf(index, inputs, source.blogId) : [];
   const total = listed?.total ?? products.length + articles.length;
   const pages = Math.max(1, Math.ceil(total / source.perPage));
@@ -407,7 +505,7 @@ export function pageListOf(
     links: linksOf(source, query, query.page, pages),
     query,
     sorts: sortsOf(source, query),
-    facets: facetsOfPage(index, query, source, listed),
+    facets: facetsOfPage(index, query, source, listed, records),
   };
 }
 

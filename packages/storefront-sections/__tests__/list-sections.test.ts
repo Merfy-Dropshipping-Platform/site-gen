@@ -25,6 +25,10 @@ const CARD = {
   variantId: 'v-1',
   colors: [],
   hasVariants: true,
+  badges: [],
+  discountPercent: null,
+  stockLeft: null,
+  tags: [],
 } satisfies ListProductCard;
 const LIST = {
   kind: 'products',
@@ -51,6 +55,7 @@ const LIST = {
     price: { min: money(190000), max: money(350000) },
     groups: [{ key: 'цвет', name: 'Цвет', values: [{ value: 'Синий', selected: false }] }],
     collections: [],
+    filters: [],
   },
 } satisfies PageList;
 

@@ -176,7 +176,7 @@ describe('page.list у секций', () => {
         }),
         KASHEMIR,
       ],
-      { catalog: list(2) },
+      { catalog: list(2), collection: list(2) },
     );
     const found = await listAt('/catalog', withOptions);
     expect(found?.facets).toEqual({
@@ -192,7 +192,117 @@ describe('page.list у секций', () => {
         },
       ],
       collections: [{ slug: 'kashemir', title: 'Кашемир', selected: false }],
+      filters: [
+        {
+          key: 'price',
+          kind: 'price',
+          type: 'range',
+          label: 'Цена',
+          params: { min: 'min_price', max: 'max_price' },
+          min: 1900,
+          max: 5000,
+          clearUrl: null,
+        },
+        // Коллекций в снимке нет (коллекцию по умолчанию не отличить). Ключ группы — как LOWER(vg.name) сервиса:
+        // «Цвет » с пробелом на конце и «цвет» — разные группы, как и у сервиса; у старых groups — одна.
+        ...[
+          { key: 'цвет', label: 'цвет', value: 'Белый' },
+          { key: 'цвет ', label: 'Цвет', value: 'Синий' },
+        ].map(({ key, label, value }) => ({
+          key,
+          kind: 'variant',
+          type: 'list',
+          label,
+          param: `filter.${key}`,
+          clearUrl: null,
+          options: [
+            {
+              value,
+              label: value,
+              count: 1,
+              selected: false,
+              url: `/catalog?${encodeURIComponent(`filter.${key}`)}=${encodeURIComponent(value)}`,
+            },
+          ],
+        })),
+      ],
     });
+    // Коллекция: фильтры — по её товарам; карточки без ответа сервиса — без признаков.
+    const inCollection = await listAt('/collections/kashemir', withOptions);
+    expect(inCollection?.facets?.filters.map((filter) => filter.key)).toEqual(['price', 'цвет ']);
+    expect(inCollection?.facets?.filters[0]).toMatchObject({ min: 1900, max: 1900 });
+    expect(inCollection?.items[0]).toMatchObject({ badges: [], discountPercent: null, stockLeft: null, tags: [] });
+  });
+
+  it('с ответом сервиса: filters — из getFilters со ссылками, поля карточки — из findAll по id', () => {
+    const inputs = inputsOf();
+    const source: ListSource = {
+      kind: 'products',
+      url: '/catalog',
+      pages: 'built',
+      collectionId: null,
+      catalog: true,
+      perPage: 2,
+    };
+    const query = parseListQuery(new URLSearchParams('badge=sale&page=2'));
+    const badge = {
+      key: 'badge',
+      kind: 'badge',
+      type: 'flags',
+      label: 'Подборки',
+      param: 'badge',
+      options: [{ value: 'sale', label: 'Со скидкой', count: 3, selected: true }],
+    };
+    const collectionFilter = {
+      key: 'collection',
+      kind: 'collection',
+      type: 'list',
+      label: 'Коллекции',
+      param: 'collection_id',
+      options: [{ value: C1, label: 'Кашемир', count: 2, selected: false }],
+    };
+    const found = pageListOf(recordIndex(inputs), inputs, source, query, {
+      ids: [ID(103), ID(101)],
+      total: 6,
+      facets: { price: null, groups: [], filters: [badge, collectionFilter, 'мусор'] },
+      details: { [ID(103)]: { badges: ['sale'], discountPercent: 25, stockLeft: 3, tags: ['leto'] } },
+    });
+    expect(found.facets?.filters).toEqual([
+      {
+        ...badge,
+        clearUrl: '/catalog',
+        options: [{ ...badge.options[0], url: '/catalog' }],
+      },
+      {
+        ...collectionFilter,
+        param: 'collection',
+        clearUrl: null,
+        options: [
+          {
+            value: 'kashemir',
+            label: 'Кашемир',
+            count: 2,
+            selected: false,
+            url: '/catalog?badge=sale&collection=kashemir',
+          },
+        ],
+      },
+    ]);
+    expect(
+      found.items.map((item) =>
+        'badges' in item ? [item.badges, item.discountPercent, item.stockLeft, item.tags] : null,
+      ),
+    ).toEqual([
+      [['sale'], 25, 3, ['leto']],
+      [[], null, null, []],
+    ]);
+    // Старый ответ сервиса без filters — пустой список, остальное прежнее.
+    const old = pageListOf(recordIndex(inputs), inputs, source, query, {
+      ids: [],
+      total: 6,
+      facets: { price: null, groups: [] },
+    });
+    expect(old.facets?.filters).toEqual([]);
   });
 
   it('с параметрами и ответом сервиса: карточки по id, всего — от сервиса, адреса — с ?page=', () => {

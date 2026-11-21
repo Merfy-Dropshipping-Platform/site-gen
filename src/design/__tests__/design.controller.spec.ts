@@ -16,7 +16,9 @@ const look: StoredLook = {
   createdAt: "2026-11-21T10:00:00.000Z",
 };
 
-function fakeStore(overrides: Partial<Record<keyof DesignStore, jest.Mock>> = {}) {
+function fakeStore(
+  overrides: Partial<Record<keyof DesignStore, jest.Mock>> = {},
+) {
   const store = {
     save: jest.fn().mockResolvedValue(LOOK_ID),
     get: jest.fn().mockResolvedValue(look),
@@ -57,9 +59,9 @@ describe("RPC design.* (sites_queue)", () => {
     const bad = await controller.saveLook({ ...saveInput, url: "ftp://x" });
     expect(bad).toMatchObject({ success: false });
     expect(bad.success ? "" : bad.error).toMatch(/^invalid:/);
-    expect(
-      await controller.saveLook({ ...saveInput, ms: -1 }),
-    ).toMatchObject({ success: false });
+    expect(await controller.saveLook({ ...saveInput, ms: -1 })).toMatchObject({
+      success: false,
+    });
   });
 
   it("getLook → строка; нет записи — success: false; lookId не uuid — отказ без базы", async () => {
@@ -81,11 +83,25 @@ describe("RPC design.* (sites_queue)", () => {
   it("findRecent → строка или null", async () => {
     const store = fakeStore();
     const controller = controllerWith(store);
-    const input = { siteId: "site-1", url: "https://shop.example/", maxAgeMs: 86_400_000 };
-    expect(await controller.findRecent(input)).toEqual({ success: true, data: null });
+    const input = {
+      siteId: "site-1",
+      url: "https://shop.example/",
+      maxAgeMs: 86_400_000,
+    };
+    expect(await controller.findRecent(input)).toEqual({
+      success: true,
+      data: null,
+    });
     store.findRecent.mockResolvedValueOnce(look);
-    expect(await controller.findRecent(input)).toEqual({ success: true, data: look });
-    expect(store.findRecent).toHaveBeenCalledWith("site-1", "https://shop.example/", 86_400_000);
+    expect(await controller.findRecent(input)).toEqual({
+      success: true,
+      data: look,
+    });
+    expect(store.findRecent).toHaveBeenCalledWith(
+      "site-1",
+      "https://shop.example/",
+      86_400_000,
+    );
     expect(
       await controller.findRecent({ ...input, maxAgeMs: 0 }),
     ).toMatchObject({ success: false });
@@ -95,11 +111,22 @@ describe("RPC design.* (sites_queue)", () => {
     const store = fakeStore({ isOwned: jest.fn().mockResolvedValue(true) });
     const controller = controllerWith(store);
     expect(
-      await controller.confirmOwned({ siteId: "site-1", domain: "shop.example", userId: "u-1" }),
+      await controller.confirmOwned({
+        siteId: "site-1",
+        domain: "shop.example",
+        userId: "u-1",
+      }),
     ).toEqual({ success: true, data: { ok: true } });
-    expect(store.confirmOwned).toHaveBeenCalledWith("site-1", "shop.example", "u-1");
+    expect(store.confirmOwned).toHaveBeenCalledWith(
+      "site-1",
+      "shop.example",
+      "u-1",
+    );
     expect(
-      await controller.isOwned({ siteId: "site-1", domain: "WWW.Shop.Example." }),
+      await controller.isOwned({
+        siteId: "site-1",
+        domain: "WWW.Shop.Example.",
+      }),
     ).toEqual({ success: true, data: { owned: true } });
     expect(store.isOwned).toHaveBeenCalledWith("site-1", "shop.example");
     expect(
@@ -108,7 +135,9 @@ describe("RPC design.* (sites_queue)", () => {
   });
 
   it("сбой базы — success: false, а не исключение", async () => {
-    const store = fakeStore({ save: jest.fn().mockRejectedValue(new Error("connection refused")) });
+    const store = fakeStore({
+      save: jest.fn().mockRejectedValue(new Error("connection refused")),
+    });
     expect(await controllerWith(store).saveLook(saveInput)).toEqual({
       success: false,
       error: "internal_error",

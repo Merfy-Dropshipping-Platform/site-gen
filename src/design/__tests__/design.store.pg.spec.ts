@@ -55,14 +55,20 @@ suite("«Дизайн по ссылке» на Postgres", () => {
 
   afterAll(async () => {
     if (!db) return;
-    await db.delete(schema.designLooks).where(like(schema.designLooks.siteId, `${P}%`));
-    await db.delete(schema.designOwnedSites).where(like(schema.designOwnedSites.siteId, `${P}%`));
+    await db
+      .delete(schema.designLooks)
+      .where(like(schema.designLooks.siteId, `${P}%`));
+    await db
+      .delete(schema.designOwnedSites)
+      .where(like(schema.designOwnedSites.siteId, `${P}%`));
     await pool.end();
   });
 
   it("saveLook → getLook: строка без tool, toolVersion, raw; чужой магазин — нет записи", async () => {
     const siteId = `${P}${randomUUID()}`;
-    const saved = await controller.saveLook(look(siteId, { content: { v: 1, logo: null, menu: [], blocks: [] } }));
+    const saved = await controller.saveLook(
+      look(siteId, { content: { v: 1, logo: null, menu: [], blocks: [] } }),
+    );
     if (!saved.success) throw new Error(saved.error);
     const got = await controller.getLook({ siteId, lookId: saved.data.id });
     expect(got).toEqual({
@@ -76,43 +82,108 @@ suite("«Дизайн по ссылке» на Postgres", () => {
         createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
       },
     });
-    const [row] = await db.select().from(schema.designLooks).where(eq(schema.designLooks.id, saved.data.id));
-    expect(row).toMatchObject({ tool: "dembrandt", toolVersion: "0.41.0", raw: { dembrandt: { colors: {} } }, ms: 4321 });
-    expect(await controller.getLook({ siteId: `${P}other`, lookId: saved.data.id })).toEqual({ success: false, error: NOT_FOUND });
+    const [row] = await db
+      .select()
+      .from(schema.designLooks)
+      .where(eq(schema.designLooks.id, saved.data.id));
+    expect(row).toMatchObject({
+      tool: "dembrandt",
+      toolVersion: "0.41.0",
+      raw: { dembrandt: { colors: {} } },
+      ms: 4321,
+    });
+    expect(
+      await controller.getLook({ siteId: `${P}other`, lookId: saved.data.id }),
+    ).toEqual({ success: false, error: NOT_FOUND });
   });
 
   it("findRecent: самый свежий снимок той же ссылки за срок; старше срока или другая ссылка — null", async () => {
     const siteId = `${P}${randomUUID()}`;
     const old = randomUUID();
-    await db.insert(schema.designLooks).values({ id: old, ...look(siteId), createdAt: new Date(Date.now() - 2 * DAY) });
-    expect(await controller.findRecent({ siteId, url: "https://shop.example/", maxAgeMs: DAY })).toEqual({ success: true, data: null });
+    await db.insert(schema.designLooks).values({
+      id: old,
+      ...look(siteId),
+      createdAt: new Date(Date.now() - 2 * DAY),
+    });
+    expect(
+      await controller.findRecent({
+        siteId,
+        url: "https://shop.example/",
+        maxAgeMs: DAY,
+      }),
+    ).toEqual({ success: true, data: null });
     const first = await store.save(look(siteId));
-    const second = await store.save(look(siteId, { style: { v: 1, second: true } }));
-    const recent = await controller.findRecent({ siteId, url: "https://shop.example/", maxAgeMs: DAY });
+    const second = await store.save(
+      look(siteId, { style: { v: 1, second: true } }),
+    );
+    const recent = await controller.findRecent({
+      siteId,
+      url: "https://shop.example/",
+      maxAgeMs: DAY,
+    });
     expect(recent.success && recent.data?.id).toBe(second);
-    expect(recent.success && recent.data?.style).toEqual({ v: 1, second: true });
+    expect(recent.success && recent.data?.style).toEqual({
+      v: 1,
+      second: true,
+    });
     expect(first).not.toBe(second);
-    expect(await controller.findRecent({ siteId, url: "https://other.example/", maxAgeMs: DAY })).toEqual({ success: true, data: null });
+    expect(
+      await controller.findRecent({
+        siteId,
+        url: "https://other.example/",
+        maxAgeMs: DAY,
+      }),
+    ).toEqual({ success: true, data: null });
   });
 
   it("confirmOwned → isOwned: домен нормализован, повтор обновляет пользователя", async () => {
     const siteId = `${P}${randomUUID()}`;
-    expect(await controller.isOwned({ siteId, domain: "shop.example" })).toEqual({ success: true, data: { owned: false } });
-    expect(await controller.confirmOwned({ siteId, domain: "shop.example", userId: "u-1" })).toEqual({ success: true, data: { ok: true } });
-    expect(await controller.confirmOwned({ siteId, domain: "WWW.shop.example.", userId: "u-2" })).toEqual({ success: true, data: { ok: true } });
-    const rows = await db.select().from(schema.designOwnedSites).where(eq(schema.designOwnedSites.siteId, siteId));
-    expect(rows).toEqual([expect.objectContaining({ domain: "shop.example", userId: "u-2" })]);
-    expect(await controller.isOwned({ siteId, domain: "shop.example" })).toEqual({ success: true, data: { owned: true } });
-    expect(await controller.isOwned({ siteId: `${P}other`, domain: "shop.example" })).toEqual({ success: true, data: { owned: false } });
+    expect(
+      await controller.isOwned({ siteId, domain: "shop.example" }),
+    ).toEqual({ success: true, data: { owned: false } });
+    expect(
+      await controller.confirmOwned({
+        siteId,
+        domain: "shop.example",
+        userId: "u-1",
+      }),
+    ).toEqual({ success: true, data: { ok: true } });
+    expect(
+      await controller.confirmOwned({
+        siteId,
+        domain: "WWW.shop.example.",
+        userId: "u-2",
+      }),
+    ).toEqual({ success: true, data: { ok: true } });
+    const rows = await db
+      .select()
+      .from(schema.designOwnedSites)
+      .where(eq(schema.designOwnedSites.siteId, siteId));
+    expect(rows).toEqual([
+      expect.objectContaining({ domain: "shop.example", userId: "u-2" }),
+    ]);
+    expect(
+      await controller.isOwned({ siteId, domain: "shop.example" }),
+    ).toEqual({ success: true, data: { owned: true } });
+    expect(
+      await controller.isOwned({ siteId: `${P}other`, domain: "shop.example" }),
+    ).toEqual({ success: true, data: { owned: false } });
   });
 
   it("чистка: снимки старше 30 дней удаляются, свежие остаются", async () => {
     const siteId = `${P}${randomUUID()}`;
     const stale = randomUUID();
-    await db.insert(schema.designLooks).values({ id: stale, ...look(siteId), createdAt: new Date(Date.now() - 31 * DAY) });
+    await db.insert(schema.designLooks).values({
+      id: stale,
+      ...look(siteId),
+      createdAt: new Date(Date.now() - 31 * DAY),
+    });
     const fresh = await store.save(look(siteId));
     expect(await store.purge()).toBeGreaterThanOrEqual(1);
-    const left = await db.select({ id: schema.designLooks.id }).from(schema.designLooks).where(eq(schema.designLooks.siteId, siteId));
+    const left = await db
+      .select({ id: schema.designLooks.id })
+      .from(schema.designLooks)
+      .where(eq(schema.designLooks.siteId, siteId));
     expect(left.map((row) => row.id)).toEqual([fresh]);
     await store.purgeDaily();
   });

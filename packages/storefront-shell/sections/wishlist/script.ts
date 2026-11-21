@@ -1,4 +1,4 @@
-import { defineSection, type CatalogItem, type El } from '@merfy/shell';
+import { defineSection, type ProductCard, type El } from '@merfy/shell';
 
 // «Избранное» (блок 10 «Секций и SDK», 10.6, «Решил сам» п. 15; часть 10б, Р10б-12): карточки отмеченных —
 // ctx.favorites.$products по <template>, вид карточки — как на проде у flux: подложка, фото, бейдж скидки,
@@ -7,7 +7,7 @@ import { defineSection, type CatalogItem, type El } from '@merfy/shell';
 // обновляет $products. Скелетон и подзаголовок скрываются в любом исходе чтения (грид / пусто).
 
 // Фото или заглушка «нет фото».
-const fillImage = (row: El, item: CatalogItem): void => {
+const fillImage = (row: El, item: ProductCard): void => {
   const image = row.ref('image');
   const noImage = row.ref('no-image');
   if (item.image === null) {
@@ -21,7 +21,7 @@ const fillImage = (row: El, item: CatalogItem): void => {
   }
 };
 
-const fillCard = (row: El, item: CatalogItem): void => {
+const fillCard = (row: El, item: ProductCard): void => {
   fillImage(row, item);
   row.ref('photo-link')?.attr('href', item.url);
   row.ref('link')?.attr('href', item.url);

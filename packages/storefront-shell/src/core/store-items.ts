@@ -1,4 +1,4 @@
-import type { CatalogItem, PriceMoney } from './types';
+import type { PriceMoney, ProductCard } from './types';
 
 // Товар в ответах шлюза /store/products и /store/products/search (api-gateway: search-hit.ts, mapVariants) → строка
 // для секций: без остатков, артикулов и себестоимости (находка 4 блока 11). Цены шлюза — рубли (факт 11): в копейки —
@@ -11,7 +11,7 @@ const SLUG_MAX = 200;
 export const productUrl = (handle: string, id: string): string =>
   `/product/${handle.length <= SLUG_MAX && SLUG.test(handle) ? handle : id}`;
 
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+export const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 function rublesOf(value: unknown): number | null {
@@ -37,7 +37,7 @@ function imageOf(raw: Readonly<Record<string, unknown>>): string | null {
   return typeof first === 'string' && first !== '' ? first : null;
 }
 
-export function storeItemOf(raw: unknown, currency: string): CatalogItem | null {
+export function storeItemOf(raw: unknown, currency: string): ProductCard | null {
   if (!isRecord(raw) || typeof raw.id !== 'string' || typeof raw.title !== 'string') return null;
   const handle = typeof raw.handle === 'string' ? raw.handle : '';
   const price = rublesOf(raw.basePrice) ?? 0;
@@ -55,7 +55,7 @@ export function storeItemOf(raw: unknown, currency: string): CatalogItem | null 
 }
 
 // Список товаров ответа: элемент не по форме — без него; не список — null.
-export function storeItemsOf(list: unknown, currency: string): CatalogItem[] | null {
+export function storeItemsOf(list: unknown, currency: string): ProductCard[] | null {
   if (!Array.isArray(list)) return null;
   return list.flatMap((raw) => {
     const item = storeItemOf(raw, currency);

@@ -54,11 +54,17 @@ export { purchase } from './parts/purchase';
 export { catalog } from './parts/catalog';
 // Блок 11 «Секций и SDK», часть 11б: типы модулей вариантов, поиска и каталога; части — в задачах Б11б-3…Б11б-5.
 export type {
+  CatalogBadge,
+  CatalogFilter,
+  CatalogFilterOption,
   CatalogFilters,
   CatalogItem,
+  CatalogListFilter,
   CatalogModule,
   CatalogQuery,
+  CatalogRangeFilter,
   PriceMoney,
+  ProductCard,
   ProductVariants,
   SearchItem,
   SearchModule,

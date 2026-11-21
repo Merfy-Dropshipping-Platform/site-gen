@@ -238,7 +238,7 @@ export interface FavoritesState {
 // Карточки отмеченных (блок 10, часть 10б, Р10б-2, Р10б-8): вид каталога блока 11; товара нет у шлюза — карточки нет.
 export interface FavoriteProducts {
   readonly ready: boolean; // false — карточки ещё не прочитаны
-  readonly products: readonly CatalogItem[]; // в порядке $favorites.ids
+  readonly products: readonly ProductCard[]; // в порядке $favorites.ids
 }
 export interface FavoritesModule {
   readonly $favorites: ReadableStore<FavoritesState>; // ready: false — список сервера ещё не прочитан (вошедшая)
@@ -370,6 +370,7 @@ export interface SearchModule {
   open(): Promise<Result<{ readonly panel: boolean }>>; // Р11б-7
 }
 // Каталог для своих секций (блок 11, 11.4, п. 13): параметры — как у шлюза /store/products и /store/filters.
+export type CatalogBadge = 'sale' | 'new' | 'low_stock' | 'preorder' | 'in_stock'; // признаки товара (контракт фильтров, п. 3)
 export interface CatalogQuery {
   readonly page?: number;
   readonly limit?: number; // по умолчанию 20, как у шлюза
@@ -377,17 +378,61 @@ export interface CatalogQuery {
   readonly minPrice?: number; // рубли
   readonly maxPrice?: number;
   readonly availability?: 'in_stock' | 'sold_out';
-  readonly collectionIds?: readonly string[];
+  readonly collectionIds?: readonly string[]; // хоть в одной из коллекций (ИЛИ)
   readonly q?: string;
+  readonly tags?: readonly string[]; // хоть с одним тегом (ИЛИ)
+  readonly badges?: readonly CatalogBadge[]; // каждый признак — отдельное условие (И)
+  readonly minDiscount?: number; // скидка не меньше N процентов, целое 1..99
+  readonly newDays?: number; // окно признака new, дни, 1..365 (у шлюза по умолчанию 30)
+  readonly lowStockMax?: number; // порог признака low_stock, штук, 1..1000 (у шлюза по умолчанию 5)
   readonly filters?: Readonly<Record<string, readonly string[]>>; // ключ группы → значения (ИЛИ)
 }
-export interface CatalogItem extends SearchItem {
+// Карточка товара из ответов шлюза: поиск, избранное, каталог.
+export interface ProductCard extends SearchItem {
   readonly hasVariants: boolean;
 }
+export interface CatalogItem extends ProductCard {
+  readonly badges: readonly string[]; // истинные признаки товара; незнакомые строки шлюза — как есть
+  readonly discountPercent: number | null; // самая большая скидка, целые проценты; скидки нет — null
+  readonly stockLeft: number | null; // суммарный остаток; нет данных — null
+  readonly tags: readonly string[];
+}
+// Значение фильтра: value уходит в параметр запроса, label — на экран. Незнакомые поля (swatch, …) приходят как есть.
+export interface CatalogFilterOption {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number; // сколько товаров будет, если выбрать это значение
+  readonly selected: boolean;
+  readonly [extra: string]: unknown;
+}
+// Фильтр рисуется по type: list и flags — список options (param — имя параметра запроса), range — от min до max.
+// kind — откуда фильтр (price, badge, collection, tag, variant, позже attribute): секция по нему не ветвится, а
+// незнакомый kind с понятной формой SDK отдаёт как есть. Незнакомые поля фильтра приходят как есть.
+export interface CatalogListFilter {
+  readonly key: string;
+  readonly kind: string;
+  readonly type: 'list' | 'flags';
+  readonly label: string;
+  readonly param: string;
+  readonly options: readonly CatalogFilterOption[];
+  readonly [extra: string]: unknown;
+}
+export interface CatalogRangeFilter {
+  readonly key: string;
+  readonly kind: string;
+  readonly type: 'range';
+  readonly label: string;
+  readonly min: PriceMoney | number; // kind: 'price' — деньги, у прочих диапазонов — число шлюза
+  readonly max: PriceMoney | number;
+  readonly params?: { readonly min: string; readonly max: string }; // у цены: min_price и max_price
+  readonly [extra: string]: unknown;
+}
+export type CatalogFilter = CatalogListFilter | CatalogRangeFilter;
 export interface CatalogFilters {
   readonly groups: readonly { readonly key: string; readonly name: string; readonly values: readonly string[] }[];
   readonly price: { readonly min: PriceMoney; readonly max: PriceMoney } | null;
   readonly total: number;
+  readonly filters: readonly CatalogFilter[]; // динамичный список; старый шлюз без поля — пустой
 }
 export interface CatalogModule {
   products(
@@ -402,7 +447,7 @@ export interface CatalogModule {
     }>
   >;
   filters(
-    query?: Omit<CatalogQuery, 'page' | 'limit' | 'sort' | 'collectionIds'>,
+    query?: Omit<CatalogQuery, 'page' | 'limit' | 'sort'>,
     options?: ActionOptions,
   ): Promise<Result<CatalogFilters>>;
 }

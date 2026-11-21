@@ -1,6 +1,9 @@
+import { filtersListOf } from '../catalog-filters';
+import { catalogItemsOf } from '../catalog-items';
+import { invalidText, storeQueryOf } from '../catalog-query';
 import { type Failure, failed, failureOf, reasonOf, reportFailure } from '../failures';
 import { requestJson } from '../requests';
-import { priceOf, storeItemsOf } from '../store-items';
+import { priceOf } from '../store-items';
 import type {
   ActionOptions,
   CatalogFilters,
@@ -15,8 +18,6 @@ import type {
 // Модуль «Каталог» (блок 11 «Секций и SDK», часть 11б; design.md 11.4, п. 13, Р11б-8): те же /store/products и
 // /store/filters шлюза — для своих секций мерчанта. Наша секция «Каталог» (поведение catalog) ими не пользуется:
 // список с фильтрами она получает готовым HTML. Разметки нет — параметры запроса не влезают в data-атрибуты.
-
-const LIMIT_MAX = 100;
 
 type ProductsResult = Result<{
   readonly items: readonly CatalogItem[];
@@ -36,26 +37,8 @@ const fail = (core: CoreHandle, failure: Failure, options?: ActionOptions): Resu
   return failed(failure);
 };
 
-// Параметры запроса → строка адреса шлюза: имена — как у StoreProductsQueryDto; группа вариантов — её ключ именем
-// параметра (повтор — несколько значений, ИЛИ); коллекции — collection_id на каждую. Пустые значения не пишутся.
-export function storeQueryOf(shopId: string, query: CatalogQuery, withPaging: boolean): URLSearchParams {
-  const params = new URLSearchParams({ store_id: shopId });
-  const single: [string, string | number | undefined][] = [
-    ['page', withPaging ? query.page : undefined],
-    ['limit', withPaging ? query.limit : undefined],
-    ['sort', withPaging ? query.sort : undefined],
-    ['min_price', query.minPrice],
-    ['max_price', query.maxPrice],
-    ['availability', query.availability],
-    ['q', query.q?.trim() === '' ? undefined : query.q?.trim()],
-  ];
-  single.forEach(([name, value]) => {
-    if (value !== undefined) params.append(name, String(value));
-  });
-  if (withPaging) (query.collectionIds ?? []).forEach((id) => params.append('collection_id', id));
-  Object.entries(query.filters ?? {}).forEach(([key, values]) => values.forEach((value) => params.append(key, value)));
-  return params;
-}
+// Параметры запроса и проверка входа — в catalog-query.ts; storeQueryOf остаётся доступным отсюда (тесты, секции).
+export { storeQueryOf };
 
 // Ответ /store/products → { items, total, page, pages }; не по форме — null.
 function productsOf(
@@ -64,7 +47,7 @@ function productsOf(
 ): ProductsResult | null {
   const body = reply.body;
   if (reply.status < 200 || reply.status > 299 || !isRecord(body)) return null;
-  const items = storeItemsOf(body.products, currency);
+  const items = catalogItemsOf(body.products, currency);
   const pagination = isRecord(body.pagination) ? body.pagination : null;
   const total = countOf(body.total);
   const page = pagination === null ? null : countOf(pagination.page);
@@ -80,13 +63,14 @@ const groupOf = (raw: unknown): CatalogFilters['groups'][number] | null => {
   return { key: raw.key, name: raw.name, values };
 };
 
-// Ответ /store/filters → { groups, price, total }; не по форме — null.
+// Ответ /store/filters → { groups, price, total, filters }; не по форме — null. Нет filters (старый шлюз) — пустой список.
 function filtersOf(
   reply: { readonly status: number; readonly body: unknown },
   currency: string,
 ): Result<CatalogFilters> | null {
   const body = reply.body;
-  if (reply.status < 200 || reply.status > 299 || !isRecord(body) || body.success !== true || !isRecord(body.data)) return null;
+  if (reply.status < 200 || reply.status > 299 || !isRecord(body) || body.success !== true || !isRecord(body.data))
+    return null;
   const data = body.data;
   if (!Array.isArray(data.groups)) return null;
   const groups = data.groups.flatMap((raw: unknown): readonly CatalogFilters['groups'][number][] => {
@@ -97,7 +81,7 @@ function filtersOf(
   const total = countOf(data.totalProducts);
   if (range === null || total === null) return null;
   const price = priceRangeOf(range, currency);
-  return { ok: true, data: { groups, price, total } };
+  return { ok: true, data: { groups, price, total, filters: filtersListOf(data.filters, currency) } };
 }
 
 const priceRangeOf = (range: Readonly<Record<string, unknown>>, currency: string): CatalogFilters['price'] => {
@@ -125,24 +109,18 @@ async function ask<T>(
   return parsed ?? fail(core, failureOf(reasonOf(reply), `${author}: шлюз ответил не по форме`, reply), options);
 }
 
-const invalidPaging = (query: CatalogQuery): boolean =>
-  [query.page, query.limit].some((value) => value !== undefined && (!Number.isInteger(value) || value < 1)) ||
-  (query.limit !== undefined && query.limit > LIMIT_MAX);
-
 export const catalog: SdkPart<'catalog', CatalogModule> = {
   name: 'catalog',
   create: (core: CoreHandle): CatalogModule => ({
     products: async (query: CatalogQuery = {}, options?: ActionOptions): Promise<ProductsResult> => {
-      if (invalidPaging(query)) {
-        return fail(core, failureOf('invalid', 'catalog.products: page и limit — целые от 1, limit — до 100'), options);
-      }
+      const invalid = invalidText(query, true);
+      if (invalid !== undefined) return fail(core, failureOf('invalid', `catalog.products: ${invalid}`), options);
       const shopId = core.config?.shop.id ?? '';
       return ask(core, '/store/products', storeQueryOf(shopId, query, true), productsOf, 'catalog.products', options);
     },
-    filters: async (
-      query: Omit<CatalogQuery, 'page' | 'limit' | 'sort' | 'collectionIds'> = {},
-      options?: ActionOptions,
-    ) => {
+    filters: async (query: Omit<CatalogQuery, 'page' | 'limit' | 'sort'> = {}, options?: ActionOptions) => {
+      const invalid = invalidText(query, false);
+      if (invalid !== undefined) return fail(core, failureOf('invalid', `catalog.filters: ${invalid}`), options);
       const shopId = core.config?.shop.id ?? '';
       return ask(core, '/store/filters', storeQueryOf(shopId, query, false), filtersOf, 'catalog.filters', options);
     },

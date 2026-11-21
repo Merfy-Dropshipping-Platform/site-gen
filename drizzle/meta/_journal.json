@@ -288,6 +288,13 @@
       "when": 1793059200000,
       "tag": "0040_storefront_published_by",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793145600000,
+      "tag": "0041_design_looks",
+      "breakpoints": true
     }
   ]
 }

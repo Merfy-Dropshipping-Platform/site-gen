@@ -28,6 +28,20 @@ export class StorefrontAuditController {
   }
 
   /**
+   * GET /api/sites/:id/audit/latest — сводка последней проверенной публикации магазина:
+   * { build, measuredAt, regressed, pages: [{ path, pageId, metrics, previous, findings }] }.
+   * `regressed` — аудит отработал и есть находка не платформы (то же правило, что у события
+   * `audit.regressed`). Аудита ещё не было — 404. Читает шлюз для плашки в конструкторе.
+   */
+  @Get("latest")
+  async summary(
+    @Param("id") siteId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    sendAnswer(res, await this.builder.call("/audit/latest", { shop: siteId }));
+  }
+
+  /**
    * GET /api/sites/:id/audit/superseded?build=<номер> — вышла ли после сборки новая живая
    * сборка магазина: проверяющий процесс спрашивает перед прогоном аудита, не вытеснено ли
    * задание. Ответ сборщика: { superseded: boolean }.

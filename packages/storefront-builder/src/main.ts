@@ -186,7 +186,12 @@ const rollback = roleRollback({
 });
 await consumeSectionErrors({ broker, db, log, roles: { db, after: rollback } });
 // Аудит после публикации (место проверок `audit`): ответы проверяющего процесса → сравнение с прошлым → storefront_audit.
-await consumeAuditResults(broker, { db, publishAudit: broker.publishAudit, log });
+await consumeAuditResults(broker, {
+  db,
+  publishAudit: broker.publishAudit,
+  publishRegressed: broker.publishAuditRegressed,
+  log,
+});
 // Выпуск платформы (задача 11): новый образ — новый код платформы (renderHash, в нём ядро и секции платформы); тот же
 // отпечаток — ничего. Заводится до подписки: resume ниже сразу поведёт его волну 0.
 const platformRelease = {

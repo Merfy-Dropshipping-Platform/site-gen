@@ -5,6 +5,7 @@ import type { Log } from '../log';
 import type { Queryable } from '../shop-state';
 import { jsonAnswer } from '../stand-preview';
 import { latestAudit, newerLiveBuild } from './store';
+import { latestSummary } from './summary';
 
 // Последний аудит страницы магазина для sites и проверяющего процесса: `GET /audit?shop=<uuid>&page=<id страницы>`.
 // Проверяющий процесс кладёт его в ответ снимка (`look`), оттуда его берёт MCP. Только чтение.
@@ -40,6 +41,24 @@ export async function supersededAnswer(
     return jsonAnswer(200, { superseded: await newerLiveBuild(deps.db, query.data.shop, query.data.build) });
   } catch (error) {
     deps.log('audit-superseded-read-failed', { shopId: query.data.shop, error: errorText(error) });
+    return jsonAnswer(500, { problems: [TEXT.failed] });
+  }
+}
+
+// Сводка последней проверенной публикации магазина: `GET /audit/latest?shop=<uuid>` → `{ build, measuredAt, regressed,
+// pages }` (`audit/summary.ts`). Для шлюза и плашки в конструкторе. Аудита ещё не было — 404.
+export const AUDIT_LATEST_ROUTE = '/audit/latest';
+
+const shopSchema = z.object({ shop: z.uuid() });
+
+export async function summaryAnswer(deps: AuditAnswerDeps, rawShop: string | null): Promise<DrawAnswer> {
+  const query = shopSchema.safeParse({ shop: rawShop });
+  if (!query.success) return jsonAnswer(400, { problems: ['нужен shop (uuid)'] });
+  try {
+    const summary = await latestSummary(deps.db, query.data.shop);
+    return summary === null ? jsonAnswer(404, { problems: [TEXT.none] }) : jsonAnswer(200, summary);
+  } catch (error) {
+    deps.log('audit-summary-read-failed', { shopId: query.data.shop, error: errorText(error) });
     return jsonAnswer(500, { problems: [TEXT.failed] });
   }
 }

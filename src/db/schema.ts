@@ -27,6 +27,7 @@ import {
   primaryKey,
   real,
   serial,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 // Состояния саги рождения магазина объявлены в одном месте — в модуле саги.
@@ -924,5 +925,60 @@ export const storefrontAudit = pgTable(
       table.pageId,
       table.measuredAt,
     ),
+  }),
+);
+
+/**
+ * design_looks — «Дизайн по ссылке» (drizzle/0040, контракт reports/vizi-design-copy/contract.md, раздел 3): снятые
+ * проверяющим процессом стиль, контур и (для своего сайта) содержимое чужой страницы. tool, toolVersion и raw — только
+ * для разбора и стенда, агенту и мерчанту не отдаются (design.getLook их не возвращает). Чистка старше 30 дней —
+ * src/design/design.store.ts.
+ */
+export const designLooks = pgTable(
+  "design_looks",
+  {
+    id: uuid("id").primaryKey(),
+    siteId: text("site_id").notNull(),
+    url: text("url").notNull(),
+    finalUrl: text("final_url").notNull(),
+    tool: text("tool").notNull(),
+    toolVersion: text("tool_version").notNull(),
+    outlineTool: text("outline_tool").notNull(),
+    style: jsonb("style").notNull(),
+    outline: jsonb("outline").notNull(),
+    content: jsonb("content"),
+    raw: jsonb("raw")
+      .default(sql`'{}'::jsonb`)
+      .notNull(),
+    ms: integer("ms").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    siteCreatedIdx: index("idx_design_looks_site_id_created_at").on(
+      table.siteId,
+      table.createdAt,
+    ),
+    createdIdx: index("idx_design_looks_created_at").on(table.createdAt),
+  }),
+);
+
+/**
+ * design_owned_sites — мерчант подтвердил, что сайт его («Да, сайт мой»): тогда снятие несёт тексты и фото. Домен —
+ * нижний регистр, без www. и точки в конце (так нормализует шлюз).
+ */
+export const designOwnedSites = pgTable(
+  "design_owned_sites",
+  {
+    siteId: text("site_id").notNull(),
+    domain: text("domain").notNull(),
+    userId: text("user_id").notNull(),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.siteId, table.domain] }),
   }),
 );

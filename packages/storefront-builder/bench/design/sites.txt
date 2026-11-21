@@ -1,0 +1,35 @@
+# Эталонные сайты стенда «Дизайн по ссылке»: python -m vizi.design.lab --sites bench/design/sites.txt
+# Адрес — первое слово строки, после «#» — заметка. Платформа проверена по разметке страницы 21.11.2026
+# (tildacdn, insales, cdn.shopify.com, woocommerce/wp-content). Ozon и WB не включаем.
+
+# Наши витрины nova на dev: настройки темы известны точно — эталон для стиля.
+https://4e589f747e5c.dev.merfy.ru/            # nova, «Шарфы QA nova» (qa-shell-nova-1010)
+https://66af8e692fa2.dev.merfy.ru/            # nova, магазин мерчанта
+
+# Tilda
+https://tilda.store/                          # магазин на Tilda
+https://tilda.education/                      # лендинг на Tilda
+https://tilda.cc/ru/                          # лендинг на Tilda
+
+# InSales
+https://bestpohod.ru/                         # туристическое снаряжение
+https://wool7.ru/                             # пряжа
+https://bronzamania.ru/                       # фурнитура
+https://klubok-ok.com/                        # пряжа, другая тема
+
+# Shopify
+https://www.allbirds.com/                     # обувь
+https://gymshark.com/                         # спортивная одежда
+https://www.glossier.com/                     # косметика
+https://kyliecosmetics.com/                   # косметика, тёмные полосы
+https://www.rhodeskin.com/                    # косметика, минимализм
+
+# WordPress / WooCommerce
+https://offermanwoodshop.com/                 # WooCommerce
+https://www.brodo.com/                        # WooCommerce
+https://lamarzoccousa.com/                    # WooCommerce
+https://themes.woocommerce.com/storefront/    # демо темы Storefront
+
+# Лендинги брендов и свой движок
+https://www.apple.com/ru/                     # лендинг бренда
+https://lime-shop.com/ru_ru                   # российский бренд, свой движок

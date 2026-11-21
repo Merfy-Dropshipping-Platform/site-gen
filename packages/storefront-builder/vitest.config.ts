@@ -31,6 +31,11 @@ export default defineConfig({
         // запись и чтение итога. Прогон в настоящем Chromium — __tests__/look-audit-browser.test.ts.
         'src/checks/audit/{report,compare,median}.ts',
         'src/audit/{contract,plan,start,run,results,store,answer,read}.ts',
+        // «Дизайн по ссылке» (21.11): фильтр адресов и прокси, подпроцесс инструментов, переходники, сборка формата,
+        // задание и стенд. Захват в браузере (design-capture) проверяет настоящий Chromium в
+        // __tests__/design-browser.test.ts — без браузера тест пропускается.
+        'src/design/{design-guard,design-egress,design-node,design-values,design-style,design-outline,design-content,design-dom,design-pick,design-scripts,design-run,design-job,design-types,design-queue,registry,lab}.ts',
+        'src/design/tools/*.ts',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },

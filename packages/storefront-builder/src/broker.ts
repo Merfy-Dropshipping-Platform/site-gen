@@ -15,6 +15,7 @@ import type { Log } from './log';
 import { AUDITS_QUEUE, AUDIT_RESULTS_QUEUE, type AuditJob, type AuditResult } from './audit/contract';
 import { AUDIT_EXCHANGE, type AuditRegressed } from './audit/regressed';
 import { PREVIEW_EXCHANGE, type PreviewSignal } from './preview';
+import { DESIGNS_QUEUE } from './design/design-queue';
 import { LOOKS_QUEUE } from './look/look-queue';
 import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } from './release/checks';
 
@@ -29,6 +30,7 @@ import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } fr
 //   storefront_checks         — задания проверки в браузере (блок 10), их берёт проверяющий процесс;
 //   storefront_check_results  — ответы проверки, их берёт ведущий волн сборщика;
 //   storefront_looks          — снимки черновика (RPC шлюза), их берёт проверяющий процесс;
+//   storefront_designs        — «Дизайн по ссылке» (RPC шлюза), их берёт проверяющий процесс;
 //   storefront_audits         — аудит опубликованной страницы после публикации (Lighthouse), его берёт проверяющий процесс;
 //   storefront_audit_results  — ответы аудита, их берёт сборщик;
 //   storefront.audit          — fanout: «после публикации стало хуже» (audit/regressed.ts); очередь заводит и привязывает
@@ -97,6 +99,8 @@ export async function declareTopology(channel: ConfirmChannel): Promise<void> {
   // Снимки черновика (28.10): объявляют только сборщик и проверяющий процесс; шлюз очередь не объявляет, а проверяет
   // (checkQueue), поэтому аргументов, которые пришлось бы держать одинаковыми с ним, нет.
   await channel.assertQueue(LOOKS_QUEUE, { durable: true });
+  // «Дизайн по ссылке» (21.11): так же — шлюз очередь только проверяет.
+  await channel.assertQueue(DESIGNS_QUEUE, { durable: true });
   await channel.assertQueue(AUDITS_QUEUE, { durable: true });
   await channel.assertQueue(AUDIT_RESULTS_QUEUE, { durable: true });
 }

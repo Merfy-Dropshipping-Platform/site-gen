@@ -290,6 +290,43 @@ error, ms).
 под липкой шапкой, баннер поверх страницы, скрытая и отсутствующая секция, отбор находок по секции) — настоящий Chromium
 (пропускаются, если браузера Playwright нет).
 
+## Дизайн по ссылке (21.11)
+
+Стиль и контур чужого сайта для Визи («сделай как на example.com»). Контракт — `reports/vizi-design-copy/contract.md`
+(разделы 1–2), код — `src/design/`. Делает проверяющий процесс, зовёт шлюз (`POST /api/sites/:id/design-look`), снимок
+хранит sites (`design_looks`, RPC `design.*`).
+
+**Вызов.** Как у снимка черновика: очередь `storefront_designs` (durable), `{ pattern: 'storefront.design', id, data }`,
+`replyTo`, `correlationId`, `expiration`; `data` строго `{ v: 1, siteId, url, owned, deadline }`. Ответ `{ err: null,
+isDisposed: true, id, response }`, `response` — `{ v: 1, ok: true, tool, toolVersion, outlineTool, ms, style, outline,
+content, raw }` (форматы `SiteStyle`, `PageOutline`, `OwnContent` — `design-types.ts`, `raw` ≤ 512 КБ) или `{ v: 1, ok:
+false, error: { code, message } }`, `code` ∈ `blocked`, `unreachable`, `bot-protection`, `canvas`, `timeout`,
+`tool-failed`, `invalid`.
+
+**Фильтр.** На задание — свой Chromium с портом CDP на 127.0.0.1 и свой прокси внутри процесса (`design-egress.ts`):
+`--proxy-server`, `--proxy-bypass-list=<-loopback>`, WebRTC без прокси выключен. Прокси на каждое соединение разрешает
+имя, проверяет все адреса (`design-guard.ts`: только публичные IPv4/IPv6, порты 80/443, не наш сервер) и соединяется с
+проверенным IP; редиректы, WebSocket и повторные соединения идут через него же. Витринам платформы (`DESIGN_OWN_HOSTS`,
+по умолчанию `merfy.ru`) прощается только «наш сервер». Node-процессы инструментов — с окружением с нуля, сеть только
+к прокси и CDP (`node/netguard.mjs`), свой браузер не запускают (`design-node.ts`).
+
+**Инструменты.** `DESIGN_STYLE` (по умолчанию `dembrandt,own`) и `DESIGN_OUTLINE` (`designlang,dom`): порядок — запасной
+путь, стиль и контур снимаются параллельно; ответил не всё — следующий в цепочке дозаполняет поле, побеждает самое
+уверенное значение. Переходники — `tools/` (`dembrandt` 0.41.0 и `designlang` 13.4.1 по CDP к нашему Chromium,
+`own` — свой скрипт в странице, `dom` — роли по правилам геометрии); новый — файл в `tools/`, строка в `registry.ts`,
+пакет с точной версией. `owned: true` — ещё `OwnContent` (тексты, крупные https-фото, логотип, меню).
+
+**Переменные.** `DESIGN_SLOTS` (1), `DESIGN_TIMEOUT_MS` (60000), `DESIGN_STYLE`, `DESIGN_OUTLINE`, `DESIGN_OWN_HOSTS`,
+`OUTBOUND_BLOCKED_ADDRESSES` (ещё адреса нашего сервера, IP или CIDR через запятую).
+
+**Стенд.** `pnpm --filter @merfy/storefront-builder design-lab <url…> | --sites bench/design/sites.txt --out <папка>` —
+все переходники на каждом сайте, итог цепочек, время и ошибки; `report.html` (снимок страницы, полосы, шрифты, радиусы,
+блоки, сырой ответ по клику) и `report.json`.
+
+**Тесты.** `design-guard`, `design-egress` (настоящие сокеты: внутренний IP, localhost, имя → 127.0.0.1, редирект,
+WebSocket, порт), `design-browser` (настоящий Chromium: те же попытки из страницы и до порта CDP), `design-style` и
+`design-outline` (записанные ответы инструментов), `design-run`, `design-job`, `design-node`, `design-lab`.
+
 ## Команда выпуска (блок 10)
 
 Запускает человек на своей машине: `pnpm --filter @merfy/storefront-builder theme-release <подкоманда>`.

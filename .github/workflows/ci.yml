@@ -291,6 +291,7 @@ jobs:
           src/scheduler/site-provisioning.can-create.spec.ts
           src/modules/theme-preset/theme-catalog-seed.spec.ts
           src/pages
+          src/design
 
       # Публикации и блоги (контракт «Публикации», 20.10.2026): правила адресов,
       # анонса и статусов, коды ошибок RPC, сервисы на Postgres и миграция 0027

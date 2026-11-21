@@ -428,6 +428,63 @@ export interface DiffResult {
   ops: Op[];
 }
 
+/** Секция, которой ограничена отмена записей агента: страница и id экземпляра (или Puck-блока у пяти тем). */
+export interface UndoScopeSection {
+  page: string;
+  id: string;
+}
+
+/** Чем ограничить отмену записей агента; не задано — весь магазин. */
+export interface UndoScope {
+  sections?: UndoScopeSection[];
+}
+
+/** Кто менял место после агента — метки той же формы, что в истории ревизий (И5). */
+export interface UndoAuthor {
+  actor: WriteActor | null;
+  source: WriteSource | null;
+}
+
+/** Место, которое отмена оставила как есть: после правки агента его менял кто-то другой. */
+export interface UndoKeptPlace {
+  path: string;
+  reason: "changed_after_agent";
+  /** Последний, кто менял место после агента; не нашли — `null`. */
+  by: UndoAuthor | null;
+}
+
+/**
+ * «Отменить записи агента с ревизии `since`» (этап 6 спеки «Визи делает сайты
+ * в конструкторе», Ч2): документ — как если бы ревизий этого `source` после
+ * `since` не было, кроме мест, которые после агента менял кто-то другой.
+ * Алгоритм — `undo-agent.ts`, README рядом.
+ */
+export interface UndoAgentParams {
+  tenantId: string;
+  site: StoreContentSite;
+  /** Ревизия R: с неё отменяются записи агента. Снимок клиента — его ревизия-слияние (`meta.snapshotOf`). */
+  since: string;
+  /** Чьи записи отменяются; от него же — метки новой ревизии (`actor: agent`). */
+  source: WriteSource;
+  scope?: UndoScope;
+  actorUserId?: string;
+  /** Ключ от повторов записи (К3), как у `SaveOnBaseParams`. */
+  idempotencyKey?: string;
+}
+
+export interface UndoAgentResult {
+  /** Новая текущая ревизия; `null` — ничего не изменилось, ничего не записано. */
+  revisionId: string | null;
+  /** Ревизия R, от которой считалась отмена (после разворота снимка клиента). */
+  restoredFrom: string;
+  /** Адреса, которые отмена поменяла относительно прежней текущей. */
+  undone: string[];
+  /** Места, которые остались как есть, потому что их менял кто-то другой. */
+  kept: UndoKeptPlace[];
+  /** Ответ повторён по ключу от повторов: новая ревизия не писалась. */
+  replayed?: true;
+}
+
 export interface StoreContent {
   /** «Ревизии нет» — бросает {@link RevisionNotFoundError}. Нужен именно результат без исключения — см. `loadOrNull`. */
   load(siteId: string, opts: LoadOptions): Promise<LoadResult>;
@@ -490,6 +547,12 @@ export interface StoreContent {
     to: string,
     opts: DiffOptions,
   ): Promise<CheckScope>;
+  /**
+   * Отменить записи агента `source` после ревизии `since`, не трогая правки
+   * других (`undo-agent.ts`): одна новая ревизия от текущей или «ничего не
+   * изменилось». `since` не найдена — {@link RevisionNotFoundError}.
+   */
+  undoAgent(siteId: string, params: UndoAgentParams): Promise<UndoAgentResult>;
 }
 
 /** Модели контента, которые понимает `StoreContentService`. Сегодня — только 'document'. */

@@ -77,7 +77,11 @@ import type {
   SaveResult,
   StoreContent,
   StoreContentSite,
+  UndoAgentParams,
+  UndoAgentResult,
 } from "./store-content.port";
+import { runUndoAgent } from "./undo-agent-write";
+import type { UndoStore } from "./undo-agent-write";
 import { diff as diffDocuments } from "./operations";
 import { isStoreVersion } from "./revision-kinds";
 
@@ -562,6 +566,30 @@ export class DocumentAdapter implements StoreContent {
       fromRow.data as Record<string, unknown>,
     );
     return scopeBetween(model, before, after);
+  }
+
+  /** Отменить записи агента с ревизии R (`undo-agent.ts`, обвязка — `undo-agent-write.ts`). */
+  async undoAgent(
+    siteId: string,
+    params: UndoAgentParams,
+  ): Promise<UndoAgentResult> {
+    return runUndoAgent(this.undoStore, siteId, params);
+  }
+
+  private get undoStore(): UndoStore {
+    return {
+      readPointer: (siteId, tenantId) => this.readPointer(siteId, tenantId),
+      history: (siteId, opts) => this.history(siteId, opts),
+      envelope: (siteId, revisionId, site) =>
+        this.envelopeOrNull(siteId, revisionId, { site }),
+      fetchData: async (revisionId, siteId) =>
+        (await this.fetchRevision(revisionId, siteId))?.data as
+          | Record<string, unknown>
+          | undefined,
+      writeModel: (siteId, site, storedCurrent) =>
+        this.writeModel(siteId, site, false, storedCurrent),
+      save: (siteId, params) => this.save(siteId, params),
+    };
   }
 
   private async writeModel(

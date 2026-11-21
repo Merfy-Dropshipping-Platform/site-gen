@@ -57,6 +57,7 @@ import type {
   HistoryCursor,
   StaleBasePolicy,
   StoreContentSite,
+  UndoScope,
   WriteActor,
   WriteSource,
 } from "./content/store-content.port";
@@ -2171,6 +2172,30 @@ export class SitesDomainService {
     if (!site) throw new Error("site_not_found");
     return this.storeContent.rollback(params.siteId, {
       ...params,
+      site: toStoreContentSite(site),
+    });
+  }
+
+  /**
+   * Отменить записи агента с ревизии `since`, не трогая правки мерчанта
+   * (этап 6 Визи, Ч2) — см. `content/undo-agent.ts`. Одна новая ревизия
+   * (`actor: agent`, тот же `source`, `restoredFrom: since`) или «ничего не
+   * изменилось» (`revisionId: null`).
+   */
+  async undoAgentRevisions(params: {
+    tenantId: string;
+    siteId: string;
+    since: string;
+    source: WriteSource;
+    scope?: UndoScope;
+    actorUserId?: string;
+    idempotencyKey?: string;
+  }) {
+    const site = await this.get(params.tenantId, params.siteId);
+    if (!site) throw new Error("site_not_found");
+    const { siteId, ...rest } = params;
+    return this.storeContent.undoAgent(siteId, {
+      ...rest,
       site: toStoreContentSite(site),
     });
   }

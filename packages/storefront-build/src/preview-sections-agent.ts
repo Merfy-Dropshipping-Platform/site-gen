@@ -28,7 +28,9 @@ import { OVERLAY_ATTRIBUTE } from '@merfy/shell/roles';
 // POST <адрес превью>/block с экземпляром и замена секции по data-section-id; ответ на старую правку отбрасывается.
 // reconcile — лишние секции убираются, новые и изменённые запрашиваются, порядок — как в списке, ответ —
 // reconcile-ack; ответ блока, на который уже ушёл более новый запрос, тоже отбрасывается — на странице остаётся новый
-// (Р11). set-agent-frame { sectionId, label? } (этап 4 «Живой холст») — рамка Визи #merfy-agent-frame: фиолетовая, с
+// (Р11). Ack — один, на последний reconcile: ok только когда все секции списка стоят на странице, иначе ok: false с
+// missing; повтор того же списка берёт запрос блока в пути, а не отменяет его. Секции встали — заглушка пустого
+// магазина ([data-merfy-empty-shop]) снимается, секций не осталось — возвращается. set-agent-frame { sectionId, label? } (этап 4 «Живой холст») — рамка Визи #merfy-agent-frame: фиолетовая, с
 // подписью «Визи · <label>», без кнопок; выбор мерчанта не трогает, секция за краем окна — прокрутка, как у select();
 // sectionId: null — рамки нет. set-check-marks { marks: [{ sectionId, items: [{ title, text? }] }] } (этап 5 «Проверки в
 // окне») — янтарный значок с числом находок в правом верхнем углу секции (data-merfy-check-mark, в нём
@@ -637,7 +639,66 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       document.body.appendChild(node);
     });
   }
+  // Заглушка пустого магазина (empty-shop.ts): на странице без секций сборщик кладёт её в <main>. Секции встали — заглушка
+  // снимается (иначе новые секции стоят под «Здесь пока пусто»); секций не осталось — возвращается тот же узел. Своего
+  // экземпляра у скрипта нет: вернуть он может только ту заглушку, что сам снял.
+  var emptyShop = null;
+  function hideEmptyShop(node) {
+    if (!node) return;
+    emptyShop = node;
+    node.parentNode.removeChild(node);
+  }
+  function syncEmptyShop() {
+    var node = document.querySelector('[data-merfy-empty-shop]');
+    if (all().length > 0) return hideEmptyShop(node);
+    if (emptyShop && !node) containerOf().appendChild(emptyShop);
+  }
+  // Номер последнего reconcile и запросы его блоков, ещё не вернувшиеся: повтор того же списка (хост повторяет reconcile,
+  // если ack задержался) берёт тот же запрос, а не отменяет его новым — иначе ответы каждого повтора отбрасываются как
+  // устаревшие, и секции не встают, пока запросы не укладываются в срок хоста.
+  var latestReconcile = 0;
+  var pending = {};
+  function requestBlock(block) {
+    var live = pending[block.id];
+    if (live && live.hash === block.propsHash && tickets[block.id] === live.ticket) return live.request;
+    var ticket = (tickets[block.id] || 0) + 1;
+    tickets[block.id] = ticket;
+    function release() {
+      if (pending[block.id] && pending[block.id].ticket === ticket) delete pending[block.id];
+    }
+    var request = fetchBlock(instanceOf(block.id, block.type, block.props), block.props).then(
+      function (answer) {
+        release();
+        if (tickets[block.id] !== ticket) return { id: block.id, node: null };
+        hashes[block.id] = block.propsHash;
+        setCss(block.id, answer.css);
+        return { id: block.id, node: nodeOf(answer.html), html: answer.html, script: answer.script, revision: answer.revision };
+      },
+      function (error) {
+        release();
+        throw error;
+      }
+    );
+    pending[block.id] = { hash: block.propsHash, ticket: ticket, request: request };
+    return request;
+  }
+  // Ack хосту — один, на последний reconcile. ok: true — каждая секция списка стоит на странице; иначе ok: false и в
+  // missing секции, которых нет (ответ на них отброшен как устаревший, например правкой секции, пока шёл запрос): по
+  // ok: false хост тихо перезагружает превью, и оно берёт сохранённое состояние. Reconcile, поверх которого пришёл новый,
+  // молчит — ack пришлёт новый.
+  function acknowledge(data, blocks, changed) {
+    var missing = blocks
+      .filter(function (block) {
+        return !byId(block.id);
+      })
+      .map(function (block) {
+        return block.id;
+      });
+    if (missing.length > 0) return post({ type: 'reconcile-ack', version: data.version, ok: false, applied: 0, missing: missing });
+    post({ type: 'reconcile-ack', version: data.version, ok: true, applied: changed.length });
+  }
   function reconcile(data) {
+    var mine = (latestReconcile += 1);
     var blocks = data.blocks || [];
     var wanted = {};
     blocks.forEach(function (block) {
@@ -653,19 +714,9 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
       return !known || hashes[block.id] !== block.propsHash;
     });
     var container = containerOf();
-    Promise.all(
-      changed.map(function (block) {
-        var ticket = (tickets[block.id] || 0) + 1;
-        tickets[block.id] = ticket;
-        return fetchBlock(instanceOf(block.id, block.type, block.props), block.props).then(function (answer) {
-          if (tickets[block.id] !== ticket) return { id: block.id, node: null };
-          hashes[block.id] = block.propsHash;
-          setCss(block.id, answer.css);
-          return { id: block.id, node: nodeOf(answer.html), html: answer.html, script: answer.script, revision: answer.revision };
-        });
-      })
-    )
+    Promise.all(changed.map(requestBlock))
       .then(function (fresh) {
+        if (mine !== latestReconcile) return;
         var nodes = {};
         fresh.forEach(function (item) {
           if (!item.node) return;
@@ -683,16 +734,19 @@ export const PREVIEW_SECTIONS_AGENT = `(function () {
         fresh.forEach(function (item) {
           if (item.node) item.node.removeAttribute(STILL_ATTRIBUTE);
         });
+        syncEmptyShop();
         showOverlay();
         place();
         showBlock();
-        post({ type: 'reconcile-ack', version: data.version, ok: true, applied: changed.length });
+        acknowledge(data, blocks, changed);
       })
       .catch(function (error) {
-        var missing = changed.map(function (block) {
-          return block.id;
-        });
-        post({ type: 'reconcile-ack', version: data.version, ok: false, applied: 0, missing: missing });
+        if (mine === latestReconcile) {
+          var missing = changed.map(function (block) {
+            return block.id;
+          });
+          post({ type: 'reconcile-ack', version: data.version, ok: false, applied: 0, missing: missing });
+        }
         failed(error);
       });
   }

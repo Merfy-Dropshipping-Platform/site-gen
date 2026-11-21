@@ -23,8 +23,8 @@ describe('общий вид находки', () => {
       { ...base, section: 'hero-1', where: 'h2', text: 'Пустой h2' },
     ]);
     expect(found).toEqual([
-      { ...base, fix: 'silent', section: 'faq-1', where: 'h2 первый', text: 'Пустой h2', count: 2 },
-      { ...base, fix: 'silent', section: 'hero-1', where: 'h2', text: 'Пустой h2', count: 1 },
+      { ...base, fix: 'ask', section: 'faq-1', where: 'h2 первый', text: 'Пустой h2', count: 2 },
+      { ...base, fix: 'ask', section: 'hero-1', where: 'h2', text: 'Пустой h2', count: 1 },
     ]);
   });
 
@@ -57,6 +57,12 @@ describe('семантика по HTML (html-validate + своё правило)
         fix: 'silent',
       },
     ]);
+  });
+
+  it('кто чинит: пустой заголовок — вопрос мерчанту (нужен текст), порядок заголовков — молча', async () => {
+    const found = await semanticHtml(page(section('hero-1', '<h2></h2>') + section('faq-1', '<h3>Вопросы</h3>')));
+    expect(byRule(found, 'empty-heading').map((finding) => finding.fix)).toEqual(['ask']);
+    expect(byRule(found, 'heading-level').map((finding) => finding.fix)).toEqual(['silent']);
   });
 
   it('h1, потом h2 — заголовки в порядке, находок нет', async () => {

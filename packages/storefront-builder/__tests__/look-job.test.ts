@@ -84,6 +84,7 @@ describe('снимок черновика · успех', () => {
         code: 'gradient-text',
         name: 'Gradient text',
         text: 'h1',
+        fix: 'ask',
         device: 'mobile',
         section: null,
         clip: null,
@@ -372,6 +373,7 @@ describe('снимок черновика · детектор в снимке с
       code: rule,
       name,
       text,
+      fix: 'ask',
       device: 'mobile',
       section: null,
       clip: null,
@@ -854,6 +856,22 @@ describe('снимок черновика · проверки мест html и b
       (finding) => `${finding.section}:${finding.fix}`,
     );
     expect(found).toEqual(['hero-1:silent', 'faq-1:platform']);
+  });
+
+  it('кто чинит находки вёрстки: в секции платформы — platform; в изменённой и своей — ask; Impeccable без секции — ask', async () => {
+    const tag = `<script type="application/json" id="merfy-look-sample">${JSON.stringify({ v: 1, platform: ['faq-1'] })}</script>`;
+    const page = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Магазин</title></head><body>
+      <merfy-section data-section-id="hero-1" data-role="cart"><h1>Шарфы</h1></merfy-section>
+      <merfy-section data-section-id="faq-1"><h2>Вопросы</h2></merfy-section>${tag}
+    </body></html>`;
+    const { deps } = setup(
+      { mobile: { layout: [layoutFinding('overlap', 0, 'hero-1'), layoutFinding('overlap', 1, 'faq-1')] } },
+      () => Promise.resolve(htmlResponse(page)),
+    );
+    const found = snapshotOf(await runLookJob(deps, job({ devices: 'mobile' }))).findings.map(
+      (finding) => `${finding.source}:${finding.section}:${finding.fix}`,
+    );
+    expect(found).toEqual(['layout:hero-1:ask', 'layout:faq-1:platform']);
   });
 
   it('снимок секции — находки только этой секции, из обоих мест', async () => {

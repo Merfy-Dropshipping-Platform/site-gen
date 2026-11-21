@@ -1,10 +1,14 @@
-// Кто чинит находку (`fix`): значение по месту проверки, одна таблица `FIX_BY_PLACE`; проверка может задать своё;
-// в секции платформы (библиотечной, не тронутой в магазине) то, что чинил бы агент, — дело платформы.
+// Кто чинит находку (`fix`): значение по месту проверки (`FIX_BY_PLACE`), исключения по коду проверки (`FIX_BY_CHECK`);
+// проверка может задать своё; в секции платформы (библиотечной, не тронутой в магазине) то, что чинил бы агент, — дело платформы.
 import { describe, expect, it } from 'vitest';
 import {
+  FIX_BY_CHECK,
   FIX_BY_PLACE,
   FIX_ON_PLATFORM_SECTION,
+  fixOf,
   grouped,
+  lookFixOf,
+  lookOnPlatformSections,
   onPlatformSections,
   type CheckFinding,
   type CheckPlace,
@@ -13,6 +17,7 @@ import {
 } from '../src/checks/finding';
 import { platformSections } from '../src/checks/html/platform';
 import { sampleTagOf } from '../src/look/look-sample';
+import { LAYOUT_CODES } from '../src/look/look-types';
 import { platformIdsOf } from '../src/preview-sample';
 
 const draft = (place: CheckPlace, patch: Partial<FindingDraft> = {}): FindingDraft => ({
@@ -94,6 +99,54 @@ describe('секции платформы на странице', () => {
   });
 });
 
+describe('fix по коду проверки (FIX_BY_CHECK)', () => {
+  const asked = ['image-aspect-ratio', 'lcp-hidden', 'empty-heading', ...LAYOUT_CODES];
+  // Спорные: агент выбирает исправление без смены вида — остаются по месту.
+  const silent = ['text-content', 'heading-level', 'nested-interactive', 'lcp-background'];
+
+  it.each(asked)('%s — ask, у какого бы места ни была', (rule) => {
+    expect(FIX_BY_CHECK[rule]).toBe('ask');
+    expect(grouped([draft('browser', { rule })])[0]?.fix).toBe('ask');
+    expect(grouped([draft('html', { rule })])[0]?.fix).toBe('ask');
+  });
+
+  it.each(silent)('%s — silent: в таблице исключений нет', (rule) => {
+    expect(FIX_BY_CHECK[rule]).toBeUndefined();
+    expect(grouped([draft('browser', { rule })])[0]?.fix).toBe('silent');
+  });
+
+  it('своё поле находки главнее таблицы кодов, таблица кодов — главнее места', () => {
+    expect(grouped([draft('browser', { rule: 'empty-heading', fix: 'silent' })])[0]?.fix).toBe('silent');
+    expect(fixOf('shop', 'empty-heading')).toBe('ask');
+    expect(fixOf('shop', 'demo-rule')).toBe('ask');
+    expect(fixOf('release', 'demo-rule')).toBe('platform');
+  });
+
+  it('все коды проверок вёрстки — ask', () => {
+    expect(LAYOUT_CODES.map((code) => FIX_BY_CHECK[code])).toEqual(LAYOUT_CODES.map(() => 'ask'));
+  });
+});
+
+describe('fix у находок старой формы', () => {
+  it('вёрстка — ask по коду, детектор Impeccable — ask по источнику, любой его код', () => {
+    expect(LAYOUT_CODES.map((code) => lookFixOf('layout', code))).toEqual(LAYOUT_CODES.map(() => 'ask'));
+    expect(['gradient-text', 'side-tab', 'неизвестный-код'].map((code) => lookFixOf('impeccable', code))).toEqual([
+      'ask',
+      'ask',
+      'ask',
+    ]);
+  });
+});
+
+describe('fix у находок старой формы в секциях платформы', () => {
+  const old = (section: string | null) => ({ section, fix: 'ask' as CheckFix });
+
+  it('вёрстка в секции платформы — platform; в своей — ask; без секции (Impeccable) — ask', () => {
+    const found = lookOnPlatformSections([old('faq-1'), old('hero-1'), old(null)], new Set(['faq-1']));
+    expect(found.map((finding) => finding.fix)).toEqual(['platform', 'ask', 'ask']);
+  });
+});
+
 describe('fix в секциях платформы', () => {
   const found = (patch: Partial<CheckFinding>): CheckFinding => ({
     place: 'browser',
@@ -114,12 +167,28 @@ describe('fix в секциях платформы', () => {
     expect([mine?.fix, theirs?.fix]).toEqual(['platform', 'silent']);
   });
 
-  it('данные магазина (ask) остаются вопросом мерчанту, находка вне секций не трогается', () => {
-    const [asked, outside] = onPlatformSections(
-      [found({ section: 'drawer-1', fix: 'ask' }), found({ section: null })],
+  it('вопрос мерчанту про вид (ask) в секции платформы — тоже platform: чинят правкой кода секции', () => {
+    const [asked] = onPlatformSections([found({ section: 'drawer-1', fix: 'ask' })], platform);
+    expect(asked?.fix).toBe('platform');
+  });
+
+  it('данные магазина (место shop) остаются вопросом мерчанту, находка вне секций не трогается', () => {
+    const [shop, outside] = onPlatformSections(
+      [found({ place: 'shop', section: 'drawer-1', fix: 'ask' }), found({ section: null, fix: 'ask' })],
       platform,
     );
-    expect([asked?.fix, outside?.fix]).toEqual(['ask', 'silent']);
+    expect([shop?.fix, outside?.fix]).toEqual(['ask', 'ask']);
+  });
+
+  it('находка по коду проверки: ask → platform в платформенной секции, silent → platform, в своей — как была', () => {
+    const [onPlatform, own] = onPlatformSections(
+      grouped([
+        draft('browser', { rule: 'image-aspect-ratio', section: 'drawer-1' }),
+        draft('browser', { rule: 'image-aspect-ratio' }),
+      ]),
+      platform,
+    );
+    expect([onPlatform?.fix, own?.fix]).toEqual(['platform', 'ask']);
   });
 
   it('таблица покрывает все значения fix', () => {

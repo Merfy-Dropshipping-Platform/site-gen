@@ -49,6 +49,7 @@ function fakeDb(previous: AuditMetrics | AuditMetrics[] | null) {
 const depsOf = (db: Queryable): AuditResultDeps & { publishAudit: ReturnType<typeof vi.fn> } => ({
   db,
   publishAudit: vi.fn().mockResolvedValue(undefined),
+  publishRegressed: vi.fn().mockResolvedValue(undefined),
   log: vi.fn(),
 });
 

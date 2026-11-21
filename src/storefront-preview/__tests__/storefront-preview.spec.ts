@@ -197,6 +197,16 @@ describe("превью новой темы — от сборщика, нынеш
     ]);
   });
 
+  it("сводка последней проверенной публикации — запрос сборщику с магазином, не путается с аудитом страницы", async () => {
+    const answer = await request(app.getHttpServer()).get(
+      `/api/sites/${NEW_SITE}/audit/latest`,
+    );
+    expect(answer.status).toBe(200);
+    expect(seen.map((call) => call.url)).toEqual([
+      `/audit/latest?shop=${NEW_SITE}`,
+    ]);
+  });
+
   it("превью без page и стенд — page уходит к сборщику как есть", async () => {
     await request(app.getHttpServer()).get(`/api/sites/${NEW_SITE}/preview`);
     await request(app.getHttpServer()).get(

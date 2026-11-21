@@ -13,6 +13,7 @@ import {
 } from './events';
 import type { Log } from './log';
 import { AUDITS_QUEUE, AUDIT_RESULTS_QUEUE, type AuditJob, type AuditResult } from './audit/contract';
+import { AUDIT_EXCHANGE, type AuditRegressed } from './audit/regressed';
 import { PREVIEW_EXCHANGE, type PreviewSignal } from './preview';
 import { LOOKS_QUEUE } from './look/look-queue';
 import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } from './release/checks';
@@ -29,7 +30,9 @@ import { CHECKS_QUEUE, CHECK_RESULTS_QUEUE, type CheckJob, type CheckResult } fr
 //   storefront_check_results  — ответы проверки, их берёт ведущий волн сборщика;
 //   storefront_looks          — снимки черновика (RPC шлюза), их берёт проверяющий процесс;
 //   storefront_audits         — аудит опубликованной страницы после публикации (Lighthouse), его берёт проверяющий процесс;
-//   storefront_audit_results  — ответы аудита, их берёт сборщик.
+//   storefront_audit_results  — ответы аудита, их берёт сборщик;
+//   storefront.audit          — fanout: «после публикации стало хуже» (audit/regressed.ts); очередь заводит и привязывает
+//                    слушатель (шлюз), сборщик только публикует.
 // Объявление — на каждом канале при каждом подключении (факт 6): брокер перезапустился — очереди на месте.
 
 export const EVENTS_QUEUE = 'storefront_builder_events';
@@ -67,6 +70,8 @@ export interface Broker {
   // Аудит после публикации: сборщик → проверяющий процесс (задание), обратно — ответ.
   publishAudit: (job: AuditJob) => Promise<void>;
   publishAuditResult: (result: AuditResult) => Promise<void>;
+  // Событие «после публикации стало хуже»: сборщик → слушатель (шлюз) через fanout storefront.audit.
+  publishAuditRegressed: (event: AuditRegressed) => Promise<void>;
   consume: (queue: string, prefetch: number, handler: Handler) => Promise<void>;
   // Штатная остановка: новых сообщений не брать. Взятые обработчики доделывают, отправка работает до close.
   pause: () => Promise<void>;
@@ -78,6 +83,7 @@ export async function declareTopology(channel: ConfirmChannel): Promise<void> {
   await channel.assertExchange(PRODUCT_EXCHANGE, 'fanout', { durable: true });
   await channel.assertExchange(ACTIVITY_EXCHANGE, 'topic', { durable: true });
   await channel.assertExchange(PREVIEW_EXCHANGE, 'fanout', { durable: true });
+  await channel.assertExchange(AUDIT_EXCHANGE, 'fanout', { durable: true });
   await channel.assertQueue(EVENTS_QUEUE, { durable: true });
   await channel.bindQueue(EVENTS_QUEUE, CONTENT_EXCHANGE, '#');
   await channel.bindQueue(EVENTS_QUEUE, PRODUCT_EXCHANGE, '');
@@ -144,6 +150,19 @@ function openChannel(connection: AmqpConnectionManager, log: Log): ChannelWrappe
 
 type Publishers = Omit<Broker, 'consume' | 'pause' | 'close'>;
 
+// Аудит после публикации: задание и ответ — в очереди, «стало хуже» — в fanout storefront.audit.
+const auditPublishersOf = (publisher: ChannelWrapper) => ({
+  publishAudit: async (job: AuditJob) => {
+    await publisher.sendToQueue(AUDITS_QUEUE, json(job), persistent());
+  },
+  publishAuditResult: async (result: AuditResult) => {
+    await publisher.sendToQueue(AUDIT_RESULTS_QUEUE, json(result), persistent());
+  },
+  publishAuditRegressed: async (event: AuditRegressed) => {
+    await publisher.publish(AUDIT_EXCHANGE, '', json(event), persistent());
+  },
+});
+
 // Всё, что сборщик отправляет, — через один канал с подтверждениями брокера.
 const publishersOf = (publisher: ChannelWrapper): Publishers => ({
   publishJob: async (job, priority) => {
@@ -168,12 +187,7 @@ const publishersOf = (publisher: ChannelWrapper): Publishers => ({
   publishCheckResult: async (result) => {
     await publisher.sendToQueue(CHECK_RESULTS_QUEUE, json(result), persistent());
   },
-  publishAudit: async (job) => {
-    await publisher.sendToQueue(AUDITS_QUEUE, json(job), persistent());
-  },
-  publishAuditResult: async (result) => {
-    await publisher.sendToQueue(AUDIT_RESULTS_QUEUE, json(result), persistent());
-  },
+  ...auditPublishersOf(publisher),
 });
 
 export function openBroker(url: string, log: Log): Broker {

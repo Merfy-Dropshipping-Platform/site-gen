@@ -7,10 +7,14 @@ import { errorText } from '../errors';
 import type { Log } from '../log';
 import type { Queryable } from '../shop-state';
 import { AUDIT_RESULTS_QUEUE, parseAuditResult, type AuditJob, type AuditResult } from './contract';
+import { announceRegressed, type PublishRegressed } from './regressed';
 import { previousMetrics, recordAudit } from './store';
 
 // Ответ проверяющего процесса по аудиту страницы (`audit/contract.ts`): сравнить с прошлыми аудитами той же страницы и
 // записать строку (`audit/store.ts`). «Не отработал» тоже строка — агент видит причину, а не тишину.
+//
+// Стало хуже для мерчанта (находка не платформы) — итоговая строка, не перемер, уходит событием во внутренний брокер
+// (`audit/regressed.ts`); сбой брокера записи не ломает.
 //
 // Шум: один прогон Lighthouse врёт, поэтому правила считаются по медиане трёх прогонов. Сработало правило на первом
 // прогоне — страницу перемеряют ещё дважды (задание с уже снятыми прогонами уходит в ту же очередь аудита, то есть с тем
@@ -20,6 +24,8 @@ export interface AuditResultDeps {
   db: Queryable;
   // Поставить задание аудита (перемер).
   publishAudit: (job: AuditJob) => Promise<void>;
+  // Сообщить, что после публикации стало хуже (`audit/regressed.ts`): только итоговая строка, перемеры — нет.
+  publishRegressed: PublishRegressed;
   log: Log;
 }
 
@@ -91,6 +97,7 @@ export async function onAuditResult(deps: AuditResultDeps, result: AuditResult):
   const { report, findings, status, reason } = outcomeOf(result, samples, baseline);
   const row = { siteId, build, path, pageId, status, reason, report, previous: baseline, findings, measuredAt };
   await recordAudit(deps.db, row);
+  await announceRegressed(deps, row);
   deps.log('audit-recorded', {
     shopId: siteId,
     buildId: build,

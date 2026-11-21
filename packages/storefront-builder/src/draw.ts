@@ -11,7 +11,15 @@ import {
 } from '@merfy/storefront-build';
 import { withSectionRenderer } from '@merfy/storefront-sections';
 import { hexOf, recordDrawnPage, type ObjectStore } from '@merfy/storefront-storage';
-import { AUDIT_ROUTE, AUDIT_SUPERSEDED_ROUTE, auditAnswer, supersededAnswer } from './audit/answer';
+import {
+  AUDIT_LATEST_ROUTE,
+  AUDIT_ROUTE,
+  AUDIT_SUPERSEDED_ROUTE,
+  type AuditAnswerDeps,
+  auditAnswer,
+  summaryAnswer,
+  supersededAnswer,
+} from './audit/answer';
 import { LIST_ARGS_MAX, listAt } from './list-rpc';
 import { z } from 'zod';
 import type { LoadedTheme } from './build-job';
@@ -239,6 +247,19 @@ async function previewRoute(preview: PreviewDeps, request: IncomingMessage, url:
   }
 }
 
+// Входы аудита после публикации (место проверок `audit`), только чтение, та же база: последний аудит страницы и
+// вытеснено ли задание новой сборкой (для проверяющего процесса), сводка последней проверенной публикации (для шлюза).
+const AUDIT_ROUTES: Readonly<Record<string, (deps: AuditAnswerDeps, query: URLSearchParams) => Promise<DrawAnswer>>> = {
+  [AUDIT_ROUTE]: (deps, query) => auditAnswer(deps, query.get('shop'), query.get('page')),
+  [AUDIT_LATEST_ROUTE]: (deps, query) => summaryAnswer(deps, query.get('shop')),
+  [AUDIT_SUPERSEDED_ROUTE]: (deps, query) => supersededAnswer(deps, query.get('shop'), query.get('build')),
+};
+
+function auditRoute(deps: DrawDeps, request: IncomingMessage, url: URL): Promise<DrawAnswer> {
+  if (request.method !== 'GET') return Promise.resolve({ status: 405, body: '' });
+  return AUDIT_ROUTES[url.pathname]({ db: deps.snapshot.db, log: deps.log }, url.searchParams);
+}
+
 async function route(deps: DrawDeps, request: IncomingMessage): Promise<DrawAnswer> {
   const url = new URL(request.url ?? '/', 'http://builder');
   if (url.pathname === '/health') return { status: 200, body: 'ok\n' };
@@ -248,18 +269,7 @@ async function route(deps: DrawDeps, request: IncomingMessage): Promise<DrawAnsw
     if (request.method !== 'GET') return { status: 405, body: '' };
     return pointerState(pointerStateDeps(deps.snapshot.db, deps.store, deps.log), url.searchParams.get('shop'));
   }
-  // Последний аудит страницы после публикации (место проверок `audit`): только чтение, та же база.
-  if (url.pathname === AUDIT_ROUTE) {
-    if (request.method !== 'GET') return { status: 405, body: '' };
-    const query = url.searchParams;
-    return auditAnswer({ db: deps.snapshot.db, log: deps.log }, query.get('shop'), query.get('page'));
-  }
-  // Вытеснено ли задание аудита новой сборкой: для проверяющего процесса перед прогоном.
-  if (url.pathname === AUDIT_SUPERSEDED_ROUTE) {
-    if (request.method !== 'GET') return { status: 405, body: '' };
-    const query = url.searchParams;
-    return supersededAnswer({ db: deps.snapshot.db, log: deps.log }, query.get('shop'), query.get('build'));
-  }
+  if (url.pathname in AUDIT_ROUTES) return auditRoute(deps, request, url);
   // Секция версии расширения от сервиса extensions через sites (блок 12 «Секций и SDK», 12.6).
   if (url.pathname === EXTENSION_SECTION_ROUTE && deps.sections) {
     const read = (): Promise<string> => bodyOf(request, SECTION_BODY_LIMIT_BYTES);

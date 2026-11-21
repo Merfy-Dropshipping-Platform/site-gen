@@ -63,6 +63,14 @@ export async function previousMetrics(
   return past.length === 0 ? null : medianMetrics(past);
 }
 
+const tenantRow = z.object({ tenant_id: z.string() });
+
+// Организация магазина (site.tenant_id), как в тревоге сборщика (`alert.ts`); магазина в базе нет — его id.
+export async function tenantOf(db: Queryable, siteId: string): Promise<string> {
+  const { rows } = await db.query('SELECT tenant_id FROM site WHERE id = $1', [siteId]);
+  return rows.map((row) => tenantRow.parse(row).tenant_id).at(0) ?? siteId;
+}
+
 const NEWER_BUILD_SQL = `
 SELECT 1 FROM storefront_build WHERE site_id = $1 AND build > $2 AND outcome = 'live' LIMIT 1`;
 

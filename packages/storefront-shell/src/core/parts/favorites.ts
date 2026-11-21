@@ -7,11 +7,11 @@ import { storeItemsOf } from '../store-items';
 import { type Atom, atom, batch, computed, onMount, readable } from '../stores';
 import type {
   ActionOptions,
-  CatalogItem,
   CoreHandle,
   FavoriteProducts,
   FavoritesModule,
   FavoritesState,
+  ProductCard,
   Result,
   SdkPart,
 } from '../types';
@@ -37,7 +37,7 @@ interface FavoritesRuntime {
   readonly page: KeyValue;
   readonly enqueue: <T>(task: () => Promise<T>) => Promise<T>;
   readonly writeStores: (write: () => void) => void;
-  readonly cards: Map<string, CatalogItem>;
+  readonly cards: Map<string, ProductCard>;
   readonly requested: Set<string>; // id уже был в запросе: ответа без товара достаточно (Р10б-8)
   readDone: boolean; // список сервера прочитан (вошедшая)
   readQueued: boolean; // чтение по подписке стоит в очереди и ещё не началось

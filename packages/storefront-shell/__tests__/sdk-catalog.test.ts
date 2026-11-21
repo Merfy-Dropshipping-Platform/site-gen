@@ -66,6 +66,10 @@ describe('ctx.catalog', () => {
             compareAtPrice: null,
             available: true,
             hasVariants: false,
+            badges: [],
+            discountPercent: null,
+            stockLeft: null,
+            tags: [],
           },
         ],
         total: 21,
@@ -91,6 +95,7 @@ describe('ctx.catalog', () => {
         groups: [{ name: 'Цвет', key: 'цвет', values: ['Синий'] }],
         price: { min: rub(190000), max: rub(500000) },
         total: 4,
+        filters: [],
       },
     });
     expect(urls[0]?.href).toBe(`${API_URL}/store/filters?store_id=${SHOP_ID}&min_price=100&availability=in_stock`);

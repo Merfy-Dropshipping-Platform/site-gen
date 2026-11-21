@@ -215,6 +215,44 @@ codeOnly }` (скрипт секций превью → скрипт превь�
   наш модуль «Каталог» (поведение `catalog`) список с фильтрами читает у сервера готовым HTML.
 - Цены модулей — `PriceMoney`: копейки, валюта и текст «1 900 ₽».
 
+### Каталог: динамичные фильтры (`ctx.catalog`)
+
+Секция мерчанта рисует фильтры по `type` и ничего не знает о конкретных группах («страна», «цвет»).
+
+- Параметры `products` и `filters` (код — `src/core/catalog-query.ts`): `collectionIds` → `collection_id`, `tags` → `tags`
+  (повтор ключа, ИЛИ), `badges` (`sale`, `new`, `low_stock`, `preorder`, `in_stock`) → `badge` (повтор, между
+  признаками И), `minDiscount` (1..99) → `min_discount`, `newDays` (1..365) → `new_days`, `lowStockMax` (1..1000) →
+  `low_stock_max`, `filters` — группы вариантов (ключ группы именем параметра). Неверное значение — `invalid` без запроса.
+  `filters()` принимает те же поля, кроме `page`, `limit` и `sort`.
+- Карточка `CatalogItem` (`src/core/catalog-items.ts`): к карточке добавлены `badges` (истинные признаки), `discountPercent`
+  (целые проценты или `null`), `stockLeft` (остаток или `null`), `tags`. Значение не той формы — пустой список или `null`,
+  карточка остаётся. Избранное и поиск отдают прежнюю карточку `ProductCard` без этих полей (вес ядра страницы).
+- `CatalogFilters.filters` (`src/core/catalog-filters.ts`) — список фильтров шлюза. Старые `groups`, `price`, `total` на
+  месте. Нет поля (старый шлюз) — пустой список. Форма фильтра:
+  - `type: 'list' | 'flags'` — `options: { value, label, count, selected }[]` и `param`: имя параметра запроса, в который
+    уходит `value` (`flags` — признаки `badge`, значения складываются по И; у `list` — по ИЛИ);
+  - `type: 'range'` — `min` и `max`; у `kind: 'price'` это `PriceMoney`, `params: { min, max }` — имена параметров
+    (`min_price`, `max_price`); у прочих диапазонов — числа шлюза;
+  - `key`, `kind` (`price`, `badge`, `collection`, `tag`, `variant`, позже `attribute`), `label` — подпись.
+- Незнакомый `kind` с понятной формой (`list` с `options`, `range` с `min` и `max`) SDK отдаёт как есть; незнакомые поля
+  фильтра и значения (`swatch`, `histogram`, …) не отбрасываются. Фильтр с незнакомым `type` или не по форме — без него.
+
+Секция, которая рисует любой список фильтров по `type`, не зная групп:
+
+```ts
+const filters = await ctx.catalog.filters({ badges: selected.badges });
+if (filters.ok) {
+  filters.data.filters.forEach((filter) => {
+    if (filter.type === 'range') {
+      drawRange(filter.label, filter.min, filter.max, filter.params); // у цены — PriceMoney и имена параметров
+    } else {
+      // list и flags: чекбокс на каждое значение; по клику — param=value в запрос; count — «(12)»
+      drawList(filter.label, filter.param, filter.options);
+    }
+  });
+}
+```
+
 ## Поведения `catalog` и `search` (блок 11 «Секций и SDK», часть 11б-2)
 
 - `data-behavior="catalog"` и `data-paging` (`pages`, `more` — по умолчанию, `scroll`): части `list` (с `data-page`),

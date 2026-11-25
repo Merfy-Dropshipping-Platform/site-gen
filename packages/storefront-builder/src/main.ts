@@ -147,6 +147,7 @@ const conductor = createConductor({
 });
 // Снимку — версии тем и выпущенная версия (блок 10): магазин рисуется версией своего закрепления.
 const pinnedSnapshot = { ...snapshot, pins: catalog };
+const signalPreview = previewVia(broker.publishPreview, log);
 
 const deps: RuntimeDeps = {
   db,
@@ -166,7 +167,7 @@ const deps: RuntimeDeps = {
   enqueue: enqueueVia(broker, log),
   alert: (stopped) => raiseAlert({ db, publishActivity: broker.publishActivity, log, clock }, stopped),
   announce: settings.indexNow === null ? undefined : createIndexNow({ ...settings.indexNow, log }),
-  preview: previewVia(broker.publishPreview, log),
+  preview: signalPreview,
   publishAudit: broker.publishAudit,
   broker,
   themeIds: [...loaded.themes.keys()],
@@ -251,6 +252,7 @@ const drawDeps = {
     store,
     themeIds: deps.themeIds,
     open: sectionUploadsOpen(sandbox),
+    preview: signalPreview,
     log,
     libraryDir: join(ROOT, 'packages/storefront-sections'),
   }),

@@ -36,6 +36,7 @@ import type { CheckFinding } from './checks/finding';
 import type { DrawAnswer } from './draw';
 import { errorText } from './errors';
 import type { Log } from './log';
+import type { Preview } from './preview';
 import { sectionEditErrors, type SectionEditError } from './section-error-store';
 import { jsonAnswer } from './stand-preview';
 
@@ -150,6 +151,8 @@ export interface SectionToolsDeps {
   // Ошибки скрипта правки из браузеров — для «правок секции» (Р12в-10).
   errors: (shopId: string, name: string) => Promise<SectionEditError[]>;
   rollback: (shopId: string, name: string, id: string) => Promise<SectionRow | null>;
+  // Сигнал открытым конструкторам «код секций магазина изменился»; нет — без сигнала.
+  preview?: Preview;
   log: Log;
 }
 
@@ -242,6 +245,12 @@ async function declineUpdateOffer(deps: SectionToolsDeps, request: ToolRequest):
   return jsonAnswer(200, { ok: true, name, declined: { version: offer.latest.version } } satisfies DeclineAnswer);
 }
 
+// Правка кода секции ревизию не меняет, и сигнала записи черновика о ней нет: без этого холст открытого конструктора
+// показывает прежний вид секции до перезагрузки страницы. Ответ сигнала не ждёт, сбой отправки — строка журнала.
+function announceCode(deps: SectionToolsDeps, shopId: string): void {
+  void deps.preview?.({ shopId, entities: ['code'] });
+}
+
 // Сохранить файлы своей секцией магазина — черновиком; отказ проверки — 422, ничего не записано. Основа (`basedOn`)
 // сверяется с историей библиотеки до записи: чужой или неизвестный отпечаток — 400 based-on-invalid.
 async function save(deps: SectionToolsDeps, request: ToolRequest): Promise<DrawAnswer> {
@@ -266,6 +275,7 @@ async function save(deps: SectionToolsDeps, request: ToolRequest): Promise<DrawA
     id: result.row.id,
   };
   deps.log('section-saved', { shopId: request.shopId, name: answer.name, status: answer.status });
+  if (result.status === 'accepted') announceCode(deps, request.shopId);
   return jsonAnswer(200, answer);
 }
 
@@ -331,6 +341,7 @@ async function rollback(deps: SectionToolsDeps, request: ToolRequest): Promise<D
     throw error;
   }
   if (row === null) return toolError(404, 'edit-not-found', TEXT.edit(parsed.data.id));
+  announceCode(deps, request.shopId);
   const answer: RollbackAnswer = { name: request.name, id: row.id, draft: row.draft, published: row.published };
   return jsonAnswer(200, answer);
 }
@@ -388,6 +399,7 @@ export interface SectionToolsBase {
   // Темы новой архитектуры образа — как у превью (loaded.themes).
   themeIds: readonly string[];
   open: boolean;
+  preview: Preview;
   log: Log;
   // Пакет storefront-sections в образе: оттуда читается текущая версия библиотечной секции (библиотека — папки пакета).
   libraryDir: string;
@@ -418,6 +430,7 @@ export function sectionToolsDeps(base: SectionToolsBase): SectionToolsDeps {
     history: (shopId, name) => sectionHistory(base.db, shopId, name),
     errors: (shopId, name) => sectionEditErrors(base.db, shopId, name),
     rollback: (shopId, name, id) => rollbackSection(base.db, shopId, name, id),
+    preview: base.preview,
     log: base.log,
   };
 }

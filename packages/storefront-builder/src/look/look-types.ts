@@ -44,7 +44,8 @@ export interface Clip {
 }
 
 // Коды проверок вёрстки (28.10), в порядке важности: по нему отбираются находки и вырезки. Правила и пороги — в
-// `browser/layout-checks.js`. `overflow-x`, `columns-many`, `tap-small`, `text-small` запускаются только на телефоне.
+// `browser/layout-checks.js`. `overflow-x`, `columns-many`, `stack-tall`, `tap-small`, `text-small` запускаются только на
+// телефоне.
 export const LAYOUT_CODES = [
   'row-unequal',
   'row-not-filling',
@@ -53,6 +54,8 @@ export const LAYOUT_CODES = [
   'overlap',
   'image-distorted',
   'columns-many',
+  'row-orphan',
+  'stack-tall',
   'tap-small',
   'text-small',
 ] as const;

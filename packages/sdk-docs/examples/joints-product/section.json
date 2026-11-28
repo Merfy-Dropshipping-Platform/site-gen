@@ -1,0 +1,12 @@
+{
+  "sdk": 1,
+  "name": "joints-product",
+  "kind": "section",
+  "title": "Товар: стыки с витриной",
+  "uses": ["cart"],
+  "settings": [
+    { "id": "product", "label": "Выбор товара", "setting": { "kind": "product" } },
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Товар недели" } },
+    { "id": "button-label", "label": "Надпись кнопки", "setting": { "kind": "string", "default": "В корзину" } }
+  ]
+}

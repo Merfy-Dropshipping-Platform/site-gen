@@ -43,6 +43,8 @@ export const FIX_BY_CHECK: Record<string, CheckFix> = {
   overlap: 'ask',
   'image-distorted': 'ask',
   'columns-many': 'ask',
+  'row-orphan': 'ask',
+  'stack-tall': 'ask',
   'tap-small': 'ask',
   'text-small': 'ask',
 };

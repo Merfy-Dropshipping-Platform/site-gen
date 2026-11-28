@@ -56,6 +56,19 @@ async (options) => {
     textSmall: { minFontPx: 12, minChars: 3 },
     // columns-many (телефон). Ряд из minColumns и больше карточек (картинка и текст внутри), которые целиком в экране.
     columnsMany: { minColumns: 3 },
+    // row-orphan (28.11). Родитель раскладывает детей рядами (сетка или перенос строк): видимых детей-блоков (не inline,
+    // не absolute/fixed) от minItems до maxItems, из них не меньше minCards — карточки (`isCardLike`). Ряд — дети с
+    // пересекающимся по высоте местом (а не «общая верхняя линия»: знак «+» с items-center стоит ниже карточек, но это тот
+    // же ряд) и без отбора по ширине: в ряду могут быть карточки и знаки-разделители вперемешку. Находка: рядов не меньше
+    // двух, все ряды до последнего одной длины не меньше minPrevRow, в последнем — ровно один ребёнок, и он карточка.
+    // Не считаются: ряд, что листается вбок (родитель или его предок с overflow-x auto/scroll, data-behavior="carousel"),
+    // и один ребёнок на всю ширину содержимого родителя (от fullWidthShare: кнопка «Смотреть все», подпись).
+    rowOrphan: { minItems: 4, maxItems: 12, minCards: 3, minPrevRow: 3, fullWidthShare: 0.9, topTolerance: 2 },
+    // stack-tall (28.11, телефон). Дети одного родителя (карточки, `isCardLike`): от minItems до maxItems, по одному в
+    // ряду, ширина и высота у всех в пределах ±sizeTolerance от медианной, каждый не ниже minHeightShare высоты экрана, а
+    // вместе (от верха первого до низа последнего) занимают больше minTotalScreens высот экрана. Не считаются: формы,
+    // ряд, что листается вбок (см. row-orphan); строки аккордеона и списки текста ниже четверти экрана отсеяны порогом.
+    stackTall: { minItems: 4, maxItems: 8, sizeTolerance: 0.15, minHeightShare: 0.25, minTotalScreens: 2.5 },
   };
 
   const MAX_PER_CODE = 6;
@@ -205,13 +218,17 @@ async (options) => {
 
   // ---- ряды: общий разбор для row-unequal и columns-many -------------------------------------------------------
 
-  const isCardLike = (el) => {
+  // Видимый ребёнок-блок любого размера (28.11: row-orphan считает и маленькие знаки-разделители между карточками).
+  const isBlockChild = (el) => {
     if (['SCRIPT', 'STYLE', 'TEMPLATE', 'BR', 'NOSCRIPT'].includes(el.tagName)) return false;
     const style = styleOf(el);
     if (['inline', 'contents', 'none'].includes(style.display)) return false;
     if (style.position === 'absolute' || style.position === 'fixed') return false;
+    return isVisible(el);
+  };
+  const isCardLike = (el) => {
     const rect = rectOf(el);
-    return rect.width >= RULES.rowUnequal.minItem && rect.height >= RULES.rowUnequal.minItem && isVisible(el);
+    return rect.width >= RULES.rowUnequal.minItem && rect.height >= RULES.rowUnequal.minItem && isBlockChild(el);
   };
   const median = (values) => {
     const sorted = [...values].sort((a, b) => a - b);
@@ -666,6 +683,109 @@ async (options) => {
     }
   };
   if (MOBILE) checkColumns();
+
+  // ---- row-orphan и stack-tall: общие помощники --------------------------------------------------------------------
+
+  // Ряд листается вбок: сам родитель или предок — прокрутка по x, либо карусель платформы (её скрипт ставит прокрутку
+  // уже после снимка, поэтому смотрим и на атрибут).
+  const scrollsSideways = (el) =>
+    el.closest('[data-behavior="carousel"]') !== null ||
+    ['auto', 'scroll'].includes(styleOf(el).overflowX) ||
+    inScroller(el);
+  const within = (value, middle, share) => Math.abs(value - middle) <= middle * share;
+  const oneDecimal = (value) => String(Math.round(value * 10) / 10).replace('.', ',');
+
+  // ---- row-orphan ---------------------------------------------------------------------------------------------
+
+  // Ряды по пересечению мест по высоте, а не по общей линии верха: знак «+» с items-center стоит ниже карточек, но он в
+  // том же ряду. Следующий ряд начинается ниже низа предыдущего (минус topTolerance на округление).
+  const overlapRows = (items) => {
+    const sorted = [...items].sort((a, b) => rectOf(a).top - rectOf(b).top || rectOf(a).left - rectOf(b).left);
+    const lines = [];
+    let bottom = -Infinity;
+    for (const item of sorted) {
+      const rect = rectOf(item);
+      const sameLine = lines.length > 0 && rect.top < bottom - RULES.rowOrphan.topTolerance;
+      if (sameLine) lines[lines.length - 1].push(item);
+      else lines.push([item]);
+      bottom = sameLine ? Math.max(bottom, rect.bottom) : rect.bottom;
+    }
+    return lines;
+  };
+  const orphanOf = (parent) => {
+    const rule = RULES.rowOrphan;
+    const kids = [...parent.children].filter(isBlockChild);
+    if (kids.length < rule.minItems || kids.length > rule.maxItems) return null;
+    if (kids.filter(isCardLike).length < rule.minCards || scrollsSideways(parent)) return null;
+    const lines = overlapRows(kids);
+    const last = lines[lines.length - 1];
+    const perRow = lines[0].length;
+    const regular =
+      lines.length >= 2 && perRow >= rule.minPrevRow && lines.slice(0, -1).every((l) => l.length === perRow);
+    if (!regular || last.length !== 1 || !isCardLike(last[0])) return null;
+    const wide = rectOf(last[0]).width >= contentWidth(parent) * rule.fullWidthShare;
+    return wide ? null : { kids, lines, perRow, orphan: last[0] };
+  };
+  const checkRowOrphan = (parent) => {
+    const found = orphanOf(parent);
+    if (found === null) return;
+    const { kids, lines, perRow, orphan } = found;
+    report(
+      'row-orphan',
+      orphan,
+      `В сетке ${kids.length} элементов по ${perRow} в ряд: последний остался один в ${lines.length}-м ряду · ` +
+        'сделай число колонок по числу элементов или кратным ему (md:grid-cols-3 для трёх, lg:grid-cols-5 для пяти); ' +
+        'знаки-разделители («+», стрелки) не ставь отдельными ячейками сетки — помести их внутрь карточки или между карточками поверх зазора',
+      lines.slice(-2).flat().map(rectOf),
+      [orphan],
+      perRow,
+    );
+  };
+  for (const parent of all) {
+    if (parent.children.length >= RULES.rowOrphan.minItems && isVisible(parent)) checkRowOrphan(parent);
+  }
+
+  // ---- stack-tall ---------------------------------------------------------------------------------------------
+
+  const stackOf = (parent) => {
+    const rule = RULES.stackTall;
+    const kids = [...parent.children].filter(isCardLike);
+    if (kids.length < rule.minItems || kids.length > rule.maxItems) return null;
+    if (parent.children.length !== kids.length || parent.closest('form') !== null || scrollsSideways(parent))
+      return null;
+    if (lineGroups(kids, RULES.rowUnequal.topTolerance).length !== kids.length) return null;
+    const middleWidth = median(kids.map((kid) => rectOf(kid).width));
+    const middleHeight = median(kids.map((kid) => rectOf(kid).height));
+    const similar = kids.every(
+      (kid) =>
+        within(rectOf(kid).width, middleWidth, rule.sizeTolerance) &&
+        within(rectOf(kid).height, middleHeight, rule.sizeTolerance),
+    );
+    const screen = window.innerHeight;
+    const extent = unionOf(kids.map(rectOf)).height;
+    const tall =
+      middleHeight >= screen * rule.minHeightShare &&
+      kids.every((kid) => rectOf(kid).height >= screen * rule.minHeightShare);
+    return similar && tall && extent > screen * rule.minTotalScreens ? { kids, screens: extent / screen } : null;
+  };
+  const checkStackTall = (parent) => {
+    const found = stackOf(parent);
+    if (found === null) return;
+    report(
+      'stack-tall',
+      found.kids[0],
+      `${found.kids.length} одинаковых блоков стоят столбиком и занимают ${oneDecimal(found.screens)} экрана телефона · ` +
+        'на телефоне поставь по два в ряд (grid-cols-2) или сделай ленту с прокруткой вбок (data-behavior="carousel" или flex overflow-x-auto snap-x)',
+      found.kids.map(rectOf),
+      found.kids,
+      found.screens,
+    );
+  };
+  if (MOBILE) {
+    for (const parent of all) {
+      if (parent.children.length >= RULES.stackTall.minItems && isVisible(parent)) checkStackTall(parent);
+    }
+  }
 
   // ---- итог ---------------------------------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 # Шпаргалка: секция с нуля
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Шпаргалка: как написать секцию с нуля и не открывать остальные файлы. Подробности — по ссылкам внизу; каждый абзац ниже
 сверен с проверкой при сохранении.
@@ -132,9 +132,9 @@ const { settings, blocks } = Astro.props;
 ## Данные
 
 - `settings.<id>` — значения полей; `blocks[i].settings.<id>` — поля блока.
-- Поля `product`, `collection`, `blog`, `policy` дают запись или `null`: у товара `title`, `url`, `price`, `compareAtPrice`,
-  `images`, `available`, `preorder` (под заказ: остатка нет, заказ разрешён), `options`, `variants`; у коллекции
-  `products` (карточки до 24). Скрипту записи отдаёт `data` в `section.json` ([data.md](data.md)).
+- Поля `product`, `collection`, `blog`, `policy` дают запись или `null`. Стыки с витриной — поля записей, цена-объект,
+  обязательные данные кнопок, пустые поля, токены темы — в [joints.md](joints.md): читай его вместе со шпаргалкой.
+  Скрипту записи отдаёт `data` в `section.json` ([data.md](data.md)).
 - Каталог и коллекция — `page.list`: карточки страницы, номера, фильтры и сортировки; размер — поле `per-page`. Секция
   каталога или коллекции без фильтров, сортировки и листания не проходит проверку (`list-incomplete`,
   [data.md](data.md#список-страницы)).
@@ -160,6 +160,6 @@ const { settings, blocks } = Astro.props;
 
 ## Дальше
 
-[start.md](start.md) — адреса и разобранный пример · [anatomy.md](anatomy.md) — как связаны файлы · [errors.md](errors.md)
+[joints.md](joints.md) — стыки с витриной · [start.md](start.md) — адреса и разобранный пример · [anatomy.md](anatomy.md) — как связаны файлы · [errors.md](errors.md)
 — справка по кодам проверки · [template.md](template.md) · [section-json.md](section-json.md) · [events.md](events.md).
 

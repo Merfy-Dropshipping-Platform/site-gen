@@ -64,7 +64,7 @@ interface Case {
   name: string;
   html: string;
   device?: LookDevice;
-  // Какие коды должны быть среди находок; `none` — никаких находок вообще.
+  // Какие коды должны быть среди находок; `none` — никаких находок вообще; `!код` — этого кода среди находок нет.
   expected: string;
 }
 
@@ -74,6 +74,216 @@ const wideImg = png(80, 40);
 // Карточки в ряд: общий CSS.
 const CARDS_CSS =
   '.row{display:flex;gap:12px;padding:0 16px}.card{flex:1;border:1px solid #888;background:#fff}.card p{margin:8px}';
+
+// ---- row-orphan и stack-tall (28.11): разметка двух дефектов из прогона и соседние раскладки, где молчим ----
+
+const repeat = (count: number, html: string): string => Array.from({ length: count }, () => html).join('');
+
+// Сетка секции «Вместе удобнее»: 1 колонка → 2 → 4 (md и lg), дети — карточки товаров и знаки «+» между ними.
+const BUNDLE_CSS =
+  '.wrap{max-width:1200px;margin:0 auto;padding:0 16px}.g{display:grid;grid-template-columns:1fr;gap:16px;align-items:stretch}' +
+  '@media(min-width:768px){.g{grid-template-columns:repeat(2,1fr)}}@media(min-width:1024px){.g{grid-template-columns:repeat(4,1fr);gap:8px}}' +
+  '.c{display:flex;flex-direction:column;min-width:0;border:1px solid #888;background:#fff;padding:12px}' +
+  '.c img{width:100%;aspect-ratio:4/5;object-fit:cover}.c h3{margin:12px 0}.c button{height:44px;width:100%}' +
+  '.plus{display:flex;align-items:center;justify-content:center;font-size:30px}';
+const BUNDLE_CARD = `<article class="c"><img src="${IMG_A}" alt="Шарф"><h3>Шарф</h3><button type="button">В корзину</button></article>`;
+const PLUS = '<div class="plus"><span>+</span></div>';
+const bundle = (css = ''): string =>
+  page(
+    `<merfy-section data-section="bundle-offer" data-section-id="bundle-1"><div class="wrap"><div class="g">${[BUNDLE_CARD, PLUS, BUNDLE_CARD, PLUS, BUNDLE_CARD].join('')}</div></div></merfy-section>`,
+    BUNDLE_CSS + css,
+  );
+
+// Плитки «Коллекции плиткой»: 1 колонка → 2 (sm) → 5 (lg).
+const TILES_CSS =
+  '.g{display:grid;grid-template-columns:1fr;gap:16px;padding:0 16px}@media(min-width:1024px){.g{grid-template-columns:repeat(5,1fr)}}' +
+  '.g2{grid-template-columns:repeat(2,1fr)}' +
+  '.t{display:flex;flex-direction:column;border:1px solid #888;background:#fff;color:inherit;text-decoration:none}' +
+  '.t img{width:100%;aspect-ratio:4/5;object-fit:cover}.t h3{margin:12px;font-size:20px}';
+const TILE = `<a class="t" href="#"><img src="${IMG_A}" alt="Шарфы"><h3>Шарфы</h3></a>`;
+const tiles = (count: number, gridClass = 'g'): string =>
+  page(
+    `<merfy-section data-section="collections-tiles" data-section-id="tiles-1"><div class="${gridClass}">${repeat(count, TILE)}</div></merfy-section>`,
+    TILES_CSS,
+  );
+
+// Простые блоки без картинок и кнопок: чтобы не срабатывали другие проверки, кроме проверяемой.
+const BLOCKS_CSS =
+  '.g{display:grid;gap:16px;padding:0 16px}.g1{grid-template-columns:1fr}.g2{grid-template-columns:repeat(2,1fr)}' +
+  '.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.k{border:1px solid #888;background:#fff;height:120px}' +
+  '.k p{margin:8px}.full{grid-column:1/-1;height:80px}.stack{display:flex;flex-direction:column;gap:16px;padding:0 16px}';
+const K = '<div class="k"><p>Шарф</p></div>';
+const blocks = (grid: string, inner: string, attrs = ''): string =>
+  page(`<div class="g ${grid}"${attrs}>${inner}</div>`, BLOCKS_CSS);
+const stack = (heights: number[], tag = 'div', attrs = ''): string =>
+  page(
+    `<${tag} class="stack"${attrs}>${heights.map((h) => `<div class="k" style="height:${h}px"><p>Блок</p></div>`).join('')}</${tag}>`,
+    BLOCKS_CSS,
+  );
+
+const ORPHAN_CASES: Case[] = [
+  {
+    name: 'row-orphan: «Вместе удобнее» — три карточки и два «+» в сетке на 4 колонки, третья одна во втором ряду',
+    device: 'desktop',
+    expected: 'row-orphan',
+    html: bundle(),
+  },
+  {
+    name: 'row-orphan: знак «+» меньше 48 px и по центру ряда не выпадает из счёта',
+    device: 'desktop',
+    expected: 'row-orphan',
+    html: bundle('.plus{align-self:center;width:30px;height:30px}'),
+  },
+  {
+    name: 'row-orphan: три в ряд и ещё одна карточка снизу',
+    device: 'desktop',
+    expected: 'row-orphan',
+    html: blocks('g3', repeat(4, K)),
+  },
+  {
+    name: 'row-orphan: и на телефоне (три колонки, четвёртая одна)',
+    expected: 'row-orphan',
+    html: blocks('g3', repeat(4, K)),
+  },
+  {
+    name: 'row-orphan: нет — тот же «Вместе удобнее» на телефоне, одна колонка',
+    expected: '!row-orphan',
+    html: bundle(),
+  },
+  {
+    name: 'row-orphan: нет — ряд листается вбок (overflow-x: auto)',
+    device: 'desktop',
+    expected: '!row-orphan',
+    html: blocks('g3', repeat(4, K), ' style="overflow-x:auto"'),
+  },
+  {
+    name: 'row-orphan: нет — карусель платформы (data-behavior="carousel")',
+    device: 'desktop',
+    expected: '!row-orphan',
+    html: blocks('g3', repeat(4, K), ' data-behavior="carousel"'),
+  },
+  {
+    name: 'row-orphan: нет — список длиннее 12 (13 карточек по 3)',
+    device: 'desktop',
+    expected: '!row-orphan',
+    html: blocks('g3', repeat(13, K)),
+  },
+  {
+    name: 'row-orphan: нет — один ребёнок на всю ширину после рядов (подпись)',
+    device: 'desktop',
+    expected: '!row-orphan',
+    html: blocks('g3', `${repeat(3, K)}<div class="k full"><p>Смотреть все</p></div>`),
+  },
+  {
+    name: 'row-orphan: нет — три карточки и кнопка под ними',
+    device: 'desktop',
+    expected: '!row-orphan',
+    html: blocks(
+      'g3',
+      `${repeat(3, K)}<button type="button" style="grid-column:1/-1;height:44px">Смотреть все</button>`,
+    ),
+  },
+  {
+    name: 'row-orphan: нет — 3 + 3 карточки',
+    device: 'desktop',
+    expected: '!row-orphan',
+    html: blocks('g3', repeat(6, K)),
+  },
+  {
+    name: 'row-orphan: нет — 4 + 2 карточки',
+    device: 'desktop',
+    expected: '!row-orphan',
+    html: blocks('g4', repeat(6, K)),
+  },
+  {
+    name: 'row-orphan: нет — сетка 2×N на телефоне',
+    expected: '!row-orphan',
+    html: tiles(6, 'g g2'),
+  },
+  {
+    name: 'row-orphan: нет — на телефоне в две колонки пять карточек (в ряду меньше трёх)',
+    expected: '!row-orphan',
+    html: blocks('g2', repeat(5, K)),
+  },
+];
+
+const STACK_CASES: Case[] = [
+  {
+    name: 'stack-tall: «Коллекции плиткой» — пять плиток столбиком на несколько экранов телефона',
+    expected: 'stack-tall',
+    html: tiles(5),
+  },
+  {
+    name: 'stack-tall: нет — те же плитки на компьютере (пять колонок)',
+    device: 'desktop',
+    expected: 'none',
+    html: tiles(5),
+  },
+  {
+    name: 'stack-tall: нет — сетка плиток 2×N на телефоне',
+    expected: 'none',
+    html: tiles(6, 'g g2'),
+  },
+  {
+    name: 'stack-tall: нет — каталог из 24 карточек в одну колонку (больше 8)',
+    expected: 'none',
+    html: blocks('g1', repeat(24, K)),
+  },
+  {
+    name: 'stack-tall: нет — девять высоких блоков (больше 8)',
+    expected: 'none',
+    html: stack(Array.from({ length: 9 }, () => 440)),
+  },
+  {
+    name: 'stack-tall: нет — три высоких блока (меньше 4)',
+    expected: 'none',
+    html: stack([800, 800, 800]),
+  },
+  {
+    name: 'stack-tall: нет — четыре блока занимают меньше 2,5 экрана',
+    expected: 'none',
+    html: stack([400, 400, 400, 400]),
+  },
+  {
+    name: 'stack-tall: нет — блоки разной высоты',
+    expected: 'none',
+    html: stack([300, 500, 700, 400, 600]),
+  },
+  {
+    name: 'stack-tall: нет — строки FAQ из шести вопросов (ниже четверти экрана)',
+    expected: 'none',
+    html: page(
+      `<div class="faq">${repeat(6, '<div class="q"><p>Как оформить заказ?</p></div>')}</div>`,
+      '.faq{padding:0 16px}.q{border:1px solid #888;padding:14px}.q p{margin:0}',
+    ),
+  },
+  {
+    name: 'stack-tall: нет — блоки внутри формы',
+    expected: 'none',
+    html: stack(
+      Array.from({ length: 5 }, () => 440),
+      'form',
+    ),
+  },
+  {
+    name: 'stack-tall: нет — ряд листается вбок (overflow-x: auto)',
+    expected: 'none',
+    html: stack(
+      Array.from({ length: 5 }, () => 440),
+      'div',
+      ' style="overflow-x:auto"',
+    ),
+  },
+  {
+    name: 'stack-tall: нет — карусель платформы (data-behavior="carousel")',
+    expected: 'none',
+    html: stack(
+      Array.from({ length: 5 }, () => 440),
+      'div',
+      ' data-behavior="carousel"',
+    ),
+  },
+];
 
 const CASES: Case[] = [
   // ---- row-unequal ----
@@ -326,6 +536,8 @@ const CASES: Case[] = [
       CARDS_CSS,
     ),
   },
+  ...ORPHAN_CASES,
+  ...STACK_CASES,
 ];
 
 describe.skipIf(!hasChromium)('проверки вёрстки · настоящий Chromium', () => {
@@ -334,6 +546,7 @@ describe.skipIf(!hasChromium)('проверки вёрстки · настоящ
     async ({ html, expected, device }) => {
       const codes = await codesOn(html, device ?? 'mobile');
       if (expected === 'none') expect(codes).toEqual([]);
+      else if (expected.startsWith('!')) expect(codes).not.toContain(expected.slice(1));
       else expect(codes).toContain(expected);
     },
     60_000,
@@ -353,6 +566,38 @@ describe.skipIf(!hasChromium)('проверки вёрстки · настоящ
       await rendered.close();
     }
   }, 60_000);
+
+  const TEXT_CASES: Array<[string, LookDevice, string, string, RegExp]> = [
+    [
+      'row-orphan',
+      'desktop',
+      bundle(),
+      'bundle-1',
+      /5 элементов по 4 в ряд: последний остался один.* · .*md:grid-cols-3.*«\+»/,
+    ],
+    [
+      'stack-tall',
+      'mobile',
+      tiles(5),
+      'tiles-1',
+      /5 одинаковых блоков стоят столбиком и занимают [\d,]+ экрана.* · .*grid-cols-2.*carousel/,
+    ],
+  ];
+  it.each(TEXT_CASES)(
+    '%s: находка называет секцию и несёт «что не так · как починить»',
+    async (code, device, html, section, text) => {
+      const rendered = await renderer.open({ html, devices: [device] });
+      try {
+        const found = (await rendered.sessions[0]?.layout()) ?? [];
+        const own = found.find((finding) => finding.code === code);
+        expect(own?.section).toBe(section);
+        expect(own?.text).toMatch(text);
+      } finally {
+        await rendered.close();
+      }
+    },
+    60_000,
+  );
 
   it('вырезка — JPEG именно того места, куда указывает находка (картинка ниже первого экрана)', async () => {
     const green = png(80, 40, [0, 160, 0]);

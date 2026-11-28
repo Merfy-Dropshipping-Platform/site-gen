@@ -1,0 +1,31 @@
+---
+const { settings } = Astro.props;
+---
+{settings.product && (
+  <div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
+    {settings.heading && (
+      <h2 class="m-0 font-heading weight-heading tracking-heading text-heading text-2xl md:text-3xl">{settings.heading}</h2>
+    )}
+    {settings.product.images.length > 0 && (
+      <img src={settings.product.images[0]} alt={settings.product.title} class="aspect-square w-full rounded-media object-cover" />
+    )}
+    <a href={settings.product.url} class="text-xl text-foreground">{settings.product.title}</a>
+    <p class="m-0 flex flex-wrap items-baseline gap-x-2">
+      <span class="text-lg weight-heading text-price">{settings.product.price.text}</span>
+      {settings.product.compareAtPrice && <s class="text-sm text-price-old">{settings.product.compareAtPrice.text}</s>}
+      {settings.product.compareAtPrice && settings.product.compareAtPrice.amount > settings.product.price.amount && (
+        <span class="rounded-badge bg-sale px-2 py-1 text-xs text-sale-foreground">−{Math.round((1 - settings.product.price.amount / settings.product.compareAtPrice.amount) * 100)} %</span>
+      )}
+    </p>
+    {settings['button-label'] && (
+      <button
+        type="button"
+        class="inline-flex h-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground disabled:opacity-40"
+        data-action="cart.add"
+        data-product-id={settings.product.id}
+        data-variant-id={settings.product.variants[0]?.id}
+        disabled={settings.product.available === false}
+      >{settings['button-label']}</button>
+    )}
+  </div>
+)}

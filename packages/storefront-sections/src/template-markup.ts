@@ -18,8 +18,23 @@ export interface MarkupRef extends MarkupName {
   template: boolean;
 }
 
+// Элемент с data-action (28.11, проверка обязательных параметров действия): data-атрибуты элемента в любом виде (строкой,
+// выражением, без значения) — имена без «data-»; spread — у элемента есть {...attrs}; inTemplate — элемент внутри
+// <template> (строку списка заполняет скрипт); ref — у элемента data-ref (атрибуты может дописать скрипт).
+export interface ActionElement {
+  params: readonly string[];
+  spread: boolean;
+  inTemplate: boolean;
+  ref: boolean;
+}
+
+// Действие разметки и его элемент; element нет — элемент не известен (разметка из старых тестов и NO_MARKUP).
+export interface MarkupAction extends MarkupName {
+  element?: ActionElement;
+}
+
 export interface TemplateMarkup {
-  actions: readonly MarkupName[];
+  actions: readonly MarkupAction[];
   // Места блоков расширений (блок 12 «Секций и SDK», В12-2 А): data-ext-point="<место>" строкой. Нет мест — ключа нет.
   points?: readonly MarkupName[];
   // Элементы с data-ref строкой, в том числе внутри <template>. Нет таких — ключа нет.
@@ -78,11 +93,56 @@ function refOf(node: AstNode, text: string): MarkupRef[] {
   );
 }
 
+const DATA_PREFIX = 'data-';
+
+const attributesOf = (element: AstNode): AstNode[] => {
+  const opening = fieldOf(element, 'openingElement');
+  const attributes = isNode(opening) ? fieldOf(opening, 'attributes') : undefined;
+  return Array.isArray(attributes) ? attributes.filter(isNode) : [];
+};
+
+const attributeNameOf = (attribute: AstNode): string => {
+  const name = fieldOf(attribute, 'name');
+  const value = isNode(name) ? fieldOf(name, 'name') : undefined;
+  return typeof value === 'string' ? value : '';
+};
+
+// Узлы внутри <template> (без самого <template>): строки списков, которые заполняет скрипт.
+const templateInsides = (nodes: readonly AstNode[]): ReadonlySet<AstNode> =>
+  new Set(
+    nodes
+      .filter((node) => node.type === 'JSXElement' && tagOf(node) === 'template')
+      .flatMap((node) => nodesOf(fieldOf(node, 'children'))),
+  );
+
+function actionElementOf(element: AstNode, inside: ReadonlySet<AstNode>): ActionElement {
+  const attributes = attributesOf(element);
+  const names = attributes.map(attributeNameOf);
+  return {
+    params: names.filter((name) => name.startsWith(DATA_PREFIX)).map((name) => name.slice(DATA_PREFIX.length)),
+    // {...attrs} шаблон и так не пропускает (template-forbidden); признак — страховка от ложного отказа.
+    spread: attributes.some((attribute) => attribute.type === 'JSXSpreadAttribute'),
+    inTemplate: inside.has(element),
+    ref: names.includes(REF_ATTRIBUTE),
+  };
+}
+
+// Действия data-action одного элемента — с данными элемента.
+function elementActions(element: AstNode, text: string, inside: ReadonlySet<AstNode>): MarkupAction[] {
+  const tokens = attributesOf(element).flatMap((attribute) => attributeTokens(attribute, text, ACTION_ATTRIBUTE));
+  if (tokens.length === 0) return [];
+  const info = actionElementOf(element, inside);
+  return tokens.map((token) => ({ ...token, element: info }));
+}
+
 // data-action="pick hover:preview" → «pick» и «hover:preview»; data-ext-point="cart" → «cart» (блок 12);
 // data-ref="lines" → «lines» и есть ли у элемента дочерний <template>.
 export function templateMarkup(ast: unknown, text: string): TemplateMarkup {
   const nodes = nodesOf(ast);
-  const actions = nodes.flatMap((node) => attributeTokens(node, text, ACTION_ATTRIBUTE));
+  const inside = templateInsides(nodes);
+  const actions = nodes
+    .filter((node) => node.type === 'JSXElement')
+    .flatMap((element) => elementActions(element, text, inside));
   const points = nodes.flatMap((node) => attributeTokens(node, text, EXT_POINT_ATTRIBUTE));
   const refs = nodes.flatMap((node) => refOf(node, text));
   return {

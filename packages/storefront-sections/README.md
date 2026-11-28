@@ -85,6 +85,10 @@
   `aria-label`, `placeholder`, `value`, `href`, `src`, `content` не содержат `[object Object]`, `undefined`, `NaN`
   (`script`, `style` и комментарии пропускаются). Найдено — `render-leak`; на страницах каталога и записей считается
   только объект вместо текста. Цена записи — `Money` `{ amount, currency, text }`: в шаблоне `price.text`.
+- На примерах данных записи полей с записями секции и блоков (с ценами, вариантами, карточками) и `shop` отданы шаблону
+  под наблюдением (`src/record-shapes.ts`, ключ `watch` запроса процесса рендера; у витрины и превью его нет): чтение
+  поля не из публичных полей вида — `render-field-unknown` с путём, списком полей и ближайшим именем
+  (`src/field-unknown.ts`, до трёх на сохранение). Данные страницы (`page.record`, `page.list`) не наблюдаются.
 - Место ошибки — строка и колонка значения в `section.json` (`jsonc-parser`; в процессе проверки — внешний модуль).
 - `pnpm generate` пишет `generated/`: `section.schema.json` (для `"$schema"` в `section.json`), `names.schema.json`,
   `NAMES.md`, `shared-settings.json`; тест сверяет их с генерацией. Поменял словарь, формат секции или пометки
@@ -155,7 +159,9 @@
   `defineSection(…)` снимаются, `a[k]` — через помощник (только собственные поля; запись служебного поля — исключение),
   потом сжатие.
 - **Сверка имён** (`src/script-names.ts`, таблица `NAME_RULES`): `event-unknown` — `ctx.listen('…')` по каталогу событий
-  ядра; `action-unknown` — `data-action` по `actions` секции, действиям SDK и событиям ядра; `theme-setting-unknown` —
+  ядра; `action-unknown` — `data-action` по `actions` секции, действиям SDK и событиям ядра; `action-param-missing` —
+  у элемента с действием SDK нет атрибута `data-<параметр>` из `requiredParams` (элементы в `<template>` и с `data-ref`
+  у секции со скриптом не сверяются, 28.11); `theme-setting-unknown` —
   `ctx.theme['…']` по сквозным настройкам темы (`NAMES.shared`, блок 9, часть 9б); `class-arbitrary` — класс
   `toggleClass('…')` не вида утилиты. Новый код — строка таблицы и код в `PROBLEM_CODES`.
 - **`uses`** — `theme`, `shop` (данные шаблона) и модули SDK `cart`, `favorites`, `auth`, `newsletter`; в шаблон и входы

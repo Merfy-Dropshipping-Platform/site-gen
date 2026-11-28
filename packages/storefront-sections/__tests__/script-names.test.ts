@@ -22,7 +22,7 @@ const SCRIPT = `${HEAD}export default defineSection({\n  mount(el, ctx) {\n    c
 const TEMPLATE = `<div>
   <button type="button" data-action="pick">Серое</button>
   <button type="button" data-action="pik hover:pick mouseenter:pick">Чёрное</button>
-  <button type="button" data-action="cart.ad cart.add">В корзину</button>
+  <button type="button" data-action="cart.ad cart.add" data-product-id="p-1">В корзину</button>
   <form data-action="newsletter.subscribe"></form>
   <p data-action={'x'}></p>
 </div>`;
@@ -48,7 +48,7 @@ describe('сверка имён', () => {
 
   it('без скрипта своё действие — action-unknown; действие SDK — можно', async () => {
     const markup = await markupOf(
-      '<div><button data-action="pick">x</button><button data-action="favorites.toggle">♡</button></div>',
+      '<div><button data-action="pick">x</button><button data-action="favorites.toggle" data-product-id="p-1">♡</button></div>',
     );
     const found = nameProblems({ manifest: MANIFEST, markup, facts: null, scriptEntry: null });
     expect(found.map((item) => item.message)).toEqual([

@@ -96,8 +96,9 @@ describe('render-leak: объект вместо текста в HTML пробн
 
   it('undefined в тексте от шаблонной строки — отказ с подсказкой про значения, которых нет', async () => {
     const problems = await problemsOf('{settings.product && <p>{`${settings.product.sku} шт`}</p>}');
-    expect(problems.map((item) => item.code)).toEqual(['render-leak']);
-    expect(problems[0]?.message).toContain('найдено «undefined»');
+    // Поля sku у товара нет: первым — его чтение (render-field-unknown, 28.11), утечка undefined — его следствие.
+    expect(problems.map((item) => item.code)).toEqual(['render-field-unknown', 'render-leak']);
+    expect(problems[1]?.message).toContain('найдено «undefined»');
   });
 
   it('шаблон падает на примерах данных — render-failed с текстом ошибки', async () => {
@@ -199,7 +200,9 @@ describe('примеры данных магазина', () => {
   });
 });
 
-describe('наши секции проходят поиск утечек', () => {
+// Вся библиотека (LIBRARY_DIRS): приём целиком, с поиском утечек и чтений полей, которых у записи нет (28.11,
+// render-field-unknown): ложный отказ библиотечной секции хуже пропуска.
+describe('наши секции проходят поиск утечек и чтений полей, которых нет', () => {
   const folders = [
     ...readdirSync(SHOP).map((name) => `${SHOP}/${name}`),
     ...readdirSync(SHELL).map((name) => `${SHELL}/${name}`),

@@ -18,8 +18,16 @@ describe('data-ext-point в разметке', () => {
   });
 
   it('шаблон без мест — ключа points нет', async () => {
+    // element — данные элемента для action-param-missing (28.11): data-атрибуты без «data-».
     expect(await markupOf('<button data-action="cart.add">В корзину</button>')).toEqual({
-      actions: [{ name: 'cart.add', line: 1, column: 22 }],
+      actions: [
+        {
+          name: 'cart.add',
+          line: 1,
+          column: 22,
+          element: { params: ['action'], spread: false, inTemplate: false, ref: false },
+        },
+      ],
     });
   });
 });

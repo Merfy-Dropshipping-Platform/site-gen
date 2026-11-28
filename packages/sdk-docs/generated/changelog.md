@@ -1,6 +1,13 @@
 # Что нового
 
-> SDK 1 · документация 1.47.0 · 2026-11-28
+> SDK 1 · документация 1.48.0 · 2026-11-28
+
+## 1.48.0 — 2026-11-28
+
+- Проверка при сохранении: [`render-field-unknown`](errors.md#render-field-unknown) — шаблон на примерах данных читает
+  поле записи или магазина, которого нет (`price.value` вместо `price.amount`);
+  [`action-param-missing`](errors.md#action-param-missing) — у кнопки с `data-action` нет обязательного параметра
+  (`cart.add` без `data-product-id`, [стыки](joints.md#кнопки)).
 
 ## 1.47.0 — 2026-11-28
 

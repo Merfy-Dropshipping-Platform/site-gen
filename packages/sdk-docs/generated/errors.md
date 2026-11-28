@@ -1,6 +1,6 @@
 # Коды ошибок
 
-> SDK 1 · документация 1.47.0 · 2026-11-28
+> SDK 1 · документация 1.48.0 · 2026-11-28
 
 Справка по кодам проверки секции: когда бывает код и как исправить.
 
@@ -202,6 +202,16 @@
 
 Как исправить: Объяви действие в defineSection или возьми имя из каталога: actions.md..
 
+## action-param-missing
+
+Когда: У кнопки с `data-action` действия SDK нет обязательного параметра — атрибута `data-<параметр>` на том же элементе: витрина отклонит нажатие, кнопка не сработает.
+
+Как исправить: Добавь атрибут из текста ошибки на тот же элемент: у товара — `data-product-id={settings.product.id}`, у карточки коллекции или списка — `card.id`; обязательные параметры действий — actions.md и joints.md..
+Пример: было `<button data-action="cart.add" data-variant-id={card.variantId}>` → стало `<button data-action="cart.add" data-product-id={card.id} data-variant-id={card.variantId}>`.
+
+Правило с примерами: [joints.md#кнопки](joints.md#кнопки).
+
+
 ## theme-setting-unknown
 
 Когда: `ctx.theme` читает настройку темы, которой нет в сквозных настройках панели.
@@ -306,6 +316,14 @@
 
 Как исправить: Выводи поле объекта, а не сам объект: у цены записи — `price.text` (Money — `{ amount, currency, text }`); значения, которых может не быть, проверяй до вывода..
 Пример: было `{settings.product.price} ₽` → стало `{settings.product.price.text}`.
+
+
+## render-field-unknown
+
+Когда: На пробном рендере с примерами данных магазина шаблон читает поле записи (товара, коллекции, блога, политики, их цен, вариантов и карточек) или данных магазина, которого у них нет: условие с таким полем никогда не выполнится.
+
+Как исправить: Возьми поле из списка «Есть» в тексте ошибки: у цены — `amount` (копейки) для сравнения и `text` для вывода; поля записей — на странице data.md..
+Пример: было `{product.compareAtPrice && product.compareAtPrice.value > product.price.value && <s>…</s>}` → стало `{product.compareAtPrice && product.compareAtPrice.amount > product.price.amount && <s>…</s>}`.
 
 
 ## block-select-unavailable

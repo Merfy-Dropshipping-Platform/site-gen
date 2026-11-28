@@ -7,26 +7,33 @@ import {
   type PageInfo,
   type SectionRecordValues,
 } from '@merfy/storefront-build';
+import { fieldUnknownProblems } from './field-unknown';
 import { TEMPLATE_FILE } from './format';
 import { problem, type SectionProblem } from './problems';
+import type { FieldRead, FieldWatch } from './record-shapes';
 import { leakHint, renderLeaks } from './render-leak';
-import { withSectionRenderer, type RendererOptions, type SectionRenderRequest } from './render';
+import {
+  withSectionRenderer,
+  type RendererOptions,
+  type SectionDrawing,
+  type SectionRenderRequest,
+  type SectionTracer,
+} from './render';
 import type { SettingValues, TemplateBlock } from './trial-render';
 
 // Пробный рендер при сохранении (блок 2 «Секций и SDK», «Решил сам» п. 5): модуль шаблона рендерит процесс рендера — с теми же
 // правами и пределами, что на витрине. Процесс проверки чужой JS не исполняет: у него WASI, которого у процесса рендера
 // нет. Шаблон должен рендериться с умолчаниями настроек, с пустыми строками вместо них (блок 3, Р3.11) и на примерах
 // данных магазина (SAMPLE_*, storefront-build). Не упал — мало: HTML каждого рендера сверяется на утечки значений
-// (render-leak.ts): объект, выведенный как текст, undefined и NaN — отказ render-leak.
+// (render-leak.ts): объект, выведенный как текст, undefined и NaN — отказ render-leak. На примерах данных записи ещё и под
+// наблюдением (28.11, record-shapes.ts): чтение поля, которого у записи нет, — отказ render-field-unknown.
 
-// Итог одного рендера: HTML или текст ошибки JavaScript.
-type Outcome = { html: string } | { error: string };
+// Итог одного рендера: HTML с чтениями полей или текст ошибки JavaScript.
+type Outcome = SectionDrawing | { error: string };
 
-type Draw = (request: SectionRenderRequest) => Promise<string>;
-
-async function attempt(draw: Draw, request: SectionRenderRequest): Promise<Outcome> {
+async function attempt(trace: SectionTracer['trace'], request: SectionRenderRequest): Promise<Outcome> {
   try {
-    return { html: await draw(request) };
+    return await trace(request);
   } catch (error) {
     return { error: error instanceof Error ? error.message : String(error) };
   }
@@ -71,7 +78,7 @@ async function singleTrial(
   label: string,
   failed: (text: string) => SectionProblem,
 ): Promise<SectionProblem[]> {
-  const outcome = await withSectionRenderer((draw) => attempt(draw, request), options);
+  const outcome = await withSectionRenderer((_render, trace) => attempt(trace, request), options);
   return 'error' in outcome ? [failed(outcome.error)] : leakProblems(outcome.html, label);
 }
 
@@ -104,6 +111,8 @@ export interface TrialSample {
   records: SectionRecordValues;
   // Записи полей с записями в блоках (sampleBlockRecords, 29.10): id блока → id поля → запись.
   blockRecords?: Readonly<Record<string, SectionRecordValues>>;
+  // Виды записей полей секции и блоков для наблюдения за чтением полей (28.11); нет — без наблюдения.
+  watch?: FieldWatch;
 }
 
 // Страницы, на которых секция рисуется сверх главной: каталог со списком и страницы записей. Какой из них секция
@@ -111,8 +120,33 @@ export interface TrialSample {
 // находок считается только объект вместо текста.
 const pageLabel = (page: PageInfo): string => `на примерах данных магазина (страница ${page.id})`;
 
+interface SampleFound {
+  leaks: SectionProblem[];
+  reads: FieldRead[];
+}
+
+// Находки рендера на примерах данных: главная (main), затем страницы, пока утечек меньше LEAKS_MAX.
+async function sampleFound(
+  trace: SectionTracer['trace'],
+  base: SectionRenderRequest,
+  main: SectionDrawing,
+): Promise<SampleFound> {
+  const seen = new Set<string>();
+  const found = { leaks: leakProblems(main.html, 'на примерах данных магазина', false, seen), reads: [...main.reads] };
+  for (const page of SAMPLE_PAGES) {
+    if (found.leaks.length >= LEAKS_MAX) break;
+    const drawn = await attempt(trace, { ...base, page });
+    if ('error' in drawn) continue;
+    found.leaks.push(...leakProblems(drawn.html, pageLabel(page), true, seen));
+    found.reads.push(...drawn.reads);
+  }
+  return found;
+}
+
 // Третий пробный рендер — на примерах данных магазина: записи полей, данные магазина, настройки темы, затем страницы
-// каталога и записей. Один процесс рендера на все страницы.
+// каталога и записей. Один процесс рендера на все страницы. Чтения полей, которых нет, собираются со всех страниц: записи
+// полей секции на каждой те же. Данные страницы (page.record, page.list) не наблюдаются: какой странице принадлежит
+// секция, проверка не знает, и шаблон страницы товара на странице статьи законно читает у page.record поле товара.
 export async function sampleTrialRender(
   render: string,
   settings: SettingValues,
@@ -127,20 +161,16 @@ export async function sampleTrialRender(
     shop: SAMPLE_SHOP,
     records: sample.records,
     ...(sample.blockRecords === undefined ? {} : { blockRecords: sample.blockRecords }),
+    ...(sample.watch === undefined ? {} : { watch: sample.watch }),
   };
-  return withSectionRenderer(async (draw) => {
-    const main = await attempt(draw, base);
+  return withSectionRenderer(async (_render, trace) => {
+    const main = await attempt(trace, base);
     if ('error' in main)
       return [
         problem('render-failed', TEMPLATE_FILE, `шаблон не отрисовался на примерах данных магазина: ${main.error}`),
       ];
-    const seen = new Set<string>();
-    const problems = leakProblems(main.html, 'на примерах данных магазина', false, seen);
-    for (const page of SAMPLE_PAGES) {
-      if (problems.length >= LEAKS_MAX) break;
-      const drawn = await attempt(draw, { ...base, page });
-      if ('html' in drawn) problems.push(...leakProblems(drawn.html, pageLabel(page), true, seen));
-    }
-    return problems;
+    const { leaks, reads } = await sampleFound(trace, base, main);
+    // Поле, которого нет, — первым: утечка undefined рядом с ним обычно его следствие.
+    return [...fieldUnknownProblems(reads), ...leaks];
   }, options);
 }

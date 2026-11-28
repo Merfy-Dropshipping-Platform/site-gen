@@ -159,7 +159,9 @@
   `defineSection(…)` снимаются, `a[k]` — через помощник (только собственные поля; запись служебного поля — исключение),
   потом сжатие.
 - **Сверка имён** (`src/script-names.ts`, таблица `NAME_RULES`): `event-unknown` — `ctx.listen('…')` по каталогу событий
-  ядра; `action-unknown` — `data-action` по `actions` секции, действиям SDK и событиям ядра; `theme-setting-unknown` —
+  ядра; `action-unknown` — `data-action` по `actions` секции, действиям SDK и событиям ядра; `action-param-missing` —
+  у элемента с действием SDK нет атрибута `data-<параметр>` из `requiredParams` (элементы в `<template>` и с `data-ref`
+  у секции со скриптом не сверяются, 28.11); `theme-setting-unknown` —
   `ctx.theme['…']` по сквозным настройкам темы (`NAMES.shared`, блок 9, часть 9б); `class-arbitrary` — класс
   `toggleClass('…')` не вида утилиты. Новый код — строка таблицы и код в `PROBLEM_CODES`.
 - **`uses`** — `theme`, `shop` (данные шаблона) и модули SDK `cart`, `favorites`, `auth`, `newsletter`; в шаблон и входы

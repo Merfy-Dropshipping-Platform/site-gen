@@ -1,4 +1,4 @@
-import { ACTIONS, ACTION_EVENTS, ACTION_NAMES, isActionName } from '@merfy/shell/actions';
+import { ACTIONS, ACTION_EVENTS, ACTION_NAMES, isActionName, requiredParams } from '@merfy/shell/actions';
 import { EVENT_NAMES } from '@merfy/shell/events';
 import { LIBRARY_NAMES, isLibraryName } from '@merfy/shell/libraries';
 import { EXT_USE_PREFIX, LIB_USE_PREFIX, STORE_USE_PREFIX, TEMPLATE_FILE, type SectionManifest } from './format';
@@ -7,7 +7,7 @@ import { NAMES } from './names';
 import { problem, type SectionProblem } from './problems';
 import type { ScriptFacts } from './script-facts';
 import { dataUnknownProblems } from './section-data';
-import type { MarkupName, TemplateMarkup } from './template-markup';
+import type { ActionElement, MarkupAction, MarkupName, TemplateMarkup } from './template-markup';
 
 // Сверка имён при сохранении (11д А; design.md блока 5, раздел 3.9) — по разметке шаблона, фактам скрипта и section.json.
 // Строка таблицы NAME_RULES — один код ошибки: event-unknown — имя в ctx.listen('…') по каталогу событий SDK (блок 9,
@@ -207,9 +207,50 @@ const listTemplateMissing: NameRule = ({ markup, facts }) =>
     return [problem('list-template-missing', item.file, text, item)];
   });
 
+// Кнопка действия SDK без обязательного параметра (28.11): ядро витрины такой вызов отклоняет («cart.add: productId —
+// непустая строка»), кнопка молчит. Обязательные — ActionSpec.required каталога действий (requiredParams), параметр —
+// атрибут data-<имя> того же элемента в любом виде. Не сверяются (ложный отказ хуже пропуска): элемент внутри <template>
+// и элемент с data-ref у секции со скриптом — атрибуты ставит скрипт; элемент с {...attrs}; действие из выражения.
+const PARAM_HINTS: Readonly<Record<string, string>> = {
+  'product-id':
+    'витрина не узнает, какой товар. Добавь `data-product-id={<запись>.id}`: у товара — `settings.product.id`, у карточки коллекции или списка — `card.id`',
+  'variant-id':
+    'витрина не узнает, какой вариант. Добавь `data-variant-id={card.variantId}` или `product.variants[0].id`',
+  group: 'витрина не узнает группу вариантов. Добавь `data-group={option.id}`',
+  value: 'витрина не узнает значение группы. Добавь `data-value={value.id}`',
+  'line-id':
+    'витрина не узнает строку корзины. Кнопки строк корзины ставь в <template> списка — `data-line-id` пишет скрипт из ctx.cart',
+  quantity: 'витрина не узнает количество. Добавь `data-quantity` числом: `data-quantity="1"`',
+};
+const JOINTS_LINK = 'обязательные данные кнопок — joints.md#кнопки';
+
+const paramHint = (param: string): string =>
+  PARAM_HINTS[param] ?? `без него действие не сработает. Добавь \`data-${param}={…}\``;
+
+const isChecked = (element: ActionElement, facts: ScriptFacts | null): boolean =>
+  !element.spread && !element.inTemplate && !(element.ref && facts !== null);
+
+// Недостающие обязательные параметры действия; действие не SDK или элемент не сверяется — пусто.
+function missingParams(token: MarkupAction, facts: ScriptFacts | null): string[] {
+  const name = token.name.split(':').at(-1) ?? '';
+  if (token.element === undefined || !isActionName(name) || !isChecked(token.element, facts)) return [];
+  const present = token.element.params;
+  return requiredParams(name).filter((param) => !present.includes(param));
+}
+
+const actionParamMissing: NameRule = ({ markup, facts }) =>
+  markup.actions.flatMap((token) =>
+    missingParams(token, facts).map((param) => {
+      const action = token.name.split(':').at(-1) ?? '';
+      const text = `кнопка \`${action}\` без \`data-${param}\`: ${paramHint(param)}; ${JOINTS_LINK}`;
+      return problem('action-param-missing', TEMPLATE_FILE, text, token);
+    }),
+  );
+
 export const NAME_RULES: readonly NameRule[] = [
   eventUnknown,
   actionUnknown,
+  actionParamMissing,
   themeSettingUnknown,
   sectionThemeSettingUnknown,
   scriptClasses,

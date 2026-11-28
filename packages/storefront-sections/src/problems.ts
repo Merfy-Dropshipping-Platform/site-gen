@@ -40,6 +40,8 @@ export const PROBLEM_CODES = [
   'list-template-missing',
   'event-unknown',
   'action-unknown',
+  // data-action действия SDK без обязательного параметра из ActionSpec.required: cart.add без data-product-id (28.11).
+  'action-param-missing',
   // ctx.theme['<имя>'] не из сквозных настроек темы (блок 9 «Секций и SDK», часть 9б).
   'theme-setting-unknown',
   'script-heavy',

@@ -155,6 +155,15 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     when: '`data-action` в шаблоне называет действие, которого нет ни у секции, ни у SDK.',
     fix: 'Объяви действие в defineSection или возьми имя из каталога: actions.md.',
   },
+  'action-param-missing': {
+    when: 'У кнопки с `data-action` действия SDK нет обязательного параметра — атрибута `data-<параметр>` на том же элементе: витрина отклонит нажатие, кнопка не сработает.',
+    fix: 'Добавь атрибут из текста ошибки на тот же элемент: у товара — `data-product-id={settings.product.id}`, у карточки коллекции или списка — `card.id`; обязательные параметры действий — actions.md и joints.md.',
+    example: {
+      before: '<button data-action="cart.add" data-variant-id={card.variantId}>',
+      after: '<button data-action="cart.add" data-product-id={card.id} data-variant-id={card.variantId}>',
+    },
+    doc: 'joints.md#кнопки',
+  },
   // ctx.theme['<имя>'] не из сквозных настроек темы (блок 9 «Секций и SDK», часть 9б).
   'theme-setting-unknown': {
     when: '`ctx.theme` читает настройку темы, которой нет в сквозных настройках панели.',

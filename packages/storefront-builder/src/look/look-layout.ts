@@ -39,6 +39,8 @@ const LAYOUT_NAMES: Record<LayoutCode, string> = {
   overlap: 'Элементы перекрывают друг друга',
   'image-distorted': 'Картинка растянута',
   'columns-many': 'Много колонок карточек на телефоне',
+  'row-orphan': 'Один элемент остался в последнем ряду',
+  'stack-tall': 'Одинаковые блоки стоят столбиком на телефоне',
   'tap-small': 'Кнопка или ссылка мельче 44 px',
   'text-small': 'Текст мельче 12 px',
 };

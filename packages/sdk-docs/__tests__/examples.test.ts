@@ -20,6 +20,7 @@ describe('примеры документации', () => {
       'bad-setting-name-unknown',
       'bad-template-forbidden',
       'hero-clean',
+      'joints-product',
       'scarf-match',
     ]);
   });

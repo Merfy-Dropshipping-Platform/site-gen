@@ -227,6 +227,9 @@ importers:
       '@merfy/shell':
         specifier: workspace:*
         version: link:../storefront-shell
+      '@merfy/storefront-build':
+        specifier: workspace:*
+        version: link:../storefront-build
       '@merfy/storefront-sections':
         specifier: workspace:*
         version: link:../storefront-sections

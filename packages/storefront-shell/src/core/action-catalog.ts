@@ -18,6 +18,9 @@ export interface ActionSpec {
   readonly about: string;
   // Параметры data-action; null — действие только из скрипта секции.
   readonly markup: Readonly<Record<string, ParamRule>> | null;
+  // Параметры из markup (имена без data-), без которых действие не сработает: ядро отклоняет вызов кодом invalid. Одно
+  // определение для документации (actions.md, joints.md) и проверки секции при сохранении; нет поля — все необязательны.
+  readonly required?: readonly string[];
 }
 
 export const ACTIONS = {
@@ -25,17 +28,20 @@ export const ACTIONS = {
     module: 'cart',
     about: 'добавить товар в корзину; аргументы { productId, variantId?, quantity? = 1 }, ответ — CartState',
     markup: { 'product-id': 'text', 'variant-id': 'text', quantity: 'count-from-1' },
+    required: ['product-id'],
   },
   // Блок 10, часть 10а: по номеру строки корзины; quantity 0 — убрать строку.
   'cart.change': {
     module: 'cart',
     about: 'поменять количество строки корзины; аргументы { lineId, quantity }, 0 — убрать строку; ответ — CartState',
     markup: { 'line-id': 'text', quantity: 'count-from-0' },
+    required: ['line-id', 'quantity'],
   },
   'cart.remove': {
     module: 'cart',
     about: 'убрать строку из корзины; аргументы { lineId }, ответ — CartState',
     markup: { 'line-id': 'text' },
+    required: ['line-id'],
   },
   'cart.open': {
     module: 'cart',
@@ -66,22 +72,26 @@ export const ACTIONS = {
     about:
       'выбрать подсказку адреса из $hints: город или адрес с домом и индексом; аргументы { id }, ответ — CheckoutForm',
     markup: { 'hint-id': 'text' },
+    required: ['hint-id'],
   },
   'checkout.selectDelivery': {
     module: 'checkout',
     about: 'выбрать способ доставки из $delivery.options; аргументы { id }, ответ — CheckoutDelivery',
     markup: { 'option-id': 'text' },
+    required: ['option-id'],
   },
   'checkout.selectPoint': {
     module: 'checkout',
     about: 'выбрать пункт выдачи перевозчика из $delivery.points; аргументы { code }, ответ — CheckoutDelivery',
     markup: { 'point-code': 'text' },
+    required: ['point-code'],
   },
   'checkout.selectPayment': {
     module: 'checkout',
     about:
       'выбрать способ оплаты: bank_card, sbp, sberbank, tinkoff_bank — из $payment.methods; аргументы { method }, ответ — CheckoutPayment',
     markup: { method: 'text' },
+    required: ['method'],
   },
   'checkout.applyPromo': {
     module: 'checkout',
@@ -103,6 +113,7 @@ export const ACTIONS = {
     module: 'favorites',
     about: 'отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added }',
     markup: { 'product-id': 'text' },
+    required: ['product-id'],
   },
   // Блок 10, часть 10в: вход по коду из письма и кабинет. Тексты ошибок секция показывает сама (quiet: true).
   'auth.requestCode': {
@@ -164,6 +175,7 @@ export const ACTIONS = {
     about:
       'выбрать значение группы вариантов товара; аргументы { productId, group, value } — id из JSON вариантов страницы, ответ — Variant, потом merfy:variant:change',
     markup: { 'product-id': 'text', group: 'text', value: 'text' },
+    required: ['product-id', 'group', 'value'],
   },
   // Блок 11, часть 11б: кнопка «Поиск» «Шапки» — панель секции «Поиск» или страница каталога.
   'search.open': {
@@ -183,6 +195,7 @@ export const ACTIONS = {
     about:
       'скопировать текст в буфер обмена (промокод, ссылку); аргументы { text }, ответ — {}; нет буфера — запасной способ; успех — уведомление «Скопировано»',
     markup: { text: 'text' },
+    required: ['text'],
   },
   // 01.11: крестик и кнопки «Закрыть» окна поверх страницы — закрывает окно своей секции, merfy:overlay:close с button.
   'overlay.close': {
@@ -203,6 +216,12 @@ export const isActionName = (name: string): name is ActionName => Object.hasOwn(
 export function markupParams(name: ActionName): readonly string[] {
   const markup: ActionSpec['markup'] = ACTIONS[name].markup;
   return markup === null ? [] : Object.keys(markup);
+}
+
+// Обязательные параметры разметки: без них действие не сработает (ActionSpec.required).
+export function requiredParams(name: ActionName): readonly string[] {
+  const spec: ActionSpec = ACTIONS[name];
+  return spec.required ?? [];
 }
 
 // Модули SDK для "uses" в section.json (design.md блока 5, раздел 3.8): по этому списку проверка при сохранении (часть 5в)

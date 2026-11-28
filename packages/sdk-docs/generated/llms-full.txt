@@ -1,7 +1,7 @@
 # Merfy · SDK секций витрины
 
 > Как написать секцию магазина Merfy: section.json, template.astro, script.ts.
-> SDK 1 · документация 1.46.0 · 2026-11-21. Читай эту документацию, а не память: SDK новый.
+> SDK 1 · документация 1.47.0 · 2026-11-28. Читай эту документацию, а не память: SDK новый.
 
 ## Гайд
 - [Из чего состоит секция](anatomy.md): section.json, template.astro и script.ts, как они связаны, откуда секция берёт данные и как общается со страницей
@@ -9,6 +9,7 @@
 
 ## Начать
 - [Шпаргалка: секция с нуля](quick.md): файлы, поля и имена, шаблон, классы, данные, скрипт и пределы на одной странице (до 10 000 знаков)
+- [Стыки с витриной](joints.md): поля записей, цена, обязательные параметры кнопок, пустые поля, токены темы; читать вместе со шпаргалкой
 - [Как сделать секцию](start.md): порядок работы, адреса проверки и сохранения, разобранный пример
 - [Шаблон секции](template/AGENTS.md): правила для ИИ и файлы, с которых начинать
 - [Как писать код секции](code.md): декларативный шаблон и скрипт: правила «плохо → хорошо», предупреждения taste-*
@@ -46,7 +47,7 @@
 
 # Из чего состоит секция
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Секция — один блок страницы магазина: шапка, баннер, список товаров, подвал. Секция хранится как папка с файлами.
 Описание нужно любой секции, разметка — обычной, скрипт — только той, у которой что-то меняется после загрузки. Эта страница объясняет, за что отвечает каждый файл, как они связаны и
@@ -175,7 +176,7 @@
 
 # Путь секции до витрины
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Эта страница описывает путь секции: файлы написаны → проверка → сохранение → публикация магазина и сборка → витрина.
 На каждом шаге сказано, какая часть платформы работает и что остаётся, если шаг не прошёл.
@@ -284,7 +285,7 @@
 
 # Шпаргалка: секция с нуля
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Шпаргалка: как написать секцию с нуля и не открывать остальные файлы. Подробности — по ссылкам внизу; каждый абзац ниже
 сверен с проверкой при сохранении.
@@ -416,9 +417,9 @@ const { settings, blocks } = Astro.props;
 ## Данные
 
 - `settings.<id>` — значения полей; `blocks[i].settings.<id>` — поля блока.
-- Поля `product`, `collection`, `blog`, `policy` дают запись или `null`: у товара `title`, `url`, `price`, `compareAtPrice`,
-  `images`, `available`, `preorder` (под заказ: остатка нет, заказ разрешён), `options`, `variants`; у коллекции
-  `products` (карточки до 24). Скрипту записи отдаёт `data` в `section.json` ([data.md](data.md)).
+- Поля `product`, `collection`, `blog`, `policy` дают запись или `null`. Стыки с витриной — поля записей, цена-объект,
+  обязательные данные кнопок, пустые поля, токены темы — в [joints.md](joints.md): читай его вместе со шпаргалкой.
+  Скрипту записи отдаёт `data` в `section.json` ([data.md](data.md)).
 - Каталог и коллекция — `page.list`: карточки страницы, номера, фильтры и сортировки; размер — поле `per-page`. Секция
   каталога или коллекции без фильтров, сортировки и листания не проходит проверку (`list-incomplete`,
   [data.md](data.md#список-страницы)).
@@ -444,8 +445,146 @@ const { settings, blocks } = Astro.props;
 
 ## Дальше
 
-[start.md](start.md) — адреса и разобранный пример · [anatomy.md](anatomy.md) — как связаны файлы · [errors.md](errors.md)
+[joints.md](joints.md) — стыки с витриной · [start.md](start.md) — адреса и разобранный пример · [anatomy.md](anatomy.md) — как связаны файлы · [errors.md](errors.md)
 — справка по кодам проверки · [template.md](template.md) · [section-json.md](section-json.md) · [events.md](events.md).
+
+
+
+---
+
+# Стыки с витриной
+
+> SDK 1 · документация 1.47.0 · 2026-11-28
+
+Вёрстка свободная, стыки — нет. Читай вместе со [шпаргалкой](quick.md); полностью — [data.md](data.md),
+[actions.md](actions.md), [styles.md](styles.md).
+
+## Данные
+
+Поля `product`, `collection`, `blog`, `policy` дают запись или `null` ([data.md](data.md#записи-магазина-в-полях-секции)).
+
+| Запись | Где | Поля |
+|---|---|---|
+| товар | поле `product` | `id`, `title`, `slug`, `url`, `description`, `price`, `compareAtPrice`, `images`, `available`, `preorder`, `options`, `variants`, `collections`, `updatedAt` |
+| вариант | `product.variants[i]` | `id`, `title`, `price`, `compareAtPrice`, `available`, `options` |
+| группа вариантов | `product.options[i]` | `id`, `name`, `values` |
+| значение группы | `product.options[i].values[j]` | `id`, `value`, `images`, `swatch` |
+| цена | `price`, `compareAtPrice` везде | `amount`, `currency`, `text` |
+| коллекция | поле `collection` | `id`, `title`, `slug`, `url`, `description`, `images`, `productsCount`, `products` |
+| карточка товара | `collection.products[i]` | `id`, `title`, `url`, `price`, `compareAtPrice`, `image`, `available`, `preorder`, `images`, `variantId`, `colors` |
+| блог | поле `blog` | `id`, `title`, `handle`, `url`, `articlesCount`, `articles` |
+| карточка статьи | `blog.articles[i]` | `id`, `title`, `url`, `publishedAt`, `publishedText`, `cover`, `excerpt` |
+| статья | `page.record` на странице статьи | `id`, `title`, `slug`, `url`, `publishedAt`, `publishedText`, `cover`, `excerpt`, `html`, `blog` |
+| страница-правило (политика) | поле `policy` | `type`, `title`, `url`, `html` |
+
+- Цена — объект, не число: выводи `price.text`, сравнивай и считай скидку по `price.amount` (копейки).
+  `price.value` нет; `{price}` целиком — отказ `render-leak`. `compareAtPrice` у товара без скидки — `null`.
+- У карточки в `collection.products` фото — `image` и `images`; сочетание для корзины — `variantId`. Поля
+  `variants` у карточки нет.
+- У коллекции есть `images` — её обложка (`collection.images[0]`). Отдельное поле-картинка под обложку не нужно.
+
+## Кнопки
+
+Параметры — атрибуты той же кнопки, что `data-action`: `data-product-id={product.id}` (у карточки `card.id`),
+`data-variant-id={card.variantId}` или `product.variants[0].id`.
+
+| `data-action` | Обязательно | Можно | Что сделает витрина |
+|---|---|---|---|
+| `cart.add` | `data-product-id` | `data-variant-id`, `data-quantity` | добавить товар в корзину |
+| `cart.change` | `data-line-id`, `data-quantity` | — | поменять количество строки корзины |
+| `cart.remove` | `data-line-id` | — | убрать строку из корзины |
+| `checkout.pickHint` | `data-hint-id` | — | выбрать подсказку адреса из $hints |
+| `checkout.selectDelivery` | `data-option-id` | — | выбрать способ доставки из $delivery.options |
+| `checkout.selectPoint` | `data-point-code` | — | выбрать пункт выдачи перевозчика из $delivery.points |
+| `checkout.selectPayment` | `data-method` | — | выбрать способ оплаты |
+| `favorites.toggle` | `data-product-id` | — | отметить товар в избранном или снять отметку |
+| `variants.pick` | `data-product-id`, `data-group`, `data-value` | — | выбрать значение группы вариантов товара |
+| `share.copy` | `data-text` | — | скопировать текст в буфер обмена (промокод, ссылку) |
+
+Без параметров: `cart.open`, `cart.checkout`, `checkout.removePromo`, `checkout.submit`, `auth.signout`, `consent.accept`, `consent.decline`, `search.open`, `share.page`, `overlay.close`.
+
+Кнопка без обязательного параметра не сработает.
+
+## Пустые поля
+
+Запись в поле бывает `null`: выбранная запись удалена или записей этого вида в магазине нет — проверяй до обращения к
+её полям. Пустое поле на шаблоне записи своего вида — запись этой страницы: секция «Карточка товара» на шаблоне «Товар»
+показывает товар страницы. На других страницах пустое поле — как у секций пяти тем на проде: первый товар, все товары
+(первые 24), записи всех блогов (первые 12); у политики — `null`. У такой «коллекции» и такого «блога» `title` и `url` —
+пустые строки: заголовок и ссылку «смотреть все» рисуй, только когда они непустые.
+
+Нет данных — блок не рисуется: `{settings.product && (…)}`, `images.length > 0`, `compareAtPrice &&`. Обращений к
+владельцу магазина («выберите товар в настройках») в разметке нет.
+
+## Тема
+
+Заголовок и кнопки берут вид из токенов: секции магазина выглядят одной рукой и перекрашиваются настройками темы
+([styles.md](styles.md)).
+
+| Что | Классы |
+|---|---|
+| заголовок секции | `m-0 font-heading weight-heading tracking-heading text-heading text-2xl md:text-3xl` |
+| главная кнопка | `inline-flex h-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground` |
+| цена, со скидкой, старая в `<s>` | `text-price`, `text-sale`, `text-price-old` |
+| плашка скидки | `rounded-badge bg-sale px-2 py-1 text-xs text-sale-foreground` |
+| фото; ширина секции | `rounded-media`, `mx-auto max-w-page px-4` |
+
+## Пример стыков
+
+Не вёрстка для подражания, а минимум стыков: `price.text`, скидка по `amount`, `cart.add`, `available === false`.
+
+joints-product/
+
+```json
+{
+  "sdk": 1,
+  "name": "joints-product",
+  "kind": "section",
+  "title": "Товар: стыки с витриной",
+  "uses": ["cart"],
+  "settings": [
+    { "id": "product", "label": "Выбор товара", "setting": { "kind": "product" } },
+    { "id": "heading", "label": "Заголовок", "setting": { "kind": "string", "default": "Товар недели" } },
+    { "id": "button-label", "label": "Надпись кнопки", "setting": { "kind": "string", "default": "В корзину" } }
+  ]
+}
+
+```
+
+```astro
+---
+const { settings } = Astro.props;
+---
+{settings.product && (
+  <div class="mx-auto flex max-w-page flex-col gap-4 px-4 font-body">
+    {settings.heading && (
+      <h2 class="m-0 font-heading weight-heading tracking-heading text-heading text-2xl md:text-3xl">{settings.heading}</h2>
+    )}
+    {settings.product.images.length > 0 && (
+      <img src={settings.product.images[0]} alt={settings.product.title} class="aspect-square w-full rounded-media object-cover" />
+    )}
+    <a href={settings.product.url} class="text-xl text-foreground">{settings.product.title}</a>
+    <p class="m-0 flex flex-wrap items-baseline gap-x-2">
+      <span class="text-lg weight-heading text-price">{settings.product.price.text}</span>
+      {settings.product.compareAtPrice && <s class="text-sm text-price-old">{settings.product.compareAtPrice.text}</s>}
+      {settings.product.compareAtPrice && settings.product.compareAtPrice.amount > settings.product.price.amount && (
+        <span class="rounded-badge bg-sale px-2 py-1 text-xs text-sale-foreground">−{Math.round((1 - settings.product.price.amount / settings.product.compareAtPrice.amount) * 100)} %</span>
+      )}
+    </p>
+    {settings['button-label'] && (
+      <button
+        type="button"
+        class="inline-flex h-11 items-center justify-center rounded-button border-width-button border-primary-border bg-primary px-6 text-sm text-primary-foreground shadow-button hover:bg-primary-hover hover:text-primary-hover-foreground disabled:opacity-40"
+        data-action="cart.add"
+        data-product-id={settings.product.id}
+        data-variant-id={settings.product.variants[0]?.id}
+        disabled={settings.product.available === false}
+      >{settings['button-label']}</button>
+    )}
+  </div>
+)}
+
+```
 
 
 
@@ -453,7 +592,7 @@ const { settings, blocks } = Astro.props;
 
 # Как сделать секцию
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Секция — папка с файлами: `section.json` (поля), `template.astro` (разметка) и `script.ts` — только если на странице
 что-то меняется после загрузки. Секцию проверяют и сохраняют в магазин через шлюз Merfy с входом мерчанта; на витрину
@@ -680,7 +819,7 @@ const { settings } = Astro.props;
 
 # Как писать код секции
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Шаблон описывает вид секции, а не программу: значение настройки попадает в атрибут, вид по значению задают классы
 словаря. Ветвление остаётся там, где меняется сама разметка: есть блок или нет, есть фото или нет. Переменных и функций
@@ -1006,7 +1145,7 @@ const { settings, blocks } = Astro.props;
 
 # section.json
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Ключи файла `section.json` и формы полей каждого вида. Формат хранит та же схема, по которой работает проверка при сохранении.
 
@@ -1076,7 +1215,7 @@ const { settings, blocks } = Astro.props;
 
 # Имена полей
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 # Имена полей секций
 
@@ -1211,7 +1350,7 @@ const { settings, blocks } = Astro.props;
 
 # template.astro
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 `template.astro` — разметка секции на Astro. Сборка рендерит её на сервере со значениями полей мерчанта.
 
@@ -1269,7 +1408,7 @@ const { settings, blocks } = Astro.props;
 
 # Классы и токены
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Своего CSS у секции нет. Только классы Tailwind из словаря магазина — так секция выглядит в цветах и шрифтах любой
 темы и меняется вместе с «Настройками темы».
@@ -1566,7 +1705,7 @@ const { settings, blocks } = Astro.props;
 
 # script.ts
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 `script.ts` — поведение секции в браузере. Нужен, только если на странице что-то меняется после загрузки: выбор,
 фильтр, счётчик. Открыть, переключить, прокрутить — готовые [поведения](behaviors.md) без скрипта.
@@ -2011,7 +2150,7 @@ actions: {
 
 # Свои сторы
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Свой стор — значение JSON, которое считает код автора отдельно от секций: «покупатель собирается уйти», «город
 покупателя», «окно уже показывали». Секции и другие сторы его читают, меняет только код самого стора. Места на странице
@@ -2124,7 +2263,7 @@ mount(el, ctx) {
 
 # Модули SDK
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Ключ `uses` в `section.json` открывает секции данные и модули SDK. Значения:
 
@@ -2219,7 +2358,7 @@ mount(el, ctx) {
 
 # События
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 События витрины отправляет ядро SDK; секция слушает их через `ctx.listen`, свой код мерчанта — на `document`.
 
@@ -2278,27 +2417,27 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 # Действия
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Действия SDK вызывает ядро по `data-action="<имя>"` в разметке секции — без скрипта. Из `script.ts` то же действие вызывается как `ctx.<модуль>.<действие>(…)`. Ответ каждого действия — в его описании: это содержимое `data` ответа `Result`, а не весь ответ ([ответ действия](#ответ-действия)).
 
 | Действие | Модуль | Что делает и что отвечает | Параметры разметки |
 |---|---|---|---|
-| `cart.add` | cart | добавить товар в корзину; аргументы { productId, variantId?, quantity? = 1 }, ответ — CartState | `data-product-id`, `data-variant-id`, `data-quantity` |
-| `cart.change` | cart | поменять количество строки корзины; аргументы { lineId, quantity }, 0 — убрать строку; ответ — CartState | `data-line-id`, `data-quantity` |
-| `cart.remove` | cart | убрать строку из корзины; аргументы { lineId }, ответ — CartState | `data-line-id` |
+| `cart.add` | cart | добавить товар в корзину; аргументы { productId, variantId?, quantity? = 1 }, ответ — CartState | обязательно: `data-product-id`; можно: `data-variant-id`, `data-quantity` |
+| `cart.change` | cart | поменять количество строки корзины; аргументы { lineId, quantity }, 0 — убрать строку; ответ — CartState | обязательно: `data-line-id`, `data-quantity` |
+| `cart.remove` | cart | убрать строку из корзины; аргументы { lineId }, ответ — CartState | обязательно: `data-line-id` |
 | `cart.open` | cart | открыть корзину: при «Сайдбар» и выезжающей корзине на странице — merfy:cart:open, иначе переход на /cart; ответ — { drawer } | — |
 | `cart.checkout` | cart | перейти в оформление заказа: номер корзины и копия строк для оформления, переход на /checkout | — |
 | `checkout.set` | checkout | записать поле покупателя; аргументы { field, value }, field — email, phone, country, firstName, lastName, city, address, postalCode; город и адрес дают подсказки в $hints; ответ — CheckoutForm | только из script.ts |
 | `checkout.leave` | checkout | покупатель ушёл с поля — в $form.errors появляется ошибка этого поля; аргументы { field }, ответ — CheckoutForm | только из script.ts |
-| `checkout.pickHint` | checkout | выбрать подсказку адреса из $hints: город или адрес с домом и индексом; аргументы { id }, ответ — CheckoutForm | `data-hint-id` |
-| `checkout.selectDelivery` | checkout | выбрать способ доставки из $delivery.options; аргументы { id }, ответ — CheckoutDelivery | `data-option-id` |
-| `checkout.selectPoint` | checkout | выбрать пункт выдачи перевозчика из $delivery.points; аргументы { code }, ответ — CheckoutDelivery | `data-point-code` |
-| `checkout.selectPayment` | checkout | выбрать способ оплаты: bank_card, sbp, sberbank, tinkoff_bank — из $payment.methods; аргументы { method }, ответ — CheckoutPayment | `data-method` |
+| `checkout.pickHint` | checkout | выбрать подсказку адреса из $hints: город или адрес с домом и индексом; аргументы { id }, ответ — CheckoutForm | обязательно: `data-hint-id` |
+| `checkout.selectDelivery` | checkout | выбрать способ доставки из $delivery.options; аргументы { id }, ответ — CheckoutDelivery | обязательно: `data-option-id` |
+| `checkout.selectPoint` | checkout | выбрать пункт выдачи перевозчика из $delivery.points; аргументы { code }, ответ — CheckoutDelivery | обязательно: `data-point-code` |
+| `checkout.selectPayment` | checkout | выбрать способ оплаты: bank_card, sbp, sberbank, tinkoff_bank — из $payment.methods; аргументы { method }, ответ — CheckoutPayment | обязательно: `data-method` |
 | `checkout.applyPromo` | checkout | применить промокод к корзине; аргументы { code }, ответ — CheckoutPromo; отказ магазина — в $promo.error | только из script.ts |
 | `checkout.removePromo` | checkout | убрать промокод; ответ — CheckoutPromo | — |
 | `checkout.submit` | checkout | «Оплатить»: проверка полей, заказ и переход на страницу платёжки выбранным способом, потом merfy:checkout:order; ошибки полей — в $form.errors, остальное — в $status.error; повтор не создаёт второй заказ | — |
-| `favorites.toggle` | favorites | отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added } | `data-product-id` |
+| `favorites.toggle` | favorites | отметить товар в избранном или снять отметку; аргументы { productId }, ответ — { added } | обязательно: `data-product-id` |
 | `auth.requestCode` | auth | отправить письмо с кодом и ссылкой для входа; аргументы { email }, ответ — {} | только из script.ts |
 | `auth.verify` | auth | войти по коду { email, code } или ссылке { token }; ответ — { customer }, потом merfy:auth:signin; на «Входе» — переход по ?redirect или в кабинет | только из script.ts |
 | `auth.signout` | auth | выйти: токен и избранное браузера стёрты, merfy:auth:signout; в кабинете — переход на «Вход» | — |
@@ -2309,11 +2448,13 @@ document.addEventListener('merfy:cart:add', (event) => {
 | `consent.accept` | consent | покупатель принял cookie: счётчики мерчанта и «свой код» с ожиданием согласия запускаются; ответ — "accepted" | — |
 | `consent.decline` | consent | покупатель отклонил cookie: аналитика ничего не отправляет, счётчиков нет; ответ — "declined" | — |
 | `newsletter.subscribe` | newsletter | подписать на рассылку магазина; аргументы { email }, ответ — { alreadySubscribed }; e-mail — из поля формы | только из script.ts |
-| `variants.pick` | variants | выбрать значение группы вариантов товара; аргументы { productId, group, value } — id из JSON вариантов страницы, ответ — Variant, потом merfy:variant:change | `data-product-id`, `data-group`, `data-value` |
+| `variants.pick` | variants | выбрать значение группы вариантов товара; аргументы { productId, group, value } — id из JSON вариантов страницы, ответ — Variant, потом merfy:variant:change | обязательно: `data-product-id`, `data-group`, `data-value` |
 | `search.open` | search | открыть панель поиска: есть на странице — merfy:search:open, нет — переход на /catalog; ответ — { panel } | — |
 | `share.page` | share | поделиться страницей: окно «Поделиться» системы с названием и адресом страницы, нет окна — адрес в буфер обмена; ответ — { method: "share" | "copy" } | — |
-| `share.copy` | share | скопировать текст в буфер обмена (промокод, ссылку); аргументы { text }, ответ — {}; нет буфера — запасной способ; успех — уведомление «Скопировано» | `data-text` |
+| `share.copy` | share | скопировать текст в буфер обмена (промокод, ссылку); аргументы { text }, ответ — {}; нет буфера — запасной способ; успех — уведомление «Скопировано» | обязательно: `data-text` |
 | `overlay.close` | overlay | закрыть окно своей секции поверх страницы: фокус возвращается туда, где был до открытия, потом merfy:overlay:close с reason "button"; ответ — {} | — |
+
+Кнопка без обязательного параметра не сработает: ядро отклонит вызов кодом `invalid` ([ответ действия](#ответ-действия)); у `cart.change` пропущенное `data-quantity` читается как 0 — строка уберётся. Параметры — атрибуты `data-*` той же кнопки, где `data-action`.
 
 Свои действия секция описывает в `script.ts` ([script.md](script.md)).
 
@@ -2336,7 +2477,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 # Поведения и анимации
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Готовое поведение вешается на элемент атрибутом `data-behavior="<имя>"` — без скрипта. Части поведения отмечаются `data-part`, параметры — своими `data-…` на том же элементе.
 
@@ -2491,7 +2632,7 @@ document.addEventListener('merfy:cart:add', (event) => {
 
 # Анимации
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Движение в секции делают несколькими способами. Берите первый подходящий.
 
@@ -2983,7 +3124,7 @@ ctx.animate(label, { translate: ['0 0', '0 -6px'] }, { duration: 1800, repeat: I
 
 # Настройки темы
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Сквозные настройки общие у всех секций: их задаёт мерчант в «Настройках темы», секция читает значения. Список — из общих настроек платформы.
 
@@ -3034,7 +3175,7 @@ const { settings, theme } = Astro.props;
 
 # Страницы
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 ## Группы страницы
 
@@ -3075,7 +3216,7 @@ const { settings, theme } = Astro.props;
 
 # Данные магазина
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Данные магазина секция читает только объявленные в `section.json` ключом `uses`.
 
@@ -3495,7 +3636,7 @@ const { settings, page } = Astro.props;
 
 # Коды ошибок
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Справка по кодам проверки секции: когда бывает код и как исправить.
 
@@ -4092,7 +4233,7 @@ const { settings, page } = Astro.props;
 
 # Лимиты
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
 
 Пределы, которые проверка секции применяет при сохранении. Числа — из констант проверки.
 
@@ -4125,7 +4266,15 @@ const { settings, page } = Astro.props;
 
 # Что нового
 
-> SDK 1 · документация 1.46.0 · 2026-11-21
+> SDK 1 · документация 1.47.0 · 2026-11-28
+
+## 1.47.0 — 2026-11-28
+
+- Новая страница [«Стыки с витриной»](joints.md) (до 9 КБ): поля записей и карточек, цена-объект, обязательные данные
+  кнопок, пустые поля, токены темы и один пример стыков. Читается вместе с [шпаргалкой](quick.md), в которой на неё
+  ссылки.
+- [Действия](actions.md): у действий с разметкой указаны обязательные параметры (`обязательно` и `можно`) — одно
+  определение `ActionSpec.required` в каталоге действий ядра. Кнопка без обязательного параметра не сработает.
 
 ## 1.46.0 — 2026-11-21
 

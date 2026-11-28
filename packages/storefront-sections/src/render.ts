@@ -12,6 +12,7 @@ import type {
 } from '@merfy/storefront-build';
 import { z } from 'zod';
 import { defaultLaunch, spawnIsolated, type IsolatedLaunch } from './isolation';
+import { FIELD_READS_MAX, SHAPE_NAMES, type FieldRead, type FieldWatch } from './record-shapes';
 import type { SettingValues } from './trial-render';
 import { WORKER_FILES } from './worker-files';
 
@@ -45,6 +46,15 @@ export interface SectionRenderRequest {
   blockRecords?: Readonly<Record<string, SectionRecordValues>>;
   // Значения сторов расширений с prerender по именам ext секции — Astro.props.ext; нет — {} (render-worker.ts).
   ext?: Readonly<Record<string, ExtValue | null>>;
+  // Наблюдение за чтением полей записей (28.11, record-shapes.ts) — только пробный рендер при сохранении; нет — рендер
+  // как на витрине.
+  watch?: FieldWatch;
+}
+
+// HTML секции и чтения полей, которых у записи нет (только у запроса с watch, иначе пусто).
+export interface SectionDrawing {
+  html: string;
+  reads: readonly FieldRead[];
 }
 
 export interface SectionRenderer {
@@ -52,6 +62,12 @@ export interface SectionRenderer {
   // pid процесса рендера; null — процесса нет: рендера ещё не было или процесс остановлен.
   pid: () => number | null;
   close: () => Promise<void>;
+}
+
+// Процесс рендера с чтениями полей (пробный рендер при сохранении, 28.11). Отдельный тип: подставные процессы сборщика и
+// превью реализуют только SectionRenderer.
+export interface SectionTracer extends SectionRenderer {
+  trace: (request: SectionRenderRequest) => Promise<SectionDrawing>;
 }
 
 export interface RenderLimits {
@@ -125,7 +141,15 @@ const TEXT = {
 const answerSchema = z.union([
   z.strictObject({ ready: z.literal(true) }),
   // cpuMs — процессорное время секции в процессе рендера; у старого процесса поля нет.
-  z.strictObject({ html: z.string(), cpuMs: z.number().nonnegative().optional() }),
+  // reads — у запроса с watch (render-worker.ts): не больше FIELD_READS_MAX.
+  z.strictObject({
+    html: z.string(),
+    cpuMs: z.number().nonnegative().optional(),
+    reads: z
+      .array(z.strictObject({ path: z.string(), shape: z.enum(SHAPE_NAMES), key: z.string() }))
+      .max(FIELD_READS_MAX)
+      .optional(),
+  }),
   z.strictObject({ error: z.string(), denied: z.boolean(), cpuMs: z.number().nonnegative().optional() }),
 ]);
 type Answer = z.infer<typeof answerSchema>;
@@ -200,7 +224,7 @@ class FrameReader {
 
 interface Job {
   request: SectionRenderRequest;
-  resolve: (html: string) => void;
+  resolve: (drawing: SectionDrawing) => void;
   reject: (error: Error) => void;
 }
 
@@ -237,7 +261,7 @@ const exitFault = (signal: NodeJS.Signals | null): Fault =>
     : { stage: 'render', message: TEXT.exited };
 
 /** Живой процесс рендера: очередь запросов, один запрос в работе, пределы и замена процесса. */
-class Renderer implements SectionRenderer {
+class Renderer implements SectionTracer {
   private readonly queue: Job[] = [];
   private running: Running | null = null;
   private current: InFlight | null = null;
@@ -248,11 +272,13 @@ class Renderer implements SectionRenderer {
     this.limits = { ...RENDER_LIMITS, ...envLimits(process.env), ...options.limits };
   }
 
-  render = (request: SectionRenderRequest): Promise<string> =>
-    new Promise<string>((resolve, reject) => {
+  trace = (request: SectionRenderRequest): Promise<SectionDrawing> =>
+    new Promise<SectionDrawing>((resolve, reject) => {
       this.queue.push({ request, resolve, reject });
       this.pump();
     });
+
+  render = async (request: SectionRenderRequest): Promise<string> => (await this.trace(request)).html;
 
   pid = (): number | null => this.running?.child.pid ?? null;
 
@@ -291,7 +317,7 @@ class Renderer implements SectionRenderer {
 
   private send(running: Running, job: Job): void {
     const id = this.nextId++;
-    const { hash, settings, module, blocks, preview, menus, theme, shop, page, records, blockRecords, ext } =
+    const { hash, settings, module, blocks, preview, menus, theme, shop, page, records, blockRecords, ext, watch } =
       job.request;
     const message = {
       id,
@@ -306,6 +332,7 @@ class Renderer implements SectionRenderer {
       ...(records === undefined ? {} : { records }),
       ...(blockRecords === undefined ? {} : { blockRecords }),
       ...(ext === undefined ? {} : { ext }),
+      ...(watch === undefined ? {} : { watch }),
       ...(running.sent.has(hash) ? {} : { module }),
     };
     running.sent.add(hash);
@@ -362,7 +389,7 @@ class Renderer implements SectionRenderer {
     this.current = null;
     if (running.timer !== null) clearTimeout(running.timer);
     running.renders += 1;
-    if ('html' in frame.answer) current.job.resolve(frame.answer.html);
+    if ('html' in frame.answer) current.job.resolve({ html: frame.answer.html, reads: frame.answer.reads ?? [] });
     else
       current.job.reject(new SectionRenderError(frame.answer.denied ? 'render-denied' : 'render', frame.answer.error));
     if (running.renders >= this.limits.renders) this.retire(running);
@@ -409,18 +436,19 @@ class Renderer implements SectionRenderer {
   }
 }
 
-export function startSectionRenderer(options: RendererOptions = {}): SectionRenderer {
+export function startSectionRenderer(options: RendererOptions = {}): SectionTracer {
   return new Renderer(options);
 }
 
-// Работа с процессом рендера: процесс закрывается после работы, даже если она упала.
+// Работа с процессом рендера: процесс закрывается после работы, даже если она упала. trace — рендер с чтениями полей
+// (пробный рендер на примерах данных, trial.ts).
 export async function withSectionRenderer<T>(
-  work: (render: SectionRenderer['render']) => Promise<T>,
+  work: (render: SectionRenderer['render'], trace: SectionTracer['trace']) => Promise<T>,
   options: RendererOptions = {},
 ): Promise<T> {
   const renderer = startSectionRenderer(options);
   try {
-    return await work(renderer.render);
+    return await work(renderer.render, renderer.trace);
   } finally {
     await renderer.close();
   }

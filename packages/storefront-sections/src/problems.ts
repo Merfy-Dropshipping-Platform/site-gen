@@ -60,6 +60,9 @@ export const PROBLEM_CODES = [
   'render-empty-failed',
   // В HTML пробного рендера объект вместо текста ([object Object]) или слова undefined и NaN (trial.ts, render-leak.ts).
   'render-leak',
+  // Шаблон на примерах данных магазина читает поле записи или магазина, которого у них нет: price.value (28.11,
+  // record-shapes.ts, field-unknown.ts).
+  'render-field-unknown',
   'block-select-unavailable',
   // Правка текста в превью (блок 1, часть 6): у настройки с "inlineEdit": true в шаблоне нет места правки — ошибка.
   'inline-edit-unavailable',

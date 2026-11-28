@@ -85,6 +85,10 @@
   `aria-label`, `placeholder`, `value`, `href`, `src`, `content` не содержат `[object Object]`, `undefined`, `NaN`
   (`script`, `style` и комментарии пропускаются). Найдено — `render-leak`; на страницах каталога и записей считается
   только объект вместо текста. Цена записи — `Money` `{ amount, currency, text }`: в шаблоне `price.text`.
+- На примерах данных записи полей с записями секции и блоков (с ценами, вариантами, карточками) и `shop` отданы шаблону
+  под наблюдением (`src/record-shapes.ts`, ключ `watch` запроса процесса рендера; у витрины и превью его нет): чтение
+  поля не из публичных полей вида — `render-field-unknown` с путём, списком полей и ближайшим именем
+  (`src/field-unknown.ts`, до трёх на сохранение). Данные страницы (`page.record`, `page.list`) не наблюдаются.
 - Место ошибки — строка и колонка значения в `section.json` (`jsonc-parser`; в процессе проверки — внешний модуль).
 - `pnpm generate` пишет `generated/`: `section.schema.json` (для `"$schema"` в `section.json`), `names.schema.json`,
   `NAMES.md`, `shared-settings.json`; тест сверяет их с генерацией. Поменял словарь, формат секции или пометки

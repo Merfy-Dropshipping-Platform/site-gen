@@ -308,6 +308,14 @@
 Пример: было `{settings.product.price} ₽` → стало `{settings.product.price.text}`.
 
 
+## render-field-unknown
+
+Когда: На пробном рендере с примерами данных магазина шаблон читает поле записи (товара, коллекции, блога, политики, их цен, вариантов и карточек) или данных магазина, которого у них нет: условие с таким полем никогда не выполнится.
+
+Как исправить: Возьми поле из списка «Есть» в тексте ошибки: у цены — `amount` (копейки) для сравнения и `text` для вывода; поля записей — на странице data.md..
+Пример: было `{product.compareAtPrice && product.compareAtPrice.value > product.price.value && <s>…</s>}` → стало `{product.compareAtPrice && product.compareAtPrice.amount > product.price.amount && <s>…</s>}`.
+
+
 ## block-select-unavailable
 
 Когда: У блока в blocks.map нет одного корневого элемента; секция сохраняется.

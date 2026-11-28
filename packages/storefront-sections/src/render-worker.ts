@@ -4,12 +4,14 @@ import { createInterface } from 'node:readline';
 import type { PageList } from '@merfy/storefront-build';
 import { z } from 'zod';
 import { loadTemplate } from './module-loader';
-import { renderTemplate, type TemplateComponent } from './trial-render';
+import { SHAPE_NAMES, watchProps, type FieldRead, type FieldWatch } from './record-shapes';
+import { renderTemplate, type TemplateComponent, type TemplateProps } from './trial-render';
 
 // Процесс рендера секций (render.ts; блок 2 «Секций и SDK», «Решил сам» п. 2). Запросы — строки JSON на stdin: первая —
 // ключ процесса, дальше { id, hash, module?, settings }; module приходит один раз на hash, загруженный шаблон хранится
 // по hash. Ответы — рамками в дескриптор 3: строка «<ключ> <id> <байт>\n» и ровно столько байт JSON — { ready: true }
-// (id 0), { html, cpuMs } или { error, denied, cpuMs } (cpuMs — процессорное время запроса, мс). Ключа у модуля секции нет: подделать ответ записью в дескриптор он не может.
+// (id 0), { html, cpuMs } или { error, denied, cpuMs } (cpuMs — процессорное время запроса, мс; у запроса с watch к HTML
+// добавляется reads — чтения полей, которых у записи нет, 28.11). Ключа у модуля секции нет: подделать ответ записью в дескриптор он не может.
 // Запись в дескриптор сохранена до первого модуля секции — модуль её не подменит.
 const write = writeSync;
 const CHANNEL = 3;
@@ -76,6 +78,14 @@ const requestSchema = z.strictObject({
   blockRecords: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.json()).nullable())).default({}),
   // Значения сторов расширений с prerender по именам ext секции (20.11): значение или null; нет ключа — {}.
   ext: z.record(z.string(), z.json()).default({}),
+  // Наблюдение за чтением полей записей (28.11, record-shapes.ts): только у пробного рендера на примерах данных; нет
+  // ключа — рендер как на витрине, в ответе нет reads.
+  watch: z
+    .strictObject({
+      records: z.record(z.string(), z.enum(SHAPE_NAMES)),
+      blockRecords: z.record(z.string(), z.record(z.string(), z.enum(SHAPE_NAMES))),
+    })
+    .optional(),
 });
 
 const templates = new Map<string, Promise<TemplateComponent>>();
@@ -108,6 +118,22 @@ function denied(error: unknown): boolean {
   return [Reflect.get(Object(error), 'code'), Reflect.get(Object(cause), 'code')].includes('ERR_ACCESS_DENIED');
 }
 
+// Рендер под наблюдением: HTML и чтения полей, которых у записи нет. Наблюдение не меняет исход: шаблон, упавший под
+// ним (Proxy не копируется structuredClone и т. п.), рисуется ещё раз без наблюдения — HTML или ошибку отдаёт обычный
+// рендер, чтений тогда нет.
+async function watchedAnswer(
+  template: TemplateComponent,
+  props: TemplateProps,
+  watch: FieldWatch,
+): Promise<{ html: string; reads?: FieldRead[] }> {
+  const { values, reads } = watchProps(props, watch);
+  try {
+    return { html: await renderTemplate(template, { ...props, ...values }), reads };
+  } catch {
+    return { html: await renderTemplate(template, props) };
+  }
+}
+
 function requestOf(line: string) {
   try {
     return requestSchema.safeParse(JSON.parse(line));
@@ -119,7 +145,7 @@ function requestOf(line: string) {
 async function answerTo(line: string): Promise<{ id: number; answer: object }> {
   const parsed = requestOf(line);
   if (parsed === null || !parsed.success) return { id: 0, answer: { error: 'запрос не по форме', denied: false } };
-  const { id, hash, module, settings, blocks, preview, menus, theme, shop, page, records, blockRecords, ext } =
+  const { id, hash, module, settings, blocks, preview, menus, theme, shop, page, records, blockRecords, ext, watch } =
     parsed.data;
   try {
     if (module !== undefined && !templates.has(hash)) templates.set(hash, loadTemplate(module));
@@ -138,6 +164,7 @@ async function answerTo(line: string): Promise<{ id: number; answer: object }> {
       blockRecords,
       ext,
     };
+    if (watch !== undefined) return { id, answer: await watchedAnswer(await template, props, watch) };
     return { id, answer: { html: await renderTemplate(await template, props) } };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

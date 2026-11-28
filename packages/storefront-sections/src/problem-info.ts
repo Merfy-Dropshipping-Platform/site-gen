@@ -318,6 +318,14 @@ export const PROBLEM_INFO: Readonly<Record<ProblemCode, ProblemInfo>> = {
     fix: 'Выводи поле объекта, а не сам объект: у цены записи — `price.text` (Money — `{ amount, currency, text }`); значения, которых может не быть, проверяй до вывода.',
     example: { before: '{settings.product.price} ₽', after: '{settings.product.price.text}' },
   },
+  'render-field-unknown': {
+    when: 'На пробном рендере с примерами данных магазина шаблон читает поле записи (товара, коллекции, блога, политики, их цен, вариантов и карточек) или данных магазина, которого у них нет: условие с таким полем никогда не выполнится.',
+    fix: 'Возьми поле из списка «Есть» в тексте ошибки: у цены — `amount` (копейки) для сравнения и `text` для вывода; поля записей — на странице data.md.',
+    example: {
+      before: '{product.compareAtPrice && product.compareAtPrice.value > product.price.value && <s>…</s>}',
+      after: '{product.compareAtPrice && product.compareAtPrice.amount > product.price.amount && <s>…</s>}',
+    },
+  },
   'block-select-unavailable': {
     when: 'У блока в blocks.map нет одного корневого элемента; секция сохраняется.',
     fix: 'Оберни разметку блока одним элементом — тогда блок выбирается кликом в превью.',

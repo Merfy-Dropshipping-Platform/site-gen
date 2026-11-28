@@ -154,8 +154,9 @@ const { settings, ext } = Astro.props;
 товара — не число и не строка, а объект `Money`: `{ amount, currency, text }`. `amount` — копейки (целое число),
 `currency` — `"RUB"`, `text` — готовая подпись «1 900 ₽». В шаблоне выводите `price.text`. Запись
 `{settings.product.price}` напечатает `[object Object]`: проверка при сохранении откажет такой секции кодом
-`render-leak` ([errors.md](errors.md#render-leak)). `compareAtPrice` у товара без скидки — `null`: проверьте его до
-вывода. Деньги в событиях корзины — другой объект, `{ amount, currency }` без `text` ([events.md](events.md)).
+`render-leak` ([errors.md](errors.md#render-leak)). Сравнивайте цены по `amount`: поля `value` у цены нет, и
+`price.value` проверка тоже не пропустит — `render-field-unknown` ([errors.md](errors.md#render-field-unknown)).
+`compareAtPrice` у товара без скидки — `null`: проверьте его до вывода. Деньги в событиях корзины — другой объект, `{ amount, currency }` без `text` ([events.md](events.md)).
 
 ```astro
 {settings.product && (

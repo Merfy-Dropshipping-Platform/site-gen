@@ -5,9 +5,10 @@ import { problem } from './problems';
 import { resolveSectionBlocks } from './blocks';
 import { sectionMenus } from './menus';
 import { settingFieldsOf } from './fields';
+import { recordWatchOf } from './record-shapes';
 import { sectionRecordKeys } from './section-data';
 import { defaultSettings, emptySettings } from './settings';
-import { emptyTrialRender, sampleTrialRender, trialRender } from './trial';
+import { emptyTrialRender, sampleTrialRender, trialRender, type TrialSample } from './trial';
 import { WORKER_FILES } from './worker-files';
 
 // Отдельный процесс для приёма (design.md блока 7, С7-11 А: код любого автора проверяет и собирает sites). Чужой код
@@ -94,18 +95,22 @@ export async function prepareInWorker(
   if (blank.length > 0) return { ok: false, problems: blank };
   // Третий пробный рендер — на примерах данных магазина: ветки с ценой и карточками при умолчаниях не выполняются.
   // Блоки и меню — как в первом.
-  const keys = sectionRecordKeys(result.section.manifest);
-  const records = sampleRecordValues(keys.recordFields);
-  // Поля с записями в блоках (29.10): у блоков по умолчанию — примеры своего вида.
-  const blockRecords = sampleBlockRecords(keys.blockRecordFields, blocks);
-  const sample = { launch: options.launch };
-  const sampled = await sampleTrialRender(
-    result.section.render,
-    settings,
-    { records, blockRecords },
-    sample,
-    blocks,
-    menus,
-  );
+  const sample = trialSampleOf(result.section.manifest, blocks);
+  const launch = { launch: options.launch };
+  const sampled = await sampleTrialRender(result.section.render, settings, sample, launch, blocks, menus);
   return sampled.length > 0 ? { ok: false, problems: sampled } : result;
+}
+
+// Примеры данных для третьего пробного рендера: записи полей с записями секции и блоков по умолчанию (29.10) — примеры
+// своего вида; виды этих записей — для наблюдения за чтением полей (28.11, record-shapes.ts).
+function trialSampleOf(
+  manifest: Parameters<typeof sectionRecordKeys>[0],
+  blocks: Parameters<typeof sampleBlockRecords>[1],
+): TrialSample {
+  const keys = sectionRecordKeys(manifest);
+  return {
+    records: sampleRecordValues(keys.recordFields),
+    blockRecords: sampleBlockRecords(keys.blockRecordFields, blocks),
+    watch: recordWatchOf(keys.recordFields, keys.blockRecordFields, blocks),
+  };
 }

@@ -1,11 +1,28 @@
-import { ACTIONS } from '@merfy/shell/actions';
+import { ACTIONS, ACTION_NAMES, isActionName, requiredParams, type ActionName } from '@merfy/shell/actions';
 import { ERROR_CODES } from '@merfy/shell/events';
 
 // actions.md (блок 14): действия SDK из каталога ACTIONS — имя, модуль, параметры разметки.
-const markupText = (markup: Readonly<Record<string, unknown>> | null): string => {
-  if (markup === null) return 'только из script.ts';
-  const params = Object.keys(markup).map((name) => `\`data-${name}\``);
-  return params.length === 0 ? '—' : params.join(', ');
+const dataAttr = (name: string): string => `\`data-${name}\``;
+
+export const actionNames = (): readonly ActionName[] => ACTION_NAMES.filter(isActionName);
+
+// Параметры разметки действия: обязательные (ActionSpec.required) и остальные; null — разметки нет. Общее для actions.md
+// и joints.md: одно определение «что кнопка обязана передать».
+export function markupSplit(name: ActionName): { required: string[]; optional: string[] } | null {
+  const markup: Readonly<Record<string, unknown>> | null = ACTIONS[name].markup;
+  if (markup === null) return null;
+  const required = [...requiredParams(name)];
+  return { required, optional: Object.keys(markup).filter((param) => !required.includes(param)) };
+}
+
+const markupText = (name: ActionName): string => {
+  const split = markupSplit(name);
+  if (split === null) return 'только из script.ts';
+  const parts = [
+    split.required.length === 0 ? '' : `обязательно: ${split.required.map(dataAttr).join(', ')}`,
+    split.optional.length === 0 ? '' : `можно: ${split.optional.map(dataAttr).join(', ')}`,
+  ].filter((part) => part !== '');
+  return parts.length === 0 ? '—' : parts.join('; ');
 };
 
 type ErrorCode = (typeof ERROR_CODES)[number];
@@ -28,8 +45,8 @@ const ERROR_ABOUT: Readonly<Record<ErrorCode, string>> = {
 const errorRows = (): string[] => ERROR_CODES.map((code) => `| \`'${code}'\` | ${ERROR_ABOUT[code]} |`);
 
 export function actionsPage(): string {
-  const rows = Object.entries(ACTIONS).map(
-    ([name, spec]) => `| \`${name}\` | ${spec.module} | ${spec.about} | ${markupText(spec.markup)} |`,
+  const rows = actionNames().map(
+    (name) => `| \`${name}\` | ${ACTIONS[name].module} | ${ACTIONS[name].about} | ${markupText(name)} |`,
   );
   return [
     'Действия SDK вызывает ядро по `data-action="<имя>"` в разметке секции — без скрипта. Из `script.ts` то же действие вызывается как `ctx.<модуль>.<действие>(…)`. Ответ каждого действия — в его описании: это содержимое `data` ответа `Result`, а не весь ответ ([ответ действия](#ответ-действия)).',
@@ -37,6 +54,8 @@ export function actionsPage(): string {
     '| Действие | Модуль | Что делает и что отвечает | Параметры разметки |',
     '|---|---|---|---|',
     ...rows,
+    '',
+    'Кнопка без обязательного параметра не сработает: ядро отклонит вызов кодом `invalid` ([ответ действия](#ответ-действия)); у `cart.change` пропущенное `data-quantity` читается как 0 — строка уберётся. Параметры — атрибуты `data-*` той же кнопки, где `data-action`.',
     '',
     'Свои действия секция описывает в `script.ts` ([script.md](script.md)).',
     '',

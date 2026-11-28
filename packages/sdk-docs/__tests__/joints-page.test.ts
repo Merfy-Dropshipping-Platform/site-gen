@@ -89,6 +89,11 @@ describe('joints.md', () => {
     expect(oneLine(files['data.md'] ?? '')).toContain(rule);
     expect(oneLine(section('Пустые поля'))).toContain(rule);
     expect(section('Пустые поля')).toContain('блок не рисуется');
+    // Правила EMPTY_RULES (storefront-build/section-records.ts): запись бывает null; у «коллекции» и «блога» пустого
+    // поля title и url — пустые строки, у политики — null. Страница не должна обещать «не выбрано — null».
+    expect(section('Пустые поля')).toContain('Запись в поле бывает `null`: выбранная запись удалена');
+    expect(section('Пустые поля')).not.toContain('Поле записи не выбрано');
+    expect(oneLine(section('Пустые поля'))).toContain('`title` и `url` — пустые строки');
   });
 
   it('тема: каждый класс — токен из словаря (TOKENS.md) или раскладка без вида темы', () => {
